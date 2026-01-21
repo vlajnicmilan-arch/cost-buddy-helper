@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Category, CATEGORIES, Expense } from '@/types/expense';
-import { Plus } from 'lucide-react';
+import { Plus, Camera, Image, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 
 interface AddExpenseDialogProps {
-  onAdd: (expense: Omit<Expense, 'id'>) => void;
+  onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => void;
 }
 
 export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
@@ -17,6 +18,29 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category>('food');
+  const [merchantName, setMerchantName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { scanning, scanReceipt } = useReceiptScanner();
+
+  const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string;
+      const result = await scanReceipt(base64);
+      
+      if (result) {
+        setAmount(result.amount.toString());
+        setDescription(result.description);
+        setCategory(result.category);
+        setMerchantName(result.merchant);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,11 +52,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       category,
       date: new Date(),
       type,
+      merchant_name: merchantName || undefined,
+      ai_extracted: false
     });
 
     setAmount('');
     setDescription('');
     setCategory('food');
+    setMerchantName('');
     setOpen(false);
   };
 
@@ -44,12 +71,61 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
           Dodaj
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md glass-card border-border/50">
+      <DialogContent className="sm:max-w-md glass-card border-border/50 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Nova transakcija</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+          {/* Receipt Scan Buttons */}
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleImageCapture}
+              className="hidden"
+              id="camera-input"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 gap-2 rounded-xl"
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.setAttribute('capture', 'environment');
+                  fileInputRef.current.click();
+                }
+              }}
+              disabled={scanning}
+            >
+              {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+              Fotografiraj
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 gap-2 rounded-xl"
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.removeAttribute('capture');
+                  fileInputRef.current.click();
+                }
+              }}
+              disabled={scanning}
+            >
+              {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
+              Iz galerije
+            </Button>
+          </div>
+
+          {scanning && (
+            <div className="text-center py-4 text-muted-foreground text-sm">
+              Analiziram račun...
+            </div>
+          )}
+
           {/* Type Toggle */}
           <div className="flex gap-2 p-1 bg-muted rounded-xl">
             <button
@@ -94,12 +170,24 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
             />
           </div>
 
+          {/* Merchant Name */}
+          <div className="space-y-2">
+            <Label htmlFor="merchant" className="text-sm font-medium">Trgovina (opcionalno)</Label>
+            <Input
+              id="merchant"
+              placeholder="Npr. Konzum"
+              value={merchantName}
+              onChange={(e) => setMerchantName(e.target.value)}
+              className="h-12 rounded-xl"
+            />
+          </div>
+
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description" className="text-sm font-medium">Opis</Label>
             <Input
               id="description"
-              placeholder="Npr. Kava u kafiću"
+              placeholder="Npr. Tjedna kupovina"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="h-12 rounded-xl"
@@ -134,6 +222,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
           <Button 
             type="submit" 
             className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+            disabled={scanning}
           >
             Spremi transakciju
           </Button>

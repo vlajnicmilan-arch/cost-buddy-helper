@@ -1,5 +1,5 @@
-import { CATEGORIES, getCategoryInfo, Category } from '@/types/expense';
-import { cn } from '@/lib/utils';
+import { CATEGORIES } from '@/types/expense';
+import { motion } from 'framer-motion';
 
 interface CategoryBreakdownProps {
   expensesByCategory: Record<string, number>;
@@ -25,19 +25,33 @@ export const CategoryBreakdown = ({ expensesByCategory, total }: CategoryBreakdo
 
   if (sortedCategories.length === 0) {
     return (
-      <div className="glass-card rounded-2xl p-6 animate-fade-in">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card rounded-2xl p-6"
+      >
         <h3 className="text-lg font-semibold mb-4">Po kategorijama</h3>
         <p className="text-muted-foreground text-sm">Još nema troškova</p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="glass-card rounded-2xl p-6 animate-fade-in">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card rounded-2xl p-6"
+    >
       <h3 className="text-lg font-semibold mb-4">Po kategorijama</h3>
       <div className="space-y-4">
-        {sortedCategories.map((cat) => (
-          <div key={cat.id} className="space-y-2">
+        {sortedCategories.map((cat, index) => (
+          <motion.div 
+            key={cat.id} 
+            className="space-y-2"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{cat.icon}</span>
@@ -48,17 +62,19 @@ export const CategoryBreakdown = ({ expensesByCategory, total }: CategoryBreakdo
               </span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
+              <motion.div
+                className="h-full rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${cat.percentage}%` }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
                 style={{
-                  width: `${cat.percentage}%`,
                   backgroundColor: `hsl(var(--${cat.color}))`,
                 }}
               />
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 };
