@@ -14,7 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bank_connections: {
+        Row: {
+          account_id: string | null
+          bank_name: string
+          created_at: string
+          id: string
+          last_synced_at: string | null
+          provider: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          bank_name: string
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          provider: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          bank_name?: string
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          provider?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          ai_extracted: boolean | null
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          merchant_name: string | null
+          receipt_url: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_extracted?: boolean | null
+          amount: number
+          category?: string
+          created_at?: string
+          date?: string
+          description: string
+          id?: string
+          merchant_name?: string | null
+          receipt_url?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_extracted?: boolean | null
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          merchant_name?: string | null
+          receipt_url?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          currency: string | null
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

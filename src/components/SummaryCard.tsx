@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface SummaryCardProps {
   title: string;
@@ -16,7 +17,11 @@ export const SummaryCard = ({ title, amount, variant, icon }: SummaryCardProps) 
   };
 
   return (
-    <div className="glass-card rounded-2xl p-6 animate-fade-in">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card rounded-2xl p-6"
+    >
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
         <div className={cn(
@@ -36,6 +41,6 @@ export const SummaryCard = ({ title, amount, variant, icon }: SummaryCardProps) 
       )}>
         {variant === 'expense' ? '-' : ''}{formatAmount(Math.abs(amount))}
       </p>
-    </div>
+    </motion.div>
   );
 };

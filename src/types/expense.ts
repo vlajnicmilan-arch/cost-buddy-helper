@@ -9,11 +9,17 @@ export type Category =
 
 export interface Expense {
   id: string;
+  user_id: string;
   amount: number;
   description: string;
   category: Category;
   date: Date;
   type: 'expense' | 'income';
+  receipt_url?: string | null;
+  merchant_name?: string | null;
+  ai_extracted?: boolean | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CategoryInfo {
@@ -36,3 +42,15 @@ export const CATEGORIES: CategoryInfo[] = [
 export const getCategoryInfo = (category: Category): CategoryInfo => {
   return CATEGORIES.find(c => c.id === category) || CATEGORIES[6];
 };
+
+export interface BankConnection {
+  id: string;
+  user_id: string;
+  provider: string;
+  bank_name: string;
+  account_id?: string;
+  status: 'pending' | 'connected' | 'error' | 'expired';
+  last_synced_at?: string;
+  created_at: string;
+  updated_at: string;
+}
