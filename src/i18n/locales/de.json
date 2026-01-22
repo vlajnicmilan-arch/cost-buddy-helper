@@ -176,6 +176,11 @@
     "lastBackup": "Letzte Sicherung",
     "autoBackup": "Auto-Sicherung"
   },
+  "bulk": {
+    "paymentSource": "Massen-Zahlung",
+    "category": "Massen-Kategorie",
+    "reports": "Berichte"
+  },
   "settings": {
     "title": "Einstellungen",
     "language": "Sprache",

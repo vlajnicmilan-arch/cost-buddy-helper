@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { CreditCard, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface BulkPaymentSourceDialogProps {
   expenses: Expense[];
@@ -16,6 +17,7 @@ interface BulkPaymentSourceDialogProps {
 }
 
 export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaymentSourceDialogProps) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newPaymentSource, setNewPaymentSource] = useState<PaymentSource | ''>('');
@@ -119,7 +121,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2 bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-700">
           <CreditCard className="w-4 h-4" />
-          Grupno ažuriranje
+          {t('bulk.paymentSource')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">

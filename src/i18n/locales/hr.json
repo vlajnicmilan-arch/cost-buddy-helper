@@ -176,6 +176,11 @@
     "lastBackup": "Zadnja kopija",
     "autoBackup": "Automatska kopija"
   },
+  "bulk": {
+    "paymentSource": "Grupno plaćanje",
+    "category": "Grupno kategorije",
+    "reports": "Izvješća"
+  },
   "settings": {
     "title": "Postavke",
     "language": "Jezik",

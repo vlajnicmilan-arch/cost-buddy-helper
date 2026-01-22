@@ -176,6 +176,11 @@
     "lastBackup": "Last Backup",
     "autoBackup": "Auto Backup"
   },
+  "bulk": {
+    "paymentSource": "Bulk Payment",
+    "category": "Bulk Category",
+    "reports": "Reports"
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",

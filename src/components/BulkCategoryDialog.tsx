@@ -10,6 +10,7 @@ import { hr } from 'date-fns/locale';
 import { Tags, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { useTranslation } from 'react-i18next';
 
 interface BulkCategoryDialogProps {
   expenses: Expense[];
@@ -49,6 +50,7 @@ const CATEGORY_GROUPS = [
 ];
 
 export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryDialogProps) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newCategory, setNewCategory] = useState<Category | ''>('');
@@ -172,7 +174,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2 bg-purple-500 hover:bg-purple-600 text-white dark:bg-purple-600 dark:hover:bg-purple-700">
           <Tags className="w-4 h-4" />
-          Grupno kategorije
+          {t('bulk.category')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
