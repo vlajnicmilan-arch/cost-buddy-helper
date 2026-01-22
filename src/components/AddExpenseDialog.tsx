@@ -45,7 +45,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
-  const { incomeSources } = useIncomeSources();
+  const { incomeSources, refetch: refetchIncomeSources } = useIncomeSources();
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -214,7 +214,11 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
-      if (!isOpen) resetForm();
+      if (isOpen) {
+        refetchIncomeSources();
+      } else {
+        resetForm();
+      }
     }}>
       <DialogTrigger asChild>
         <Button className="gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
