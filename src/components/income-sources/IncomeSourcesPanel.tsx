@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
 import { useIncomeSourceStats } from '@/hooks/useIncomeSourceStats';
-import { useIncomeSourceOwnership } from '@/hooks/useIncomeSourceOwnership';
+import { useAuth } from '@/hooks/useAuth';
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense } from '@/types/expense';
 import { IncomeSourceCard } from './IncomeSourceCard';
@@ -30,6 +30,7 @@ export const IncomeSourcesPanel = ({
   onRefreshExpenses
 }: IncomeSourcesPanelProps) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const {
     incomeSources, 
     loading, 
@@ -41,9 +42,6 @@ export const IncomeSourcesPanel = ({
   // Get member and pending stats for all sources
   const sourceIds = useMemo(() => incomeSources.map(s => s.id), [incomeSources]);
   const { stats: memberStats } = useIncomeSourceStats(sourceIds);
-  
-  // Check ownership for all sources
-  const { isOwner, loading: ownershipLoading } = useIncomeSourceOwnership(sourceIds);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<IncomeSource | null>(null);
@@ -152,7 +150,7 @@ export const IncomeSourcesPanel = ({
     }).format(value);
   };
 
-  if (loading || ownershipLoading) {
+  if (loading) {
     return (
       <div className="glass-card rounded-2xl p-6">
         <div className="flex items-center justify-center py-8">
@@ -187,7 +185,8 @@ export const IncomeSourcesPanel = ({
         <div className="space-y-3">
           <AnimatePresence>
             {incomeSources.map((source) => {
-              const sourceIsOwner = isOwner(source.id);
+              // Check ownership by comparing user_id
+              const sourceIsOwner = source.user_id === user?.id;
               return (
                 <motion.div
                   key={source.id}
