@@ -84,7 +84,11 @@ PRAVILA ZA DETEKCIJU:
 
 PRAVILA ZA TRANSAKCIJE:
 - Iznos je UVIJEK pozitivan broj
-- Tip je "income" za uplate/priljeve, "expense" za isplate/odljeve
+- Tip može biti:
+  - "income" za STVARNE prihode (plaća, primanja od trećih osoba, povrat)
+  - "expense" za STVARNE troškove (kupovina, plaćanja, računi)
+  - "transfer" za INTERNE prijenose između vlastitih računa (npr. toplanje Aircash/Revolut, prebacivanje na vlastiti račun)
+- VAŽNO: Prepoznaj interne prijenose! Ključne riječi: "top up", "nadoplata", "uplata na Aircash/Revolut", "prijenos na vlastiti račun", "podizanje gotovine", "ATM"
 - Kategorije: food, transport, shopping, entertainment, bills, health, other
 - Datum u formatu YYYY-MM-DD
 - card_last4: zadnje 4 znamenke kartice ako je vidljivo (npr. "*1234" ili "VISA ****5678")
@@ -148,8 +152,8 @@ PRAVILA ZA TRANSAKCIJE:
                         },
                         type: { 
                           type: 'string', 
-                          enum: ['income', 'expense'],
-                          description: 'Transaction type' 
+                          enum: ['income', 'expense', 'transfer'],
+                          description: 'Transaction type: income for real income, expense for real costs, transfer for internal transfers between own accounts' 
                         },
                         category: { 
                           type: 'string', 

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { parseCSV, ParsedTransaction } from '@/lib/csvParsers';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getCategoryInfo, Category } from '@/types/expense';
+import { getCategoryInfo, Category, TransactionType } from '@/types/expense';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 
@@ -103,8 +103,8 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
     setTimeout(resetState, 200);
   };
 
-  const formatAmount = (amount: number, type: 'expense' | 'income') => {
-    const prefix = type === 'income' ? '+' : '-';
+  const formatAmount = (amount: number, type: TransactionType) => {
+    const prefix = type === 'income' ? '+' : type === 'transfer' ? '↔' : '-';
     return `${prefix}${amount.toFixed(2)} €`;
   };
 
@@ -237,7 +237,8 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
                           </p>
                         </div>
                         <span className={`text-sm font-semibold ${
-                          tx.type === 'income' ? 'text-income' : 'text-expense'
+                          tx.type === 'income' ? 'text-income' : 
+                          tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
                         }`}>
                           {formatAmount(tx.amount, tx.type)}
                         </span>

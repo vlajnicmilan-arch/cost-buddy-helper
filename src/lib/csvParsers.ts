@@ -1,14 +1,80 @@
-import { Category, PaymentSource } from '@/types/expense';
+import { Category, PaymentSource, TransactionType } from '@/types/expense';
 
 export interface ParsedTransaction {
   date: Date;
   amount: number;
   description: string;
-  type: 'expense' | 'income';
+  type: TransactionType;
   category: Category;
   merchant_name?: string;
   source: string;
   payment_source: PaymentSource;
+}
+
+// Detect if transaction is an internal transfer between own accounts
+export function isInternalTransfer(description: string): boolean {
+  const desc = description.toLowerCase();
+  
+  // Keywords that indicate internal transfers
+  const transferKeywords = [
+    // Aircash transfers
+    'uplata na aircash',
+    'nadoplata aircash',
+    'aircash top up',
+    'top up aircash',
+    // Revolut transfers
+    'revolut top up',
+    'top-up',
+    'topup',
+    'uplata revolut',
+    'nadoplata revolut',
+    // General bank transfers
+    'prijenos na vlastiti',
+    'prijenos između računa',
+    'transfer between accounts',
+    'internal transfer',
+    'interni prijenos',
+    'prebacivanje sredstava',
+    'transfer to own',
+    'transfer from own',
+    // Card top-ups
+    'visa top up',
+    'mastercard top up',
+    'card top up',
+    'kartica nadoplata',
+    // Crypto transfers between wallets
+    'transfer to wallet',
+    'prijenos na wallet',
+    // Specific patterns
+    'nadoplata putem',
+    'podizanje gotovine', // ATM withdrawal - technically a transfer
+    'bankomat podizanje'
+  ];
+  
+  // Check for any transfer keyword
+  for (const keyword of transferKeywords) {
+    if (desc.includes(keyword)) {
+      return true;
+    }
+  }
+  
+  // Pattern: "Uplata na X - Y" where X is a payment platform name
+  const paymentPlatforms = ['aircash', 'revolut', 'paypal', 'skrill', 'wise', 'n26'];
+  for (const platform of paymentPlatforms) {
+    if (desc.includes(`uplata na ${platform}`) || 
+        desc.includes(`prijenos na ${platform}`) ||
+        desc.includes(`transfer to ${platform}`)) {
+      return true;
+    }
+  }
+  
+  // Pattern: Card-based top-up (e.g., "Visa *** 1234" for top-ups)
+  if ((desc.includes('visa') || desc.includes('mastercard') || desc.includes('maestro')) && 
+      (desc.includes('top') || desc.includes('nadoplata') || desc.includes('uplata'))) {
+    return true;
+  }
+  
+  return false;
 }
 
 // Map source name to payment source
@@ -291,15 +357,23 @@ function parseRevolut(rows: string[][]): ParsedTransaction[] {
     if (amount === 0) continue;
     
     const description = row[descIdx] || '';
-    const isIncome = (row[typeIdx]?.toLowerCase().includes('topup') || 
-                     row[typeIdx]?.toLowerCase().includes('transfer') && parseFloat(row[amountIdx] || '0') > 0) ||
-                     parseFloat(row[amountIdx] || '0') > 0;
+    const rowType = row[typeIdx]?.toLowerCase() || '';
+    
+    // Check if it's a transfer first
+    let transactionType: TransactionType;
+    if (isInternalTransfer(description) || rowType.includes('topup') || rowType.includes('top-up')) {
+      transactionType = 'transfer';
+    } else if (parseFloat(row[amountIdx] || '0') > 0) {
+      transactionType = 'income';
+    } else {
+      transactionType = 'expense';
+    }
     
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
       description,
-      type: isIncome ? 'income' : 'expense',
+      type: transactionType,
       category: categorizeTransaction(description),
       merchant_name: description.split(' - ')[0] || undefined,
       source: 'Revolut',
@@ -329,18 +403,27 @@ function parseAircash(rows: string[][]): ParsedTransaction[] {
     
     const description = row[descIdx] || '';
     const typeStr = row[typeIdx]?.toLowerCase() || '';
-    const isIncome = typeStr.includes('uplata') || typeStr.includes('primljeno') || 
-                     parseFloat(row[amountIdx] || '0') > 0;
     
     // Detect actual payment source from description
     // E.g., "Uplata na Aircash - Visa *** 7262" means source is bank card, not Aircash
     const paymentSource = detectPaymentSourceFromDescription(description, 'aircash');
     
+    // Check if it's a transfer first
+    let transactionType: TransactionType;
+    if (isInternalTransfer(description) || typeStr.includes('nadoplata') || typeStr.includes('top up')) {
+      transactionType = 'transfer';
+    } else if (typeStr.includes('uplata') || typeStr.includes('primljeno') || 
+               parseFloat(row[amountIdx] || '0') > 0) {
+      transactionType = 'income';
+    } else {
+      transactionType = 'expense';
+    }
+    
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
       description,
-      type: isIncome ? 'income' : 'expense',
+      type: transactionType,
       category: categorizeTransaction(description),
       source: 'Aircash',
       payment_source: paymentSource
@@ -366,27 +449,37 @@ function parsePBZ(rows: string[][]): ParsedTransaction[] {
     if (row.length < 3) continue;
     
     let amount = 0;
-    let isIncome = false;
+    let isCredit = false;
     
     if (debitIdx >= 0 && creditIdx >= 0) {
       const debit = parseAmount(row[debitIdx] || '0');
       const credit = parseAmount(row[creditIdx] || '0');
       amount = debit > 0 ? debit : credit;
-      isIncome = credit > 0;
+      isCredit = credit > 0;
     } else {
       amount = parseAmount(row[amountIdx] || '0');
-      isIncome = parseFloat(row[amountIdx] || '0') > 0;
+      isCredit = parseFloat(row[amountIdx] || '0') > 0;
     }
     
     if (amount === 0) continue;
     
     const description = row[descIdx] || '';
     
+    // Check if it's a transfer
+    let transactionType: TransactionType;
+    if (isInternalTransfer(description)) {
+      transactionType = 'transfer';
+    } else if (isCredit) {
+      transactionType = 'income';
+    } else {
+      transactionType = 'expense';
+    }
+    
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
       description,
-      type: isIncome ? 'income' : 'expense',
+      type: transactionType,
       category: categorizeTransaction(description),
       source: 'PBZ',
       payment_source: 'bank'
@@ -413,14 +506,24 @@ function parseErste(rows: string[][]): ParsedTransaction[] {
     const amount = parseAmount(amountRaw);
     if (amount === 0) continue;
     
-    const isIncome = parseFloat(amountRaw.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0;
+    const isCredit = parseFloat(amountRaw.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0;
     const description = row[descIdx] || '';
+    
+    // Check if it's a transfer
+    let transactionType: TransactionType;
+    if (isInternalTransfer(description)) {
+      transactionType = 'transfer';
+    } else if (isCredit) {
+      transactionType = 'income';
+    } else {
+      transactionType = 'expense';
+    }
     
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
       description,
-      type: isIncome ? 'income' : 'expense',
+      type: transactionType,
       category: categorizeTransaction(description),
       source: 'Erste',
       payment_source: 'bank'
@@ -447,14 +550,24 @@ function parseZaba(rows: string[][]): ParsedTransaction[] {
     const amount = parseAmount(amountRaw);
     if (amount === 0) continue;
     
-    const isIncome = parseFloat(amountRaw.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0;
+    const isCredit = parseFloat(amountRaw.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0;
     const description = row[descIdx] || '';
+    
+    // Check if it's a transfer
+    let transactionType: TransactionType;
+    if (isInternalTransfer(description)) {
+      transactionType = 'transfer';
+    } else if (isCredit) {
+      transactionType = 'income';
+    } else {
+      transactionType = 'expense';
+    }
     
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
       description,
-      type: isIncome ? 'income' : 'expense',
+      type: transactionType,
       category: categorizeTransaction(description),
       source: 'Zagrebačka banka',
       payment_source: 'bank'
@@ -481,14 +594,24 @@ function parseGeneric(rows: string[][]): ParsedTransaction[] {
     const amount = parseAmount(amountRaw);
     if (amount === 0) continue;
     
-    const isIncome = parseFloat(amountRaw.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0;
+    const isCredit = parseFloat(amountRaw.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0;
     const description = row[descIdx] || row[0] || '';
+    
+    // Check if it's a transfer
+    let transactionType: TransactionType;
+    if (isInternalTransfer(description)) {
+      transactionType = 'transfer';
+    } else if (isCredit) {
+      transactionType = 'income';
+    } else {
+      transactionType = 'expense';
+    }
     
     transactions.push({
       date: parseDate(row[dateIdx] || row[2] || new Date().toISOString()),
       amount,
       description,
-      type: isIncome ? 'income' : 'expense',
+      type: transactionType,
       category: categorizeTransaction(description),
       source: 'CSV Import',
       payment_source: 'other'

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Category, PaymentSource } from '@/types/expense';
+import { Category, PaymentSource, TransactionType } from '@/types/expense';
 import { toast } from 'sonner';
 
 export interface ParsedPDFTransaction {
   date: Date;
   description: string;
   amount: number;
-  type: 'expense' | 'income';
+  type: TransactionType;
   category: Category;
   merchant_name: string | null;
   payment_source?: PaymentSource;
@@ -96,7 +96,7 @@ export const usePDFParser = () => {
           ...tx,
           date: new Date(tx.date),
           category: tx.category as Category,
-          type: tx.type as 'expense' | 'income',
+          type: tx.type as TransactionType,
           payment_source: detectPaymentSource(tx.description, data.detected_bank),
           card_last4: tx.card_last4 || null
         })),
