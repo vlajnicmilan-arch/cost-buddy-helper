@@ -54,7 +54,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Use Gemini for OCR and categorization
+    // Use Gemini for OCR and categorization with enhanced prompt for date and items
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -66,18 +66,30 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Ti si asistent za analizu računa. Analiziraj sliku računa i izvuci:
-- Ukupni iznos (samo broj u eurima)
-- Naziv trgovine/usluge
-- Opis transakcije (kratko)
-- Kategorija: food, transport, shopping, entertainment, bills, health, other
+            content: `Ti si asistent za analizu računa. Analiziraj sliku računa i izvuci SVE podatke:
+
+1. Ukupni iznos (samo broj u eurima)
+2. Naziv trgovine/usluge
+3. Opis transakcije (kratko)
+4. Kategorija: food, transport, shopping, entertainment, bills, health, other
+5. DATUM računa - traži datum na računu (format: YYYY-MM-DD). Ako ne možeš pronaći, koristi null.
+6. SVE artikle s računa - za svaki artikl izvuci:
+   - name: naziv artikla
+   - quantity: količina (broj, default 1)
+   - unit_price: jedinična cijena ako postoji (broj ili null)
+   - total_price: ukupna cijena artikla (broj)
 
 Odgovori SAMO u JSON formatu:
 {
   "amount": 45.50,
   "merchant": "Konzum",
   "description": "Tjedna kupovina namirnica",
-  "category": "food"
+  "category": "food",
+  "date": "2025-01-20",
+  "items": [
+    {"name": "Mlijeko 1L", "quantity": 2, "unit_price": 1.20, "total_price": 2.40},
+    {"name": "Kruh", "quantity": 1, "unit_price": 1.50, "total_price": 1.50}
+  ]
 }
 
 Ako ne možeš pročitati račun, vrati:
@@ -90,7 +102,7 @@ Ako ne možeš pročitati račun, vrati:
             content: [
               {
                 type: 'text',
-                text: 'Analiziraj ovaj račun i izvuci podatke.'
+                text: 'Analiziraj ovaj račun i izvuci sve podatke uključujući datum i artikle.'
               },
               {
                 type: 'image_url',
@@ -159,7 +171,9 @@ Ako ne možeš pročitati račun, vrati:
         amount: receiptData.amount,
         merchant: receiptData.merchant,
         description: receiptData.description,
-        category: receiptData.category
+        category: receiptData.category,
+        date: receiptData.date || null,
+        items: receiptData.items || []
       }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
