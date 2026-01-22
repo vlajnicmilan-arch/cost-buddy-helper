@@ -1,6 +1,7 @@
 import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { SummaryCard } from '@/components/SummaryCard';
 import { TransactionItem } from '@/components/TransactionItem';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
@@ -32,6 +33,9 @@ const Index = () => {
     isLocalMode,
     refetch
   } = useExpenses();
+
+  // Initialize auto-backup for local mode
+  useAutoBackup();
 
   useEffect(() => {
     // Only redirect to auth if using cloud mode and not logged in
