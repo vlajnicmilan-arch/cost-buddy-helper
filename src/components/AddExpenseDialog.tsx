@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Category, CATEGORIES, Expense } from '@/types/expense';
+import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES } from '@/types/expense';
 import { Plus, Camera, Image, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
@@ -19,6 +19,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category>('food');
   const [merchantName, setMerchantName] = useState('');
+  const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt } = useReceiptScanner();
@@ -52,6 +53,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       category,
       date: new Date(),
       type,
+      payment_source: paymentSource,
       merchant_name: merchantName || undefined,
       ai_extracted: false
     });
@@ -60,6 +62,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setDescription('');
     setCategory('food');
     setMerchantName('');
+    setPaymentSource('cash');
     setOpen(false);
   };
 
@@ -154,6 +157,31 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
             </button>
           </div>
 
+          {/* Payment Source - Only show for income */}
+          {type === 'income' && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Izvor prihoda</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {PAYMENT_SOURCES.map((source) => (
+                  <button
+                    key={source.id}
+                    type="button"
+                    onClick={() => setPaymentSource(source.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
+                      paymentSource === source.id 
+                        ? "border-income bg-income/10" 
+                        : "border-transparent bg-muted/50 hover:bg-muted"
+                    )}
+                  >
+                    <span className="text-xl">{source.icon}</span>
+                    <span className="text-xs font-medium text-muted-foreground">{source.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Amount */}
           <div className="space-y-2">
             <Label htmlFor="amount" className="text-sm font-medium">Iznos (€)</Label>
@@ -172,10 +200,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
 
           {/* Merchant Name */}
           <div className="space-y-2">
-            <Label htmlFor="merchant" className="text-sm font-medium">Trgovina (opcionalno)</Label>
+            <Label htmlFor="merchant" className="text-sm font-medium">
+              {type === 'income' ? 'Izvor (opcionalno)' : 'Trgovina (opcionalno)'}
+            </Label>
             <Input
               id="merchant"
-              placeholder="Npr. Konzum"
+              placeholder={type === 'income' ? 'Npr. Plaća, Freelance...' : 'Npr. Konzum'}
               value={merchantName}
               onChange={(e) => setMerchantName(e.target.value)}
               className="h-12 rounded-xl"
@@ -187,7 +217,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
             <Label htmlFor="description" className="text-sm font-medium">Opis</Label>
             <Input
               id="description"
-              placeholder="Npr. Tjedna kupovina"
+              placeholder={type === 'income' ? 'Npr. Plaća za siječanj' : 'Npr. Tjedna kupovina'}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="h-12 rounded-xl"
@@ -195,28 +225,30 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
             />
           </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Kategorija</Label>
-            <div className="grid grid-cols-4 gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setCategory(cat.id)}
-                  className={cn(
-                    "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                    category === cat.id 
-                      ? "border-primary bg-primary/5" 
-                      : "border-transparent bg-muted/50 hover:bg-muted"
-                  )}
-                >
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="text-xs font-medium text-muted-foreground">{cat.name}</span>
-                </button>
-              ))}
+          {/* Category - Only show for expenses */}
+          {type === 'expense' && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Kategorija</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategory(cat.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
+                      category === cat.id 
+                        ? "border-primary bg-primary/5" 
+                        : "border-transparent bg-muted/50 hover:bg-muted"
+                    )}
+                  >
+                    <span className="text-xl">{cat.icon}</span>
+                    <span className="text-xs font-medium text-muted-foreground">{cat.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Submit */}
           <Button 

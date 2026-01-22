@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Expense, Category } from '@/types/expense';
+import { Expense, Category, PaymentSource } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { ParsedTransaction } from '@/lib/csvParsers';
@@ -30,7 +30,8 @@ export const useExpenses = () => {
         ...e,
         date: new Date(e.date),
         category: e.category as Category,
-        type: e.type as 'expense' | 'income'
+        type: e.type as 'expense' | 'income',
+        payment_source: (e.payment_source || 'cash') as PaymentSource
       })) || []);
     } catch (error) {
       console.error('Error fetching expenses:', error);
@@ -60,6 +61,7 @@ export const useExpenses = () => {
           category: expense.category,
           type: expense.type,
           date: expense.date.toISOString(),
+          payment_source: expense.payment_source || 'cash',
           receipt_url: expense.receipt_url,
           merchant_name: expense.merchant_name,
           ai_extracted: expense.ai_extracted
@@ -73,7 +75,8 @@ export const useExpenses = () => {
         ...data,
         date: new Date(data.date),
         category: data.category as Category,
-        type: data.type as 'expense' | 'income'
+        type: data.type as 'expense' | 'income',
+        payment_source: (data.payment_source || 'cash') as PaymentSource
       };
 
       setExpenses(prev => [newExpense, ...prev]);
@@ -130,7 +133,8 @@ export const useExpenses = () => {
         ...e,
         date: new Date(e.date),
         category: e.category as Category,
-        type: e.type as 'expense' | 'income'
+        type: e.type as 'expense' | 'income',
+        payment_source: (e.payment_source || 'cash') as PaymentSource
       }));
 
       setExpenses(prev => [...newExpenses, ...prev].sort(

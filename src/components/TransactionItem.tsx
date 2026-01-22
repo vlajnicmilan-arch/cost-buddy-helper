@@ -1,4 +1,4 @@
-import { Expense, getCategoryInfo } from '@/types/expense';
+import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
 import { cn } from '@/lib/utils';
 import { Trash2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -10,6 +10,7 @@ interface TransactionItemProps {
 
 export const TransactionItem = ({ expense, onDelete }: TransactionItemProps) => {
   const category = getCategoryInfo(expense.category);
+  const paymentSource = getPaymentSourceInfo(expense.payment_source || 'cash');
   
   const formatAmount = (value: number) => {
     return new Intl.NumberFormat('hr-HR', {
@@ -47,7 +48,16 @@ export const TransactionItem = ({ expense, onDelete }: TransactionItemProps) => 
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          {expense.merchant_name ? `${expense.merchant_name} • ` : ''}{category.name} • {formatDate(expense.date)}
+          {expense.merchant_name ? `${expense.merchant_name} • ` : ''}
+          {expense.type === 'income' ? (
+            <span className="inline-flex items-center gap-1">
+              <span>{paymentSource.icon}</span>
+              <span>{paymentSource.name}</span>
+            </span>
+          ) : (
+            category.name
+          )}
+          {' • '}{formatDate(expense.date)}
         </p>
       </div>
 
