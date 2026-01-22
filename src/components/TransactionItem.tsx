@@ -47,17 +47,16 @@ export const TransactionItem = ({ expense, onDelete }: TransactionItemProps) => 
             <Sparkles className="w-3.5 h-3.5 text-accent shrink-0" />
           )}
         </div>
-        <p className="text-sm text-muted-foreground">
-          {expense.merchant_name ? `${expense.merchant_name} • ` : ''}
-          {expense.type === 'income' ? (
-            <span className="inline-flex items-center gap-1">
-              <span>{paymentSource.icon}</span>
-              <span>{paymentSource.name}</span>
-            </span>
-          ) : (
-            category.name
+        <p className="text-sm text-muted-foreground flex items-center gap-1 flex-wrap">
+          {expense.merchant_name && <span>{expense.merchant_name} •</span>}
+          <span className="inline-flex items-center gap-0.5">
+            <span>{paymentSource.icon}</span>
+            <span>{paymentSource.name}</span>
+          </span>
+          {expense.type === 'expense' && (
+            <span>• {category.name}</span>
           )}
-          {' • '}{formatDate(expense.date)}
+          <span>• {formatDate(expense.date)}</span>
         </p>
       </div>
 
