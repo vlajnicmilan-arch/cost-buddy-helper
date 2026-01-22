@@ -64,7 +64,8 @@ export const BankConnection = ({ onImportCSV }: BankConnectionProps) => {
       type: tx.type,
       category: tx.category,
       merchant_name: tx.merchant_name || undefined,
-      source: 'pdf'
+      source: 'pdf',
+      payment_source: tx.payment_source || 'bank'
     }));
 
     await onImportCSV(transactions);

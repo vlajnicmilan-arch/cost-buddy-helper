@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Category } from '@/types/expense';
+import { Category, PaymentSource } from '@/types/expense';
 import { toast } from 'sonner';
 
-interface ParsedPDFTransaction {
+export interface ParsedPDFTransaction {
   date: Date;
   description: string;
   amount: number;
   type: 'expense' | 'income';
   category: Category;
   merchant_name: string | null;
+  payment_source?: PaymentSource;
 }
 
 interface PDFParseResult {
@@ -19,6 +20,26 @@ interface PDFParseResult {
     total_expenses: number;
     transaction_count: number;
   } | null;
+}
+
+// Detect payment source from description or bank type
+function detectPaymentSource(description: string, bankType?: string): PaymentSource {
+  const desc = description.toLowerCase();
+  
+  if (desc.includes('revolut')) return 'revolut';
+  if (desc.includes('aircash')) return 'aircash';
+  if (desc.includes('crypto') || desc.includes('bitcoin') || desc.includes('ethereum')) return 'crypto';
+  
+  // If bank type is specified, use it
+  if (bankType) {
+    const bank = bankType.toLowerCase();
+    if (bank.includes('revolut')) return 'revolut';
+    if (bank.includes('aircash')) return 'aircash';
+    if (bank.includes('pbz') || bank.includes('erste') || bank.includes('zaba') || 
+        bank.includes('bank') || bank.includes('banka')) return 'bank';
+  }
+  
+  return 'bank'; // Default to bank for PDF statements
 }
 
 export const usePDFParser = () => {
@@ -63,13 +84,14 @@ export const usePDFParser = () => {
 
       const data = await response.json();
       
-      // Convert date strings to Date objects
+      // Convert date strings to Date objects and add payment source
       const result: PDFParseResult = {
         transactions: (data.transactions || []).map((tx: any) => ({
           ...tx,
           date: new Date(tx.date),
           category: tx.category as Category,
-          type: tx.type as 'expense' | 'income'
+          type: tx.type as 'expense' | 'income',
+          payment_source: detectPaymentSource(tx.description, bankType)
         })),
         summary: data.summary
       };
