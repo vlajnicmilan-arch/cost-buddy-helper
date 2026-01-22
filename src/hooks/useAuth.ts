@@ -29,14 +29,18 @@ export const useAuth = () => {
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl
       }
     });
-    return { error };
+    
+    // Check if user needs email confirmation
+    const needsEmailConfirmation = data?.user && !data?.session;
+    
+    return { data, error, needsEmailConfirmation };
   };
 
   const signIn = async (email: string, password: string) => {
@@ -52,12 +56,25 @@ export const useAuth = () => {
     return { error };
   };
 
+  const resendVerificationEmail = async (email: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
+    return { error };
+  };
+
   return {
     user,
     session,
     loading,
     signUp,
     signIn,
-    signOut
+    signOut,
+    resendVerificationEmail
   };
 };
