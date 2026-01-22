@@ -247,7 +247,16 @@ export const UnassignedIncomeDialog = ({
                 return (
                   <div
                     key={expense.id}
-                    className="p-3 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors"
+                    className={`p-3 rounded-xl transition-colors cursor-pointer ${
+                      isAssigning 
+                        ? 'bg-primary/10 border border-primary/30' 
+                        : 'bg-muted/50 hover:bg-muted/80'
+                    }`}
+                    onClick={() => {
+                      if (!isAssigning) {
+                        handleStartAssign(expense.id);
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-3">
                       {/* Icon */}
@@ -270,64 +279,47 @@ export const UnassignedIncomeDialog = ({
                         +{formatAmount(expense.amount)}
                       </p>
 
-                      {/* Actions */}
-                      {!isAssigning && (
-                        <div className="flex gap-1 shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            title="Dodijeli izvoru"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartAssign(expense.id);
-                            }}
-                          >
-                            <Link2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            title="Uredi"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditTransaction(expense);
-                            }}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
+                      {/* Edit button - always visible */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        title="Uredi"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditTransaction(expense);
+                        }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                     </div>
 
-                    {/* Assignment UI - Show source buttons */}
+                    {/* Assignment UI - Show source buttons when clicked */}
                     {isAssigning && (
-                      <div className="mt-3 pt-3 border-t">
-                        <p className="text-xs text-muted-foreground mb-2">Odaberi izvor:</p>
+                      <div className="mt-3 pt-3 border-t border-primary/20">
+                        <p className="text-xs text-muted-foreground mb-2">Dodijeli izvoru:</p>
                         <div className="flex flex-wrap gap-2">
                           {incomeSources.map((source) => (
                             <Button
                               key={source.id}
                               variant="outline"
                               size="sm"
-                              className="gap-1"
+                              className="gap-1.5"
                               disabled={saving}
-                              onClick={async (e) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 setSaving(true);
-                                try {
-                                  await onUpdateExpense({
-                                    ...expense,
-                                    income_source_id: source.id
-                                  });
+                                onUpdateExpense({
+                                  ...expense,
+                                  income_source_id: source.id
+                                }).then(() => {
                                   toast.success(`Dodijeljeno izvoru "${source.name}"`);
                                   setAssigningId(null);
-                                } catch (error) {
+                                }).catch(() => {
                                   toast.error('Greška pri dodjeljivanju');
-                                } finally {
+                                }).finally(() => {
                                   setSaving(false);
-                                }
+                                });
                               }}
                             >
                               {saving ? (
@@ -338,20 +330,28 @@ export const UnassignedIncomeDialog = ({
                               <span>{source.name}</span>
                             </Button>
                           ))}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCancelAssign();
-                            }}
-                            disabled={saving}
-                          >
-                            <X className="w-4 h-4" />
-                            Odustani
-                          </Button>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCancelAssign();
+                          }}
+                          disabled={saving}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Odustani
+                        </Button>
                       </div>
+                    )}
+
+                    {/* Hint when not assigning */}
+                    {!isAssigning && (
+                      <p className="text-xs text-muted-foreground mt-2 text-center">
+                        Klikni za dodjelu izvoru
+                      </p>
                     )}
                   </div>
                 );
