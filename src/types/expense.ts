@@ -65,6 +65,8 @@ export interface ReceiptItem {
 
 export type TransactionType = 'expense' | 'income' | 'transfer';
 
+export type TransactionStatus = 'pending' | 'approved' | 'rejected';
+
 export interface Expense {
   id: string;
   user_id: string;
@@ -78,6 +80,8 @@ export interface Expense {
   merchant_name?: string | null;
   ai_extracted?: boolean | null;
   income_source_id?: string | null;
+  status?: TransactionStatus | null;
+  submitted_by?: string | null;
   created_at?: string;
   updated_at?: string;
   items?: ReceiptItem[];

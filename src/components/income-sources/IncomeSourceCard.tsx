@@ -1,6 +1,7 @@
 import { IncomeSource } from '@/types/incomeSource';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface IncomeSourceCardProps {
@@ -9,9 +10,12 @@ interface IncomeSourceCardProps {
   incomeAmount?: number;
   expenseAmount?: number;
   transactionCount: number;
+  memberCount?: number;
+  pendingCount?: number;
   onEdit: (source: IncomeSource) => void;
   onDelete: (id: string) => void;
   onClick: (source: IncomeSource) => void;
+  onMembersClick?: (source: IncomeSource) => void;
 }
 
 export const IncomeSourceCard = ({
@@ -20,9 +24,12 @@ export const IncomeSourceCard = ({
   incomeAmount = 0,
   expenseAmount = 0,
   transactionCount,
+  memberCount = 0,
+  pendingCount = 0,
   onEdit,
   onDelete,
-  onClick
+  onClick,
+  onMembersClick
 }: IncomeSourceCardProps) => {
   const formatAmount = (value: number) => {
     return new Intl.NumberFormat('hr-HR', {
@@ -86,6 +93,32 @@ export const IncomeSourceCard = ({
               <span className="text-xs text-muted-foreground">
                 Nema transakcija
               </span>
+            )}
+
+            {/* Members & Pending Indicators */}
+            {(memberCount > 0 || pendingCount > 0) && (
+              <div className="flex items-center gap-2 mt-2">
+                {memberCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 gap-1 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMembersClick?.(source);
+                    }}
+                  >
+                    <Users className="w-3 h-3" />
+                    {memberCount}
+                  </Button>
+                )}
+                {pendingCount > 0 && (
+                  <Badge variant="secondary" className="gap-1 h-6">
+                    <Clock className="w-3 h-3" />
+                    {pendingCount} na čekanju
+                  </Badge>
+                )}
+              </div>
             )}
           </div>
         </div>
