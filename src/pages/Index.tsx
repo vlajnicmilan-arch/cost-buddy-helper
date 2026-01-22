@@ -19,12 +19,14 @@ import { BulkCategoryDialog } from '@/components/BulkCategoryDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
+import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
+import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { checkForUpdates } from '@/components/PWAUpdatePrompt';
@@ -50,6 +52,8 @@ const Index = () => {
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [dashboardFilters, setDashboardFilters] = useState<FilterState>(defaultFilters);
+  const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
+  const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
 
   const handleCheckForUpdates = async () => {
     setIsCheckingUpdate(true);
@@ -283,7 +287,11 @@ const Index = () => {
                 key={source.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm"
+                onClick={() => {
+                  setSelectedPaymentSource(source);
+                  setPaymentSourceDialogOpen(true);
+                }}
+                className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-card/80 hover:border-primary/30 transition-all"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <span 
@@ -539,6 +547,16 @@ const Index = () => {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSave={updateExpense}
+      />
+
+      {/* Payment Source Transactions Dialog */}
+      <PaymentSourceTransactionsDialog
+        open={paymentSourceDialogOpen}
+        onOpenChange={setPaymentSourceDialogOpen}
+        paymentSource={selectedPaymentSource}
+        expenses={expenses}
+        onUpdate={updateExpense}
+        onDelete={deleteExpense}
       />
     </div>
   );
