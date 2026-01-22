@@ -14,6 +14,7 @@ import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { TransferListDialog } from '@/components/TransferListDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
+import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { Expense } from '@/types/expense';
 import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -124,6 +125,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ReportsDialog expenses={expenses} />
             <AddExpenseDialog onAdd={addExpense} />
             <TooltipProvider>
               <Tooltip>
