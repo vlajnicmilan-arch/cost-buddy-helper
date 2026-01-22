@@ -176,6 +176,49 @@ export const useExpenses = () => {
     }
   };
 
+  // Bulk update expenses (for batch operations like changing payment source)
+  const bulkUpdateExpenses = async (expensesToUpdate: Expense[]) => {
+    try {
+      if (isLocalMode) {
+        for (const expense of expensesToUpdate) {
+          await updateLocalExpense(expense);
+        }
+        setExpenses(prev => {
+          const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
+          return prev.map(e => updatedMap.get(e.id) || e);
+        });
+        toast.success(`Ažurirano ${expensesToUpdate.length} transakcija`);
+      } else {
+        if (!user) {
+          toast.error('Moraš biti prijavljen');
+          return;
+        }
+
+        // Update in batches to avoid overwhelming the DB
+        for (const expense of expensesToUpdate) {
+          const { error } = await supabase
+            .from('expenses')
+            .update({
+              payment_source: expense.payment_source || 'cash',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', expense.id);
+
+          if (error) throw error;
+        }
+
+        setExpenses(prev => {
+          const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
+          return prev.map(e => updatedMap.get(e.id) || e);
+        });
+      }
+    } catch (error) {
+      console.error('Error bulk updating expenses:', error);
+      toast.error('Greška pri grupnom ažuriranju');
+      throw error;
+    }
+  };
+
   const deleteExpense = async (id: string) => {
     try {
       if (isLocalMode) {
@@ -342,6 +385,7 @@ export const useExpenses = () => {
     loading,
     addExpense,
     updateExpense,
+    bulkUpdateExpenses,
     deleteExpense,
     importFromCSV,
     findDuplicates,

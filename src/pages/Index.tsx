@@ -12,6 +12,7 @@ import { TransactionListDialog } from '@/components/TransactionListDialog';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { TransferListDialog } from '@/components/TransferListDialog';
+import { BulkPaymentSourceDialog } from '@/components/BulkPaymentSourceDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
@@ -52,6 +53,7 @@ const Index = () => {
     loading: expensesLoading,
     addExpense, 
     updateExpense,
+    bulkUpdateExpenses,
     deleteExpense, 
     importFromCSV,
     findDuplicates,
@@ -190,6 +192,9 @@ const Index = () => {
               <LanguageSwitcher />
             </div>
             <HelpDialog />
+            <div className="hidden sm:block">
+              <BulkPaymentSourceDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
+            </div>
             <ReportsDialog expenses={expenses} />
             <AddExpenseDialog onAdd={addExpense} />
             {/* Desktop-only buttons */}
