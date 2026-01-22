@@ -236,8 +236,11 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
                         {tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}
                       </p>
                     </div>
-                    <p className={`font-mono font-bold ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                      {tx.type === 'income' ? '+' : '-'}€{tx.amount.toFixed(2)}
+                    <p className={`font-mono font-bold ${
+                      tx.type === 'income' ? 'text-income' : 
+                      tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
+                    }`}>
+                      {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '↔' : '-'}€{tx.amount.toFixed(2)}
                     </p>
                   </div>
                 ))}
