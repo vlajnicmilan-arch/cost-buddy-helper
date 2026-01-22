@@ -178,24 +178,24 @@ export const UnassignedIncomeDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
-          <DialogHeader className="shrink-0">
-            <DialogTitle className="flex items-center gap-2">
-              <CircleDashed className="w-5 h-5 text-muted-foreground" />
+        <DialogContent className="sm:max-w-md w-[calc(100%-2rem)] max-h-[70vh] flex flex-col overflow-hidden p-4 sm:p-6">
+          <DialogHeader className="shrink-0 pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <CircleDashed className="w-4 h-4 text-muted-foreground" />
               Prihodi bez izvora
             </DialogTitle>
           </DialogHeader>
 
           {/* Summary */}
-          <div className="p-4 rounded-xl bg-muted/50 border border-dashed shrink-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Nedodijeljeni prihodi</p>
-                <p className="text-sm text-muted-foreground">
-                  {unassignedIncome.length} {unassignedIncome.length === 1 ? 'prihod' : 'prihoda'} čeka dodjelu
+          <div className="p-3 rounded-lg bg-muted/50 border border-dashed shrink-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium text-sm">Nedodijeljeni prihodi</p>
+                <p className="text-xs text-muted-foreground">
+                  {unassignedIncome.length} {unassignedIncome.length === 1 ? 'prihod' : 'prihoda'}
                 </p>
               </div>
-              <p className="font-mono font-semibold text-lg text-income">
+              <p className="font-mono font-semibold text-income shrink-0">
                 +{formatAmount(totalUnassigned)}
               </p>
             </div>
@@ -203,24 +203,24 @@ export const UnassignedIncomeDialog = ({
 
           {/* Bulk Actions */}
           {incomeSources.length > 0 && unassignedIncome.length > 0 && (
-            <div className="flex flex-col gap-2 shrink-0">
+            <div className="flex flex-col gap-1.5 shrink-0 pt-2">
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 text-xs h-8"
                   onClick={handleAutoAssign}
                   disabled={autoAssigning}
                 >
                   {autoAssigning ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
                   ) : (
-                    <Link2 className="w-4 h-4 mr-2" />
+                    <Link2 className="w-3 h-3 mr-1.5" />
                   )}
                   Auto-dodijeli
                 </Button>
                 <Select onValueChange={handleAssignAll} disabled={autoAssigning}>
-                  <SelectTrigger className="flex-1 bg-background">
+                  <SelectTrigger className="flex-1 bg-background text-xs h-8">
                     <SelectValue placeholder="Dodijeli sve..." />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-[200]">
@@ -235,42 +235,34 @@ export const UnassignedIncomeDialog = ({
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Auto-dodijeli pretražuje po imenu izvora u opisu transakcije
-              </p>
             </div>
           )}
 
           {/* Transaction List */}
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="pr-4">
-              {unassignedIncome.length === 0 ? (
-                <div className="py-12 text-center">
-                  <Check className="w-12 h-12 mx-auto text-income/30 mb-3" />
-                  <p className="text-muted-foreground">Svi prihodi su dodijeljeni!</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Nema prihoda bez izvora
-                  </p>
-                </div>
-              ) : incomeSources.length === 0 ? (
-                <div className="py-12 text-center">
-                  <CircleDashed className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-                  <p className="text-muted-foreground">Nema definiranih izvora</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Kreiraj izvor prihoda da bi mogao dodijeliti prihode
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setShowNewSourceDialog(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Kreiraj novi izvor
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2 py-2">
-                  {unassignedIncome.map((expense) => {
+          <div className="flex-1 min-h-0 overflow-hidden mt-2">
+            <ScrollArea className="h-full">
+              <div className="space-y-2 pr-2">
+                {unassignedIncome.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <Check className="w-10 h-10 mx-auto text-income/30 mb-2" />
+                    <p className="text-sm text-muted-foreground">Svi prihodi su dodijeljeni!</p>
+                  </div>
+                ) : incomeSources.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <CircleDashed className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
+                    <p className="text-sm text-muted-foreground">Nema definiranih izvora</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => setShowNewSourceDialog(true)}
+                    >
+                      <Plus className="w-3 h-3 mr-1.5" />
+                      Kreiraj novi izvor
+                    </Button>
+                  </div>
+                ) : (
+                  unassignedIncome.map((expense) => {
                     const categoryInfo = getCategoryInfo(expense.category);
                     const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
                     const isAssigning = assigningId === expense.id;
@@ -278,7 +270,7 @@ export const UnassignedIncomeDialog = ({
                     return (
                       <div
                         key={expense.id}
-                        className={`p-3 rounded-xl transition-colors cursor-pointer ${
+                        className={`p-2.5 rounded-lg transition-colors cursor-pointer ${
                           isAssigning 
                             ? 'bg-primary/10 border border-primary/30' 
                             : 'bg-muted/50 hover:bg-muted/80'
@@ -289,53 +281,50 @@ export const UnassignedIncomeDialog = ({
                           }
                         }}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           {/* Icon */}
-                          <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg shrink-0">
+                          <div className="w-8 h-8 rounded-md bg-background flex items-center justify-center text-sm shrink-0">
                             {categoryInfo.icon}
                           </div>
 
                           {/* Details */}
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{expense.description}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{format(expense.date, 'dd.MM.yyyy', { locale: hr })}</span>
-                              <span>•</span>
-                              <span>{paymentInfo.icon} {paymentInfo.name}</span>
-                            </div>
+                            <p className="font-medium text-sm truncate">{expense.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(expense.date, 'dd.MM.yyyy', { locale: hr })}
+                            </p>
                           </div>
 
                           {/* Amount */}
-                          <p className="font-mono font-semibold whitespace-nowrap text-income shrink-0">
+                          <p className="font-mono text-sm font-semibold text-income shrink-0">
                             +{formatAmount(expense.amount)}
                           </p>
 
-                          {/* Edit button - always visible */}
+                          {/* Edit button */}
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0"
-                            title="Uredi"
+                            className="h-7 w-7 shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               onEditTransaction(expense);
                             }}
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </Button>
                         </div>
 
-                        {/* Assignment UI - Show source buttons when clicked */}
+                        {/* Assignment UI */}
                         {isAssigning && (
-                          <div className="mt-3 pt-3 border-t border-primary/20">
-                            <p className="text-xs text-muted-foreground mb-2">Dodijeli izvoru:</p>
-                            <div className="flex flex-wrap gap-2">
+                          <div className="mt-2 pt-2 border-t border-primary/20">
+                            <p className="text-xs text-muted-foreground mb-1.5">Dodijeli izvoru:</p>
+                            <div className="flex flex-wrap gap-1.5">
                               {incomeSources.map((source) => (
                                 <Button
                                   key={source.id}
                                   variant="outline"
                                   size="sm"
-                                  className="gap-1.5"
+                                  className="gap-1 h-7 text-xs px-2"
                                   disabled={saving}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -361,11 +350,10 @@ export const UnassignedIncomeDialog = ({
                                   <span>{source.name}</span>
                                 </Button>
                               ))}
-                              {/* Add new source button */}
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-1.5 border-dashed"
+                                className="gap-1 h-7 text-xs px-2 border-dashed"
                                 disabled={saving}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -373,38 +361,38 @@ export const UnassignedIncomeDialog = ({
                                 }}
                               >
                                 <Plus className="w-3 h-3" />
-                                <span>Novi izvor</span>
+                                <span>Novi</span>
                               </Button>
                             </div>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="mt-2 w-full"
+                              className="mt-1.5 w-full h-7 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCancelAssign();
                               }}
                               disabled={saving}
                             >
-                              <X className="w-4 h-4 mr-1" />
+                              <X className="w-3 h-3 mr-1" />
                               Odustani
                             </Button>
                           </div>
                         )}
 
-                        {/* Hint when not assigning */}
+                        {/* Hint */}
                         {!isAssigning && (
-                          <p className="text-xs text-muted-foreground mt-2 text-center">
-                            Klikni za dodjelu izvoru
+                          <p className="text-[10px] text-muted-foreground mt-1 text-center opacity-60">
+                            Klikni za dodjelu
                           </p>
                         )}
                       </div>
                     );
-                  })}
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
 
