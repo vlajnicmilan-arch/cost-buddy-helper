@@ -142,7 +142,12 @@
     "addSource": "Add Source",
     "noSources": "No income sources",
     "unassigned": "Unassigned",
-    "assignSource": "Assign Source"
+    "assignSource": "Assign Source",
+    "addFirstSource": "Add your first source to categorize income",
+    "incomes": "incomes",
+    "clickToAssign": "Click to assign",
+    "deleteSource": "Delete income source?",
+    "deleteSourceDescription": "This action cannot be undone. Income linked to this source will be preserved but will no longer be associated with the source."
   },
   "scanner": {
     "scanReceipt": "Scan Receipt",
