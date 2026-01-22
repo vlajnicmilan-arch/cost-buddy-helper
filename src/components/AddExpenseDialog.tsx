@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
 interface AddExpenseDialogProps {
-  onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[]) => void;
+  onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[]) => Promise<void> | void;
 }
 
 interface ScannedData {
@@ -75,34 +75,45 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     }
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const acceptScannedData = async () => {
-    if (!scannedData) return;
+    if (!scannedData || isSaving) return;
     
-    const validItems = scannedData.items.filter(item => item.name && item.total_price > 0);
+    setIsSaving(true);
     
-    let receiptUrl: string | undefined;
-    if (saveReceipt && receiptImage) {
-      toast.info('Spremam sliku računa...');
-      const uploadedUrl = await uploadReceiptImage(receiptImage);
-      if (uploadedUrl) {
-        receiptUrl = uploadedUrl;
+    try {
+      const validItems = scannedData.items.filter(item => item.name && item.total_price > 0);
+      
+      let receiptUrl: string | undefined;
+      if (saveReceipt && receiptImage) {
+        toast.info('Spremam sliku računa...');
+        const uploadedUrl = await uploadReceiptImage(receiptImage);
+        if (uploadedUrl) {
+          receiptUrl = uploadedUrl;
+        }
       }
+
+      await onAdd({
+        amount: scannedData.amount,
+        description: scannedData.description,
+        category: scannedData.category,
+        date: new Date(scannedData.date || expenseDate),
+        type: 'expense',
+        payment_source: paymentSource,
+        merchant_name: scannedData.merchant || undefined,
+        receipt_url: receiptUrl,
+        ai_extracted: true
+      }, validItems.length > 0 ? validItems : undefined);
+
+      resetForm();
+      setOpen(false);
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      toast.error('Greška pri spremanju troška');
+    } finally {
+      setIsSaving(false);
     }
-
-    onAdd({
-      amount: scannedData.amount,
-      description: scannedData.description,
-      category: scannedData.category,
-      date: new Date(scannedData.date || expenseDate),
-      type: 'expense',
-      payment_source: paymentSource,
-      merchant_name: scannedData.merchant || undefined,
-      receipt_url: receiptUrl,
-      ai_extracted: true
-    }, validItems.length > 0 ? validItems : undefined);
-
-    resetForm();
-    setOpen(false);
   };
 
   const rejectScannedData = () => {
