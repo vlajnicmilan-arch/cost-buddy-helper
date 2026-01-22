@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useIncomeSourceMembers } from '@/hooks/useIncomeSourceMembers';
 import { usePendingTransactions } from '@/hooks/usePendingTransactions';
 import { IncomeSource } from '@/types/incomeSource';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Users, 
@@ -19,11 +22,15 @@ import {
   Check, 
   X,
   Mail,
-  AlertCircle
+  Link,
+  Copy,
+  UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MembersDialogProps {
   open: boolean;
@@ -32,13 +39,18 @@ interface MembersDialogProps {
 }
 
 export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps) => {
+  const { user } = useAuth();
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  
   const { 
     members, 
     invitations, 
     loading, 
     isOwner, 
     removeMember, 
-    cancelInvitation 
+    cancelInvitation,
+    refetch
   } = useIncomeSourceMembers(source?.id || null);
   
   const { 
@@ -48,6 +60,51 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
     rejectTransaction,
     pendingCount
   } = usePendingTransactions(source?.id || null);
+
+  const generateInviteLink = async () => {
+    if (!source || !user) return;
+    
+    setGeneratingLink(true);
+    try {
+      // Create invitation in database
+      const { data, error } = await supabase
+        .from('income_source_invitations')
+        .insert({
+          income_source_id: source.id,
+          invited_by: user.id,
+          email: 'link-invite', // Placeholder for link invites
+          expires_at: addDays(new Date(), 7).toISOString()
+        })
+        .select('token')
+        .single();
+
+      if (error) throw error;
+
+      // Generate the invite link
+      const baseUrl = window.location.origin;
+      const link = `${baseUrl}/join/${data.token}`;
+      setInviteLink(link);
+      
+      toast.success('Link pozivnice generiran!');
+      refetch();
+    } catch (error) {
+      console.error('Error generating invite link:', error);
+      toast.error('Greška pri generiranju linka');
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    if (!inviteLink) return;
+    
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success('Link kopiran u međuspremnik!');
+    } catch (error) {
+      toast.error('Greška pri kopiranju');
+    }
+  };
 
   const formatAmount = (value: number) => {
     return new Intl.NumberFormat('hr-HR', {
@@ -174,18 +231,56 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
                   </div>
                 )}
 
-                {/* Add Member Info */}
+                {/* Invite Link Generator */}
                 {isOwner && (
-                  <div className="p-4 rounded-lg bg-muted/50 border border-dashed">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium">Pozivanje članova</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Funkcija email pozivnica bit će dostupna uskoro. Za sada možete ručno dodati članove.
-                        </p>
-                      </div>
+                  <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <UserPlus className="w-5 h-5 text-primary" />
+                      <p className="text-sm font-medium">Pozovi nove članove</p>
                     </div>
+                    
+                    {!inviteLink ? (
+                      <Button
+                        onClick={generateInviteLink}
+                        disabled={generatingLink}
+                        className="w-full gap-2"
+                      >
+                        {generatingLink ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Link className="w-4 h-4" />
+                        )}
+                        Generiraj link za pozivnicu
+                      </Button>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Input 
+                            value={inviteLink} 
+                            readOnly 
+                            className="text-xs"
+                          />
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={copyToClipboard}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Link vrijedi 7 dana. Podijeli ga s osobom koju želiš pozvati.
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          onClick={generateInviteLink}
+                        >
+                          Generiraj novi link
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </>

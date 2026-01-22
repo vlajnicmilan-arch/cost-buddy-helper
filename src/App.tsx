@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import StorageSetup from "./pages/StorageSetup";
 import Install from "./pages/Install";
+import JoinCircle from "./pages/JoinCircle";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -44,6 +45,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={<Auth />} />
       <Route path="/setup" element={<StorageSetup />} />
       <Route path="/install" element={<Install />} />
+      <Route path="/join/:token" element={<JoinCircle />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
