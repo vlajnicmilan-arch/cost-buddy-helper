@@ -27,12 +27,14 @@ const AppRoutes = () => {
     );
   }
 
-  // If no storage mode selected, show setup
+  // If no storage mode selected, show setup (but allow join route for invitations)
   if (!storageMode) {
     return (
       <Routes>
         <Route path="/setup" element={<StorageSetup />} />
         <Route path="/install" element={<Install />} />
+        <Route path="/join/:token" element={<JoinCircle />} />
+        <Route path="/auth" element={<Auth />} />
         <Route path="*" element={<Navigate to="/setup" replace />} />
       </Routes>
     );
