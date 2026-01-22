@@ -16,7 +16,8 @@ import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPan
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { Expense } from '@/types/expense';
-import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet } from 'lucide-react';
+import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
@@ -97,32 +98,35 @@ const Index = () => {
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-6 sm:mb-8">
           <div className="flex items-center justify-between sm:block">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">V&M Balance</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">Upravljaj svojim financijama</p>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/50 text-xs text-muted-foreground">
-                        {isLocalMode ? (
-                          <>
-                            <Smartphone className="w-3 h-3" />
-                            Lokalno
-                          </>
-                        ) : (
-                          <>
-                            <Cloud className="w-3 h-3" />
-                            Cloud
-                          </>
-                        )}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{isLocalMode ? 'Podaci su spremljeni na ovom uređaju' : 'Podaci su u oblaku'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="V&M Balance" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+              <div>
+                <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">V&M Balance</h1>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">Upravljaj svojim financijama</p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/50 text-xs text-muted-foreground">
+                          {isLocalMode ? (
+                            <>
+                              <Smartphone className="w-3 h-3" />
+                              Lokalno
+                            </>
+                          ) : (
+                            <>
+                              <Cloud className="w-3 h-3" />
+                              Cloud
+                            </>
+                          )}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isLocalMode ? 'Podaci su spremljeni na ovom uređaju' : 'Podaci su u oblaku'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
             </div>
             {/* Mobile-only quick actions */}

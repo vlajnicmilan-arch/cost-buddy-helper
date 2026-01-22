@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Wallet, ArrowRight, Check, Lock } from 'lucide-react';
+import { ArrowRight, Check, Lock } from 'lucide-react';
 import { useStorage } from '@/contexts/StorageContext';
 import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
 import { cn } from '@/lib/utils';
 import { initLocalDB } from '@/lib/storage/indexedDB';
+import logo from '@/assets/logo.png';
 
 const StorageSetup = () => {
   const navigate = useNavigate();
@@ -48,8 +49,8 @@ const StorageSetup = () => {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Wallet className="w-8 h-8 text-primary" />
+          <div className="w-20 h-20 mx-auto mb-4">
+            <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
