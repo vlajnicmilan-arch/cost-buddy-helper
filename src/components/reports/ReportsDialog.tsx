@@ -359,20 +359,36 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     return diff > 0 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
   };
 
-  const getReportData = (): ReportData => ({
-    expenses: filteredExpenses,
-    incomeSources,
-    dateRange,
-    totals: {
-      income: stats.income,
-      expenses: stats.expenses,
-      balance: stats.balance,
-      transfers: stats.transfers,
-    },
-    byCategory: stats.byCategory,
-    byPaymentSource: stats.byPaymentSource,
-    byIncomeSource: stats.byIncomeSource,
-  });
+  const getReportData = (): ReportData => {
+    // Get selected income source info
+    let selectedIncomeSource: { id: string; name: string; icon: string } | null = null;
+    if (selectedIncomeSourceId !== 'all') {
+      if (selectedIncomeSourceId === 'unassigned') {
+        selectedIncomeSource = { id: 'unassigned', name: 'Bez izvora', icon: '📭' };
+      } else {
+        const source = incomeSources.find(s => s.id === selectedIncomeSourceId);
+        if (source) {
+          selectedIncomeSource = { id: source.id, name: source.name, icon: source.icon || '💰' };
+        }
+      }
+    }
+
+    return {
+      expenses: filteredExpenses,
+      incomeSources,
+      dateRange,
+      totals: {
+        income: stats.income,
+        expenses: stats.expenses,
+        balance: stats.balance,
+        transfers: stats.transfers,
+      },
+      byCategory: stats.byCategory,
+      byPaymentSource: stats.byPaymentSource,
+      byIncomeSource: stats.byIncomeSource,
+      selectedIncomeSource,
+    };
+  };
 
   const handleExportPDF = () => {
     try {

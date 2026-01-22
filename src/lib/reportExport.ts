@@ -16,6 +16,7 @@ export interface ReportData {
   byCategory: Record<string, number>;
   byPaymentSource: Record<string, number>;
   byIncomeSource: Record<string, { income: number; expenses: number; balance: number }>;
+  selectedIncomeSource?: { id: string; name: string; icon: string } | null;
 }
 
 const formatDate = (date: Date): string => {
@@ -29,13 +30,28 @@ const formatCurrency = (amount: number): string => {
   }).format(amount);
 };
 
-export const generatePDFReport = (data: ReportData, reportTitle: string = 'Financijsko izvješće'): void => {
+// Convert Croatian characters to ASCII for PDF compatibility
+const toAscii = (text: string): string => {
+  return text
+    .replace(/č/g, 'c')
+    .replace(/Č/g, 'C')
+    .replace(/ć/g, 'c')
+    .replace(/Ć/g, 'C')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/š/g, 's')
+    .replace(/Š/g, 'S')
+    .replace(/ž/g, 'z')
+    .replace(/Ž/g, 'Z');
+};
+
+export const generatePDFReport = (data: ReportData, reportTitle: string = 'Financijsko izvjesce'): void => {
   const doc = new jsPDF();
   
   // Title
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text(reportTitle, 14, 20);
+  doc.text(toAscii(reportTitle), 14, 20);
   
   // Date range
   doc.setFontSize(10);
@@ -50,17 +66,31 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
   // Summary section
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('Sažetak', 14, 46);
+  doc.text(toAscii('Sazetak'), 14, 46);
+
+  // Show selected income source name if filtered
+  let summaryStartY = 50;
+  if (data.selectedIncomeSource) {
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(59, 130, 246); // Blue color
+    const sourceName = data.selectedIncomeSource.id === 'unassigned' 
+      ? 'Bez izvora' 
+      : data.selectedIncomeSource.name;
+    doc.text(`Izvor: ${toAscii(sourceName)}`, 14, 52);
+    doc.setTextColor(0, 0, 0); // Reset to black
+    summaryStartY = 58;
+  }
 
   const summaryData = [
-    ['Ukupni prihodi', formatCurrency(data.totals.income)],
-    ['Ukupni troškovi', formatCurrency(data.totals.expenses)],
+    [toAscii('Ukupni prihodi'), formatCurrency(data.totals.income)],
+    [toAscii('Ukupni troskovi'), formatCurrency(data.totals.expenses)],
     ['Stanje', formatCurrency(data.totals.balance)],
     ['Prijenosi', formatCurrency(data.totals.transfers)],
   ];
 
   autoTable(doc, {
-    startY: 50,
+    startY: summaryStartY,
     head: [['Stavka', 'Iznos']],
     body: summaryData,
     theme: 'striped',
@@ -73,7 +103,7 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('Troškovi po kategorijama', 14, categoryY);
+  doc.text(toAscii('Troskovi po kategorijama'), 14, categoryY);
 
   const categoryData = Object.entries(data.byCategory)
     .filter(([_, amount]) => amount > 0)
@@ -83,7 +113,7 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
       const percentage = data.totals.expenses > 0 
         ? ((amount / data.totals.expenses) * 100).toFixed(1) 
         : '0';
-      return [info.name, formatCurrency(amount), `${percentage}%`];
+      return [toAscii(info.name), formatCurrency(amount), `${percentage}%`];
     });
 
   if (categoryData.length > 0) {
@@ -98,10 +128,10 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
     });
   }
 
-  // Income sources breakdown
+  // Income sources breakdown (only show if not filtered by single source)
   const incomeSourceY = (doc as any).lastAutoTable?.finalY + 15 || categoryY + 20;
   
-  if (Object.keys(data.byIncomeSource).length > 0) {
+  if (Object.keys(data.byIncomeSource).length > 0 && !data.selectedIncomeSource) {
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Po izvorima prihoda', 14, incomeSourceY);
@@ -110,7 +140,7 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
       .map(([sourceId, stats]) => {
         const source = data.incomeSources.find(s => s.id === sourceId);
         return [
-          source?.name || 'Nepoznato',
+          toAscii(source?.name || 'Nepoznato'),
           formatCurrency(stats.income),
           formatCurrency(stats.expenses),
           formatCurrency(stats.balance),
@@ -119,7 +149,7 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
 
     autoTable(doc, {
       startY: incomeSourceY + 4,
-      head: [['Izvor', 'Prihodi', 'Troškovi', 'Stanje']],
+      head: [['Izvor', 'Prihodi', toAscii('Troskovi'), 'Stanje']],
       body: sourceData,
       theme: 'striped',
       headStyles: { fillColor: [59, 130, 246] },
@@ -140,9 +170,9 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
       const categoryInfo = getCategoryInfo(expense.category);
       return [
         formatDate(expense.date),
-        typeInfo.name,
-        expense.description,
-        categoryInfo.name,
+        toAscii(typeInfo.name),
+        toAscii(expense.description),
+        toAscii(categoryInfo.name),
         expense.type === 'expense' 
           ? `-${formatCurrency(expense.amount)}` 
           : formatCurrency(expense.amount),
