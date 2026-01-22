@@ -21,6 +21,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { checkForUpdates } from '@/components/PWAUpdatePrompt';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -148,6 +149,7 @@ const Index = () => {
             
             {/* Navigation icons (right side) */}
             <div className="flex items-center gap-1 sm:gap-2">
+              <ThemeToggle />
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
