@@ -303,7 +303,7 @@ const Index = () => {
                   <span className="text-xs sm:text-sm font-medium truncate flex-1">{source.name}</span>
                 </div>
                 <p className={`text-base sm:text-lg font-bold ${source.balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  €{source.balance.toFixed(2)}
+                  {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(source.balance)}
                 </p>
                 {source.cards && source.cards.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
@@ -323,7 +323,7 @@ const Index = () => {
               <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.balance')}</span>
             </div>
             <p className={`text-base sm:text-xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-              €{balance.toFixed(2)}
+              {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(balance)}
             </p>
           </div>
           <div 
@@ -335,7 +335,7 @@ const Index = () => {
               <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalIncome')}</span>
             </div>
             <p className="text-base sm:text-xl font-bold text-primary">
-              €{totalIncome.toFixed(2)}
+              {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(totalIncome)}
             </p>
           </div>
           <div 
@@ -347,7 +347,7 @@ const Index = () => {
               <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
             </div>
             <p className="text-base sm:text-xl font-bold text-destructive">
-              €{totalExpenses.toFixed(2)}
+              {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(totalExpenses)}
             </p>
           </div>
         </div>

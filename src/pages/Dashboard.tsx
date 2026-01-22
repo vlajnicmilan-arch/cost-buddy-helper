@@ -226,6 +226,9 @@ const Dashboard = () => {
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(amount);
 
+  const formatAxisCurrency = (amount: number) =>
+    new Intl.NumberFormat('hr-HR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ' €';
+
   if (authLoading && storageMode === 'cloud') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -390,7 +393,7 @@ const Dashboard = () => {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                       <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
-                      <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(v) => `€${v}`} width={45} />
+                      <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={formatAxisCurrency} width={55} />
                       <Tooltip 
                         formatter={(value: number) => formatCurrency(value)}
                         contentStyle={{ 
@@ -497,8 +500,8 @@ const Dashboard = () => {
                       />
                       <YAxis 
                         tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} 
-                        tickFormatter={(v) => `€${v}`} 
-                        width={40}
+                        tickFormatter={formatAxisCurrency} 
+                        width={50}
                       />
                       <Tooltip 
                         formatter={(value: number) => formatCurrency(value)}
@@ -537,7 +540,7 @@ const Dashboard = () => {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={incomeSourceData} layout="vertical" margin={{ left: -10 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                        <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(v) => `€${v}`} />
+                        <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={formatAxisCurrency} />
                         <YAxis 
                           type="category" 
                           dataKey="name" 
