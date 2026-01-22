@@ -8,12 +8,16 @@ import { toast } from 'sonner';
 // Local storage key for local mode
 const LOCAL_INCOME_SOURCES_KEY = 'finmate-income-sources';
 
+export interface IncomeSourceWithOwnership extends IncomeSource {
+  isOwner: boolean;
+}
+
 export const useIncomeSources = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const isLocalMode = storageMode === 'local' || !user;
   
-  const [incomeSources, setIncomeSources] = useState<IncomeSource[]>([]);
+  const [incomeSources, setIncomeSources] = useState<IncomeSourceWithOwnership[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchIncomeSources = useCallback(async () => {
@@ -22,7 +26,9 @@ export const useIncomeSources = () => {
       if (isLocalMode) {
         const stored = localStorage.getItem(LOCAL_INCOME_SOURCES_KEY);
         if (stored) {
-          setIncomeSources(JSON.parse(stored));
+          const sources = JSON.parse(stored);
+          // In local mode, user owns all sources
+          setIncomeSources(sources.map((s: IncomeSource) => ({ ...s, isOwner: true })));
         }
       } else if (user) {
         // Fetch sources user owns
@@ -33,6 +39,9 @@ export const useIncomeSources = () => {
 
         if (ownedError) throw ownedError;
 
+        // Mark owned sources
+        const ownedWithFlag = (ownedSources || []).map(s => ({ ...s, isOwner: true }));
+
         // Fetch sources user is a member of (but not owner)
         const { data: memberships, error: memberError } = await supabase
           .from('income_source_members')
@@ -42,7 +51,7 @@ export const useIncomeSources = () => {
 
         if (memberError) throw memberError;
 
-        let sharedSources: IncomeSource[] = [];
+        let sharedSources: IncomeSourceWithOwnership[] = [];
         if (memberships && memberships.length > 0) {
           const sourceIds = memberships.map(m => m.income_source_id);
           const { data: sharedData, error: sharedError } = await supabase
@@ -51,11 +60,12 @@ export const useIncomeSources = () => {
             .in('id', sourceIds);
 
           if (sharedError) throw sharedError;
-          sharedSources = sharedData || [];
+          // Mark shared sources as not owned
+          sharedSources = (sharedData || []).map(s => ({ ...s, isOwner: false }));
         }
 
-        // Combine and deduplicate
-        const allSources = [...(ownedSources || []), ...sharedSources];
+        // Combine and deduplicate (prefer owned status)
+        const allSources = [...ownedWithFlag, ...sharedSources];
         const uniqueSources = allSources.filter((source, index, self) =>
           index === self.findIndex(s => s.id === source.id)
         );
@@ -82,12 +92,13 @@ export const useIncomeSources = () => {
   const addIncomeSource = async (source: Omit<IncomeSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
       if (isLocalMode) {
-        const newSource: IncomeSource = {
+        const newSource: IncomeSourceWithOwnership = {
           ...source,
           id: crypto.randomUUID(),
           user_id: 'local',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          isOwner: true
         };
         const updated = [newSource, ...incomeSources];
         setIncomeSources(updated);
@@ -105,9 +116,10 @@ export const useIncomeSources = () => {
           .single();
 
         if (error) throw error;
-        setIncomeSources(prev => [data, ...prev]);
+        const newSource: IncomeSourceWithOwnership = { ...data, isOwner: true };
+        setIncomeSources(prev => [newSource, ...prev]);
         toast.success('Izvor prihoda dodan!');
-        return data;
+        return newSource;
       }
     } catch (error) {
       console.error('Error adding income source:', error);
@@ -120,7 +132,7 @@ export const useIncomeSources = () => {
     try {
       if (isLocalMode) {
         const updated = incomeSources.map(s => 
-          s.id === source.id ? { ...source, updated_at: new Date().toISOString() } : s
+          s.id === source.id ? { ...s, ...source, updated_at: new Date().toISOString() } : s
         );
         setIncomeSources(updated);
         localStorage.setItem(LOCAL_INCOME_SOURCES_KEY, JSON.stringify(updated));
@@ -137,7 +149,7 @@ export const useIncomeSources = () => {
           .eq('id', source.id);
 
         if (error) throw error;
-        setIncomeSources(prev => prev.map(s => s.id === source.id ? source : s));
+        setIncomeSources(prev => prev.map(s => s.id === source.id ? { ...s, ...source } : s));
         toast.success('Izvor prihoda ažuriran!');
       }
     } catch (error) {
@@ -190,8 +202,13 @@ export const useIncomeSources = () => {
     }
   };
 
-  const getIncomeSourceById = (id: string): IncomeSource | undefined => {
+  const getIncomeSourceById = (id: string): IncomeSourceWithOwnership | undefined => {
     return incomeSources.find(s => s.id === id);
+  };
+
+  const isSourceOwner = (sourceId: string): boolean => {
+    const source = incomeSources.find(s => s.id === sourceId);
+    return source?.isOwner ?? true;
   };
 
   return {
@@ -201,6 +218,7 @@ export const useIncomeSources = () => {
     updateIncomeSource,
     deleteIncomeSource,
     getIncomeSourceById,
+    isSourceOwner,
     refetch: fetchIncomeSources,
     isLocalMode
   };

@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.accept-invitation]
 verify_jwt = false
+
+[functions.notify-pending-transaction]
+verify_jwt = false
