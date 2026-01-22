@@ -86,18 +86,18 @@ export const TransactionDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="text-2xl">{categoryInfo.icon}</span>
-            <span className="truncate">{expense.description}</span>
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="flex items-start gap-2">
+            <span className="text-2xl shrink-0">{categoryInfo.icon}</span>
+            <span className="break-words whitespace-normal">{expense.description}</span>
             {expense.ai_extracted && (
               <Sparkles className="w-4 h-4 text-accent shrink-0" />
             )}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 overflow-y-auto flex-1 min-h-0">
           {/* Amount */}
           <div className={cn(
             "p-4 rounded-xl text-center",
@@ -156,10 +156,10 @@ export const TransactionDetailDialog = ({
             {expense.merchant_name && (
               <div className="p-3 rounded-lg bg-muted/50 col-span-2">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-4 h-4 shrink-0" />
                   <span className="text-xs">Trgovac</span>
                 </div>
-                <p className="font-medium">{expense.merchant_name}</p>
+                <p className="font-medium break-words whitespace-normal">{expense.merchant_name}</p>
               </div>
             )}
           </div>
@@ -208,7 +208,7 @@ export const TransactionDetailDialog = ({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 pt-2 shrink-0">
           <Button 
             variant="outline" 
             className="flex-1"
