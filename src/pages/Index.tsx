@@ -11,14 +11,17 @@ import { BackupRestore } from '@/components/BackupRestore';
 import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+type FilterType = 'all' | 'income' | 'expense';
 
 const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { storageMode } = useStorage();
   const navigate = useNavigate();
+  const [filter, setFilter] = useState<FilterType>('all');
   
   const { 
     expenses, 
@@ -33,6 +36,15 @@ const Index = () => {
     isLocalMode,
     refetch
   } = useExpenses();
+
+  const filteredExpenses = useMemo(() => {
+    if (filter === 'all') return expenses;
+    return expenses.filter(e => e.type === filter);
+  }, [expenses, filter]);
+
+  const handleCardClick = (type: FilterType) => {
+    setFilter(prev => prev === type ? 'all' : type);
+  };
 
   // Initialize auto-backup for local mode
   useAutoBackup();
@@ -163,18 +175,24 @@ const Index = () => {
             amount={balance}
             variant="balance"
             icon={<Wallet className="w-5 h-5" />}
+            isActive={filter === 'all'}
+            onClick={() => handleCardClick('all')}
           />
           <SummaryCard
             title="Prihodi"
             amount={totalIncome}
             variant="income"
             icon={<TrendingUp className="w-5 h-5" />}
+            isActive={filter === 'income'}
+            onClick={() => handleCardClick('income')}
           />
           <SummaryCard
             title="Troškovi"
             amount={totalExpenses}
             variant="expense"
             icon={<TrendingDown className="w-5 h-5" />}
+            isActive={filter === 'expense'}
+            onClick={() => handleCardClick('expense')}
           />
         </div>
 
@@ -182,22 +200,40 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Transactions */}
           <div className="lg:col-span-2 glass-card rounded-2xl p-6 animate-fade-in">
-            <h2 className="text-lg font-semibold mb-4">Nedavne transakcije</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">
+                {filter === 'all' && 'Nedavne transakcije'}
+                {filter === 'income' && 'Prihodi'}
+                {filter === 'expense' && 'Troškovi'}
+              </h2>
+              {filter !== 'all' && (
+                <button
+                  onClick={() => setFilter('all')}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Prikaži sve
+                </button>
+              )}
+            </div>
             {expensesLoading ? (
               <div className="py-12 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-            ) : expenses.length === 0 ? (
+            ) : filteredExpenses.length === 0 ? (
               <div className="py-12 text-center">
-                <p className="text-muted-foreground">Još nema transakcija</p>
+                <p className="text-muted-foreground">
+                  {filter === 'all' && 'Još nema transakcija'}
+                  {filter === 'income' && 'Nema prihoda'}
+                  {filter === 'expense' && 'Nema troškova'}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dodaj prvu transakciju klikom na "Dodaj"
+                  {filter === 'all' ? 'Dodaj prvu transakciju klikom na "Dodaj"' : 'Klikni na "Stanje" za prikaz svih transakcija'}
                 </p>
               </div>
             ) : (
               <div className="space-y-1">
                 <AnimatePresence>
-                  {expenses.map((expense) => (
+                  {filteredExpenses.map((expense) => (
                     <TransactionItem
                       key={expense.id}
                       expense={expense}

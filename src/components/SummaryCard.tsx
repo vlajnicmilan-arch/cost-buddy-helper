@@ -6,9 +6,11 @@ interface SummaryCardProps {
   amount: number;
   variant: 'balance' | 'income' | 'expense';
   icon: React.ReactNode;
+  isActive?: boolean;
+  onClick?: () => void;
 }
 
-export const SummaryCard = ({ title, amount, variant, icon }: SummaryCardProps) => {
+export const SummaryCard = ({ title, amount, variant, icon, isActive, onClick }: SummaryCardProps) => {
   const formatAmount = (value: number) => {
     return new Intl.NumberFormat('hr-HR', {
       style: 'currency',
@@ -20,7 +22,12 @@ export const SummaryCard = ({ title, amount, variant, icon }: SummaryCardProps) 
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-card rounded-2xl p-6"
+      onClick={onClick}
+      className={cn(
+        "glass-card rounded-2xl p-6 transition-all duration-200",
+        onClick && "cursor-pointer hover:scale-[1.02] hover:shadow-lg",
+        isActive && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+      )}
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
