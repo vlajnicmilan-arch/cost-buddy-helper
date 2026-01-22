@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Expense, getCategoryInfo } from '@/types/expense';
+import { Expense, getCategoryInfo, CATEGORIES } from '@/types/expense';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
 import {
   FileText,
@@ -28,15 +28,17 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
-  PieChart,
+  PieChart as PieChartIcon,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
   Minus,
+  BarChart3,
 } from 'lucide-react';
 import { generatePDFReport, generateCSVReport, generateJSONExport, ReportData } from '@/lib/reportExport';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface ReportsDialogProps {
   expenses: Expense[];
@@ -44,6 +46,36 @@ interface ReportsDialogProps {
 
 type PeriodPreset = 'this-month' | 'last-month' | 'this-year' | 'last-year' | 'all' | 'custom';
 type ComparePreset = 'month-vs-month' | 'year-vs-year' | 'custom';
+type ChartType = 'pie' | 'bar';
+
+const CATEGORY_COLORS: Record<string, string> = {
+  food: '#f97316',
+  groceries: '#fb923c',
+  transport: '#3b82f6',
+  car: '#60a5fa',
+  shopping: '#ec4899',
+  clothing: '#f472b6',
+  entertainment: '#a855f7',
+  subscriptions: '#c084fc',
+  bills: '#6366f1',
+  utilities: '#818cf8',
+  rent: '#4f46e5',
+  health: '#22c55e',
+  beauty: '#4ade80',
+  sports: '#86efac',
+  education: '#14b8a6',
+  travel: '#f59e0b',
+  home: '#8b5cf6',
+  pets: '#eab308',
+  gifts: '#ef4444',
+  kids: '#06b6d4',
+  insurance: '#0ea5e9',
+  taxes: '#64748b',
+  savings: '#10b981',
+  investments: '#059669',
+  charity: '#dc2626',
+  other: '#6b7280',
+};
 
 const calculateStats = (expenseList: Expense[]) => {
   const income = expenseList
@@ -105,6 +137,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('this-month');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  
+  // Chart state
+  const [chartType, setChartType] = useState<ChartType>('pie');
   
   // Comparison state
   const [comparePreset, setComparePreset] = useState<ComparePreset>('month-vs-month');
@@ -241,6 +276,22 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       .slice(0, 5);
   }, [stats.byCategory]);
 
+  // Chart data for pie chart
+  const chartData = useMemo(() => {
+    return Object.entries(stats.byCategory)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([categoryId, amount]) => {
+        const info = getCategoryInfo(categoryId as any);
+        return {
+          name: info.name,
+          value: amount,
+          icon: info.icon,
+          color: CATEGORY_COLORS[categoryId] || '#6b7280',
+        };
+      });
+  }, [stats.byCategory]);
+
   // Category comparison
   const categoryComparison = useMemo(() => {
     const allCategories = new Set([
@@ -259,6 +310,19 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
       .slice(0, 8);
   }, [compareStats1.byCategory, compareStats2.byCategory]);
+
+  // Comparison chart data
+  const comparisonChartData = useMemo(() => {
+    return categoryComparison.map(({ category, amount1, amount2 }) => {
+      const info = getCategoryInfo(category as any);
+      return {
+        name: info.name,
+        icon: info.icon,
+        [compareDateRanges.period1.label]: amount1,
+        [compareDateRanges.period2.label]: amount2,
+      };
+    });
+  }, [categoryComparison, compareDateRanges]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(amount);
@@ -441,35 +505,102 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               </div>
             </div>
 
-            {/* Top Categories */}
-            {topCategories.length > 0 && (
+            {/* Category Chart */}
+            {chartData.length > 0 && (
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Top 5 kategorija troškova</Label>
-                <div className="space-y-2">
-                  {topCategories.map(([categoryId, amount]) => {
-                    const info = getCategoryInfo(categoryId as any);
-                    const percentage = stats.expenses > 0 ? (amount / stats.expenses) * 100 : 0;
-                    return (
-                      <div key={categoryId} className="flex items-center gap-3">
-                        <div className="w-8 text-center">{info.icon}</div>
-                        <div className="flex-1">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>{info.name}</span>
-                            <span className="font-mono">{formatCurrency(amount)}</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-expense rounded-full transition-all"
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                        </div>
-                        <span className="text-xs text-muted-foreground w-12 text-right">
-                          {percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <PieChartIcon className="w-4 h-4" />
+                    Troškovi po kategorijama
+                  </Label>
+                  <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                    <Button
+                      variant={chartType === 'pie' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => setChartType('pie')}
+                    >
+                      <PieChartIcon className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={chartType === 'bar' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => setChartType('bar')}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {chartType === 'pie' ? (
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={2}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: number) => formatCurrency(value)}
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--popover))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                        />
+                      </PieChart>
+                    ) : (
+                      <BarChart data={chartData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis type="number" tickFormatter={(v) => `€${v}`} />
+                        <YAxis 
+                          type="category" 
+                          dataKey="name" 
+                          width={80} 
+                          tick={{ fontSize: 12 }}
+                        />
+                        <Tooltip 
+                          formatter={(value: number) => formatCurrency(value)}
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--popover))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Category Legend */}
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {chartData.slice(0, 6).map((item) => (
+                    <div key={item.name} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="truncate flex-1">{item.icon} {item.name}</span>
+                      <span className="font-mono text-xs">{formatCurrency(item.value)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -671,10 +802,53 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               </div>
             </div>
 
-            {/* Category Comparison */}
+            {/* Comparison Bar Chart */}
+            {comparisonChartData.length > 0 && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Grafikon usporedbe
+                </Label>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonChartData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" tickFormatter={(v) => `€${v}`} />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={70} 
+                        tick={{ fontSize: 11 }}
+                      />
+                      <Tooltip 
+                        formatter={(value: number) => formatCurrency(value)}
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--popover))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Legend />
+                      <Bar 
+                        dataKey={compareDateRanges.period1.label} 
+                        fill="hsl(var(--primary))" 
+                        radius={[0, 4, 4, 0]}
+                      />
+                      <Bar 
+                        dataKey={compareDateRanges.period2.label} 
+                        fill="hsl(var(--muted-foreground))" 
+                        radius={[0, 4, 4, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Category Comparison List */}
             {categoryComparison.length > 0 && (
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Usporedba po kategorijama</Label>
+                <Label className="text-sm font-medium">Detalji po kategorijama</Label>
                 <div className="space-y-2">
                   {categoryComparison.map(({ category, amount1, amount2, diff, diffPercent }) => {
                     const info = getCategoryInfo(category as any);
