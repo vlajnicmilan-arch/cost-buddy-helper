@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,11 +7,11 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense'
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import { useIncomeSourceMembers } from '@/hooks/useIncomeSourceMembers';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, Clock, UserCheck } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, Clock, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
 interface IncomeSourceTransactionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,6 +32,40 @@ export const IncomeSourceTransactionsDialog = ({
   const { user } = useAuth();
   const { isOwner } = useIncomeSourceMembers(source?.id || null);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [memberProfiles, setMemberProfiles] = useState<Record<string, string>>({});
+
+  // Fetch member profiles for displaying submitter names
+  useEffect(() => {
+    const fetchMemberProfiles = async () => {
+      if (!source || !open) return;
+      
+      // Get unique user IDs from transactions (submitted_by or user_id)
+      const userIds = new Set<string>();
+      expenses.forEach(e => {
+        if (e.income_source_id === source.id) {
+          if (e.submitted_by) userIds.add(e.submitted_by);
+          if (e.user_id) userIds.add(e.user_id);
+        }
+      });
+
+      if (userIds.size === 0) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', Array.from(userIds));
+
+      if (data) {
+        const profileMap: Record<string, string> = {};
+        data.forEach(p => {
+          profileMap[p.user_id] = p.display_name || 'Nepoznat';
+        });
+        setMemberProfiles(profileMap);
+      }
+    };
+
+    fetchMemberProfiles();
+  }, [source, expenses, open]);
 
   // All transactions linked to this source (both income and expenses)
   const allTransactions = useMemo(() => {
@@ -174,12 +208,19 @@ export const IncomeSourceTransactionsDialog = ({
 
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium truncate">{expense.description}</p>
                         {isPending && (
                           <Badge variant="secondary" className="gap-1 h-5 text-xs">
                             <Clock className="w-3 h-3" />
                             Čeka
+                          </Badge>
+                        )}
+                        {/* Show submitter badge if transaction is from another member */}
+                        {expense.user_id !== user?.id && (
+                          <Badge variant="outline" className="gap-1 h-5 text-xs bg-primary/10 border-primary/20">
+                            <User className="w-3 h-3" />
+                            {memberProfiles[expense.submitted_by || expense.user_id] || 'Član'}
                           </Badge>
                         )}
                       </div>
