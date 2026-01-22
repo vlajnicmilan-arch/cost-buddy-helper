@@ -138,9 +138,9 @@
     "paymentSource": "Zahlungsquelle"
   },
   "incomeSources": {
-    "title": "Einnahmequellen",
-    "addSource": "Quelle hinzufügen",
-    "noSources": "Keine Einnahmequellen",
+    "title": "Projekte",
+    "addSource": "Projekt hinzufügen",
+    "noSources": "Keine Projekte",
     "unassigned": "Nicht zugeordnet",
     "assignSource": "Quelle zuordnen",
     "addFirstSource": "Fügen Sie Ihre erste Quelle hinzu, um Einnahmen zu kategorisieren",
