@@ -130,7 +130,11 @@ serve(async (req) => {
 3. Opis transakcije (kratko)
 4. Kategorija: food, transport, shopping, entertainment, bills, health, other
 5. DATUM računa - traži datum na računu (format: YYYY-MM-DD). Ako ne možeš pronaći, koristi null.
-6. SVE artikle s računa - za svaki artikl izvuci:
+6. NAČIN PLAĆANJA - traži na računu:
+   - "card" ako piše: VISA, MASTERCARD, MAESTRO, kartica, POS, AMEX, kartično plaćanje, bezgotovinski, contactless
+   - "cash" ako piše: gotovina, GOTOV., uplaćeno, cash
+   - null ako nije jasno
+7. SVE artikle s računa - za svaki artikl izvuci:
    - name: naziv artikla
    - quantity: količina (broj, default 1)
    - unit_price: jedinična cijena ako postoji (broj ili null)
@@ -143,6 +147,7 @@ Odgovori SAMO u JSON formatu:
   "description": "Tjedna kupovina namirnica",
   "category": "food",
   "date": "2025-01-20",
+  "payment_method": "card",
   "items": [
     {"name": "Mlijeko 1L", "quantity": 2, "unit_price": 1.20, "total_price": 2.40},
     {"name": "Kruh", "quantity": 1, "unit_price": 1.50, "total_price": 1.50}
@@ -230,6 +235,7 @@ Ako ne možeš pročitati račun, vrati:
         description: receiptData.description,
         category: receiptData.category,
         date: receiptData.date || null,
+        payment_method: receiptData.payment_method || null,
         items: receiptData.items || []
       }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

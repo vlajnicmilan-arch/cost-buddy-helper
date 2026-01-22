@@ -23,6 +23,7 @@ interface ScannedData {
   description: string;
   category: Category;
   date: string | null;
+  payment_source: PaymentSource | null;
   items: ReceiptItem[];
 }
 
@@ -65,6 +66,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
           description: result.description,
           category: result.category,
           date: result.date,
+          payment_source: result.payment_source,
           items: result.items
         });
         setShowScannedPreview(true);
@@ -97,13 +99,16 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         }
       }
 
+      // Use detected payment source from receipt, fallback to current selection
+      const detectedPaymentSource = scannedData.payment_source || paymentSource;
+
       await onAdd({
         amount: scannedData.amount,
         description: scannedData.description,
         category: scannedData.category,
         date: new Date(scannedData.date || expenseDate),
         type: 'expense',
-        payment_source: paymentSource,
+        payment_source: detectedPaymentSource,
         merchant_name: scannedData.merchant || undefined,
         receipt_url: receiptUrl,
         ai_extracted: true
