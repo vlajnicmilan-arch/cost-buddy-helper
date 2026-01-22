@@ -9,6 +9,9 @@ import { CategoryBreakdown } from '@/components/CategoryBreakdown';
 import { BankConnection } from '@/components/BankConnection';
 import { BackupRestore } from '@/components/BackupRestore';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
+import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
+import { EditTransactionDialog } from '@/components/EditTransactionDialog';
+import { Expense } from '@/types/expense';
 import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +25,9 @@ const Index = () => {
   const navigate = useNavigate();
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   const { 
     expenses, 
@@ -208,6 +214,10 @@ const Index = () => {
                       key={expense.id}
                       expense={expense}
                       onDelete={deleteExpense}
+                      onClick={(e) => {
+                        setSelectedTransaction(e);
+                        setDetailDialogOpen(true);
+                      }}
                     />
                   ))}
                 </AnimatePresence>
@@ -245,6 +255,27 @@ const Index = () => {
         onUpdate={updateExpense}
         onDelete={deleteExpense}
         total={totalExpenses}
+      />
+
+      {/* Transaction Detail Dialog */}
+      <TransactionDetailDialog
+        expense={selectedTransaction}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        onEdit={(expense) => {
+          setSelectedTransaction(expense);
+          setDetailDialogOpen(false);
+          setEditDialogOpen(true);
+        }}
+        onDelete={deleteExpense}
+      />
+
+      {/* Edit Transaction Dialog */}
+      <EditTransactionDialog
+        expense={selectedTransaction}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSave={updateExpense}
       />
     </div>
   );
