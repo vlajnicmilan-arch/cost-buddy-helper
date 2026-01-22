@@ -25,6 +25,38 @@ export function mapSourceToPaymentSource(source: string): PaymentSource {
   return 'other';
 }
 
+// Detect actual payment source from transaction description
+export function detectPaymentSourceFromDescription(description: string, defaultSource: PaymentSource = 'other'): PaymentSource {
+  const desc = description.toLowerCase();
+  
+  // Credit/Debit cards = bank
+  if (desc.includes('visa') || desc.includes('mastercard') || desc.includes('maestro') || 
+      desc.includes('kartic') || desc.includes('card') || desc.includes('pbz') ||
+      desc.includes('erste') || desc.includes('zaba') || desc.includes('otp') ||
+      desc.includes('raiffeisen') || desc.includes('addiko')) {
+    return 'bank';
+  }
+  
+  // Cash deposits
+  if (desc.includes('gotovina') || desc.includes('tisak') || desc.includes('ina ') ||
+      desc.includes('bankomat') || desc.includes('atm')) {
+    return 'cash';
+  }
+  
+  // Revolut
+  if (desc.includes('revolut')) {
+    return 'revolut';
+  }
+  
+  // Crypto
+  if (desc.includes('bitcoin') || desc.includes('ethereum') || desc.includes('crypto') ||
+      desc.includes('binance') || desc.includes('coinbase')) {
+    return 'crypto';
+  }
+  
+  return defaultSource;
+}
+
 export interface CSVParseResult {
   success: boolean;
   transactions: ParsedTransaction[];
@@ -300,6 +332,10 @@ function parseAircash(rows: string[][]): ParsedTransaction[] {
     const isIncome = typeStr.includes('uplata') || typeStr.includes('primljeno') || 
                      parseFloat(row[amountIdx] || '0') > 0;
     
+    // Detect actual payment source from description
+    // E.g., "Uplata na Aircash - Visa *** 7262" means source is bank card, not Aircash
+    const paymentSource = detectPaymentSourceFromDescription(description, 'aircash');
+    
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
@@ -307,7 +343,7 @@ function parseAircash(rows: string[][]): ParsedTransaction[] {
       type: isIncome ? 'income' : 'expense',
       category: categorizeTransaction(description),
       source: 'Aircash',
-      payment_source: 'aircash'
+      payment_source: paymentSource
     });
   }
   
