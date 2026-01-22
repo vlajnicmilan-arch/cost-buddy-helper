@@ -17,6 +17,7 @@ import { BulkPaymentSourceDialog } from '@/components/BulkPaymentSourceDialog';
 import { BulkCategoryDialog } from '@/components/BulkCategoryDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
+import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
@@ -398,6 +399,7 @@ const Index = () => {
               onDeleteExpense={deleteExpense}
             />
             <CustomCategoriesPanel />
+            <CustomPaymentSourcesPanel />
             <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
             <BackupRestore onDataImported={refetch} />
           </div>
