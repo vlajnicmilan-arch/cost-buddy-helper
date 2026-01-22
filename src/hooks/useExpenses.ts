@@ -19,8 +19,9 @@ export const useExpenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Use local mode only if explicitly set to 'local', otherwise use cloud when user is logged in
-  const isLocalMode = storageMode === 'local';
+  // If user is logged in, always use cloud mode regardless of storageMode setting
+  // Only use local mode if explicitly set AND user is not logged in
+  const isLocalMode = storageMode === 'local' && !user;
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
