@@ -97,7 +97,7 @@ export const IncomeSourceCard = ({
               </span>
             )}
 
-            {/* Members & Pending Indicators - Always show members button */}
+            {/* Members & Pending Indicators */}
             <div className="flex items-center gap-2 mt-2">
               {/* Member badge for non-owners */}
               {!isOwner && (
@@ -106,18 +106,22 @@ export const IncomeSourceCard = ({
                   Član
                 </Badge>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 gap-1 text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMembersClick?.(source);
-                }}
-              >
-                <Users className="w-3 h-3" />
-                {memberCount > 0 ? memberCount : 'Članovi'}
-              </Button>
+              {/* Members button - show count only, clickable */}
+              {memberCount > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 gap-1 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMembersClick?.(source);
+                  }}
+                >
+                  <Users className="w-3 h-3" />
+                  {memberCount}
+                </Button>
+              )}
+              {/* Pending count - only for owners */}
               {pendingCount > 0 && isOwner && (
                 <Badge variant="secondary" className="gap-1 h-6">
                   <Clock className="w-3 h-3" />
