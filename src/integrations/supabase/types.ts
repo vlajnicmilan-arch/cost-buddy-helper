@@ -60,6 +60,7 @@ export type Database = {
           description: string
           id: string
           merchant_name: string | null
+          payment_source: string | null
           receipt_url: string | null
           type: string
           updated_at: string
@@ -74,6 +75,7 @@ export type Database = {
           description: string
           id?: string
           merchant_name?: string | null
+          payment_source?: string | null
           receipt_url?: string | null
           type?: string
           updated_at?: string
@@ -88,6 +90,7 @@ export type Database = {
           description?: string
           id?: string
           merchant_name?: string | null
+          payment_source?: string | null
           receipt_url?: string | null
           type?: string
           updated_at?: string

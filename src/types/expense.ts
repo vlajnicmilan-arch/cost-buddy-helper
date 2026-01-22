@@ -7,6 +7,33 @@ export type Category =
   | 'health'
   | 'other';
 
+export type PaymentSource = 
+  | 'cash'
+  | 'bank'
+  | 'revolut'
+  | 'aircash'
+  | 'crypto'
+  | 'other';
+
+export interface PaymentSourceInfo {
+  id: PaymentSource;
+  name: string;
+  icon: string;
+}
+
+export const PAYMENT_SOURCES: PaymentSourceInfo[] = [
+  { id: 'cash', name: 'Gotovina', icon: '💵' },
+  { id: 'bank', name: 'Banka', icon: '🏦' },
+  { id: 'revolut', name: 'Revolut', icon: '💳' },
+  { id: 'aircash', name: 'Aircash', icon: '📱' },
+  { id: 'crypto', name: 'Kripto', icon: '₿' },
+  { id: 'other', name: 'Ostalo', icon: '💰' },
+];
+
+export const getPaymentSourceInfo = (source: PaymentSource): PaymentSourceInfo => {
+  return PAYMENT_SOURCES.find(s => s.id === source) || PAYMENT_SOURCES[5];
+};
+
 export interface Expense {
   id: string;
   user_id: string;
@@ -15,6 +42,7 @@ export interface Expense {
   category: Category;
   date: Date;
   type: 'expense' | 'income';
+  payment_source?: PaymentSource;
   receipt_url?: string | null;
   merchant_name?: string | null;
   ai_extracted?: boolean | null;
