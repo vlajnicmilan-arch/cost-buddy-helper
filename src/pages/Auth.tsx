@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Wallet, Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import logo from '@/assets/logo.png';
 
 const authSchema = z.object({
   email: z.string().email('Nevažeća email adresa'),
@@ -84,8 +85,8 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         {/* Logo */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <Wallet className="w-8 h-8 text-primary" />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+            <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
