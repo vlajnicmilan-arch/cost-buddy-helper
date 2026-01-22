@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ interface EditTransactionDialogProps {
   onSave: (expense: Expense) => Promise<void>;
 }
 
-export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: EditTransactionDialogProps) => {
+export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionDialogProps>(({ expense, open, onOpenChange, onSave }, ref) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category>('other');
@@ -265,4 +265,6 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+EditTransactionDialog.displayName = 'EditTransactionDialog';
