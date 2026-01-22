@@ -332,8 +332,8 @@ const Index = () => {
           </div>
 
           {/* Transactions */}
-          <div className="lg:col-span-2 glass-card rounded-2xl p-6 animate-fade-in">
-            <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen}>
+          <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen} className="lg:col-span-2">
+            <div className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 ${transactionsOpen ? 'p-6' : 'p-4'}`}>
               <CollapsibleTrigger asChild>
                 <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
                   <h2 className="text-lg font-semibold">{t('transactions.recentTransactions')}</h2>
@@ -375,8 +375,8 @@ const Index = () => {
                   </div>
                 )}
               </CollapsibleContent>
-            </Collapsible>
-          </div>
+            </div>
+          </Collapsible>
 
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
