@@ -2,6 +2,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { SummaryCard } from '@/components/SummaryCard';
 import { TransactionItem } from '@/components/TransactionItem';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
@@ -21,6 +22,7 @@ import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/C
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
+import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown } from 'lucide-react';
@@ -47,6 +49,7 @@ const Index = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
+  const [dashboardFilters, setDashboardFilters] = useState<FilterState>(defaultFilters);
 
   const handleCheckForUpdates = async () => {
     setIsCheckingUpdate(true);
@@ -80,6 +83,19 @@ const Index = () => {
     expenses.filter(e => e.type === 'transfer').sort((a, b) => b.date.getTime() - a.date.getTime()),
     [expenses]
   );
+
+  // Get custom payment sources for card filtering
+  const { customPaymentSources } = useCustomPaymentSources();
+  
+  // Get all cards from all custom payment sources
+  const allCards = useMemo(() => {
+    return customPaymentSources.flatMap(source => source.cards || []);
+  }, [customPaymentSources]);
+
+  // Apply filters to dashboard expenses
+  const filteredDashboardExpenses = useMemo(() => {
+    return applyFilters(expenses, dashboardFilters);
+  }, [expenses, dashboardFilters]);
 
   // Initialize auto-backup for local mode
   useAutoBackup();
@@ -341,28 +357,44 @@ const Index = () => {
                   <h2 className="text-lg font-semibold">{t('transactions.recentTransactions')}</h2>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
-                      {expenses.length} {expenses.length === 1 ? 'transakcija' : 'transakcija'}
+                      {filteredDashboardExpenses.length !== expenses.length 
+                        ? `${filteredDashboardExpenses.length} / ${expenses.length}`
+                        : expenses.length} {expenses.length === 1 ? 'transakcija' : 'transakcija'}
                     </span>
                     <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${transactionsOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4">
+              <CollapsibleContent className="mt-4 space-y-4">
+                {/* Filters */}
+                <TransactionFilters
+                  filters={dashboardFilters}
+                  onFiltersChange={setDashboardFilters}
+                  showCardFilter={allCards.length > 0}
+                  cards={allCards}
+                />
+
                 {expensesLoading ? (
                   <div className="py-12 flex items-center justify-center">
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : expenses.length === 0 ? (
+                ) : filteredDashboardExpenses.length === 0 ? (
                   <div className="py-12 text-center">
-                    <p className="text-muted-foreground">{t('transactions.noTransactions')}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {t('transactions.addFirstTransaction')}
+                    <p className="text-muted-foreground">
+                      {expenses.length === 0 
+                        ? t('transactions.noTransactions')
+                        : 'Nema rezultata za odabrane filtere'}
                     </p>
+                    {expenses.length === 0 && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {t('transactions.addFirstTransaction')}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="max-h-[400px] overflow-y-auto space-y-1 pr-1">
                     <AnimatePresence>
-                      {expenses.map((expense) => (
+                      {filteredDashboardExpenses.map((expense) => (
                         <TransactionItem
                           key={expense.id}
                           expense={expense}
