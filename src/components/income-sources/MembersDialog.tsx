@@ -92,7 +92,23 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
         .select('token')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        // RLS policy violation - user is not the owner
+        if (error.code === '42501' || error.message?.includes('row-level security')) {
+          toast.error('Samo vlasnik kruga može generirati pozivnice');
+        } else {
+          toast.error('Greška pri generiranju linka');
+        }
+        return;
+      }
+
+      // Check if data was actually returned (RLS might silently block)
+      if (!data || !data.token) {
+        console.error('No data returned - likely RLS policy blocked insert');
+        toast.error('Samo vlasnik kruga može generirati pozivnice');
+        return;
+      }
 
       // Generate the invite link
       const baseUrl = window.location.origin;
@@ -101,9 +117,13 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
       
       toast.success('Link pozivnice generiran!');
       refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating invite link:', error);
-      toast.error('Greška pri generiranju linka');
+      if (error?.code === '42501' || error?.message?.includes('row-level security')) {
+        toast.error('Samo vlasnik kruga može generirati pozivnice');
+      } else {
+        toast.error('Greška pri generiranju linka');
+      }
     } finally {
       setGeneratingLink(false);
     }
