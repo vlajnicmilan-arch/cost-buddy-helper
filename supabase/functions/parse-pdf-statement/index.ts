@@ -47,14 +47,23 @@ serve(async (req) => {
       );
     }
 
-    console.log('Processing PDF statement for user:', userId, 'bank:', bankType);
+    // Check PDF size (max ~5MB base64 = ~7MB string)
+    const pdfSizeKB = Math.round(pdfBase64.length / 1024);
+    console.log('Processing PDF statement for user:', userId, 'bank:', bankType, 'size:', pdfSizeKB, 'KB');
+
+    if (pdfBase64.length > 7 * 1024 * 1024) {
+      return new Response(
+        JSON.stringify({ error: 'PDF je prevelik. Maksimalna veličina je 5MB.' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Use Gemini with tool calling for structured output
+    // Use Gemini 2.5 Flash for better PDF support
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -62,7 +71,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'system',
