@@ -3,8 +3,10 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export const PWAUpdatePrompt = () => {
+  const { t } = useTranslation();
   const [showPrompt, setShowPrompt] = useState(false);
   
   const {
@@ -57,15 +59,15 @@ export const PWAUpdatePrompt = () => {
                 <Sparkles className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-foreground">Nova verzija dostupna!</h3>
+                <h3 className="font-semibold text-foreground">{t('update.available')}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Ažurirajte aplikaciju za najnovije značajke i popravke.
+                  {t('update.description')}
                 </p>
               </div>
               <button
                 onClick={handleDismiss}
                 className="p-1 rounded-lg hover:bg-muted transition-colors flex-shrink-0"
-                aria-label="Zatvori"
+                aria-label={t('common.close')}
               >
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
@@ -78,7 +80,7 @@ export const PWAUpdatePrompt = () => {
                 className="flex-1 rounded-xl"
                 onClick={handleDismiss}
               >
-                Kasnije
+                {t('update.later')}
               </Button>
               <Button
                 size="sm"
@@ -86,7 +88,7 @@ export const PWAUpdatePrompt = () => {
                 onClick={handleUpdate}
               >
                 <RefreshCw className="w-4 h-4" />
-                Ažuriraj
+                {t('update.updateNow')}
               </Button>
             </div>
           </div>

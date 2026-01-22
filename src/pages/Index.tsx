@@ -15,6 +15,7 @@ import { TransferListDialog } from '@/components/TransferListDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet } from 'lucide-react';
@@ -24,8 +25,10 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 const Index = () => {
+  const { t } = useTranslation();
   const { user, loading: authLoading, signOut } = useAuth();
   const { storageMode } = useStorage();
   const navigate = useNavigate();
@@ -132,6 +135,7 @@ const Index = () => {
             </div>
             {/* Mobile-only quick actions */}
             <div className="flex items-center gap-1 sm:hidden">
+              <LanguageSwitcher />
               <HelpDialog />
               <Button 
                 variant="outline" 
@@ -164,6 +168,9 @@ const Index = () => {
           
           {/* Action buttons row */}
           <div className="flex items-center gap-2">
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
             <HelpDialog />
             <ReportsDialog expenses={expenses} />
             <AddExpenseDialog onAdd={addExpense} />
