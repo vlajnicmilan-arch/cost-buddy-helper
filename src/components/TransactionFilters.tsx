@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X, CalendarIcon, Filter, Users } from 'lucide-react';
+import { Search, X, CalendarIcon, Filter, Users, CreditCard } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
+import { PaymentSourceCard } from '@/types/customPaymentSource';
 
 export interface MemberOption {
   userId: string;
@@ -21,6 +22,7 @@ export interface FilterState {
   minAmount: number | undefined;
   maxAmount: number | undefined;
   memberId: string | undefined;
+  cardId: string | undefined;
 }
 
 interface TransactionFiltersProps {
@@ -28,7 +30,9 @@ interface TransactionFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
   showAmountFilter?: boolean;
   showMemberFilter?: boolean;
+  showCardFilter?: boolean;
   members?: MemberOption[];
+  cards?: PaymentSourceCard[];
   className?: string;
 }
 
@@ -61,7 +65,9 @@ export const TransactionFilters = ({
   onFiltersChange,
   showAmountFilter = true,
   showMemberFilter = false,
+  showCardFilter = false,
   members = [],
+  cards = [],
   className,
 }: TransactionFiltersProps) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -71,7 +77,8 @@ export const TransactionFilters = ({
     filters.dateRange?.from ||
     filters.minAmount !== undefined ||
     filters.maxAmount !== undefined ||
-    filters.memberId !== undefined;
+    filters.memberId !== undefined ||
+    filters.cardId !== undefined;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -80,6 +87,7 @@ export const TransactionFilters = ({
       minAmount: undefined,
       maxAmount: undefined,
       memberId: undefined,
+      cardId: undefined,
     });
   };
 
@@ -248,6 +256,27 @@ export const TransactionFilters = ({
               </SelectContent>
             </Select>
           )}
+
+          {/* Card Filter */}
+          {showCardFilter && cards.length > 0 && (
+            <Select
+              value={filters.cardId || 'all'}
+              onValueChange={(value) => updateFilter('cardId', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger className="w-[180px] h-8 text-xs">
+                <CreditCard className="w-3.5 h-3.5 mr-1.5" />
+                <SelectValue placeholder="Sve kartice" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Sve kartice</SelectItem>
+                {cards.map((card) => (
+                  <SelectItem key={card.id} value={card.id}>
+                    {card.card_name} (•••• {card.last_four_digits})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
     </div>
@@ -255,7 +284,7 @@ export const TransactionFilters = ({
 };
 
 // Helper function to apply filters to expenses
-export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null }>(
+export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null }>(
   items: T[],
   filters: FilterState
 ): T[] => {
@@ -301,6 +330,11 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       if (transactionMemberId !== filters.memberId) return false;
     }
 
+    // Card filter
+    if (filters.cardId !== undefined) {
+      if (item.payment_source_card_id !== filters.cardId) return false;
+    }
+
     return true;
   });
 };
@@ -312,4 +346,5 @@ export const defaultFilters: FilterState = {
   minAmount: undefined,
   maxAmount: undefined,
   memberId: undefined,
+  cardId: undefined,
 };

@@ -38,6 +38,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [category, setCategory] = useState<Category>('food');
   const [merchantName, setMerchantName] = useState('');
   const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [showItems, setShowItems] = useState(false);
@@ -221,6 +222,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setCategory('food');
     setMerchantName('');
     setPaymentSource('cash');
+    setSelectedCardId(null);
     setExpenseDate(new Date().toISOString().split('T')[0]);
     setItems([]);
     setShowItems(false);
@@ -257,6 +259,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       date: new Date(expenseDate),
       type,
       payment_source: paymentSource,
+      payment_source_card_id: selectedCardId,
       merchant_name: merchantName || undefined,
       receipt_url: receiptUrl,
       ai_extracted: scannedData !== null,
@@ -586,7 +589,10 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                           <button
                             key={`custom-${source.id}`}
                             type="button"
-                            onClick={() => setPaymentSource(source.id as PaymentSource)}
+                            onClick={() => {
+                              setPaymentSource(source.id as PaymentSource);
+                              setSelectedCardId(null); // Reset card when changing source
+                            }}
                             className={cn(
                               "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all",
                               paymentSource === source.id 
@@ -608,6 +614,51 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                       </div>
                     </div>
                   )}
+
+                  {/* Card Selection - Show when custom payment source with cards is selected */}
+                  {(() => {
+                    const selectedSource = customPaymentSources.find(s => s.id === paymentSource);
+                    if (!selectedSource?.cards?.length) return null;
+                    
+                    return (
+                      <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                          Odaberi karticu
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCardId(null)}
+                            className={cn(
+                              "px-3 py-2 rounded-lg text-xs font-medium transition-all border",
+                              !selectedCardId 
+                                ? "border-primary bg-primary/10 text-primary" 
+                                : "border-border bg-muted/50 hover:bg-muted"
+                            )}
+                          >
+                            Bez kartice
+                          </button>
+                          {selectedSource.cards.map((card) => (
+                            <button
+                              key={card.id}
+                              type="button"
+                              onClick={() => setSelectedCardId(card.id)}
+                              className={cn(
+                                "px-3 py-2 rounded-lg text-xs font-medium transition-all border flex items-center gap-2",
+                                selectedCardId === card.id 
+                                  ? "border-primary bg-primary/10 text-primary" 
+                                  : "border-border bg-muted/50 hover:bg-muted"
+                              )}
+                            >
+                              <span>💳</span>
+                              <span>{card.card_name}</span>
+                              <span className="text-muted-foreground">•••• {card.last_four_digits}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

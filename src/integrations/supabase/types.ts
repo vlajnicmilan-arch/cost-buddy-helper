@@ -128,6 +128,7 @@ export type Database = {
           income_source_id: string | null
           merchant_name: string | null
           payment_source: string | null
+          payment_source_card_id: string | null
           receipt_url: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
@@ -146,6 +147,7 @@ export type Database = {
           income_source_id?: string | null
           merchant_name?: string | null
           payment_source?: string | null
+          payment_source_card_id?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
@@ -164,6 +166,7 @@ export type Database = {
           income_source_id?: string | null
           merchant_name?: string | null
           payment_source?: string | null
+          payment_source_card_id?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
@@ -171,7 +174,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_payment_source_card_id_fkey"
+            columns: ["payment_source_card_id"]
+            isOneToOne: false
+            referencedRelation: "payment_source_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       income_source_invitations: {
         Row: {
