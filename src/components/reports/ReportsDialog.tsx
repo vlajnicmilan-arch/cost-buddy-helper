@@ -40,6 +40,7 @@ import { generatePDFReport, generateCSVReport, generateJSONExport, ReportData } 
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 interface ReportsDialogProps {
   expenses: Expense[];
@@ -132,6 +133,7 @@ const calculateStats = (expenseList: Expense[]) => {
 };
 
 export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
+  const { t } = useTranslation();
   const { incomeSources } = useIncomeSources();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('report');
@@ -425,7 +427,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       <DialogTrigger asChild>
         <Button className="gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700">
           <FileText className="w-4 h-4" />
-          Izvješća
+          {t('bulk.reports')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
