@@ -27,7 +27,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, addDays } from 'date-fns';
+import { format, addHours } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -80,14 +80,14 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
         .eq('income_source_id', source.id)
         .eq('email', 'link-invite');
 
-      // Create new invitation in database
+      // Create new invitation in database (expires in 24 hours)
       const { data, error } = await supabase
         .from('income_source_invitations')
         .insert({
           income_source_id: source.id,
           invited_by: user.id,
           email: 'link-invite', // Placeholder for link invites
-          expires_at: addDays(new Date(), 7).toISOString()
+          expires_at: addHours(new Date(), 24).toISOString()
         })
         .select('token')
         .single();
@@ -283,7 +283,7 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
                           </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Link vrijedi 7 dana. Podijeli ga s osobom koju želiš pozvati.
+                          Link vrijedi 24 sata. Podijeli ga s osobom koju želiš pozvati.
                         </p>
                         <Button
                           variant="ghost"
