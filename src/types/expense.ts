@@ -157,6 +157,7 @@ export interface Expense {
   date: Date;
   type: TransactionType;
   payment_source?: PaymentSource;
+  payment_source_card_id?: string | null;
   receipt_url?: string | null;
   merchant_name?: string | null;
   ai_extracted?: boolean | null;

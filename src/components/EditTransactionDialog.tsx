@@ -26,6 +26,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category>('other');
   const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [type, setType] = useState<TransactionType>('expense');
   const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
@@ -34,6 +35,10 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const { incomeSources } = useIncomeSources();
   const { customPaymentSources } = useCustomPaymentSources();
 
+  // Get cards for currently selected custom payment source
+  const selectedSource = customPaymentSources.find(s => s.id === paymentSource);
+  const availableCards = selectedSource?.cards || [];
+
   // Initialize form when dialog opens or expense changes
   useEffect(() => {
     if (open && expense) {
@@ -41,6 +46,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
       setDescription(expense.description);
       setCategory(expense.category);
       setPaymentSource(expense.payment_source || 'cash');
+      setSelectedCardId(expense.payment_source_card_id || null);
       setDate(expense.date instanceof Date ? expense.date : new Date(expense.date));
       setType(expense.type);
       setIncomeSourceId(expense.income_source_id || null);
@@ -58,6 +64,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
         description,
         category,
         payment_source: paymentSource,
+        payment_source_card_id: selectedCardId,
         date,
         type,
         income_source_id: incomeSourceId,
@@ -195,7 +202,13 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
           {/* Payment Source */}
           <div className="space-y-2">
             <Label>Izvor plaćanja</Label>
-            <Select value={paymentSource} onValueChange={(v) => setPaymentSource(v as PaymentSource)}>
+            <Select 
+              value={paymentSource} 
+              onValueChange={(v) => {
+                setPaymentSource(v as PaymentSource);
+                setSelectedCardId(null); // Reset card when changing source
+              }}
+            >
               <SelectTrigger>
                 <SelectValue>
                   {paymentSource && (() => {
@@ -265,6 +278,33 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
               </SelectContent>
             </Select>
           </div>
+
+          {/* Card Selection - Show when custom payment source with cards is selected */}
+          {availableCards.length > 0 && (
+            <div className="space-y-2">
+              <Label>Kartica</Label>
+              <Select 
+                value={selectedCardId || 'none'} 
+                onValueChange={(v) => setSelectedCardId(v === 'none' ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberi karticu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Bez kartice</SelectItem>
+                  {availableCards.map((card) => (
+                    <SelectItem key={card.id} value={card.id}>
+                      <span className="flex items-center gap-2">
+                        <span>💳</span>
+                        <span>{card.card_name}</span>
+                        <span className="text-muted-foreground">•••• {card.last_four_digits}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Date */}
           <div className="space-y-2">

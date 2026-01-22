@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
@@ -32,6 +33,13 @@ export const TransactionListDialog = ({
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+
+  const { customPaymentSources } = useCustomPaymentSources();
+
+  // Get all cards from all custom payment sources
+  const allCards = useMemo(() => {
+    return customPaymentSources.flatMap(source => source.cards || []);
+  }, [customPaymentSources]);
 
   const typeFilteredExpenses = useMemo(() => {
     return expenses.filter(e => e.type === type);
@@ -99,6 +107,8 @@ export const TransactionListDialog = ({
           <TransactionFilters
             filters={filters}
             onFiltersChange={setFilters}
+            showCardFilter={allCards.length > 0}
+            cards={allCards}
             className="shrink-0"
           />
 

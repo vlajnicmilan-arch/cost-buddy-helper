@@ -74,7 +74,8 @@ export const useExpenses = () => {
           category: e.category as Category,
           type: e.type as TransactionType,
           payment_source: (e.payment_source || 'cash') as PaymentSource,
-          income_source_id: e.income_source_id
+          income_source_id: e.income_source_id,
+          payment_source_card_id: e.payment_source_card_id
         })) || []);
       }
     } catch (error) {
@@ -137,6 +138,7 @@ export const useExpenses = () => {
             type: expense.type,
             date: expense.date.toISOString(),
             payment_source: expense.payment_source || 'cash',
+            payment_source_card_id: expense.payment_source_card_id || null,
             receipt_url: expense.receipt_url,
             merchant_name: expense.merchant_name,
             ai_extracted: expense.ai_extracted,
@@ -182,7 +184,8 @@ export const useExpenses = () => {
           category: data.category as Category,
           type: data.type as TransactionType,
           payment_source: (data.payment_source || 'cash') as PaymentSource,
-          income_source_id: data.income_source_id
+          income_source_id: data.income_source_id,
+          payment_source_card_id: data.payment_source_card_id
         };
 
         setExpenses(prev => [newExpense, ...prev]);
@@ -220,6 +223,7 @@ export const useExpenses = () => {
             type: expense.type,
             date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
             payment_source: expense.payment_source || 'cash',
+            payment_source_card_id: expense.payment_source_card_id || null,
             merchant_name: expense.merchant_name,
             income_source_id: expense.income_source_id,
             updated_at: new Date().toISOString()
