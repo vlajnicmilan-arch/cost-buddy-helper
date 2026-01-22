@@ -37,6 +37,12 @@ export type PaymentSource =
   | 'visa_platinum'
   | 'visa_kekspay'
   | 'visa_erste'
+  | 'mastercard'
+  | 'mastercard_gold'
+  | 'mastercard_platinum'
+  | 'maestro'
+  | 'amex'
+  | 'diners'
   | 'other';
 
 export interface PaymentSourceInfo {
@@ -48,11 +54,21 @@ export interface PaymentSourceInfo {
 export const PAYMENT_SOURCES: PaymentSourceInfo[] = [
   { id: 'cash', name: 'Gotovina', icon: '💵' },
   { id: 'bank', name: 'Banka', icon: '🏦' },
+  // Visa kartice
   { id: 'visa', name: 'Visa', icon: '💳' },
   { id: 'visa_gold', name: 'Visa Gold', icon: '💳' },
   { id: 'visa_platinum', name: 'Visa Platinum', icon: '💳' },
   { id: 'visa_kekspay', name: 'Visa KeksPay', icon: '📱' },
   { id: 'visa_erste', name: 'Visa Erstebank', icon: '🏦' },
+  // Mastercard kartice
+  { id: 'mastercard', name: 'Mastercard', icon: '💳' },
+  { id: 'mastercard_gold', name: 'Mastercard Gold', icon: '💳' },
+  { id: 'mastercard_platinum', name: 'Mastercard Platinum', icon: '💳' },
+  { id: 'maestro', name: 'Maestro', icon: '💳' },
+  // Ostale kartice
+  { id: 'amex', name: 'American Express', icon: '💳' },
+  { id: 'diners', name: 'Diners Club', icon: '💳' },
+  // Digitalni novčanici
   { id: 'revolut', name: 'Revolut', icon: '💳' },
   { id: 'aircash', name: 'Aircash', icon: '📱' },
   { id: 'crypto', name: 'Kripto', icon: '₿' },

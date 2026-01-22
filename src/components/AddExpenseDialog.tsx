@@ -113,12 +113,18 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       if (detectedPaymentSource && detectedPaymentSource !== 'cash' && incomeSources.length > 0) {
         // Keywords to match for different payment sources
         const paymentSourceKeywords: Record<PaymentSource, string[]> = {
-          bank: ['banka', 'kartica', 'card', 'bank', 'račun', 'mastercard', 'maestro', 'pbz', 'zaba', 'otp', 'rba', 'addiko'],
+          bank: ['banka', 'bank', 'račun', 'pbz', 'zaba', 'otp', 'rba', 'addiko'],
           visa: ['visa'],
-          visa_gold: ['visa gold', 'gold'],
-          visa_platinum: ['visa platinum', 'platinum'],
+          visa_gold: ['visa gold'],
+          visa_platinum: ['visa platinum'],
           visa_kekspay: ['kekspay', 'keks pay'],
           visa_erste: ['erste', 'erstebank'],
+          mastercard: ['mastercard', 'master card'],
+          mastercard_gold: ['mastercard gold'],
+          mastercard_platinum: ['mastercard platinum'],
+          maestro: ['maestro'],
+          amex: ['amex', 'american express'],
+          diners: ['diners', 'diners club'],
           revolut: ['revolut'],
           aircash: ['aircash', 'air cash'],
           crypto: ['crypto', 'kripto', 'bitcoin', 'btc', 'eth'],
