@@ -106,8 +106,8 @@ export const IncomeSourceCard = ({
                   Član
                 </Badge>
               )}
-              {/* Members button - show for owners, or when there are multiple members */}
-              {(isOwner || memberCount > 1) && (
+              {/* Members button - always show for owners to manage members */}
+              {isOwner && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -118,7 +118,7 @@ export const IncomeSourceCard = ({
                   }}
                 >
                   <Users className="w-3 h-3" />
-                  {memberCount > 0 ? memberCount : ''}
+                  {memberCount}
                 </Button>
               )}
               {/* Pending count - only for owners */}
