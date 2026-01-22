@@ -27,19 +27,22 @@ export const IncomeSourceCard = ({
     }).format(value);
   };
 
+  const sourceColor = source.color || '#22c55e';
+  const sourceIcon = source.icon || '💰';
+
   return (
     <div 
       className="relative group p-4 rounded-xl border bg-card hover:shadow-md transition-all cursor-pointer"
-      style={{ borderLeftColor: source.color, borderLeftWidth: 4 }}
+      style={{ borderLeftColor: sourceColor, borderLeftWidth: 4 }}
       onClick={() => onClick(source)}
     >
       <div className="flex items-start gap-3">
         {/* Icon */}
         <div 
           className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-          style={{ backgroundColor: `${source.color}20` }}
+          style={{ backgroundColor: `${sourceColor}20` }}
         >
-          {source.icon}
+          {sourceIcon}
         </div>
 
         {/* Content */}

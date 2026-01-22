@@ -45,6 +45,9 @@ export const IncomeSourceTransactionsDialog = ({
 
   if (!source) return null;
 
+  const sourceColor = source.color || '#22c55e';
+  const sourceIcon = source.icon || '💰';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
@@ -52,9 +55,9 @@ export const IncomeSourceTransactionsDialog = ({
           <DialogTitle className="flex items-center gap-3">
             <div 
               className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-              style={{ backgroundColor: `${source.color}20` }}
+              style={{ backgroundColor: `${sourceColor}20` }}
             >
-              {source.icon}
+              {sourceIcon}
             </div>
             <div>
               <span>{source.name}</span>
@@ -68,7 +71,7 @@ export const IncomeSourceTransactionsDialog = ({
         {/* Summary */}
         <div 
           className="p-4 rounded-xl mb-4"
-          style={{ backgroundColor: `${source.color}15` }}
+          style={{ backgroundColor: `${sourceColor}15` }}
         >
           <p className="text-sm text-muted-foreground mb-1">
             Ukupno ({filteredExpenses.length} transakcija)
