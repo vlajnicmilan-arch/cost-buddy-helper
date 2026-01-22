@@ -9,7 +9,6 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Tags, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 interface BulkCategoryDialogProps {
@@ -176,76 +175,76 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
           Grupno kategorije
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Tags className="w-5 h-5" />
-            Grupno ažuriranje kategorija
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6 pb-2 space-y-4">
+          <DialogHeader className="shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Tags className="w-5 h-5" />
+              Grupno ažuriranje kategorija
+            </DialogTitle>
+          </DialogHeader>
 
-        {/* Stats */}
-        <div className="flex flex-wrap gap-2 shrink-0">
-          {Array.from(categoryStats.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 6)
-            .map(([category, count]) => {
-              const info = getCategoryInfoExtended(category);
-              return (
-                <Button
-                  key={category}
-                  variant={filterCategory === category ? 'default' : 'outline'}
-                  size="sm"
-                  className="gap-1 h-7 text-xs"
-                  onClick={() => setFilterCategory(filterCategory === category ? 'all' : category as Category)}
-                >
-                  <span>{info.icon}</span>
-                  <span>{info.name}</span>
-                  <span className="opacity-60">({count})</span>
-                </Button>
-              );
-            })}
-          {filterCategory !== 'all' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setFilterCategory('all')}
-            >
-              Očisti filter
-            </Button>
-          )}
-        </div>
-
-        {/* Search & Select All */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Pretraži transakcije..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9"
-            />
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 shrink-0"
-            onClick={selectAll}
-          >
-            {selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0 ? (
-              <CheckSquare className="w-4 h-4" />
-            ) : (
-              <Square className="w-4 h-4" />
+          {/* Stats */}
+          <div className="flex flex-wrap gap-2 shrink-0">
+            {Array.from(categoryStats.entries())
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 6)
+              .map(([category, count]) => {
+                const info = getCategoryInfoExtended(category);
+                return (
+                  <Button
+                    key={category}
+                    variant={filterCategory === category ? 'default' : 'outline'}
+                    size="sm"
+                    className="gap-1 h-7 text-xs"
+                    onClick={() => setFilterCategory(filterCategory === category ? 'all' : category as Category)}
+                  >
+                    <span>{info.icon}</span>
+                    <span>{info.name}</span>
+                    <span className="opacity-60">({count})</span>
+                  </Button>
+                );
+              })}
+            {filterCategory !== 'all' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setFilterCategory('all')}
+              >
+                Očisti filter
+              </Button>
             )}
-            {selectedIds.size > 0 ? `${selectedIds.size} odabrano` : 'Odaberi sve'}
-          </Button>
-        </div>
+          </div>
 
-        {/* Transaction List */}
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-1 py-2">
+          {/* Search & Select All */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Pretraži transakcije..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 shrink-0"
+              onClick={selectAll}
+            >
+              {selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0 ? (
+                <CheckSquare className="w-4 h-4" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+              {selectedIds.size > 0 ? `${selectedIds.size} odabrano` : 'Odaberi sve'}
+            </Button>
+          </div>
+
+          {/* Transaction List */}
+          <div className="space-y-1 min-h-[150px] max-h-[35vh] overflow-y-auto border rounded-lg p-2 bg-muted/20">
             {filteredExpenses.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 Nema transakcija za prikaz
@@ -290,16 +289,16 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
               })
             )}
           </div>
-        </ScrollArea>
+        </div>
 
-        {/* Action Bar */}
-        <div className="flex items-center gap-3 pt-4 border-t shrink-0">
+        {/* Action Bar - Fixed at bottom */}
+        <div className="flex items-center gap-3 p-4 border-t shrink-0 bg-background">
           <div className="flex-1">
             <Select value={newCategory} onValueChange={(v) => setNewCategory(v as Category)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Odaberi novu kategoriju..." />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
+              <SelectContent className="max-h-[300px] z-[100]">
                 {/* System categories grouped */}
                 {CATEGORY_GROUPS.map((group) => (
                   <div key={group.label}>
