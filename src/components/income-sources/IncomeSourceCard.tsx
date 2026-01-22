@@ -95,31 +95,27 @@ export const IncomeSourceCard = ({
               </span>
             )}
 
-            {/* Members & Pending Indicators */}
-            {(memberCount > 0 || pendingCount > 0) && (
-              <div className="flex items-center gap-2 mt-2">
-                {memberCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 gap-1 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMembersClick?.(source);
-                    }}
-                  >
-                    <Users className="w-3 h-3" />
-                    {memberCount}
-                  </Button>
-                )}
-                {pendingCount > 0 && (
-                  <Badge variant="secondary" className="gap-1 h-6">
-                    <Clock className="w-3 h-3" />
-                    {pendingCount} na čekanju
-                  </Badge>
-                )}
-              </div>
-            )}
+            {/* Members & Pending Indicators - Always show members button */}
+            <div className="flex items-center gap-2 mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 gap-1 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMembersClick?.(source);
+                }}
+              >
+                <Users className="w-3 h-3" />
+                {memberCount > 0 ? memberCount : 'Članovi'}
+              </Button>
+              {pendingCount > 0 && (
+                <Badge variant="secondary" className="gap-1 h-6">
+                  <Clock className="w-3 h-3" />
+                  {pendingCount} na čekanju
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 
