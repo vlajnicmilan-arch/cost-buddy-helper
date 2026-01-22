@@ -117,6 +117,31 @@ export const saveLocalExpense = async (
   });
 };
 
+export const updateLocalExpense = async (expense: Expense): Promise<Expense> => {
+  const database = await getDB();
+  
+  const updatedExpense: Expense = {
+    ...expense,
+    updated_at: new Date().toISOString()
+  };
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction('expenses', 'readwrite');
+    const store = transaction.objectStore('expenses');
+    
+    // Store with ISO date string for IndexedDB
+    const toStore = {
+      ...updatedExpense,
+      date: updatedExpense.date instanceof Date ? updatedExpense.date.toISOString() : updatedExpense.date
+    };
+    
+    const request = store.put(toStore);
+
+    request.onsuccess = () => resolve(updatedExpense);
+    request.onerror = () => reject(request.error);
+  });
+};
+
 export const deleteLocalExpense = async (id: string): Promise<void> => {
   const database = await getDB();
   

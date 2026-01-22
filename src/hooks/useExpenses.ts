@@ -8,6 +8,7 @@ import { ParsedTransaction } from '@/lib/csvParsers';
 import {
   getLocalExpenses,
   saveLocalExpense,
+  updateLocalExpense,
   deleteLocalExpense,
   saveLocalReceiptItems,
   initLocalDB
@@ -134,6 +135,43 @@ export const useExpenses = () => {
     }
   };
 
+  const updateExpense = async (expense: Expense) => {
+    try {
+      if (isLocalMode) {
+        const updated = await updateLocalExpense(expense);
+        setExpenses(prev => prev.map(e => e.id === expense.id ? updated : e));
+        toast.success('Ažurirano');
+      } else {
+        if (!user) {
+          toast.error('Moraš biti prijavljen');
+          return;
+        }
+
+        const { error } = await supabase
+          .from('expenses')
+          .update({
+            amount: expense.amount,
+            description: expense.description,
+            category: expense.category,
+            type: expense.type,
+            date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
+            payment_source: expense.payment_source || 'cash',
+            merchant_name: expense.merchant_name,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', expense.id);
+
+        if (error) throw error;
+
+        setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
+        toast.success('Ažurirano');
+      }
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      toast.error('Greška pri ažuriranju');
+    }
+  };
+
   const deleteExpense = async (id: string) => {
     try {
       if (isLocalMode) {
@@ -240,6 +278,7 @@ export const useExpenses = () => {
     expenses,
     loading,
     addExpense,
+    updateExpense,
     deleteExpense,
     importFromCSV,
     totalExpenses,
