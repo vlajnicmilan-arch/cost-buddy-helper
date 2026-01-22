@@ -61,7 +61,7 @@ export const useReceiptScanner = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
-        toast.error('Moraš biti prijavljen');
+        toast.error('AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.');
         return null;
       }
 
