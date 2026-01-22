@@ -23,7 +23,17 @@
     "amount": "Betrag",
     "description": "Beschreibung",
     "category": "Kategorie",
-    "language": "Sprache"
+    "language": "Sprache",
+    "local": "Lokal",
+    "cloud": "Cloud",
+    "localMode": "Lokaler Modus",
+    "localData": "Daten sind auf diesem Gerät gespeichert",
+    "cloudData": "Daten sind in der Cloud",
+    "dataStaysLocal": "Daten bleiben nur auf diesem Gerät",
+    "switchToCloud": "Zur Cloud wechseln",
+    "manageFinances": "Verwalten Sie Ihre Finanzen",
+    "changeStorageMode": "Speichermodus ändern",
+    "clickForDetails": "Klicken für Details"
   },
   "nav": {
     "home": "Startseite",
@@ -70,14 +80,19 @@
     "newTransaction": "Neue Transaktion",
     "addExpense": "Ausgabe hinzufügen",
     "addIncome": "Einnahme hinzufügen",
-    "noTransactions": "Keine Transaktionen",
+    "noTransactions": "Noch keine Transaktionen",
     "recentTransactions": "Letzte Transaktionen",
     "allTransactions": "Alle Transaktionen",
     "thisMonth": "Dieser Monat",
     "lastMonth": "Letzter Monat",
     "thisYear": "Dieses Jahr",
     "customPeriod": "Benutzerdefinierter Zeitraum",
-    "transferNote": "Überweisungen zwischen eigenen Konten beeinflussen den Saldo nicht"
+    "transferNote": "Überweisungen zwischen eigenen Konten beeinflussen den Saldo nicht",
+    "addFirstTransaction": "Fügen Sie Ihre erste Transaktion hinzu, indem Sie auf \"Hinzufügen\" klicken",
+    "transfers": "Überweisungen",
+    "noTransfers": "Keine Überweisungen zwischen eigenen Konten",
+    "transferCount": "{count} Überweisung(en) insgesamt",
+    "transfersThisMonth": "Dieser Monat: {count} Überweisung(en)"
   },
   "categories": {
     "food": "Essen",
@@ -167,7 +182,10 @@
     "available": "Neue Version verfügbar!",
     "updateNow": "Aktualisieren",
     "later": "Später",
-    "description": "Aktualisieren Sie die App für die neuesten Funktionen und Fehlerbehebungen."
+    "description": "Aktualisieren Sie die App für die neuesten Funktionen und Fehlerbehebungen.",
+    "checkForUpdates": "Nach Updates suchen",
+    "upToDate": "App ist aktuell!",
+    "checkFailed": "Überprüfung fehlgeschlagen"
   },
   "errors": {
     "fetchError": "Fehler beim Abrufen der Daten",
