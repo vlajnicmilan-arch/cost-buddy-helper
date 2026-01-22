@@ -3,23 +3,32 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Search, X, CalendarIcon, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, X, CalendarIcon, Filter, Users } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
+
+export interface MemberOption {
+  userId: string;
+  displayName: string;
+}
 
 export interface FilterState {
   searchTerm: string;
   dateRange: DateRange | undefined;
   minAmount: number | undefined;
   maxAmount: number | undefined;
+  memberId: string | undefined;
 }
 
 interface TransactionFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
   showAmountFilter?: boolean;
+  showMemberFilter?: boolean;
+  members?: MemberOption[];
   className?: string;
 }
 
@@ -51,6 +60,8 @@ export const TransactionFilters = ({
   filters,
   onFiltersChange,
   showAmountFilter = true,
+  showMemberFilter = false,
+  members = [],
   className,
 }: TransactionFiltersProps) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -59,7 +70,8 @@ export const TransactionFilters = ({
     filters.searchTerm ||
     filters.dateRange?.from ||
     filters.minAmount !== undefined ||
-    filters.maxAmount !== undefined;
+    filters.maxAmount !== undefined ||
+    filters.memberId !== undefined;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -67,6 +79,7 @@ export const TransactionFilters = ({
       dateRange: undefined,
       minAmount: undefined,
       maxAmount: undefined,
+      memberId: undefined,
     });
   };
 
@@ -214,6 +227,27 @@ export const TransactionFilters = ({
               />
             </div>
           )}
+
+          {/* Member Filter */}
+          {showMemberFilter && members.length > 0 && (
+            <Select
+              value={filters.memberId || 'all'}
+              onValueChange={(value) => updateFilter('memberId', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <Users className="w-3.5 h-3.5 mr-1.5" />
+                <SelectValue placeholder="Svi članovi" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Svi članovi</SelectItem>
+                {members.map((member) => (
+                  <SelectItem key={member.userId} value={member.userId}>
+                    {member.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
     </div>
@@ -221,7 +255,7 @@ export const TransactionFilters = ({
 };
 
 // Helper function to apply filters to expenses
-export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null }>(
+export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null }>(
   items: T[],
   filters: FilterState
 ): T[] => {
@@ -261,6 +295,12 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       return false;
     }
 
+    // Member filter
+    if (filters.memberId !== undefined) {
+      const transactionMemberId = item.submitted_by || item.user_id;
+      if (transactionMemberId !== filters.memberId) return false;
+    }
+
     return true;
   });
 };
@@ -271,4 +311,5 @@ export const defaultFilters: FilterState = {
   dateRange: undefined,
   minAmount: undefined,
   maxAmount: undefined,
+  memberId: undefined,
 };

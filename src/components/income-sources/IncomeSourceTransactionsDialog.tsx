@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
-import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
+import { TransactionFilters, FilterState, defaultFilters, applyFilters, MemberOption } from '@/components/TransactionFilters';
 import { useIncomeSourceMembers } from '@/hooks/useIncomeSourceMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -108,6 +108,14 @@ export const IncomeSourceTransactionsDialog = ({
     onOpenChange(open);
   };
 
+  // Build member options from profiles
+  const memberOptions: MemberOption[] = useMemo(() => {
+    return Object.entries(memberProfiles).map(([userId, displayName]) => ({
+      userId,
+      displayName,
+    }));
+  }, [memberProfiles]);
+
   if (!source) return null;
 
   const sourceColor = source.color || '#22c55e';
@@ -137,6 +145,8 @@ export const IncomeSourceTransactionsDialog = ({
         <TransactionFilters
           filters={filters}
           onFiltersChange={setFilters}
+          showMemberFilter={memberOptions.length > 1}
+          members={memberOptions}
           className="shrink-0"
         />
 
