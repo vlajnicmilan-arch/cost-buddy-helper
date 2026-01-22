@@ -73,7 +73,14 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
     
     setGeneratingLink(true);
     try {
-      // Create invitation in database
+      // Delete any existing link invitations for this source first
+      await supabase
+        .from('income_source_invitations')
+        .delete()
+        .eq('income_source_id', source.id)
+        .eq('email', 'link-invite');
+
+      // Create new invitation in database
       const { data, error } = await supabase
         .from('income_source_invitations')
         .insert({
