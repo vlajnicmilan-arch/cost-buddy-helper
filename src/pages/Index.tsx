@@ -285,6 +285,7 @@ const Index = () => {
               expenses={expenses}
               onUpdateExpense={updateExpense}
               onDeleteExpense={deleteExpense}
+              onRefreshExpenses={refetch}
             />
             <CategoryBreakdown 
               expensesByCategory={expensesByCategory} 
