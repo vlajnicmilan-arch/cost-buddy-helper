@@ -174,7 +174,7 @@ export const TransferListDialog = ({
         </div>
 
         {/* Transfer List */}
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
           {filteredTransfers.length === 0 ? (
             <div className="py-12 text-center">
               <ArrowLeftRight className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
