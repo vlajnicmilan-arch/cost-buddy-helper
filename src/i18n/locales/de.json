@@ -139,7 +139,7 @@
   },
   "incomeSources": {
     "title": "Projekte",
-    "addSource": "Projekt hinzufügen",
+    "addSource": "Hinzufügen",
     "noSources": "Keine Projekte",
     "unassigned": "Nicht zugeordnet",
     "assignSource": "Quelle zuordnen",

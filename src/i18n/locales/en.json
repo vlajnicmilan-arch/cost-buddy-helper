@@ -139,7 +139,7 @@
   },
   "incomeSources": {
     "title": "Projects",
-    "addSource": "Add Project",
+    "addSource": "Add",
     "noSources": "No projects",
     "unassigned": "Unassigned",
     "assignSource": "Assign Source",

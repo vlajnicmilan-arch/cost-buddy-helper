@@ -139,7 +139,7 @@
   },
   "incomeSources": {
     "title": "Projekti",
-    "addSource": "Dodaj projekt",
+    "addSource": "Dodaj",
     "noSources": "Nema projekata",
     "unassigned": "Bez izvora",
     "assignSource": "Dodijeli izvor",
