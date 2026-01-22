@@ -62,48 +62,58 @@
   }
 
   .dark {
-    --background: 175 25% 8%;
-    --foreground: 165 25% 95%;
+    /* #0A1A2F - anthracite blue background */
+    --background: 214 65% 11%;
+    --foreground: 0 0% 100%;
 
-    --card: 175 20% 12%;
-    --card-foreground: 165 25% 95%;
+    /* #111F34 - primary cards */
+    --card: 216 51% 14%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 175 20% 12%;
-    --popover-foreground: 165 25% 95%;
+    /* #111F34 - popover same as card */
+    --popover: 216 51% 14%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 172 66% 45%;
+    /* #21D4AE - teal accent */
+    --primary: 167 73% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 175 20% 16%;
-    --secondary-foreground: 165 25% 95%;
+    /* #15263E - secondary cards */
+    --secondary: 215 49% 16%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 175 18% 18%;
-    --muted-foreground: 170 15% 60%;
+    /* #1C324E - muted/hover */
+    --muted: 214 47% 21%;
+    --muted-foreground: 210 20% 70%;
 
-    --accent: 160 75% 42%;
+    /* #21D4AE - accent same as primary */
+    --accent: 167 73% 48%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 35%;
-    --destructive-foreground: 165 25% 95%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
 
     --expense: 0 72% 55%;
     --expense-foreground: 0 0% 100%;
 
-    --income: 160 75% 45%;
+    /* #21D4AE for income amounts */
+    --income: 167 73% 48%;
     --income-foreground: 0 0% 100%;
 
-    --border: 175 18% 20%;
-    --input: 175 18% 20%;
-    --ring: 172 66% 50%;
+    /* #1C324E - border/input */
+    --border: 214 47% 21%;
+    --input: 214 47% 21%;
+    --ring: 167 73% 48%;
 
-    --sidebar-background: 175 22% 10%;
-    --sidebar-foreground: 165 20% 90%;
-    --sidebar-primary: 172 66% 45%;
+    /* Sidebar using same palette */
+    --sidebar-background: 214 65% 11%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 167 73% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 175 18% 15%;
-    --sidebar-accent-foreground: 165 20% 90%;
-    --sidebar-border: 175 18% 18%;
-    --sidebar-ring: 172 66% 50%;
+    --sidebar-accent: 215 49% 16%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 214 47% 21%;
+    --sidebar-ring: 167 73% 48%;
   }
 }
 
