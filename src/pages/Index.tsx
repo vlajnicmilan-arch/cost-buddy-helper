@@ -20,6 +20,7 @@ const Index = () => {
     loading: expensesLoading,
     addExpense, 
     deleteExpense, 
+    importFromCSV,
     totalExpenses, 
     totalIncome, 
     balance,
@@ -130,7 +131,7 @@ const Index = () => {
               expensesByCategory={expensesByCategory} 
               total={totalExpenses} 
             />
-            <BankConnection />
+            <BankConnection onImportCSV={importFromCSV} />
           </div>
         </div>
       </div>
