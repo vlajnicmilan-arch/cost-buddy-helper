@@ -11,10 +11,14 @@ export interface ParsedPDFTransaction {
   category: Category;
   merchant_name: string | null;
   payment_source?: PaymentSource;
+  card_last4?: string | null;
 }
 
 interface PDFParseResult {
   transactions: ParsedPDFTransaction[];
+  detected_bank: string | null;
+  account_iban: string | null;
+  cards_detected: string[];
   summary: {
     total_income: number;
     total_expenses: number;
@@ -22,22 +26,24 @@ interface PDFParseResult {
   } | null;
 }
 
-// Detect payment source from description or bank type
-function detectPaymentSource(description: string, bankType?: string): PaymentSource {
+// Detect payment source from description or detected bank
+function detectPaymentSource(description: string, detectedBank?: string | null): PaymentSource {
   const desc = description.toLowerCase();
+  const bank = (detectedBank || '').toLowerCase();
   
+  // Check detected bank first
+  if (bank.includes('revolut')) return 'revolut';
+  if (bank.includes('aircash')) return 'aircash';
+  
+  // Check description for payment hints
   if (desc.includes('revolut')) return 'revolut';
   if (desc.includes('aircash')) return 'aircash';
   if (desc.includes('crypto') || desc.includes('bitcoin') || desc.includes('ethereum')) return 'crypto';
   
-  // If bank type is specified, use it
-  if (bankType) {
-    const bank = bankType.toLowerCase();
-    if (bank.includes('revolut')) return 'revolut';
-    if (bank.includes('aircash')) return 'aircash';
-    if (bank.includes('pbz') || bank.includes('erste') || bank.includes('zaba') || 
-        bank.includes('bank') || bank.includes('banka')) return 'bank';
-  }
+  // Croatian banks
+  if (bank.includes('pbz') || bank.includes('erste') || bank.includes('zaba') || 
+      bank.includes('otp') || bank.includes('rba') || bank.includes('addiko') ||
+      bank.includes('bank') || bank.includes('banka')) return 'bank';
   
   return 'bank'; // Default to bank for PDF statements
 }
@@ -91,13 +97,21 @@ export const usePDFParser = () => {
           date: new Date(tx.date),
           category: tx.category as Category,
           type: tx.type as 'expense' | 'income',
-          payment_source: detectPaymentSource(tx.description, bankType)
+          payment_source: detectPaymentSource(tx.description, data.detected_bank),
+          card_last4: tx.card_last4 || null
         })),
+        detected_bank: data.detected_bank || null,
+        account_iban: data.account_iban || null,
+        cards_detected: data.cards_detected || [],
         summary: data.summary
       };
 
       setParsedData(result);
-      toast.success(`Pronađeno ${result.transactions.length} transakcija`);
+      
+      // Show detection info in toast
+      const bankInfo = result.detected_bank ? ` (${result.detected_bank})` : '';
+      const cardInfo = result.cards_detected.length > 0 ? `, ${result.cards_detected.length} kartica` : '';
+      toast.success(`Pronađeno ${result.transactions.length} transakcija${bankInfo}${cardInfo}`);
       return result;
     } catch (error) {
       console.error('Error parsing PDF:', error);

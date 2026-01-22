@@ -144,6 +144,27 @@ export const BankConnection = ({ onImportCSV }: BankConnectionProps) => {
           
           {parsedData && (
             <div className="flex-1 overflow-y-auto space-y-4">
+              {/* Detected bank and account info */}
+              {(parsedData.detected_bank || parsedData.account_iban || parsedData.cards_detected.length > 0) && (
+                <div className="p-3 bg-primary/10 rounded-xl text-sm space-y-1">
+                  {parsedData.detected_bank && (
+                    <p className="font-medium">
+                      🏦 Banka: <span className="text-primary">{parsedData.detected_bank}</span>
+                    </p>
+                  )}
+                  {parsedData.account_iban && (
+                    <p className="text-muted-foreground text-xs font-mono">
+                      Račun: {parsedData.account_iban}
+                    </p>
+                  )}
+                  {parsedData.cards_detected.length > 0 && (
+                    <p className="text-muted-foreground text-xs">
+                      💳 Kartice: {parsedData.cards_detected.map(c => `*${c}`).join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {parsedData.summary && (
                 <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
                   <div className="text-center">
@@ -171,6 +192,7 @@ export const BankConnection = ({ onImportCSV }: BankConnectionProps) => {
                       <p className="font-medium truncate">{tx.description}</p>
                       <p className="text-xs text-muted-foreground">
                         {tx.date.toLocaleDateString('hr-HR')} • {tx.merchant_name || tx.category}
+                        {tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}
                       </p>
                     </div>
                     <p className={`font-mono font-bold ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>

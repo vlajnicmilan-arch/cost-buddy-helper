@@ -67,13 +67,18 @@ serve(async (req) => {
           {
             role: 'system',
             content: `Ti si asistent za analizu bankovnih izvoda. Analiziraj tekst izvoda i izvuci SVE transakcije.
-Banka/izvor: ${bankType || 'nepoznato'}
 
-PRAVILA:
+PRAVILA ZA DETEKCIJU:
+1. BANKA - prepoznaj naziv banke iz zaglavlja/logotipa (PBZ, Erste, Zaba, Revolut, Aircash, OTP, RBA, Addiko, itd.)
+2. IBAN/RAČUN - pronađi glavni IBAN ili broj računa vlasnika izvoda
+3. KARTICE - ako transakcija pokazuje drugačiju karticu (zadnje 4 znamenke), izdvoji to
+
+PRAVILA ZA TRANSAKCIJE:
 - Iznos je UVIJEK pozitivan broj
 - Tip je "income" za uplate/priljeve, "expense" za isplate/odljeve
 - Kategorije: food, transport, shopping, entertainment, bills, health, other
 - Datum u formatu YYYY-MM-DD
+- card_last4: zadnje 4 znamenke kartice ako je vidljivo (npr. "*1234" ili "VISA ****5678")
 - Ako ne možeš naći transakcije, vrati prazan niz`
           },
           {
@@ -81,7 +86,10 @@ PRAVILA:
             content: [
               {
                 type: 'text',
-                text: `Analiziraj ovaj bankovni izvod i izvuci sve transakcije. Ako je dokument nečitljiv ili nije bankovni izvod, vrati prazan niz transakcija.`
+                text: `Analiziraj ovaj bankovni izvod. Izvuci:
+1. Naziv banke iz dokumenta
+2. Glavni IBAN ili broj računa
+3. Sve transakcije s detaljima o kartici ako postoje`
               },
               {
                 type: 'image_url',
@@ -97,10 +105,20 @@ PRAVILA:
             type: 'function',
             function: {
               name: 'extract_transactions',
-              description: 'Extract transactions from a bank statement',
+              description: 'Extract bank info and transactions from a bank statement',
               parameters: {
                 type: 'object',
                 properties: {
+                  detected_bank: {
+                    type: 'string',
+                    description: 'Detected bank name (e.g., PBZ, Erste, Zaba, Revolut, Aircash, OTP, RBA)',
+                    nullable: true
+                  },
+                  account_iban: {
+                    type: 'string',
+                    description: 'Main account IBAN or account number from the statement',
+                    nullable: true
+                  },
                   transactions: {
                     type: 'array',
                     description: 'List of extracted transactions',
@@ -132,6 +150,11 @@ PRAVILA:
                         merchant_name: { 
                           type: 'string', 
                           description: 'Merchant or recipient name if available',
+                          nullable: true
+                        },
+                        card_last4: {
+                          type: 'string',
+                          description: 'Last 4 digits of card used (e.g., "1234"), if different cards are used',
                           nullable: true
                         }
                       },
@@ -178,7 +201,13 @@ PRAVILA:
     console.log('AI response structure:', JSON.stringify(aiData, null, 2));
 
     // Extract from tool call response
-    let statementData = { transactions: [], total_income: 0, total_expenses: 0 };
+    let statementData: { 
+      transactions: any[]; 
+      total_income: number; 
+      total_expenses: number;
+      detected_bank?: string | null;
+      account_iban?: string | null;
+    } = { transactions: [], total_income: 0, total_expenses: 0, detected_bank: null, account_iban: null };
     
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
@@ -204,14 +233,28 @@ PRAVILA:
     }
 
     const transactions = statementData.transactions || [];
+    const detectedBank = statementData.detected_bank || null;
+    const accountIban = statementData.account_iban || null;
     const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
-    console.log(`Extracted ${transactions.length} transactions`);
+    // Group transactions by card if multiple cards detected
+    const cardGroups = new Map<string, number>();
+    transactions.forEach((t: any) => {
+      if (t.card_last4) {
+        cardGroups.set(t.card_last4, (cardGroups.get(t.card_last4) || 0) + 1);
+      }
+    });
+
+    console.log(`Extracted ${transactions.length} transactions from ${detectedBank || 'unknown bank'}, account: ${accountIban || 'unknown'}`);
+    console.log(`Cards detected: ${cardGroups.size > 0 ? Array.from(cardGroups.entries()).map(([card, count]) => `*${card} (${count})`).join(', ') : 'none'}`);
 
     return new Response(
       JSON.stringify({
         transactions,
+        detected_bank: detectedBank,
+        account_iban: accountIban,
+        cards_detected: Array.from(cardGroups.keys()),
         summary: {
           total_income: totalIncome,
           total_expenses: totalExpenses,
