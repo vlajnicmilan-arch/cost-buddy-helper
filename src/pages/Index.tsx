@@ -15,6 +15,7 @@ import { TransferListDialog } from '@/components/TransferListDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
+import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet } from 'lucide-react';
 import logo from '@/assets/logo.png';
@@ -162,6 +163,7 @@ const Index = () => {
           
           {/* Action buttons row */}
           <div className="flex items-center gap-2">
+            <HelpDialog />
             <ReportsDialog expenses={expenses} />
             <AddExpenseDialog onAdd={addExpense} />
             {/* Desktop-only buttons */}
