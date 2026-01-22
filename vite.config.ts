@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["favicon.png", "logo-192.png", "logo-512.png"],
       manifest: {
         name: "V&M Balance - Upravljanje financijama",
