@@ -132,6 +132,7 @@ const Index = () => {
             </div>
             {/* Mobile-only quick actions */}
             <div className="flex items-center gap-1 sm:hidden">
+              <HelpDialog />
               <Button 
                 variant="outline" 
                 size="icon" 
