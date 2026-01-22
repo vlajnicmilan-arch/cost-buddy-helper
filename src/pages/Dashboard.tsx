@@ -240,21 +240,21 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <header className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <header className="flex items-center justify-between mb-4 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => navigate('/')}
-              className="rounded-xl"
+              className="rounded-xl h-9 w-9 sm:h-10 sm:w-10"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
-              <p className="text-muted-foreground">Pregled svih financijskih metrika</p>
+              <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
+              <p className="text-xs sm:text-base text-muted-foreground hidden sm:block">Pregled svih financijskih metrika</p>
             </div>
           </div>
         </header>
@@ -266,95 +266,95 @@ const Dashboard = () => {
         ) : (
           <>
             {/* Summary Cards Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-8">
               <SummaryCard
                 title="Stanje"
                 amount={balance}
                 variant="balance"
-                icon={<Wallet className="w-5 h-5" />}
+                icon={<Wallet className="w-4 h-4 sm:w-5 sm:h-5" />}
               />
               <SummaryCard
                 title="Prihodi"
                 amount={totalIncome}
                 variant="income"
-                icon={<TrendingUp className="w-5 h-5" />}
+                icon={<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />}
               />
               <SummaryCard
                 title="Troškovi"
                 amount={totalExpenses}
                 variant="expense"
-                icon={<TrendingDown className="w-5 h-5" />}
+                icon={<TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />}
               />
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card rounded-2xl p-6"
+                className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-6"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-muted-foreground">Prijenosi</span>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
-                    <ArrowLeftRight className="w-5 h-5" />
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">Prijenosi</span>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center bg-primary/10 text-primary">
+                    <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
-                <p className="text-2xl font-mono font-bold text-muted-foreground">
+                <p className="text-lg sm:text-2xl font-mono font-bold text-muted-foreground">
                   {formatCurrency(totalTransfers)}
                 </p>
               </motion.div>
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="p-4 rounded-xl bg-muted/30 border border-border/50"
+                className="p-3 sm:p-4 rounded-xl bg-muted/30 border border-border/50"
               >
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Activity className="w-4 h-4" />
-                  <span className="text-xs">Transakcije</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1 sm:mb-2">
+                  <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[10px] sm:text-xs">Transakcije</span>
                 </div>
-                <p className="text-2xl font-bold">{stats.transactionCount}</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.transactionCount}</p>
               </motion.div>
               
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="p-4 rounded-xl bg-muted/30 border border-border/50"
+                className="p-3 sm:p-4 rounded-xl bg-muted/30 border border-border/50"
               >
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Calendar className="w-4 h-4" />
-                  <span className="text-xs">Prosj. dnevno</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1 sm:mb-2">
+                  <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[10px] sm:text-xs">Prosj. dnevno</span>
                 </div>
-                <p className="text-2xl font-bold font-mono">{formatCurrency(stats.avgDailySpend)}</p>
+                <p className="text-base sm:text-2xl font-bold font-mono">{formatCurrency(stats.avgDailySpend)}</p>
               </motion.div>
               
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="p-4 rounded-xl bg-muted/30 border border-border/50"
+                className="p-3 sm:p-4 rounded-xl bg-muted/30 border border-border/50"
               >
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Target className="w-4 h-4" />
-                  <span className="text-xs">Top kategorija</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1 sm:mb-2">
+                  <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[10px] sm:text-xs">Top kategorija</span>
                 </div>
-                <p className="text-lg font-semibold truncate">{stats.topCategory}</p>
+                <p className="text-sm sm:text-lg font-semibold truncate">{stats.topCategory}</p>
               </motion.div>
               
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
-                className="p-4 rounded-xl bg-muted/30 border border-border/50"
+                className="p-3 sm:p-4 rounded-xl bg-muted/30 border border-border/50"
               >
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <BarChart3 className="w-4 h-4" />
-                  <span className="text-xs">Vs. prošli mjesec</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1 sm:mb-2">
+                  <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[10px] sm:text-xs">Vs. prošli mj.</span>
                 </div>
                 <p className={cn(
-                  "text-2xl font-bold",
+                  "text-xl sm:text-2xl font-bold",
                   stats.expenseChange > 0 ? 'text-expense' : stats.expenseChange < 0 ? 'text-income' : ''
                 )}>
                   {stats.expenseChange > 0 ? '+' : ''}{stats.expenseChange.toFixed(1)}%
@@ -363,21 +363,21 @@ const Dashboard = () => {
             </div>
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-8">
               {/* Monthly Trend Chart */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="glass-card rounded-2xl p-6"
+                className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6"
               >
-                <div className="flex items-center gap-2 mb-4">
-                  <Activity className="w-5 h-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Trend (6 mjeseci)</h3>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  <h3 className="text-base sm:text-lg font-semibold">Trend (6 mjeseci)</h3>
                 </div>
-                <div className="h-64">
+                <div className="h-48 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthlyTrendData}>
+                    <AreaChart data={monthlyTrendData} margin={{ left: -10, right: 5 }}>
                       <defs>
                         <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="hsl(var(--income))" stopOpacity={0.3}/>
@@ -389,14 +389,15 @@ const Dashboard = () => {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                      <XAxis dataKey="month" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                      <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `€${v}`} />
+                      <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                      <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(v) => `€${v}`} width={45} />
                       <Tooltip 
                         formatter={(value: number) => formatCurrency(value)}
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--popover))', 
                           borderColor: 'hsl(var(--border))',
                           borderRadius: '0.5rem',
+                          fontSize: '12px',
                         }}
                       />
                       <Area 
@@ -420,27 +421,30 @@ const Dashboard = () => {
                 </div>
               </motion.div>
 
+              {/* Two Column Charts for larger screens */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+
               {/* Category Distribution */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
-                className="glass-card rounded-2xl p-6"
+                className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6"
               >
-                <div className="flex items-center gap-2 mb-4">
-                  <PieChartIcon className="w-5 h-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Raspodjela troškova</h3>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <PieChartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  <h3 className="text-base sm:text-lg font-semibold">Raspodjela troškova</h3>
                 </div>
-                <div className="h-64">
+                <div className="h-48 sm:h-64">
                   {categoryChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={categoryChartData}
                           cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
+                          cy="45%"
+                          innerRadius={35}
+                          outerRadius={60}
                           paddingAngle={2}
                           dataKey="value"
                         >
@@ -454,15 +458,17 @@ const Dashboard = () => {
                             backgroundColor: 'hsl(var(--popover))', 
                             borderColor: 'hsl(var(--border))',
                             borderRadius: '0.5rem',
+                            fontSize: '12px',
                           }}
                         />
                         <Legend 
-                          formatter={(value) => <span className="text-xs">{value}</span>}
+                          formatter={(value) => <span className="text-[10px] sm:text-xs">{value}</span>}
+                          wrapperStyle={{ fontSize: '10px' }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
                       Nema podataka o troškovima
                     </div>
                   )}
@@ -474,18 +480,26 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="glass-card rounded-2xl p-6"
+                className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6"
               >
-                <div className="flex items-center gap-2 mb-4">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Dnevna potrošnja (ovaj mjesec)</h3>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  <h3 className="text-base sm:text-lg font-semibold">Dnevna potrošnja</h3>
                 </div>
-                <div className="h-64">
+                <div className="h-48 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dailySpendingData}>
+                    <BarChart data={dailySpendingData} margin={{ left: -15, right: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                      <XAxis dataKey="day" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                      <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `€${v}`} />
+                      <XAxis 
+                        dataKey="day" 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }} 
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} 
+                        tickFormatter={(v) => `€${v}`} 
+                        width={40}
+                      />
                       <Tooltip 
                         formatter={(value: number) => formatCurrency(value)}
                         labelFormatter={(label) => `Dan ${label}`}
@@ -493,12 +507,13 @@ const Dashboard = () => {
                           backgroundColor: 'hsl(var(--popover))', 
                           borderColor: 'hsl(var(--border))',
                           borderRadius: '0.5rem',
+                          fontSize: '12px',
                         }}
                       />
                       <Bar 
                         dataKey="amount" 
                         fill="hsl(var(--expense))" 
-                        radius={[4, 4, 0, 0]}
+                        radius={[2, 2, 0, 0]}
                         name="Potrošnja"
                       />
                     </BarChart>
@@ -511,23 +526,23 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.45 }}
-                className="glass-card rounded-2xl p-6"
+                className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6"
               >
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-5 h-5 text-income" />
-                  <h3 className="text-lg font-semibold">Izvori prihoda</h3>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-income" />
+                  <h3 className="text-base sm:text-lg font-semibold">Izvori prihoda</h3>
                 </div>
-                <div className="h-64">
+                <div className="h-48 sm:h-64">
                   {incomeSourceData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={incomeSourceData} layout="vertical">
+                      <BarChart data={incomeSourceData} layout="vertical" margin={{ left: -10 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                        <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `€${v}`} />
+                        <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(v) => `€${v}`} />
                         <YAxis 
                           type="category" 
                           dataKey="name" 
-                          width={100}
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                          width={70}
+                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
                         />
                         <Tooltip 
                           formatter={(value: number) => formatCurrency(value)}
@@ -535,6 +550,7 @@ const Dashboard = () => {
                             backgroundColor: 'hsl(var(--popover))', 
                             borderColor: 'hsl(var(--border))',
                             borderRadius: '0.5rem',
+                            fontSize: '12px',
                           }}
                         />
                         <Bar 
@@ -546,12 +562,13 @@ const Dashboard = () => {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
                       Nema podataka o prihodima
                     </div>
                   )}
                 </div>
               </motion.div>
+              </div>
             </div>
 
             {/* Monthly Comparison Table */}
@@ -559,30 +576,30 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="glass-card rounded-2xl p-6"
+              className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6"
             >
-              <div className="flex items-center gap-2 mb-4">
-                <BarChart3 className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-semibold">Mjesečni pregled (6 mjeseci)</h3>
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <h3 className="text-base sm:text-lg font-semibold">Mjesečni pregled</h3>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <table className="w-full text-xs sm:text-sm min-w-[300px]">
                   <thead>
                     <tr className="border-b border-border/50">
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Mjesec</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">Prihodi</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">Troškovi</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">Stanje</th>
+                      <th className="text-left py-2 sm:py-3 px-2 font-medium text-muted-foreground">Mjesec</th>
+                      <th className="text-right py-2 sm:py-3 px-1 sm:px-2 font-medium text-muted-foreground">Prihodi</th>
+                      <th className="text-right py-2 sm:py-3 px-1 sm:px-2 font-medium text-muted-foreground">Troškovi</th>
+                      <th className="text-right py-2 sm:py-3 px-2 font-medium text-muted-foreground">Stanje</th>
                     </tr>
                   </thead>
                   <tbody>
                     {monthlyTrendData.map((month, index) => (
                       <tr key={index} className="border-b border-border/30">
-                        <td className="py-3 px-2 font-medium">{month.month}</td>
-                        <td className="py-3 px-2 text-right font-mono text-income">{formatCurrency(month.income)}</td>
-                        <td className="py-3 px-2 text-right font-mono text-expense">{formatCurrency(month.expenses)}</td>
+                        <td className="py-2 sm:py-3 px-2 font-medium">{month.month}</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-right font-mono text-income">{formatCurrency(month.income)}</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-right font-mono text-expense">{formatCurrency(month.expenses)}</td>
                         <td className={cn(
-                          "py-3 px-2 text-right font-mono font-semibold",
+                          "py-2 sm:py-3 px-2 text-right font-mono font-semibold",
                           month.balance >= 0 ? 'text-income' : 'text-expense'
                         )}>
                           {formatCurrency(month.balance)}
