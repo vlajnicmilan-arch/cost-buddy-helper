@@ -1,30 +1,27 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Building2, Plus, ExternalLink } from 'lucide-react';
+import { Building2, Plus, FileSpreadsheet, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CSVImportDialog } from './CSVImportDialog';
+import { ParsedTransaction } from '@/lib/csvParsers';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BankConnectionProps {
-  onConnect?: () => void;
+  onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
 }
 
-const SUPPORTED_BANKS = [
+const SUPPORTED_SOURCES = [
+  { id: 'revolut', name: 'Revolut', logo: '💳' },
+  { id: 'aircash', name: 'Aircash', logo: '📱' },
   { id: 'pbz', name: 'PBZ', logo: '🏦' },
   { id: 'erste', name: 'Erste Bank', logo: '🏛️' },
   { id: 'zaba', name: 'Zagrebačka banka', logo: '🏦' },
-  { id: 'raiffeisen', name: 'Raiffeisen', logo: '🏛️' },
-  { id: 'otp', name: 'OTP Banka', logo: '🏦' },
-  { id: 'addiko', name: 'Addiko Bank', logo: '🏛️' },
+  { id: 'other', name: 'Ostale banke', logo: '📄' },
 ];
 
-export const BankConnection = ({ onConnect }: BankConnectionProps) => {
-  const [open, setOpen] = useState(false);
-
-  const handleBankConnect = (bankId: string) => {
-    // For now, show that this feature requires external API setup
-    alert(`Povezivanje s bankom ${bankId} zahtijeva konfiguraciju Salt Edge ili Nordigen API-ja. Ova funkcionalnost dolazi uskoro!`);
-    setOpen(false);
-  };
+export const BankConnection = ({ onImportCSV }: BankConnectionProps) => {
+  const [infoOpen, setInfoOpen] = useState(false);
 
   return (
     <motion.div 
@@ -34,45 +31,66 @@ export const BankConnection = ({ onConnect }: BankConnectionProps) => {
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Building2 className="w-5 h-5" />
-          Bankovni računi
+          <FileSpreadsheet className="w-5 h-5" />
+          Uvoz transakcija
         </h3>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-lg"
+                onClick={() => setInfoOpen(true)}
+              >
+                <Info className="w-4 h-4 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Podržani formati</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       <p className="text-sm text-muted-foreground mb-4">
-        Poveži banku za automatski uvoz transakcija putem PSD2 Open Banking protokola.
+        Uvezi transakcije iz CSV izvoza svoje banke ili fintech aplikacije.
       </p>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="w-full gap-2 rounded-xl">
-            <Plus className="w-4 h-4" />
-            Poveži banku
-          </Button>
-        </DialogTrigger>
+      {onImportCSV && <CSVImportDialog onImport={onImportCSV} />}
+
+      {/* Info Dialog */}
+      <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
         <DialogContent className="sm:max-w-md glass-card border-border/50">
           <DialogHeader>
-            <DialogTitle>Odaberi banku</DialogTitle>
+            <DialogTitle>Podržani izvori</DialogTitle>
           </DialogHeader>
           
           <div className="grid grid-cols-2 gap-3 mt-4">
-            {SUPPORTED_BANKS.map((bank) => (
-              <button
-                key={bank.id}
-                onClick={() => handleBankConnect(bank.id)}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-transparent bg-muted/50 hover:bg-muted hover:border-primary/20 transition-all"
+            {SUPPORTED_SOURCES.map((source) => (
+              <div
+                key={source.id}
+                className="flex items-center gap-3 p-3 rounded-xl bg-muted/50"
               >
-                <span className="text-2xl">{bank.logo}</span>
-                <span className="text-sm font-medium">{bank.name}</span>
-              </button>
+                <span className="text-xl">{source.logo}</span>
+                <span className="text-sm font-medium">{source.name}</span>
+              </div>
             ))}
           </div>
 
           <div className="mt-4 p-4 bg-muted/50 rounded-xl">
-            <p className="text-xs text-muted-foreground text-center">
-              Bankovno povezivanje koristi sigurni PSD2 Open Banking protokol. 
-              Tvoji podaci su kriptirani i zaštićeni.
-            </p>
+            <p className="text-sm font-medium mb-2">Kako izvesti CSV?</p>
+            <ul className="text-xs text-muted-foreground space-y-2">
+              <li>
+                <strong>Revolut:</strong> Otvori app → Transactions → tri točkice → Export statement → CSV
+              </li>
+              <li>
+                <strong>Aircash:</strong> Transakcije → Izvoz/Export
+              </li>
+              <li>
+                <strong>Internet bankarstvo:</strong> Prometi/Izvodi → Preuzmi/Export → CSV format
+              </li>
+            </ul>
           </div>
         </DialogContent>
       </Dialog>

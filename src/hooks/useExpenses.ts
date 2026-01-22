@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { ParsedTransaction } from '@/lib/csvParsers';
 
 export const useExpenses = () => {
   const { user } = useAuth();
@@ -100,6 +101,50 @@ export const useExpenses = () => {
     }
   };
 
+  const importFromCSV = async (transactions: ParsedTransaction[]) => {
+    if (!user) {
+      toast.error('Moraš biti prijavljen');
+      return;
+    }
+
+    try {
+      const expensesToInsert = transactions.map(tx => ({
+        user_id: user.id,
+        amount: tx.amount,
+        description: tx.description,
+        category: tx.category,
+        type: tx.type,
+        date: tx.date.toISOString(),
+        merchant_name: tx.merchant_name || null,
+        ai_extracted: false
+      }));
+
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert(expensesToInsert)
+        .select();
+
+      if (error) throw error;
+
+      const newExpenses: Expense[] = (data || []).map(e => ({
+        ...e,
+        date: new Date(e.date),
+        category: e.category as Category,
+        type: e.type as 'expense' | 'income'
+      }));
+
+      setExpenses(prev => [...newExpenses, ...prev].sort(
+        (a, b) => b.date.getTime() - a.date.getTime()
+      ));
+
+      toast.success(`Uvezeno ${transactions.length} transakcija`);
+    } catch (error) {
+      console.error('Error importing CSV:', error);
+      toast.error('Greška pri uvozu transakcija');
+      throw error;
+    }
+  };
+
   const totalExpenses = expenses
     .filter(e => e.type === 'expense')
     .reduce((sum, e) => sum + Number(e.amount), 0);
@@ -122,6 +167,7 @@ export const useExpenses = () => {
     loading,
     addExpense,
     deleteExpense,
+    importFromCSV,
     totalExpenses,
     totalIncome,
     balance,
