@@ -116,11 +116,17 @@ export const useReceiptScanner = () => {
         return null;
       }
 
-      const { data: urlData } = supabase.storage
+      // Create signed URL for private bucket (valid for 1 hour)
+      const { data: urlData, error: urlError } = await supabase.storage
         .from('receipts')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      return urlData.publicUrl;
+      if (urlError || !urlData?.signedUrl) {
+        console.error('Error creating signed URL:', urlError);
+        return null;
+      }
+
+      return urlData.signedUrl;
     } catch (error) {
       console.error('Error uploading receipt image:', error);
       return null;
