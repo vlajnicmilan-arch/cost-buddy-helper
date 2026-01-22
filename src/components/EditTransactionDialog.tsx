@@ -59,7 +59,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         payment_source: paymentSource,
         date,
         type,
-        income_source_id: type === 'income' ? incomeSourceId : null,
+        income_source_id: incomeSourceId,
         updated_at: new Date().toISOString()
       });
       onOpenChange(false);
@@ -101,31 +101,36 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
             </div>
           </div>
 
-          {/* Income Source - Only for income type */}
-          {type === 'income' && incomeSources.length > 0 && (
+          {/* Income Source - For both income and expense */}
+          {incomeSources.length > 0 && (
             <div className="space-y-2">
-              <Label>Izvor prihoda</Label>
+              <Label>{type === 'income' ? 'Izvor prihoda' : 'Knjiži iz izvora'}</Label>
               <Select 
                 value={incomeSourceId || 'none'} 
                 onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Odaberi izvor prihoda" />
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder={type === 'income' ? 'Odaberi izvor prihoda' : 'Odaberi izvor'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
                   <SelectItem value="none">
                     <span className="text-muted-foreground">Bez izvora</span>
                   </SelectItem>
                   {incomeSources.map((source) => (
                     <SelectItem key={source.id} value={source.id}>
                       <span className="flex items-center gap-2">
-                        <span>{source.icon}</span>
+                        <span>{source.icon || '💰'}</span>
                         <span>{source.name}</span>
                       </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {type === 'expense' && incomeSourceId && (
+                <p className="text-xs text-muted-foreground">
+                  Trošak će se oduzeti od ovog izvora prihoda
+                </p>
+              )}
             </div>
           )}
 
