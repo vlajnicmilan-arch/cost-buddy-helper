@@ -17,3 +17,6 @@ port = 54323
 
 [functions.parse-receipt]
 verify_jwt = false
+
+[functions.accept-invitation]
+verify_jwt = false
