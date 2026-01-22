@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IncomeSource } from '@/types/incomeSource';
-import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
+import { Expense, getCategoryInfo } from '@/types/expense';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Link2, CircleDashed, Check, X, Loader2, Plus } from 'lucide-react';
+import { Pencil, Link2, CircleDashed, Check, X, Loader2, Plus, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { IncomeSourceDialog } from './IncomeSourceDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface UnassignedIncomeDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface UnassignedIncomeDialogProps {
   incomeSources: IncomeSource[];
   onUpdateExpense: (expense: Expense) => Promise<void>;
   onEditTransaction: (expense: Expense) => void;
+  onDeleteExpense: (id: string) => Promise<void>;
   onAddIncomeSource: (source: Omit<IncomeSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<IncomeSource | void>;
 }
 
@@ -28,6 +30,7 @@ export const UnassignedIncomeDialog = ({
   incomeSources,
   onUpdateExpense,
   onEditTransaction,
+  onDeleteExpense,
   onAddIncomeSource
 }: UnassignedIncomeDialogProps) => {
   const [assigningId, setAssigningId] = useState<string | null>(null);
@@ -36,6 +39,30 @@ export const UnassignedIncomeDialog = ({
   const [autoAssigning, setAutoAssigning] = useState(false);
   const [showNewSourceDialog, setShowNewSourceDialog] = useState(false);
   const [pendingExpenseForNewSource, setPendingExpenseForNewSource] = useState<Expense | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteClick = (e: React.MouseEvent, expense: Expense) => {
+    e.stopPropagation();
+    setExpenseToDelete(expense);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!expenseToDelete) return;
+    setDeleting(true);
+    try {
+      await onDeleteExpense(expenseToDelete.id);
+      toast.success('Transakcija obrisana');
+    } catch (error) {
+      toast.error('Greška pri brisanju');
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+      setExpenseToDelete(null);
+    }
+  };
 
   // Unassigned income transactions
   const unassignedIncome = useMemo(() => {
@@ -178,7 +205,7 @@ export const UnassignedIncomeDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] max-w-[400px] max-h-[85vh] flex flex-col gap-3 p-4">
+        <DialogContent className="w-[95vw] max-w-[420px] h-[80vh] max-h-[600px] flex flex-col gap-3 p-4 overflow-hidden">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2 text-base">
               <CircleDashed className="w-4 h-4 text-muted-foreground" />
@@ -237,8 +264,8 @@ export const UnassignedIncomeDialog = ({
           )}
 
           {/* Transaction List */}
-          <ScrollArea className="flex-1 min-h-0 -mx-4 px-4">
-            <div className="space-y-2 pb-2">
+          <div className="flex-1 min-h-0 overflow-y-auto -mx-4 px-4">
+            <div className="space-y-2 pb-4">
               {unassignedIncome.length === 0 ? (
                 <div className="py-8 text-center">
                   <Check className="w-10 h-10 mx-auto text-income/30 mb-2" />
@@ -289,22 +316,32 @@ export const UnassignedIncomeDialog = ({
                               +{formatAmount(expense.amount)}
                             </p>
                           </div>
-                          <div className="flex items-center justify-between mt-1">
+                          <div className="flex items-center justify-between mt-1 gap-1">
                             <p className="text-xs text-muted-foreground">
                               {format(expense.date, 'dd.MM.yyyy', { locale: hr })}
                             </p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onEditTransaction(expense);
-                              }}
-                            >
-                              <Pencil className="w-3 h-3 mr-1" />
-                              Uredi
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditTransaction(expense);
+                                }}
+                              >
+                                <Pencil className="w-3 h-3 mr-1" />
+                                Uredi
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={(e) => handleDeleteClick(e, expense)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -386,7 +423,7 @@ export const UnassignedIncomeDialog = ({
                 })
               )}
             </div>
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -396,6 +433,32 @@ export const UnassignedIncomeDialog = ({
         onOpenChange={setShowNewSourceDialog}
         onSave={handleNewSourceSave}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="max-w-[90vw] w-[340px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Obriši transakciju?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {expenseToDelete && (
+                <span>
+                  "{expenseToDelete.description}" - {formatAmount(expenseToDelete.amount)}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Odustani</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-destructive text-destructive-foreground"
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Obriši'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
