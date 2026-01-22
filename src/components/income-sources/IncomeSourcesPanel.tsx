@@ -5,9 +5,10 @@ import { Expense } from '@/types/expense';
 import { IncomeSourceCard } from './IncomeSourceCard';
 import { IncomeSourceDialog } from './IncomeSourceDialog';
 import { IncomeSourceTransactionsDialog } from './IncomeSourceTransactionsDialog';
+import { UnassignedIncomeDialog } from './UnassignedIncomeDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, TrendingUp } from 'lucide-react';
+import { Plus, Loader2, TrendingUp, CircleDashed } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
@@ -34,6 +35,7 @@ export const IncomeSourcesPanel = ({
   const [editingSource, setEditingSource] = useState<IncomeSource | null>(null);
   const [selectedSource, setSelectedSource] = useState<IncomeSource | null>(null);
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
+  const [unassignedDialogOpen, setUnassignedDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Expense | null>(null);
   const [editTransactionDialogOpen, setEditTransactionDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -193,21 +195,31 @@ export const IncomeSourcesPanel = ({
             </div>
           )}
 
-          {/* Unassigned Income */}
+          {/* Unassigned Income - Clickable */}
           {unassignedStats.count > 0 && (
-            <div className="p-4 rounded-xl border border-dashed bg-muted/30">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onClick={() => setUnassignedDialogOpen(true)}
+              className="p-4 rounded-xl border border-dashed bg-muted/30 cursor-pointer hover:bg-muted/50 hover:border-primary/30 transition-all"
+            >
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-muted-foreground">Bez izvora</p>
-                  <p className="text-sm text-muted-foreground">
-                    {unassignedStats.count} {unassignedStats.count === 1 ? 'prihod' : 'prihoda'} nije dodijeljeno
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                    <CircleDashed className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">Bez izvora</p>
+                    <p className="text-sm text-muted-foreground">
+                      {unassignedStats.count} {unassignedStats.count === 1 ? 'prihod' : 'prihoda'} • Klikni za dodjelu
+                    </p>
+                  </div>
                 </div>
                 <p className="font-mono font-semibold text-income">
                   {formatAmount(unassignedStats.total)}
                 </p>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
@@ -238,6 +250,15 @@ export const IncomeSourcesPanel = ({
         open={editTransactionDialogOpen}
         onOpenChange={setEditTransactionDialogOpen}
         onSave={handleTransactionSave}
+      />
+
+      <UnassignedIncomeDialog
+        open={unassignedDialogOpen}
+        onOpenChange={setUnassignedDialogOpen}
+        expenses={expenses}
+        incomeSources={incomeSources}
+        onUpdateExpense={onUpdateExpense}
+        onEditTransaction={handleEditTransaction}
       />
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
