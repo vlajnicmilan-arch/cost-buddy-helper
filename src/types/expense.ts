@@ -34,6 +34,16 @@ export const getPaymentSourceInfo = (source: PaymentSource): PaymentSourceInfo =
   return PAYMENT_SOURCES.find(s => s.id === source) || PAYMENT_SOURCES[5];
 };
 
+export interface ReceiptItem {
+  id?: string;
+  expense_id?: string;
+  name: string;
+  quantity: number;
+  unit_price?: number;
+  total_price: number;
+  created_at?: string;
+}
+
 export interface Expense {
   id: string;
   user_id: string;
@@ -48,6 +58,7 @@ export interface Expense {
   ai_extracted?: boolean | null;
   created_at?: string;
   updated_at?: string;
+  items?: ReceiptItem[];
 }
 
 export interface CategoryInfo {

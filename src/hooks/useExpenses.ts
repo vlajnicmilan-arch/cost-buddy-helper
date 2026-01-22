@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Expense, Category, PaymentSource } from '@/types/expense';
+import { Expense, Category, PaymentSource, ReceiptItem } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { ParsedTransaction } from '@/lib/csvParsers';
@@ -45,13 +45,17 @@ export const useExpenses = () => {
     fetchExpenses();
   }, [fetchExpenses]);
 
-  const addExpense = async (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const addExpense = async (
+    expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    items?: ReceiptItem[]
+  ) => {
     if (!user) {
       toast.error('Moraš biti prijavljen');
       return;
     }
 
     try {
+      // Insert expense
       const { data, error } = await supabase
         .from('expenses')
         .insert({
@@ -71,6 +75,26 @@ export const useExpenses = () => {
 
       if (error) throw error;
 
+      // Insert receipt items if provided
+      if (items && items.length > 0 && data) {
+        const itemsToInsert = items.map(item => ({
+          expense_id: data.id,
+          name: item.name,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || null,
+          total_price: item.total_price
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('receipt_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) {
+          console.error('Error inserting receipt items:', itemsError);
+          // Don't fail the whole operation, just log
+        }
+      }
+
       const newExpense: Expense = {
         ...data,
         date: new Date(data.date),
@@ -80,10 +104,10 @@ export const useExpenses = () => {
       };
 
       setExpenses(prev => [newExpense, ...prev]);
-      toast.success('Trošak dodan');
+      toast.success(expense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
     } catch (error) {
       console.error('Error adding expense:', error);
-      toast.error('Greška pri dodavanju troška');
+      toast.error('Greška pri dodavanju');
     }
   };
 

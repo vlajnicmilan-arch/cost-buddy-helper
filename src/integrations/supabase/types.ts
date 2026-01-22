@@ -125,6 +125,44 @@ export type Database = {
         }
         Relationships: []
       }
+      receipt_items: {
+        Row: {
+          created_at: string
+          expense_id: string
+          id: string
+          name: string
+          quantity: number | null
+          total_price: number
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          expense_id: string
+          id?: string
+          name: string
+          quantity?: number | null
+          total_price: number
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          expense_id?: string
+          id?: string
+          name?: string
+          quantity?: number | null
+          total_price?: number
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_items_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
