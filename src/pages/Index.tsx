@@ -92,85 +92,121 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <header className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">FinMate</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-muted-foreground">Upravljaj svojim financijama</p>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/50 text-xs text-muted-foreground">
-                      {isLocalMode ? (
-                        <>
-                          <Smartphone className="w-3 h-3" />
-                          Lokalno
-                        </>
-                      ) : (
-                        <>
-                          <Cloud className="w-3 h-3" />
-                          Cloud
-                        </>
-                      )}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isLocalMode ? 'Podaci su spremljeni na ovom uređaju' : 'Podaci su u oblaku'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-6 sm:mb-8">
+          <div className="flex items-center justify-between sm:block">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">FinMate</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">Upravljaj svojim financijama</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/50 text-xs text-muted-foreground">
+                        {isLocalMode ? (
+                          <>
+                            <Smartphone className="w-3 h-3" />
+                            Lokalno
+                          </>
+                        ) : (
+                          <>
+                            <Cloud className="w-3 h-3" />
+                            Cloud
+                          </>
+                        )}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{isLocalMode ? 'Podaci su spremljeni na ovom uređaju' : 'Podaci su u oblaku'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ReportsDialog expenses={expenses} />
-            <AddExpenseDialog onAdd={addExpense} />
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => navigate('/dashboard')}
-                    className="rounded-xl"
-                  >
-                    <LayoutDashboard className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Dashboard</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => navigate('/setup')}
-                    className="rounded-xl"
-                  >
-                    <Settings className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Promijeni način pohrane</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {!isLocalMode && (
+            {/* Mobile-only quick actions */}
+            <div className="flex items-center gap-1 sm:hidden">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => navigate('/dashboard')}
+                className="rounded-xl h-9 w-9"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+              </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={handleSignOut}
-                className="rounded-xl"
+                onClick={() => navigate('/setup')}
+                className="rounded-xl h-9 w-9"
               >
-                <LogOut className="w-5 h-5" />
+                <Settings className="w-4 h-4" />
               </Button>
-            )}
+              {!isLocalMode && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleSignOut}
+                  className="rounded-xl h-9 w-9"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Action buttons row */}
+          <div className="flex items-center gap-2">
+            <ReportsDialog expenses={expenses} />
+            <AddExpenseDialog onAdd={addExpense} />
+            {/* Desktop-only buttons */}
+            <div className="hidden sm:flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => navigate('/dashboard')}
+                      className="rounded-xl"
+                    >
+                      <LayoutDashboard className="w-5 h-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Dashboard</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => navigate('/setup')}
+                      className="rounded-xl"
+                    >
+                      <Settings className="w-5 h-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Promijeni način pohrane</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {!isLocalMode && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleSignOut}
+                  className="rounded-xl"
+                >
+                  <LogOut className="w-5 h-5" />
+                </Button>
+              )}
+            </div>
           </div>
         </header>
 
