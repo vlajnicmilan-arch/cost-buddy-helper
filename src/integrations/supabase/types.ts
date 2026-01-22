@@ -59,6 +59,7 @@ export type Database = {
           date: string
           description: string
           id: string
+          income_source_id: string | null
           merchant_name: string | null
           payment_source: string | null
           receipt_url: string | null
@@ -74,6 +75,7 @@ export type Database = {
           date?: string
           description: string
           id?: string
+          income_source_id?: string | null
           merchant_name?: string | null
           payment_source?: string | null
           receipt_url?: string | null
@@ -89,10 +91,52 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          income_source_id?: string | null
           merchant_name?: string | null
           payment_source?: string | null
           receipt_url?: string | null
           type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_income_source_id_fkey"
+            columns: ["income_source_id"]
+            isOneToOne: false
+            referencedRelation: "income_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      income_sources: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
           updated_at?: string
           user_id?: string
         }
