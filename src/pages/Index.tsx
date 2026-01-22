@@ -380,8 +380,15 @@ const Index = () => {
             <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
             <BackupRestore onDataImported={refetch} />
           </div>
+          </div>
         </div>
-      </div>
+
+        {/* Footer with version */}
+        <footer className="mt-8 py-4 text-center border-t border-border/30">
+          <p className="text-xs text-muted-foreground">
+            V&M Balance v1.0.0
+          </p>
+        </footer>
 
       {/* Transaction Dialogs */}
       <TransactionListDialog
