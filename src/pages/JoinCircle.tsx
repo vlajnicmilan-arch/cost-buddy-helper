@@ -61,7 +61,34 @@ const JoinCircle = () => {
         body: { token }
       });
 
-      if (error) throw error;
+      // Handle edge function errors properly
+      if (error) {
+        // Try to parse error message from the response
+        let errorMessage = 'Greška pri prihvaćanju pozivnice';
+        
+        if (error.message) {
+          // Check if it's a FunctionsHttpError with context
+          if (error.context?.body) {
+            try {
+              const errorBody = JSON.parse(error.context.body);
+              if (errorBody.error) {
+                errorMessage = errorBody.error;
+              }
+            } catch {
+              // If parsing fails, use the error message
+              errorMessage = error.message;
+            }
+          } else if (error.message.includes('non-2xx')) {
+            // Generic edge function error - try to get more details from data
+            errorMessage = data?.error || 'Pozivnica nije pronađena ili je istekla';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
+        setError(errorMessage);
+        return;
+      }
       
       if (data?.error) {
         setError(data.error);
