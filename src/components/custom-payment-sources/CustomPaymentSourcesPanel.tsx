@@ -26,9 +26,9 @@ export const CustomPaymentSourcesPanel = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [sourceToDelete, setSourceToDelete] = useState<CustomPaymentSource | null>(null);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
-  const [initialData, setInitialData] = useState<{ name: string; icon: string; color: string } | undefined>();
+  const [initialData, setInitialData] = useState<{ name: string; icon: string; color: string; balance?: number } | undefined>();
 
-  const handleSave = async (data: { name: string; icon: string; color: string }) => {
+  const handleSave = async (data: { name: string; icon: string; color: string; balance: number; description?: string }) => {
     if (editingSource) {
       await updateCustomPaymentSource(editingSource.id, data);
     } else {
@@ -72,7 +72,7 @@ export const CustomPaymentSourcesPanel = () => {
       return;
     }
     setEditingSource(null);
-    setInitialData(suggestion);
+    setInitialData({ ...suggestion, balance: 0 });
     setDialogOpen(true);
   };
 
@@ -128,34 +128,44 @@ export const CustomPaymentSourcesPanel = () => {
               {customPaymentSources.map((source) => (
                 <div
                   key={source.id}
-                  className="flex items-center justify-between p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white"
                       style={{ backgroundColor: source.color }}
                     >
                       <span>{source.icon}</span>
                     </div>
-                    <span className="font-medium">{source.name}</span>
+                    <div>
+                      <span className="font-medium">{source.name}</span>
+                      {source.description && (
+                        <p className="text-xs text-muted-foreground truncate max-w-[120px]">{source.description}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleEdit(source)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(source)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="flex items-center gap-2">
+                    <span className={`font-mono text-sm font-semibold ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}>
+                      €{(source.balance || 0).toFixed(2)}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEdit(source)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(source)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

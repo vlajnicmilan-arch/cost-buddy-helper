@@ -3,14 +3,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { CustomPaymentSource, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
+
+interface PaymentSourceData {
+  name: string;
+  icon: string;
+  color: string;
+  balance: number;
+  description?: string;
+}
 
 interface CustomPaymentSourceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   source: CustomPaymentSource | null;
-  onSave: (data: { name: string; icon: string; color: string }) => Promise<void>;
-  initialData?: { name: string; icon: string; color: string };
+  onSave: (data: PaymentSourceData) => Promise<void>;
+  initialData?: Partial<PaymentSourceData>;
 }
 
 export const CustomPaymentSourceDialog = ({
@@ -23,6 +32,8 @@ export const CustomPaymentSourceDialog = ({
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('💳');
   const [color, setColor] = useState('#6b7280');
+  const [balance, setBalance] = useState('0');
+  const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -31,14 +42,20 @@ export const CustomPaymentSourceDialog = ({
         setName(source.name);
         setIcon(source.icon);
         setColor(source.color);
+        setBalance(source.balance?.toString() || '0');
+        setDescription(source.description || '');
       } else if (initialData) {
-        setName(initialData.name);
-        setIcon(initialData.icon);
-        setColor(initialData.color);
+        setName(initialData.name || '');
+        setIcon(initialData.icon || '💳');
+        setColor(initialData.color || '#6b7280');
+        setBalance(initialData.balance?.toString() || '0');
+        setDescription(initialData.description || '');
       } else {
         setName('');
         setIcon('💳');
         setColor('#6b7280');
+        setBalance('0');
+        setDescription('');
       }
     }
   }, [open, source, initialData]);
@@ -47,16 +64,24 @@ export const CustomPaymentSourceDialog = ({
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await onSave({ name: name.trim(), icon, color });
+      await onSave({ 
+        name: name.trim(), 
+        icon, 
+        color, 
+        balance: parseFloat(balance) || 0,
+        description: description.trim() || undefined
+      });
       onOpenChange(false);
     } finally {
       setSaving(false);
     }
   };
 
+  const formattedBalance = parseFloat(balance) || 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {source ? 'Uredi izvor plaćanja' : 'Novi izvor plaćanja'}
@@ -72,6 +97,32 @@ export const CustomPaymentSourceDialog = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="npr. PayPal, Google Pay..."
+            />
+          </div>
+
+          {/* Balance */}
+          <div className="space-y-2">
+            <Label htmlFor="balance">Stanje računa (€)</Label>
+            <Input
+              id="balance"
+              type="number"
+              step="0.01"
+              value={balance}
+              onChange={(e) => setBalance(e.target.value)}
+              placeholder="0.00"
+              className="font-mono"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Opis (opcionalno)</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="npr. broj računa, bilješke..."
+              rows={2}
             />
           </div>
 
@@ -117,14 +168,24 @@ export const CustomPaymentSourceDialog = ({
           {/* Preview */}
           <div className="space-y-2">
             <Label>Pregled</Label>
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white"
-                style={{ backgroundColor: color }}
-              >
-                <span>{icon}</span>
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                  style={{ backgroundColor: color }}
+                >
+                  <span>{icon}</span>
+                </div>
+                <div>
+                  <span className="font-medium">{name || 'Naziv izvora'}</span>
+                  {description && (
+                    <p className="text-xs text-muted-foreground truncate max-w-[150px]">{description}</p>
+                  )}
+                </div>
               </div>
-              <span className="font-medium">{name || 'Naziv izvora'}</span>
+              <span className={`font-mono font-semibold ${formattedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
+                €{formattedBalance.toFixed(2)}
+              </span>
             </div>
           </div>
         </div>
