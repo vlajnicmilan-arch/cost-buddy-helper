@@ -101,17 +101,24 @@ export const TransactionDetailDialog = ({
           {/* Amount */}
           <div className={cn(
             "p-4 rounded-xl text-center",
-            expense.type === 'income' ? "bg-income/10" : "bg-expense/10"
+            expense.type === 'income' ? "bg-income/10" : 
+            expense.type === 'transfer' ? "bg-primary/10" : "bg-expense/10"
           )}>
             <p className="text-sm text-muted-foreground mb-1">
-              {expense.type === 'income' ? 'Prihod' : 'Trošak'}
+              {expense.type === 'income' ? 'Prihod' : expense.type === 'transfer' ? 'Prijenos' : 'Trošak'}
             </p>
             <p className={cn(
               "text-3xl font-bold font-mono",
-              expense.type === 'income' ? "text-income" : "text-expense"
+              expense.type === 'income' ? "text-income" : 
+              expense.type === 'transfer' ? "text-primary" : "text-expense"
             )}>
-              {expense.type === 'expense' ? '-' : '+'}{formatAmount(Number(expense.amount))}
+              {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount))}
             </p>
+            {expense.type === 'transfer' && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Prijenosi ne utječu na bilance
+              </p>
+            )}
           </div>
 
           {/* Payment Source - Highlighted */}
