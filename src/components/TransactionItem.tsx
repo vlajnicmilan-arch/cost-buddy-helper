@@ -6,9 +6,10 @@ import { motion } from 'framer-motion';
 interface TransactionItemProps {
   expense: Expense;
   onDelete: (id: string) => void;
+  onClick?: (expense: Expense) => void;
 }
 
-export const TransactionItem = ({ expense, onDelete }: TransactionItemProps) => {
+export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemProps) => {
   const category = getCategoryInfo(expense.category);
   const paymentSource = getPaymentSourceInfo(expense.payment_source || 'cash');
   
@@ -26,12 +27,22 @@ export const TransactionItem = ({ expense, onDelete }: TransactionItemProps) => 
     }).format(date);
   };
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick(expense);
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="group flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors"
+      onClick={handleClick}
+      className={cn(
+        "group flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors",
+        onClick && "cursor-pointer"
+      )}
     >
       <div 
         className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0"
@@ -69,7 +80,10 @@ export const TransactionItem = ({ expense, onDelete }: TransactionItemProps) => 
         </p>
         
         <button
-          onClick={() => onDelete(expense.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(expense.id);
+          }}
           className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
         >
           <Trash2 className="w-4 h-4" />
