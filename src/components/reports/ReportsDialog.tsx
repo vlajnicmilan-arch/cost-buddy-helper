@@ -34,6 +34,7 @@ import {
   ArrowDown,
   Minus,
   BarChart3,
+  Banknote,
 } from 'lucide-react';
 import { generatePDFReport, generateCSVReport, generateJSONExport, ReportData } from '@/lib/reportExport';
 import { toast } from 'sonner';
@@ -141,6 +142,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   // Chart state
   const [chartType, setChartType] = useState<ChartType>('pie');
   
+  // Income source filter
+  const [selectedIncomeSourceId, setSelectedIncomeSourceId] = useState<string>('all');
+  
   // Comparison state
   const [comparePreset, setComparePreset] = useState<ComparePreset>('month-vs-month');
   const [customCompare1Start, setCustomCompare1Start] = useState('');
@@ -245,9 +249,19 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const filteredExpenses = useMemo(() => {
     return expenses.filter(e => {
       const expenseDate = e.date.getTime();
-      return expenseDate >= dateRange.start.getTime() && expenseDate <= dateRange.end.getTime() + 86400000;
+      const inDateRange = expenseDate >= dateRange.start.getTime() && expenseDate <= dateRange.end.getTime() + 86400000;
+      
+      // Filter by income source if selected
+      if (selectedIncomeSourceId !== 'all') {
+        if (selectedIncomeSourceId === 'unassigned') {
+          return inDateRange && !e.income_source_id;
+        }
+        return inDateRange && e.income_source_id === selectedIncomeSourceId;
+      }
+      
+      return inDateRange;
     });
-  }, [expenses, dateRange]);
+  }, [expenses, dateRange, selectedIncomeSourceId]);
 
   // Comparison filtered expenses
   const compareExpenses1 = useMemo(() => {
@@ -420,54 +434,97 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
 
           {/* Report Tab */}
           <TabsContent value="report" className="space-y-6">
-            {/* Period Selection */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Odaberi razdoblje
-              </Label>
-              <Select value={periodPreset} onValueChange={(v) => setPeriodPreset(v as PeriodPreset)}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="this-month">Ovaj mjesec</SelectItem>
-                  <SelectItem value="last-month">Prošli mjesec</SelectItem>
-                  <SelectItem value="this-year">Ova godina</SelectItem>
-                  <SelectItem value="last-year">Prošla godina</SelectItem>
-                  <SelectItem value="all">Sve vrijeme</SelectItem>
-                  <SelectItem value="custom">Prilagođeno</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Period & Income Source Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Period Selection */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Odaberi razdoblje
+                </Label>
+                <Select value={periodPreset} onValueChange={(v) => setPeriodPreset(v as PeriodPreset)}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="this-month">Ovaj mjesec</SelectItem>
+                    <SelectItem value="last-month">Prošli mjesec</SelectItem>
+                    <SelectItem value="this-year">Ova godina</SelectItem>
+                    <SelectItem value="last-year">Prošla godina</SelectItem>
+                    <SelectItem value="all">Sve vrijeme</SelectItem>
+                    <SelectItem value="custom">Prilagođeno</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              {periodPreset === 'custom' && (
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <Label className="text-xs text-muted-foreground">Od</Label>
-                    <Input
-                      type="date"
-                      value={customStart}
-                      onChange={(e) => setCustomStart(e.target.value)}
-                      className="rounded-xl"
-                    />
+                {periodPreset === 'custom' && (
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">Od</Label>
+                      <Input
+                        type="date"
+                        value={customStart}
+                        onChange={(e) => setCustomStart(e.target.value)}
+                        className="rounded-xl"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">Do</Label>
+                      <Input
+                        type="date"
+                        value={customEnd}
+                        onChange={(e) => setCustomEnd(e.target.value)}
+                        className="rounded-xl"
+                      />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <Label className="text-xs text-muted-foreground">Do</Label>
-                    <Input
-                      type="date"
-                      value={customEnd}
-                      onChange={(e) => setCustomEnd(e.target.value)}
-                      className="rounded-xl"
-                    />
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              <p className="text-sm text-muted-foreground">
-                {dateRange.start.toLocaleDateString('hr-HR')} - {dateRange.end.toLocaleDateString('hr-HR')}
-                <span className="ml-2">({stats.transactionCount} transakcija)</span>
-              </p>
+              {/* Income Source Filter */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Banknote className="w-4 h-4" />
+                  Izvor prihoda
+                </Label>
+                <Select value={selectedIncomeSourceId} onValueChange={setSelectedIncomeSourceId}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Svi izvori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <span className="flex items-center gap-2">
+                        📊 Svi izvori
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="unassigned">
+                      <span className="flex items-center gap-2">
+                        📭 Bez izvora
+                      </span>
+                    </SelectItem>
+                    {incomeSources.map((source) => (
+                      <SelectItem key={source.id} value={source.id}>
+                        <span className="flex items-center gap-2">
+                          {source.icon} {source.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            <p className="text-sm text-muted-foreground">
+              {dateRange.start.toLocaleDateString('hr-HR')} - {dateRange.end.toLocaleDateString('hr-HR')}
+              <span className="ml-2">({stats.transactionCount} transakcija)</span>
+              {selectedIncomeSourceId !== 'all' && (
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                  {selectedIncomeSourceId === 'unassigned' 
+                    ? '📭 Bez izvora' 
+                    : `${incomeSources.find(s => s.id === selectedIncomeSourceId)?.icon || ''} ${incomeSources.find(s => s.id === selectedIncomeSourceId)?.name || ''}`
+                  }
+                </span>
+              )}
+            </p>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
