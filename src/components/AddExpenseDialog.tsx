@@ -43,7 +43,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [scannedData, setScannedData] = useState<ScannedData | null>(null);
   const [showScannedPreview, setShowScannedPreview] = useState(false);
   const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
   const { incomeSources, refetch: refetchIncomeSources } = useIncomeSources();
@@ -74,9 +75,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     };
     reader.readAsDataURL(file);
     
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    // Reset file inputs
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
+    if (galleryInputRef.current) {
+      galleryInputRef.current.value = '';
     }
   };
 
@@ -348,8 +352,9 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
             <form onSubmit={handleSubmit} className="space-y-5 pb-4">
               {/* Receipt Scan Buttons */}
               <div className="flex gap-2">
+                {/* Camera input - has capture attribute */}
                 <input
-                  ref={fileInputRef}
+                  ref={cameraInputRef}
                   type="file"
                   accept="image/*"
                   capture="environment"
@@ -357,16 +362,20 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   className="hidden"
                   id="camera-input"
                 />
+                {/* Gallery input - NO capture attribute */}
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageCapture}
+                  className="hidden"
+                  id="gallery-input"
+                />
                 <Button
                   type="button"
                   variant="outline"
                   className="flex-1 gap-2 rounded-xl"
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.setAttribute('capture', 'environment');
-                      fileInputRef.current.click();
-                    }
-                  }}
+                  onClick={() => cameraInputRef.current?.click()}
                   disabled={scanning}
                 >
                   {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -376,12 +385,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   type="button"
                   variant="outline"
                   className="flex-1 gap-2 rounded-xl"
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.removeAttribute('capture');
-                      fileInputRef.current.click();
-                    }
-                  }}
+                  onClick={() => galleryInputRef.current?.click()}
                   disabled={scanning}
                 >
                   {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
