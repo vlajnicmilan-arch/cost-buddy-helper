@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, ReceiptItem, getCategoryInfo } from '@/types/expense';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
+import { useIncomeSources } from '@/hooks/useIncomeSources';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
@@ -39,9 +41,11 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [scannedData, setScannedData] = useState<ScannedData | null>(null);
   const [showScannedPreview, setShowScannedPreview] = useState(false);
+  const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
+  const { incomeSources } = useIncomeSources();
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -169,6 +173,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setSaveReceipt(true);
     setScannedData(null);
     setShowScannedPreview(false);
+    setIncomeSourceId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -196,7 +201,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       payment_source: paymentSource,
       merchant_name: merchantName || undefined,
       receipt_url: receiptUrl,
-      ai_extracted: scannedData !== null
+      ai_extracted: scannedData !== null,
+      income_source_id: type === 'income' ? incomeSourceId : null
     }, validItems.length > 0 ? validItems : undefined);
 
     resetForm();
@@ -424,6 +430,34 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   Prihod
                 </button>
               </div>
+
+              {/* Income Source - Only for income type */}
+              {type === 'income' && incomeSources.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Izvor prihoda</Label>
+                  <Select 
+                    value={incomeSourceId || 'none'} 
+                    onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue placeholder="Odaberi izvor prihoda" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">Bez izvora</span>
+                      </SelectItem>
+                      {incomeSources.map((source) => (
+                        <SelectItem key={source.id} value={source.id}>
+                          <span className="flex items-center gap-2">
+                            <span>{source.icon}</span>
+                            <span>{source.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Payment Source */}
               <div className="space-y-2">

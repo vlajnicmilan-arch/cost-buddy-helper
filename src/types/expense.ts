@@ -56,6 +56,7 @@ export interface Expense {
   receipt_url?: string | null;
   merchant_name?: string | null;
   ai_extracted?: boolean | null;
+  income_source_id?: string | null;
   created_at?: string;
   updated_at?: string;
   items?: ReceiptItem[];

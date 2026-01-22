@@ -11,6 +11,7 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useIncomeSources } from '@/hooks/useIncomeSources';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -26,19 +27,10 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
   const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
   const [date, setDate] = useState<Date>(new Date());
   const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Initialize form when expense changes
-  useState(() => {
-    if (expense) {
-      setAmount(expense.amount.toString());
-      setDescription(expense.description);
-      setCategory(expense.category);
-      setPaymentSource(expense.payment_source || 'cash');
-      setDate(expense.date);
-      setType(expense.type);
-    }
-  });
+  const { incomeSources } = useIncomeSources();
 
   // Reset form when dialog opens with new expense
   const handleOpenChange = (isOpen: boolean) => {
@@ -49,6 +41,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
       setPaymentSource(expense.payment_source || 'cash');
       setDate(expense.date);
       setType(expense.type);
+      setIncomeSourceId(expense.income_source_id || null);
     }
     onOpenChange(isOpen);
   };
@@ -66,6 +59,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         payment_source: paymentSource,
         date,
         type,
+        income_source_id: type === 'income' ? incomeSourceId : null,
         updated_at: new Date().toISOString()
       });
       onOpenChange(false);
@@ -78,7 +72,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Uredi {type === 'income' ? 'prihod' : 'trošak'}</DialogTitle>
         </DialogHeader>
@@ -106,6 +100,34 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
               </Button>
             </div>
           </div>
+
+          {/* Income Source - Only for income type */}
+          {type === 'income' && incomeSources.length > 0 && (
+            <div className="space-y-2">
+              <Label>Izvor prihoda</Label>
+              <Select 
+                value={incomeSourceId || 'none'} 
+                onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberi izvor prihoda" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">Bez izvora</span>
+                  </SelectItem>
+                  {incomeSources.map((source) => (
+                    <SelectItem key={source.id} value={source.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{source.icon}</span>
+                        <span>{source.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Amount */}
           <div className="space-y-2">

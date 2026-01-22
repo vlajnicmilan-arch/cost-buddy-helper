@@ -52,7 +52,8 @@ export const useExpenses = () => {
           date: new Date(e.date),
           category: e.category as Category,
           type: e.type as 'expense' | 'income',
-          payment_source: (e.payment_source || 'cash') as PaymentSource
+          payment_source: (e.payment_source || 'cash') as PaymentSource,
+          income_source_id: e.income_source_id
         })) || []);
       }
     } catch (error) {
@@ -99,7 +100,8 @@ export const useExpenses = () => {
             payment_source: expense.payment_source || 'cash',
             receipt_url: expense.receipt_url,
             merchant_name: expense.merchant_name,
-            ai_extracted: expense.ai_extracted
+            ai_extracted: expense.ai_extracted,
+            income_source_id: expense.income_source_id
           })
           .select()
           .single();
@@ -123,7 +125,8 @@ export const useExpenses = () => {
           date: new Date(data.date),
           category: data.category as Category,
           type: data.type as 'expense' | 'income',
-          payment_source: (data.payment_source || 'cash') as PaymentSource
+          payment_source: (data.payment_source || 'cash') as PaymentSource,
+          income_source_id: data.income_source_id
         };
 
         setExpenses(prev => [newExpense, ...prev]);
@@ -157,6 +160,7 @@ export const useExpenses = () => {
             date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
             payment_source: expense.payment_source || 'cash',
             merchant_name: expense.merchant_name,
+            income_source_id: expense.income_source_id,
             updated_at: new Date().toISOString()
           })
           .eq('id', expense.id);

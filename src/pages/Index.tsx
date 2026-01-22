@@ -11,6 +11,7 @@ import { BackupRestore } from '@/components/BackupRestore';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
+import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { Expense } from '@/types/expense';
 import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -227,6 +228,11 @@ const Index = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
+            <IncomeSourcesPanel
+              expenses={expenses}
+              onUpdateExpense={updateExpense}
+              onDeleteExpense={deleteExpense}
+            />
             <CategoryBreakdown 
               expensesByCategory={expensesByCategory} 
               total={totalExpenses} 
