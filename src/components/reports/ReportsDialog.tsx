@@ -393,7 +393,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 rounded-xl">
+        <Button variant="outline" className="gap-2 rounded-xl border-amber-500/50 text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:border-amber-400/50 dark:text-amber-400 dark:hover:bg-amber-950 dark:hover:text-amber-300">
           <FileText className="w-4 h-4" />
           Izvješća
         </Button>
