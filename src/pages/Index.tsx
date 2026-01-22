@@ -265,6 +265,16 @@ const Index = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Income Sources - Mobile First (visible only on mobile, above transactions) */}
+          <div className="lg:hidden">
+            <IncomeSourcesPanel
+              expenses={expenses}
+              onUpdateExpense={updateExpense}
+              onDeleteExpense={deleteExpense}
+              onRefreshExpenses={refetch}
+            />
+          </div>
+
           {/* Transactions */}
           <div className="lg:col-span-2 glass-card rounded-2xl p-6 animate-fade-in">
             <h2 className="text-lg font-semibold mb-4">Nedavne transakcije</h2>
@@ -300,12 +310,15 @@ const Index = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
-            <IncomeSourcesPanel
-              expenses={expenses}
-              onUpdateExpense={updateExpense}
-              onDeleteExpense={deleteExpense}
-              onRefreshExpenses={refetch}
-            />
+            {/* Income Sources - Desktop (hidden on mobile since it's shown above) */}
+            <div className="hidden lg:block">
+              <IncomeSourcesPanel
+                expenses={expenses}
+                onUpdateExpense={updateExpense}
+                onDeleteExpense={deleteExpense}
+                onRefreshExpenses={refetch}
+              />
+            </div>
             <CategoryBreakdown 
               expensesByCategory={expensesByCategory} 
               total={totalExpenses}
