@@ -57,6 +57,9 @@ const Index = () => {
     setIsCheckingUpdate(false);
   };
   
+  // Get custom payment sources for card filtering (declare before useExpenses to use in callback)
+  const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
+
   const { 
     expenses, 
     allExpenses,
@@ -76,7 +79,9 @@ const Index = () => {
     expensesByCategory,
     isLocalMode,
     refetch
-  } = useExpenses();
+  } = useExpenses({
+    onBalanceUpdated: refetchPaymentSources
+  });
 
   // Get all transfers for the dialog
   const allTransfers = useMemo(() => 
@@ -84,9 +89,6 @@ const Index = () => {
     [expenses]
   );
 
-  // Get custom payment sources for card filtering
-  const { customPaymentSources } = useCustomPaymentSources();
-  
   // Get all cards from all custom payment sources
   const allCards = useMemo(() => {
     return customPaymentSources.flatMap(source => source.cards || []);
