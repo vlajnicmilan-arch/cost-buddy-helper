@@ -12,6 +12,43 @@ interface ParsedReceipt {
   items: ReceiptItem[];
 }
 
+// Kompresija slike za mobilne uređaje - smanjuje veličinu za stabilnije slanje
+const compressImage = async (base64: string, maxWidth = 1200, quality = 0.8): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      
+      // Smanjuj ako je preveliko
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(base64);
+        return;
+      }
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressed = canvas.toDataURL('image/jpeg', quality);
+      console.log('Image compressed from', base64.length, 'to', compressed.length);
+      resolve(compressed);
+    };
+    img.onerror = () => {
+      console.error('Failed to load image for compression');
+      resolve(base64); // Vrati original ako kompresija ne uspije
+    };
+    img.src = base64;
+  });
+};
+
 export const useReceiptScanner = () => {
   const [scanning, setScanning] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(null);
@@ -28,6 +65,11 @@ export const useReceiptScanner = () => {
         return null;
       }
 
+      // Komprimiraj sliku za stabilniji prijenos s mobitela
+      console.log('Compressing image...');
+      const compressedImage = await compressImage(imageBase64);
+      console.log('Image ready, sending to API...');
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`,
         {
@@ -36,9 +78,11 @@ export const useReceiptScanner = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${sessionData.session.access_token}`
           },
-          body: JSON.stringify({ imageBase64 })
+          body: JSON.stringify({ imageBase64: compressedImage })
         }
       );
+
+      console.log('Response status:', response.status);
 
       if (response.status === 429) {
         toast.error('Previše zahtjeva. Pokušaj ponovno za minutu.');
@@ -51,11 +95,18 @@ export const useReceiptScanner = () => {
       }
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Greška pri skeniranju');
+        let errorMessage = 'Greška pri skeniranju';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          console.error('Failed to parse error response');
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log('Parsed data:', data);
       
       const result: ParsedReceipt = {
         amount: data.amount,

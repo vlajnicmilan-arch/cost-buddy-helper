@@ -6,6 +6,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Čišćenje base64 podataka - mobilni uređaji često dodaju prefiks
+function cleanBase64(base64String: string): string {
+  if (!base64String) return "";
+  let cleaned = base64String.trim();
+
+  // Uklanjanje "data:image/...;base64," prefiksa
+  if (cleaned.includes(",") && cleaned.startsWith("data:")) {
+    cleaned = cleaned.split(",")[1];
+  }
+
+  // Uklanjanje razmaka i novih redova koji se mogu pojaviti na mobitelu
+  return cleaned.replace(/\s/g, "");
+}
+
+// Detekcija MIME tipa iz base64 podataka
+function detectMimeType(base64String: string): string {
+  if (base64String.startsWith("data:")) {
+    const match = base64String.match(/data:([^;]+);/);
+    if (match) return match[1];
+  }
+  
+  // Provjera magic bytes-a
+  const cleaned = cleanBase64(base64String);
+  if (cleaned.startsWith("/9j/")) return "image/jpeg";
+  if (cleaned.startsWith("iVBORw")) return "image/png";
+  if (cleaned.startsWith("R0lGOD")) return "image/gif";
+  if (cleaned.startsWith("UklGR")) return "image/webp";
+  
+  return "image/jpeg"; // Default
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -14,6 +45,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
+      console.error('No authorization header');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -31,6 +63,7 @@ serve(async (req) => {
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     
     if (claimsError || !claimsData?.claims) {
+      console.error('Invalid token:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Invalid token' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -38,22 +71,46 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { imageBase64 } = await req.json();
+    
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const { imageBase64 } = body;
 
     if (!imageBase64) {
+      console.error('No image provided in request');
       return new Response(
         JSON.stringify({ error: 'No image provided' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Detektiraj MIME tip i očisti base64
+    const mimeType = detectMimeType(imageBase64);
+    const cleanedBase64 = cleanBase64(imageBase64);
+    
     console.log('Processing receipt image for user:', userId);
+    console.log('MIME type detected:', mimeType);
+    console.log('Base64 length:', cleanedBase64.length);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    // Kreiraj ispravni data URL za Gemini AI
+    const imageDataUrl = `data:${mimeType};base64,${cleanedBase64}`;
+    
+    console.log('Sending to AI gateway...');
+    
     // Use Gemini for OCR and categorization with enhanced prompt for date and items
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -107,7 +164,7 @@ Ako ne možeš pročitati račun, vrati:
               {
                 type: 'image_url',
                 image_url: {
-                  url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`
+                  url: imageDataUrl
                 }
               }
             ]
