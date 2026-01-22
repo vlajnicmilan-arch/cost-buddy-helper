@@ -138,9 +138,9 @@
     "paymentSource": "Izvor plaćanja"
   },
   "incomeSources": {
-    "title": "Izvori prihoda",
-    "addSource": "Dodaj izvor",
-    "noSources": "Nema izvora prihoda",
+    "title": "Projekti",
+    "addSource": "Dodaj projekt",
+    "noSources": "Nema projekata",
     "unassigned": "Bez izvora",
     "assignSource": "Dodijeli izvor",
     "addFirstSource": "Dodaj prvi izvor za kategorizaciju prihoda",

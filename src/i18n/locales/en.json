@@ -138,9 +138,9 @@
     "paymentSource": "Payment Source"
   },
   "incomeSources": {
-    "title": "Income Sources",
-    "addSource": "Add Source",
-    "noSources": "No income sources",
+    "title": "Projects",
+    "addSource": "Add Project",
+    "noSources": "No projects",
     "unassigned": "Unassigned",
     "assignSource": "Assign Source",
     "addFirstSource": "Add your first source to categorize income",
