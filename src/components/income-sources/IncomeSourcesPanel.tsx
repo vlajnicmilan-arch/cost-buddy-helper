@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
+import { useIncomeSourceStats } from '@/hooks/useIncomeSourceStats';
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense } from '@/types/expense';
 import { IncomeSourceCard } from './IncomeSourceCard';
 import { IncomeSourceDialog } from './IncomeSourceDialog';
 import { IncomeSourceTransactionsDialog } from './IncomeSourceTransactionsDialog';
 import { UnassignedIncomeDialog } from './UnassignedIncomeDialog';
+import { MembersDialog } from './MembersDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2, TrendingUp, CircleDashed } from 'lucide-react';
@@ -35,11 +37,16 @@ export const IncomeSourcesPanel = ({
     deleteIncomeSource 
   } = useIncomeSources();
 
+  // Get member and pending stats for all sources
+  const sourceIds = useMemo(() => incomeSources.map(s => s.id), [incomeSources]);
+  const { stats: memberStats } = useIncomeSourceStats(sourceIds);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<IncomeSource | null>(null);
   const [selectedSource, setSelectedSource] = useState<IncomeSource | null>(null);
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
   const [unassignedDialogOpen, setUnassignedDialogOpen] = useState(false);
+  const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Expense | null>(null);
   const [editTransactionDialogOpen, setEditTransactionDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -106,6 +113,11 @@ export const IncomeSourcesPanel = ({
   const handleSourceClick = (source: IncomeSource) => {
     setSelectedSource(source);
     setTransactionsDialogOpen(true);
+  };
+
+  const handleMembersClick = (source: IncomeSource) => {
+    setSelectedSource(source);
+    setMembersDialogOpen(true);
   };
 
   const handleSave = async (sourceData: Omit<IncomeSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
@@ -183,9 +195,12 @@ export const IncomeSourcesPanel = ({
                   incomeAmount={sourceStats[source.id]?.income || 0}
                   expenseAmount={sourceStats[source.id]?.expenses || 0}
                   transactionCount={sourceStats[source.id]?.count || 0}
+                  memberCount={memberStats[source.id]?.memberCount || 0}
+                  pendingCount={memberStats[source.id]?.pendingCount || 0}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onClick={handleSourceClick}
+                  onMembersClick={handleMembersClick}
                 />
               </motion.div>
             ))}
@@ -267,6 +282,12 @@ export const IncomeSourcesPanel = ({
         onEditTransaction={handleEditTransaction}
         onDeleteExpense={onDeleteExpense}
         onAddIncomeSource={addIncomeSource}
+      />
+
+      <MembersDialog
+        open={membersDialogOpen}
+        onOpenChange={setMembersDialogOpen}
+        source={selectedSource}
       />
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
