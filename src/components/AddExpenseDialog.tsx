@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, ReceiptItem, getCategoryInfo, TransactionType } from '@/types/expense';
+import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, getCategoryInfo, TransactionType } from '@/types/expense';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
@@ -533,28 +533,37 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               )}
 
               {/* Payment Source */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label className="text-sm font-medium">
                   {type === 'income' ? 'Izvor prihoda' : 'Način plaćanja'}
                 </Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {PAYMENT_SOURCES.map((source) => (
-                    <button
-                      key={source.id}
-                      type="button"
-                      onClick={() => setPaymentSource(source.id)}
-                      className={cn(
-                        "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all",
-                        paymentSource === source.id 
-                          ? type === 'income' 
-                            ? "border-income bg-income/10" 
-                            : "border-expense bg-expense/10"
-                          : "border-transparent bg-muted/50 hover:bg-muted"
-                      )}
-                    >
-                      <span className="text-lg">{source.icon}</span>
-                      <span className="text-xs font-medium text-muted-foreground">{source.name}</span>
-                    </button>
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                  {PAYMENT_SOURCE_GROUPS.map((group) => (
+                    <div key={group.label} className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {group.label}
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {group.sources.map((source) => (
+                          <button
+                            key={source.id}
+                            type="button"
+                            onClick={() => setPaymentSource(source.id)}
+                            className={cn(
+                              "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all",
+                              paymentSource === source.id 
+                                ? type === 'income' 
+                                  ? "border-income bg-income/10" 
+                                  : "border-expense bg-expense/10"
+                                : "border-transparent bg-muted/50 hover:bg-muted"
+                            )}
+                          >
+                            <span className="text-lg">{source.icon}</span>
+                            <span className="text-xs font-medium text-muted-foreground truncate w-full text-center">{source.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

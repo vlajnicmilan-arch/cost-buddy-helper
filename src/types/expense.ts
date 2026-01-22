@@ -75,6 +75,61 @@ export const PAYMENT_SOURCES: PaymentSourceInfo[] = [
   { id: 'other', name: 'Ostalo', icon: '💰' },
 ];
 
+export interface PaymentSourceGroup {
+  label: string;
+  sources: PaymentSourceInfo[];
+}
+
+export const PAYMENT_SOURCE_GROUPS: PaymentSourceGroup[] = [
+  {
+    label: 'Osnovno',
+    sources: [
+      { id: 'cash', name: 'Gotovina', icon: '💵' },
+      { id: 'bank', name: 'Banka', icon: '🏦' },
+    ]
+  },
+  {
+    label: 'Visa',
+    sources: [
+      { id: 'visa', name: 'Visa', icon: '💳' },
+      { id: 'visa_gold', name: 'Visa Gold', icon: '💳' },
+      { id: 'visa_platinum', name: 'Visa Platinum', icon: '💳' },
+      { id: 'visa_kekspay', name: 'Visa KeksPay', icon: '📱' },
+      { id: 'visa_erste', name: 'Visa Erstebank', icon: '🏦' },
+    ]
+  },
+  {
+    label: 'Mastercard',
+    sources: [
+      { id: 'mastercard', name: 'Mastercard', icon: '💳' },
+      { id: 'mastercard_gold', name: 'Mastercard Gold', icon: '💳' },
+      { id: 'mastercard_platinum', name: 'Mastercard Platinum', icon: '💳' },
+      { id: 'maestro', name: 'Maestro', icon: '💳' },
+    ]
+  },
+  {
+    label: 'Ostale kartice',
+    sources: [
+      { id: 'amex', name: 'American Express', icon: '💳' },
+      { id: 'diners', name: 'Diners Club', icon: '💳' },
+    ]
+  },
+  {
+    label: 'Digitalni novčanici',
+    sources: [
+      { id: 'revolut', name: 'Revolut', icon: '💳' },
+      { id: 'aircash', name: 'Aircash', icon: '📱' },
+      { id: 'crypto', name: 'Kripto', icon: '₿' },
+    ]
+  },
+  {
+    label: 'Ostalo',
+    sources: [
+      { id: 'other', name: 'Ostalo', icon: '💰' },
+    ]
+  }
+];
+
 export const getPaymentSourceInfo = (source: PaymentSource): PaymentSourceInfo => {
   return PAYMENT_SOURCES.find(s => s.id === source) || PAYMENT_SOURCES[PAYMENT_SOURCES.length - 1];
 };
