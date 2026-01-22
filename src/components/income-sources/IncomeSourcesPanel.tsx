@@ -16,12 +16,14 @@ interface IncomeSourcesPanelProps {
   expenses: Expense[];
   onUpdateExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
+  onRefreshExpenses?: () => void;
 }
 
 export const IncomeSourcesPanel = ({
   expenses,
   onUpdateExpense,
-  onDeleteExpense
+  onDeleteExpense,
+  onRefreshExpenses
 }: IncomeSourcesPanelProps) => {
   const { 
     incomeSources, 
@@ -93,6 +95,8 @@ export const IncomeSourcesPanel = ({
     if (sourceToDelete) {
       await deleteIncomeSource(sourceToDelete);
       setSourceToDelete(null);
+      // Refresh expenses after deleting income source (as linked expenses are also deleted)
+      onRefreshExpenses?.();
     }
     setDeleteConfirmOpen(false);
   };
