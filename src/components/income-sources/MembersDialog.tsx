@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useIncomeSourceMembers } from '@/hooks/useIncomeSourceMembers';
 import { usePendingTransactions } from '@/hooks/usePendingTransactions';
 import { IncomeSource } from '@/types/incomeSource';
@@ -52,6 +52,13 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
     cancelInvitation,
     refetch
   } = useIncomeSourceMembers(source?.id || null);
+
+  // Reset invite link when dialog opens/closes or source changes
+  useEffect(() => {
+    if (!open) {
+      setInviteLink(null);
+    }
+  }, [open, source?.id]);
   
   const { 
     pendingTransactions, 
