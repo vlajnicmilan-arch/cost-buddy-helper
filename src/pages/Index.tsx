@@ -98,7 +98,7 @@ const Index = () => {
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-6 sm:mb-8">
           <div className="flex items-center justify-between sm:block">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">FinMate</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">V&M Balance</h1>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">Upravljaj svojim financijama</p>
                 <TooltipProvider>

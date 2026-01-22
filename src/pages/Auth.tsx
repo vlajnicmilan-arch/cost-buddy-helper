@@ -87,7 +87,7 @@ const Auth = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <Wallet className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">FinMate</h1>
+          <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
             {isLogin ? 'Prijavite se na svoj račun' : 'Kreirajte novi račun'}
           </p>

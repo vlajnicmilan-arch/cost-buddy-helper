@@ -156,7 +156,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `finmate-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -393,7 +393,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
                         <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                         <p className="font-medium mb-2">Odaberi JSON datoteku</p>
                         <p className="text-sm text-muted-foreground">
-                          Datoteka mora biti prethodno izvezena iz FinMate
+                          Datoteka mora biti prethodno izvezena iz V&M Balance
                         </p>
                       </>
                     )}

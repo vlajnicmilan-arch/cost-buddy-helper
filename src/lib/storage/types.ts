@@ -34,7 +34,7 @@ export const STORAGE_OPTIONS = [
   },
   {
     id: 'cloud' as StorageMode,
-    name: 'FinMate Cloud',
+    name: 'V&M Balance Cloud',
     icon: '☁️',
     description: 'Sinkroniziraj između uređaja. Potrebna registracija.',
     available: true
