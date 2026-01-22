@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, ReceiptItem, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useBalanceUpdater } from './useBalanceUpdater';
 import { toast } from 'sonner';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import {
@@ -14,9 +15,16 @@ import {
   initLocalDB
 } from '@/lib/storage/indexedDB';
 
-export const useExpenses = () => {
+interface UseExpensesOptions {
+  onBalanceUpdated?: () => void;
+}
+
+export const useExpenses = (options?: UseExpensesOptions) => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
+  const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({
+    onBalanceUpdated: options?.onBalanceUpdated
+  });
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -121,6 +129,10 @@ export const useExpenses = () => {
         }
 
         setExpenses(prev => [newExpense, ...prev]);
+        
+        // Update payment source balance for local mode
+        await updateBalance(expense.payment_source, expense.amount, expense.type);
+        
         toast.success(expense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
       } else {
         if (!user) {
@@ -189,6 +201,9 @@ export const useExpenses = () => {
         };
 
         setExpenses(prev => [newExpense, ...prev]);
+
+        // Update payment source balance
+        await updateBalance(expense.payment_source, expense.amount, expense.type);
         
         if (isPendingMemberTransaction) {
           toast.success('Transakcija poslana vlasniku na odobrenje');
@@ -204,9 +219,25 @@ export const useExpenses = () => {
 
   const updateExpense = async (expense: Expense) => {
     try {
+      // Find the old expense to compare for balance updates
+      const oldExpense = expenses.find(e => e.id === expense.id);
+      
       if (isLocalMode) {
         const updated = await updateLocalExpense(expense);
         setExpenses(prev => prev.map(e => e.id === expense.id ? updated : e));
+        
+        // Update balances if payment source, amount, or type changed
+        if (oldExpense) {
+          await handleTransactionUpdate(
+            oldExpense.payment_source,
+            oldExpense.amount,
+            oldExpense.type,
+            expense.payment_source,
+            expense.amount,
+            expense.type
+          );
+        }
+        
         toast.success('Ažurirano');
       } else {
         if (!user) {
@@ -233,6 +264,19 @@ export const useExpenses = () => {
         if (error) throw error;
 
         setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
+        
+        // Update balances if payment source, amount, or type changed
+        if (oldExpense) {
+          await handleTransactionUpdate(
+            oldExpense.payment_source,
+            oldExpense.amount,
+            oldExpense.type,
+            expense.payment_source,
+            expense.amount,
+            expense.type
+          );
+        }
+        
         toast.success('Ažurirano');
       }
     } catch (error) {
@@ -286,6 +330,9 @@ export const useExpenses = () => {
 
   const deleteExpense = async (id: string) => {
     try {
+      // Find the expense before deleting to reverse its balance effect
+      const expenseToDelete = expenses.find(e => e.id === id);
+      
       if (isLocalMode) {
         await deleteLocalExpense(id);
       } else {
@@ -298,6 +345,17 @@ export const useExpenses = () => {
       }
 
       setExpenses(prev => prev.filter(e => e.id !== id));
+      
+      // Reverse the balance effect of the deleted transaction
+      if (expenseToDelete) {
+        await updateBalance(
+          expenseToDelete.payment_source,
+          expenseToDelete.amount,
+          expenseToDelete.type,
+          true // isReversal = true
+        );
+      }
+      
       toast.success('Obrisano');
     } catch (error) {
       console.error('Error deleting expense:', error);
