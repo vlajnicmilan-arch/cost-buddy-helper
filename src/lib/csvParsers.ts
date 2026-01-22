@@ -22,33 +22,90 @@ export function isInternalTransfer(description: string): boolean {
     'nadoplata aircash',
     'aircash top up',
     'top up aircash',
+    'aircash nadoplata',
     // Revolut transfers
     'revolut top up',
+    'revolut nadoplata',
     'top-up',
     'topup',
     'uplata revolut',
     'nadoplata revolut',
+    'added money',
+    'money added',
     // General bank transfers
     'prijenos na vlastiti',
     'prijenos između računa',
+    'prijenos s računa',
+    'prijenos na račun',
     'transfer between accounts',
     'internal transfer',
     'interni prijenos',
     'prebacivanje sredstava',
     'transfer to own',
     'transfer from own',
+    'own account transfer',
+    'vlastiti račun',
+    // Croatian bank specific
+    'pbz prijenos',
+    'erste prijenos',
+    'zaba prijenos',
+    'otp prijenos',
+    'rba prijenos',
+    'raiffeisen prijenos',
+    'addiko prijenos',
+    'hpb prijenos',
+    'sberbank prijenos',
     // Card top-ups
     'visa top up',
     'mastercard top up',
+    'maestro top up',
     'card top up',
     'kartica nadoplata',
+    'nadoplata kartice',
+    'dopuna kartice',
+    // ATM and cash operations
+    'podizanje gotovine',
+    'bankomat podizanje',
+    'atm withdrawal',
+    'atm',
+    'bankomat',
+    'cash withdrawal',
+    'polog gotovine',
+    'cash deposit',
+    'uplata gotovine',
     // Crypto transfers between wallets
     'transfer to wallet',
     'prijenos na wallet',
+    'crypto transfer',
+    'wallet transfer',
+    // Exchange operations
+    'exchange',
+    'mjenjačnica',
+    'currency exchange',
+    'forex',
+    'konverzija valute',
+    'currency conversion',
     // Specific patterns
     'nadoplata putem',
-    'podizanje gotovine', // ATM withdrawal - technically a transfer
-    'bankomat podizanje'
+    'savings transfer',
+    'štednja prijenos',
+    'oročena sredstva',
+    'tekući račun prijenos',
+    // PayPal and digital wallets
+    'paypal transfer',
+    'paypal prijenos',
+    'wise transfer',
+    'skrill transfer',
+    'n26 transfer',
+    // Loan/credit related transfers
+    'otplata kredita',
+    'rata kredita',
+    'kredit prijenos',
+    // Investment transfers
+    'ulaganje',
+    'investment transfer',
+    'fond prijenos',
+    'dionice prijenos'
   ];
   
   // Check for any transfer keyword
@@ -59,18 +116,34 @@ export function isInternalTransfer(description: string): boolean {
   }
   
   // Pattern: "Uplata na X - Y" where X is a payment platform name
-  const paymentPlatforms = ['aircash', 'revolut', 'paypal', 'skrill', 'wise', 'n26'];
+  const paymentPlatforms = ['aircash', 'revolut', 'paypal', 'skrill', 'wise', 'n26', 'curve', 'bunq', 'monzo', 'transferwise'];
   for (const platform of paymentPlatforms) {
     if (desc.includes(`uplata na ${platform}`) || 
         desc.includes(`prijenos na ${platform}`) ||
-        desc.includes(`transfer to ${platform}`)) {
+        desc.includes(`transfer to ${platform}`) ||
+        desc.includes(`${platform} uplata`) ||
+        desc.includes(`${platform} prijenos`)) {
+      return true;
+    }
+  }
+  
+  // Pattern: Croatian bank names with transfer keywords
+  const croatianBanks = ['pbz', 'erste', 'zaba', 'zagrebačka banka', 'otp', 'rba', 'raiffeisen', 'addiko', 'hpb', 'sberbank', 'kentbank', 'agram banka', 'partner banka', 'podravska banka', 'samoborska banka', 'slatinska banka'];
+  for (const bank of croatianBanks) {
+    if (desc.includes(bank) && (desc.includes('prijenos') || desc.includes('transfer') || desc.includes('prebacivanje'))) {
       return true;
     }
   }
   
   // Pattern: Card-based top-up (e.g., "Visa *** 1234" for top-ups)
-  if ((desc.includes('visa') || desc.includes('mastercard') || desc.includes('maestro')) && 
-      (desc.includes('top') || desc.includes('nadoplata') || desc.includes('uplata'))) {
+  if ((desc.includes('visa') || desc.includes('mastercard') || desc.includes('maestro') || desc.includes('diners') || desc.includes('amex') || desc.includes('american express')) && 
+      (desc.includes('top') || desc.includes('nadoplata') || desc.includes('uplata') || desc.includes('dopuna'))) {
+    return true;
+  }
+  
+  // Pattern: IBAN to IBAN transfer (HR IBAN format)
+  if (/hr\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{1}/.test(desc) && 
+      (desc.includes('prijenos') || desc.includes('transfer') || desc.includes('prebacivanje'))) {
     return true;
   }
   
