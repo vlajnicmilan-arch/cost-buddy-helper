@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
-import { CustomPaymentSource } from '@/types/customPaymentSource';
+import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSource';
 import { toast } from 'sonner';
 
 export const useCustomPaymentSources = () => {
@@ -29,14 +29,30 @@ export const useCustomPaymentSources = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      // Fetch payment sources
+      const { data: sources, error: sourcesError } = await supabase
         .from('custom_payment_sources' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setCustomPaymentSources((data || []) as unknown as CustomPaymentSource[]);
+      if (sourcesError) throw sourcesError;
+
+      // Fetch cards for all sources
+      const { data: cards, error: cardsError } = await supabase
+        .from('payment_source_cards' as any)
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (cardsError) throw cardsError;
+
+      // Map cards to their sources
+      const sourcesWithCards = (sources || []).map((source: any) => ({
+        ...source,
+        cards: (cards || []).filter((card: any) => card.payment_source_id === source.id)
+      }));
+
+      setCustomPaymentSources(sourcesWithCards as CustomPaymentSource[]);
     } catch (error) {
       console.error('Error fetching custom payment sources:', error);
       toast.error('Greška pri dohvaćanju prilagođenih izvora plaćanja');
@@ -71,17 +87,18 @@ export const useCustomPaymentSources = () => {
     }
 
     try {
+      const { cards, ...sourceData } = source;
       const { data, error } = await supabase
         .from('custom_payment_sources' as any)
         .insert({
-          ...source,
+          ...sourceData,
           user_id: user.id,
         })
         .select()
         .single();
 
       if (error) throw error;
-      const newSource = data as unknown as CustomPaymentSource;
+      const newSource = { ...(data as object), cards: [] } as CustomPaymentSource;
       setCustomPaymentSources(prev => [newSource, ...prev]);
       toast.success('Izvor plaćanja dodan');
       return newSource;
@@ -104,9 +121,10 @@ export const useCustomPaymentSources = () => {
     }
 
     try {
+      const { cards, ...sourceData } = updates;
       const { error } = await supabase
         .from('custom_payment_sources' as any)
-        .update(updates)
+        .update(sourceData)
         .eq('id', id);
 
       if (error) throw error;
@@ -144,12 +162,132 @@ export const useCustomPaymentSources = () => {
     }
   };
 
+  // Card management functions
+  const addCard = async (paymentSourceId: string, card: Omit<PaymentSourceCard, 'id' | 'payment_source_id' | 'user_id' | 'created_at'>) => {
+    if (isLocalMode) {
+      const newCard: PaymentSourceCard = {
+        ...card,
+        id: crypto.randomUUID(),
+        payment_source_id: paymentSourceId,
+        user_id: 'local',
+        created_at: new Date().toISOString(),
+      };
+      const updated = customPaymentSources.map(src =>
+        src.id === paymentSourceId 
+          ? { ...src, cards: [...(src.cards || []), newCard] }
+          : src
+      );
+      setCustomPaymentSources(updated);
+      localStorage.setItem('customPaymentSources', JSON.stringify(updated));
+      return newCard;
+    }
+
+    if (!user) {
+      toast.error('Morate biti prijavljeni');
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('payment_source_cards' as any)
+        .insert({
+          ...card,
+          payment_source_id: paymentSourceId,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      const newCard = data as unknown as PaymentSourceCard;
+      setCustomPaymentSources(prev =>
+        prev.map(src =>
+          src.id === paymentSourceId
+            ? { ...src, cards: [...(src.cards || []), newCard] }
+            : src
+        )
+      );
+      return newCard;
+    } catch (error) {
+      console.error('Error adding card:', error);
+      toast.error('Greška pri dodavanju kartice');
+      return null;
+    }
+  };
+
+  const updateCard = async (cardId: string, updates: Partial<Pick<PaymentSourceCard, 'card_name' | 'last_four_digits' | 'card_type'>>) => {
+    if (isLocalMode) {
+      const updated = customPaymentSources.map(src => ({
+        ...src,
+        cards: (src.cards || []).map(card =>
+          card.id === cardId ? { ...card, ...updates } : card
+        )
+      }));
+      setCustomPaymentSources(updated);
+      localStorage.setItem('customPaymentSources', JSON.stringify(updated));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('payment_source_cards' as any)
+        .update(updates)
+        .eq('id', cardId);
+
+      if (error) throw error;
+      setCustomPaymentSources(prev =>
+        prev.map(src => ({
+          ...src,
+          cards: (src.cards || []).map(card =>
+            card.id === cardId ? { ...card, ...updates } : card
+          )
+        }))
+      );
+    } catch (error) {
+      console.error('Error updating card:', error);
+      toast.error('Greška pri ažuriranju kartice');
+    }
+  };
+
+  const deleteCard = async (cardId: string) => {
+    if (isLocalMode) {
+      const updated = customPaymentSources.map(src => ({
+        ...src,
+        cards: (src.cards || []).filter(card => card.id !== cardId)
+      }));
+      setCustomPaymentSources(updated);
+      localStorage.setItem('customPaymentSources', JSON.stringify(updated));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('payment_source_cards' as any)
+        .delete()
+        .eq('id', cardId);
+
+      if (error) throw error;
+      setCustomPaymentSources(prev =>
+        prev.map(src => ({
+          ...src,
+          cards: (src.cards || []).filter(card => card.id !== cardId)
+        }))
+      );
+    } catch (error) {
+      console.error('Error deleting card:', error);
+      toast.error('Greška pri brisanju kartice');
+    }
+  };
+
   return {
     customPaymentSources,
     loading,
     addCustomPaymentSource,
     updateCustomPaymentSource,
     deleteCustomPaymentSource,
+    addCard,
+    updateCard,
+    deleteCard,
     refetch: fetchCustomPaymentSources,
   };
 };

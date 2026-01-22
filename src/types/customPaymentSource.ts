@@ -1,3 +1,13 @@
+export interface PaymentSourceCard {
+  id: string;
+  payment_source_id: string;
+  user_id: string;
+  card_name: string;
+  last_four_digits: string;
+  card_type?: string | null;
+  created_at: string;
+}
+
 export interface CustomPaymentSource {
   id: string;
   user_id: string;
@@ -8,6 +18,7 @@ export interface CustomPaymentSource {
   description?: string | null;
   created_at: string;
   updated_at: string;
+  cards?: PaymentSourceCard[];
 }
 
 export const DEFAULT_PAYMENT_ICONS = [
