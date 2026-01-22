@@ -13,7 +13,7 @@ import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { Expense } from '@/types/expense';
-import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -40,6 +40,8 @@ const Index = () => {
     findDuplicates,
     totalExpenses, 
     totalIncome, 
+    monthlyTransfers,
+    monthlyTransferCount,
     balance,
     expensesByCategory,
     isLocalMode,
@@ -169,7 +171,7 @@ const Index = () => {
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <SummaryCard
             title="Stanje"
             amount={balance}
@@ -191,6 +193,33 @@ const Index = () => {
             onClick={() => setExpenseDialogOpen(true)}
           />
         </div>
+
+        {/* Monthly Transfers Summary */}
+        {monthlyTransferCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-muted/30 border border-border/50 rounded-xl flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <ArrowLeftRight className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Prijenosi ovaj mjesec</p>
+                <p className="text-xs text-muted-foreground">
+                  {monthlyTransferCount} {monthlyTransferCount === 1 ? 'prijenos' : monthlyTransferCount < 5 ? 'prijenosa' : 'prijenosa'} između vlastitih računa
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="font-mono font-semibold text-lg text-muted-foreground">
+                ↔ {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(monthlyTransfers)}
+              </p>
+              <p className="text-xs text-muted-foreground">ne utječe na stanje</p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
