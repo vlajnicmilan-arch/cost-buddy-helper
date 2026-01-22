@@ -195,31 +195,31 @@ const Index = () => {
         </div>
 
         {/* Monthly Transfers Summary */}
-        {monthlyTransferCount > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 bg-muted/30 border border-border/50 rounded-xl flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <ArrowLeftRight className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Prijenosi ovaj mjesec</p>
-                <p className="text-xs text-muted-foreground">
-                  {monthlyTransferCount} {monthlyTransferCount === 1 ? 'prijenos' : monthlyTransferCount < 5 ? 'prijenosa' : 'prijenosa'} između vlastitih računa
-                </p>
-              </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-4 bg-muted/30 border border-border/50 rounded-xl flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <ArrowLeftRight className="w-5 h-5 text-primary" />
             </div>
-            <div className="text-right">
-              <p className="font-mono font-semibold text-lg text-muted-foreground">
-                ↔ {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(monthlyTransfers)}
+            <div>
+              <p className="text-sm font-medium">Prijenosi ovaj mjesec</p>
+              <p className="text-xs text-muted-foreground">
+                {monthlyTransferCount === 0 
+                  ? 'Nema prijenosa između vlastitih računa' 
+                  : `${monthlyTransferCount} ${monthlyTransferCount === 1 ? 'prijenos' : 'prijenosa'} između vlastitih računa`}
               </p>
-              <p className="text-xs text-muted-foreground">ne utječe na stanje</p>
             </div>
-          </motion.div>
-        )}
+          </div>
+          <div className="text-right">
+            <p className="font-mono font-semibold text-lg text-muted-foreground">
+              ↔ {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(monthlyTransfers)}
+            </p>
+            <p className="text-xs text-muted-foreground">ne utječe na stanje</p>
+          </div>
+        </motion.div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
