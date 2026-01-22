@@ -203,32 +203,44 @@ const Index = () => {
           />
         </div>
 
-        {/* Monthly Transfers Summary - Clickable */}
+        {/* Transfers Summary - Clickable with toggle */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          onClick={() => setTransferDialogOpen(true)}
-          className="mb-8 p-4 bg-muted/30 border border-border/50 rounded-xl flex items-center justify-between cursor-pointer hover:bg-muted/50 hover:border-primary/30 transition-all"
+          className="mb-8 p-4 bg-muted/30 border border-border/50 rounded-xl"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ArrowLeftRight className="w-5 h-5 text-primary" />
+          <div 
+            onClick={() => setTransferDialogOpen(true)}
+            className="flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <ArrowLeftRight className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Prijenosi</p>
+                <p className="text-xs text-muted-foreground">
+                  {allTransfers.length === 0 
+                    ? 'Nema prijenosa između vlastitih računa' 
+                    : `${allTransfers.length} ${allTransfers.length === 1 ? 'prijenos' : 'prijenosa'} ukupno`}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium">Prijenosi ovaj mjesec</p>
-              <p className="text-xs text-muted-foreground">
-                {monthlyTransferCount === 0 
-                  ? 'Nema prijenosa između vlastitih računa' 
-                  : `${monthlyTransferCount} ${monthlyTransferCount === 1 ? 'prijenos' : 'prijenosa'} između vlastitih računa`}
+            <div className="text-right">
+              <p className="font-mono font-semibold text-lg text-muted-foreground">
+                ↔ {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(totalTransfers)}
               </p>
+              <p className="text-xs text-muted-foreground">Klikni za detalje →</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="font-mono font-semibold text-lg text-muted-foreground">
-              ↔ {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(monthlyTransfers)}
-            </p>
-            <p className="text-xs text-muted-foreground">Klikni za detalje →</p>
-          </div>
+          
+          {/* Quick stats row */}
+          {allTransfers.length > 0 && monthlyTransferCount > 0 && (
+            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+              <span>Ovaj mjesec: {monthlyTransferCount} {monthlyTransferCount === 1 ? 'prijenos' : 'prijenosa'}</span>
+              <span className="font-mono">{new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(monthlyTransfers)}</span>
+            </div>
+          )}
         </motion.div>
 
         {/* Main Content Grid */}
