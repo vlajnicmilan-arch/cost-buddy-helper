@@ -1,0 +1,146 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Wallet, ArrowRight, Check, Lock } from 'lucide-react';
+import { useStorage } from '@/contexts/StorageContext';
+import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
+import { cn } from '@/lib/utils';
+import { initLocalDB } from '@/lib/storage/indexedDB';
+
+const StorageSetup = () => {
+  const navigate = useNavigate();
+  const { setStorageMode } = useStorage();
+  const [selectedMode, setSelectedMode] = useState<StorageMode | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleContinue = async () => {
+    if (!selectedMode) return;
+
+    setIsLoading(true);
+
+    try {
+      if (selectedMode === 'local') {
+        await initLocalDB();
+        setStorageMode('local');
+        navigate('/');
+      } else if (selectedMode === 'cloud') {
+        setStorageMode('cloud');
+        navigate('/auth');
+      } else {
+        // Google Drive / iCloud - coming soon
+        setStorageMode(selectedMode);
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Error setting up storage:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md"
+      >
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Wallet className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground">FinMate</h1>
+          <p className="text-muted-foreground mt-2">
+            Gdje želiš spremati svoje podatke?
+          </p>
+        </div>
+
+        {/* Storage Options */}
+        <div className="space-y-3 mb-8">
+          <AnimatePresence>
+            {STORAGE_OPTIONS.map((option, index) => (
+              <motion.button
+                key={option.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => option.available && setSelectedMode(option.id)}
+                disabled={!option.available}
+                className={cn(
+                  "w-full p-4 rounded-2xl border-2 text-left transition-all relative overflow-hidden",
+                  selectedMode === option.id
+                    ? "border-primary bg-primary/5"
+                    : option.available
+                    ? "border-border/50 bg-muted/30 hover:bg-muted/50 hover:border-border"
+                    : "border-border/30 bg-muted/20 opacity-60 cursor-not-allowed"
+                )}
+              >
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl">{option.icon}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground">
+                        {option.name}
+                      </span>
+                      {option.comingSoon && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          Uskoro
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {option.description}
+                    </p>
+                  </div>
+                  {selectedMode === option.id && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="w-6 h-6 rounded-full bg-primary flex items-center justify-center"
+                    >
+                      <Check className="w-4 h-4 text-primary-foreground" />
+                    </motion.div>
+                  )}
+                </div>
+              </motion.button>
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Privacy Notice */}
+        <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl mb-6">
+          <Lock className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground">
+            Tvoji financijski podaci su privatni. Lokalna pohrana nikad ne napušta tvoj uređaj. 
+            Cloud opcije koriste enkripciju za zaštitu podataka.
+          </p>
+        </div>
+
+        {/* Continue Button */}
+        <Button
+          onClick={handleContinue}
+          disabled={!selectedMode || isLoading}
+          className="w-full h-14 rounded-xl text-lg font-medium gap-2"
+        >
+          {isLoading ? 'Postavljam...' : 'Nastavi'}
+          <ArrowRight className="w-5 h-5" />
+        </Button>
+
+        {/* Skip for later */}
+        <button
+          onClick={() => {
+            setStorageMode('local');
+            navigate('/');
+          }}
+          className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Preskoči za sada (lokalna pohrana)
+        </button>
+      </motion.div>
+    </div>
+  );
+};
+
+export default StorageSetup;
