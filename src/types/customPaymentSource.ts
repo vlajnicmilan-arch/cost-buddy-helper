@@ -4,6 +4,8 @@ export interface CustomPaymentSource {
   name: string;
   icon: string;
   color: string;
+  balance: number;
+  description?: string | null;
   created_at: string;
   updated_at: string;
 }

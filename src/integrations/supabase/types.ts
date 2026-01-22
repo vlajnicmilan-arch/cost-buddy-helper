@@ -82,8 +82,10 @@ export type Database = {
       }
       custom_payment_sources: {
         Row: {
+          balance: number
           color: string
           created_at: string
+          description: string | null
           icon: string
           id: string
           name: string
@@ -91,8 +93,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          balance?: number
           color?: string
           created_at?: string
+          description?: string | null
           icon?: string
           id?: string
           name: string
@@ -100,8 +104,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          balance?: number
           color?: string
           created_at?: string
+          description?: string | null
           icon?: string
           id?: string
           name?: string
