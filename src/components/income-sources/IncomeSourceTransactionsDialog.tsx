@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
+import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, TrendingUp } from 'lucide-react';
@@ -25,18 +26,25 @@ export const IncomeSourceTransactionsDialog = ({
   onEditTransaction,
   onDeleteTransaction
 }: IncomeSourceTransactionsDialogProps) => {
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
+
   // All transactions linked to this source (both income and expenses)
   const allTransactions = useMemo(() => {
     if (!source) return [];
     return expenses.filter(e => e.income_source_id === source.id);
   }, [expenses, source]);
 
-  // Separate income and expenses for the source
+  // Apply filters
+  const filteredTransactions = useMemo(() => {
+    return applyFilters(allTransactions, filters);
+  }, [allTransactions, filters]);
+
+  // Separate income and expenses for the source (from filtered)
   const incomeTransactions = useMemo(() => 
-    allTransactions.filter(e => e.type === 'income'), [allTransactions]);
+    filteredTransactions.filter(e => e.type === 'income'), [filteredTransactions]);
   
   const expenseTransactions = useMemo(() => 
-    allTransactions.filter(e => e.type === 'expense'), [allTransactions]);
+    filteredTransactions.filter(e => e.type === 'expense'), [filteredTransactions]);
 
   const totalIncome = useMemo(() => 
     incomeTransactions.reduce((sum, e) => sum + e.amount, 0), [incomeTransactions]);
@@ -53,15 +61,23 @@ export const IncomeSourceTransactionsDialog = ({
     }).format(value);
   };
 
+  // Reset filters when dialog closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setFilters(defaultFilters);
+    }
+    onOpenChange(open);
+  };
+
   if (!source) return null;
 
   const sourceColor = source.color || '#22c55e';
   const sourceIcon = source.icon || '💰';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
-        <DialogHeader>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-3">
             <div 
               className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
@@ -78,9 +94,16 @@ export const IncomeSourceTransactionsDialog = ({
           </DialogTitle>
         </DialogHeader>
 
+        {/* Filters */}
+        <TransactionFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          className="shrink-0"
+        />
+
         {/* Summary */}
         <div 
-          className="p-4 rounded-xl mb-4 space-y-2"
+          className="p-4 rounded-xl space-y-2 shrink-0"
           style={{ backgroundColor: `${sourceColor}15` }}
         >
           <div className="flex justify-between items-center">
@@ -97,21 +120,32 @@ export const IncomeSourceTransactionsDialog = ({
               {formatAmount(balance)}
             </span>
           </div>
+          {filteredTransactions.length !== allTransactions.length && (
+            <p className="text-xs text-muted-foreground text-center pt-1">
+              Prikazano {filteredTransactions.length} od {allTransactions.length} transakcija
+            </p>
+          )}
         </div>
 
         {/* Transaction List */}
-        <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-          {allTransactions.length === 0 ? (
+        <div className="flex-1 overflow-y-auto space-y-2 pr-2 -mx-6 px-6">
+          {filteredTransactions.length === 0 ? (
             <div className="py-12 text-center">
               <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">Nema transakcija za ovaj izvor</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Dodaj prihod ili trošak i poveži ga s ovim izvorom
+              <p className="text-muted-foreground">
+                {allTransactions.length === 0 
+                  ? 'Nema transakcija za ovaj izvor'
+                  : 'Nema rezultata za odabrane filtere'}
               </p>
+              {allTransactions.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Dodaj prihod ili trošak i poveži ga s ovim izvorom
+                </p>
+              )}
             </div>
           ) : (
             <AnimatePresence>
-              {allTransactions.map((expense) => {
+              {filteredTransactions.map((expense) => {
                 const categoryInfo = getCategoryInfo(expense.category);
                 const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
                 const isIncome = expense.type === 'income';

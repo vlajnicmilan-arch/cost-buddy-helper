@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
 import { EditTransactionDialog } from './EditTransactionDialog';
+import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
@@ -30,10 +31,19 @@ export const TransactionListDialog = ({
 }: TransactionListDialogProps) => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
-  const filteredExpenses = useMemo(() => {
+  const typeFilteredExpenses = useMemo(() => {
     return expenses.filter(e => e.type === type);
   }, [expenses, type]);
+
+  const filteredExpenses = useMemo(() => {
+    return applyFilters(typeFilteredExpenses, filters);
+  }, [typeFilteredExpenses, filters]);
+
+  const filteredTotal = useMemo(() => {
+    return filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [filteredExpenses]);
 
   const formatAmount = (value: number) => {
     return new Intl.NumberFormat('hr-HR', {
@@ -57,11 +67,19 @@ export const TransactionListDialog = ({
     await onDelete(id);
   };
 
+  // Reset filters when dialog closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setFilters(defaultFilters);
+    }
+    onOpenChange(open);
+  };
+
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
-          <DialogHeader>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               {type === 'income' ? (
                 <>
@@ -77,28 +95,37 @@ export const TransactionListDialog = ({
             </DialogTitle>
           </DialogHeader>
 
+          {/* Filters */}
+          <TransactionFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            className="shrink-0"
+          />
+
           {/* Summary */}
           <div className={cn(
-            "p-4 rounded-xl mb-4",
+            "p-4 rounded-xl shrink-0",
             type === 'income' ? "bg-income/10" : "bg-expense/10"
           )}>
             <p className="text-sm text-muted-foreground mb-1">
-              Ukupno ({filteredExpenses.length} transakcija)
+              Prikazano ({filteredExpenses.length} od {typeFilteredExpenses.length})
             </p>
             <p className={cn(
               "text-2xl font-bold font-mono",
               type === 'income' ? "text-income" : "text-expense"
             )}>
-              {type === 'expense' ? '-' : ''}{formatAmount(total)}
+              {type === 'expense' ? '-' : ''}{formatAmount(filteredTotal)}
             </p>
           </div>
 
           {/* Transaction List */}
-          <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+          <div className="flex-1 overflow-y-auto space-y-2 pr-2 -mx-6 px-6">
             {filteredExpenses.length === 0 ? (
               <div className="py-12 text-center">
                 <p className="text-muted-foreground">
-                  {type === 'income' ? 'Nema prihoda' : 'Nema troškova'}
+                  {typeFilteredExpenses.length === 0 
+                    ? (type === 'income' ? 'Nema prihoda' : 'Nema troškova')
+                    : 'Nema rezultata za odabrane filtere'}
                 </p>
               </div>
             ) : (

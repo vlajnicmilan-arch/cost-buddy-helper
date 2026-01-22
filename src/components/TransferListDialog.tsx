@@ -1,14 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Expense, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
+import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { ArrowRight, ArrowLeftRight, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-type PeriodFilter = 'month' | 'all';
 
 interface TransferListDialogProps {
   open: boolean;
@@ -105,17 +103,12 @@ export const TransferListDialog = ({
   transfers,
   totalAmount
 }: TransferListDialogProps) => {
-  const [period, setPeriod] = useState<PeriodFilter>('month');
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
-  // Filter transfers by period
-  const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
-
+  // Apply filters
   const filteredTransfers = useMemo(() => {
-    if (period === 'all') return transfers;
-    return transfers.filter(t => t.date >= monthStart && t.date <= monthEnd);
-  }, [transfers, period, monthStart, monthEnd]);
+    return applyFilters(transfers, filters);
+  }, [transfers, filters]);
 
   const filteredTotal = useMemo(() => 
     filteredTransfers.reduce((sum, t) => sum + Number(t.amount), 0),
@@ -145,8 +138,16 @@ export const TransferListDialog = ({
 
   const sortedMonths = Object.keys(groupedTransfers).sort((a, b) => b.localeCompare(a));
 
+  // Reset filters when dialog closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setFilters(defaultFilters);
+    }
+    onOpenChange(open);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -155,24 +156,20 @@ export const TransferListDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Period Toggle */}
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)} className="shrink-0">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="month">Ovaj mjesec</TabsTrigger>
-            <TabsTrigger value="all">Ukupno</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Filters */}
+        <TransactionFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          className="shrink-0"
+        />
 
         {/* Summary */}
         <div className="p-4 rounded-xl bg-primary/10 text-center shrink-0">
           <p className="text-sm text-muted-foreground mb-1">
-            {period === 'month' ? 'Prebačeno ovaj mjesec' : 'Ukupno prebačeno'}
+            Prikazano ({filteredTransfers.length} od {transfers.length})
           </p>
           <p className="text-2xl font-bold font-mono text-primary">
             ↔ {formatAmount(filteredTotal)}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {filteredTransfers.length} {filteredTransfers.length === 1 ? 'prijenos' : 'prijenosa'}
           </p>
         </div>
 
@@ -182,7 +179,9 @@ export const TransferListDialog = ({
             <div className="py-12 text-center">
               <ArrowLeftRight className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
               <p className="text-muted-foreground">
-                {period === 'month' ? 'Nema prijenosa ovaj mjesec' : 'Nema prijenosa'}
+                {transfers.length === 0 
+                  ? 'Nema prijenosa'
+                  : 'Nema rezultata za odabrane filtere'}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Prijenosi između vlastitih računa će se prikazati ovdje

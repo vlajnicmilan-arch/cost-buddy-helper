@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense, getCategoryInfo } from '@/types/expense';
+import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Link2, CircleDashed, Check, X, Loader2, Plus, Trash2 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { IncomeSourceDialog } from './IncomeSourceDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -42,6 +42,7 @@ export const UnassignedIncomeDialog = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
   const handleDeleteClick = (e: React.MouseEvent, expense: Expense) => {
     e.stopPropagation();
@@ -71,9 +72,19 @@ export const UnassignedIncomeDialog = ({
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [expenses]);
 
+  // Apply filters
+  const filteredUnassignedIncome = useMemo(() => {
+    return applyFilters(unassignedIncome, filters);
+  }, [unassignedIncome, filters]);
+
   const totalUnassigned = useMemo(() => 
     unassignedIncome.reduce((sum, e) => sum + e.amount, 0), 
     [unassignedIncome]
+  );
+
+  const filteredTotal = useMemo(() => 
+    filteredUnassignedIncome.reduce((sum, e) => sum + e.amount, 0), 
+    [filteredUnassignedIncome]
   );
 
   const formatAmount = (value: number) => {
@@ -202,10 +213,19 @@ export const UnassignedIncomeDialog = ({
     }
   };
 
+  // Reset filters when dialog closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setFilters(defaultFilters);
+      setAssigningId(null);
+    }
+    onOpenChange(open);
+  };
+
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] max-w-[420px] h-[80vh] max-h-[600px] flex flex-col gap-3 p-4 overflow-hidden">
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="w-[95vw] max-w-[500px] h-[85vh] max-h-[700px] flex flex-col gap-3 p-4 overflow-hidden">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2 text-base">
               <CircleDashed className="w-4 h-4 text-muted-foreground" />
@@ -213,17 +233,24 @@ export const UnassignedIncomeDialog = ({
             </DialogTitle>
           </DialogHeader>
 
+          {/* Filters */}
+          <TransactionFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            className="shrink-0"
+          />
+
           {/* Summary */}
           <div className="p-3 rounded-lg bg-muted/50 border border-dashed shrink-0">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-medium text-sm">Nedodijeljeni prihodi</p>
                 <p className="text-xs text-muted-foreground">
-                  {unassignedIncome.length} {unassignedIncome.length === 1 ? 'prihod' : 'prihoda'}
+                  Prikazano {filteredUnassignedIncome.length} od {unassignedIncome.length}
                 </p>
               </div>
               <p className="font-mono font-semibold text-income shrink-0">
-                +{formatAmount(totalUnassigned)}
+                +{formatAmount(filteredTotal)}
               </p>
             </div>
           </div>
@@ -266,27 +293,33 @@ export const UnassignedIncomeDialog = ({
           {/* Transaction List */}
           <div className="flex-1 min-h-0 overflow-y-auto -mx-4 px-4">
             <div className="space-y-2 pb-4">
-              {unassignedIncome.length === 0 ? (
+              {filteredUnassignedIncome.length === 0 ? (
                 <div className="py-8 text-center">
-                  <Check className="w-10 h-10 mx-auto text-income/30 mb-2" />
-                  <p className="text-sm text-muted-foreground">Svi prihodi su dodijeljeni!</p>
-                </div>
-              ) : incomeSources.length === 0 ? (
-                <div className="py-8 text-center">
-                  <CircleDashed className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-                  <p className="text-sm text-muted-foreground">Nema definiranih izvora</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => setShowNewSourceDialog(true)}
-                  >
-                    <Plus className="w-3 h-3 mr-1.5" />
-                    Kreiraj novi izvor
-                  </Button>
+                  {unassignedIncome.length === 0 ? (
+                    <>
+                      <Check className="w-10 h-10 mx-auto text-income/30 mb-2" />
+                      <p className="text-sm text-muted-foreground">Svi prihodi su dodijeljeni!</p>
+                    </>
+                  ) : incomeSources.length === 0 ? (
+                    <>
+                      <CircleDashed className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
+                      <p className="text-sm text-muted-foreground">Nema definiranih izvora</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => setShowNewSourceDialog(true)}
+                      >
+                        <Plus className="w-3 h-3 mr-1.5" />
+                        Kreiraj novi izvor
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nema rezultata za odabrane filtere</p>
+                  )}
                 </div>
               ) : (
-                unassignedIncome.map((expense) => {
+                filteredUnassignedIncome.map((expense) => {
                   const categoryInfo = getCategoryInfo(expense.category);
                   const isAssigning = assigningId === expense.id;
                   
@@ -441,18 +474,19 @@ export const UnassignedIncomeDialog = ({
             <AlertDialogTitle>Obriši transakciju?</AlertDialogTitle>
             <AlertDialogDescription>
               {expenseToDelete && (
-                <span>
-                  "{expenseToDelete.description}" - {formatAmount(expenseToDelete.amount)}
-                </span>
+                <>
+                  Jeste li sigurni da želite obrisati "{expenseToDelete.description}" 
+                  ({formatAmount(expenseToDelete.amount)})?
+                </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Odustani</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={confirmDelete} 
-              className="bg-destructive text-destructive-foreground"
+              onClick={confirmDelete}
               disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Obriši'}
             </AlertDialogAction>
