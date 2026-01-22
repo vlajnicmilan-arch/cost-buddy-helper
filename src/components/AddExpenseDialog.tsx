@@ -44,7 +44,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [showItems, setShowItems] = useState(false);
-  const [saveReceipt, setSaveReceipt] = useState(true);
+  const [saveReceipt, setSaveReceipt] = useState(false);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [scannedData, setScannedData] = useState<ScannedData | null>(null);
   const [showScannedPreview, setShowScannedPreview] = useState(false);
@@ -250,7 +250,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setItems([]);
     setShowItems(false);
     setReceiptImage(null);
-    setSaveReceipt(true);
+    setSaveReceipt(false);
     setScannedData(null);
     setShowScannedPreview(false);
     setIncomeSourceId(null);
