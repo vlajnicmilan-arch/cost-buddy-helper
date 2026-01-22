@@ -5,6 +5,25 @@ export type Category =
   | 'entertainment'
   | 'bills'
   | 'health'
+  | 'groceries'
+  | 'utilities'
+  | 'rent'
+  | 'education'
+  | 'travel'
+  | 'clothing'
+  | 'beauty'
+  | 'sports'
+  | 'pets'
+  | 'gifts'
+  | 'subscriptions'
+  | 'savings'
+  | 'investments'
+  | 'charity'
+  | 'kids'
+  | 'home'
+  | 'car'
+  | 'insurance'
+  | 'taxes'
   | 'other';
 
 export type PaymentSource = 
@@ -83,16 +102,35 @@ export interface CategoryInfo {
 
 export const CATEGORIES: CategoryInfo[] = [
   { id: 'food', name: 'Hrana', icon: '🍔', color: 'category-food' },
+  { id: 'groceries', name: 'Namirnice', icon: '🛒', color: 'category-food' },
   { id: 'transport', name: 'Prijevoz', icon: '🚗', color: 'category-transport' },
+  { id: 'car', name: 'Automobil', icon: '🚘', color: 'category-transport' },
   { id: 'shopping', name: 'Kupovina', icon: '🛍️', color: 'category-shopping' },
+  { id: 'clothing', name: 'Odjeća', icon: '👕', color: 'category-shopping' },
   { id: 'entertainment', name: 'Zabava', icon: '🎬', color: 'category-entertainment' },
+  { id: 'subscriptions', name: 'Pretplate', icon: '📺', color: 'category-entertainment' },
   { id: 'bills', name: 'Računi', icon: '📄', color: 'category-bills' },
+  { id: 'utilities', name: 'Režije', icon: '💡', color: 'category-bills' },
+  { id: 'rent', name: 'Najam', icon: '🏠', color: 'category-bills' },
   { id: 'health', name: 'Zdravlje', icon: '💊', color: 'category-health' },
+  { id: 'beauty', name: 'Ljepota', icon: '💅', color: 'category-health' },
+  { id: 'sports', name: 'Sport', icon: '⚽', color: 'category-health' },
+  { id: 'education', name: 'Obrazovanje', icon: '📚', color: 'category-other' },
+  { id: 'travel', name: 'Putovanja', icon: '✈️', color: 'category-entertainment' },
+  { id: 'home', name: 'Dom', icon: '🏡', color: 'category-bills' },
+  { id: 'pets', name: 'Ljubimci', icon: '🐕', color: 'category-other' },
+  { id: 'gifts', name: 'Pokloni', icon: '🎁', color: 'category-shopping' },
+  { id: 'kids', name: 'Djeca', icon: '👶', color: 'category-other' },
+  { id: 'insurance', name: 'Osiguranje', icon: '🛡️', color: 'category-bills' },
+  { id: 'taxes', name: 'Porezi', icon: '🏛️', color: 'category-bills' },
+  { id: 'savings', name: 'Štednja', icon: '🐷', color: 'category-other' },
+  { id: 'investments', name: 'Investicije', icon: '📈', color: 'category-other' },
+  { id: 'charity', name: 'Donacije', icon: '❤️', color: 'category-other' },
   { id: 'other', name: 'Ostalo', icon: '📦', color: 'category-other' },
 ];
 
 export const getCategoryInfo = (category: Category): CategoryInfo => {
-  return CATEGORIES.find(c => c.id === category) || CATEGORIES[6];
+  return CATEGORIES.find(c => c.id === category) || CATEGORIES[CATEGORIES.length - 1];
 };
 
 export interface BankConnection {

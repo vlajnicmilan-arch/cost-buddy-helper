@@ -287,7 +287,10 @@ const Index = () => {
             />
             <CategoryBreakdown 
               expensesByCategory={expensesByCategory} 
-              total={totalExpenses} 
+              total={totalExpenses}
+              expenses={expenses}
+              onUpdateExpense={updateExpense}
+              onDeleteExpense={deleteExpense}
             />
             <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
             <BackupRestore onDataImported={refetch} />
