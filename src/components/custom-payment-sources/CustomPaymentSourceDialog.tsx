@@ -4,7 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { CustomPaymentSource, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
+import { CustomPaymentSource, PaymentSourceCard, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
+import { Plus, X, CreditCard } from 'lucide-react';
+
+interface CardInput {
+  id?: string;
+  card_name: string;
+  last_four_digits: string;
+  card_type?: string;
+}
 
 interface PaymentSourceData {
   name: string;
@@ -12,6 +20,7 @@ interface PaymentSourceData {
   color: string;
   balance: number;
   description?: string;
+  cards?: CardInput[];
 }
 
 interface CustomPaymentSourceDialogProps {
@@ -19,6 +28,8 @@ interface CustomPaymentSourceDialogProps {
   onOpenChange: (open: boolean) => void;
   source: CustomPaymentSource | null;
   onSave: (data: PaymentSourceData) => Promise<void>;
+  onAddCard?: (paymentSourceId: string, card: Omit<PaymentSourceCard, 'id' | 'payment_source_id' | 'user_id' | 'created_at'>) => Promise<PaymentSourceCard | null>;
+  onDeleteCard?: (cardId: string) => Promise<void>;
   initialData?: Partial<PaymentSourceData>;
 }
 
@@ -27,6 +38,8 @@ export const CustomPaymentSourceDialog = ({
   onOpenChange,
   source,
   onSave,
+  onAddCard,
+  onDeleteCard,
   initialData,
 }: CustomPaymentSourceDialogProps) => {
   const [name, setName] = useState('');
@@ -34,6 +47,7 @@ export const CustomPaymentSourceDialog = ({
   const [color, setColor] = useState('#6b7280');
   const [balance, setBalance] = useState('0');
   const [description, setDescription] = useState('');
+  const [cards, setCards] = useState<CardInput[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -44,18 +58,26 @@ export const CustomPaymentSourceDialog = ({
         setColor(source.color);
         setBalance(source.balance?.toString() || '0');
         setDescription(source.description || '');
+        setCards((source.cards || []).map(c => ({
+          id: c.id,
+          card_name: c.card_name,
+          last_four_digits: c.last_four_digits,
+          card_type: c.card_type || undefined
+        })));
       } else if (initialData) {
         setName(initialData.name || '');
         setIcon(initialData.icon || '💳');
         setColor(initialData.color || '#6b7280');
         setBalance(initialData.balance?.toString() || '0');
         setDescription(initialData.description || '');
+        setCards(initialData.cards || []);
       } else {
         setName('');
         setIcon('💳');
         setColor('#6b7280');
         setBalance('0');
         setDescription('');
+        setCards([]);
       }
     }
   }, [open, source, initialData]);
@@ -71,10 +93,49 @@ export const CustomPaymentSourceDialog = ({
         balance: parseFloat(balance) || 0,
         description: description.trim() || undefined
       });
+
+      // Handle cards for existing sources
+      if (source && onAddCard && onDeleteCard) {
+        const existingCardIds = (source.cards || []).map(c => c.id);
+        const currentCardIds = cards.filter(c => c.id).map(c => c.id);
+        
+        // Delete removed cards
+        for (const existingId of existingCardIds) {
+          if (!currentCardIds.includes(existingId)) {
+            await onDeleteCard(existingId);
+          }
+        }
+        
+        // Add new cards
+        for (const card of cards) {
+          if (!card.id && card.last_four_digits) {
+            await onAddCard(source.id, {
+              card_name: card.card_name || 'Kartica',
+              last_four_digits: card.last_four_digits,
+              card_type: card.card_type
+            });
+          }
+        }
+      }
+
       onOpenChange(false);
     } finally {
       setSaving(false);
     }
+  };
+
+  const addCard = () => {
+    setCards([...cards, { card_name: 'Kartica', last_four_digits: '', card_type: '' }]);
+  };
+
+  const updateCard = (index: number, field: keyof CardInput, value: string) => {
+    const newCards = [...cards];
+    newCards[index] = { ...newCards[index], [field]: value };
+    setCards(newCards);
+  };
+
+  const removeCard = (index: number) => {
+    setCards(cards.filter((_, i) => i !== index));
   };
 
   const formattedBalance = parseFloat(balance) || 0;
@@ -126,6 +187,71 @@ export const CustomPaymentSourceDialog = ({
             />
           </div>
 
+          {/* Cards Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Kartice
+              </Label>
+              <Button type="button" variant="ghost" size="sm" onClick={addCard}>
+                <Plus className="w-4 h-4 mr-1" />
+                Dodaj karticu
+              </Button>
+            </div>
+            
+            {cards.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                Nema kartica. Kliknite "Dodaj karticu" za povezivanje.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {cards.map((card, index) => (
+                  <div key={index} className="flex gap-2 p-3 bg-muted/50 rounded-lg">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Naziv kartice"
+                          value={card.card_name}
+                          onChange={(e) => updateCard(index, 'card_name', e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Input
+                          placeholder="Tip (Visa, MC...)"
+                          value={card.card_type || ''}
+                          onChange={(e) => updateCard(index, 'card_type', e.target.value)}
+                          className="h-9 text-sm w-24"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">**** **** ****</span>
+                        <Input
+                          placeholder="1234"
+                          value={card.last_four_digits}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            updateCard(index, 'last_four_digits', value);
+                          }}
+                          className="h-9 text-sm w-20 font-mono"
+                          maxLength={4}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeCard(index)}
+                      className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Icon Selection */}
           <div className="space-y-2">
             <Label>Ikona</Label>
@@ -168,24 +294,37 @@ export const CustomPaymentSourceDialog = ({
           {/* Preview */}
           <div className="space-y-2">
             <Label>Pregled</Label>
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white"
-                  style={{ backgroundColor: color }}
-                >
-                  <span>{icon}</span>
+            <div className="p-3 rounded-lg border bg-card space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                    style={{ backgroundColor: color }}
+                  >
+                    <span>{icon}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">{name || 'Naziv izvora'}</span>
+                    {description && (
+                      <p className="text-xs text-muted-foreground truncate max-w-[150px]">{description}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <span className="font-medium">{name || 'Naziv izvora'}</span>
-                  {description && (
-                    <p className="text-xs text-muted-foreground truncate max-w-[150px]">{description}</p>
-                  )}
-                </div>
+                <span className={`font-mono font-semibold ${formattedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
+                  €{formattedBalance.toFixed(2)}
+                </span>
               </div>
-              <span className={`font-mono font-semibold ${formattedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
-                €{formattedBalance.toFixed(2)}
-              </span>
+              {cards.filter(c => c.last_four_digits).length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2 border-t">
+                  {cards.filter(c => c.last_four_digits).map((card, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs">
+                      <CreditCard className="w-3 h-3" />
+                      {card.card_type && <span className="text-muted-foreground">{card.card_type}</span>}
+                      <span className="font-mono">****{card.last_four_digits}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

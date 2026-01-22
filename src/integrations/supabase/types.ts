@@ -315,6 +315,44 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_source_cards: {
+        Row: {
+          card_name: string
+          card_type: string | null
+          created_at: string
+          id: string
+          last_four_digits: string
+          payment_source_id: string
+          user_id: string
+        }
+        Insert: {
+          card_name?: string
+          card_type?: string | null
+          created_at?: string
+          id?: string
+          last_four_digits: string
+          payment_source_id: string
+          user_id: string
+        }
+        Update: {
+          card_name?: string
+          card_type?: string | null
+          created_at?: string
+          id?: string
+          last_four_digits?: string
+          payment_source_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_source_cards_payment_source_id_fkey"
+            columns: ["payment_source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

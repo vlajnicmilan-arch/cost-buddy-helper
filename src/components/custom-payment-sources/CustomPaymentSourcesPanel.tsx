@@ -20,7 +20,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown } from 'lucide-react';
 
 export const CustomPaymentSourcesPanel = () => {
-  const { customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource } = useCustomPaymentSources();
+  const { customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard } = useCustomPaymentSources();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<CustomPaymentSource | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -128,45 +128,62 @@ export const CustomPaymentSourcesPanel = () => {
               {customPaymentSources.map((source) => (
                 <div
                   key={source.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white"
-                      style={{ backgroundColor: source.color }}
-                    >
-                      <span>{source.icon}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                        style={{ backgroundColor: source.color }}
+                      >
+                        <span>{source.icon}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">{source.name}</span>
+                        {source.description && (
+                          <p className="text-xs text-muted-foreground truncate max-w-[120px]">{source.description}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-medium">{source.name}</span>
-                      {source.description && (
-                        <p className="text-xs text-muted-foreground truncate max-w-[120px]">{source.description}</p>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <span className={`font-mono text-sm font-semibold ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}>
+                        €{(source.balance || 0).toFixed(2)}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleEdit(source)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(source)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`font-mono text-sm font-semibold ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}>
-                      €{(source.balance || 0).toFixed(2)}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleEdit(source)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(source)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  {/* Cards display */}
+                  {source.cards && source.cards.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/50">
+                      {source.cards.map((card) => (
+                        <span 
+                          key={card.id} 
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted rounded text-xs"
+                        >
+                          <CreditCard className="w-3 h-3" />
+                          {card.card_type && <span className="text-muted-foreground">{card.card_type}</span>}
+                          <span className="font-mono">****{card.last_four_digits}</span>
+                        </span>
+                      ))}
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -214,6 +231,8 @@ export const CustomPaymentSourcesPanel = () => {
         onOpenChange={setDialogOpen}
         source={editingSource}
         onSave={handleSave}
+        onAddCard={addCard}
+        onDeleteCard={deleteCard}
         initialData={initialData}
       />
 
