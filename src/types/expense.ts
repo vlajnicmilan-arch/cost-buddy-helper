@@ -32,6 +32,11 @@ export type PaymentSource =
   | 'revolut'
   | 'aircash'
   | 'crypto'
+  | 'visa'
+  | 'visa_gold'
+  | 'visa_platinum'
+  | 'visa_kekspay'
+  | 'visa_erste'
   | 'other';
 
 export interface PaymentSourceInfo {
@@ -43,6 +48,11 @@ export interface PaymentSourceInfo {
 export const PAYMENT_SOURCES: PaymentSourceInfo[] = [
   { id: 'cash', name: 'Gotovina', icon: '💵' },
   { id: 'bank', name: 'Banka', icon: '🏦' },
+  { id: 'visa', name: 'Visa', icon: '💳' },
+  { id: 'visa_gold', name: 'Visa Gold', icon: '💳' },
+  { id: 'visa_platinum', name: 'Visa Platinum', icon: '💳' },
+  { id: 'visa_kekspay', name: 'Visa KeksPay', icon: '📱' },
+  { id: 'visa_erste', name: 'Visa Erstebank', icon: '🏦' },
   { id: 'revolut', name: 'Revolut', icon: '💳' },
   { id: 'aircash', name: 'Aircash', icon: '📱' },
   { id: 'crypto', name: 'Kripto', icon: '₿' },
@@ -50,7 +60,7 @@ export const PAYMENT_SOURCES: PaymentSourceInfo[] = [
 ];
 
 export const getPaymentSourceInfo = (source: PaymentSource): PaymentSourceInfo => {
-  return PAYMENT_SOURCES.find(s => s.id === source) || PAYMENT_SOURCES[5];
+  return PAYMENT_SOURCES.find(s => s.id === source) || PAYMENT_SOURCES[PAYMENT_SOURCES.length - 1];
 };
 
 export interface ReceiptItem {
