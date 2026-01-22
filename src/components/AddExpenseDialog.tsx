@@ -7,7 +7,6 @@ import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, ReceiptI
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
@@ -217,12 +216,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
           Dodaj
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md glass-card border-border/50 max-h-[85vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="sm:max-w-md glass-card border-border/50 h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="text-xl font-semibold">Nova transakcija</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
+        <div className="flex-1 overflow-y-auto -mx-6 px-6">
           {/* Scanned Data Preview */}
           {showScannedPreview && scannedData && (
             <div className="space-y-4 pb-4">
@@ -649,7 +648,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               )}
             </form>
           )}
-        </ScrollArea>
+        </div>
         
         {/* Fixed Submit Button at bottom - outside ScrollArea */}
         {!showScannedPreview && (
