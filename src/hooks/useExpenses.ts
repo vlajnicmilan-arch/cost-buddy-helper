@@ -300,6 +300,11 @@ export const useExpenses = () => {
     }
   };
 
+  // Get current month boundaries
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
   // Exclude transfers from totals
   const totalExpenses = expenses
     .filter(e => e.type === 'expense')
@@ -312,6 +317,16 @@ export const useExpenses = () => {
   const totalTransfers = expenses
     .filter(e => e.type === 'transfer')
     .reduce((sum, e) => sum + Number(e.amount), 0);
+
+  // This month's transfers
+  const monthlyTransfers = expenses
+    .filter(e => e.type === 'transfer' && e.date >= currentMonthStart && e.date <= currentMonthEnd)
+    .reduce((sum, e) => sum + Number(e.amount), 0);
+
+  const transferCount = expenses.filter(e => e.type === 'transfer').length;
+  const monthlyTransferCount = expenses
+    .filter(e => e.type === 'transfer' && e.date >= currentMonthStart && e.date <= currentMonthEnd)
+    .length;
 
   const balance = totalIncome - totalExpenses;
 
@@ -332,6 +347,10 @@ export const useExpenses = () => {
     findDuplicates,
     totalExpenses,
     totalIncome,
+    totalTransfers,
+    monthlyTransfers,
+    transferCount,
+    monthlyTransferCount,
     balance,
     expensesByCategory,
     refetch: fetchExpenses,
