@@ -245,9 +245,8 @@ export const UnassignedIncomeDialog = ({
                 const isAssigning = assigningId === expense.id;
                 
                 return (
-                  <motion.div
+                  <div
                     key={expense.id}
-                    layout
                     className="p-3 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors"
                   >
                     <div className="flex items-center gap-3">
@@ -279,7 +278,10 @@ export const UnassignedIncomeDialog = ({
                             size="icon"
                             className="h-8 w-8"
                             title="Dodijeli izvoru"
-                            onClick={() => handleStartAssign(expense.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartAssign(expense.id);
+                            }}
                           >
                             <Link2 className="w-4 h-4" />
                           </Button>
@@ -288,7 +290,10 @@ export const UnassignedIncomeDialog = ({
                             size="icon"
                             className="h-8 w-8"
                             title="Uredi"
-                            onClick={() => onEditTransaction(expense)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEditTransaction(expense);
+                            }}
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
@@ -296,53 +301,59 @@ export const UnassignedIncomeDialog = ({
                       )}
                     </div>
 
-                    {/* Assignment UI */}
+                    {/* Assignment UI - Show source buttons */}
                     {isAssigning && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-3 pt-3 border-t flex items-center gap-2"
-                      >
-                        <Select
-                          value={selectedSourceId}
-                          onValueChange={setSelectedSourceId}
-                        >
-                          <SelectTrigger className="flex-1 bg-background">
-                            <SelectValue placeholder="Odaberi izvor..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover z-[100]">
-                            {incomeSources.map((source) => (
-                              <SelectItem key={source.id} value={source.id}>
-                                <span className="flex items-center gap-2">
-                                  <span>{source.icon}</span>
-                                  <span>{source.name}</span>
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
-                          onClick={handleCancelAssign}
-                          disabled={saving}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-
-                        <Button
-                          size="icon"
-                          className="h-9 w-9 shrink-0"
-                          onClick={() => handleConfirmAssign(expense)}
-                          disabled={!selectedSourceId || saving}
-                        >
-                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                        </Button>
-                      </motion.div>
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Odaberi izvor:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {incomeSources.map((source) => (
+                            <Button
+                              key={source.id}
+                              variant="outline"
+                              size="sm"
+                              className="gap-1"
+                              disabled={saving}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setSaving(true);
+                                try {
+                                  await onUpdateExpense({
+                                    ...expense,
+                                    income_source_id: source.id
+                                  });
+                                  toast.success(`Dodijeljeno izvoru "${source.name}"`);
+                                  setAssigningId(null);
+                                } catch (error) {
+                                  toast.error('Greška pri dodjeljivanju');
+                                } finally {
+                                  setSaving(false);
+                                }
+                              }}
+                            >
+                              {saving ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <span>{source.icon}</span>
+                              )}
+                              <span>{source.name}</span>
+                            </Button>
+                          ))}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelAssign();
+                            }}
+                            disabled={saving}
+                          >
+                            <X className="w-4 h-4" />
+                            Odustani
+                          </Button>
+                        </div>
+                      </div>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
