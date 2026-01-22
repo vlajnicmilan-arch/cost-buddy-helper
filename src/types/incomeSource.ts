@@ -3,8 +3,8 @@ export interface IncomeSource {
   user_id: string;
   name: string;
   description?: string | null;
-  icon: string;
-  color: string;
+  icon?: string | null;
+  color?: string | null;
   created_at?: string;
   updated_at?: string;
 }

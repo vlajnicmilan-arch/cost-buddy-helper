@@ -35,8 +35,8 @@ export const IncomeSourceDialog = ({
     if (source) {
       setName(source.name);
       setDescription(source.description || '');
-      setIcon(source.icon);
-      setColor(source.color);
+      setIcon(source.icon || '💼');
+      setColor(source.color || '#22c55e');
     } else {
       setName('');
       setDescription('');
