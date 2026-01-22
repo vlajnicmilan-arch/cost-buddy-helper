@@ -316,6 +316,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_income_source_member: {
+        Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_income_source_owner: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
