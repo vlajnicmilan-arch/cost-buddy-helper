@@ -26,6 +26,8 @@ interface ScannedData {
   category: Category;
   date: string | null;
   payment_source: PaymentSource | null;
+  custom_payment_source_id: string | null;
+  payment_source_card_id: string | null;
   items: ReceiptItem[];
 }
 
@@ -63,7 +65,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       const base64 = e.target?.result as string;
       setReceiptImage(base64);
       
-      const result = await scanReceipt(base64);
+      // Pass custom payment sources to scanner for matching
+      const result = await scanReceipt(base64, customPaymentSources);
       
       if (result) {
         setScannedData({
@@ -73,6 +76,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
           category: result.category,
           date: result.date,
           payment_source: result.payment_source,
+          custom_payment_source_id: result.custom_payment_source_id,
+          payment_source_card_id: result.payment_source_card_id,
           items: result.items
         });
         setShowScannedPreview(true);
@@ -108,12 +113,23 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         }
       }
 
-      // Use detected payment source from receipt, fallback to current selection
-      const detectedPaymentSource = scannedData.payment_source || paymentSource;
+      // Use detected custom payment source if matched, otherwise use detected payment source
+      let finalPaymentSource: PaymentSource = paymentSource;
+      let finalCardId: string | null = null;
+      
+      if (scannedData.custom_payment_source_id) {
+        // Custom source was matched by AI
+        finalPaymentSource = `custom:${scannedData.custom_payment_source_id}` as PaymentSource;
+        finalCardId = scannedData.payment_source_card_id;
+        console.log(`Using AI-matched custom source: ${scannedData.custom_payment_source_id}, card: ${finalCardId}`);
+      } else if (scannedData.payment_source) {
+        // Standard payment source detected
+        finalPaymentSource = scannedData.payment_source;
+      }
 
       // Auto-match income source based on payment method
       let matchedIncomeSourceId: string | null = null;
-      if (detectedPaymentSource && detectedPaymentSource !== 'cash' && incomeSources.length > 0) {
+      if (finalPaymentSource && finalPaymentSource !== 'cash' && incomeSources.length > 0) {
         // Keywords to match for different payment sources
         const paymentSourceKeywords: Record<PaymentSource, string[]> = {
           bank: ['banka', 'bank', 'račun', 'pbz', 'zaba', 'otp', 'rba', 'addiko'],
@@ -135,7 +151,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
           other: []
         };
         
-        const keywords = paymentSourceKeywords[detectedPaymentSource] || [];
+        const keywords = paymentSourceKeywords[finalPaymentSource] || [];
         
         // Find matching income source by name
         const matchedSource = incomeSources.find(source => {
@@ -145,7 +161,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         
         if (matchedSource) {
           matchedIncomeSourceId = matchedSource.id;
-          console.log(`Auto-matched payment source "${detectedPaymentSource}" to income source "${matchedSource.name}"`);
+          console.log(`Auto-matched payment source "${finalPaymentSource}" to income source "${matchedSource.name}"`);
         }
       }
 
@@ -158,7 +174,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         category: scannedData.category,
         date: new Date(scannedData.date || expenseDate),
         type: 'expense',
-        payment_source: detectedPaymentSource,
+        payment_source: finalPaymentSource,
+        payment_source_card_id: finalCardId,
         merchant_name: scannedData.merchant || undefined,
         receipt_url: receiptUrl,
         ai_extracted: true,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, ReceiptItem } from '@/types/expense';
+import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { toast } from 'sonner';
 
 interface ParsedReceipt {
@@ -10,6 +11,8 @@ interface ParsedReceipt {
   category: Category;
   date: string | null;
   payment_source: PaymentSource | null;
+  custom_payment_source_id: string | null;
+  payment_source_card_id: string | null;
   items: ReceiptItem[];
 }
 
@@ -54,7 +57,10 @@ export const useReceiptScanner = () => {
   const [scanning, setScanning] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(null);
 
-  const scanReceipt = async (imageBase64: string): Promise<ParsedReceipt | null> => {
+  const scanReceipt = async (
+    imageBase64: string, 
+    customPaymentSources?: CustomPaymentSource[]
+  ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
 
@@ -71,6 +77,18 @@ export const useReceiptScanner = () => {
       const compressedImage = await compressImage(imageBase64);
       console.log('Image ready, sending to API...');
 
+      // Prepare custom payment sources for the API
+      const sourcesForApi = customPaymentSources?.map(src => ({
+        id: src.id,
+        name: src.name,
+        cards: src.cards?.map(card => ({
+          id: card.id,
+          card_name: card.card_name,
+          last_four_digits: card.last_four_digits,
+          card_type: card.card_type
+        })) || []
+      })) || [];
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`,
         {
@@ -79,7 +97,10 @@ export const useReceiptScanner = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${sessionData.session.access_token}`
           },
-          body: JSON.stringify({ imageBase64: compressedImage })
+          body: JSON.stringify({ 
+            imageBase64: compressedImage,
+            customPaymentSources: sourcesForApi
+          })
         }
       );
 
@@ -111,7 +132,10 @@ export const useReceiptScanner = () => {
       
       // Map payment_method from AI to PaymentSource
       let paymentSource: PaymentSource | null = null;
-      if (data.payment_method === 'card') {
+      if (data.custom_payment_source_id) {
+        // Use 'custom' as payment source when custom source is matched
+        paymentSource = `custom:${data.custom_payment_source_id}` as PaymentSource;
+      } else if (data.payment_method === 'card') {
         paymentSource = 'bank';
       } else if (data.payment_method === 'cash') {
         paymentSource = 'cash';
@@ -124,6 +148,8 @@ export const useReceiptScanner = () => {
         category: data.category as Category,
         date: data.date || null,
         payment_source: paymentSource,
+        custom_payment_source_id: data.custom_payment_source_id || null,
+        payment_source_card_id: data.payment_source_card_id || null,
         items: (data.items || []).map((item: any) => ({
           name: item.name || '',
           quantity: item.quantity || 1,
@@ -133,7 +159,14 @@ export const useReceiptScanner = () => {
       };
 
       setParsedData(result);
-      toast.success(`Račun skeniran! Pronađeno ${result.items.length} artikala.`);
+      
+      // Show different message if custom source was matched
+      if (data.custom_payment_source_id) {
+        const matchedSource = customPaymentSources?.find(s => s.id === data.custom_payment_source_id);
+        toast.success(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
+      } else {
+        toast.success(`Račun skeniran! Pronađeno ${result.items.length} artikala.`);
+      }
       return result;
     } catch (error) {
       console.error('Error scanning receipt:', error);
