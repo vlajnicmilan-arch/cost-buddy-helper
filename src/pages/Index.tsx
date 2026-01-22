@@ -13,6 +13,7 @@ import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { TransferListDialog } from '@/components/TransferListDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
+import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { Expense } from '@/types/expense';
 import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -292,6 +293,7 @@ const Index = () => {
               onUpdateExpense={updateExpense}
               onDeleteExpense={deleteExpense}
             />
+            <CustomCategoriesPanel />
             <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
             <BackupRestore onDataImported={refetch} />
           </div>
