@@ -1,5 +1,5 @@
 import { IncomeSource } from '@/types/incomeSource';
-import { Pencil, Trash2, Users, Clock } from 'lucide-react';
+import { Pencil, Trash2, Users, Clock, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ interface IncomeSourceCardProps {
   transactionCount: number;
   memberCount?: number;
   pendingCount?: number;
+  isOwner?: boolean;
   onEdit: (source: IncomeSource) => void;
   onDelete: (id: string) => void;
   onClick: (source: IncomeSource) => void;
@@ -26,6 +27,7 @@ export const IncomeSourceCard = ({
   transactionCount,
   memberCount = 0,
   pendingCount = 0,
+  isOwner = true,
   onEdit,
   onDelete,
   onClick,
@@ -97,6 +99,13 @@ export const IncomeSourceCard = ({
 
             {/* Members & Pending Indicators - Always show members button */}
             <div className="flex items-center gap-2 mt-2">
+              {/* Member badge for non-owners */}
+              {!isOwner && (
+                <Badge variant="secondary" className="gap-1 h-6">
+                  <UserCheck className="w-3 h-3" />
+                  Član
+                </Badge>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -109,7 +118,7 @@ export const IncomeSourceCard = ({
                 <Users className="w-3 h-3" />
                 {memberCount > 0 ? memberCount : 'Članovi'}
               </Button>
-              {pendingCount > 0 && (
+              {pendingCount > 0 && isOwner && (
                 <Badge variant="secondary" className="gap-1 h-6">
                   <Clock className="w-3 h-3" />
                   {pendingCount} na čekanju
@@ -119,34 +128,36 @@ export const IncomeSourceCard = ({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className={cn(
-          "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
-          "absolute top-2 right-2"
-        )}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(source);
-            }}
-          >
-            <Pencil className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(source.id);
-            }}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+        {/* Actions - Only show for owners */}
+        {isOwner && (
+          <div className={cn(
+            "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+            "absolute top-2 right-2"
+          )}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(source);
+              }}
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(source.id);
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

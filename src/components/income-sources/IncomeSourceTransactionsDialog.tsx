@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
+import { useIncomeSourceMembers } from '@/hooks/useIncomeSourceMembers';
+import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, Clock, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface IncomeSourceTransactionsDialogProps {
@@ -26,6 +29,8 @@ export const IncomeSourceTransactionsDialog = ({
   onEditTransaction,
   onDeleteTransaction
 }: IncomeSourceTransactionsDialogProps) => {
+  const { user } = useAuth();
+  const { isOwner } = useIncomeSourceMembers(source?.id || null);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
   // All transactions linked to this source (both income and expenses)
@@ -149,6 +154,10 @@ export const IncomeSourceTransactionsDialog = ({
                 const categoryInfo = getCategoryInfo(expense.category);
                 const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
                 const isIncome = expense.type === 'income';
+                const isPending = expense.status === 'pending';
+                // Only owner can edit/delete, and only their own transactions can members delete
+                const canEdit = isOwner || expense.user_id === user?.id;
+                const canDelete = isOwner || expense.user_id === user?.id;
                 
                 return (
                   <motion.div
@@ -165,7 +174,15 @@ export const IncomeSourceTransactionsDialog = ({
 
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{expense.description}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{expense.description}</p>
+                        {isPending && (
+                          <Badge variant="secondary" className="gap-1 h-5 text-xs">
+                            <Clock className="w-3 h-3" />
+                            Čeka
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{format(expense.date, 'dd.MM.yyyy', { locale: hr })}</span>
                         <span>•</span>
@@ -182,25 +199,31 @@ export const IncomeSourceTransactionsDialog = ({
                       {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
                     </p>
 
-                    {/* Actions */}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => onEditTransaction(expense)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => onDeleteTransaction(expense.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    {/* Actions - Only for owner or own transactions */}
+                    {(canEdit || canDelete) && !isPending && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {canEdit && isOwner && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => onEditTransaction(expense)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canDelete && isOwner && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => onDeleteTransaction(expense.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
