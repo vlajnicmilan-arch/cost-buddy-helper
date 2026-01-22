@@ -114,25 +114,44 @@ serve(async (req) => {
     
     // Build custom payment sources context for AI prompt
     let paymentSourcesContext = '';
+    let cardMatchingRules = '';
+    
     if (customPaymentSources && customPaymentSources.length > 0) {
-      const sourcesList = customPaymentSources.map((src: any) => {
-        const cardsInfo = src.cards?.length > 0 
-          ? ` (kartice: ${src.cards.map((c: any) => `${c.card_name} ****${c.last_four_digits}`).join(', ')})`
-          : '';
-        return `- "${src.name}" (ID: ${src.id})${cardsInfo}`;
-      }).join('\n');
+      const sourcesList: string[] = [];
+      const cardsList: string[] = [];
+      
+      customPaymentSources.forEach((src: any) => {
+        sourcesList.push(`- "${src.name}" (source_id: ${src.id})`);
+        
+        if (src.cards?.length > 0) {
+          src.cards.forEach((card: any) => {
+            cardsList.push(`  - Kartica "${card.card_name}" zadnje 4 znamenke: ${card.last_four_digits} (card_id: ${card.id}, source_id: ${src.id})`);
+          });
+        }
+      });
       
       paymentSourcesContext = `
 
 PRILAGOĐENI IZVORI PLAĆANJA KORISNIKA:
-${sourcesList}
+${sourcesList.join('\n')}
 
-PRAVILA ZA PREPOZNAVANJE IZVORA PLAĆANJA:
-1. Ako na računu vidiš naziv banke, kartice ili zadnje 4 znamenke koje odgovaraju nekom od gore navedenih izvora, koristi taj izvor.
-2. Traži ključne riječi poput naziva banke (npr. "ZABA", "PBZ", "Erste", "Revolut", "N26") ili broja kartice.
-3. Ako pronađeš podudaranje, vrati custom_payment_source_id s odgovarajućim ID-om.
-4. Ako pronađeš podudaranje s karticom, vrati i payment_source_card_id s ID-om te kartice.
-5. Ako nema podudaranja, koristi standardne opcije (card/cash).`;
+KARTICE KORISNIKA:
+${cardsList.length > 0 ? cardsList.join('\n') : '(nema definiranih kartica)'}`;
+
+      cardMatchingRules = `
+
+KRITIČNA PRAVILA ZA PREPOZNAVANJE KARTICE:
+1. TRAŽI BROJ KARTICE na računu! Obično piše kao: "****1234", "XXXX1234", "1234****", ili samo "1234" blizu oznake kartice.
+2. Traži redove s tekstom: "KARTICA", "CARD", "PAN", "VISA", "MASTERCARD", "MAESTRO", "AMEX" - broj kartice je obično blizu.
+3. Ako pronađeš zadnje 4 znamenke (npr. "1234") koje TOČNO odgovaraju nekoj kartici iz popisa KARTICE KORISNIKA:
+   - Postavi custom_payment_source_id na odgovarajući source_id
+   - Postavi payment_source_card_id na odgovarajući card_id
+4. Ako prepoznaš samo naziv banke (npr. "ZABA", "PBZ", "Erste", "Revolut") ali NE vidiš broj kartice:
+   - Postavi custom_payment_source_id na odgovarajući source_id
+   - Ostavi payment_source_card_id kao null
+5. Ako nema podudaranja, koristi payment_method: "card" ili "cash".
+
+PRIMJER: Ako na računu piše "VISA ****5678" i u popisu kartica imaš karticu s last_four_digits: "5678", MORAŠ vratiti taj card_id!`;
     }
     
     // Use Gemini for OCR and categorization with enhanced prompt for date and items
@@ -163,7 +182,7 @@ PRAVILA ZA PREPOZNAVANJE IZVORA PLAĆANJA:
    - quantity: količina (broj, default 1)
    - unit_price: jedinična cijena ako postoji (broj ili null)
    - total_price: ukupna cijena artikla (broj)
-${paymentSourcesContext}
+${paymentSourcesContext}${cardMatchingRules}
 
 Odgovori SAMO u JSON formatu:
 {
@@ -191,7 +210,7 @@ Ako ne možeš pročitati račun, vrati:
             content: [
               {
                 type: 'text',
-                text: 'Analiziraj ovaj račun i izvuci sve podatke uključujući datum, artikle i način plaćanja. Ako prepoznaš banku ili karticu, poveži s odgovarajućim izvorom plaćanja.'
+                text: 'Analiziraj ovaj račun. VAŽNO: Pažljivo potraži broj kartice (zadnje 4 znamenke) na računu i usporedi ga s popisom kartica korisnika. Ako pronađeš podudaranje, vrati odgovarajući card_id i source_id.'
               },
               {
                 type: 'image_url',
