@@ -83,7 +83,7 @@ serve(async (req) => {
       );
     }
     
-    const { imageBase64 } = body;
+    const { imageBase64, customPaymentSources } = body;
 
     if (!imageBase64) {
       console.error('No image provided in request');
@@ -100,6 +100,7 @@ serve(async (req) => {
     console.log('Processing receipt image for user:', userId);
     console.log('MIME type detected:', mimeType);
     console.log('Base64 length:', cleanedBase64.length);
+    console.log('Custom payment sources:', customPaymentSources?.length || 0);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -110,6 +111,29 @@ serve(async (req) => {
     const imageDataUrl = `data:${mimeType};base64,${cleanedBase64}`;
     
     console.log('Sending to AI gateway...');
+    
+    // Build custom payment sources context for AI prompt
+    let paymentSourcesContext = '';
+    if (customPaymentSources && customPaymentSources.length > 0) {
+      const sourcesList = customPaymentSources.map((src: any) => {
+        const cardsInfo = src.cards?.length > 0 
+          ? ` (kartice: ${src.cards.map((c: any) => `${c.card_name} ****${c.last_four_digits}`).join(', ')})`
+          : '';
+        return `- "${src.name}" (ID: ${src.id})${cardsInfo}`;
+      }).join('\n');
+      
+      paymentSourcesContext = `
+
+PRILAGOĐENI IZVORI PLAĆANJA KORISNIKA:
+${sourcesList}
+
+PRAVILA ZA PREPOZNAVANJE IZVORA PLAĆANJA:
+1. Ako na računu vidiš naziv banke, kartice ili zadnje 4 znamenke koje odgovaraju nekom od gore navedenih izvora, koristi taj izvor.
+2. Traži ključne riječi poput naziva banke (npr. "ZABA", "PBZ", "Erste", "Revolut", "N26") ili broja kartice.
+3. Ako pronađeš podudaranje, vrati custom_payment_source_id s odgovarajućim ID-om.
+4. Ako pronađeš podudaranje s karticom, vrati i payment_source_card_id s ID-om te kartice.
+5. Ako nema podudaranja, koristi standardne opcije (card/cash).`;
+    }
     
     // Use Gemini for OCR and categorization with enhanced prompt for date and items
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -139,6 +163,7 @@ serve(async (req) => {
    - quantity: količina (broj, default 1)
    - unit_price: jedinična cijena ako postoji (broj ili null)
    - total_price: ukupna cijena artikla (broj)
+${paymentSourcesContext}
 
 Odgovori SAMO u JSON formatu:
 {
@@ -148,6 +173,8 @@ Odgovori SAMO u JSON formatu:
   "category": "food",
   "date": "2025-01-20",
   "payment_method": "card",
+  "custom_payment_source_id": null,
+  "payment_source_card_id": null,
   "items": [
     {"name": "Mlijeko 1L", "quantity": 2, "unit_price": 1.20, "total_price": 2.40},
     {"name": "Kruh", "quantity": 1, "unit_price": 1.50, "total_price": 1.50}
@@ -164,7 +191,7 @@ Ako ne možeš pročitati račun, vrati:
             content: [
               {
                 type: 'text',
-                text: 'Analiziraj ovaj račun i izvuci sve podatke uključujući datum i artikle.'
+                text: 'Analiziraj ovaj račun i izvuci sve podatke uključujući datum, artikle i način plaćanja. Ako prepoznaš banku ili karticu, poveži s odgovarajućim izvorom plaćanja.'
               },
               {
                 type: 'image_url',
@@ -236,6 +263,8 @@ Ako ne možeš pročitati račun, vrati:
         category: receiptData.category,
         date: receiptData.date || null,
         payment_method: receiptData.payment_method || null,
+        custom_payment_source_id: receiptData.custom_payment_source_id || null,
+        payment_source_card_id: receiptData.payment_source_card_id || null,
         items: receiptData.items || []
       }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
