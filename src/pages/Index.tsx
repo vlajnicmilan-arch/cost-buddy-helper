@@ -217,10 +217,8 @@ const Index = () => {
           <div className="flex flex-wrap items-center gap-2">
             <LanguageSwitcher />
             <HelpDialog />
-            <div className="hidden sm:flex items-center gap-2">
-              <BulkPaymentSourceDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
-              <BulkCategoryDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
-            </div>
+            <BulkPaymentSourceDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
+            <BulkCategoryDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
             <ReportsDialog expenses={expenses} />
             <AddExpenseDialog onAdd={addExpense} />
           </div>
