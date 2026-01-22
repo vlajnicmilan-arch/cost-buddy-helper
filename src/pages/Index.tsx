@@ -6,6 +6,7 @@ import { TransactionItem } from '@/components/TransactionItem';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { CategoryBreakdown } from '@/components/CategoryBreakdown';
 import { BankConnection } from '@/components/BankConnection';
+import { BackupRestore } from '@/components/BackupRestore';
 import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,8 @@ const Index = () => {
     totalIncome, 
     balance,
     expensesByCategory,
-    isLocalMode
+    isLocalMode,
+    refetch
   } = useExpenses();
 
   useEffect(() => {
@@ -210,6 +212,7 @@ const Index = () => {
               total={totalExpenses} 
             />
             <BankConnection onImportCSV={importFromCSV} />
+            <BackupRestore onDataImported={refetch} />
           </div>
         </div>
       </div>
