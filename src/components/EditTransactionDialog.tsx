@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCES, TransactionType } from '@/types/expense';
+import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo } from '@/types/expense';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -196,16 +196,30 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
             <Label>Izvor plaćanja</Label>
             <Select value={paymentSource} onValueChange={(v) => setPaymentSource(v as PaymentSource)}>
               <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_SOURCES.map((src) => (
-                  <SelectItem key={src.id} value={src.id}>
+                <SelectValue>
+                  {paymentSource && (
                     <span className="flex items-center gap-2">
-                      <span>{src.icon}</span>
-                      <span>{src.name}</span>
+                      <span>{getPaymentSourceInfo(paymentSource).icon}</span>
+                      <span>{getPaymentSourceInfo(paymentSource).name}</span>
                     </span>
-                  </SelectItem>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {PAYMENT_SOURCE_GROUPS.map((group) => (
+                  <div key={group.label}>
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
+                      {group.label}
+                    </div>
+                    {group.sources.map((src) => (
+                      <SelectItem key={src.id} value={src.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{src.icon}</span>
+                          <span>{src.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </div>
                 ))}
               </SelectContent>
             </Select>
