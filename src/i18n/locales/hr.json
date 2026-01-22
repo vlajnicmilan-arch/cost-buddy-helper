@@ -23,7 +23,17 @@
     "amount": "Iznos",
     "description": "Opis",
     "category": "Kategorija",
-    "language": "Jezik"
+    "language": "Jezik",
+    "local": "Lokalno",
+    "cloud": "Cloud",
+    "localMode": "Lokalni način rada",
+    "localData": "Podaci su spremljeni na ovom uređaju",
+    "cloudData": "Podaci su u oblaku",
+    "dataStaysLocal": "Podaci ostaju samo na ovom uređaju",
+    "switchToCloud": "Prebaci u oblak",
+    "manageFinances": "Upravljaj svojim financijama",
+    "changeStorageMode": "Promijeni način pohrane",
+    "clickForDetails": "Klikni za detalje"
   },
   "nav": {
     "home": "Početna",
@@ -70,14 +80,19 @@
     "newTransaction": "Nova transakcija",
     "addExpense": "Dodaj trošak",
     "addIncome": "Dodaj prihod",
-    "noTransactions": "Nema transakcija",
+    "noTransactions": "Još nema transakcija",
     "recentTransactions": "Nedavne transakcije",
     "allTransactions": "Sve transakcije",
     "thisMonth": "Ovaj mjesec",
     "lastMonth": "Prošli mjesec",
     "thisYear": "Ova godina",
     "customPeriod": "Prilagođeni period",
-    "transferNote": "Prijenosi između vlastitih računa ne utječu na bilance"
+    "transferNote": "Prijenosi između vlastitih računa ne utječu na bilance",
+    "addFirstTransaction": "Dodaj prvu transakciju klikom na \"Dodaj\"",
+    "transfers": "Prijenosi",
+    "noTransfers": "Nema prijenosa između vlastitih računa",
+    "transferCount": "{count} {count, plural, one {prijenos} few {prijenosa} other {prijenosa}} ukupno",
+    "transfersThisMonth": "Ovaj mjesec: {count} {count, plural, one {prijenos} few {prijenosa} other {prijenosa}}"
   },
   "categories": {
     "food": "Hrana",
@@ -167,7 +182,10 @@
     "available": "Nova verzija dostupna!",
     "updateNow": "Ažuriraj",
     "later": "Kasnije",
-    "description": "Ažurirajte aplikaciju za najnovije značajke i popravke."
+    "description": "Ažurirajte aplikaciju za najnovije značajke i popravke.",
+    "checkForUpdates": "Provjeri ažuriranja",
+    "upToDate": "Aplikacija je ažurna!",
+    "checkFailed": "Provjera nije uspjela"
   },
   "errors": {
     "fetchError": "Greška pri dohvaćanju podataka",

@@ -23,7 +23,17 @@
     "amount": "Amount",
     "description": "Description",
     "category": "Category",
-    "language": "Language"
+    "language": "Language",
+    "local": "Local",
+    "cloud": "Cloud",
+    "localMode": "Local mode",
+    "localData": "Data is stored on this device",
+    "cloudData": "Data is in the cloud",
+    "dataStaysLocal": "Data stays only on this device",
+    "switchToCloud": "Switch to cloud",
+    "manageFinances": "Manage your finances",
+    "changeStorageMode": "Change storage mode",
+    "clickForDetails": "Click for details"
   },
   "nav": {
     "home": "Home",
@@ -70,14 +80,19 @@
     "newTransaction": "New Transaction",
     "addExpense": "Add Expense",
     "addIncome": "Add Income",
-    "noTransactions": "No transactions",
+    "noTransactions": "No transactions yet",
     "recentTransactions": "Recent Transactions",
     "allTransactions": "All Transactions",
     "thisMonth": "This month",
     "lastMonth": "Last month",
     "thisYear": "This year",
     "customPeriod": "Custom period",
-    "transferNote": "Transfers between your own accounts don't affect balances"
+    "transferNote": "Transfers between your own accounts don't affect balances",
+    "addFirstTransaction": "Add your first transaction by clicking \"Add\"",
+    "transfers": "Transfers",
+    "noTransfers": "No transfers between your own accounts",
+    "transferCount": "{count} transfer(s) total",
+    "transfersThisMonth": "This month: {count} transfer(s)"
   },
   "categories": {
     "food": "Food",
@@ -167,7 +182,10 @@
     "available": "New version available!",
     "updateNow": "Update",
     "later": "Later",
-    "description": "Update the app to get the latest features and fixes."
+    "description": "Update the app to get the latest features and fixes.",
+    "checkForUpdates": "Check for updates",
+    "upToDate": "App is up to date!",
+    "checkFailed": "Check failed"
   },
   "errors": {
     "fetchError": "Error fetching data",

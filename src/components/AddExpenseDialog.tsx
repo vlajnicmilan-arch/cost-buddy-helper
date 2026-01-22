@@ -12,6 +12,7 @@ import { useIncomeSources } from '@/hooks/useIncomeSources';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[]) => Promise<void> | void;
@@ -28,6 +29,7 @@ interface ScannedData {
 }
 
 export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -260,12 +262,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       <DialogTrigger asChild>
         <Button className="gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
           <Plus className="w-5 h-5" />
-          Dodaj
+          {t('common.add')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md glass-card border-border/50 h-[85vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="text-xl font-semibold">Nova transakcija</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">{t('transactions.newTransaction')}</DialogTitle>
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto -mx-6 px-6">
@@ -276,7 +278,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-primary flex items-center gap-2">
                     <Check className="w-4 h-4" />
-                    Pronađeni podaci s računa
+                    {t('scanner.foundData')}
                   </h3>
                 </div>
                 
@@ -292,24 +294,24 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Iznos:</span>
+                    <span className="text-muted-foreground">{t('common.amount')}:</span>
                     <p className="font-bold text-lg">€{scannedData.amount.toFixed(2)}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Trgovina:</span>
+                    <span className="text-muted-foreground">{t('scanner.merchant')}:</span>
                     <p className="font-medium">{scannedData.merchant || '-'}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Datum:</span>
+                    <span className="text-muted-foreground">{t('common.date')}:</span>
                     <p className="font-medium">
                       {scannedData.date 
                         ? new Date(scannedData.date).toLocaleDateString('hr-HR')
-                        : 'Nije pronađen'
+                        : t('scanner.dateNotFound')
                       }
                     </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Kategorija:</span>
+                    <span className="text-muted-foreground">{t('common.category')}:</span>
                     <p className="font-medium">
                       {categoryInfo?.icon} {categoryInfo?.name}
                     </p>
@@ -317,14 +319,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 </div>
                 
                 <div>
-                  <span className="text-muted-foreground text-sm">Opis:</span>
+                  <span className="text-muted-foreground text-sm">{t('common.description')}:</span>
                   <p className="font-medium text-sm">{scannedData.description}</p>
                 </div>
                 
                 {scannedData.items.length > 0 && (
                   <div>
                     <span className="text-muted-foreground text-sm">
-                      Artikli ({scannedData.items.length}):
+                      {t('scanner.itemsFound')} ({scannedData.items.length}):
                     </span>
                     <div className="mt-1 max-h-32 overflow-y-auto space-y-1">
                       {scannedData.items.map((item, idx) => (
@@ -348,7 +350,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                     className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
                   >
                     <Save className="w-3 h-3" />
-                    Spremi sliku računa
+                    {t('scanner.saveImage')}
                   </label>
                 </div>
               </div>
@@ -361,7 +363,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   onClick={rejectScannedData}
                 >
                   <RotateCcw className="w-4 h-4" />
-                  Odbaci
+                  {t('scanner.reject')}
                 </Button>
                 <Button
                   type="button"
@@ -369,7 +371,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   onClick={acceptScannedData}
                 >
                   <Check className="w-4 h-4" />
-                  Prihvati i spremi
+                  {t('scanner.accept')}
                 </Button>
               </div>
             </div>
@@ -407,7 +409,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   disabled={scanning}
                 >
                   {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-                  Fotografiraj
+                  {t('scanner.takePhoto')}
                 </Button>
                 <Button
                   type="button"
@@ -417,14 +419,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   disabled={scanning}
                 >
                   {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
-                  Iz galerije
+                  {t('scanner.fromGallery')}
                 </Button>
               </div>
 
               {scanning && (
                 <div className="text-center py-4 text-muted-foreground text-sm">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                  Analiziram račun...
+                  {t('scanner.analyzing')}
                 </div>
               )}
 
@@ -456,7 +458,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  Trošak
+                  {t('transactions.expense')}
                 </button>
                 <button
                   type="button"
@@ -468,7 +470,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  Prihod
+                  {t('transactions.income')}
                 </button>
                 <button
                   type="button"
@@ -485,7 +487,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               </div>
               {type === 'transfer' && (
                 <p className="text-xs text-muted-foreground text-center">
-                  Prijenosi između vlastitih računa ne utječu na bilance
+                  {t('transactions.transferNote')}
                 </p>
               )}
 
@@ -493,18 +495,18 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               {incomeSources.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
-                    {type === 'income' ? 'Izvor prihoda' : 'Knjiži iz izvora'}
+                    {type === 'income' ? t('incomeSources.title') : t('incomeSources.assignSource')}
                   </Label>
                   <Select 
                     value={incomeSourceId || 'none'} 
                     onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue placeholder={type === 'income' ? 'Odaberi izvor prihoda' : 'Odaberi izvor'} />
+                      <SelectValue placeholder={type === 'income' ? t('incomeSources.title') : t('incomeSources.assignSource')} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
                       <SelectItem value="none">
-                        <span className="text-muted-foreground">Bez izvora</span>
+                        <span className="text-muted-foreground">{t('incomeSources.unassigned')}</span>
                       </SelectItem>
                       {incomeSources.map((source) => (
                         <SelectItem key={source.id} value={source.id}>
@@ -516,11 +518,6 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                       ))}
                     </SelectContent>
                   </Select>
-                  {type === 'expense' && incomeSourceId && (
-                    <p className="text-xs text-muted-foreground">
-                      Trošak će se oduzeti od ovog izvora prihoda
-                    </p>
-                  )}
                 </div>
               )}
 
@@ -553,7 +550,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
 
               {/* Date */}
               <div className="space-y-2">
-                <Label htmlFor="date" className="text-sm font-medium">Datum</Label>
+                <Label htmlFor="date" className="text-sm font-medium">{t('common.date')}</Label>
                 <Input
                   id="date"
                   type="date"
@@ -706,7 +703,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               {/* Category - Only show for expenses */}
               {type === 'expense' && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Kategorija</Label>
+                  <Label className="text-sm font-medium">{t('common.category')}</Label>
                   <div className="grid grid-cols-4 gap-2">
                     {CATEGORIES.map((cat) => (
                       <button
@@ -741,7 +738,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                     className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
                   >
                     <Save className="w-3 h-3" />
-                    Spremi sliku računa
+                    {t('scanner.saveImage')}
                   </label>
                 </div>
               )}
@@ -758,7 +755,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
               disabled={scanning || !amount || !description}
             >
-              Spremi transakciju
+              {t('common.save')}
             </Button>
           </div>
         )}

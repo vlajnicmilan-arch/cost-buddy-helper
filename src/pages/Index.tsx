@@ -115,7 +115,7 @@ const Index = () => {
               <div>
                 <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">V&M Balance</h1>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">Upravljaj svojim financijama</p>
+                  <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">{t('common.manageFinances')}</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -123,18 +123,18 @@ const Index = () => {
                           {isLocalMode ? (
                             <>
                               <Smartphone className="w-3 h-3" />
-                              Lokalno
+                              {t('common.local')}
                             </>
                           ) : (
                             <>
                               <Cloud className="w-3 h-3" />
-                              Cloud
+                              {t('common.cloud')}
                             </>
                           )}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{isLocalMode ? 'Podaci su spremljeni na ovom uređaju' : 'Podaci su u oblaku'}</p>
+                        <p>{isLocalMode ? t('common.localData') : t('common.cloudData')}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -242,7 +242,7 @@ const Index = () => {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Promijeni način pohrane</p>
+                    <p>{t('common.changeStorageMode')}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -270,8 +270,8 @@ const Index = () => {
             <div className="flex items-center gap-3">
               <Smartphone className="w-5 h-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Lokalni način rada</p>
-                <p className="text-xs text-muted-foreground">Podaci ostaju samo na ovom uređaju</p>
+                <p className="text-sm font-medium">{t('common.localMode')}</p>
+                <p className="text-xs text-muted-foreground">{t('common.dataStaysLocal')}</p>
               </div>
             </div>
             <Button 
@@ -280,7 +280,7 @@ const Index = () => {
               onClick={() => navigate('/setup')}
               className="rounded-lg text-xs"
             >
-              Prebaci u oblak
+              {t('common.switchToCloud')}
             </Button>
           </motion.div>
         )}
@@ -288,20 +288,20 @@ const Index = () => {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <SummaryCard
-            title="Stanje"
+            title={t('summary.balance')}
             amount={balance}
             variant="balance"
             icon={<Wallet className="w-5 h-5" />}
           />
           <SummaryCard
-            title="Prihodi"
+            title={t('summary.totalIncome')}
             amount={totalIncome}
             variant="income"
             icon={<TrendingUp className="w-5 h-5" />}
             onClick={() => setIncomeDialogOpen(true)}
           />
           <SummaryCard
-            title="Troškovi"
+            title={t('summary.totalExpenses')}
             amount={totalExpenses}
             variant="expense"
             icon={<TrendingDown className="w-5 h-5" />}
@@ -324,11 +324,11 @@ const Index = () => {
                 <ArrowLeftRight className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Prijenosi</p>
+                <p className="text-sm font-medium">{t('transactions.transfers')}</p>
                 <p className="text-xs text-muted-foreground">
                   {allTransfers.length === 0 
-                    ? 'Nema prijenosa između vlastitih računa' 
-                    : `${allTransfers.length} ${allTransfers.length === 1 ? 'prijenos' : 'prijenosa'} ukupno`}
+                    ? t('transactions.noTransfers')
+                    : `${allTransfers.length} ${allTransfers.length === 1 ? t('transactions.transfer').toLowerCase() : t('transactions.transfers').toLowerCase()}`}
                 </p>
               </div>
             </div>
@@ -336,14 +336,14 @@ const Index = () => {
               <p className="font-mono font-semibold text-lg text-muted-foreground">
                 ↔ {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(totalTransfers)}
               </p>
-              <p className="text-xs text-muted-foreground">Klikni za detalje →</p>
+              <p className="text-xs text-muted-foreground">{t('common.clickForDetails')} →</p>
             </div>
           </div>
           
           {/* Quick stats row */}
           {allTransfers.length > 0 && monthlyTransferCount > 0 && (
             <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-              <span>Ovaj mjesec: {monthlyTransferCount} {monthlyTransferCount === 1 ? 'prijenos' : 'prijenosa'}</span>
+              <span>{t('transactions.thisMonth')}: {monthlyTransferCount} {monthlyTransferCount === 1 ? t('transactions.transfer').toLowerCase() : t('transactions.transfers').toLowerCase()}</span>
               <span className="font-mono">{new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(monthlyTransfers)}</span>
             </div>
           )}
@@ -363,16 +363,16 @@ const Index = () => {
 
           {/* Transactions */}
           <div className="lg:col-span-2 glass-card rounded-2xl p-6 animate-fade-in">
-            <h2 className="text-lg font-semibold mb-4">Nedavne transakcije</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('transactions.recentTransactions')}</h2>
             {expensesLoading ? (
               <div className="py-12 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : expenses.length === 0 ? (
               <div className="py-12 text-center">
-                <p className="text-muted-foreground">Još nema transakcija</p>
+                <p className="text-muted-foreground">{t('transactions.noTransactions')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dodaj prvu transakciju klikom na "Dodaj"
+                  {t('transactions.addFirstTransaction')}
                 </p>
               </div>
             ) : (
