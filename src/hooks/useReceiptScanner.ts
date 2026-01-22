@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Category } from '@/types/expense';
+import { Category, ReceiptItem } from '@/types/expense';
 import { toast } from 'sonner';
 
 interface ParsedReceipt {
@@ -8,6 +8,8 @@ interface ParsedReceipt {
   merchant: string;
   description: string;
   category: Category;
+  date: string | null;
+  items: ReceiptItem[];
 }
 
 export const useReceiptScanner = () => {
@@ -59,11 +61,18 @@ export const useReceiptScanner = () => {
         amount: data.amount,
         merchant: data.merchant,
         description: data.description,
-        category: data.category as Category
+        category: data.category as Category,
+        date: data.date || null,
+        items: (data.items || []).map((item: any) => ({
+          name: item.name || '',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || undefined,
+          total_price: item.total_price || 0
+        }))
       };
 
       setParsedData(result);
-      toast.success('Račun uspješno skeniran!');
+      toast.success(`Račun skeniran! Pronađeno ${result.items.length} artikala.`);
       return result;
     } catch (error) {
       console.error('Error scanning receipt:', error);
@@ -71,6 +80,50 @@ export const useReceiptScanner = () => {
       return null;
     } finally {
       setScanning(false);
+    }
+  };
+
+  const uploadReceiptImage = async (imageBase64: string): Promise<string | null> => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        return null;
+      }
+
+      const userId = sessionData.session.user.id;
+      const fileName = `${userId}/${Date.now()}.jpg`;
+      
+      // Convert base64 to blob
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+      const { error } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Error uploading receipt:', error);
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading receipt image:', error);
+      return null;
     }
   };
 
@@ -82,6 +135,7 @@ export const useReceiptScanner = () => {
     scanning,
     parsedData,
     scanReceipt,
+    uploadReceiptImage,
     clearParsedData
   };
 };

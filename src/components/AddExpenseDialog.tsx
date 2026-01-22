@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, ReceiptItem } from '@/types/expense';
-import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[]) => void;
@@ -25,9 +27,11 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [showItems, setShowItems] = useState(false);
+  const [saveReceipt, setSaveReceipt] = useState(true);
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { scanning, scanReceipt } = useReceiptScanner();
+  const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -36,6 +40,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
+      setReceiptImage(base64);
+      
       const result = await scanReceipt(base64);
       
       if (result) {
@@ -43,10 +49,25 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         setDescription(result.description);
         setCategory(result.category);
         setMerchantName(result.merchant);
-        // If scanner returns items in the future, we can add them here
+        
+        // Set date from receipt if found
+        if (result.date) {
+          setExpenseDate(result.date);
+        }
+        
+        // Set items from receipt
+        if (result.items && result.items.length > 0) {
+          setItems(result.items);
+          setShowItems(true);
+        }
       }
     };
     reader.readAsDataURL(file);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const addItem = () => {
@@ -96,13 +117,26 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setExpenseDate(new Date().toISOString().split('T')[0]);
     setItems([]);
     setShowItems(false);
+    setReceiptImage(null);
+    setSaveReceipt(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !description) return;
 
     const validItems = items.filter(item => item.name && item.total_price > 0);
+    
+    // Upload receipt image if option is selected
+    let receiptUrl: string | undefined;
+    if (saveReceipt && receiptImage) {
+      toast.info('Spremam sliku računa...');
+      const uploadedUrl = await uploadReceiptImage(receiptImage);
+      if (uploadedUrl) {
+        receiptUrl = uploadedUrl;
+        toast.success('Slika računa spremljena!');
+      }
+    }
 
     onAdd({
       amount: parseFloat(amount),
@@ -112,7 +146,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       type,
       payment_source: paymentSource,
       merchant_name: merchantName || undefined,
-      ai_extracted: false
+      receipt_url: receiptUrl,
+      ai_extracted: receiptImage !== null
     }, validItems.length > 0 ? validItems : undefined);
 
     resetForm();
@@ -183,6 +218,42 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
             {scanning && (
               <div className="text-center py-4 text-muted-foreground text-sm">
                 Analiziram račun...
+              </div>
+            )}
+
+            {/* Receipt Preview and Save Option */}
+            {receiptImage && !scanning && (
+              <div className="space-y-2">
+                <div className="relative rounded-xl overflow-hidden bg-muted/50 p-2">
+                  <img 
+                    src={receiptImage} 
+                    alt="Račun" 
+                    className="w-full h-24 object-cover rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
+                    onClick={() => setReceiptImage(null)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="save-receipt" 
+                    checked={saveReceipt}
+                    onCheckedChange={(checked) => setSaveReceipt(checked as boolean)}
+                  />
+                  <label 
+                    htmlFor="save-receipt" 
+                    className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
+                  >
+                    <Save className="w-3 h-3" />
+                    Spremi sliku računa
+                  </label>
+                </div>
               </div>
             )}
 
@@ -271,7 +342,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
             {type === 'expense' && (
               <Collapsible open={showItems} onOpenChange={setShowItems}>
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Artikli na računu</Label>
+                  <Label className="text-sm font-medium">
+                    Artikli na računu
+                    {items.length > 0 && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ({items.length} artikala)
+                      </span>
+                    )}
+                  </Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
