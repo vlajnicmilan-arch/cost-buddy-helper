@@ -647,18 +647,23 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   </label>
                 </div>
               )}
-
-              {/* Submit */}
-              <Button 
-                type="submit" 
-                className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                disabled={scanning}
-              >
-                Spremi transakciju
-              </Button>
             </form>
           )}
         </ScrollArea>
+        
+        {/* Fixed Submit Button at bottom - outside ScrollArea */}
+        {!showScannedPreview && (
+          <div className="flex-shrink-0 pt-4 border-t border-border/50">
+            <Button 
+              type="button"
+              onClick={handleSubmit}
+              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              disabled={scanning || !amount || !description}
+            >
+              Spremi transakciju
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
