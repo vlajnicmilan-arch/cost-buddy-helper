@@ -1,7 +1,9 @@
 import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { cn } from '@/lib/utils';
 import { Trash2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 
 interface TransactionItemProps {
   expense: Expense;
@@ -12,6 +14,22 @@ interface TransactionItemProps {
 export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemProps) => {
   const category = getCategoryInfo(expense.category);
   const paymentSource = getPaymentSourceInfo(expense.payment_source || 'cash');
+  const { customPaymentSources } = useCustomPaymentSources();
+
+  // Find card info if transaction has a card assigned
+  const cardInfo = useMemo(() => {
+    if (!expense.payment_source_card_id) return null;
+    for (const source of customPaymentSources) {
+      const card = source.cards?.find(c => c.id === expense.payment_source_card_id);
+      if (card) return card;
+    }
+    return null;
+  }, [expense.payment_source_card_id, customPaymentSources]);
+
+  // Check if payment source is a custom one
+  const customSource = useMemo(() => {
+    return customPaymentSources.find(s => s.id === expense.payment_source);
+  }, [expense.payment_source, customPaymentSources]);
   
   const formatAmount = (value: number) => {
     return new Intl.NumberFormat('hr-HR', {
@@ -61,9 +79,28 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
         <p className="text-sm text-muted-foreground flex items-center gap-1 flex-wrap">
           {expense.merchant_name && <span>{expense.merchant_name} •</span>}
           <span className="inline-flex items-center gap-0.5">
-            <span>{paymentSource.icon}</span>
-            <span>{paymentSource.name}</span>
+            {customSource ? (
+              <>
+                <span 
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[10px]"
+                  style={{ backgroundColor: customSource.color }}
+                >
+                  {customSource.icon}
+                </span>
+                <span>{customSource.name}</span>
+              </>
+            ) : (
+              <>
+                <span>{paymentSource.icon}</span>
+                <span>{paymentSource.name}</span>
+              </>
+            )}
           </span>
+          {cardInfo && (
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+              💳 •••• {cardInfo.last_four_digits}
+            </span>
+          )}
           {expense.type === 'transfer' && (
             <span className="text-primary">• Prijenos</span>
           )}
