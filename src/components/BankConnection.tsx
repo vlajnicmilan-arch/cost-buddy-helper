@@ -1,16 +1,18 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Info, FileText, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { CSVImportDialog } from './CSVImportDialog';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePDFParser } from '@/hooks/usePDFParser';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
 }
 
 const SUPPORTED_SOURCES = [
@@ -22,9 +24,12 @@ const SUPPORTED_SOURCES = [
   { id: 'other', name: 'Ostale banke', logo: '📄' },
 ];
 
-export const BankConnection = ({ onImportCSV }: BankConnectionProps) => {
+export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionProps) => {
   const [infoOpen, setInfoOpen] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
+  const [includeDuplicates, setIncludeDuplicates] = useState(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
 
@@ -68,10 +73,46 @@ export const BankConnection = ({ onImportCSV }: BankConnectionProps) => {
       payment_source: tx.payment_source || 'bank'
     }));
 
+    // Check for duplicates if function is provided
+    if (findDuplicates) {
+      const { duplicates, unique } = findDuplicates(transactions);
+      
+      if (duplicates.length > 0) {
+        setDuplicateInfo({ duplicates, unique });
+        setIncludeDuplicates(false);
+        setPdfPreviewOpen(false);
+        setDuplicateWarningOpen(true);
+        return;
+      }
+    }
+
+    // No duplicates, import all
     await onImportCSV(transactions);
     setPdfPreviewOpen(false);
     clearParsedData();
     toast.success(`Uvezeno ${transactions.length} transakcija iz PDF-a`);
+  };
+
+  const handleConfirmImportWithDuplicates = async () => {
+    if (!duplicateInfo || !onImportCSV) return;
+
+    const transactionsToImport = includeDuplicates 
+      ? [...duplicateInfo.unique, ...duplicateInfo.duplicates]
+      : duplicateInfo.unique;
+
+    if (transactionsToImport.length === 0) {
+      toast.info('Nema novih transakcija za uvoz');
+      setDuplicateWarningOpen(false);
+      clearParsedData();
+      setDuplicateInfo(null);
+      return;
+    }
+
+    await onImportCSV(transactionsToImport);
+    setDuplicateWarningOpen(false);
+    clearParsedData();
+    setDuplicateInfo(null);
+    toast.success(`Uvezeno ${transactionsToImport.length} transakcija`);
   };
 
   return (
@@ -210,6 +251,89 @@ export const BankConnection = ({ onImportCSV }: BankConnectionProps) => {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Warning Dialog */}
+      <Dialog open={duplicateWarningOpen} onOpenChange={setDuplicateWarningOpen}>
+        <DialogContent className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              Pronađeni duplikati
+            </DialogTitle>
+          </DialogHeader>
+          
+          {duplicateInfo && (
+            <div className="flex-1 overflow-y-auto space-y-4">
+              <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm">
+                <p className="font-medium text-orange-600 dark:text-orange-400">
+                  {duplicateInfo.duplicates.length} transakcija već postoji u bazi
+                </p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  {duplicateInfo.unique.length} novih transakcija je spremno za uvoz
+                </p>
+              </div>
+
+              {duplicateInfo.duplicates.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Duplikati:</p>
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {duplicateInfo.duplicates.map((tx, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm border border-border/50"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate text-xs">{tx.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {tx.date.toLocaleDateString('hr-HR')}
+                          </p>
+                        </div>
+                        <p className={`font-mono text-xs ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                          {tx.type === 'income' ? '+' : '-'}€{tx.amount.toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-xl">
+                <Checkbox 
+                  id="include-duplicates" 
+                  checked={includeDuplicates}
+                  onCheckedChange={(checked) => setIncludeDuplicates(checked === true)}
+                />
+                <label htmlFor="include-duplicates" className="text-sm cursor-pointer">
+                  Svejedno uvezi duplikate ({duplicateInfo.duplicates.length})
+                </label>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDuplicateWarningOpen(false);
+                clearParsedData();
+                setDuplicateInfo(null);
+              }}
+              className="rounded-xl"
+            >
+              Odustani
+            </Button>
+            <Button 
+              onClick={handleConfirmImportWithDuplicates}
+              className="rounded-xl"
+            >
+              Uvezi {includeDuplicates 
+                ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0)
+                : duplicateInfo?.unique.length || 0
+              } transakcija
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

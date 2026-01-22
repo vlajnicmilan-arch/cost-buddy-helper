@@ -197,6 +197,44 @@ export const useExpenses = () => {
     }
   };
 
+  // Check for duplicate transactions
+  const findDuplicates = useCallback((transactions: ParsedTransaction[]): {
+    duplicates: ParsedTransaction[];
+    unique: ParsedTransaction[];
+  } => {
+    const duplicates: ParsedTransaction[] = [];
+    const unique: ParsedTransaction[] = [];
+
+    for (const tx of transactions) {
+      // Check if a transaction with same date, amount, and similar description exists
+      const isDuplicate = expenses.some(existing => {
+        const sameDate = existing.date.toDateString() === tx.date.toDateString();
+        const sameAmount = Math.abs(Number(existing.amount) - tx.amount) < 0.01;
+        const sameType = existing.type === tx.type;
+        
+        // Check description similarity (contains key words)
+        const existingDesc = existing.description.toLowerCase();
+        const txDesc = tx.description.toLowerCase();
+        const similarDesc = existingDesc === txDesc || 
+          existingDesc.includes(txDesc) || 
+          txDesc.includes(existingDesc) ||
+          // Check merchant name match
+          (existing.merchant_name && tx.merchant_name && 
+           existing.merchant_name.toLowerCase() === tx.merchant_name.toLowerCase());
+
+        return sameDate && sameAmount && sameType && similarDesc;
+      });
+
+      if (isDuplicate) {
+        duplicates.push(tx);
+      } else {
+        unique.push(tx);
+      }
+    }
+
+    return { duplicates, unique };
+  }, [expenses]);
+
   const importFromCSV = async (transactions: ParsedTransaction[]) => {
     try {
       if (isLocalMode) {
@@ -286,6 +324,7 @@ export const useExpenses = () => {
     updateExpense,
     deleteExpense,
     importFromCSV,
+    findDuplicates,
     totalExpenses,
     totalIncome,
     balance,

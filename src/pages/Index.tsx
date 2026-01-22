@@ -37,6 +37,7 @@ const Index = () => {
     updateExpense,
     deleteExpense, 
     importFromCSV,
+    findDuplicates,
     totalExpenses, 
     totalIncome, 
     balance,
@@ -237,7 +238,7 @@ const Index = () => {
               expensesByCategory={expensesByCategory} 
               total={totalExpenses} 
             />
-            <BankConnection onImportCSV={importFromCSV} />
+            <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
             <BackupRestore onDataImported={refetch} />
           </div>
         </div>
