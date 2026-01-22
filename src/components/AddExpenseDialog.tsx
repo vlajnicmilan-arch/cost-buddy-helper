@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, getCategoryInfo, TransactionType } from '@/types/expense';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
@@ -50,6 +51,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
   const { incomeSources, isSourceOwner, refetch: refetchIncomeSources } = useIncomeSources();
+  const { customPaymentSources } = useCustomPaymentSources();
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -571,6 +573,40 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                       </div>
                     </div>
                   ))}
+
+                  {/* Custom Payment Sources */}
+                  {customPaymentSources.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                        Prilagođeni
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {customPaymentSources.map((source) => (
+                          <button
+                            key={`custom-${source.id}`}
+                            type="button"
+                            onClick={() => setPaymentSource(source.id as PaymentSource)}
+                            className={cn(
+                              "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all",
+                              paymentSource === source.id 
+                                ? type === 'income' 
+                                  ? "border-income bg-income/10" 
+                                  : "border-expense bg-expense/10"
+                                : "border-transparent bg-muted/50 hover:bg-muted"
+                            )}
+                          >
+                            <span 
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-white text-sm"
+                              style={{ backgroundColor: source.color }}
+                            >
+                              {source.icon}
+                            </span>
+                            <span className="text-xs font-medium text-muted-foreground truncate w-full text-center">{source.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

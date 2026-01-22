@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo } from '@/types/expense';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -31,6 +32,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const [saving, setSaving] = useState(false);
 
   const { incomeSources } = useIncomeSources();
+  const { customPaymentSources } = useCustomPaymentSources();
 
   // Initialize form when dialog opens or expense changes
   useEffect(() => {
@@ -196,12 +198,31 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
             <Select value={paymentSource} onValueChange={(v) => setPaymentSource(v as PaymentSource)}>
               <SelectTrigger>
                 <SelectValue>
-                  {paymentSource && (
-                    <span className="flex items-center gap-2">
-                      <span>{getPaymentSourceInfo(paymentSource).icon}</span>
-                      <span>{getPaymentSourceInfo(paymentSource).name}</span>
-                    </span>
-                  )}
+                  {paymentSource && (() => {
+                    // Check if it's a custom payment source
+                    const customSource = customPaymentSources.find(s => s.id === paymentSource);
+                    if (customSource) {
+                      return (
+                        <span className="flex items-center gap-2">
+                          <span 
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
+                            style={{ backgroundColor: customSource.color }}
+                          >
+                            {customSource.icon}
+                          </span>
+                          <span>{customSource.name}</span>
+                        </span>
+                      );
+                    }
+                    // Otherwise use standard payment source info
+                    const info = getPaymentSourceInfo(paymentSource);
+                    return (
+                      <span className="flex items-center gap-2">
+                        <span>{info.icon}</span>
+                        <span>{info.name}</span>
+                      </span>
+                    );
+                  })()}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="max-h-[300px]">
@@ -220,6 +241,27 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                     ))}
                   </div>
                 ))}
+                {/* Custom Payment Sources */}
+                {customPaymentSources.length > 0 && (
+                  <div>
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
+                      Prilagođeni
+                    </div>
+                    {customPaymentSources.map((src) => (
+                      <SelectItem key={`custom-${src.id}`} value={src.id}>
+                        <span className="flex items-center gap-2">
+                          <span 
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
+                            style={{ backgroundColor: src.color }}
+                          >
+                            {src.icon}
+                          </span>
+                          <span>{src.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </div>
+                )}
               </SelectContent>
             </Select>
           </div>
