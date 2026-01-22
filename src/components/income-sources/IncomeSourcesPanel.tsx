@@ -39,32 +39,41 @@ export const IncomeSourcesPanel = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [sourceToDelete, setSourceToDelete] = useState<string | null>(null);
 
-  // Calculate stats for each source
+  // Calculate stats for each source (income - expenses = balance)
   const sourceStats = useMemo(() => {
-    const stats: Record<string, { total: number; count: number }> = {};
+    const stats: Record<string, { income: number; expenses: number; balance: number; count: number }> = {};
     
     incomeSources.forEach(source => {
-      stats[source.id] = { total: 0, count: 0 };
+      stats[source.id] = { income: 0, expenses: 0, balance: 0, count: 0 };
     });
 
     expenses
-      .filter(e => e.type === 'income' && e.income_source_id)
+      .filter(e => e.income_source_id)
       .forEach(e => {
         if (e.income_source_id && stats[e.income_source_id]) {
-          stats[e.income_source_id].total += e.amount;
+          if (e.type === 'income') {
+            stats[e.income_source_id].income += e.amount;
+          } else {
+            stats[e.income_source_id].expenses += e.amount;
+          }
           stats[e.income_source_id].count += 1;
         }
       });
+
+    // Calculate balance for each source
+    Object.keys(stats).forEach(id => {
+      stats[id].balance = stats[id].income - stats[id].expenses;
+    });
 
     return stats;
   }, [expenses, incomeSources]);
 
   // Calculate unassigned income
   const unassignedStats = useMemo(() => {
-    const unassigned = expenses.filter(e => e.type === 'income' && !e.income_source_id);
+    const unassignedIncome = expenses.filter(e => e.type === 'income' && !e.income_source_id);
     return {
-      total: unassigned.reduce((sum, e) => sum + e.amount, 0),
-      count: unassigned.length
+      total: unassignedIncome.reduce((sum, e) => sum + e.amount, 0),
+      count: unassignedIncome.length
     };
   }, [expenses]);
 
@@ -162,7 +171,9 @@ export const IncomeSourcesPanel = ({
               >
                 <IncomeSourceCard
                   source={source}
-                  totalAmount={sourceStats[source.id]?.total || 0}
+                  totalAmount={sourceStats[source.id]?.balance || 0}
+                  incomeAmount={sourceStats[source.id]?.income || 0}
+                  expenseAmount={sourceStats[source.id]?.expenses || 0}
                   transactionCount={sourceStats[source.id]?.count || 0}
                   onEdit={handleEdit}
                   onDelete={handleDelete}

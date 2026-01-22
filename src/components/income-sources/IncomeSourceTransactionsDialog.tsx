@@ -25,16 +25,26 @@ export const IncomeSourceTransactionsDialog = ({
   onEditTransaction,
   onDeleteTransaction
 }: IncomeSourceTransactionsDialogProps) => {
-  const filteredExpenses = useMemo(() => {
+  // All transactions linked to this source (both income and expenses)
+  const allTransactions = useMemo(() => {
     if (!source) return [];
-    return expenses.filter(e => 
-      e.type === 'income' && e.income_source_id === source.id
-    );
+    return expenses.filter(e => e.income_source_id === source.id);
   }, [expenses, source]);
 
-  const totalAmount = useMemo(() => {
-    return filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
-  }, [filteredExpenses]);
+  // Separate income and expenses for the source
+  const incomeTransactions = useMemo(() => 
+    allTransactions.filter(e => e.type === 'income'), [allTransactions]);
+  
+  const expenseTransactions = useMemo(() => 
+    allTransactions.filter(e => e.type === 'expense'), [allTransactions]);
+
+  const totalIncome = useMemo(() => 
+    incomeTransactions.reduce((sum, e) => sum + e.amount, 0), [incomeTransactions]);
+  
+  const totalExpenses = useMemo(() => 
+    expenseTransactions.reduce((sum, e) => sum + e.amount, 0), [expenseTransactions]);
+
+  const balance = totalIncome - totalExpenses;
 
   const formatAmount = (value: number) => {
     return new Intl.NumberFormat('hr-HR', {
@@ -70,32 +80,41 @@ export const IncomeSourceTransactionsDialog = ({
 
         {/* Summary */}
         <div 
-          className="p-4 rounded-xl mb-4"
+          className="p-4 rounded-xl mb-4 space-y-2"
           style={{ backgroundColor: `${sourceColor}15` }}
         >
-          <p className="text-sm text-muted-foreground mb-1">
-            Ukupno ({filteredExpenses.length} transakcija)
-          </p>
-          <p className="text-2xl font-bold font-mono text-income">
-            {formatAmount(totalAmount)}
-          </p>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Prihodi ({incomeTransactions.length})</span>
+            <span className="font-mono font-semibold text-income">+{formatAmount(totalIncome)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Troškovi ({expenseTransactions.length})</span>
+            <span className="font-mono font-semibold text-expense">-{formatAmount(totalExpenses)}</span>
+          </div>
+          <div className="border-t pt-2 flex justify-between items-center">
+            <span className="text-sm font-medium">Stanje</span>
+            <span className={`text-lg font-bold font-mono ${balance >= 0 ? 'text-income' : 'text-expense'}`}>
+              {formatAmount(balance)}
+            </span>
+          </div>
         </div>
 
         {/* Transaction List */}
         <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-          {filteredExpenses.length === 0 ? (
+          {allTransactions.length === 0 ? (
             <div className="py-12 text-center">
               <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">Nema prihoda za ovaj izvor</p>
+              <p className="text-muted-foreground">Nema transakcija za ovaj izvor</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Dodaj novi prihod i poveži ga s ovim izvorom
+                Dodaj prihod ili trošak i poveži ga s ovim izvorom
               </p>
             </div>
           ) : (
             <AnimatePresence>
-              {filteredExpenses.map((expense) => {
+              {allTransactions.map((expense) => {
                 const categoryInfo = getCategoryInfo(expense.category);
                 const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
+                const isIncome = expense.type === 'income';
                 
                 return (
                   <motion.div
@@ -117,12 +136,16 @@ export const IncomeSourceTransactionsDialog = ({
                         <span>{format(expense.date, 'dd.MM.yyyy', { locale: hr })}</span>
                         <span>•</span>
                         <span>{paymentInfo.icon} {paymentInfo.name}</span>
+                        <span>•</span>
+                        <span className={isIncome ? 'text-income' : 'text-expense'}>
+                          {isIncome ? 'Prihod' : 'Trošak'}
+                        </span>
                       </div>
                     </div>
 
                     {/* Amount */}
-                    <p className="font-mono font-semibold whitespace-nowrap text-income">
-                      +{formatAmount(expense.amount)}
+                    <p className={`font-mono font-semibold whitespace-nowrap ${isIncome ? 'text-income' : 'text-expense'}`}>
+                      {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
                     </p>
 
                     {/* Actions */}

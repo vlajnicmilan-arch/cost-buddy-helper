@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 interface IncomeSourceCardProps {
   source: IncomeSource;
   totalAmount: number;
+  incomeAmount?: number;
+  expenseAmount?: number;
   transactionCount: number;
   onEdit: (source: IncomeSource) => void;
   onDelete: (id: string) => void;
@@ -15,6 +17,8 @@ interface IncomeSourceCardProps {
 export const IncomeSourceCard = ({
   source,
   totalAmount,
+  incomeAmount = 0,
+  expenseAmount = 0,
   transactionCount,
   onEdit,
   onDelete,
@@ -51,13 +55,38 @@ export const IncomeSourceCard = ({
           {source.description && (
             <p className="text-sm text-muted-foreground truncate">{source.description}</p>
           )}
-          <div className="mt-2 flex items-center gap-4 text-sm">
-            <span className="font-mono font-semibold text-income">
-              {formatAmount(totalAmount)}
-            </span>
-            <span className="text-muted-foreground">
-              {transactionCount} {transactionCount === 1 ? 'transakcija' : 'transakcija'}
-            </span>
+          <div className="mt-2 space-y-1">
+            {/* Balance */}
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "font-mono font-bold text-lg",
+                totalAmount >= 0 ? "text-income" : "text-expense"
+              )}>
+                {formatAmount(totalAmount)}
+              </span>
+              <span className="text-xs text-muted-foreground">stanje</span>
+            </div>
+            
+            {/* Income/Expense breakdown */}
+            {(incomeAmount > 0 || expenseAmount > 0) && (
+              <div className="flex items-center gap-3 text-xs">
+                {incomeAmount > 0 && (
+                  <span className="text-income">+{formatAmount(incomeAmount)}</span>
+                )}
+                {expenseAmount > 0 && (
+                  <span className="text-expense">-{formatAmount(expenseAmount)}</span>
+                )}
+                <span className="text-muted-foreground">
+                  ({transactionCount} tr.)
+                </span>
+              </div>
+            )}
+            
+            {incomeAmount === 0 && expenseAmount === 0 && (
+              <span className="text-xs text-muted-foreground">
+                Nema transakcija
+              </span>
+            )}
           </div>
         </div>
 
