@@ -117,11 +117,30 @@ export const useIncomeSources = () => {
   const deleteIncomeSource = async (id: string) => {
     try {
       if (isLocalMode) {
+        // First delete associated expenses from localStorage
+        const storedExpenses = localStorage.getItem('localExpenses');
+        if (storedExpenses) {
+          const expenses = JSON.parse(storedExpenses);
+          const filteredExpenses = expenses.filter((e: any) => e.income_source_id !== id);
+          localStorage.setItem('localExpenses', JSON.stringify(filteredExpenses));
+        }
+        
         const updated = incomeSources.filter(s => s.id !== id);
         setIncomeSources(updated);
         localStorage.setItem(LOCAL_INCOME_SOURCES_KEY, JSON.stringify(updated));
-        toast.success('Izvor prihoda obrisan!');
+        toast.success('Izvor prihoda i povezane transakcije obrisani!');
       } else {
+        // First delete all expenses linked to this income source
+        const { error: expenseError } = await supabase
+          .from('expenses')
+          .delete()
+          .eq('income_source_id', id);
+
+        if (expenseError) {
+          console.error('Error deleting linked expenses:', expenseError);
+        }
+
+        // Then delete the income source
         const { error } = await supabase
           .from('income_sources')
           .delete()
@@ -129,7 +148,7 @@ export const useIncomeSources = () => {
 
         if (error) throw error;
         setIncomeSources(prev => prev.filter(s => s.id !== id));
-        toast.success('Izvor prihoda obrisan!');
+        toast.success('Izvor prihoda i povezane transakcije obrisani!');
       }
     } catch (error) {
       console.error('Error deleting income source:', error);
