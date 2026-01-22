@@ -4,14 +4,25 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, X, Sparkles, Bug } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 // Set to true to show test button, false for production
 const SHOW_TEST_BUTTON = true;
+
+// Global reference for manual update check
+let checkForUpdatesRef: (() => Promise<void>) | null = null;
+
+export const checkForUpdates = async () => {
+  if (checkForUpdatesRef) {
+    await checkForUpdatesRef();
+  }
+};
 
 export const PWAUpdatePrompt = () => {
   const { t } = useTranslation();
   const [showPrompt, setShowPrompt] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -19,6 +30,24 @@ export const PWAUpdatePrompt = () => {
   } = useRegisterSW({
     onRegisteredSW(swUrl, r) {
       console.log('SW Registered:', swUrl);
+      // Store reference for manual check
+      checkForUpdatesRef = async () => {
+        setIsChecking(true);
+        try {
+          await r?.update();
+          // Small delay to allow needRefresh to update
+          await new Promise(resolve => setTimeout(resolve, 500));
+          if (!needRefresh) {
+            toast.success(t('update.upToDate', 'Aplikacija je ažurna!'));
+          }
+        } catch (error) {
+          console.error('Update check failed:', error);
+          toast.error(t('update.checkFailed', 'Provjera nije uspjela'));
+        } finally {
+          setIsChecking(false);
+        }
+      };
+      
       // Check for updates every 60 minutes
       if (r) {
         setInterval(() => {
@@ -31,6 +60,11 @@ export const PWAUpdatePrompt = () => {
     },
   });
 
+  // Expose checking state globally
+  useEffect(() => {
+    (window as any).__pwaIsChecking = isChecking;
+  }, [isChecking]);
+
   useEffect(() => {
     if (needRefresh) {
       setShowPrompt(true);
@@ -40,7 +74,6 @@ export const PWAUpdatePrompt = () => {
 
   const handleUpdate = () => {
     if (isTestMode) {
-      // In test mode, just close the prompt
       setShowPrompt(false);
       setIsTestMode(false);
     } else {
@@ -64,11 +97,11 @@ export const PWAUpdatePrompt = () => {
 
   return (
     <>
-      {/* Test button - only visible in development */}
+      {/* Test button - only visible when enabled */}
       {SHOW_TEST_BUTTON && (
         <button
           onClick={handleTestClick}
-          className="fixed bottom-4 left-4 z-[99] p-2 bg-amber-500 text-white rounded-full shadow-lg hover:bg-amber-600 transition-colors"
+          className="fixed bottom-4 left-4 z-[99] p-2 bg-warning text-warning-foreground rounded-full shadow-lg hover:opacity-80 transition-opacity"
           title="Test update notification"
         >
           <Bug className="w-4 h-4" />
@@ -86,7 +119,7 @@ export const PWAUpdatePrompt = () => {
           >
             <div className="bg-card border border-border rounded-2xl shadow-2xl p-4 space-y-3">
               {isTestMode && (
-                <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-lg text-center mb-2">
+                <div className="text-xs text-warning bg-warning/10 px-2 py-1 rounded-lg text-center mb-2">
                   🧪 Test prikaz - ovo je simulacija
                 </div>
               )}
