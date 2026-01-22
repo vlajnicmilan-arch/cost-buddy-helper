@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
 import { useIncomeSourceStats } from '@/hooks/useIncomeSourceStats';
+import { useIncomeSourceOwnership } from '@/hooks/useIncomeSourceOwnership';
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense } from '@/types/expense';
 import { IncomeSourceCard } from './IncomeSourceCard';
@@ -40,6 +41,9 @@ export const IncomeSourcesPanel = ({
   // Get member and pending stats for all sources
   const sourceIds = useMemo(() => incomeSources.map(s => s.id), [incomeSources]);
   const { stats: memberStats } = useIncomeSourceStats(sourceIds);
+  
+  // Check ownership for all sources
+  const { isOwner, loading: ownershipLoading } = useIncomeSourceOwnership(sourceIds);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<IncomeSource | null>(null);
@@ -148,7 +152,7 @@ export const IncomeSourcesPanel = ({
     }).format(value);
   };
 
-  if (loading) {
+  if (loading || ownershipLoading) {
     return (
       <div className="glass-card rounded-2xl p-6">
         <div className="flex items-center justify-center py-8">
@@ -182,28 +186,32 @@ export const IncomeSourcesPanel = ({
         {/* Income Sources List */}
         <div className="space-y-3">
           <AnimatePresence>
-            {incomeSources.map((source) => (
-              <motion.div
-                key={source.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                <IncomeSourceCard
-                  source={source}
-                  totalAmount={sourceStats[source.id]?.balance || 0}
-                  incomeAmount={sourceStats[source.id]?.income || 0}
-                  expenseAmount={sourceStats[source.id]?.expenses || 0}
-                  transactionCount={sourceStats[source.id]?.count || 0}
-                  memberCount={memberStats[source.id]?.memberCount || 0}
-                  pendingCount={memberStats[source.id]?.pendingCount || 0}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onClick={handleSourceClick}
-                  onMembersClick={handleMembersClick}
-                />
-              </motion.div>
-            ))}
+            {incomeSources.map((source) => {
+              const sourceIsOwner = isOwner(source.id);
+              return (
+                <motion.div
+                  key={source.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <IncomeSourceCard
+                    source={source}
+                    totalAmount={sourceStats[source.id]?.balance || 0}
+                    incomeAmount={sourceStats[source.id]?.income || 0}
+                    expenseAmount={sourceStats[source.id]?.expenses || 0}
+                    transactionCount={sourceStats[source.id]?.count || 0}
+                    memberCount={memberStats[source.id]?.memberCount || 0}
+                    pendingCount={memberStats[source.id]?.pendingCount || 0}
+                    isOwner={sourceIsOwner}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onClick={handleSourceClick}
+                    onMembersClick={handleMembersClick}
+                  />
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
 
           {incomeSources.length === 0 && (
