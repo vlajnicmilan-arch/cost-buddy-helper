@@ -54,7 +54,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Use Gemini for PDF parsing
+    // Use Gemini with tool calling for structured output
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -62,60 +62,26 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           {
             role: 'system',
-            content: `Ti si asistent za analizu bankovnih izvoda u PDF formatu. Analiziraj PDF i izvuci SVE transakcije.
-
-Za svaku transakciju izvuci:
-1. date: datum transakcije (format: YYYY-MM-DD)
-2. description: opis transakcije
-3. amount: iznos (pozitivan broj)
-4. type: "income" za uplate/priljeve, "expense" za isplate/odljeve
-5. category: automatski kategoriziraj - food, transport, shopping, entertainment, bills, health, other
-6. merchant_name: naziv trgovca/primatelja ako postoji
-
+            content: `Ti si asistent za analizu bankovnih izvoda. Analiziraj tekst izvoda i izvuci SVE transakcije.
 Banka/izvor: ${bankType || 'nepoznato'}
 
-Odgovori SAMO u JSON formatu:
-{
-  "transactions": [
-    {
-      "date": "2025-01-20",
-      "description": "Plaćanje - Konzum",
-      "amount": 45.50,
-      "type": "expense",
-      "category": "food",
-      "merchant_name": "Konzum"
-    },
-    {
-      "date": "2025-01-19",
-      "description": "Uplata plaće",
-      "amount": 1500.00,
-      "type": "income",
-      "category": "other",
-      "merchant_name": null
-    }
-  ],
-  "summary": {
-    "total_income": 1500.00,
-    "total_expenses": 45.50,
-    "transaction_count": 2
-  }
-}
-
-Ako ne možeš pročitati PDF ili nema transakcija, vrati:
-{
-  "error": "Nije moguće pročitati PDF izvod"
-}`
+PRAVILA:
+- Iznos je UVIJEK pozitivan broj
+- Tip je "income" za uplate/priljeve, "expense" za isplate/odljeve
+- Kategorije: food, transport, shopping, entertainment, bills, health, other
+- Datum u formatu YYYY-MM-DD
+- Ako ne možeš naći transakcije, vrati prazan niz`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Analiziraj ovaj bankovni izvod u PDF formatu i izvuci sve transakcije.'
+                text: `Analiziraj ovaj bankovni izvod i izvuci sve transakcije. Ako je dokument nečitljiv ili nije bankovni izvod, vrati prazan niz transakcija.`
               },
               {
                 type: 'image_url',
@@ -125,7 +91,68 @@ Ako ne možeš pročitati PDF ili nema transakcija, vrati:
               }
             ]
           }
-        ]
+        ],
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'extract_transactions',
+              description: 'Extract transactions from a bank statement',
+              parameters: {
+                type: 'object',
+                properties: {
+                  transactions: {
+                    type: 'array',
+                    description: 'List of extracted transactions',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        date: { 
+                          type: 'string', 
+                          description: 'Transaction date in YYYY-MM-DD format' 
+                        },
+                        description: { 
+                          type: 'string', 
+                          description: 'Transaction description' 
+                        },
+                        amount: { 
+                          type: 'number', 
+                          description: 'Transaction amount (always positive)' 
+                        },
+                        type: { 
+                          type: 'string', 
+                          enum: ['income', 'expense'],
+                          description: 'Transaction type' 
+                        },
+                        category: { 
+                          type: 'string', 
+                          enum: ['food', 'transport', 'shopping', 'entertainment', 'bills', 'health', 'other'],
+                          description: 'Transaction category' 
+                        },
+                        merchant_name: { 
+                          type: 'string', 
+                          description: 'Merchant or recipient name if available',
+                          nullable: true
+                        }
+                      },
+                      required: ['date', 'description', 'amount', 'type', 'category']
+                    }
+                  },
+                  total_income: {
+                    type: 'number',
+                    description: 'Sum of all income transactions'
+                  },
+                  total_expenses: {
+                    type: 'number',
+                    description: 'Sum of all expense transactions'
+                  }
+                },
+                required: ['transactions', 'total_income', 'total_expenses']
+              }
+            }
+          }
+        ],
+        tool_choice: { type: 'function', function: { name: 'extract_transactions' } }
       })
     });
 
@@ -148,40 +175,48 @@ Ako ne možeš pročitati PDF ili nema transakcija, vrati:
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content || '';
+    console.log('AI response structure:', JSON.stringify(aiData, null, 2));
+
+    // Extract from tool call response
+    let statementData = { transactions: [], total_income: 0, total_expenses: 0 };
     
-    console.log('AI response:', content);
-
-    // Parse JSON from AI response
-    let statementData;
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        statementData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No JSON found in response');
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) {
+      try {
+        statementData = JSON.parse(toolCall.function.arguments);
+        console.log('Parsed tool call data:', statementData);
+      } catch (parseError) {
+        console.error('Failed to parse tool call arguments:', parseError);
       }
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      return new Response(
-        JSON.stringify({ error: 'Nije moguće analizirati PDF izvod' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    } else {
+      // Fallback: try to parse from content
+      const content = aiData.choices?.[0]?.message?.content || '';
+      console.log('No tool call found, trying content:', content);
+      
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          statementData = JSON.parse(jsonMatch[0]);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse content:', parseError);
+      }
     }
 
-    if (statementData.error) {
-      return new Response(
-        JSON.stringify({ error: statementData.error }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const transactions = statementData.transactions || [];
+    const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
-    console.log('Parsed statement data:', statementData);
+    console.log(`Extracted ${transactions.length} transactions`);
 
     return new Response(
       JSON.stringify({
-        transactions: statementData.transactions || [],
-        summary: statementData.summary || null
+        transactions,
+        summary: {
+          total_income: totalIncome,
+          total_expenses: totalExpenses,
+          transaction_count: transactions.length
+        }
       }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
