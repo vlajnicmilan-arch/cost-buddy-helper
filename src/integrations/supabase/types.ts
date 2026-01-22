@@ -99,15 +99,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "expenses_income_source_id_fkey"
-            columns: ["income_source_id"]
-            isOneToOne: false
-            referencedRelation: "income_sources"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       income_sources: {
         Row: {
