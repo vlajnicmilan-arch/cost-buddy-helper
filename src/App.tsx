@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import StorageSetup from "./pages/StorageSetup";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -29,6 +30,7 @@ const AppRoutes = () => {
     return (
       <Routes>
         <Route path="/setup" element={<StorageSetup />} />
+        <Route path="/install" element={<Install />} />
         <Route path="*" element={<Navigate to="/setup" replace />} />
       </Routes>
     );
@@ -40,6 +42,7 @@ const AppRoutes = () => {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/setup" element={<StorageSetup />} />
+      <Route path="/install" element={<Install />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
