@@ -51,7 +51,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
   const { incomeSources, isSourceOwner, refetch: refetchIncomeSources } = useIncomeSources();
-  const { customPaymentSources } = useCustomPaymentSources();
+  const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -274,6 +274,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       setOpen(isOpen);
       if (isOpen) {
         refetchIncomeSources();
+        refetchPaymentSources();
       } else {
         resetForm();
       }
