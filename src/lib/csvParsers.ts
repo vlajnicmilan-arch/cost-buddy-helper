@@ -164,27 +164,70 @@ export function mapSourceToPaymentSource(source: string): PaymentSource {
   return 'other';
 }
 
-// Detect actual payment source from transaction description
+// Detect actual payment source from transaction description with specific card types
 export function detectPaymentSourceFromDescription(description: string, defaultSource: PaymentSource = 'other'): PaymentSource {
   const desc = description.toLowerCase();
   
-  // Credit/Debit cards = bank
-  if (desc.includes('visa') || desc.includes('mastercard') || desc.includes('maestro') || 
-      desc.includes('kartic') || desc.includes('card') || desc.includes('pbz') ||
-      desc.includes('erste') || desc.includes('zaba') || desc.includes('otp') ||
-      desc.includes('raiffeisen') || desc.includes('addiko')) {
+  // Visa variants
+  if (desc.includes('visa platinum') || desc.includes('platinum visa') || desc.includes('visa infinite')) {
+    return 'visa_platinum';
+  }
+  if (desc.includes('visa gold') || desc.includes('gold visa')) {
+    return 'visa_gold';
+  }
+  if (desc.includes('visa kekspay') || desc.includes('kekspay visa')) {
+    return 'visa_kekspay';
+  }
+  if (desc.includes('visa erste') || desc.includes('erste visa')) {
+    return 'visa_erste';
+  }
+  if (desc.includes('visa') && !desc.includes('aircash')) {
+    return 'visa';
+  }
+  
+  // Mastercard variants
+  if (desc.includes('mastercard platinum') || desc.includes('platinum mastercard') || desc.includes('mc platinum')) {
+    return 'mastercard_platinum';
+  }
+  if (desc.includes('mastercard gold') || desc.includes('gold mastercard') || desc.includes('mc gold')) {
+    return 'mastercard_gold';
+  }
+  if (desc.includes('mastercard') || desc.includes('master card') || desc.includes(' mc ')) {
+    return 'mastercard';
+  }
+  if (desc.includes('maestro')) {
+    return 'maestro';
+  }
+  
+  // Other cards
+  if (desc.includes('american express') || desc.includes('amex')) {
+    return 'amex';
+  }
+  if (desc.includes('diners') || desc.includes('dc ')) {
+    return 'diners';
+  }
+  
+  // Digital wallets
+  if (desc.includes('revolut')) {
+    return 'revolut';
+  }
+  if (desc.includes('aircash')) {
+    return 'aircash';
+  }
+  if (desc.includes('kekspay') || desc.includes('keks pay')) {
+    return 'visa_kekspay';
+  }
+  
+  // Generic bank/card keywords
+  if (desc.includes('pbz') || desc.includes('erste') || desc.includes('zaba') || 
+      desc.includes('otp') || desc.includes('raiffeisen') || desc.includes('addiko') ||
+      desc.includes('rba') || desc.includes('hpb')) {
     return 'bank';
   }
   
-  // Cash deposits
-  if (desc.includes('gotovina') || desc.includes('tisak') || desc.includes('ina ') ||
-      desc.includes('bankomat') || desc.includes('atm')) {
+  // Cash indicators
+  if (desc.includes('gotovina') || desc.includes('tisak') || desc.includes('bankomat') || desc.includes('atm')) {
     return 'cash';
-  }
-  
-  // Revolut
-  if (desc.includes('revolut')) {
-    return 'revolut';
   }
   
   // Crypto
@@ -194,6 +237,67 @@ export function detectPaymentSourceFromDescription(description: string, defaultS
   }
   
   return defaultSource;
+}
+
+// Extract card info from description (e.g., "Visa *** 7262" -> { type: 'visa', last4: '7262' })
+export function extractCardInfo(description: string): { cardType: string | null; last4: string | null } {
+  const desc = description.toLowerCase();
+  
+  // Pattern: "Visa *** 1234" or "VISA *1234" or "visa ****1234"
+  const cardPatterns = [
+    /visa\s*[\*\s]+(\d{4})/i,
+    /mastercard\s*[\*\s]+(\d{4})/i,
+    /maestro\s*[\*\s]+(\d{4})/i,
+    /mc\s*[\*\s]+(\d{4})/i,
+    /amex\s*[\*\s]+(\d{4})/i,
+    /diners\s*[\*\s]+(\d{4})/i,
+    /kartica\s*[\*\s]+(\d{4})/i,
+    /card\s*[\*\s]+(\d{4})/i,
+    /\*{3,4}\s*(\d{4})/i, // Generic *** 1234 pattern
+  ];
+  
+  for (const pattern of cardPatterns) {
+    const match = description.match(pattern);
+    if (match) {
+      let cardType = 'card';
+      if (desc.includes('visa')) cardType = 'Visa';
+      else if (desc.includes('mastercard') || desc.includes(' mc ')) cardType = 'Mastercard';
+      else if (desc.includes('maestro')) cardType = 'Maestro';
+      else if (desc.includes('amex') || desc.includes('american express')) cardType = 'Amex';
+      else if (desc.includes('diners')) cardType = 'Diners';
+      
+      return { cardType, last4: match[1] };
+    }
+  }
+  
+  return { cardType: null, last4: null };
+}
+
+// Enrich description with additional payment info
+export function enrichDescription(description: string, source: string, paymentSource: PaymentSource): string {
+  const cardInfo = extractCardInfo(description);
+  const parts: string[] = [description];
+  
+  // Add card info if detected and not already in description
+  if (cardInfo.cardType && cardInfo.last4) {
+    if (!description.toLowerCase().includes(cardInfo.cardType.toLowerCase())) {
+      parts.push(`[${cardInfo.cardType} *${cardInfo.last4}]`);
+    }
+  }
+  
+  // Add source bank info if not already obvious
+  if (source && !description.toLowerCase().includes(source.toLowerCase())) {
+    // Only add for bank sources that aren't already mentioned
+    const bankKeywords = ['pbz', 'erste', 'zaba', 'otp', 'rba', 'raiffeisen', 'addiko', 'hpb'];
+    const sourceLower = source.toLowerCase();
+    const descLower = description.toLowerCase();
+    
+    if (bankKeywords.some(b => sourceLower.includes(b)) && !bankKeywords.some(b => descLower.includes(b))) {
+      parts.push(`[${source}]`);
+    }
+  }
+  
+  return parts.join(' ');
 }
 
 export interface CSVParseResult {
@@ -442,10 +546,12 @@ function parseRevolut(rows: string[][]): ParsedTransaction[] {
       transactionType = 'expense';
     }
     
+    const enrichedDescription = enrichDescription(description, 'Revolut', 'revolut');
+    
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
-      description,
+      description: enrichedDescription,
       type: transactionType,
       category: categorizeTransaction(description),
       merchant_name: description.split(' - ')[0] || undefined,
@@ -492,12 +598,15 @@ function parseAircash(rows: string[][]): ParsedTransaction[] {
       transactionType = 'expense';
     }
     
+    const enrichedDescription = enrichDescription(description, 'Aircash', paymentSource);
+    
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
-      description,
+      description: enrichedDescription,
       type: transactionType,
       category: categorizeTransaction(description),
+      merchant_name: description.split(' - ')[0] || undefined,
       source: 'Aircash',
       payment_source: paymentSource
     });
@@ -548,14 +657,18 @@ function parsePBZ(rows: string[][]): ParsedTransaction[] {
       transactionType = 'expense';
     }
     
+    const paymentSource = detectPaymentSourceFromDescription(description, 'bank');
+    const enrichedDescription = enrichDescription(description, 'PBZ', paymentSource);
+    
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
-      description,
+      description: enrichedDescription,
       type: transactionType,
       category: categorizeTransaction(description),
+      merchant_name: description.split(' ')[0] || undefined,
       source: 'PBZ',
-      payment_source: 'bank'
+      payment_source: paymentSource
     });
   }
   
@@ -592,14 +705,18 @@ function parseErste(rows: string[][]): ParsedTransaction[] {
       transactionType = 'expense';
     }
     
+    const paymentSource = detectPaymentSourceFromDescription(description, 'bank');
+    const enrichedDescription = enrichDescription(description, 'Erste', paymentSource);
+    
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
-      description,
+      description: enrichedDescription,
       type: transactionType,
       category: categorizeTransaction(description),
+      merchant_name: description.split(' ')[0] || undefined,
       source: 'Erste',
-      payment_source: 'bank'
+      payment_source: paymentSource
     });
   }
   
@@ -636,14 +753,18 @@ function parseZaba(rows: string[][]): ParsedTransaction[] {
       transactionType = 'expense';
     }
     
+    const paymentSource = detectPaymentSourceFromDescription(description, 'bank');
+    const enrichedDescription = enrichDescription(description, 'Zagrebačka banka', paymentSource);
+    
     transactions.push({
       date: parseDate(row[dateIdx] || ''),
       amount,
-      description,
+      description: enrichedDescription,
       type: transactionType,
       category: categorizeTransaction(description),
+      merchant_name: description.split(' ')[0] || undefined,
       source: 'Zagrebačka banka',
-      payment_source: 'bank'
+      payment_source: paymentSource
     });
   }
   
@@ -680,14 +801,18 @@ function parseGeneric(rows: string[][]): ParsedTransaction[] {
       transactionType = 'expense';
     }
     
+    const paymentSource = detectPaymentSourceFromDescription(description, 'other');
+    const enrichedDescription = enrichDescription(description, 'CSV Import', paymentSource);
+    
     transactions.push({
       date: parseDate(row[dateIdx] || row[2] || new Date().toISOString()),
       amount,
-      description,
+      description: enrichedDescription,
       type: transactionType,
       category: categorizeTransaction(description),
+      merchant_name: description.split(' ')[0] || undefined,
       source: 'CSV Import',
-      payment_source: 'other'
+      payment_source: paymentSource
     });
   }
   
