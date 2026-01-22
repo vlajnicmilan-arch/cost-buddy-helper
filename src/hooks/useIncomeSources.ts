@@ -25,14 +25,47 @@ export const useIncomeSources = () => {
           setIncomeSources(JSON.parse(stored));
         }
       } else if (user) {
-        const { data, error } = await supabase
+        // Fetch sources user owns
+        const { data: ownedSources, error: ownedError } = await supabase
           .from('income_sources')
           .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .eq('user_id', user.id);
 
-        if (error) throw error;
-        setIncomeSources(data || []);
+        if (ownedError) throw ownedError;
+
+        // Fetch sources user is a member of (but not owner)
+        const { data: memberships, error: memberError } = await supabase
+          .from('income_source_members')
+          .select('income_source_id')
+          .eq('user_id', user.id)
+          .neq('role', 'owner');
+
+        if (memberError) throw memberError;
+
+        let sharedSources: IncomeSource[] = [];
+        if (memberships && memberships.length > 0) {
+          const sourceIds = memberships.map(m => m.income_source_id);
+          const { data: sharedData, error: sharedError } = await supabase
+            .from('income_sources')
+            .select('*')
+            .in('id', sourceIds);
+
+          if (sharedError) throw sharedError;
+          sharedSources = sharedData || [];
+        }
+
+        // Combine and deduplicate
+        const allSources = [...(ownedSources || []), ...sharedSources];
+        const uniqueSources = allSources.filter((source, index, self) =>
+          index === self.findIndex(s => s.id === source.id)
+        );
+
+        // Sort by created_at descending
+        uniqueSources.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        setIncomeSources(uniqueSources);
       }
     } catch (error) {
       console.error('Error fetching income sources:', error);
