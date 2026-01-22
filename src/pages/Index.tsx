@@ -18,7 +18,8 @@ import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
-import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw } from 'lucide-react';
+import { checkForUpdates } from '@/components/PWAUpdatePrompt';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +39,13 @@ const Index = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdate(true);
+    await checkForUpdates();
+    setIsCheckingUpdate(false);
+  };
   
   const { 
     expenses, 
@@ -135,6 +143,16 @@ const Index = () => {
             </div>
             {/* Mobile-only quick actions */}
             <div className="flex items-center gap-1 sm:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCheckForUpdates}
+                disabled={isCheckingUpdate}
+                className="rounded-xl h-9 w-9"
+                title={t('update.checkForUpdates', 'Provjeri ažuriranja')}
+              >
+                <RefreshCw className={`w-4 h-4 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+              </Button>
               <LanguageSwitcher />
               <HelpDialog />
               <Button 
@@ -176,6 +194,24 @@ const Index = () => {
             <AddExpenseDialog onAdd={addExpense} />
             {/* Desktop-only buttons */}
             <div className="hidden sm:flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleCheckForUpdates}
+                      disabled={isCheckingUpdate}
+                      className="rounded-xl"
+                    >
+                      <RefreshCw className={`w-5 h-5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('update.checkForUpdates', 'Provjeri ažuriranja')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
