@@ -70,7 +70,8 @@ export const useExpenses = () => {
 
   const addExpense = async (
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
-    items?: ReceiptItem[]
+    items?: ReceiptItem[],
+    isPendingMemberTransaction?: boolean
   ) => {
     try {
       if (isLocalMode) {
@@ -101,7 +102,9 @@ export const useExpenses = () => {
             receipt_url: expense.receipt_url,
             merchant_name: expense.merchant_name,
             ai_extracted: expense.ai_extracted,
-            income_source_id: expense.income_source_id
+            income_source_id: expense.income_source_id,
+            status: isPendingMemberTransaction ? 'pending' : 'approved',
+            submitted_by: isPendingMemberTransaction ? user.id : null
           })
           .select()
           .single();
@@ -120,6 +123,21 @@ export const useExpenses = () => {
           await supabase.from('receipt_items').insert(itemsToInsert);
         }
 
+        // Notify owner if this is a pending transaction from a member
+        if (isPendingMemberTransaction && expense.income_source_id && data) {
+          try {
+            await supabase.functions.invoke('notify-pending-transaction', {
+              body: {
+                expense_id: data.id,
+                income_source_id: expense.income_source_id
+              }
+            });
+          } catch (notifyError) {
+            console.error('Error sending notification:', notifyError);
+            // Don't fail the whole operation if notification fails
+          }
+        }
+
         const newExpense: Expense = {
           ...data,
           date: new Date(data.date),
@@ -130,7 +148,12 @@ export const useExpenses = () => {
         };
 
         setExpenses(prev => [newExpense, ...prev]);
-        toast.success(expense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
+        
+        if (isPendingMemberTransaction) {
+          toast.success('Transakcija poslana vlasniku na odobrenje');
+        } else {
+          toast.success(expense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
+        }
       }
     } catch (error) {
       console.error('Error adding expense:', error);

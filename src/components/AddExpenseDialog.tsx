@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 interface AddExpenseDialogProps {
-  onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[]) => Promise<void> | void;
+  onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
 }
 
 interface ScannedData {
@@ -49,7 +49,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
-  const { incomeSources, refetch: refetchIncomeSources } = useIncomeSources();
+  const { incomeSources, isSourceOwner, refetch: refetchIncomeSources } = useIncomeSources();
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -146,6 +146,9 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         }
       }
 
+      // Check if user is just a member (not owner) of the matched income source
+      const isPendingForMember = matchedIncomeSourceId ? !isSourceOwner(matchedIncomeSourceId) : false;
+
       await onAdd({
         amount: scannedData.amount,
         description: scannedData.description,
@@ -157,7 +160,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         receipt_url: receiptUrl,
         ai_extracted: true,
         income_source_id: matchedIncomeSourceId
-      }, validItems.length > 0 ? validItems : undefined);
+      }, validItems.length > 0 ? validItems : undefined, isPendingForMember);
 
       resetForm();
       setOpen(false);
@@ -242,6 +245,9 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       }
     }
 
+    // Check if user is just a member (not owner) of the selected income source
+    const isPendingForMember = incomeSourceId ? !isSourceOwner(incomeSourceId) : false;
+
     onAdd({
       amount: parseFloat(amount),
       description,
@@ -253,7 +259,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       receipt_url: receiptUrl,
       ai_extracted: scannedData !== null,
       income_source_id: incomeSourceId
-    }, validItems.length > 0 ? validItems : undefined);
+    }, validItems.length > 0 ? validItems : undefined, isPendingForMember);
 
     resetForm();
     setOpen(false);
