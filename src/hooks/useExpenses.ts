@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, ReceiptItem, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
@@ -18,11 +18,32 @@ export const useExpenses = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   // If user is logged in, always use cloud mode regardless of storageMode setting
   // Only use local mode if explicitly set AND user is not logged in
   const isLocalMode = storageMode === 'local' && !user;
+
+  // Fetch owned income source IDs
+  const fetchOwnedSources = useCallback(async () => {
+    if (isLocalMode || !user) {
+      setOwnedSourceIds(new Set());
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('income_sources')
+        .select('id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setOwnedSourceIds(new Set((data || []).map(s => s.id)));
+    } catch (error) {
+      console.error('Error fetching owned sources:', error);
+    }
+  }, [user, isLocalMode]);
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
@@ -65,8 +86,25 @@ export const useExpenses = () => {
   }, [user, isLocalMode]);
 
   useEffect(() => {
+    fetchOwnedSources();
     fetchExpenses();
-  }, [fetchExpenses]);
+  }, [fetchOwnedSources, fetchExpenses]);
+
+  // Filter expenses for dashboard display (exclude shared source transactions where user is not owner)
+  const dashboardExpenses = useMemo(() => {
+    if (isLocalMode) return expenses;
+    
+    return expenses.filter(expense => {
+      // Personal transaction (no income source) - always show
+      if (!expense.income_source_id) return true;
+      
+      // Transaction from owned income source - show in dashboard
+      if (ownedSourceIds.has(expense.income_source_id)) return true;
+      
+      // Transaction from shared source where user is member but not owner - hide from dashboard
+      return false;
+    });
+  }, [expenses, ownedSourceIds, isLocalMode]);
 
   const addExpense = async (
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
@@ -371,32 +409,32 @@ export const useExpenses = () => {
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-  // Exclude transfers from totals
-  const totalExpenses = expenses
+  // Calculate totals using dashboardExpenses (filtered for owned sources only)
+  const totalExpenses = dashboardExpenses
     .filter(e => e.type === 'expense')
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
-  const totalIncome = expenses
+  const totalIncome = dashboardExpenses
     .filter(e => e.type === 'income')
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
-  const totalTransfers = expenses
+  const totalTransfers = dashboardExpenses
     .filter(e => e.type === 'transfer')
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
   // This month's transfers
-  const monthlyTransfers = expenses
+  const monthlyTransfers = dashboardExpenses
     .filter(e => e.type === 'transfer' && e.date >= currentMonthStart && e.date <= currentMonthEnd)
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
-  const transferCount = expenses.filter(e => e.type === 'transfer').length;
-  const monthlyTransferCount = expenses
+  const transferCount = dashboardExpenses.filter(e => e.type === 'transfer').length;
+  const monthlyTransferCount = dashboardExpenses
     .filter(e => e.type === 'transfer' && e.date >= currentMonthStart && e.date <= currentMonthEnd)
     .length;
 
   const balance = totalIncome - totalExpenses;
 
-  const expensesByCategory = expenses
+  const expensesByCategory = dashboardExpenses
     .filter(e => e.type === 'expense')
     .reduce((acc, e) => {
       acc[e.category] = (acc[e.category] || 0) + Number(e.amount);
@@ -404,7 +442,8 @@ export const useExpenses = () => {
     }, {} as Record<string, number>);
 
   return {
-    expenses,
+    expenses: dashboardExpenses, // For main dashboard display
+    allExpenses: expenses, // For income source panels (includes shared)
     loading,
     addExpense,
     updateExpense,

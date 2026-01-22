@@ -55,6 +55,7 @@ const Index = () => {
   
   const { 
     expenses, 
+    allExpenses,
     loading: expensesLoading,
     addExpense, 
     updateExpense,
@@ -324,7 +325,7 @@ const Index = () => {
           {/* Income Sources - Mobile First (visible only on mobile, above transactions) */}
           <div className="lg:hidden">
             <IncomeSourcesPanel
-              expenses={expenses}
+              expenses={allExpenses}
               onUpdateExpense={updateExpense}
               onDeleteExpense={deleteExpense}
               onRefreshExpenses={refetch}
@@ -383,7 +384,7 @@ const Index = () => {
             {/* Income Sources - Desktop (hidden on mobile since it's shown above) */}
             <div className="hidden lg:block">
               <IncomeSourcesPanel
-                expenses={expenses}
+                expenses={allExpenses}
                 onUpdateExpense={updateExpense}
                 onDeleteExpense={deleteExpense}
                 onRefreshExpenses={refetch}
