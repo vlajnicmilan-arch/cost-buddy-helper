@@ -75,25 +75,34 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     }
   };
 
-  const acceptScannedData = () => {
+  const acceptScannedData = async () => {
     if (!scannedData) return;
     
-    setAmount(scannedData.amount.toString());
-    setDescription(scannedData.description);
-    setCategory(scannedData.category);
-    setMerchantName(scannedData.merchant);
+    const validItems = scannedData.items.filter(item => item.name && item.total_price > 0);
     
-    if (scannedData.date) {
-      setExpenseDate(scannedData.date);
+    let receiptUrl: string | undefined;
+    if (saveReceipt && receiptImage) {
+      toast.info('Spremam sliku računa...');
+      const uploadedUrl = await uploadReceiptImage(receiptImage);
+      if (uploadedUrl) {
+        receiptUrl = uploadedUrl;
+      }
     }
-    
-    if (scannedData.items && scannedData.items.length > 0) {
-      setItems(scannedData.items);
-      setShowItems(true);
-    }
-    
-    setShowScannedPreview(false);
-    toast.success('Podaci prihvaćeni! Pregledaj i spremi transakciju.');
+
+    onAdd({
+      amount: scannedData.amount,
+      description: scannedData.description,
+      category: scannedData.category,
+      date: new Date(scannedData.date || expenseDate),
+      type: 'expense',
+      payment_source: paymentSource,
+      merchant_name: scannedData.merchant || undefined,
+      receipt_url: receiptUrl,
+      ai_extracted: true
+    }, validItems.length > 0 ? validItems : undefined);
+
+    resetForm();
+    setOpen(false);
   };
 
   const rejectScannedData = () => {
@@ -303,7 +312,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   onClick={acceptScannedData}
                 >
                   <Check className="w-4 h-4" />
-                  Prihvati i uredi
+                  Prihvati i spremi
                 </Button>
               </div>
             </div>
