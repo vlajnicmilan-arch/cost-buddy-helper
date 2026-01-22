@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Loader2, TrendingUp, CircleDashed } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useTranslation } from 'react-i18next';
 
 interface IncomeSourcesPanelProps {
   expenses: Expense[];
@@ -25,7 +26,8 @@ export const IncomeSourcesPanel = ({
   onDeleteExpense,
   onRefreshExpenses
 }: IncomeSourcesPanelProps) => {
-  const { 
+  const { t } = useTranslation();
+  const {
     incomeSources, 
     loading, 
     addIncomeSource, 
@@ -150,7 +152,7 @@ export const IncomeSourcesPanel = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-income" />
-            <h2 className="text-lg font-semibold">Izvori prihoda</h2>
+            <h2 className="text-lg font-semibold">{t('incomeSources.title')}</h2>
           </div>
           <Button
             size="sm"
@@ -161,7 +163,7 @@ export const IncomeSourcesPanel = ({
             }}
           >
             <Plus className="w-4 h-4" />
-            Dodaj
+            {t('incomeSources.addSource')}
           </Button>
         </div>
 
@@ -192,9 +194,9 @@ export const IncomeSourcesPanel = ({
           {incomeSources.length === 0 && (
             <div className="text-center py-8">
               <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">Nema izvora prihoda</p>
+              <p className="text-muted-foreground">{t('incomeSources.noSources')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Dodaj prvi izvor za kategorizaciju prihoda
+                {t('incomeSources.addFirstSource', 'Dodaj prvi izvor za kategorizaciju prihoda')}
               </p>
             </div>
           )}
@@ -213,9 +215,9 @@ export const IncomeSourcesPanel = ({
                     <CircleDashed className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium text-muted-foreground">Bez izvora</p>
+                    <p className="font-medium text-muted-foreground">{t('incomeSources.unassigned')}</p>
                     <p className="text-sm text-muted-foreground">
-                      {unassignedStats.count} {unassignedStats.count === 1 ? 'prihod' : 'prihoda'} • Klikni za dodjelu
+                      {unassignedStats.count} {unassignedStats.count === 1 ? t('transactions.income').toLowerCase() : t('incomeSources.incomes', 'prihoda')} • {t('incomeSources.clickToAssign', 'Klikni za dodjelu')}
                     </p>
                   </div>
                 </div>
@@ -270,16 +272,15 @@ export const IncomeSourcesPanel = ({
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Obriši izvor prihoda?</AlertDialogTitle>
+            <AlertDialogTitle>{t('incomeSources.deleteSource', 'Obriši izvor prihoda?')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Ova radnja ne može se poništiti. Prihodi povezani s ovim izvorom 
-              ostat će sačuvani, ali više neće biti povezani s izvorom.
+              {t('incomeSources.deleteSourceDescription', 'Ova radnja ne može se poništiti. Prihodi povezani s ovim izvorom ostat će sačuvani, ali više neće biti povezani s izvorom.')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Odustani</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
-              Obriši
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

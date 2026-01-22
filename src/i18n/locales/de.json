@@ -142,7 +142,12 @@
     "addSource": "Quelle hinzufügen",
     "noSources": "Keine Einnahmequellen",
     "unassigned": "Nicht zugeordnet",
-    "assignSource": "Quelle zuordnen"
+    "assignSource": "Quelle zuordnen",
+    "addFirstSource": "Fügen Sie Ihre erste Quelle hinzu, um Einnahmen zu kategorisieren",
+    "incomes": "Einnahmen",
+    "clickToAssign": "Klicken zum Zuordnen",
+    "deleteSource": "Einnahmequelle löschen?",
+    "deleteSourceDescription": "Diese Aktion kann nicht rückgängig gemacht werden. Einnahmen, die mit dieser Quelle verknüpft sind, bleiben erhalten, werden aber nicht mehr mit der Quelle verbunden."
   },
   "scanner": {
     "scanReceipt": "Beleg scannen",

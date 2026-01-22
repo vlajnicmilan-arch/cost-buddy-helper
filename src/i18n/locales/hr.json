@@ -142,7 +142,12 @@
     "addSource": "Dodaj izvor",
     "noSources": "Nema izvora prihoda",
     "unassigned": "Bez izvora",
-    "assignSource": "Dodijeli izvor"
+    "assignSource": "Dodijeli izvor",
+    "addFirstSource": "Dodaj prvi izvor za kategorizaciju prihoda",
+    "incomes": "prihoda",
+    "clickToAssign": "Klikni za dodjelu",
+    "deleteSource": "Obriši izvor prihoda?",
+    "deleteSourceDescription": "Ova radnja ne može se poništiti. Prihodi povezani s ovim izvorom ostat će sačuvani, ali više neće biti povezani s izvorom."
   },
   "scanner": {
     "scanReceipt": "Skeniraj račun",
