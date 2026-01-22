@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Expense, Category, PaymentSource, ReceiptItem } from '@/types/expense';
+import { Expense, Category, PaymentSource, ReceiptItem, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { toast } from 'sonner';
@@ -51,7 +51,7 @@ export const useExpenses = () => {
           ...e,
           date: new Date(e.date),
           category: e.category as Category,
-          type: e.type as 'expense' | 'income',
+          type: e.type as TransactionType,
           payment_source: (e.payment_source || 'cash') as PaymentSource,
           income_source_id: e.income_source_id
         })) || []);
@@ -124,7 +124,7 @@ export const useExpenses = () => {
           ...data,
           date: new Date(data.date),
           category: data.category as Category,
-          type: data.type as 'expense' | 'income',
+          type: data.type as TransactionType,
           payment_source: (data.payment_source || 'cash') as PaymentSource,
           income_source_id: data.income_source_id
         };
@@ -283,7 +283,7 @@ export const useExpenses = () => {
           ...e,
           date: new Date(e.date),
           category: e.category as Category,
-          type: e.type as 'expense' | 'income',
+          type: e.type as TransactionType,
           payment_source: (e.payment_source || 'cash') as PaymentSource
         }));
 
@@ -300,12 +300,17 @@ export const useExpenses = () => {
     }
   };
 
+  // Exclude transfers from totals
   const totalExpenses = expenses
     .filter(e => e.type === 'expense')
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
   const totalIncome = expenses
     .filter(e => e.type === 'income')
+    .reduce((sum, e) => sum + Number(e.amount), 0);
+
+  const totalTransfers = expenses
+    .filter(e => e.type === 'transfer')
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
   const balance = totalIncome - totalExpenses;

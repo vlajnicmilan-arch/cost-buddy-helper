@@ -64,6 +64,9 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
             <span>{paymentSource.icon}</span>
             <span>{paymentSource.name}</span>
           </span>
+          {expense.type === 'transfer' && (
+            <span className="text-primary">• Prijenos</span>
+          )}
           {expense.type === 'expense' && (
             <span>• {category.name}</span>
           )}
@@ -74,9 +77,10 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
       <div className="flex items-center gap-3">
         <p className={cn(
           "font-mono font-semibold text-right",
-          expense.type === 'expense' ? 'text-expense' : 'text-income'
+          expense.type === 'expense' ? 'text-expense' : 
+          expense.type === 'transfer' ? 'text-muted-foreground' : 'text-income'
         )}>
-          {expense.type === 'expense' ? '-' : '+'}{formatAmount(Number(expense.amount))}
+          {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount))}
         </p>
         
         <button

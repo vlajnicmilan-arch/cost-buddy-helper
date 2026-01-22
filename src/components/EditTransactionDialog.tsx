@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCES } from '@/types/expense';
+import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCES, TransactionType } from '@/types/expense';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -26,7 +26,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
   const [category, setCategory] = useState<Category>('other');
   const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
   const [date, setDate] = useState<Date>(new Date());
-  const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [type, setType] = useState<TransactionType>('expense');
   const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -74,7 +74,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Uredi {type === 'income' ? 'prihod' : 'trošak'}</DialogTitle>
+          <DialogTitle>Uredi {type === 'income' ? 'prihod' : type === 'transfer' ? 'prijenos' : 'trošak'}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
@@ -98,7 +98,20 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
               >
                 Prihod
               </Button>
+              <Button
+                type="button"
+                variant={type === 'transfer' ? 'default' : 'outline'}
+                className="flex-1"
+                onClick={() => setType('transfer')}
+              >
+                🔄
+              </Button>
             </div>
+            {type === 'transfer' && (
+              <p className="text-xs text-muted-foreground">
+                Prijenosi između vlastitih računa ne utječu na bilance
+              </p>
+            )}
           </div>
 
           {/* Income Source - For both income and expense */}

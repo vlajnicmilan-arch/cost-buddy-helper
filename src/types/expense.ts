@@ -44,6 +44,8 @@ export interface ReceiptItem {
   created_at?: string;
 }
 
+export type TransactionType = 'expense' | 'income' | 'transfer';
+
 export interface Expense {
   id: string;
   user_id: string;
@@ -51,7 +53,7 @@ export interface Expense {
   description: string;
   category: Category;
   date: Date;
-  type: 'expense' | 'income';
+  type: TransactionType;
   payment_source?: PaymentSource;
   receipt_url?: string | null;
   merchant_name?: string | null;
@@ -61,6 +63,16 @@ export interface Expense {
   updated_at?: string;
   items?: ReceiptItem[];
 }
+
+// Helper to get transaction type display info
+export const getTransactionTypeInfo = (type: TransactionType): { name: string; icon: string } => {
+  switch (type) {
+    case 'income': return { name: 'Prihod', icon: '📥' };
+    case 'expense': return { name: 'Trošak', icon: '📤' };
+    case 'transfer': return { name: 'Prijenos', icon: '🔄' };
+    default: return { name: 'Ostalo', icon: '📦' };
+  }
+};
 
 export interface CategoryInfo {
   id: Category;

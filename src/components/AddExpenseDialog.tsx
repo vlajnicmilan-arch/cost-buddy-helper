@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, ReceiptItem, getCategoryInfo } from '@/types/expense';
+import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, ReceiptItem, getCategoryInfo, TransactionType } from '@/types/expense';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
@@ -28,7 +28,7 @@ interface ScannedData {
 
 export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category>('food');
@@ -429,7 +429,24 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 >
                   Prihod
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setType('transfer')}
+                  className={cn(
+                    "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
+                    type === 'transfer' 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  🔄
+                </button>
               </div>
+              {type === 'transfer' && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Prijenosi između vlastitih računa ne utječu na bilance
+                </p>
+              )}
 
               {/* Income Source - For both income and expense */}
               {incomeSources.length > 0 && (
