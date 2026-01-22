@@ -178,8 +178,8 @@ export const UnassignedIncomeDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md w-[calc(100%-2rem)] max-h-[70vh] flex flex-col overflow-hidden p-4 sm:p-6">
-          <DialogHeader className="shrink-0 pb-2">
+        <DialogContent className="w-[95vw] max-w-[400px] max-h-[85vh] flex flex-col gap-3 p-4">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2 text-base">
               <CircleDashed className="w-4 h-4 text-muted-foreground" />
               Prihodi bez izvora
@@ -203,196 +203,190 @@ export const UnassignedIncomeDialog = ({
 
           {/* Bulk Actions */}
           {incomeSources.length > 0 && unassignedIncome.length > 0 && (
-            <div className="flex flex-col gap-1.5 shrink-0 pt-2">
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 text-xs h-8"
-                  onClick={handleAutoAssign}
-                  disabled={autoAssigning}
-                >
-                  {autoAssigning ? (
-                    <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                  ) : (
-                    <Link2 className="w-3 h-3 mr-1.5" />
-                  )}
-                  Auto-dodijeli
-                </Button>
-                <Select onValueChange={handleAssignAll} disabled={autoAssigning}>
-                  <SelectTrigger className="flex-1 bg-background text-xs h-8">
-                    <SelectValue placeholder="Dodijeli sve..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-[200]">
-                    {incomeSources.map((source) => (
-                      <SelectItem key={source.id} value={source.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{source.icon}</span>
-                          <span>{source.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-xs h-8"
+                onClick={handleAutoAssign}
+                disabled={autoAssigning}
+              >
+                {autoAssigning ? (
+                  <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                ) : (
+                  <Link2 className="w-3 h-3 mr-1.5" />
+                )}
+                Auto
+              </Button>
+              <Select onValueChange={handleAssignAll} disabled={autoAssigning}>
+                <SelectTrigger className="flex-1 bg-background text-xs h-8">
+                  <SelectValue placeholder="Sve u..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[200]">
+                  {incomeSources.map((source) => (
+                    <SelectItem key={source.id} value={source.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{source.icon}</span>
+                        <span>{source.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
           {/* Transaction List */}
-          <div className="flex-1 min-h-0 overflow-hidden mt-2">
-            <ScrollArea className="h-full">
-              <div className="space-y-2 pr-2">
-                {unassignedIncome.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <Check className="w-10 h-10 mx-auto text-income/30 mb-2" />
-                    <p className="text-sm text-muted-foreground">Svi prihodi su dodijeljeni!</p>
-                  </div>
-                ) : incomeSources.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <CircleDashed className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-                    <p className="text-sm text-muted-foreground">Nema definiranih izvora</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="mt-3"
-                      onClick={() => setShowNewSourceDialog(true)}
+          <ScrollArea className="flex-1 min-h-0 -mx-4 px-4">
+            <div className="space-y-2 pb-2">
+              {unassignedIncome.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Check className="w-10 h-10 mx-auto text-income/30 mb-2" />
+                  <p className="text-sm text-muted-foreground">Svi prihodi su dodijeljeni!</p>
+                </div>
+              ) : incomeSources.length === 0 ? (
+                <div className="py-8 text-center">
+                  <CircleDashed className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
+                  <p className="text-sm text-muted-foreground">Nema definiranih izvora</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => setShowNewSourceDialog(true)}
+                  >
+                    <Plus className="w-3 h-3 mr-1.5" />
+                    Kreiraj novi izvor
+                  </Button>
+                </div>
+              ) : (
+                unassignedIncome.map((expense) => {
+                  const categoryInfo = getCategoryInfo(expense.category);
+                  const isAssigning = assigningId === expense.id;
+                  
+                  return (
+                    <div
+                      key={expense.id}
+                      className={`p-3 rounded-lg transition-colors ${
+                        isAssigning 
+                          ? 'bg-primary/10 border border-primary/30' 
+                          : 'bg-muted/50 hover:bg-muted/80 cursor-pointer'
+                      }`}
+                      onClick={() => {
+                        if (!isAssigning) {
+                          handleStartAssign(expense.id);
+                        }
+                      }}
                     >
-                      <Plus className="w-3 h-3 mr-1.5" />
-                      Kreiraj novi izvor
-                    </Button>
-                  </div>
-                ) : (
-                  unassignedIncome.map((expense) => {
-                    const categoryInfo = getCategoryInfo(expense.category);
-                    const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
-                    const isAssigning = assigningId === expense.id;
-                    
-                    return (
-                      <div
-                        key={expense.id}
-                        className={`p-2.5 rounded-lg transition-colors cursor-pointer ${
-                          isAssigning 
-                            ? 'bg-primary/10 border border-primary/30' 
-                            : 'bg-muted/50 hover:bg-muted/80'
-                        }`}
-                        onClick={() => {
-                          if (!isAssigning) {
-                            handleStartAssign(expense.id);
-                          }
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          {/* Icon */}
-                          <div className="w-8 h-8 rounded-md bg-background flex items-center justify-center text-sm shrink-0">
-                            {categoryInfo.icon}
+                      {/* Transaction Row */}
+                      <div className="flex items-start gap-2">
+                        <div className="w-8 h-8 rounded-md bg-background flex items-center justify-center text-base shrink-0">
+                          {categoryInfo.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-medium text-sm leading-tight line-clamp-2">{expense.description}</p>
+                            <p className="font-mono text-sm font-semibold text-income shrink-0 whitespace-nowrap">
+                              +{formatAmount(expense.amount)}
+                            </p>
                           </div>
-
-                          {/* Details */}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{expense.description}</p>
+                          <div className="flex items-center justify-between mt-1">
                             <p className="text-xs text-muted-foreground">
                               {format(expense.date, 'dd.MM.yyyy', { locale: hr })}
                             </p>
-                          </div>
-
-                          {/* Amount */}
-                          <p className="font-mono text-sm font-semibold text-income shrink-0">
-                            +{formatAmount(expense.amount)}
-                          </p>
-
-                          {/* Edit button */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditTransaction(expense);
-                            }}
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-
-                        {/* Assignment UI */}
-                        {isAssigning && (
-                          <div className="mt-2 pt-2 border-t border-primary/20">
-                            <p className="text-xs text-muted-foreground mb-1.5">Dodijeli izvoru:</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {incomeSources.map((source) => (
-                                <Button
-                                  key={source.id}
-                                  variant="outline"
-                                  size="sm"
-                                  className="gap-1 h-7 text-xs px-2"
-                                  disabled={saving}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSaving(true);
-                                    onUpdateExpense({
-                                      ...expense,
-                                      income_source_id: source.id
-                                    }).then(() => {
-                                      toast.success(`Dodijeljeno izvoru "${source.name}"`);
-                                      setAssigningId(null);
-                                    }).catch(() => {
-                                      toast.error('Greška pri dodjeljivanju');
-                                    }).finally(() => {
-                                      setSaving(false);
-                                    });
-                                  }}
-                                >
-                                  {saving ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <span>{source.icon}</span>
-                                  )}
-                                  <span>{source.name}</span>
-                                </Button>
-                              ))}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 h-7 text-xs px-2 border-dashed"
-                                disabled={saving}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCreateNewSource(expense);
-                                }}
-                              >
-                                <Plus className="w-3 h-3" />
-                                <span>Novi</span>
-                              </Button>
-                            </div>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="mt-1.5 w-full h-7 text-xs"
+                              className="h-6 px-2 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleCancelAssign();
+                                onEditTransaction(expense);
                               }}
-                              disabled={saving}
                             >
-                              <X className="w-3 h-3 mr-1" />
-                              Odustani
+                              <Pencil className="w-3 h-3 mr-1" />
+                              Uredi
                             </Button>
                           </div>
-                        )}
-
-                        {/* Hint */}
-                        {!isAssigning && (
-                          <p className="text-[10px] text-muted-foreground mt-1 text-center opacity-60">
-                            Klikni za dodjelu
-                          </p>
-                        )}
+                        </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+
+                      {/* Assignment UI */}
+                      {isAssigning && (
+                        <div className="mt-3 pt-3 border-t border-primary/20">
+                          <p className="text-xs text-muted-foreground mb-2">Dodijeli izvoru:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {incomeSources.map((source) => (
+                              <Button
+                                key={source.id}
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 h-7 text-xs px-2"
+                                disabled={saving}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSaving(true);
+                                  onUpdateExpense({
+                                    ...expense,
+                                    income_source_id: source.id
+                                  }).then(() => {
+                                    toast.success(`Dodijeljeno izvoru "${source.name}"`);
+                                    setAssigningId(null);
+                                  }).catch(() => {
+                                    toast.error('Greška pri dodjeljivanju');
+                                  }).finally(() => {
+                                    setSaving(false);
+                                  });
+                                }}
+                              >
+                                {saving ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <span>{source.icon}</span>
+                                )}
+                                <span>{source.name}</span>
+                              </Button>
+                            ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1 h-7 text-xs px-2 border-dashed"
+                              disabled={saving}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCreateNewSource(expense);
+                              }}
+                            >
+                              <Plus className="w-3 h-3" />
+                              Novi
+                            </Button>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2 w-full h-7 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelAssign();
+                            }}
+                            disabled={saving}
+                          >
+                            <X className="w-3 h-3 mr-1" />
+                            Odustani
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Hint */}
+                      {!isAssigning && (
+                        <p className="text-[10px] text-muted-foreground mt-2 text-center opacity-50">
+                          Klikni za dodjelu
+                        </p>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
