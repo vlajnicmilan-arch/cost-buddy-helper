@@ -364,30 +364,110 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   </div>
                 </div>
 
-                {/* Display matched payment source */}
-                {scannedData.custom_payment_source_id && (() => {
-                  const matchedSource = customPaymentSources.find(s => s.id === scannedData.custom_payment_source_id);
-                  const matchedCard = matchedSource?.cards?.find(c => c.id === scannedData.payment_source_card_id);
-                  return matchedSource ? (
-                    <div className="p-2 bg-primary/10 border border-primary/30 rounded-lg">
-                      <span className="text-muted-foreground text-sm">{t('common.paymentSource')}:</span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span 
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-sm"
-                          style={{ backgroundColor: matchedSource.color + '20', color: matchedSource.color }}
+                {/* Editable payment source selector */}
+                <div className="space-y-2">
+                  <span className="text-muted-foreground text-sm">{t('common.paymentSource')}:</span>
+                  <Select
+                    value={scannedData.custom_payment_source_id 
+                      ? `custom:${scannedData.custom_payment_source_id}` 
+                      : (scannedData.payment_source || 'cash')}
+                    onValueChange={(value) => {
+                      if (value.startsWith('custom:')) {
+                        const customId = value.replace('custom:', '');
+                        setScannedData({
+                          ...scannedData,
+                          custom_payment_source_id: customId,
+                          payment_source: null,
+                          payment_source_card_id: null
+                        });
+                      } else {
+                        setScannedData({
+                          ...scannedData,
+                          custom_payment_source_id: null,
+                          payment_source: value as PaymentSource,
+                          payment_source_card_id: null
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full rounded-lg">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Custom payment sources first */}
+                      {customPaymentSources.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            {t('paymentSources.myAccounts')}
+                          </div>
+                          {customPaymentSources.map((source) => (
+                            <SelectItem key={source.id} value={`custom:${source.id}`}>
+                              <div className="flex items-center gap-2">
+                                <span 
+                                  className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                                  style={{ backgroundColor: source.color + '20', color: source.color }}
+                                >
+                                  {source.icon}
+                                </span>
+                                <span>{source.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      {/* Standard payment sources */}
+                      {PAYMENT_SOURCE_GROUPS.map((group) => (
+                        <div key={group.label}>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            {group.label}
+                          </div>
+                          {group.sources.map((source) => (
+                            <SelectItem key={source.id} value={source.id}>
+                              <span className="flex items-center gap-2">
+                                <span>{source.icon}</span>
+                                <span>{source.name}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Card selector if custom source is selected */}
+                  {scannedData.custom_payment_source_id && (() => {
+                    const selectedSource = customPaymentSources.find(s => s.id === scannedData.custom_payment_source_id);
+                    if (selectedSource?.cards && selectedSource.cards.length > 0) {
+                      return (
+                        <Select
+                          value={scannedData.payment_source_card_id || 'none'}
+                          onValueChange={(value) => {
+                            setScannedData({
+                              ...scannedData,
+                              payment_source_card_id: value === 'none' ? null : value
+                            });
+                          }}
                         >
-                          {matchedSource.icon}
-                        </span>
-                        <span className="font-medium">{matchedSource.name}</span>
-                        {matchedCard && (
-                          <span className="text-xs text-muted-foreground bg-background/50 px-2 py-0.5 rounded">
-                            💳 {matchedCard.card_name} ****{matchedCard.last_four_digits}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
+                          <SelectTrigger className="w-full rounded-lg">
+                            <SelectValue placeholder={t('paymentSources.selectCard')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t('paymentSources.noCard')}</SelectItem>
+                            {selectedSource.cards.map((card) => (
+                              <SelectItem key={card.id} value={card.id}>
+                                <span className="flex items-center gap-2">
+                                  <span>💳</span>
+                                  <span>{card.card_name} ****{card.last_four_digits}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
                 
                 <div>
                   <span className="text-muted-foreground text-sm">{t('common.description')}:</span>
