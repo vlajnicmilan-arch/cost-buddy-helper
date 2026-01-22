@@ -6,23 +6,23 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    --background: 165 20% 98%;
+    --foreground: 175 30% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 175 30% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 175 30% 10%;
 
-    --primary: 222 47% 20%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 172 66% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 165 25% 95%;
+    --secondary-foreground: 175 30% 10%;
 
-    --muted: 210 20% 94%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 165 20% 93%;
+    --muted-foreground: 170 15% 45%;
 
     --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
@@ -30,26 +30,26 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --expense: 0 72% 58%;
+    --expense: 0 72% 55%;
     --expense-foreground: 0 0% 100%;
 
-    --income: 160 84% 39%;
+    --income: 160 75% 42%;
     --income-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 20%;
+    --border: 170 25% 88%;
+    --input: 170 25% 88%;
+    --ring: 172 66% 40%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 165 15% 97%;
+    --sidebar-foreground: 175 25% 25%;
+    --sidebar-primary: 172 66% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 165 20% 94%;
+    --sidebar-accent-foreground: 175 30% 10%;
+    --sidebar-border: 170 20% 90%;
+    --sidebar-ring: 172 66% 50%;
 
     /* Category colors */
     --category-food: 24 95% 53%;
@@ -58,52 +58,52 @@
     --category-entertainment: 340 82% 52%;
     --category-bills: 43 96% 56%;
     --category-health: 160 84% 39%;
-    --category-other: 215 16% 47%;
+    --category-other: 170 15% 45%;
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
+    --background: 175 25% 8%;
+    --foreground: 165 25% 95%;
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 175 20% 12%;
+    --card-foreground: 165 25% 95%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 175 20% 12%;
+    --popover-foreground: 165 25% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 172 66% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 175 20% 16%;
+    --secondary-foreground: 165 25% 95%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 175 18% 18%;
+    --muted-foreground: 170 15% 60%;
 
-    --accent: 160 84% 39%;
+    --accent: 160 75% 42%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 35%;
+    --destructive-foreground: 165 25% 95%;
 
-    --expense: 0 72% 58%;
+    --expense: 0 72% 55%;
     --expense-foreground: 0 0% 100%;
 
-    --income: 160 84% 39%;
+    --income: 160 75% 45%;
     --income-foreground: 0 0% 100%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 212 27% 84%;
+    --border: 175 18% 20%;
+    --input: 175 18% 20%;
+    --ring: 172 66% 50%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 175 22% 10%;
+    --sidebar-foreground: 165 20% 90%;
+    --sidebar-primary: 172 66% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 175 18% 15%;
+    --sidebar-accent-foreground: 165 20% 90%;
+    --sidebar-border: 175 18% 18%;
+    --sidebar-ring: 172 66% 50%;
   }
 }
 
