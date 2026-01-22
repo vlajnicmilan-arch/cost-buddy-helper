@@ -69,6 +69,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       const result = await scanReceipt(base64, customPaymentSources);
       
       if (result) {
+        console.log('Scan result:', {
+          custom_payment_source_id: result.custom_payment_source_id,
+          payment_source_card_id: result.payment_source_card_id,
+          payment_source: result.payment_source
+        });
+        
         setScannedData({
           amount: result.amount,
           merchant: result.merchant,
@@ -357,6 +363,31 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                     </p>
                   </div>
                 </div>
+
+                {/* Display matched payment source */}
+                {scannedData.custom_payment_source_id && (() => {
+                  const matchedSource = customPaymentSources.find(s => s.id === scannedData.custom_payment_source_id);
+                  const matchedCard = matchedSource?.cards?.find(c => c.id === scannedData.payment_source_card_id);
+                  return matchedSource ? (
+                    <div className="p-2 bg-primary/10 border border-primary/30 rounded-lg">
+                      <span className="text-muted-foreground text-sm">{t('common.paymentSource')}:</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span 
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-sm"
+                          style={{ backgroundColor: matchedSource.color + '20', color: matchedSource.color }}
+                        >
+                          {matchedSource.icon}
+                        </span>
+                        <span className="font-medium">{matchedSource.name}</span>
+                        {matchedCard && (
+                          <span className="text-xs text-muted-foreground bg-background/50 px-2 py-0.5 rounded">
+                            💳 {matchedCard.card_name} ****{matchedCard.last_four_digits}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
                 
                 <div>
                   <span className="text-muted-foreground text-sm">{t('common.description')}:</span>
