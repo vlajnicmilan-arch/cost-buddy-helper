@@ -111,8 +111,9 @@ const Index = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-6 sm:mb-8">
-          <div className="flex items-center justify-between sm:block">
+        <header className="flex flex-col gap-4 mb-6 sm:mb-8">
+          {/* Top row: Logo, title, and navigation icons */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src={logo} alt="V&M Balance" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
               <div>
@@ -144,63 +145,9 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            {/* Mobile-only quick actions */}
-            <div className="flex items-center gap-1 sm:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCheckForUpdates}
-                disabled={isCheckingUpdate}
-                className="rounded-xl h-9 w-9"
-                title={t('update.checkForUpdates', 'Provjeri ažuriranja')}
-              >
-                <RefreshCw className={`w-4 h-4 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
-              </Button>
-              <LanguageSwitcher />
-              <HelpDialog />
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => navigate('/dashboard')}
-                className="rounded-xl h-9 w-9"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/setup')}
-                className="rounded-xl h-9 w-9"
-              >
-                <Settings className="w-4 h-4" />
-              </Button>
-              {!isLocalMode && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleSignOut}
-                  className="rounded-xl h-9 w-9"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-          
-          {/* Action buttons row */}
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:block">
-              <LanguageSwitcher />
-            </div>
-            <HelpDialog />
-            <div className="hidden sm:flex items-center gap-2">
-              <BulkPaymentSourceDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
-              <BulkCategoryDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
-            </div>
-            <ReportsDialog expenses={expenses} />
-            <AddExpenseDialog onAdd={addExpense} />
-            {/* Desktop-only buttons */}
-            <div className="hidden sm:flex items-center gap-2">
+            
+            {/* Navigation icons (right side) */}
+            <div className="flex items-center gap-1 sm:gap-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -209,9 +156,9 @@ const Index = () => {
                       size="icon"
                       onClick={handleCheckForUpdates}
                       disabled={isCheckingUpdate}
-                      className="rounded-xl"
+                      className="rounded-xl h-9 w-9"
                     >
-                      <RefreshCw className={`w-5 h-5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -226,9 +173,9 @@ const Index = () => {
                       variant="outline" 
                       size="icon" 
                       onClick={() => navigate('/dashboard')}
-                      className="rounded-xl"
+                      className="rounded-xl h-9 w-9"
                     >
-                      <LayoutDashboard className="w-5 h-5" />
+                      <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -243,9 +190,9 @@ const Index = () => {
                       variant="ghost" 
                       size="icon" 
                       onClick={() => navigate('/setup')}
-                      className="rounded-xl"
+                      className="rounded-xl h-9 w-9"
                     >
-                      <Settings className="w-5 h-5" />
+                      <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -258,12 +205,24 @@ const Index = () => {
                   variant="ghost" 
                   size="icon" 
                   onClick={handleSignOut}
-                  className="rounded-xl"
+                  className="rounded-xl h-9 w-9"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               )}
             </div>
+          </div>
+          
+          {/* Bottom row: Action buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <LanguageSwitcher />
+            <HelpDialog />
+            <div className="hidden sm:flex items-center gap-2">
+              <BulkPaymentSourceDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
+              <BulkCategoryDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
+            </div>
+            <ReportsDialog expenses={expenses} />
+            <AddExpenseDialog onAdd={addExpense} />
           </div>
         </header>
 
