@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, forwardRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,7 +20,7 @@ interface CategoryTransactionsDialogProps {
   onEditTransaction: (expense: Expense) => void;
 }
 
-export const CategoryTransactionsDialog = ({
+export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTransactionsDialogProps>(({
   open,
   onOpenChange,
   category,
@@ -28,7 +28,7 @@ export const CategoryTransactionsDialog = ({
   onUpdateExpense,
   onDeleteExpense,
   onEditTransaction
-}: CategoryTransactionsDialogProps) => {
+}, ref) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [changingCategoryId, setChangingCategoryId] = useState<string | null>(null);
 
@@ -249,4 +249,6 @@ export const CategoryTransactionsDialog = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+CategoryTransactionsDialog.displayName = 'CategoryTransactionsDialog';
