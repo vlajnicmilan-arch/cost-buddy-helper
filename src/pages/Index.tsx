@@ -16,7 +16,7 @@ import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPan
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { Expense } from '@/types/expense';
-import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
@@ -127,6 +127,23 @@ const Index = () => {
           <div className="flex items-center gap-2">
             <ReportsDialog expenses={expenses} />
             <AddExpenseDialog onAdd={addExpense} />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => navigate('/dashboard')}
+                    className="rounded-xl"
+                  >
+                    <LayoutDashboard className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Dashboard</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
