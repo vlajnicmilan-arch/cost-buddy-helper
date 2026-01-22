@@ -51,7 +51,7 @@ const StorageSetup = () => {
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
             <Wallet className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">FinMate</h1>
+          <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
             Gdje želiš spremati svoje podatke?
           </p>
