@@ -203,7 +203,7 @@ export const useExpenses = () => {
             category: tx.category,
             type: tx.type,
             date: tx.date,
-            payment_source: 'other',
+            payment_source: tx.payment_source || 'other',
             merchant_name: tx.merchant_name || null,
             ai_extracted: false
           });
@@ -225,6 +225,7 @@ export const useExpenses = () => {
           category: tx.category,
           type: tx.type,
           date: tx.date.toISOString(),
+          payment_source: tx.payment_source || 'other',
           merchant_name: tx.merchant_name || null,
           ai_extracted: false
         }));

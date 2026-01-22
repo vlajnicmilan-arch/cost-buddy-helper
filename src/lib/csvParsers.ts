@@ -1,4 +1,4 @@
-import { Category } from '@/types/expense';
+import { Category, PaymentSource } from '@/types/expense';
 
 export interface ParsedTransaction {
   date: Date;
@@ -8,6 +8,21 @@ export interface ParsedTransaction {
   category: Category;
   merchant_name?: string;
   source: string;
+  payment_source: PaymentSource;
+}
+
+// Map source name to payment source
+export function mapSourceToPaymentSource(source: string): PaymentSource {
+  const sourceLower = source.toLowerCase();
+  
+  if (sourceLower.includes('revolut')) return 'revolut';
+  if (sourceLower.includes('aircash')) return 'aircash';
+  if (sourceLower.includes('pbz') || sourceLower.includes('erste') || 
+      sourceLower.includes('zaba') || sourceLower.includes('banka')) return 'bank';
+  if (sourceLower.includes('crypto') || sourceLower.includes('bitcoin')) return 'crypto';
+  if (sourceLower.includes('gotovina') || sourceLower.includes('cash')) return 'cash';
+  
+  return 'other';
 }
 
 export interface CSVParseResult {
@@ -255,7 +270,8 @@ function parseRevolut(rows: string[][]): ParsedTransaction[] {
       type: isIncome ? 'income' : 'expense',
       category: categorizeTransaction(description),
       merchant_name: description.split(' - ')[0] || undefined,
-      source: 'Revolut'
+      source: 'Revolut',
+      payment_source: 'revolut'
     });
   }
   
@@ -290,7 +306,8 @@ function parseAircash(rows: string[][]): ParsedTransaction[] {
       description,
       type: isIncome ? 'income' : 'expense',
       category: categorizeTransaction(description),
-      source: 'Aircash'
+      source: 'Aircash',
+      payment_source: 'aircash'
     });
   }
   
@@ -335,7 +352,8 @@ function parsePBZ(rows: string[][]): ParsedTransaction[] {
       description,
       type: isIncome ? 'income' : 'expense',
       category: categorizeTransaction(description),
-      source: 'PBZ'
+      source: 'PBZ',
+      payment_source: 'bank'
     });
   }
   
@@ -368,7 +386,8 @@ function parseErste(rows: string[][]): ParsedTransaction[] {
       description,
       type: isIncome ? 'income' : 'expense',
       category: categorizeTransaction(description),
-      source: 'Erste'
+      source: 'Erste',
+      payment_source: 'bank'
     });
   }
   
@@ -401,7 +420,8 @@ function parseZaba(rows: string[][]): ParsedTransaction[] {
       description,
       type: isIncome ? 'income' : 'expense',
       category: categorizeTransaction(description),
-      source: 'Zagrebačka banka'
+      source: 'Zagrebačka banka',
+      payment_source: 'bank'
     });
   }
   
@@ -434,7 +454,8 @@ function parseGeneric(rows: string[][]): ParsedTransaction[] {
       description,
       type: isIncome ? 'income' : 'expense',
       category: categorizeTransaction(description),
-      source: 'CSV Import'
+      source: 'CSV Import',
+      payment_source: 'other'
     });
   }
   
