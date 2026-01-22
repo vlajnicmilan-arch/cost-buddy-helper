@@ -93,6 +93,8 @@ export type Database = {
           merchant_name: string | null
           payment_source: string | null
           receipt_url: string | null
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          submitted_by: string | null
           type: string
           updated_at: string
           user_id: string
@@ -109,6 +111,8 @@ export type Database = {
           merchant_name?: string | null
           payment_source?: string | null
           receipt_url?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          submitted_by?: string | null
           type?: string
           updated_at?: string
           user_id: string
@@ -125,11 +129,89 @@ export type Database = {
           merchant_name?: string | null
           payment_source?: string | null
           receipt_url?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          submitted_by?: string | null
           type?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      income_source_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          income_source_id: string
+          invited_by: string
+          status: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          income_source_id: string
+          invited_by: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          income_source_id?: string
+          invited_by?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "income_source_invitations_income_source_id_fkey"
+            columns: ["income_source_id"]
+            isOneToOne: false
+            referencedRelation: "income_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      income_source_members: {
+        Row: {
+          created_at: string
+          id: string
+          income_source_id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["income_source_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          income_source_id: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["income_source_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          income_source_id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["income_source_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "income_source_members_income_source_id_fkey"
+            columns: ["income_source_id"]
+            isOneToOne: false
+            referencedRelation: "income_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       income_sources: {
         Row: {
@@ -234,10 +316,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_income_source_owner: {
+        Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      income_source_role: "owner" | "member"
+      transaction_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -364,6 +450,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      income_source_role: ["owner", "member"],
+      transaction_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
