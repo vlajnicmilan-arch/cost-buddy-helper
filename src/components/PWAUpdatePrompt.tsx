@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-// Set to true to show test button, false for production
-const SHOW_TEST_BUTTON = true;
+// Set to false for production
+const SHOW_TEST_BUTTON = false;
 
 // Global reference for manual update check
 let checkForUpdatesRef: (() => Promise<void>) | null = null;
