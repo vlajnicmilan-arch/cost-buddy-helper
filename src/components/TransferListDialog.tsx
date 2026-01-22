@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Expense, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { ArrowRight, ArrowLeftRight, Calendar, CreditCard } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ArrowRight, ArrowLeftRight, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+type PeriodFilter = 'month' | 'all';
 
 interface TransferListDialogProps {
   open: boolean;
@@ -103,6 +105,23 @@ export const TransferListDialog = ({
   transfers,
   totalAmount
 }: TransferListDialogProps) => {
+  const [period, setPeriod] = useState<PeriodFilter>('month');
+
+  // Filter transfers by period
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+
+  const filteredTransfers = useMemo(() => {
+    if (period === 'all') return transfers;
+    return transfers.filter(t => t.date >= monthStart && t.date <= monthEnd);
+  }, [transfers, period, monthStart, monthEnd]);
+
+  const filteredTotal = useMemo(() => 
+    filteredTransfers.reduce((sum, t) => sum + Number(t.amount), 0),
+    [filteredTransfers]
+  );
+
   const formatAmount = (value: number) => {
     return new Intl.NumberFormat('hr-HR', {
       style: 'currency',
@@ -111,7 +130,7 @@ export const TransferListDialog = ({
   };
 
   // Group transfers by month
-  const groupedTransfers = transfers.reduce((acc, transfer) => {
+  const groupedTransfers = filteredTransfers.reduce((acc, transfer) => {
     const monthKey = format(transfer.date, 'yyyy-MM');
     const monthLabel = format(transfer.date, 'LLLL yyyy', { locale: hr });
     
@@ -136,23 +155,35 @@ export const TransferListDialog = ({
           </DialogTitle>
         </DialogHeader>
 
+        {/* Period Toggle */}
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)} className="shrink-0">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="month">Ovaj mjesec</TabsTrigger>
+            <TabsTrigger value="all">Ukupno</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Summary */}
         <div className="p-4 rounded-xl bg-primary/10 text-center shrink-0">
-          <p className="text-sm text-muted-foreground mb-1">Ukupno prebačeno</p>
+          <p className="text-sm text-muted-foreground mb-1">
+            {period === 'month' ? 'Prebačeno ovaj mjesec' : 'Ukupno prebačeno'}
+          </p>
           <p className="text-2xl font-bold font-mono text-primary">
-            ↔ {formatAmount(totalAmount)}
+            ↔ {formatAmount(filteredTotal)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            {transfers.length} {transfers.length === 1 ? 'prijenos' : 'prijenosa'}
+            {filteredTransfers.length} {filteredTransfers.length === 1 ? 'prijenos' : 'prijenosa'}
           </p>
         </div>
 
         {/* Transfer List */}
         <ScrollArea className="flex-1 -mx-6 px-6">
-          {transfers.length === 0 ? (
+          {filteredTransfers.length === 0 ? (
             <div className="py-12 text-center">
               <ArrowLeftRight className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">Nema prijenosa</p>
+              <p className="text-muted-foreground">
+                {period === 'month' ? 'Nema prijenosa ovaj mjesec' : 'Nema prijenosa'}
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Prijenosi između vlastitih računa će se prikazati ovdje
               </p>

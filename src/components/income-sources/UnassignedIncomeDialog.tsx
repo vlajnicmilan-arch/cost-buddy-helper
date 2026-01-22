@@ -6,8 +6,8 @@ import { IncomeSource } from '@/types/incomeSource';
 import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Link2, CircleDashed, Check, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Pencil, Link2, CircleDashed, Check, X, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 
@@ -31,6 +31,7 @@ export const UnassignedIncomeDialog = ({
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [selectedSourceId, setSelectedSourceId] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [autoAssigning, setAutoAssigning] = useState(false);
 
   // Unassigned income transactions
   const unassignedIncome = useMemo(() => {
@@ -85,6 +86,74 @@ export const UnassignedIncomeDialog = ({
     }
   };
 
+  // Auto-assign based on description matching
+  const handleAutoAssign = async () => {
+    if (incomeSources.length === 0) {
+      toast.error('Nema definiranih izvora prihoda');
+      return;
+    }
+
+    setAutoAssigning(true);
+    let assignedCount = 0;
+
+    try {
+      for (const expense of unassignedIncome) {
+        const desc = expense.description.toLowerCase();
+        const merchant = expense.merchant_name?.toLowerCase() || '';
+        
+        // Try to match with source name or description
+        const matchedSource = incomeSources.find(source => {
+          const sourceName = source.name.toLowerCase();
+          const sourceDesc = source.description?.toLowerCase() || '';
+          
+          return desc.includes(sourceName) || 
+                 merchant.includes(sourceName) ||
+                 (sourceDesc && (desc.includes(sourceDesc) || merchant.includes(sourceDesc)));
+        });
+
+        if (matchedSource) {
+          await onUpdateExpense({
+            ...expense,
+            income_source_id: matchedSource.id
+          });
+          assignedCount++;
+        }
+      }
+
+      if (assignedCount > 0) {
+        toast.success(`Automatski dodijeljeno ${assignedCount} prihoda`);
+      } else {
+        toast.info('Nije pronađeno podudaranje za automatsko dodjeljivanje');
+      }
+    } catch (error) {
+      toast.error('Greška pri automatskom dodjeljivanju');
+    } finally {
+      setAutoAssigning(false);
+    }
+  };
+
+  // Assign all to a single source
+  const handleAssignAll = async (sourceId: string) => {
+    if (!sourceId) return;
+
+    setAutoAssigning(true);
+    try {
+      for (const expense of unassignedIncome) {
+        await onUpdateExpense({
+          ...expense,
+          income_source_id: sourceId
+        });
+      }
+      
+      const sourceName = incomeSources.find(s => s.id === sourceId)?.name;
+      toast.success(`Svi prihodi dodijeljeni izvoru "${sourceName}"`);
+    } catch (error) {
+      toast.error('Greška pri dodjeljivanju');
+    } finally {
+      setAutoAssigning(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
@@ -110,11 +179,43 @@ export const UnassignedIncomeDialog = ({
           </div>
         </div>
 
-        {/* Info about assigning */}
+        {/* Bulk Actions */}
         {incomeSources.length > 0 && unassignedIncome.length > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-sm text-muted-foreground shrink-0">
-            <Link2 className="w-4 h-4 shrink-0" />
-            <span>Klikni na ikonu veze da dodijeliš prihod izvoru</span>
+          <div className="flex flex-col gap-2 shrink-0">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={handleAutoAssign}
+                disabled={autoAssigning}
+              >
+                {autoAssigning ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Link2 className="w-4 h-4 mr-2" />
+                )}
+                Auto-dodijeli
+              </Button>
+              <Select onValueChange={handleAssignAll} disabled={autoAssigning}>
+                <SelectTrigger className="flex-1 bg-background">
+                  <SelectValue placeholder="Dodijeli sve..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[100]">
+                  {incomeSources.map((source) => (
+                    <SelectItem key={source.id} value={source.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{source.icon}</span>
+                        <span>{source.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Auto-dodijeli pretražuje po imenu izvora u opisu transakcije
+            </p>
           </div>
         )}
 
@@ -138,118 +239,112 @@ export const UnassignedIncomeDialog = ({
             </div>
           ) : (
             <div className="space-y-2 py-2">
-              <AnimatePresence>
-                {unassignedIncome.map((expense) => {
-                  const categoryInfo = getCategoryInfo(expense.category);
-                  const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
-                  const isAssigning = assigningId === expense.id;
-                  
-                  return (
-                    <motion.div
-                      key={expense.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      layout
-                      className="p-3 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        {/* Icon */}
-                        <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg shrink-0">
-                          {categoryInfo.icon}
-                        </div>
-
-                        {/* Details */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{expense.description}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{format(expense.date, 'dd.MM.yyyy', { locale: hr })}</span>
-                            <span>•</span>
-                            <span>{paymentInfo.icon} {paymentInfo.name}</span>
-                          </div>
-                        </div>
-
-                        {/* Amount */}
-                        <p className="font-mono font-semibold whitespace-nowrap text-income shrink-0">
-                          +{formatAmount(expense.amount)}
-                        </p>
-
-                        {/* Actions */}
-                        {!isAssigning && (
-                          <div className="flex gap-1 shrink-0">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              title="Dodijeli izvoru"
-                              onClick={() => handleStartAssign(expense.id)}
-                            >
-                              <Link2 className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              title="Uredi"
-                              onClick={() => onEditTransaction(expense)}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
+              {unassignedIncome.map((expense) => {
+                const categoryInfo = getCategoryInfo(expense.category);
+                const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
+                const isAssigning = assigningId === expense.id;
+                
+                return (
+                  <motion.div
+                    key={expense.id}
+                    layout
+                    className="p-3 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Icon */}
+                      <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg shrink-0">
+                        {categoryInfo.icon}
                       </div>
 
-                      {/* Assignment UI */}
-                      {isAssigning && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-3 pt-3 border-t flex items-center gap-2"
-                        >
-                          <Select
-                            value={selectedSourceId}
-                            onValueChange={setSelectedSourceId}
-                          >
-                            <SelectTrigger className="flex-1">
-                              <SelectValue placeholder="Odaberi izvor..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {incomeSources.map((source) => (
-                                <SelectItem key={source.id} value={source.id}>
-                                  <div className="flex items-center gap-2">
-                                    <span>{source.icon}</span>
-                                    <span>{source.name}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                      {/* Details */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{expense.description}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{format(expense.date, 'dd.MM.yyyy', { locale: hr })}</span>
+                          <span>•</span>
+                          <span>{paymentInfo.icon} {paymentInfo.name}</span>
+                        </div>
+                      </div>
 
+                      {/* Amount */}
+                      <p className="font-mono font-semibold whitespace-nowrap text-income shrink-0">
+                        +{formatAmount(expense.amount)}
+                      </p>
+
+                      {/* Actions */}
+                      {!isAssigning && (
+                        <div className="flex gap-1 shrink-0">
                           <Button
-                            size="icon"
                             variant="ghost"
-                            className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
-                            onClick={handleCancelAssign}
-                            disabled={saving}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-
-                          <Button
                             size="icon"
-                            className="h-9 w-9 shrink-0"
-                            onClick={() => handleConfirmAssign(expense)}
-                            disabled={!selectedSourceId || saving}
+                            className="h-8 w-8"
+                            title="Dodijeli izvoru"
+                            onClick={() => handleStartAssign(expense.id)}
                           >
-                            <Check className="w-4 h-4" />
+                            <Link2 className="w-4 h-4" />
                           </Button>
-                        </motion.div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Uredi"
+                            onClick={() => onEditTransaction(expense)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </div>
                       )}
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
+                    </div>
+
+                    {/* Assignment UI */}
+                    {isAssigning && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-3 pt-3 border-t flex items-center gap-2"
+                      >
+                        <Select
+                          value={selectedSourceId}
+                          onValueChange={setSelectedSourceId}
+                        >
+                          <SelectTrigger className="flex-1 bg-background">
+                            <SelectValue placeholder="Odaberi izvor..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover z-[100]">
+                            {incomeSources.map((source) => (
+                              <SelectItem key={source.id} value={source.id}>
+                                <span className="flex items-center gap-2">
+                                  <span>{source.icon}</span>
+                                  <span>{source.name}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
+                          onClick={handleCancelAssign}
+                          disabled={saving}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+
+                        <Button
+                          size="icon"
+                          className="h-9 w-9 shrink-0"
+                          onClick={() => handleConfirmAssign(expense)}
+                          disabled={!selectedSourceId || saving}
+                        >
+                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </ScrollArea>
