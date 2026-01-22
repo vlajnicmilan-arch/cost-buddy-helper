@@ -18,6 +18,7 @@ import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPan
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw } from 'lucide-react';
@@ -150,6 +151,7 @@ const Index = () => {
             {/* Navigation icons (right side) */}
             <div className="flex items-center gap-1 sm:gap-2">
               <ThemeToggle />
+              {!isLocalMode && <NotificationsDropdown />}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

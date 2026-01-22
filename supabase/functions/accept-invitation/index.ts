@@ -131,12 +131,41 @@ serve(async (req: Request): Promise<Response> => {
       .update({ status: 'accepted' })
       .eq('id', invitation.id);
 
-    // Get the income source name for response
+    // Get the income source details for response
     const { data: source } = await supabaseAdmin
       .from('income_sources')
-      .select('name, icon')
+      .select('name, icon, user_id')
       .eq('id', invitation.income_source_id)
       .single();
+
+    // Get joining user's display name
+    const { data: joiningUserProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('display_name')
+      .eq('user_id', user.id)
+      .single();
+
+    const joiningUserName = joiningUserProfile?.display_name || user.email || 'Nepoznati korisnik';
+
+    // Create notification for the owner
+    if (source?.user_id) {
+      await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: source.user_id,
+          type: 'member_joined',
+          title: 'Novi član u krugu',
+          message: `${joiningUserName} se pridružio/la krugu "${source.name}"`,
+          data: {
+            income_source_id: invitation.income_source_id,
+            income_source_name: source.name,
+            new_member_id: user.id,
+            new_member_name: joiningUserName,
+          }
+        });
+      
+      console.log('Notification created for owner:', source.user_id);
+    }
 
     console.log('Successfully added user to income source:', source?.name);
 
