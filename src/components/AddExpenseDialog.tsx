@@ -217,12 +217,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
           Dodaj
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md glass-card border-border/50 max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md glass-card border-border/50 max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-semibold">Nova transakcija</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
           {/* Scanned Data Preview */}
           {showScannedPreview && scannedData && (
             <div className="space-y-4 pb-4">
