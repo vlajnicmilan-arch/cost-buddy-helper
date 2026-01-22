@@ -106,6 +106,33 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       // Use detected payment source from receipt, fallback to current selection
       const detectedPaymentSource = scannedData.payment_source || paymentSource;
 
+      // Auto-match income source based on payment method
+      let matchedIncomeSourceId: string | null = null;
+      if (detectedPaymentSource && detectedPaymentSource !== 'cash' && incomeSources.length > 0) {
+        // Keywords to match for different payment sources
+        const paymentSourceKeywords: Record<PaymentSource, string[]> = {
+          bank: ['banka', 'kartica', 'card', 'bank', 'račun', 'visa', 'mastercard', 'maestro', 'pbz', 'zaba', 'erste', 'otp', 'rba', 'addiko'],
+          revolut: ['revolut'],
+          aircash: ['aircash', 'air cash'],
+          crypto: ['crypto', 'kripto', 'bitcoin', 'btc', 'eth'],
+          cash: [],
+          other: []
+        };
+        
+        const keywords = paymentSourceKeywords[detectedPaymentSource] || [];
+        
+        // Find matching income source by name
+        const matchedSource = incomeSources.find(source => {
+          const sourceName = source.name.toLowerCase();
+          return keywords.some(keyword => sourceName.includes(keyword));
+        });
+        
+        if (matchedSource) {
+          matchedIncomeSourceId = matchedSource.id;
+          console.log(`Auto-matched payment source "${detectedPaymentSource}" to income source "${matchedSource.name}"`);
+        }
+      }
+
       await onAdd({
         amount: scannedData.amount,
         description: scannedData.description,
@@ -115,7 +142,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         payment_source: detectedPaymentSource,
         merchant_name: scannedData.merchant || undefined,
         receipt_url: receiptUrl,
-        ai_extracted: true
+        ai_extracted: true,
+        income_source_id: matchedIncomeSourceId
       }, validItems.length > 0 ? validItems : undefined);
 
       resetForm();
