@@ -358,7 +358,7 @@ const Index = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="max-h-[400px] overflow-y-auto space-y-1 pr-1">
                     <AnimatePresence>
                       {expenses.map((expense) => (
                         <TransactionItem
