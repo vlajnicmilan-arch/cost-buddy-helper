@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Category, ReceiptItem } from '@/types/expense';
+import { Category, PaymentSource, ReceiptItem } from '@/types/expense';
 import { toast } from 'sonner';
 
 interface ParsedReceipt {
@@ -9,6 +9,7 @@ interface ParsedReceipt {
   description: string;
   category: Category;
   date: string | null;
+  payment_source: PaymentSource | null;
   items: ReceiptItem[];
 }
 
@@ -108,12 +109,21 @@ export const useReceiptScanner = () => {
       const data = await response.json();
       console.log('Parsed data:', data);
       
+      // Map payment_method from AI to PaymentSource
+      let paymentSource: PaymentSource | null = null;
+      if (data.payment_method === 'card') {
+        paymentSource = 'bank';
+      } else if (data.payment_method === 'cash') {
+        paymentSource = 'cash';
+      }
+
       const result: ParsedReceipt = {
         amount: data.amount,
         merchant: data.merchant,
         description: data.description,
         category: data.category as Category,
         date: data.date || null,
+        payment_source: paymentSource,
         items: (data.items || []).map((item: any) => ({
           name: item.name || '',
           quantity: item.quantity || 1,
