@@ -11,6 +11,7 @@ import { BackupRestore } from '@/components/BackupRestore';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TransferListDialog } from '@/components/TransferListDialog';
 import { BulkPaymentSourceDialog } from '@/components/BulkPaymentSourceDialog';
 import { BulkCategoryDialog } from '@/components/BulkCategoryDialog';
@@ -21,7 +22,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
-import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { checkForUpdates } from '@/components/PWAUpdatePrompt';
 import logo from '@/assets/logo.png';
@@ -44,6 +45,7 @@ const Index = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [transactionsOpen, setTransactionsOpen] = useState(false);
 
   const handleCheckForUpdates = async () => {
     setIsCheckingUpdate(true);
@@ -331,35 +333,49 @@ const Index = () => {
 
           {/* Transactions */}
           <div className="lg:col-span-2 glass-card rounded-2xl p-6 animate-fade-in">
-            <h2 className="text-lg font-semibold mb-4">{t('transactions.recentTransactions')}</h2>
-            {expensesLoading ? (
-              <div className="py-12 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : expenses.length === 0 ? (
-              <div className="py-12 text-center">
-                <p className="text-muted-foreground">{t('transactions.noTransactions')}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {t('transactions.addFirstTransaction')}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                <AnimatePresence>
-                  {expenses.map((expense) => (
-                    <TransactionItem
-                      key={expense.id}
-                      expense={expense}
-                      onDelete={deleteExpense}
-                      onClick={(e) => {
-                        setSelectedTransaction(e);
-                        setDetailDialogOpen(true);
-                      }}
-                    />
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
+            <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen}>
+              <CollapsibleTrigger asChild>
+                <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
+                  <h2 className="text-lg font-semibold">{t('transactions.recentTransactions')}</h2>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {expenses.length} {expenses.length === 1 ? 'transakcija' : 'transakcija'}
+                    </span>
+                    <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${transactionsOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
+                {expensesLoading ? (
+                  <div className="py-12 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : expenses.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <p className="text-muted-foreground">{t('transactions.noTransactions')}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t('transactions.addFirstTransaction')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <AnimatePresence>
+                      {expenses.map((expense) => (
+                        <TransactionItem
+                          key={expense.id}
+                          expense={expense}
+                          onDelete={deleteExpense}
+                          onClick={(e) => {
+                            setSelectedTransaction(e);
+                            setDetailDialogOpen(true);
+                          }}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Sidebar */}
