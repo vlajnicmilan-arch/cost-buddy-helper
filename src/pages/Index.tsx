@@ -11,12 +11,13 @@ import { BackupRestore } from '@/components/BackupRestore';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
+import { TransferListDialog } from '@/components/TransferListDialog';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { Expense } from '@/types/expense';
 import { Wallet, TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -26,6 +27,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -40,6 +42,7 @@ const Index = () => {
     findDuplicates,
     totalExpenses, 
     totalIncome, 
+    totalTransfers,
     monthlyTransfers,
     monthlyTransferCount,
     balance,
@@ -47,6 +50,12 @@ const Index = () => {
     isLocalMode,
     refetch
   } = useExpenses();
+
+  // Get all transfers for the dialog
+  const allTransfers = useMemo(() => 
+    expenses.filter(e => e.type === 'transfer').sort((a, b) => b.date.getTime() - a.date.getTime()),
+    [expenses]
+  );
 
   // Initialize auto-backup for local mode
   useAutoBackup();
@@ -194,11 +203,12 @@ const Index = () => {
           />
         </div>
 
-        {/* Monthly Transfers Summary */}
+        {/* Monthly Transfers Summary - Clickable */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-4 bg-muted/30 border border-border/50 rounded-xl flex items-center justify-between"
+          onClick={() => setTransferDialogOpen(true)}
+          className="mb-8 p-4 bg-muted/30 border border-border/50 rounded-xl flex items-center justify-between cursor-pointer hover:bg-muted/50 hover:border-primary/30 transition-all"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -217,7 +227,7 @@ const Index = () => {
             <p className="font-mono font-semibold text-lg text-muted-foreground">
               ↔ {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(monthlyTransfers)}
             </p>
-            <p className="text-xs text-muted-foreground">ne utječe na stanje</p>
+            <p className="text-xs text-muted-foreground">Klikni za detalje →</p>
           </div>
         </motion.div>
 
@@ -291,6 +301,14 @@ const Index = () => {
         onUpdate={updateExpense}
         onDelete={deleteExpense}
         total={totalExpenses}
+      />
+
+      {/* Transfer List Dialog */}
+      <TransferListDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        transfers={allTransfers}
+        totalAmount={totalTransfers}
       />
 
       {/* Transaction Detail Dialog */}
