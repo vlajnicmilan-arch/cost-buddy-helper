@@ -200,6 +200,15 @@ PRAVILA ZA TRANSAKCIJE:
     const aiData = await aiResponse.json();
     console.log('AI response structure:', JSON.stringify(aiData, null, 2));
 
+    // Check if the response contains an error
+    if (aiData.error) {
+      console.error('AI gateway returned error:', aiData.error);
+      return new Response(
+        JSON.stringify({ error: `AI greška: ${aiData.error.message || 'Nepoznata greška'}` }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Extract from tool call response
     let statementData: { 
       transactions: any[]; 
