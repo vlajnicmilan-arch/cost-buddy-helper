@@ -275,28 +275,73 @@ const Index = () => {
           </motion.div>
         )}
 
+        {/* Individual Payment Source Balances */}
+        {customPaymentSources.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+            {customPaymentSources.map((source) => (
+              <motion.div
+                key={source.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-base"
+                    style={{ backgroundColor: source.color + '20', color: source.color }}
+                  >
+                    {source.icon}
+                  </span>
+                  <span className="text-xs sm:text-sm font-medium truncate flex-1">{source.name}</span>
+                </div>
+                <p className={`text-base sm:text-lg font-bold ${source.balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                  €{source.balance.toFixed(2)}
+                </p>
+                {source.cards && source.cards.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {source.cards.length} {source.cards.length === 1 ? 'kartica' : 'kartice'}
+                  </p>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <SummaryCard
-            title={t('summary.balance')}
-            amount={balance}
-            variant="balance"
-            icon={<Wallet className="w-5 h-5" />}
-          />
-          <SummaryCard
-            title={t('summary.totalIncome')}
-            amount={totalIncome}
-            variant="income"
-            icon={<TrendingUp className="w-5 h-5" />}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Wallet className="w-4 h-4 text-primary" />
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.balance')}</span>
+            </div>
+            <p className={`text-base sm:text-xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+              €{balance.toFixed(2)}
+            </p>
+          </div>
+          <div 
+            className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm text-center cursor-pointer hover:bg-card/80 transition-colors"
             onClick={() => setIncomeDialogOpen(true)}
-          />
-          <SummaryCard
-            title={t('summary.totalExpenses')}
-            amount={totalExpenses}
-            variant="expense"
-            icon={<TrendingDown className="w-5 h-5" />}
+          >
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalIncome')}</span>
+            </div>
+            <p className="text-base sm:text-xl font-bold text-primary">
+              €{totalIncome.toFixed(2)}
+            </p>
+          </div>
+          <div 
+            className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm text-center cursor-pointer hover:bg-card/80 transition-colors"
             onClick={() => setExpenseDialogOpen(true)}
-          />
+          >
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <TrendingDown className="w-4 h-4 text-destructive" />
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
+            </div>
+            <p className="text-base sm:text-xl font-bold text-destructive">
+              €{totalExpenses.toFixed(2)}
+            </p>
+          </div>
         </div>
 
         {/* Transfers Summary - Clickable with toggle */}
