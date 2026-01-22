@@ -1,4 +1,4 @@
-import { useState, forwardRef } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,19 +32,18 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
 
   const { incomeSources } = useIncomeSources();
 
-  // Reset form when dialog opens with new expense
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && expense) {
+  // Initialize form when dialog opens or expense changes
+  useEffect(() => {
+    if (open && expense) {
       setAmount(expense.amount.toString());
       setDescription(expense.description);
       setCategory(expense.category);
       setPaymentSource(expense.payment_source || 'cash');
-      setDate(expense.date);
+      setDate(expense.date instanceof Date ? expense.date : new Date(expense.date));
       setType(expense.type);
       setIncomeSourceId(expense.income_source_id || null);
     }
-    onOpenChange(isOpen);
-  };
+  }, [open, expense]);
 
   const handleSave = async () => {
     if (!expense) return;
@@ -71,7 +70,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   if (!expense) return null;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Uredi {type === 'income' ? 'prihod' : type === 'transfer' ? 'prijenos' : 'trošak'}</DialogTitle>
