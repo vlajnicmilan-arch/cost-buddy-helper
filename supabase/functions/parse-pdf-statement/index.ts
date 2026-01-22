@@ -91,6 +91,26 @@ PRAVILA ZA TRANSAKCIJE:
 - VAŽNO: Prepoznaj interne prijenose! Ključne riječi: "top up", "nadoplata", "uplata na Aircash/Revolut", "prijenos na vlastiti račun", "podizanje gotovine", "ATM"
 - Kategorije: food, transport, shopping, entertainment, bills, health, other
 - Datum u formatu YYYY-MM-DD
+
+PRAVILA ZA OPIS TRANSAKCIJE:
+- Uključi naziv trgovca/primatelja
+- Ako je vidljivo, dodaj tip kartice (Visa, Mastercard, itd.)
+- Ako je vidljivo, dodaj zadnje 4 znamenke kartice u formatu [Visa *1234]
+- Ako je različita kartica od glavne, naznači to
+- Primjer obogaćenog opisa: "KONZUM P-1234 Zagreb [Visa *7262]" ili "Wolt Zagreb [Mastercard *4521]"
+
+payment_source opcije:
+- "cash" za gotovinu
+- "bank" za generičku banku
+- "visa", "visa_gold", "visa_platinum" za Visa kartice
+- "mastercard", "mastercard_gold", "mastercard_platinum" za Mastercard
+- "maestro" za Maestro kartice
+- "amex" za American Express
+- "diners" za Diners Club
+- "revolut" za Revolut
+- "aircash" za Aircash
+- "crypto" za kripto
+
 - card_last4: zadnje 4 znamenke kartice ako je vidljivo (npr. "*1234" ili "VISA ****5678")
 - Ako ne možeš naći transakcije, vrati prazan niz`
           },
@@ -144,7 +164,7 @@ PRAVILA ZA TRANSAKCIJE:
                         },
                         description: { 
                           type: 'string', 
-                          description: 'Transaction description' 
+                          description: 'Enriched transaction description including merchant name and card info if visible. Example: "KONZUM P-1234 Zagreb [Visa *7262]"' 
                         },
                         amount: { 
                           type: 'number', 
@@ -168,6 +188,12 @@ PRAVILA ZA TRANSAKCIJE:
                         card_last4: {
                           type: 'string',
                           description: 'Last 4 digits of card used (e.g., "1234"), if different cards are used',
+                          nullable: true
+                        },
+                        card_type: {
+                          type: 'string',
+                          enum: ['visa', 'visa_gold', 'visa_platinum', 'mastercard', 'mastercard_gold', 'mastercard_platinum', 'maestro', 'amex', 'diners', 'bank', 'cash', 'revolut', 'aircash', 'crypto', 'other'],
+                          description: 'Detected card/payment type from transaction. Use visa/mastercard variants when card type is visible.',
                           nullable: true
                         }
                       },

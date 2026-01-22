@@ -26,12 +26,39 @@ interface PDFParseResult {
   } | null;
 }
 
-// Detect payment source from description or detected bank
-function detectPaymentSource(description: string, detectedBank?: string | null): PaymentSource {
+// Detect payment source from description, card_type, or detected bank
+function detectPaymentSource(
+  description: string, 
+  detectedBank?: string | null, 
+  cardType?: string | null
+): PaymentSource {
+  // If card_type is provided from AI, use it directly if it's a valid PaymentSource
+  if (cardType) {
+    const validSources: PaymentSource[] = [
+      'visa', 'visa_gold', 'visa_platinum', 'visa_kekspay', 'visa_erste',
+      'mastercard', 'mastercard_gold', 'mastercard_platinum', 'maestro',
+      'amex', 'diners', 'revolut', 'aircash', 'crypto', 'bank', 'cash', 'other'
+    ];
+    if (validSources.includes(cardType as PaymentSource)) {
+      return cardType as PaymentSource;
+    }
+  }
+  
   const desc = description.toLowerCase();
   const bank = (detectedBank || '').toLowerCase();
   
-  // Check detected bank first
+  // Check for specific card types in description
+  if (desc.includes('visa platinum') || desc.includes('platinum visa')) return 'visa_platinum';
+  if (desc.includes('visa gold') || desc.includes('gold visa')) return 'visa_gold';
+  if (desc.includes('visa')) return 'visa';
+  if (desc.includes('mastercard platinum') || desc.includes('mc platinum')) return 'mastercard_platinum';
+  if (desc.includes('mastercard gold') || desc.includes('mc gold')) return 'mastercard_gold';
+  if (desc.includes('mastercard') || desc.includes(' mc ')) return 'mastercard';
+  if (desc.includes('maestro')) return 'maestro';
+  if (desc.includes('amex') || desc.includes('american express')) return 'amex';
+  if (desc.includes('diners')) return 'diners';
+  
+  // Check detected bank
   if (bank.includes('revolut')) return 'revolut';
   if (bank.includes('aircash')) return 'aircash';
   
@@ -97,7 +124,7 @@ export const usePDFParser = () => {
           date: new Date(tx.date),
           category: tx.category as Category,
           type: tx.type as TransactionType,
-          payment_source: detectPaymentSource(tx.description, data.detected_bank),
+          payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
           card_last4: tx.card_last4 || null
         })),
         detected_bank: data.detected_bank || null,
