@@ -170,7 +170,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 border-purple-500/50 text-purple-600 hover:bg-purple-50 hover:text-purple-700 dark:border-purple-400/50 dark:text-purple-400 dark:hover:bg-purple-950 dark:hover:text-purple-300">
+        <Button size="sm" className="gap-2 bg-purple-500 hover:bg-purple-600 text-white dark:bg-purple-600 dark:hover:bg-purple-700">
           <Tags className="w-4 h-4" />
           Grupno kategorije
         </Button>
