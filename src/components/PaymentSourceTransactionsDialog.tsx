@@ -181,20 +181,27 @@ export const PaymentSourceTransactionsDialog = ({
         <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
             <div className="flex items-center justify-between gap-3">
-              <DialogTitle className="flex items-center gap-3">
-                <span 
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
-                  style={{ backgroundColor: paymentSource.color + '20', color: paymentSource.color }}
-                >
-                  {paymentSource.icon}
-                </span>
-                <div>
-                  <span className="block">{paymentSource.name}</span>
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {sourceExpenses.length} {t('transactions.transactions')}
+              <div className="flex items-center gap-3">
+                <DialogTitle className="flex items-center gap-3">
+                  <span 
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+                    style={{ backgroundColor: paymentSource.color + '20', color: paymentSource.color }}
+                  >
+                    {paymentSource.icon}
                   </span>
-                </div>
-              </DialogTitle>
+                  <div>
+                    <span className="block">{paymentSource.name}</span>
+                    <span className="text-sm font-normal text-muted-foreground">
+                      {sourceExpenses.length} {t('transactions.transactions')}
+                    </span>
+                  </div>
+                </DialogTitle>
+                {selectedIds.size > 0 && (
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
+                    {selectedIds.size} odabrano
+                  </span>
+                )}
+              </div>
               {sourceExpenses.length > 0 && (
                 <Button
                   variant="outline"

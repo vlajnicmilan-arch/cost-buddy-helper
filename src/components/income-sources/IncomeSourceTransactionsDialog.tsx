@@ -219,20 +219,27 @@ export const IncomeSourceTransactionsDialog = ({
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <div className="flex items-center justify-between gap-3">
-            <DialogTitle className="flex items-center gap-3">
-              <div 
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                style={{ backgroundColor: `${sourceColor}20` }}
-              >
-                {sourceIcon}
-              </div>
-              <div>
-                <span>{source.name}</span>
-                {source.description && (
-                  <p className="text-sm text-muted-foreground font-normal">{source.description}</p>
-                )}
-              </div>
-            </DialogTitle>
+            <div className="flex items-center gap-3">
+              <DialogTitle className="flex items-center gap-3">
+                <div 
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                  style={{ backgroundColor: `${sourceColor}20` }}
+                >
+                  {sourceIcon}
+                </div>
+                <div>
+                  <span>{source.name}</span>
+                  {source.description && (
+                    <p className="text-sm text-muted-foreground font-normal">{source.description}</p>
+                  )}
+                </div>
+              </DialogTitle>
+              {selectedIds.size > 0 && (
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
+                  {selectedIds.size} odabrano
+                </span>
+              )}
+            </div>
             {isOwner && onUpdateTransaction && editableCount > 0 && (
               <Button
                 variant="outline"
