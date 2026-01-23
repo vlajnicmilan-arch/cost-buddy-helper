@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { usePDFParser } from '@/hooks/usePDFParser';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useTranslation } from 'react-i18next';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -21,10 +22,10 @@ const SUPPORTED_SOURCES = [
   { id: 'pbz', name: 'PBZ', logo: '🏦' },
   { id: 'erste', name: 'Erste Bank', logo: '🏛️' },
   { id: 'zaba', name: 'Zagrebačka banka', logo: '🏦' },
-  { id: 'other', name: 'Ostale banke', logo: '📄' },
 ];
 
 export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionProps) => {
+  const { t } = useTranslation();
   const [infoOpen, setInfoOpen] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
@@ -38,7 +39,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      toast.error('Molimo odaberi PDF datoteku');
+      toast.error(t('import.selectPDF'));
       return;
     }
 
@@ -90,7 +91,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
     await onImportCSV(transactions);
     setPdfPreviewOpen(false);
     clearParsedData();
-    toast.success(`Uvezeno ${transactions.length} transakcija iz PDF-a`);
+    toast.success(t('import.importedFromPDF', { count: transactions.length }));
   };
 
   const handleConfirmImportWithDuplicates = async () => {
@@ -101,7 +102,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
       : duplicateInfo.unique;
 
     if (transactionsToImport.length === 0) {
-      toast.info('Nema novih transakcija za uvoz');
+      toast.info(t('import.noNewTransactions'));
       setDuplicateWarningOpen(false);
       clearParsedData();
       setDuplicateInfo(null);
@@ -112,7 +113,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
     setDuplicateWarningOpen(false);
     clearParsedData();
     setDuplicateInfo(null);
-    toast.success(`Uvezeno ${transactionsToImport.length} transakcija`);
+    toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
   };
 
   return (
@@ -124,7 +125,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <FileSpreadsheet className="w-5 h-5" />
-          Uvoz transakcija
+          {t('import.title')}
         </h3>
         <TooltipProvider>
           <Tooltip>
@@ -139,14 +140,14 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Podržani formati</p>
+              <p>{t('import.supportedFormats')}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
 
       <p className="text-sm text-muted-foreground mb-4">
-        Uvezi transakcije iz CSV ili PDF izvoza svoje banke.
+        {t('import.supportedBanks').split(':')[0]}.
       </p>
 
       <div className="flex flex-col gap-2">
@@ -172,7 +173,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
           ) : (
             <FileText className="w-4 h-4" />
           )}
-          {parsing ? 'Analiziram PDF...' : 'Uvezi iz PDF-a'}
+          {parsing ? t('import.analyzingPDF') : t('import.importPDF')}
         </Button>
       </div>
 
@@ -180,7 +181,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
       <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
         <DialogContent className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Pronađene transakcije</DialogTitle>
+            <DialogTitle>{t('import.foundTransactions')}</DialogTitle>
           </DialogHeader>
           
           {parsedData && (
@@ -190,17 +191,17 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
                 <div className="p-3 bg-primary/10 rounded-xl text-sm space-y-1">
                   {parsedData.detected_bank && (
                     <p className="font-medium">
-                      🏦 Banka: <span className="text-primary">{parsedData.detected_bank}</span>
+                      🏦 {t('import.bank')}: <span className="text-primary">{parsedData.detected_bank}</span>
                     </p>
                   )}
                   {parsedData.account_iban && (
                     <p className="text-muted-foreground text-xs font-mono">
-                      Račun: {parsedData.account_iban}
+                      {t('import.account')}: {parsedData.account_iban}
                     </p>
                   )}
                   {parsedData.cards_detected.length > 0 && (
                     <p className="text-muted-foreground text-xs">
-                      💳 Kartice: {parsedData.cards_detected.map(c => `*${c}`).join(', ')}
+                      💳 {t('import.cards')}: {parsedData.cards_detected.map(c => `*${c}`).join(', ')}
                     </p>
                   )}
                 </div>
@@ -209,15 +210,15 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
               {parsedData.summary && (
                 <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
                   <div className="text-center">
-                    <p className="text-muted-foreground">Prihodi</p>
+                    <p className="text-muted-foreground">{t('import.income')}</p>
                     <p className="font-bold text-income">€{parsedData.summary.total_income.toFixed(2)}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-muted-foreground">Rashodi</p>
+                    <p className="text-muted-foreground">{t('import.expenses')}</p>
                     <p className="font-bold text-expense">€{parsedData.summary.total_expenses.toFixed(2)}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-muted-foreground">Ukupno</p>
+                    <p className="text-muted-foreground">{t('import.total')}</p>
                     <p className="font-bold">{parsedData.summary.transaction_count}</p>
                   </div>
                 </div>
@@ -232,7 +233,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{tx.description}</p>
                       <p className="text-xs text-muted-foreground">
-                        {tx.date.toLocaleDateString('hr-HR')} • {tx.merchant_name || tx.category}
+                        {tx.date.toLocaleDateString()} • {tx.merchant_name || tx.category}
                         {tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}
                       </p>
                     </div>
@@ -250,7 +251,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
                 onClick={handleImportPDFTransactions}
                 className="w-full rounded-xl"
               >
-                Uvezi {parsedData.transactions.length} transakcija
+                {t('import.importCount', { count: parsedData.transactions.length })}
               </Button>
             </div>
           )}
@@ -263,7 +264,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
-              Pronađeni duplikati
+              {t('import.duplicatesFound')}
             </DialogTitle>
           </DialogHeader>
           
@@ -271,16 +272,16 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
             <div className="flex-1 overflow-y-auto space-y-4">
               <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm">
                 <p className="font-medium text-orange-600 dark:text-orange-400">
-                  {duplicateInfo.duplicates.length} transakcija već postoji u bazi
+                  {t('import.duplicatesExist', { count: duplicateInfo.duplicates.length })}
                 </p>
                 <p className="text-muted-foreground text-xs mt-1">
-                  {duplicateInfo.unique.length} novih transakcija je spremno za uvoz
+                  {t('import.newTransactionsReady', { count: duplicateInfo.unique.length })}
                 </p>
               </div>
 
               {duplicateInfo.duplicates.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Duplikati:</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('import.duplicates')}:</p>
                   <div className="max-h-40 overflow-y-auto space-y-2">
                     {duplicateInfo.duplicates.map((tx, idx) => (
                       <div 
@@ -290,7 +291,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate text-xs">{tx.description}</p>
                           <p className="text-xs text-muted-foreground">
-                            {tx.date.toLocaleDateString('hr-HR')}
+                            {tx.date.toLocaleDateString()}
                           </p>
                         </div>
                         <p className={`font-mono text-xs ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
@@ -309,7 +310,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
                   onCheckedChange={(checked) => setIncludeDuplicates(checked === true)}
                 />
                 <label htmlFor="include-duplicates" className="text-sm cursor-pointer">
-                  Svejedno uvezi duplikate ({duplicateInfo.duplicates.length})
+                  {t('import.importDuplicatesAnyway', { count: duplicateInfo.duplicates.length })}
                 </label>
               </div>
             </div>
@@ -325,16 +326,17 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
               }}
               className="rounded-xl"
             >
-              Odustani
+              {t('common.cancel')}
             </Button>
             <Button 
               onClick={handleConfirmImportWithDuplicates}
               className="rounded-xl"
             >
-              Uvezi {includeDuplicates 
-                ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0)
-                : duplicateInfo?.unique.length || 0
-              } transakcija
+              {t('import.importCount', { 
+                count: includeDuplicates 
+                  ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0)
+                  : duplicateInfo?.unique.length || 0
+              })}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -344,7 +346,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
       <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
         <DialogContent className="sm:max-w-md glass-card border-border/50">
           <DialogHeader>
-            <DialogTitle>Podržani izvori</DialogTitle>
+            <DialogTitle>{t('import.supportedSources')}</DialogTitle>
           </DialogHeader>
           
           <div className="grid grid-cols-2 gap-3 mt-4">
@@ -357,22 +359,26 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
                 <span className="text-sm font-medium">{source.name}</span>
               </div>
             ))}
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
+              <span className="text-xl">📄</span>
+              <span className="text-sm font-medium">{t('import.otherBanks')}</span>
+            </div>
           </div>
 
           <div className="mt-4 p-4 bg-muted/50 rounded-xl">
-            <p className="text-sm font-medium mb-2">Podržani formati</p>
+            <p className="text-sm font-medium mb-2">{t('import.supportedFormats')}</p>
             <ul className="text-xs text-muted-foreground space-y-2">
               <li>
-                <strong>CSV:</strong> Standardni format za izvoz transakcija
+                <strong>CSV:</strong> {t('import.csvFormat')}
               </li>
               <li>
-                <strong>PDF:</strong> AI automatski prepoznaje transakcije iz PDF izvoda
+                <strong>PDF:</strong> {t('import.pdfFormat')}
               </li>
             </ul>
           </div>
 
           <div className="mt-2 p-4 bg-muted/50 rounded-xl">
-            <p className="text-sm font-medium mb-2">Kako izvesti?</p>
+            <p className="text-sm font-medium mb-2">{t('import.howToExport')}</p>
             <ul className="text-xs text-muted-foreground space-y-2">
               <li>
                 <strong>Revolut:</strong> Transactions → Export statement
