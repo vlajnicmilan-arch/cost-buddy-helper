@@ -1,7 +1,13 @@
 {
   "transactions": {
     "note": "Note",
-    "notePlaceholder": "Add a note to this transaction..."
+    "notePlaceholder": "Add a note to this transaction...",
+    "notes": "Notes",
+    "noNotes": "No notes yet. Start the conversation!",
+    "writeNote": "Write a note...",
+    "noteSent": "Note sent",
+    "noteError": "Error sending note",
+    "initialNote": "Original note"
   },
   "common": {
     "save": "Save",
@@ -42,6 +48,9 @@
     "saving": "Saving...",
     "created": "Created",
     "updated": "Updated",
+    "you": "You",
+    "member": "Member",
+    "deleted": "Deleted",
     "merchant": "Merchant",
     "items": "Items",
     "cards": "cards",

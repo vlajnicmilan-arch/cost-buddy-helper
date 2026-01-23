@@ -13,6 +13,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useTranslation } from 'react-i18next';
+import { TransactionNotesThread } from './TransactionNotesThread';
 
 interface TransactionDetailDialogProps {
   expense: Expense | null;
@@ -239,18 +240,27 @@ export const TransactionDetailDialog = ({
                 <p className="font-medium break-words whitespace-normal">{expense.merchant_name}</p>
               </div>
             )}
-
-            {/* Note */}
-            {expense.note && (
-              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 col-span-2">
-                <div className="flex items-center gap-2 text-primary mb-1">
-                  <MessageCircle className="w-4 h-4 shrink-0" />
-                  <span className="text-xs font-medium">{t('transactions.note')}</span>
-                </div>
-                <p className="text-sm break-words whitespace-normal">{expense.note}</p>
-              </div>
-            )}
           </div>
+
+          {/* Notes Thread - for project transactions */}
+          {expense.income_source_id && (
+            <TransactionNotesThread
+              expenseId={expense.id}
+              incomeSourceId={expense.income_source_id}
+              initialNote={expense.note}
+            />
+          )}
+
+          {/* Single note display for non-project transactions */}
+          {!expense.income_source_id && expense.note && (
+            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex items-center gap-2 text-primary mb-1">
+                <MessageCircle className="w-4 h-4 shrink-0" />
+                <span className="text-xs font-medium">{t('transactions.note')}</span>
+              </div>
+              <p className="text-sm break-words whitespace-normal">{expense.note}</p>
+            </div>
+          )}
 
           {/* Receipt Items */}
           {loadingItems ? (
