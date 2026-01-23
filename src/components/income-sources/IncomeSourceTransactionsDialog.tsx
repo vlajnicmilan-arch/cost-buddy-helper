@@ -2,16 +2,21 @@ import { useMemo, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { IncomeSource } from '@/types/incomeSource';
-import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
+import { Expense, getCategoryInfo, getPaymentSourceInfo, Category } from '@/types/expense';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters, MemberOption } from '@/components/TransactionFilters';
+import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
 import { useIncomeSourceMembers } from '@/hooks/useIncomeSourceMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, TrendingUp, Clock, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+
 interface IncomeSourceTransactionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -19,6 +24,7 @@ interface IncomeSourceTransactionsDialogProps {
   expenses: Expense[];
   onEditTransaction: (expense: Expense) => void;
   onDeleteTransaction: (id: string) => Promise<void>;
+  onUpdateTransaction?: (expense: Expense) => Promise<void>;
 }
 
 export const IncomeSourceTransactionsDialog = ({
@@ -27,12 +33,14 @@ export const IncomeSourceTransactionsDialog = ({
   source,
   expenses,
   onEditTransaction,
-  onDeleteTransaction
+  onDeleteTransaction,
+  onUpdateTransaction
 }: IncomeSourceTransactionsDialogProps) => {
   const { user } = useAuth();
   const { isOwner } = useIncomeSourceMembers(source?.id || null);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [memberProfiles, setMemberProfiles] = useState<Record<string, string>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Fetch member profiles for displaying submitter names
   useEffect(() => {
@@ -100,10 +108,92 @@ export const IncomeSourceTransactionsDialog = ({
     }).format(value);
   };
 
+  // Selection handlers
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectAll = () => {
+    // Only select transactions user can edit (owner or own transactions)
+    const editableIds = filteredTransactions
+      .filter(e => isOwner || e.user_id === user?.id)
+      .map(e => e.id);
+    setSelectedIds(new Set(editableIds));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Bulk operations
+  const handleBulkCategoryChange = async (category: Category) => {
+    if (!onUpdateTransaction) return;
+    const selectedExpenses = filteredTransactions.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onUpdateTransaction({ ...expense, category });
+        successCount++;
+      } catch (error) {
+        console.error('Error updating expense:', error);
+      }
+    }
+    
+    toast.success(`Kategorija promijenjena za ${successCount} transakcija`);
+    clearSelection();
+  };
+
+  const handleBulkPaymentSourceChange = async (paymentSource: string) => {
+    if (!onUpdateTransaction) return;
+    const selectedExpenses = filteredTransactions.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onUpdateTransaction({ 
+          ...expense, 
+          payment_source: paymentSource as any,
+          payment_source_card_id: null
+        });
+        successCount++;
+      } catch (error) {
+        console.error('Error updating expense:', error);
+      }
+    }
+    
+    toast.success(`Izvor plaćanja promijenjen za ${successCount} transakcija`);
+    clearSelection();
+  };
+
+  const handleBulkDelete = async () => {
+    const selectedExpenses = filteredTransactions.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onDeleteTransaction(expense.id);
+        successCount++;
+      } catch (error) {
+        console.error('Error deleting expense:', error);
+      }
+    }
+    
+    toast.success(`Obrisano ${successCount} transakcija`);
+    clearSelection();
+  };
+
   // Reset filters when dialog closes
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setFilters(defaultFilters);
+      clearSelection();
     }
     onOpenChange(open);
   };
@@ -120,6 +210,9 @@ export const IncomeSourceTransactionsDialog = ({
 
   const sourceColor = source.color || '#22c55e';
   const sourceIcon = source.icon || '💰';
+
+  // Count editable transactions
+  const editableCount = filteredTransactions.filter(e => isOwner || e.user_id === user?.id).length;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -149,6 +242,19 @@ export const IncomeSourceTransactionsDialog = ({
           members={memberOptions}
           className="shrink-0"
         />
+
+        {/* Bulk Actions Toolbar - only show if user can edit and has onUpdateTransaction */}
+        {isOwner && onUpdateTransaction && (
+          <BulkActionsToolbar
+            selectedCount={selectedIds.size}
+            totalCount={editableCount}
+            onSelectAll={selectAll}
+            onClearSelection={clearSelection}
+            onBulkCategoryChange={handleBulkCategoryChange}
+            onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
+            onBulkDelete={handleBulkDelete}
+          />
+        )}
 
         {/* Summary */}
         <div 
@@ -202,6 +308,7 @@ export const IncomeSourceTransactionsDialog = ({
                 // Only owner can edit/delete, and only their own transactions can members delete
                 const canEdit = isOwner || expense.user_id === user?.id;
                 const canDelete = isOwner || expense.user_id === user?.id;
+                const isSelected = selectedIds.has(expense.id);
                 
                 return (
                   <motion.div
@@ -209,8 +316,22 @@ export const IncomeSourceTransactionsDialog = ({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors group"
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl transition-colors group",
+                      isSelected 
+                        ? "bg-primary/10 border border-primary/30" 
+                        : "bg-muted/50 hover:bg-muted/80"
+                    )}
                   >
+                    {/* Checkbox - only for editable items */}
+                    {isOwner && onUpdateTransaction && canEdit && !isPending && (
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelection(expense.id)}
+                        className="shrink-0"
+                      />
+                    )}
+
                     {/* Icon */}
                     <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg">
                       {categoryInfo.icon}
