@@ -27,7 +27,7 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { checkForUpdates } from '@/components/PWAUpdatePrompt';
 import logo from '@/assets/logo.png';
@@ -37,6 +37,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from 'react-i18next';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -478,15 +479,40 @@ const Index = () => {
                 onRefreshExpenses={refetch}
               />
             </div>
-            <CategoryBreakdown 
-              expensesByCategory={expensesByCategory} 
-              total={totalExpenses}
-              expenses={expenses}
-              onUpdateExpense={updateExpense}
-              onDeleteExpense={deleteExpense}
-            />
+            <Accordion type="multiple" className="space-y-4">
+              <AccordionItem value="categories" className="border-none">
+                <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
+                  <div className="flex items-center gap-2">
+                    <Grid3X3 className="h-5 w-5 text-primary" />
+                    <span className="text-lg font-semibold">Po kategorijama</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="glass-card rounded-b-2xl px-6 pb-6 pt-0 border-t-0">
+                  <CategoryBreakdown 
+                    expensesByCategory={expensesByCategory} 
+                    total={totalExpenses}
+                    expenses={expenses}
+                    onUpdateExpense={updateExpense}
+                    onDeleteExpense={deleteExpense}
+                    hideHeader
+                  />
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="payment-sources" className="border-none">
+                <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    <span className="text-lg font-semibold">Prilagođeni izvori plaćanja</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="glass-card rounded-b-2xl px-6 pb-6 pt-0 border-t-0">
+                  <CustomPaymentSourcesPanel hideHeader />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            
             <CustomCategoriesPanel />
-            <CustomPaymentSourcesPanel />
             <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
             <BackupRestore onDataImported={refetch} />
           </div>

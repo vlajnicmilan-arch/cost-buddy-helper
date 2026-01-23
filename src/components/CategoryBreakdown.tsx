@@ -10,6 +10,7 @@ interface CategoryBreakdownProps {
   expenses: Expense[];
   onUpdateExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
+  hideHeader?: boolean;
 }
 
 export const CategoryBreakdown = ({ 
@@ -17,7 +18,8 @@ export const CategoryBreakdown = ({
   total,
   expenses,
   onUpdateExpense,
-  onDeleteExpense
+  onDeleteExpense,
+  hideHeader = false
 }: CategoryBreakdownProps) => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryInfo | null>(null);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
@@ -61,25 +63,17 @@ export const CategoryBreakdown = ({
 
   if (sortedCategories.length === 0) {
     return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-card rounded-2xl p-6"
-      >
-        <h3 className="text-lg font-semibold mb-4">Po kategorijama</h3>
+      <div className={hideHeader ? "" : "glass-card rounded-2xl p-6"}>
+        {!hideHeader && <h3 className="text-lg font-semibold mb-4">Po kategorijama</h3>}
         <p className="text-muted-foreground text-sm">Još nema troškova</p>
-      </motion.div>
+      </div>
     );
   }
 
   return (
     <>
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-card rounded-2xl p-6"
-      >
-        <h3 className="text-lg font-semibold mb-4">Po kategorijama</h3>
+      <div className={hideHeader ? "" : "glass-card rounded-2xl p-6"}>
+        {!hideHeader && <h3 className="text-lg font-semibold mb-4">Po kategorijama</h3>}
         <div className="space-y-4">
           {sortedCategories.map((cat, index) => (
             <motion.div 
@@ -116,7 +110,7 @@ export const CategoryBreakdown = ({
             </motion.div>
           ))}
         </div>
-      </motion.div>
+      </div>
 
       {/* Category Transactions Dialog */}
       <CategoryTransactionsDialog
