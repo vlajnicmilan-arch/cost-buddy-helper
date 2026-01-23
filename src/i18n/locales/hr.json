@@ -357,6 +357,23 @@
     "category": "Grupno kategorije",
     "reports": "Izvješća"
   },
+  "reports": {
+    "period": "Razdoblje",
+    "incomeCount": "prihoda",
+    "totalIncome": "Ukupni prihodi",
+    "byCategories": "Po kategorijama",
+    "individually": "Pojedinačno",
+    "grouped": "Grupno",
+    "exportIncomeReport": "Izvezi izvješće prihoda",
+    "report": "Izvješće",
+    "excelSheets": "Excel/Sheets",
+    "backup": "Backup",
+    "noIncomeInPeriod": "Nema prihoda u odabranom razdoblju",
+    "incomeReportGenerated": "PDF izvješće prihoda generirano!",
+    "incomeCSVGenerated": "CSV datoteka prihoda generirana!",
+    "incomeJSONGenerated": "JSON datoteka prihoda generirana!",
+    "exportError": "Greška pri generiranju izvoza"
+  },
   "settings": {
     "title": "Postavke",
     "language": "Jezik",
