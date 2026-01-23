@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/types/expense';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 interface TransactionDetailDialogProps {
   expense: Expense | null;
@@ -32,6 +33,7 @@ export const TransactionDetailDialog = ({
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
+  const { customPaymentSources } = useCustomPaymentSources();
   const isLocalMode = storageMode === 'local' && !user;
 
   useEffect(() => {
@@ -64,10 +66,66 @@ export const TransactionDetailDialog = ({
     }
   };
 
+  // Resolve payment source info - check for custom payment source first
+  const paymentInfo = useMemo(() => {
+    if (!expense) {
+      return { id: 'cash', name: 'Gotovina', icon: '💵', color: undefined };
+    }
+    
+    // Check if payment_source starts with 'custom:' or if we have a payment_source_card_id
+    if (expense.payment_source_card_id) {
+      // Find the custom source that has this card
+      for (const source of customPaymentSources) {
+        const card = source.cards?.find(c => c.id === expense.payment_source_card_id);
+        if (card) {
+          return {
+            id: source.id,
+            name: `${source.name} (${card.card_name || '****' + card.last_four_digits})`,
+            icon: source.icon,
+            color: source.color
+          };
+        }
+      }
+    }
+    
+    // Check if payment_source is a custom: prefixed id
+    if (expense.payment_source?.startsWith('custom:')) {
+      const customId = expense.payment_source.replace('custom:', '');
+      const customSource = customPaymentSources.find(s => s.id === customId);
+      if (customSource) {
+        return {
+          id: customSource.id,
+          name: customSource.name,
+          icon: customSource.icon,
+          color: customSource.color
+        };
+      }
+    }
+    
+    // Check if payment_source matches a custom source ID directly
+    const directMatch = customPaymentSources.find(s => s.id === expense.payment_source);
+    if (directMatch) {
+      return {
+        id: directMatch.id,
+        name: directMatch.name,
+        icon: directMatch.icon,
+        color: directMatch.color
+      };
+    }
+    
+    // Fall back to standard payment source
+    const standardInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
+    return {
+      id: standardInfo.id,
+      name: standardInfo.name,
+      icon: standardInfo.icon,
+      color: undefined
+    };
+  }, [expense, customPaymentSources]);
+
   if (!expense) return null;
 
   const categoryInfo = getCategoryInfo(expense.category);
-  const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
 
 
   const handleEdit = () => {
@@ -118,9 +176,21 @@ export const TransactionDetailDialog = ({
           </div>
 
           {/* Payment Source - Highlighted */}
-          <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+          <div 
+            className="p-4 rounded-xl border"
+            style={paymentInfo.color ? {
+              backgroundColor: `${paymentInfo.color}10`,
+              borderColor: `${paymentInfo.color}40`
+            } : undefined}
+          >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                style={paymentInfo.color ? {
+                  backgroundColor: `${paymentInfo.color}20`,
+                  color: paymentInfo.color
+                } : undefined}
+              >
                 {paymentInfo.icon}
               </div>
               <div>
