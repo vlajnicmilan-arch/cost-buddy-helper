@@ -9,7 +9,7 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '.
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -168,19 +168,32 @@ export const TransactionListDialog = ({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
-            <DialogTitle className="flex items-center gap-2">
-              {type === 'income' ? (
-                <>
-                  <TrendingUp className="w-5 h-5 text-income" />
-                  <span>Prihodi</span>
-                </>
-              ) : (
-                <>
-                  <TrendingDown className="w-5 h-5 text-expense" />
-                  <span>Troškovi</span>
-                </>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                {type === 'income' ? (
+                  <>
+                    <TrendingUp className="w-5 h-5 text-income" />
+                    <span>Prihodi</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="w-5 h-5 text-expense" />
+                    <span>Troškovi</span>
+                  </>
+                )}
+              </DialogTitle>
+              {filteredExpenses.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={selectedIds.size === filteredExpenses.length ? clearSelection : selectAll}
+                  className="h-7 text-xs gap-1.5"
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  {selectedIds.size === filteredExpenses.length ? 'Poništi odabir' : 'Odaberi sve'}
+                </Button>
               )}
-            </DialogTitle>
+            </div>
           </DialogHeader>
 
           {/* Filters */}

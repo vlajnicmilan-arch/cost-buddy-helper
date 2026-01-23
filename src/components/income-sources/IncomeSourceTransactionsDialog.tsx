@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, Clock, User } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, Clock, User, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -218,20 +218,33 @@ export const IncomeSourceTransactionsDialog = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-              style={{ backgroundColor: `${sourceColor}20` }}
-            >
-              {sourceIcon}
-            </div>
-            <div>
-              <span>{source.name}</span>
-              {source.description && (
-                <p className="text-sm text-muted-foreground font-normal">{source.description}</p>
-              )}
-            </div>
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="flex items-center gap-3">
+              <div 
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                style={{ backgroundColor: `${sourceColor}20` }}
+              >
+                {sourceIcon}
+              </div>
+              <div>
+                <span>{source.name}</span>
+                {source.description && (
+                  <p className="text-sm text-muted-foreground font-normal">{source.description}</p>
+                )}
+              </div>
+            </DialogTitle>
+            {isOwner && onUpdateTransaction && editableCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectedIds.size === editableCount ? clearSelection : selectAll}
+                className="h-7 text-xs gap-1.5 shrink-0"
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                {selectedIds.size === editableCount ? 'Poništi' : 'Odaberi sve'}
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         {/* Filters */}

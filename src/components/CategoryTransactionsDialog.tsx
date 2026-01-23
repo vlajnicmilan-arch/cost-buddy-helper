@@ -8,7 +8,7 @@ import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, Tag } from 'lucide-react';
+import { Pencil, Trash2, Tag, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -167,20 +167,33 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-              style={{ backgroundColor: `hsl(var(--${category.color}) / 0.2)` }}
-            >
-              {category.icon}
-            </div>
-            <div>
-              <span>{category.name}</span>
-              <p className="text-sm text-muted-foreground font-normal">
-                Troškovi u ovoj kategoriji
-              </p>
-            </div>
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="flex items-center gap-3">
+              <div 
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                style={{ backgroundColor: `hsl(var(--${category.color}) / 0.2)` }}
+              >
+                {category.icon}
+              </div>
+              <div>
+                <span>{category.name}</span>
+                <p className="text-sm text-muted-foreground font-normal">
+                  Troškovi u ovoj kategoriji
+                </p>
+              </div>
+            </DialogTitle>
+            {filteredExpenses.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectedIds.size === filteredExpenses.length ? clearSelection : selectAll}
+                className="h-7 text-xs gap-1.5 shrink-0"
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                {selectedIds.size === filteredExpenses.length ? 'Poništi' : 'Odaberi sve'}
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         {/* Filters */}
