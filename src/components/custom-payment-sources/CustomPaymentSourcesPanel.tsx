@@ -18,6 +18,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface CustomPaymentSourcesPanelProps {
   hideHeader?: boolean;
@@ -31,6 +32,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
   const [sourceToDelete, setSourceToDelete] = useState<CustomPaymentSource | null>(null);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [initialData, setInitialData] = useState<{ name: string; icon: string; color: string; balance?: number } | undefined>();
+  const { t } = useTranslation();
 
   const handleSave = async (data: { name: string; icon: string; color: string; balance: number; description?: string }) => {
     if (editingSource) {
@@ -102,7 +104,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Prilagođeni izvori plaćanja
+            {t('paymentSources.myAccounts')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -119,8 +121,8 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
       {/* Existing custom sources */}
       {customPaymentSources.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">
-          Nemate prilagođenih izvora plaćanja.<br />
-          Dodajte novi ili odaberite iz predloženih.
+          {t('common.noCustomPaymentSources')}<br />
+          {t('common.clickNewToAdd')}
         </p>
       ) : (
         <div className="space-y-2">
@@ -195,7 +197,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
             <Button variant="ghost" className="w-full justify-between text-muted-foreground hover:text-foreground">
               <span className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
-                Predloženi izvori ({availableSuggestions.length})
+                {t('common.suggestedPaymentSources')} ({availableSuggestions.length})
               </span>
               <ChevronDown className={`h-4 w-4 transition-transform ${suggestionsOpen ? 'rotate-180' : ''}`} />
             </Button>
@@ -227,7 +229,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
       {hideHeader && (
         <Button size="sm" onClick={openNewDialog} className="w-full">
           <Plus className="h-4 w-4 mr-1" />
-          Novi izvor plaćanja
+          {t('common.newPaymentSource')}
         </Button>
       )}
     </div>
@@ -249,16 +251,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Obrisati izvor plaćanja?</AlertDialogTitle>
+              <AlertDialogTitle>{t('common.deletePaymentSource')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Jeste li sigurni da želite obrisati izvor plaćanja "{sourceToDelete?.name}"?
-                Transakcije koje koriste ovaj izvor neće biti obrisane, ali će im izvor biti promijenjen u "Ostalo".
+                {t('common.deletePaymentSourceConfirm')} "{sourceToDelete?.name}"?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Odustani</AlertDialogCancel>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
               <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Obriši
+                {t('common.delete')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -274,11 +275,11 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              Prilagođeni izvori plaćanja
+              {t('paymentSources.myAccounts')}
             </CardTitle>
             <Button size="sm" onClick={openNewDialog}>
               <Plus className="h-4 w-4 mr-1" />
-              Nova
+              {t('common.new')}
             </Button>
           </div>
         </CardHeader>
@@ -300,16 +301,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Obrisati izvor plaćanja?</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.deletePaymentSource')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Jeste li sigurni da želite obrisati izvor plaćanja "{sourceToDelete?.name}"?
-              Transakcije koje koriste ovaj izvor neće biti obrisane, ali će im izvor biti promijenjen u "Ostalo".
+              {t('common.deletePaymentSourceConfirm')} "{sourceToDelete?.name}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Odustani</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Obriši
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

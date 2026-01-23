@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 
 export const CustomCategoriesPanel = () => {
   const { customCategories, loading, addCustomCategory, updateCustomCategory, deleteCustomCategory } = useCustomCategories();
@@ -23,6 +24,7 @@ export const CustomCategoriesPanel = () => {
   const [editingCategory, setEditingCategory] = useState<CustomCategory | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CustomCategory | null>(null);
+  const { t } = useTranslation();
 
   const handleSave = async (data: { name: string; icon: string; color: string }) => {
     if (editingCategory) {
@@ -62,7 +64,7 @@ export const CustomCategoriesPanel = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Tag className="h-5 w-5" />
-            Prilagođene kategorije
+            {t('categories.customCategories')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -81,19 +83,19 @@ export const CustomCategoriesPanel = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Tag className="h-5 w-5" />
-              Prilagođene kategorije
+              {t('categories.customCategories')}
             </CardTitle>
             <Button size="sm" onClick={openNewDialog}>
               <Plus className="h-4 w-4 mr-1" />
-              Nova
+              {t('common.new')}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {customCategories.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Nemate prilagođenih kategorija.<br />
-              Kliknite "Nova" za dodavanje.
+              {t('categories.noCustomCategories')}<br />
+              {t('categories.clickToAdd')}
             </p>
           ) : (
             <div className="space-y-2">
@@ -146,16 +148,15 @@ export const CustomCategoriesPanel = () => {
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Obrisati kategoriju?</AlertDialogTitle>
+            <AlertDialogTitle>{t('categories.deleteCategory')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Jeste li sigurni da želite obrisati kategoriju "{categoryToDelete?.name}"?
-              Transakcije koje koriste ovu kategoriju neće biti obrisane, ali će im kategorija biti promijenjena u "Ostalo".
+              {t('categories.deleteCategoryConfirm')} "{categoryToDelete?.name}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Odustani</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Obriši
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -4,6 +4,7 @@ import { CategoryTransactionsDialog } from './CategoryTransactionsDialog';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 interface CategoryBreakdownProps {
   expensesByCategory: Record<string, number>;
@@ -27,6 +28,7 @@ export const CategoryBreakdown = ({
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { formatAmount } = useCurrency();
+  const { t } = useTranslation();
 
   const sortedCategories = CATEGORIES
     .map(cat => ({
@@ -59,8 +61,8 @@ export const CategoryBreakdown = ({
   if (sortedCategories.length === 0) {
     return (
       <div className={hideHeader ? "" : "glass-card rounded-2xl p-6"}>
-        {!hideHeader && <h3 className="text-lg font-semibold mb-4">Po kategorijama</h3>}
-        <p className="text-muted-foreground text-sm">Još nema troškova</p>
+        {!hideHeader && <h3 className="text-lg font-semibold mb-4">{t('common.byCategories')}</h3>}
+        <p className="text-muted-foreground text-sm">{t('common.noExpensesYet')}</p>
       </div>
     );
   }
@@ -68,7 +70,7 @@ export const CategoryBreakdown = ({
   return (
     <>
       <div className={hideHeader ? "" : "glass-card rounded-2xl p-6"}>
-        {!hideHeader && <h3 className="text-lg font-semibold mb-4">Po kategorijama</h3>}
+        {!hideHeader && <h3 className="text-lg font-semibold mb-4">{t('common.byCategories')}</h3>}
         <div className="space-y-4">
           {sortedCategories.map((cat, index) => (
             <motion.div 
@@ -100,7 +102,7 @@ export const CategoryBreakdown = ({
                 />
               </div>
               <p className="text-[10px] text-muted-foreground text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                Klikni za detalje i promjenu kategorije
+                {t('categories.clickForDetailsAndChange')}
               </p>
             </motion.div>
           ))}

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { IncomeSource, DEFAULT_INCOME_SOURCE_COLORS, DEFAULT_INCOME_SOURCE_ICONS } from '@/types/incomeSource';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface IncomeSourceDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ export const IncomeSourceDialog = ({
   const [icon, setIcon] = useState('💼');
   const [color, setColor] = useState('#22c55e');
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   const isEditing = !!source;
 
@@ -78,19 +80,18 @@ export const IncomeSourceDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Uredi izvor prihoda' : 'Novi izvor prihoda'}
+            {isEditing ? t('common.edit') : t('common.add')} {t('incomeSources.title').toLowerCase()}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="source-name">Naziv *</Label>
+            <Label htmlFor="source-name">{t('common.name')} *</Label>
             <Input
               id="source-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Npr. Duje, Freelance, Plaća..."
               className="h-11 rounded-xl"
               required
             />
@@ -98,12 +99,11 @@ export const IncomeSourceDialog = ({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="source-description">Opis</Label>
+            <Label htmlFor="source-description">{t('common.description')}</Label>
             <Textarea
               id="source-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Kratki opis izvora prihoda..."
               className="rounded-xl resize-none"
               rows={2}
             />
@@ -111,7 +111,7 @@ export const IncomeSourceDialog = ({
 
           {/* Icon Selection */}
           <div className="space-y-2">
-            <Label>Ikona</Label>
+            <Label>{t('common.icon')}</Label>
             <div className="grid grid-cols-6 gap-2">
               {DEFAULT_INCOME_SOURCE_ICONS.map((ico) => (
                 <button
@@ -133,7 +133,7 @@ export const IncomeSourceDialog = ({
 
           {/* Color Selection */}
           <div className="space-y-2">
-            <Label>Boja</Label>
+            <Label>{t('common.color')}</Label>
             <div className="grid grid-cols-8 gap-2">
               {DEFAULT_INCOME_SOURCE_COLORS.map((col) => (
                 <button
@@ -152,7 +152,7 @@ export const IncomeSourceDialog = ({
 
           {/* Preview */}
           <div className="space-y-2">
-            <Label>Pregled</Label>
+            <Label>{t('common.preview')}</Label>
             <div 
               className="p-3 rounded-xl border flex items-center gap-3"
               style={{ borderLeftColor: color, borderLeftWidth: 4 }}
@@ -164,7 +164,7 @@ export const IncomeSourceDialog = ({
                 {icon}
               </div>
               <div>
-                <p className="font-medium">{name || 'Naziv izvora'}</p>
+                <p className="font-medium">{name || t('common.name')}</p>
                 {description && (
                   <p className="text-sm text-muted-foreground">{description}</p>
                 )}
@@ -180,7 +180,7 @@ export const IncomeSourceDialog = ({
               className="flex-1 rounded-xl"
               onClick={() => onOpenChange(false)}
             >
-              Odustani
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
@@ -188,7 +188,7 @@ export const IncomeSourceDialog = ({
               disabled={saving || !name.trim()}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              {isEditing ? 'Spremi' : 'Dodaj'}
+              {isEditing ? t('common.save') : t('common.add')}
             </Button>
           </div>
         </form>

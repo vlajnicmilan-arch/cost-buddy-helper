@@ -33,7 +33,44 @@
     "switchToCloud": "Switch to cloud",
     "manageFinances": "Manage your finances",
     "changeStorageMode": "Change storage mode",
-    "clickForDetails": "Click for details"
+    "clickForDetails": "Click for details",
+    "new": "New",
+    "saving": "Saving...",
+    "created": "Created",
+    "updated": "Updated",
+    "merchant": "Merchant",
+    "items": "Items",
+    "cards": "cards",
+    "card": "card",
+    "noExpensesYet": "No expenses yet",
+    "byCategories": "By categories",
+    "selectAll": "Select all",
+    "cancelSelection": "Cancel selection",
+    "selected": "selected",
+    "or": "or",
+    "categoryName": "Category name",
+    "chooseIcon": "Choose icon",
+    "chooseColor": "Choose color",
+    "orEnterHex": "Or enter hex color",
+    "newCustomCategory": "New custom category",
+    "editCategory": "Edit category",
+    "deletePaymentSource": "Delete payment source?",
+    "deletePaymentSourceConfirm": "Are you sure you want to delete the payment source",
+    "balance": "Balance",
+    "name": "Name",
+    "icon": "Icon",
+    "color": "Color",
+    "addCard": "Add card",
+    "cardName": "Card name",
+    "lastFourDigits": "Last 4 digits",
+    "cardType": "Card type",
+    "newPaymentSource": "New payment source",
+    "editPaymentSource": "Edit payment source",
+    "suggestedPaymentSources": "Suggested payment sources",
+    "noCustomPaymentSources": "You have no custom payment sources.",
+    "clickNewToAdd": "Click \"New\" to add one.",
+    "preview": "Preview",
+    "transfersNoImpact": "Transfers don't affect balances"
   },
   "nav": {
     "home": "Home",
@@ -92,7 +129,12 @@
     "transfers": "Transfers",
     "noTransfers": "No transfers between your own accounts",
     "transferCount": "{count} transfer(s) total",
-    "transfersThisMonth": "This month: {count} transfer(s)"
+    "transfersThisMonth": "This month: {count} transfer(s)",
+    "categoryChanged": "Category changed for {count} transactions",
+    "paymentSourceChanged": "Payment source changed for {count} transactions",
+    "deleted": "Deleted {count} transactions",
+    "paymentSource": "Payment source",
+    "selectCard": "Select card"
   },
   "categories": {
     "food": "Food",
@@ -126,7 +168,8 @@
     "noCustomCategories": "You have no custom categories.",
     "clickToAdd": "Click \"New\" to add one.",
     "deleteCategory": "Delete category?",
-    "deleteCategoryConfirm": "Are you sure you want to delete the category"
+    "deleteCategoryConfirm": "Are you sure you want to delete the category",
+    "clickForDetailsAndChange": "Click for details and category change"
   },
   "paymentSources": {
     "cash": "Cash",
@@ -135,7 +178,9 @@
     "aircash": "Aircash",
     "crypto": "Crypto",
     "other": "Other",
-    "paymentSource": "Payment Source"
+    "paymentSource": "Payment Source",
+    "myAccounts": "My Accounts",
+    "standardSources": "Standard Sources"
   },
   "incomeSources": {
     "title": "Projects",
@@ -147,7 +192,12 @@
     "incomes": "incomes",
     "clickToAssign": "Click to assign",
     "deleteSource": "Delete income source?",
-    "deleteSourceDescription": "This action cannot be undone. Income linked to this source will be preserved but will no longer be associated with the source."
+    "deleteSourceDescription": "This action cannot be undone. Income linked to this source will be preserved but will no longer be associated with the source.",
+    "transactions": "transactions",
+    "members": "members",
+    "pending": "pending approval",
+    "unassignedIncome": "Unassigned income",
+    "sourceDetails": "Source details"
   },
   "scanner": {
     "scanReceipt": "Scan Receipt",

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
 import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,7 @@ import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useTranslation } from 'react-i18next';
 
 interface TransactionDetailDialogProps {
   expense: Expense | null;
@@ -34,7 +35,10 @@ export const TransactionDetailDialog = ({
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { customPaymentSources } = useCustomPaymentSources();
+  const { t, i18n } = useTranslation();
   const isLocalMode = storageMode === 'local' && !user;
+  
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   useEffect(() => {
     if (expense && open) {
@@ -159,7 +163,7 @@ export const TransactionDetailDialog = ({
             expense.type === 'transfer' ? "bg-primary/10" : "bg-expense/10"
           )}>
             <p className="text-sm text-muted-foreground mb-1">
-              {expense.type === 'income' ? 'Prihod' : expense.type === 'transfer' ? 'Prijenos' : 'Trošak'}
+              {expense.type === 'income' ? t('transactions.income') : expense.type === 'transfer' ? t('transactions.transfer') : t('transactions.expense')}
             </p>
             <p className={cn(
               "text-3xl font-bold font-mono",
@@ -170,7 +174,7 @@ export const TransactionDetailDialog = ({
             </p>
             {expense.type === 'transfer' && (
               <p className="text-xs text-muted-foreground mt-1">
-                Prijenosi ne utječu na bilance
+                {t('common.transfersNoImpact')}
               </p>
             )}
           </div>
@@ -194,7 +198,7 @@ export const TransactionDetailDialog = ({
                 {paymentInfo.icon}
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Izvor plaćanja</p>
+                <p className="text-sm text-muted-foreground">{t('transactions.paymentSource')}</p>
                 <p className="font-semibold text-lg">{paymentInfo.name}</p>
               </div>
             </div>
@@ -206,10 +210,10 @@ export const TransactionDetailDialog = ({
             <div className="p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Calendar className="w-4 h-4" />
-                <span className="text-xs">Datum</span>
+                <span className="text-xs">{t('common.date')}</span>
               </div>
               <p className="font-medium">
-                {format(expense.date, 'dd. MMMM yyyy.', { locale: hr })}
+                {format(expense.date, 'dd. MMMM yyyy.', { locale: dateLocale })}
               </p>
             </div>
 
@@ -217,7 +221,7 @@ export const TransactionDetailDialog = ({
             <div className="p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Tag className="w-4 h-4" />
-                <span className="text-xs">Kategorija</span>
+                <span className="text-xs">{t('common.category')}</span>
               </div>
               <p className="font-medium flex items-center gap-1">
                 <span>{categoryInfo.icon}</span>
@@ -230,7 +234,7 @@ export const TransactionDetailDialog = ({
               <div className="p-3 rounded-lg bg-muted/50 col-span-2">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <FileText className="w-4 h-4 shrink-0" />
-                  <span className="text-xs">Trgovac</span>
+                  <span className="text-xs">{t('common.merchant')}</span>
                 </div>
                 <p className="font-medium break-words whitespace-normal">{expense.merchant_name}</p>
               </div>
@@ -246,7 +250,7 @@ export const TransactionDetailDialog = ({
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <ShoppingCart className="w-4 h-4" />
-                <span className="text-sm font-medium">Artikli ({items.length})</span>
+                <span className="text-sm font-medium">{t('common.items')} ({items.length})</span>
               </div>
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {items.map((item, index) => (
@@ -272,9 +276,9 @@ export const TransactionDetailDialog = ({
           {/* Timestamps */}
           {expense.created_at && (
             <p className="text-xs text-muted-foreground text-center">
-              Kreirano: {format(new Date(expense.created_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}
+              {t('common.created')}: {format(new Date(expense.created_at), 'dd.MM.yyyy. HH:mm', { locale: dateLocale })}
               {expense.updated_at && expense.updated_at !== expense.created_at && (
-                <> • Ažurirano: {format(new Date(expense.updated_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}</>
+                <> • {t('common.updated')}: {format(new Date(expense.updated_at), 'dd.MM.yyyy. HH:mm', { locale: dateLocale })}</>
               )}
             </p>
           )}
@@ -288,7 +292,7 @@ export const TransactionDetailDialog = ({
             onClick={handleEdit}
           >
             <Pencil className="w-4 h-4 mr-2" />
-            Uredi
+            {t('common.edit')}
           </Button>
           <Button 
             variant="destructive" 
@@ -296,7 +300,7 @@ export const TransactionDetailDialog = ({
             onClick={handleDelete}
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Obriši
+            {t('common.delete')}
           </Button>
         </div>
       </DialogContent>

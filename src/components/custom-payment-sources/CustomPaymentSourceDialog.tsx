@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomPaymentSource, PaymentSourceCard, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
 import { Plus, X, CreditCard } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface CardInput {
   id?: string;
@@ -49,6 +50,7 @@ export const CustomPaymentSourceDialog = ({
   const [description, setDescription] = useState('');
   const [cards, setCards] = useState<CardInput[]>([]);
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (open) {
@@ -110,7 +112,7 @@ export const CustomPaymentSourceDialog = ({
         for (const card of cards) {
           if (!card.id && card.last_four_digits) {
             await onAddCard(source.id, {
-              card_name: card.card_name || 'Kartica',
+              card_name: card.card_name || t('common.card'),
               last_four_digits: card.last_four_digits,
               card_type: card.card_type
             });
@@ -125,7 +127,7 @@ export const CustomPaymentSourceDialog = ({
   };
 
   const addCard = () => {
-    setCards([...cards, { card_name: 'Kartica', last_four_digits: '', card_type: '' }]);
+    setCards([...cards, { card_name: t('common.card'), last_four_digits: '', card_type: '' }]);
   };
 
   const updateCard = (index: number, field: keyof CardInput, value: string) => {
@@ -145,25 +147,25 @@ export const CustomPaymentSourceDialog = ({
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {source ? 'Uredi izvor plaćanja' : 'Novi izvor plaćanja'}
+            {source ? t('common.editPaymentSource') : t('common.newPaymentSource')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Naziv</Label>
+            <Label htmlFor="name">{t('common.name')}</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="npr. PayPal, Google Pay..."
+              placeholder="PayPal, Google Pay..."
             />
           </div>
 
           {/* Balance */}
           <div className="space-y-2">
-            <Label htmlFor="balance">Stanje računa (€)</Label>
+            <Label htmlFor="balance">{t('common.balance')} (€)</Label>
             <Input
               id="balance"
               type="number"
@@ -177,12 +179,11 @@ export const CustomPaymentSourceDialog = ({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Opis (opcionalno)</Label>
+            <Label htmlFor="description">{t('common.description')}</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="npr. broj računa, bilješke..."
               rows={2}
             />
           </div>
@@ -192,11 +193,11 @@ export const CustomPaymentSourceDialog = ({
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
-                Kartice
+                {t('common.cards')}
               </Label>
               <Button type="button" variant="ghost" size="sm" onClick={addCard}>
                 <Plus className="w-4 h-4 mr-1" />
-                Dodaj karticu
+                {t('common.addCard')}
               </Button>
             </div>
             
@@ -211,13 +212,13 @@ export const CustomPaymentSourceDialog = ({
                     <div className="flex-1 space-y-2">
                       <div className="flex gap-2">
                         <Input
-                          placeholder="Naziv kartice"
+                          placeholder={t('common.cardName')}
                           value={card.card_name}
                           onChange={(e) => updateCard(index, 'card_name', e.target.value)}
                           className="h-9 text-sm"
                         />
                         <Input
-                          placeholder="Tip (Visa, MC...)"
+                          placeholder={t('common.cardType')}
                           value={card.card_type || ''}
                           onChange={(e) => updateCard(index, 'card_type', e.target.value)}
                           className="h-9 text-sm w-24"
@@ -226,7 +227,7 @@ export const CustomPaymentSourceDialog = ({
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">**** **** ****</span>
                         <Input
-                          placeholder="1234"
+                          placeholder={t('common.lastFourDigits')}
                           value={card.last_four_digits}
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, '').slice(0, 4);
@@ -254,7 +255,7 @@ export const CustomPaymentSourceDialog = ({
 
           {/* Icon Selection */}
           <div className="space-y-2">
-            <Label>Ikona</Label>
+            <Label>{t('common.icon')}</Label>
             <div className="flex flex-wrap gap-2">
               {DEFAULT_PAYMENT_ICONS.map((i) => (
                 <button
@@ -275,7 +276,7 @@ export const CustomPaymentSourceDialog = ({
 
           {/* Color Selection */}
           <div className="space-y-2">
-            <Label>Boja</Label>
+            <Label>{t('common.color')}</Label>
             <div className="flex flex-wrap gap-2">
               {DEFAULT_PAYMENT_COLORS.map((c) => (
                 <button
@@ -293,7 +294,7 @@ export const CustomPaymentSourceDialog = ({
 
           {/* Preview */}
           <div className="space-y-2">
-            <Label>Pregled</Label>
+            <Label>{t('common.preview')}</Label>
             <div className="p-3 rounded-lg border bg-card space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -304,7 +305,7 @@ export const CustomPaymentSourceDialog = ({
                     <span>{icon}</span>
                   </div>
                   <div>
-                    <span className="font-medium">{name || 'Naziv izvora'}</span>
+                    <span className="font-medium">{name || t('common.name')}</span>
                     {description && (
                       <p className="text-xs text-muted-foreground truncate max-w-[150px]">{description}</p>
                     )}
@@ -331,10 +332,10 @@ export const CustomPaymentSourceDialog = ({
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={saving || !name.trim()}>
-            {saving ? 'Spremanje...' : 'Spremi'}
+            {saving ? t('common.saving') : t('common.save')}
           </Button>
         </div>
       </DialogContent>
