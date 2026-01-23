@@ -515,30 +515,30 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const handleExportIncomePDF = () => {
     try {
       generateIncomePDFReport(getIncomeReportData());
-      toast.success('PDF izvješće prihoda generirano!');
+      toast.success(t('reports.incomeReportGenerated', 'PDF izvješće prihoda generirano!'));
     } catch (error) {
       console.error('Error generating income PDF:', error);
-      toast.error('Greška pri generiranju PDF-a');
+      toast.error(t('reports.exportError', 'Greška pri generiranju izvoza'));
     }
   };
 
   const handleExportIncomeCSV = () => {
     try {
       generateIncomeCSVReport(getIncomeReportData());
-      toast.success('CSV datoteka prihoda generirana!');
+      toast.success(t('reports.incomeCSVGenerated', 'CSV datoteka prihoda generirana!'));
     } catch (error) {
       console.error('Error generating income CSV:', error);
-      toast.error('Greška pri generiranju CSV-a');
+      toast.error(t('reports.exportError', 'Greška pri generiranju izvoza'));
     }
   };
 
   const handleExportIncomeJSON = () => {
     try {
       generateIncomeJSONExport(getIncomeReportData());
-      toast.success('JSON datoteka prihoda generirana!');
+      toast.success(t('reports.incomeJSONGenerated', 'JSON datoteka prihoda generirana!'));
     } catch (error) {
       console.error('Error generating income JSON:', error);
-      toast.error('Greška pri generiranju JSON-a');
+      toast.error(t('reports.exportError', 'Greška pri generiranju izvoza'));
     }
   };
 
@@ -856,11 +856,11 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Razdoblje
+                {t('reports.period', 'Razdoblje')}
               </Label>
               <p className="text-sm text-muted-foreground">
                 {dateRange.start.toLocaleDateString('hr-HR')} - {dateRange.end.toLocaleDateString('hr-HR')}
-                <span className="ml-2">({incomeTransactions.length} prihoda)</span>
+                <span className="ml-2">({incomeTransactions.length} {t('reports.incomeCount', 'prihoda')})</span>
               </p>
             </div>
 
@@ -869,7 +869,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-income" />
-                  <span className="font-medium">Ukupni prihodi</span>
+                  <span className="font-medium">{t('reports.totalIncome', 'Ukupni prihodi')}</span>
                 </div>
                 <p className="font-mono font-bold text-xl text-income">{formatCurrency(stats.income)}</p>
               </div>
@@ -881,12 +881,12 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 {incomeViewType === 'grouped' ? (
                   <>
                     <PieChartIcon className="w-4 h-4" />
-                    Po kategorijama
+                    {t('reports.byCategories', 'Po kategorijama')}
                   </>
                 ) : (
                   <>
                     <List className="w-4 h-4" />
-                    Pojedinačno
+                    {t('reports.individually', 'Pojedinačno')}
                   </>
                 )}
               </Label>
@@ -897,7 +897,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                   className="h-7 px-3"
                   onClick={() => setIncomeViewType('grouped')}
                 >
-                  Grupno
+                  {t('reports.grouped', 'Grupno')}
                 </Button>
                 <Button
                   variant={incomeViewType === 'individual' ? 'secondary' : 'ghost'}
@@ -905,7 +905,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                   className="h-7 px-3"
                   onClick={() => setIncomeViewType('individual')}
                 >
-                  Pojedinačno
+                  {t('reports.individually', 'Pojedinačno')}
                 </Button>
               </div>
             </div>
@@ -1046,7 +1046,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                   })
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    Nema prihoda u odabranom razdoblju
+                    {t('reports.noIncomeInPeriod', 'Nema prihoda u odabranom razdoblju')}
                   </p>
                 )}
               </div>
@@ -1054,7 +1054,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
 
             {incomeViewType === 'grouped' && incomeChartData.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Nema prihoda u odabranom razdoblju
+                {t('reports.noIncomeInPeriod', 'Nema prihoda u odabranom razdoblju')}
               </p>
             )}
 
@@ -1062,7 +1062,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
             <div className="space-y-3 pt-4 border-t">
               <Label className="flex items-center gap-2">
                 <Download className="w-4 h-4" />
-                Izvezi izvješće prihoda
+                {t('reports.exportIncomeReport', 'Izvezi izvješće prihoda')}
               </Label>
               <div className="grid grid-cols-3 gap-3">
                 <Button
@@ -1073,7 +1073,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 >
                   <FileText className="w-6 h-6 text-income" />
                   <span>PDF</span>
-                  <span className="text-xs text-muted-foreground">Izvješće</span>
+                  <span className="text-xs text-muted-foreground">{t('reports.report', 'Izvješće')}</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -1083,7 +1083,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 >
                   <FileSpreadsheet className="w-6 h-6 text-income" />
                   <span>CSV</span>
-                  <span className="text-xs text-muted-foreground">Excel/Sheets</span>
+                  <span className="text-xs text-muted-foreground">{t('reports.excelSheets', 'Excel/Sheets')}</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -1093,12 +1093,12 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 >
                   <FileJson className="w-6 h-6 text-income" />
                   <span>JSON</span>
-                  <span className="text-xs text-muted-foreground">Backup</span>
+                  <span className="text-xs text-muted-foreground">{t('reports.backup', 'Backup')}</span>
                 </Button>
               </div>
               {incomeTransactions.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center">
-                  Nema prihoda u odabranom razdoblju
+                  {t('reports.noIncomeInPeriod', 'Nema prihoda u odabranom razdoblju')}
                 </p>
               )}
             </div>

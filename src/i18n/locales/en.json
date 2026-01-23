@@ -357,6 +357,23 @@
     "category": "Bulk Category",
     "reports": "Reports"
   },
+  "reports": {
+    "period": "Period",
+    "incomeCount": "incomes",
+    "totalIncome": "Total Income",
+    "byCategories": "By categories",
+    "individually": "Individually",
+    "grouped": "Grouped",
+    "exportIncomeReport": "Export income report",
+    "report": "Report",
+    "excelSheets": "Excel/Sheets",
+    "backup": "Backup",
+    "noIncomeInPeriod": "No income in selected period",
+    "incomeReportGenerated": "Income PDF report generated!",
+    "incomeCSVGenerated": "Income CSV file generated!",
+    "incomeJSONGenerated": "Income JSON file generated!",
+    "exportError": "Error generating export"
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",

@@ -357,6 +357,23 @@
     "category": "Massen-Kategorie",
     "reports": "Berichte"
   },
+  "reports": {
+    "period": "Zeitraum",
+    "incomeCount": "Einnahmen",
+    "totalIncome": "Gesamteinnahmen",
+    "byCategories": "Nach Kategorien",
+    "individually": "Einzeln",
+    "grouped": "Gruppiert",
+    "exportIncomeReport": "Einnahmenbericht exportieren",
+    "report": "Bericht",
+    "excelSheets": "Excel/Sheets",
+    "backup": "Backup",
+    "noIncomeInPeriod": "Keine Einnahmen im ausgewählten Zeitraum",
+    "incomeReportGenerated": "Einnahmen-PDF-Bericht erstellt!",
+    "incomeCSVGenerated": "Einnahmen-CSV-Datei erstellt!",
+    "incomeJSONGenerated": "Einnahmen-JSON-Datei erstellt!",
+    "exportError": "Fehler beim Erstellen des Exports"
+  },
   "settings": {
     "title": "Einstellungen",
     "language": "Sprache",
