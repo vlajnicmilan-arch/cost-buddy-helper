@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Trash2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface TransactionItemProps {
   expense: Expense;
@@ -17,6 +18,7 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
   const paymentSource = getPaymentSourceInfo(expense.payment_source || 'cash');
   const { customPaymentSources } = useCustomPaymentSources();
   const { formatAmount } = useCurrency();
+  const { t } = useTranslation();
 
   // Find card info if transaction has a card assigned
   const cardInfo = useMemo(() => {
@@ -98,7 +100,7 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
             </span>
           )}
           {expense.type === 'transfer' && (
-            <span className="text-primary">• Prijenos</span>
+            <span className="text-primary">• {t('transactions.transfer')}</span>
           )}
           {expense.type === 'expense' && (
             <span>• {category.name}</span>

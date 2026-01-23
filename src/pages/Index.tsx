@@ -339,7 +339,7 @@ const Index = () => {
                 </p>
                 {source.cards && source.cards.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {source.cards.length} {source.cards.length === 1 ? 'kartica' : 'kartice'}
+                    {source.cards.length} {source.cards.length === 1 ? t('common.card') : t('common.cards')}
                   </p>
                 )}
               </motion.div>

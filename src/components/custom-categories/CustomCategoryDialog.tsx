@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CustomCategory, DEFAULT_CATEGORY_ICONS, DEFAULT_CATEGORY_COLORS } from '@/types/customCategory';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTranslation } from 'react-i18next';
 
 interface CustomCategoryDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export const CustomCategoryDialog = ({
   const [icon, setIcon] = useState('📦');
   const [color, setColor] = useState('#6b7280');
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (category) {
@@ -58,7 +60,7 @@ export const CustomCategoryDialog = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {category ? 'Uredi kategoriju' : 'Nova prilagođena kategorija'}
+            {category ? t('common.editCategory') : t('common.newCustomCategory')}
           </DialogTitle>
         </DialogHeader>
 
@@ -70,25 +72,25 @@ export const CustomCategoryDialog = ({
               style={{ backgroundColor: color }}
             >
               <span className="text-xl">{icon}</span>
-              <span>{name || 'Naziv kategorije'}</span>
+              <span>{name || t('common.categoryName')}</span>
             </div>
           </div>
 
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Naziv kategorije</Label>
+            <Label htmlFor="name">{t('common.categoryName')}</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="npr. Kućni ljubimci"
+              placeholder={t('categories.pets')}
               maxLength={50}
             />
           </div>
 
           {/* Icon Selection */}
           <div className="space-y-2">
-            <Label>Odaberi ikonu</Label>
+            <Label>{t('common.chooseIcon')}</Label>
             <ScrollArea className="h-32 border rounded-lg p-2">
               <div className="grid grid-cols-8 gap-1">
                 {DEFAULT_CATEGORY_ICONS.map((emoji) => (
@@ -109,7 +111,7 @@ export const CustomCategoryDialog = ({
 
           {/* Color Selection */}
           <div className="space-y-2">
-            <Label>Odaberi boju</Label>
+            <Label>{t('common.chooseColor')}</Label>
             <div className="grid grid-cols-10 gap-1">
               {DEFAULT_CATEGORY_COLORS.map((c) => (
                 <button
@@ -125,7 +127,7 @@ export const CustomCategoryDialog = ({
             </div>
             <div className="flex items-center gap-2 mt-2">
               <Label htmlFor="customColor" className="text-sm text-muted-foreground">
-                Ili unesi hex boju:
+                {t('common.orEnterHex')}:
               </Label>
               <Input
                 id="customColor"
@@ -146,10 +148,10 @@ export const CustomCategoryDialog = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={!name.trim() || saving}>
-            {saving ? 'Spremanje...' : category ? 'Spremi' : 'Dodaj'}
+            {saving ? t('common.saving') : category ? t('common.save') : t('common.add')}
           </Button>
         </DialogFooter>
       </DialogContent>

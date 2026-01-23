@@ -33,7 +33,44 @@
     "switchToCloud": "Prebaci u oblak",
     "manageFinances": "Upravljaj svojim financijama",
     "changeStorageMode": "Promijeni način pohrane",
-    "clickForDetails": "Klikni za detalje"
+    "clickForDetails": "Klikni za detalje",
+    "new": "Nova",
+    "saving": "Spremanje...",
+    "created": "Kreirano",
+    "updated": "Ažurirano",
+    "merchant": "Trgovac",
+    "items": "Artikli",
+    "cards": "kartica",
+    "card": "kartica",
+    "noExpensesYet": "Još nema troškova",
+    "byCategories": "Po kategorijama",
+    "selectAll": "Odaberi sve",
+    "cancelSelection": "Poništi odabir",
+    "selected": "odabrano",
+    "or": "ili",
+    "categoryName": "Naziv kategorije",
+    "chooseIcon": "Odaberi ikonu",
+    "chooseColor": "Odaberi boju",
+    "orEnterHex": "Ili unesi hex boju",
+    "newCustomCategory": "Nova prilagođena kategorija",
+    "editCategory": "Uredi kategoriju",
+    "deletePaymentSource": "Obrisati izvor plaćanja?",
+    "deletePaymentSourceConfirm": "Jeste li sigurni da želite obrisati izvor plaćanja",
+    "balance": "Stanje",
+    "name": "Naziv",
+    "icon": "Ikona",
+    "color": "Boja",
+    "addCard": "Dodaj karticu",
+    "cardName": "Naziv kartice",
+    "lastFourDigits": "Zadnje 4 znamenke",
+    "cardType": "Tip kartice",
+    "newPaymentSource": "Novi izvor plaćanja",
+    "editPaymentSource": "Uredi izvor plaćanja",
+    "suggestedPaymentSources": "Predloženi izvori plaćanja",
+    "noCustomPaymentSources": "Nemate prilagođenih izvora plaćanja.",
+    "clickNewToAdd": "Kliknite \"Nova\" za dodavanje.",
+    "preview": "Pregled",
+    "transfersNoImpact": "Prijenosi ne utječu na bilance"
   },
   "nav": {
     "home": "Početna",
@@ -92,7 +129,12 @@
     "transfers": "Prijenosi",
     "noTransfers": "Nema prijenosa između vlastitih računa",
     "transferCount": "{count} {count, plural, one {prijenos} few {prijenosa} other {prijenosa}} ukupno",
-    "transfersThisMonth": "Ovaj mjesec: {count} {count, plural, one {prijenos} few {prijenosa} other {prijenosa}}"
+    "transfersThisMonth": "Ovaj mjesec: {count} {count, plural, one {prijenos} few {prijenosa} other {prijenosa}}",
+    "categoryChanged": "Kategorija promijenjena za {count} transakcija",
+    "paymentSourceChanged": "Izvor plaćanja promijenjen za {count} transakcija",
+    "deleted": "Obrisano {count} transakcija",
+    "paymentSource": "Izvor plaćanja",
+    "selectCard": "Odaberi karticu"
   },
   "categories": {
     "food": "Hrana",
@@ -126,7 +168,8 @@
     "noCustomCategories": "Nemate prilagođenih kategorija.",
     "clickToAdd": "Kliknite \"Nova\" za dodavanje.",
     "deleteCategory": "Obrisati kategoriju?",
-    "deleteCategoryConfirm": "Jeste li sigurni da želite obrisati kategoriju"
+    "deleteCategoryConfirm": "Jeste li sigurni da želite obrisati kategoriju",
+    "clickForDetailsAndChange": "Klikni za detalje i promjenu kategorije"
   },
   "paymentSources": {
     "cash": "Gotovina",
@@ -135,7 +178,9 @@
     "aircash": "Aircash",
     "crypto": "Kripto",
     "other": "Ostalo",
-    "paymentSource": "Izvor plaćanja"
+    "paymentSource": "Izvor plaćanja",
+    "myAccounts": "Moji računi",
+    "standardSources": "Standardni izvori"
   },
   "incomeSources": {
     "title": "Projekti",
@@ -147,7 +192,12 @@
     "incomes": "prihoda",
     "clickToAssign": "Klikni za dodjelu",
     "deleteSource": "Obriši izvor prihoda?",
-    "deleteSourceDescription": "Ova radnja ne može se poništiti. Prihodi povezani s ovim izvorom ostat će sačuvani, ali više neće biti povezani s izvorom."
+    "deleteSourceDescription": "Ova radnja ne može se poništiti. Prihodi povezani s ovim izvorom ostat će sačuvani, ali više neće biti povezani s izvorom.",
+    "transactions": "transakcija",
+    "members": "članova",
+    "pending": "čeka odobrenje",
+    "unassignedIncome": "Nepovezani prihodi",
+    "sourceDetails": "Detalji izvora"
   },
   "scanner": {
     "scanReceipt": "Skeniraj račun",

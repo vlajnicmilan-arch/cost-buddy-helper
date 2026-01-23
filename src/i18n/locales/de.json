@@ -33,7 +33,44 @@
     "switchToCloud": "Zur Cloud wechseln",
     "manageFinances": "Verwalten Sie Ihre Finanzen",
     "changeStorageMode": "Speichermodus ändern",
-    "clickForDetails": "Klicken für Details"
+    "clickForDetails": "Klicken für Details",
+    "new": "Neu",
+    "saving": "Speichern...",
+    "created": "Erstellt",
+    "updated": "Aktualisiert",
+    "merchant": "Händler",
+    "items": "Artikel",
+    "cards": "Karten",
+    "card": "Karte",
+    "noExpensesYet": "Noch keine Ausgaben",
+    "byCategories": "Nach Kategorien",
+    "selectAll": "Alle auswählen",
+    "cancelSelection": "Auswahl aufheben",
+    "selected": "ausgewählt",
+    "or": "oder",
+    "categoryName": "Kategoriename",
+    "chooseIcon": "Symbol wählen",
+    "chooseColor": "Farbe wählen",
+    "orEnterHex": "Oder Hex-Farbe eingeben",
+    "newCustomCategory": "Neue benutzerdefinierte Kategorie",
+    "editCategory": "Kategorie bearbeiten",
+    "deletePaymentSource": "Zahlungsquelle löschen?",
+    "deletePaymentSourceConfirm": "Sind Sie sicher, dass Sie die Zahlungsquelle löschen möchten",
+    "balance": "Saldo",
+    "name": "Name",
+    "icon": "Symbol",
+    "color": "Farbe",
+    "addCard": "Karte hinzufügen",
+    "cardName": "Kartenname",
+    "lastFourDigits": "Letzte 4 Ziffern",
+    "cardType": "Kartentyp",
+    "newPaymentSource": "Neue Zahlungsquelle",
+    "editPaymentSource": "Zahlungsquelle bearbeiten",
+    "suggestedPaymentSources": "Vorgeschlagene Zahlungsquellen",
+    "noCustomPaymentSources": "Sie haben keine benutzerdefinierten Zahlungsquellen.",
+    "clickNewToAdd": "Klicken Sie auf \"Neu\" zum Hinzufügen.",
+    "preview": "Vorschau",
+    "transfersNoImpact": "Überweisungen beeinflussen den Saldo nicht"
   },
   "nav": {
     "home": "Startseite",
@@ -92,7 +129,12 @@
     "transfers": "Überweisungen",
     "noTransfers": "Keine Überweisungen zwischen eigenen Konten",
     "transferCount": "{count} Überweisung(en) insgesamt",
-    "transfersThisMonth": "Dieser Monat: {count} Überweisung(en)"
+    "transfersThisMonth": "Dieser Monat: {count} Überweisung(en)",
+    "categoryChanged": "Kategorie geändert für {count} Transaktionen",
+    "paymentSourceChanged": "Zahlungsquelle geändert für {count} Transaktionen",
+    "deleted": "{count} Transaktionen gelöscht",
+    "paymentSource": "Zahlungsquelle",
+    "selectCard": "Karte auswählen"
   },
   "categories": {
     "food": "Essen",
@@ -126,7 +168,8 @@
     "noCustomCategories": "Sie haben keine benutzerdefinierten Kategorien.",
     "clickToAdd": "Klicken Sie auf \"Neu\" zum Hinzufügen.",
     "deleteCategory": "Kategorie löschen?",
-    "deleteCategoryConfirm": "Sind Sie sicher, dass Sie die Kategorie löschen möchten"
+    "deleteCategoryConfirm": "Sind Sie sicher, dass Sie die Kategorie löschen möchten",
+    "clickForDetailsAndChange": "Klicken für Details und Kategorieänderung"
   },
   "paymentSources": {
     "cash": "Bargeld",
@@ -135,7 +178,9 @@
     "aircash": "Aircash",
     "crypto": "Krypto",
     "other": "Sonstiges",
-    "paymentSource": "Zahlungsquelle"
+    "paymentSource": "Zahlungsquelle",
+    "myAccounts": "Meine Konten",
+    "standardSources": "Standardquellen"
   },
   "incomeSources": {
     "title": "Projekte",
@@ -147,7 +192,12 @@
     "incomes": "Einnahmen",
     "clickToAssign": "Klicken zum Zuordnen",
     "deleteSource": "Einnahmequelle löschen?",
-    "deleteSourceDescription": "Diese Aktion kann nicht rückgängig gemacht werden. Einnahmen, die mit dieser Quelle verknüpft sind, bleiben erhalten, werden aber nicht mehr mit der Quelle verbunden."
+    "deleteSourceDescription": "Diese Aktion kann nicht rückgängig gemacht werden. Einnahmen, die mit dieser Quelle verknüpft sind, bleiben erhalten, werden aber nicht mehr mit der Quelle verbunden.",
+    "transactions": "Transaktionen",
+    "members": "Mitglieder",
+    "pending": "ausstehende Genehmigung",
+    "unassignedIncome": "Nicht zugeordnete Einnahmen",
+    "sourceDetails": "Quellendetails"
   },
   "scanner": {
     "scanReceipt": "Beleg scannen",

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface IncomeSourceCardProps {
   source: IncomeSource;
@@ -35,6 +36,7 @@ export const IncomeSourceCard = ({
   onMembersClick
 }: IncomeSourceCardProps) => {
   const { formatAmount } = useCurrency();
+  const { t } = useTranslation();
 
   const sourceColor = source.color || '#22c55e';
   const sourceIcon = source.icon || '💰';
@@ -69,7 +71,7 @@ export const IncomeSourceCard = ({
               )}>
                 {formatAmount(totalAmount)}
               </span>
-              <span className="text-xs text-muted-foreground">stanje</span>
+              <span className="text-xs text-muted-foreground">{t('common.balance')}</span>
             </div>
             
             {/* Income/Expense breakdown */}
@@ -89,7 +91,7 @@ export const IncomeSourceCard = ({
             
             {incomeAmount === 0 && expenseAmount === 0 && (
               <span className="text-xs text-muted-foreground">
-                Nema transakcija
+                {t('transactions.noTransactions')}
               </span>
             )}
 
@@ -99,7 +101,7 @@ export const IncomeSourceCard = ({
               {!isOwner && (
                 <Badge variant="secondary" className="gap-1 h-6">
                   <UserCheck className="w-3 h-3" />
-                  Član
+                  {t('incomeSources.members')}
                 </Badge>
               )}
               {/* Members button - always show for owners to manage members */}
@@ -121,7 +123,7 @@ export const IncomeSourceCard = ({
               {pendingCount > 0 && isOwner && (
                 <Badge variant="secondary" className="gap-1 h-6">
                   <Clock className="w-3 h-3" />
-                  {pendingCount} na čekanju
+                  {pendingCount} {t('incomeSources.pending')}
                 </Badge>
               )}
             </div>
