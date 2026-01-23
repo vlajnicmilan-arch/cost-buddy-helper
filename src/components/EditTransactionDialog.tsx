@@ -2,6 +2,7 @@ import { useState, useEffect, forwardRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
@@ -34,6 +35,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const [date, setDate] = useState<Date>(new Date());
   const [type, setType] = useState<TransactionType>('expense');
   const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
+  const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   const { incomeSources } = useIncomeSources();
@@ -59,6 +61,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
       setDate(expense.date instanceof Date ? expense.date : new Date(expense.date));
       setType(expense.type);
       setIncomeSourceId(expense.income_source_id || null);
+      setNote(expense.note || '');
     }
   }, [open, expense]);
 
@@ -77,6 +80,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
         date,
         type,
         income_source_id: incomeSourceId,
+        note: note.trim() || null,
         updated_at: new Date().toISOString()
       });
       onOpenChange(false);
@@ -421,6 +425,20 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
               </PopoverContent>
             </Popover>
           </div>
+
+          {/* Note - Show only for project transactions */}
+          {incomeSourceId && (
+            <div className="space-y-2">
+              <Label>{t('transactions.note')}</Label>
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t('transactions.notePlaceholder')}
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 justify-end">

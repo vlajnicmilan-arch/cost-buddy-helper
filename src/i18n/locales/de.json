@@ -1,4 +1,8 @@
 {
+  "transactions": {
+    "note": "Notiz",
+    "notePlaceholder": "Notiz zu dieser Transaktion hinzufügen..."
+  },
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",

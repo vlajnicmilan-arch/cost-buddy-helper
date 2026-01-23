@@ -194,6 +194,7 @@ export interface Expense {
   income_source_id?: string | null;
   status?: TransactionStatus | null;
   submitted_by?: string | null;
+  note?: string | null;
   created_at?: string;
   updated_at?: string;
   items?: ReceiptItem[];

@@ -1,4 +1,8 @@
 {
+  "transactions": {
+    "note": "Napomena",
+    "notePlaceholder": "Dodaj napomenu uz transakciju..."
+  },
   "common": {
     "save": "Spremi",
     "cancel": "Odustani",
