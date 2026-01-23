@@ -17,7 +17,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Expense, getCategoryInfo, CATEGORIES } from '@/types/expense';
+import { Expense, getCategoryInfo, getIncomeCategoryInfo, CATEGORIES, INCOME_CATEGORIES, IncomeCategory } from '@/types/expense';
+import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import {
@@ -36,6 +37,7 @@ import {
   Minus,
   BarChart3,
   Banknote,
+  List,
 } from 'lucide-react';
 import { generatePDFReport, generateCSVReport, generateJSONExport, ReportData } from '@/lib/reportExport';
 import { toast } from 'sonner';
@@ -50,6 +52,7 @@ interface ReportsDialogProps {
 type PeriodPreset = 'this-month' | 'last-month' | 'this-year' | 'last-year' | 'all' | 'custom';
 type ComparePreset = 'month-vs-month' | 'year-vs-year' | 'custom';
 type ChartType = 'pie' | 'bar';
+type IncomeViewType = 'grouped' | 'individual';
 
 const CATEGORY_COLORS: Record<string, string> = {
   food: '#f97316',
@@ -78,6 +81,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   investments: '#059669',
   charity: '#dc2626',
   other: '#6b7280',
+};
+
+const INCOME_CATEGORY_COLORS: Record<string, string> = {
+  salary: '#22c55e',
+  freelance: '#10b981',
+  gift_income: '#f59e0b',
+  mortgage: '#3b82f6',
+  personal_loan: '#8b5cf6',
+  sale: '#ec4899',
+  other_income: '#6b7280',
 };
 
 const calculateStats = (expenseList: Expense[]) => {
@@ -136,6 +149,7 @@ const calculateStats = (expenseList: Expense[]) => {
 export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const { t } = useTranslation();
   const { incomeSources } = useIncomeSources();
+  const { customIncomeCategories } = useCustomIncomeCategories();
   const { formatAmount, currency } = useCurrency();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('report');
@@ -145,6 +159,8 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   
   // Chart state
   const [chartType, setChartType] = useState<ChartType>('pie');
+  const [incomeChartType, setIncomeChartType] = useState<ChartType>('pie');
+  const [incomeViewType, setIncomeViewType] = useState<IncomeViewType>('grouped');
   
   // Income source filter
   const [selectedIncomeSourceId, setSelectedIncomeSourceId] = useState<string>('all');
@@ -310,6 +326,58 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       });
   }, [stats.byCategory]);
 
+  // Income transactions for the filtered period
+  const incomeTransactions = useMemo(() => {
+    return filteredExpenses
+      .filter(e => e.type === 'income')
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [filteredExpenses]);
+
+  // Income by category (grouped)
+  const incomeByCategory = useMemo(() => {
+    const byCategory: Record<string, number> = {};
+    incomeTransactions.forEach(e => {
+      const cat = e.category || 'other_income';
+      byCategory[cat] = (byCategory[cat] || 0) + e.amount;
+    });
+    return byCategory;
+  }, [incomeTransactions]);
+
+  // Income chart data
+  const incomeChartData = useMemo(() => {
+    return Object.entries(incomeByCategory)
+      .sort((a, b) => b[1] - a[1])
+      .map(([categoryId, amount]) => {
+        // Check custom categories first
+        const customCat = customIncomeCategories.find(c => c.id === categoryId);
+        if (customCat) {
+          return {
+            name: customCat.name,
+            value: amount,
+            icon: customCat.icon,
+            color: customCat.color,
+          };
+        }
+        // Then check built-in income categories
+        const incomeInfo = INCOME_CATEGORIES.find(c => c.id === categoryId);
+        if (incomeInfo) {
+          return {
+            name: incomeInfo.name,
+            value: amount,
+            icon: incomeInfo.icon,
+            color: INCOME_CATEGORY_COLORS[categoryId] || '#22c55e',
+          };
+        }
+        // Fallback
+        return {
+          name: categoryId,
+          value: amount,
+          icon: '💰',
+          color: '#22c55e',
+        };
+      });
+  }, [incomeByCategory, customIncomeCategories]);
+
   // Category comparison
   const categoryComparison = useMemo(() => {
     const allCategories = new Set([
@@ -441,10 +509,14 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="report" className="gap-2">
-              <PieChart className="w-4 h-4" />
-              Izvješće
+              <PieChartIcon className="w-4 h-4" />
+              Troškovi
+            </TabsTrigger>
+            <TabsTrigger value="income" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Prihodi
             </TabsTrigger>
             <TabsTrigger value="compare" className="gap-2">
               <ArrowUpDown className="w-4 h-4" />
@@ -726,6 +798,215 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 </p>
               )}
             </div>
+          </TabsContent>
+
+          {/* Income Tab */}
+          <TabsContent value="income" className="space-y-6">
+            {/* Period Selection for Income */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Razdoblje
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {dateRange.start.toLocaleDateString('hr-HR')} - {dateRange.end.toLocaleDateString('hr-HR')}
+                <span className="ml-2">({incomeTransactions.length} prihoda)</span>
+              </p>
+            </div>
+
+            {/* Income Summary */}
+            <div className="p-4 rounded-xl bg-income/10 border border-income/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-income" />
+                  <span className="font-medium">Ukupni prihodi</span>
+                </div>
+                <p className="font-mono font-bold text-xl text-income">{formatCurrency(stats.income)}</p>
+              </div>
+            </div>
+
+            {/* View Type Toggle */}
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                {incomeViewType === 'grouped' ? (
+                  <>
+                    <PieChartIcon className="w-4 h-4" />
+                    Po kategorijama
+                  </>
+                ) : (
+                  <>
+                    <List className="w-4 h-4" />
+                    Pojedinačno
+                  </>
+                )}
+              </Label>
+              <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                <Button
+                  variant={incomeViewType === 'grouped' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-3"
+                  onClick={() => setIncomeViewType('grouped')}
+                >
+                  Grupno
+                </Button>
+                <Button
+                  variant={incomeViewType === 'individual' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-3"
+                  onClick={() => setIncomeViewType('individual')}
+                >
+                  Pojedinačno
+                </Button>
+              </div>
+            </div>
+
+            {incomeViewType === 'grouped' && incomeChartData.length > 0 && (
+              <div className="space-y-3">
+                {/* Chart Type Toggle */}
+                <div className="flex justify-end">
+                  <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                    <Button
+                      variant={incomeChartType === 'pie' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => setIncomeChartType('pie')}
+                    >
+                      <PieChartIcon className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={incomeChartType === 'bar' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => setIncomeChartType('bar')}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Income Chart */}
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {incomeChartType === 'pie' ? (
+                      <PieChart>
+                        <Pie
+                          data={incomeChartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={2}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {incomeChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: number) => formatCurrency(value)}
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--popover))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                        />
+                      </PieChart>
+                    ) : (
+                      <BarChart data={incomeChartData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis type="number" tickFormatter={(v) => formatCurrency(v)} />
+                        <YAxis 
+                          type="category" 
+                          dataKey="name" 
+                          width={100} 
+                          tick={{ fontSize: 12 }}
+                        />
+                        <Tooltip 
+                          formatter={(value: number) => formatCurrency(value)}
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--popover))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                          {incomeChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Category Legend */}
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {incomeChartData.map((item) => (
+                    <div key={item.name} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="truncate flex-1">{item.icon} {item.name}</span>
+                      <span className="font-mono text-xs">{formatCurrency(item.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {incomeViewType === 'individual' && (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {incomeTransactions.length > 0 ? (
+                  incomeTransactions.map((transaction) => {
+                    const customCat = customIncomeCategories.find(c => c.id === transaction.category);
+                    const incomeInfo = customCat || INCOME_CATEGORIES.find(c => c.id === transaction.category);
+                    const icon = customCat?.icon || incomeInfo?.icon || '💰';
+                    const catName = customCat?.name || incomeInfo?.name || transaction.category;
+                    
+                    return (
+                      <div 
+                        key={transaction.id} 
+                        className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-income/10 flex items-center justify-center text-lg">
+                          {icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{transaction.description}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{transaction.date.toLocaleDateString('hr-HR')}</span>
+                            <span>•</span>
+                            <span>{catName}</span>
+                            {transaction.merchant_name && (
+                              <>
+                                <span>•</span>
+                                <span>{transaction.merchant_name}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <p className="font-mono font-bold text-income">
+                          +{formatCurrency(transaction.amount)}
+                        </p>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nema prihoda u odabranom razdoblju
+                  </p>
+                )}
+              </div>
+            )}
+
+            {incomeViewType === 'grouped' && incomeChartData.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nema prihoda u odabranom razdoblju
+              </p>
+            )}
           </TabsContent>
 
           {/* Compare Tab */}
