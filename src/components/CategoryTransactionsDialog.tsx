@@ -1,12 +1,15 @@
 import { useState, useMemo, forwardRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense, CategoryInfo, getCategoryInfo, getPaymentSourceInfo, CATEGORIES, Category } from '@/types/expense';
+import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, Tag } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -31,6 +34,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
 }, ref) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [changingCategoryId, setChangingCategoryId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // All expenses in this category
   const categoryExpenses = useMemo(() => {
@@ -57,6 +61,82 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
     }).format(value);
   };
 
+  // Selection handlers
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(filteredExpenses.map(e => e.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Bulk operations
+  const handleBulkCategoryChange = async (newCategory: Category) => {
+    const selectedExpenses = filteredExpenses.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onUpdateExpense({ ...expense, category: newCategory });
+        successCount++;
+      } catch (error) {
+        console.error('Error updating expense:', error);
+      }
+    }
+    
+    const catInfo = getCategoryInfo(newCategory);
+    toast.success(`Kategorija "${catInfo.name}" postavljena za ${successCount} transakcija`);
+    clearSelection();
+  };
+
+  const handleBulkPaymentSourceChange = async (paymentSource: string) => {
+    const selectedExpenses = filteredExpenses.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onUpdateExpense({ 
+          ...expense, 
+          payment_source: paymentSource as any, // Custom sources use custom:id format
+          payment_source_card_id: null
+        });
+        successCount++;
+      } catch (error) {
+        console.error('Error updating expense:', error);
+      }
+    }
+    
+    toast.success(`Izvor plaćanja promijenjen za ${successCount} transakcija`);
+    clearSelection();
+  };
+
+  const handleBulkDelete = async () => {
+    const selectedExpenses = filteredExpenses.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onDeleteExpense(expense.id);
+        successCount++;
+      } catch (error) {
+        console.error('Error deleting expense:', error);
+      }
+    }
+    
+    toast.success(`Obrisano ${successCount} transakcija`);
+    clearSelection();
+  };
+
   const handleCategoryChange = async (expense: Expense, newCategory: Category) => {
     try {
       await onUpdateExpense({
@@ -76,6 +156,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
     if (!open) {
       setFilters(defaultFilters);
       setChangingCategoryId(null);
+      clearSelection();
     }
     onOpenChange(open);
   };
@@ -109,6 +190,17 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
           className="shrink-0"
         />
 
+        {/* Bulk Actions Toolbar */}
+        <BulkActionsToolbar
+          selectedCount={selectedIds.size}
+          totalCount={filteredExpenses.length}
+          onSelectAll={selectAll}
+          onClearSelection={clearSelection}
+          onBulkCategoryChange={handleBulkCategoryChange}
+          onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
+          onBulkDelete={handleBulkDelete}
+        />
+
         {/* Summary */}
         <div 
           className="p-4 rounded-xl shrink-0"
@@ -140,6 +232,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
               {filteredExpenses.map((expense) => {
                 const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
                 const isChangingCategory = changingCategoryId === expense.id;
+                const isSelected = selectedIds.has(expense.id);
                 
                 return (
                   <motion.div
@@ -147,9 +240,21 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="p-3 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors"
+                    className={cn(
+                      "p-3 rounded-xl transition-colors",
+                      isSelected 
+                        ? "bg-primary/10 border border-primary/30" 
+                        : "bg-muted/50 hover:bg-muted/80"
+                    )}
                   >
                     <div className="flex items-center gap-3">
+                      {/* Checkbox */}
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelection(expense.id)}
+                        className="shrink-0"
+                      />
+
                       {/* Icon */}
                       <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg">
                         {category.icon}
