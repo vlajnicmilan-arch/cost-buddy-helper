@@ -1,14 +1,15 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Upload, FileText, Check, AlertCircle, Loader2, X } from 'lucide-react';
+import { Upload, FileText, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseCSV, ParsedTransaction } from '@/lib/csvParsers';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getCategoryInfo, Category, TransactionType } from '@/types/expense';
+import { getCategoryInfo, TransactionType } from '@/types/expense';
 import { format } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -17,6 +18,7 @@ interface CSVImportDialogProps {
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
 export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ImportStep>('upload');
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
@@ -25,6 +27,8 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
   const [error, setError] = useState('');
   const [importedCount, setImportedCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const resetState = () => {
     setStep('upload');
@@ -46,7 +50,7 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
       const result = parseCSV(content);
 
       if (!result.success) {
-        setError(result.errors.join(', ') || 'Greška pri čitanju datoteke');
+        setError(result.errors.join(', ') || t('import.fileReadError'));
         return;
       }
 
@@ -55,7 +59,7 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
       setSelectedIndices(new Set(result.transactions.map((_, i) => i)));
       setStep('preview');
     } catch (err) {
-      setError('Greška pri čitanju datoteke');
+      setError(t('import.fileReadError'));
     }
 
     // Reset input
@@ -93,7 +97,7 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
       setImportedCount(selectedTransactions.length);
       setStep('complete');
     } catch (err) {
-      setError('Greška pri uvozu transakcija');
+      setError(t('import.importError'));
       setStep('preview');
     }
   };
@@ -116,7 +120,7 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full gap-2 rounded-xl">
           <Upload className="w-4 h-4" />
-          Uvezi CSV
+          {t('import.importCSV')}
         </Button>
       </DialogTrigger>
 
@@ -124,10 +128,10 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            {step === 'upload' && 'Uvezi transakcije'}
-            {step === 'preview' && `Pregled - ${source}`}
-            {step === 'importing' && 'Uvoz u tijeku...'}
-            {step === 'complete' && 'Uvoz završen!'}
+            {step === 'upload' && t('import.importTransactionsTitle')}
+            {step === 'preview' && `${t('import.preview')} - ${source}`}
+            {step === 'importing' && t('import.importInProgress')}
+            {step === 'complete' && t('import.importComplete')}
           </DialogTitle>
         </DialogHeader>
 
@@ -154,9 +158,9 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
                 className="border-2 border-dashed border-border/50 rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-all"
               >
                 <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="font-medium mb-2">Klikni za odabir CSV datoteke</p>
+                <p className="font-medium mb-2">{t('import.selectCSVFile')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Podržani formati: Revolut, Aircash, PBZ, Erste, Zagrebačka banka
+                  {t('import.supportedBanks')}
                 </p>
               </div>
 
@@ -172,7 +176,7 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
               )}
 
               <div className="mt-6 p-4 bg-muted/30 rounded-xl">
-                <p className="text-sm font-medium mb-2">Kako izvesti CSV?</p>
+                <p className="text-sm font-medium mb-2">{t('import.howToExportCSV')}</p>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li>• <strong>Revolut:</strong> Transactions → Export → CSV</li>
                   <li>• <strong>Aircash:</strong> Transakcije → Izvoz</li>
@@ -198,7 +202,7 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
                     onCheckedChange={toggleAll}
                   />
                   <span className="text-sm font-medium">
-                    Odabrano: {selectedIndices.size} / {transactions.length}
+                    {t('import.selected')}: {selectedIndices.size} / {transactions.length}
                   </span>
                 </label>
                 <span className="text-xs text-muted-foreground px-2 py-1 bg-muted/50 rounded-lg">
@@ -233,7 +237,7 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
                             {tx.description}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {format(tx.date, 'd. MMM yyyy', { locale: hr })}
+                            {format(tx.date, 'd. MMM yyyy', { locale: dateLocale })}
                           </p>
                         </div>
                         <span className={`text-sm font-semibold ${
@@ -265,14 +269,14 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
                   onClick={() => setStep('upload')}
                   className="flex-1 rounded-xl"
                 >
-                  Natrag
+                  {t('common.back')}
                 </Button>
                 <Button
                   onClick={handleImport}
                   disabled={selectedIndices.size === 0}
                   className="flex-1 rounded-xl bg-primary hover:bg-primary/90"
                 >
-                  Uvezi {selectedIndices.size} transakcija
+                  {t('import.importCount', { count: selectedIndices.size })}
                 </Button>
               </div>
             </motion.div>
@@ -288,9 +292,9 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
               className="py-12 text-center"
             >
               <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
-              <p className="font-medium">Uvoz transakcija u tijeku...</p>
+              <p className="font-medium">{t('import.importInProgress')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Molimo pričekajte
+                {t('import.pleaseWait')}
               </p>
             </motion.div>
           )}
@@ -312,15 +316,15 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
               >
                 <Check className="w-8 h-8 text-income" />
               </motion.div>
-              <p className="font-medium text-lg">Uspješno uvezeno!</p>
+              <p className="font-medium text-lg">{t('import.successfullyImported')}</p>
               <p className="text-muted-foreground mt-1">
-                {importedCount} transakcija dodano u tvoje troškove
+                {t('import.transactionsAdded', { count: importedCount })}
               </p>
               <Button
                 onClick={handleClose}
                 className="mt-6 rounded-xl"
               >
-                Zatvori
+                {t('common.close')}
               </Button>
             </motion.div>
           )}

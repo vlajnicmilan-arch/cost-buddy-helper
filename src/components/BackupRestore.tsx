@@ -21,14 +21,16 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { format, formatDistanceToNow } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { formatDistanceToNow } from 'date-fns';
+import { hr, enUS, de } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface BackupRestoreProps {
   onDataImported?: () => void;
 }
 
 export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -44,6 +46,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
   const { user } = useAuth();
 
   const isLocalMode = storageMode === 'local';
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   useEffect(() => {
     if (isLocalMode) {
@@ -78,9 +81,9 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
     
     try {
       await saveBackupSettings(newSettings);
-      toast.success('Postavke spremljene');
+      toast.success(t('backup.settingsSaved'));
     } catch (error) {
-      toast.error('Greška pri spremanju postavki');
+      toast.error(t('errors.saveError'));
     }
   };
 
@@ -97,11 +100,11 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       });
       
       await importLocalData(jsonData);
-      toast.success(`Vraćeno ${data.expenses.length} transakcija`);
+      toast.success(t('backup.restored', { count: data.expenses.length }));
       onDataImported?.();
       setHistoryOpen(false);
     } catch (error) {
-      toast.error('Greška pri vraćanju backupa');
+      toast.error(t('errors.saveError'));
     } finally {
       setIsRestoring(false);
     }
@@ -111,9 +114,9 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
     try {
       await deleteBackup(id);
       await loadAutoBackups();
-      toast.success('Backup obrisan');
+      toast.success(t('backup.backupDeleted'));
     } catch (error) {
-      toast.error('Greška pri brisanju');
+      toast.error(t('errors.deleteError'));
     }
   };
 
@@ -127,7 +130,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       if (isLocalMode) {
         jsonData = await exportLocalData();
       } else {
-        if (!user) throw new Error('Nisi prijavljen');
+        if (!user) throw new Error(t('backup.notLoggedIn'));
 
         const { data: expenses, error: expError } = await supabase
           .from('expenses')
@@ -162,11 +165,11 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success('Backup uspješno izvezen');
+      toast.success(t('backup.exportSuccess'));
     } catch (err) {
       console.error('Export error:', err);
-      setError('Greška pri izvozu podataka');
-      toast.error('Greška pri izvozu');
+      setError(t('errors.saveError'));
+      toast.error(t('errors.saveError'));
     } finally {
       setIsExporting(false);
     }
@@ -185,14 +188,14 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       const data = JSON.parse(content);
 
       if (!data.expenses || !Array.isArray(data.expenses)) {
-        throw new Error('Nevažeći format datoteke');
+        throw new Error(t('backup.invalidFileFormat'));
       }
 
       if (isLocalMode) {
         const result = await importLocalData(content);
         setImportResult(result);
       } else {
-        if (!user) throw new Error('Nisi prijavljen');
+        if (!user) throw new Error(t('backup.notLoggedIn'));
 
         let expenseCount = 0;
         let itemCount = 0;
@@ -241,12 +244,12 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
         setImportResult({ expenses: expenseCount, items: itemCount });
       }
 
-      toast.success('Podaci uspješno uvezeni');
+      toast.success(t('backup.importSuccess'));
       onDataImported?.();
     } catch (err) {
       console.error('Import error:', err);
-      setError(err instanceof Error ? err.message : 'Greška pri uvozu podataka');
-      toast.error('Greška pri uvozu');
+      setError(err instanceof Error ? err.message : t('errors.saveError'));
+      toast.error(t('errors.saveError'));
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {
@@ -263,7 +266,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
   const formatBackupTime = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return formatDistanceToNow(date, { addSuffix: true, locale: hr });
+      return formatDistanceToNow(date, { addSuffix: true, locale: dateLocale });
     } catch {
       return dateStr;
     }
@@ -278,7 +281,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <HardDrive className="w-5 h-5" />
-          <h3 className="text-lg font-semibold">Backup</h3>
+          <h3 className="text-lg font-semibold">{t('backup.title')}</h3>
         </div>
         {isLocalMode && (
           <div className="flex gap-1">
@@ -309,7 +312,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       {isLocalMode && backupSettings?.lastBackupAt && (
         <div className="flex items-center gap-2 mb-4 text-xs text-muted-foreground">
           <Clock className="w-3 h-3" />
-          <span>Zadnji backup: {formatBackupTime(backupSettings.lastBackupAt)}</span>
+          <span>{t('backup.lastBackup')}: {formatBackupTime(backupSettings.lastBackupAt)}</span>
         </div>
       )}
 
@@ -319,7 +322,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${backupSettings.enabled ? 'bg-income' : 'bg-muted-foreground'}`} />
             <span className="text-sm">
-              {backupSettings.enabled ? 'Automatski backup aktivan' : 'Automatski backup isključen'}
+              {backupSettings.enabled ? t('backup.autoBackupActive') : t('backup.autoBackupDisabled')}
             </span>
           </div>
           <Switch
@@ -341,7 +344,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
           ) : (
             <Download className="w-4 h-4" />
           )}
-          Izvezi podatke (JSON)
+          {t('backup.export')}
         </Button>
 
         <Dialog open={open} onOpenChange={(isOpen) => {
@@ -354,7 +357,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
               className="w-full gap-2 rounded-xl justify-start"
             >
               <Upload className="w-4 h-4" />
-              Uvezi backup
+              {t('backup.import')}
             </Button>
           </DialogTrigger>
 
@@ -362,7 +365,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileJson className="w-5 h-5" />
-                Uvezi backup
+                {t('backup.import')}
               </DialogTitle>
             </DialogHeader>
 
@@ -386,14 +389,14 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
                     {isImporting ? (
                       <>
                         <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
-                        <p className="font-medium">Uvozim podatke...</p>
+                        <p className="font-medium">{t('backup.importing')}</p>
                       </>
                     ) : (
                       <>
                         <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                        <p className="font-medium mb-2">Odaberi JSON datoteku</p>
+                        <p className="font-medium mb-2">{t('backup.selectJsonFile')}</p>
                         <p className="text-sm text-muted-foreground">
-                          Datoteka mora biti prethodno izvezena iz V&M Balance
+                          {t('backup.fileMustBeExported')}
                         </p>
                       </>
                     )}
@@ -424,13 +427,13 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
                   >
                     <Check className="w-8 h-8 text-income" />
                   </motion.div>
-                  <p className="font-medium text-lg">Uvoz završen!</p>
+                  <p className="font-medium text-lg">{t('backup.importComplete')}</p>
                   <p className="text-muted-foreground mt-1">
-                    Uvezeno {importResult.expenses} transakcija
-                    {importResult.items > 0 && ` i ${importResult.items} artikala`}
+                    {t('backup.importedTransactions', { count: importResult.expenses })}
+                    {importResult.items > 0 && ` ${t('backup.importedItems', { count: importResult.items })}`}
                   </p>
                   <Button onClick={() => setOpen(false)} className="mt-6 rounded-xl">
-                    Zatvori
+                    {t('common.close')}
                   </Button>
                 </motion.div>
               )}
@@ -445,16 +448,16 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings2 className="w-5 h-5" />
-              Postavke backupa
+              {t('backup.backupSettings')}
             </DialogTitle>
           </DialogHeader>
 
           <div className="py-4 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <Label>Automatski backup</Label>
+                <Label>{t('backup.autoBackup')}</Label>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Periodično sprema podatke u pozadini
+                  {t('backup.autoBackupDesc')}
                 </p>
               </div>
               <Switch
@@ -464,7 +467,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label>Interval backupa</Label>
+              <Label>{t('backup.backupInterval')}</Label>
               <Select
                 value={String(backupSettings?.intervalMinutes || 60)}
                 onValueChange={(value) => handleSettingChange('intervalMinutes', parseInt(value))}
@@ -473,19 +476,18 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="15">Svakih 15 minuta</SelectItem>
-                  <SelectItem value="30">Svakih 30 minuta</SelectItem>
-                  <SelectItem value="60">Svaki sat</SelectItem>
-                  <SelectItem value="180">Svaka 3 sata</SelectItem>
-                  <SelectItem value="360">Svakih 6 sati</SelectItem>
+                  <SelectItem value="15">{t('backup.every15min')}</SelectItem>
+                  <SelectItem value="30">{t('backup.every30min')}</SelectItem>
+                  <SelectItem value="60">{t('backup.everyHour')}</SelectItem>
+                  <SelectItem value="180">{t('backup.every3hours')}</SelectItem>
+                  <SelectItem value="360">{t('backup.every6hours')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="p-4 bg-muted/30 rounded-xl">
               <p className="text-xs text-muted-foreground">
-                Automatski backup čuva zadnjih 5 verzija podataka lokalno na uređaju. 
-                Backup se također sprema pri zatvaranju aplikacije.
+                {t('backup.backupInfoDesc')}
               </p>
             </div>
           </div>
@@ -498,55 +500,67 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="w-5 h-5" />
-              Povijest backupa
+              {t('backup.backupHistory')}
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[400px]">
-            <div className="py-4 space-y-3">
-              {autoBackups.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Nema spremljenih backupa</p>
-                </div>
-              ) : (
-                <AnimatePresence>
-                  {autoBackups.map((backup, index) => (
-                    <motion.div
-                      key={backup.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="p-4 bg-muted/30 rounded-xl"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
+          <div className="py-4">
+            {autoBackups.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>{t('backup.noBackups')}</p>
+              </div>
+            ) : (
+              <ScrollArea className="max-h-[300px]">
+                <div className="space-y-2">
+                  <AnimatePresence>
+                    {autoBackups.map((backup, index) => (
+                      <motion.div
+                        key={backup.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex items-center justify-between p-3 bg-muted/30 rounded-xl"
+                      >
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium">
-                            {format(new Date(backup.createdAt), 'd. MMMM yyyy, HH:mm', { locale: hr })}
+                            {backup.expenseCount} {t('incomeSources.transactions')}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {backup.expenseCount} transakcija • {backup.totalAmount.toFixed(2)} €
+                          <p className="text-xs text-muted-foreground">
+                            {formatBackupTime(backup.createdAt)} • €{backup.totalAmount.toFixed(2)}
                           </p>
                         </div>
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => handleRestoreBackup(backup)}
                             disabled={isRestoring}
-                            className="h-8 text-xs gap-1"
                           >
-                            <RotateCcw className="w-3 h-3" />
-                            Vrati
+                            {isRestoring ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <RotateCcw className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteBackup(backup.id)}
+                          >
+                            <AlertCircle className="w-4 h-4" />
                           </Button>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              )}
-            </div>
-          </ScrollArea>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </ScrollArea>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </motion.div>
