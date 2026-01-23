@@ -26,6 +26,36 @@ export type Category =
   | 'taxes'
   | 'other';
 
+export type IncomeCategory = 
+  | 'salary'
+  | 'freelance'
+  | 'gift_income'
+  | 'mortgage'
+  | 'personal_loan'
+  | 'sale'
+  | 'other_income';
+
+export interface IncomeCategoryInfo {
+  id: IncomeCategory;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+export const INCOME_CATEGORIES: IncomeCategoryInfo[] = [
+  { id: 'salary', name: 'Plaća', icon: '💰', color: 'category-income' },
+  { id: 'freelance', name: 'Honorar', icon: '💼', color: 'category-income' },
+  { id: 'gift_income', name: 'Poklon', icon: '🎁', color: 'category-income' },
+  { id: 'mortgage', name: 'Stambeni kredit', icon: '🏠', color: 'category-income' },
+  { id: 'personal_loan', name: 'Nenamjenski kredit', icon: '💳', color: 'category-income' },
+  { id: 'sale', name: 'Prodaja', icon: '🛒', color: 'category-income' },
+  { id: 'other_income', name: 'Ostalo', icon: '📦', color: 'category-income' },
+];
+
+export const getIncomeCategoryInfo = (category: IncomeCategory): IncomeCategoryInfo => {
+  return INCOME_CATEGORIES.find(c => c.id === category) || INCOME_CATEGORIES[INCOME_CATEGORIES.length - 1];
+};
+
 export type PaymentSource = 
   | 'cash'
   | 'bank'
@@ -153,7 +183,7 @@ export interface Expense {
   user_id: string;
   amount: number;
   description: string;
-  category: Category;
+  category: Category | IncomeCategory;
   date: Date;
   type: TransactionType;
   payment_source?: PaymentSource;
@@ -215,7 +245,13 @@ export const CATEGORIES: CategoryInfo[] = [
   { id: 'other', name: 'Ostalo', icon: '📦', color: 'category-other' },
 ];
 
-export const getCategoryInfo = (category: Category): CategoryInfo => {
+export const getCategoryInfo = (category: Category | IncomeCategory): CategoryInfo | IncomeCategoryInfo => {
+  // First check if it's an income category
+  const incomeCategory = INCOME_CATEGORIES.find(c => c.id === category);
+  if (incomeCategory) {
+    return incomeCategory;
+  }
+  // Otherwise return expense category
   return CATEGORIES.find(c => c.id === category) || CATEGORIES[CATEGORIES.length - 1];
 };
 

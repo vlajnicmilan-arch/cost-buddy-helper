@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo } from '@/types/expense';
+import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -26,7 +26,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const { t, i18n } = useTranslation();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<Category>('other');
+  const [category, setCategory] = useState<Category | IncomeCategory>('other');
   const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [date, setDate] = useState<Date>(new Date());
@@ -194,19 +194,30 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
           {/* Category */}
           <div className="space-y-2">
             <Label>{t('common.category')}</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
+            <Select value={category} onValueChange={(v) => setCategory(v as Category | IncomeCategory)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    <span className="flex items-center gap-2">
-                      <span>{cat.icon}</span>
-                      <span>{t(`categories.${cat.id}`)}</span>
-                    </span>
-                  </SelectItem>
-                ))}
+                {type === 'income' ? (
+                  INCOME_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{cat.icon}</span>
+                        <span>{t(`incomeCategories.${cat.id}`)}</span>
+                      </span>
+                    </SelectItem>
+                  ))
+                ) : (
+                  CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{cat.icon}</span>
+                        <span>{t(`categories.${cat.id}`)}</span>
+                      </span>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
