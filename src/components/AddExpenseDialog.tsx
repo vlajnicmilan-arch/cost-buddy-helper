@@ -642,18 +642,18 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 </p>
               )}
 
-              {/* Income Source - For both income and expense */}
+              {/* Project Assignment - For both income and expense */}
               {incomeSources.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
-                    {type === 'income' ? t('incomeSources.title') : t('incomeSources.assignSource')}
+                    {type === 'income' ? t('incomeSources.title') : 'Dodijeli projekt'}
                   </Label>
                   <Select 
                     value={incomeSourceId || 'none'} 
                     onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue placeholder={type === 'income' ? t('incomeSources.title') : t('incomeSources.assignSource')} />
+                      <SelectValue placeholder={type === 'income' ? t('incomeSources.title') : 'Odaberi projekt'} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
                       <SelectItem value="none">
@@ -677,117 +677,106 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 <Label className="text-sm font-medium">
                   {type === 'income' ? 'Izvor prihoda' : 'Način plaćanja'}
                 </Label>
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
-                  {PAYMENT_SOURCE_GROUPS.map((group) => (
-                    <div key={group.label} className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        {group.label}
-                      </p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {group.sources.map((source) => (
-                          <button
-                            key={source.id}
-                            type="button"
-                            onClick={() => setPaymentSource(source.id)}
-                            className={cn(
-                              "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all",
-                              paymentSource === source.id 
-                                ? type === 'income' 
-                                  ? "border-income bg-income/10" 
-                                  : "border-expense bg-expense/10"
-                                : "border-transparent bg-muted/50 hover:bg-muted"
-                            )}
-                          >
-                            <span className="text-lg">{source.icon}</span>
-                            <span className="text-xs font-medium text-muted-foreground truncate w-full text-center">{source.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Custom Payment Sources */}
-                  {customPaymentSources.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                        Prilagođeni
-                      </p>
-                      <div className="grid grid-cols-3 gap-2">
+                
+                <Select
+                  value={paymentSource.startsWith('custom:') ? paymentSource : (customPaymentSources.find(s => s.id === paymentSource) ? paymentSource : paymentSource)}
+                  onValueChange={(value) => {
+                    setPaymentSource(value as PaymentSource);
+                    setSelectedCardId(null);
+                  }}
+                >
+                  <SelectTrigger className="h-12 rounded-xl bg-background">
+                    <SelectValue placeholder="Odaberi način plaćanja" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50 max-h-[300px]">
+                    {/* Custom Payment Sources First - "Moji načini" */}
+                    {customPaymentSources.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Moji načini
+                        </div>
                         {customPaymentSources.map((source) => (
-                          <button
-                            key={`custom-${source.id}`}
-                            type="button"
-                            onClick={() => {
-                              setPaymentSource(source.id as PaymentSource);
-                              setSelectedCardId(null); // Reset card when changing source
-                            }}
-                            className={cn(
-                              "flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all",
-                              paymentSource === source.id 
-                                ? type === 'income' 
-                                  ? "border-income bg-income/10" 
-                                  : "border-expense bg-expense/10"
-                                : "border-transparent bg-muted/50 hover:bg-muted"
-                            )}
-                          >
-                            <span 
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-white text-sm"
-                              style={{ backgroundColor: source.color }}
-                            >
-                              {source.icon}
+                          <SelectItem key={source.id} value={source.id}>
+                            <div className="flex items-center gap-2">
+                              <span 
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                                style={{ backgroundColor: source.color + '20', color: source.color }}
+                              >
+                                {source.icon}
+                              </span>
+                              <span>{source.name}</span>
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                €{source.balance.toFixed(2)}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    
+                    {/* Standard Payment Sources */}
+                    {PAYMENT_SOURCE_GROUPS.map((group) => (
+                      <div key={group.label}>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          {group.label}
+                        </div>
+                        {group.sources.map((source) => (
+                          <SelectItem key={source.id} value={source.id}>
+                            <span className="flex items-center gap-2">
+                              <span>{source.icon}</span>
+                              <span>{source.name}</span>
                             </span>
-                            <span className="text-xs font-medium text-muted-foreground truncate w-full text-center">{source.name}</span>
-                          </button>
+                          </SelectItem>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                  {/* Card Selection - Show when custom payment source with cards is selected */}
-                  {(() => {
-                    const selectedSource = customPaymentSources.find(s => s.id === paymentSource);
-                    if (!selectedSource?.cards?.length) return null;
-                    
-                    return (
-                      <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
-                        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                          Odaberi karticu
-                        </p>
-                        <div className="flex flex-wrap gap-2">
+                {/* Card Selection - Show when custom payment source with cards is selected */}
+                {(() => {
+                  const selectedSource = customPaymentSources.find(s => s.id === paymentSource);
+                  if (!selectedSource?.cards?.length) return null;
+                  
+                  return (
+                    <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                      <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                        Odaberi karticu
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCardId(null)}
+                          className={cn(
+                            "px-3 py-2 rounded-lg text-xs font-medium transition-all border",
+                            !selectedCardId 
+                              ? "border-primary bg-primary/10 text-primary" 
+                              : "border-border bg-muted/50 hover:bg-muted"
+                          )}
+                        >
+                          Bez kartice
+                        </button>
+                        {selectedSource.cards.map((card) => (
                           <button
+                            key={card.id}
                             type="button"
-                            onClick={() => setSelectedCardId(null)}
+                            onClick={() => setSelectedCardId(card.id)}
                             className={cn(
-                              "px-3 py-2 rounded-lg text-xs font-medium transition-all border",
-                              !selectedCardId 
+                              "px-3 py-2 rounded-lg text-xs font-medium transition-all border flex items-center gap-2",
+                              selectedCardId === card.id 
                                 ? "border-primary bg-primary/10 text-primary" 
                                 : "border-border bg-muted/50 hover:bg-muted"
                             )}
                           >
-                            Bez kartice
+                            <span>💳</span>
+                            <span>{card.card_name}</span>
+                            <span className="text-muted-foreground">•••• {card.last_four_digits}</span>
                           </button>
-                          {selectedSource.cards.map((card) => (
-                            <button
-                              key={card.id}
-                              type="button"
-                              onClick={() => setSelectedCardId(card.id)}
-                              className={cn(
-                                "px-3 py-2 rounded-lg text-xs font-medium transition-all border flex items-center gap-2",
-                                selectedCardId === card.id 
-                                  ? "border-primary bg-primary/10 text-primary" 
-                                  : "border-border bg-muted/50 hover:bg-muted"
-                              )}
-                            >
-                              <span>💳</span>
-                              <span>{card.card_name}</span>
-                              <span className="text-muted-foreground">•••• {card.last_four_digits}</span>
-                            </button>
-                          ))}
-                        </div>
+                        ))}
                       </div>
-                    );
-                  })()}
-                </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Date */}
