@@ -1,13 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, X, Sparkles, Bug } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { RefreshCw, X, Sparkles, Bug, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 // Set to false for production
 const SHOW_TEST_BUTTON = false;
+
+// LocalStorage key for auto-update preference
+const AUTO_UPDATE_KEY = 'pwa-auto-update';
 
 // Global reference for manual update check
 let checkForUpdatesRef: (() => Promise<void>) | null = null;
@@ -18,12 +23,31 @@ export const checkForUpdates = async () => {
   }
 };
 
+// Helper to get auto-update preference
+export const getAutoUpdatePreference = (): boolean => {
+  try {
+    return localStorage.getItem(AUTO_UPDATE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+// Helper to set auto-update preference
+export const setAutoUpdatePreference = (enabled: boolean): void => {
+  try {
+    localStorage.setItem(AUTO_UPDATE_KEY, enabled ? 'true' : 'false');
+  } catch {
+    // Ignore localStorage errors
+  }
+};
+
 export const PWAUpdatePrompt = () => {
   const { t } = useTranslation();
   const [showPrompt, setShowPrompt] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [pendingUpdateCheck, setPendingUpdateCheck] = useState(false);
+  const [autoUpdate, setAutoUpdate] = useState(getAutoUpdatePreference);
   
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -65,29 +89,48 @@ export const PWAUpdatePrompt = () => {
     (window as any).__pwaIsChecking = isChecking;
   }, [isChecking]);
 
+  // Handle auto-update when new version is detected
+  const performAutoUpdate = useCallback(() => {
+    toast.info('Ažuriranje aplikacije...', { duration: 2000 });
+    setTimeout(() => {
+      updateServiceWorker(true);
+    }, 500);
+  }, [updateServiceWorker]);
+
   // Handle the result of update check after needRefresh state is updated
   useEffect(() => {
     if (pendingUpdateCheck && !isChecking) {
       // Check finished, now we can reliably check needRefresh
       if (needRefresh) {
-        // New version found - show update prompt, don't show "up to date"
-        setShowPrompt(true);
-        setIsTestMode(false);
+        // New version found
+        if (autoUpdate) {
+          // Auto-update enabled - update automatically
+          performAutoUpdate();
+        } else {
+          // Show update prompt
+          setShowPrompt(true);
+          setIsTestMode(false);
+        }
       } else {
         // No new version - safe to show "up to date" message
         toast.success(t('update.upToDate', 'Aplikacija je ažurna!'));
       }
       setPendingUpdateCheck(false);
     }
-  }, [pendingUpdateCheck, isChecking, needRefresh, t]);
+  }, [pendingUpdateCheck, isChecking, needRefresh, t, autoUpdate, performAutoUpdate]);
 
   useEffect(() => {
     if (needRefresh && !pendingUpdateCheck) {
       // Only auto-show if not from manual check (manual check handles it in the effect above)
-      setShowPrompt(true);
-      setIsTestMode(false);
+      if (autoUpdate) {
+        // Auto-update enabled - update automatically
+        performAutoUpdate();
+      } else {
+        setShowPrompt(true);
+        setIsTestMode(false);
+      }
     }
-  }, [needRefresh, pendingUpdateCheck]);
+  }, [needRefresh, pendingUpdateCheck, autoUpdate, performAutoUpdate]);
 
   const handleUpdate = () => {
     if (isTestMode) {
@@ -104,6 +147,20 @@ export const PWAUpdatePrompt = () => {
     setIsTestMode(false);
     if (!isTestMode) {
       setNeedRefresh(false);
+    }
+  };
+
+  const handleAutoUpdateToggle = (enabled: boolean) => {
+    setAutoUpdate(enabled);
+    setAutoUpdatePreference(enabled);
+    if (enabled) {
+      toast.success('Automatsko ažuriranje uključeno');
+      // If there's a pending update, apply it now
+      if (needRefresh && !isTestMode) {
+        performAutoUpdate();
+      }
+    } else {
+      toast.info('Automatsko ažuriranje isključeno');
     }
   };
 
@@ -157,6 +214,21 @@ export const PWAUpdatePrompt = () => {
                 >
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
+              </div>
+
+              {/* Auto-update toggle */}
+              <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" />
+                  <Label htmlFor="auto-update" className="text-sm cursor-pointer">
+                    Automatsko ažuriranje
+                  </Label>
+                </div>
+                <Switch
+                  id="auto-update"
+                  checked={autoUpdate}
+                  onCheckedChange={handleAutoUpdateToggle}
+                />
               </div>
               
               <div className="flex gap-2">
