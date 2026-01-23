@@ -1,6 +1,7 @@
 import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { SummaryCard } from '@/components/SummaryCard';
@@ -43,6 +44,7 @@ const Index = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading, signOut } = useAuth();
   const { storageMode } = useStorage();
+  const { formatAmount } = useCurrency();
   const navigate = useNavigate();
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
@@ -275,7 +277,7 @@ const Index = () => {
                   <span className="text-xs sm:text-sm font-medium truncate flex-1">{source.name}</span>
                 </div>
                 <p className={`text-base sm:text-lg font-bold ${source.balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(source.balance)}
+                  {formatAmount(source.balance)}
                 </p>
                 {source.cards && source.cards.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
@@ -295,7 +297,7 @@ const Index = () => {
               <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.balance')}</span>
             </div>
             <p className={`text-base sm:text-xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-              {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(balance)}
+              {formatAmount(balance)}
             </p>
           </div>
           <div 
@@ -307,7 +309,7 @@ const Index = () => {
               <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalIncome')}</span>
             </div>
             <p className="text-base sm:text-xl font-bold text-primary">
-              {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(totalIncome)}
+              {formatAmount(totalIncome)}
             </p>
           </div>
           <div 
@@ -319,7 +321,7 @@ const Index = () => {
               <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
             </div>
             <p className="text-base sm:text-xl font-bold text-destructive">
-              {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(totalExpenses)}
+              {formatAmount(totalExpenses)}
             </p>
           </div>
         </div>
@@ -348,9 +350,9 @@ const Index = () => {
               </div>
             </div>
             <div className="text-right">
-              <p className="font-mono font-semibold text-lg text-muted-foreground">
-                ↔ {new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(totalTransfers)}
-              </p>
+            <p className="font-mono font-semibold text-lg text-muted-foreground">
+              ↔ {formatAmount(totalTransfers)}
+            </p>
               <p className="text-xs text-muted-foreground">{t('common.clickForDetails')} →</p>
             </div>
           </div>
@@ -359,7 +361,7 @@ const Index = () => {
           {allTransfers.length > 0 && monthlyTransferCount > 0 && (
             <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
               <span>{t('transactions.thisMonth')}: {monthlyTransferCount} {monthlyTransferCount === 1 ? t('transactions.transfer').toLowerCase() : t('transactions.transfers').toLowerCase()}</span>
-              <span className="font-mono">{new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(monthlyTransfers)}</span>
+              <span className="font-mono">{formatAmount(monthlyTransfers)}</span>
             </div>
           )}
         </motion.div>

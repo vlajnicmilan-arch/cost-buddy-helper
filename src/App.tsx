@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { StorageProvider, useStorage } from "@/contexts/StorageContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -58,12 +59,14 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <StorageProvider>
-        <Toaster />
-        <Sonner />
-        <PWAUpdatePrompt />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <CurrencyProvider>
+          <Toaster />
+          <Sonner />
+          <PWAUpdatePrompt />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </CurrencyProvider>
       </StorageProvider>
     </TooltipProvider>
   </QueryClientProvider>
