@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.notify-pending-transaction]
 verify_jwt = false
+
+[functions.notify-note-added]
+verify_jwt = false

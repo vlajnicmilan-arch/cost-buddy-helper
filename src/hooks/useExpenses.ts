@@ -257,6 +257,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             payment_source_card_id: expense.payment_source_card_id || null,
             merchant_name: expense.merchant_name,
             income_source_id: expense.income_source_id,
+            note: expense.note || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', expense.id);
@@ -275,6 +276,23 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             expense.amount,
             expense.type
           );
+        }
+
+        // Notify owner if a note was added and this is a project transaction
+        const noteWasAdded = expense.note && (!oldExpense?.note || oldExpense.note !== expense.note);
+        if (noteWasAdded && expense.income_source_id) {
+          try {
+            await supabase.functions.invoke('notify-note-added', {
+              body: {
+                expense_id: expense.id,
+                income_source_id: expense.income_source_id,
+                note: expense.note
+              }
+            });
+          } catch (notifyError) {
+            console.error('Error sending note notification:', notifyError);
+            // Don't fail the whole operation if notification fails
+          }
         }
         
         toast.success('Ažurirano');
