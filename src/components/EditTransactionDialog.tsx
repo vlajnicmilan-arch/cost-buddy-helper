@@ -6,14 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
 import { useTranslation } from 'react-i18next';
+import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -36,6 +38,8 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
 
   const { incomeSources } = useIncomeSources();
   const { customPaymentSources } = useCustomPaymentSources();
+  const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
+  const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
 
   // Get date locale based on current language
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
@@ -91,6 +95,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   if (!expense) return null;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -194,20 +199,79 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
           {/* Category - Different label and options for income */}
           <div className="space-y-2">
             <Label>{type === 'income' ? t('transactions.incomeCategory') : t('common.category')}</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as Category | IncomeCategory)}>
+            <Select 
+              value={category} 
+              onValueChange={(v) => {
+                if (v === '__add_new__') {
+                  setIncomeCategoryDialogOpen(true);
+                } else {
+                  setCategory(v as Category | IncomeCategory);
+                }
+              }}
+            >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>
+                  {type === 'income' && (() => {
+                    // Check custom categories first
+                    const customCat = customIncomeCategories.find(c => c.id === category);
+                    if (customCat) {
+                      return (
+                        <span className="flex items-center gap-2">
+                          <span>{customCat.icon}</span>
+                          <span>{customCat.name}</span>
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 {type === 'income' ? (
-                  INCOME_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{cat.icon}</span>
-                        <span>{t(`incomeCategories.${cat.id}`)}</span>
-                      </span>
-                    </SelectItem>
-                  ))
+                  <>
+                    {/* Custom income categories first */}
+                    {customIncomeCategories.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          {t('transactions.customSources')}
+                        </div>
+                        {customIncomeCategories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            <span className="flex items-center gap-2">
+                              <span 
+                                className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                                style={{ backgroundColor: cat.color + '20', color: cat.color }}
+                              >
+                                {cat.icon}
+                              </span>
+                              <span>{cat.name}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {/* Default income categories */}
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {t('paymentSources.standardSources')}
+                    </div>
+                    {INCOME_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{cat.icon}</span>
+                          <span>{t(`incomeCategories.${cat.id}`)}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                    {/* Add new category option */}
+                    <div className="border-t border-border mt-1 pt-1">
+                      <SelectItem value="__add_new__" className="text-primary">
+                        <span className="flex items-center gap-2">
+                          <Plus className="w-4 h-4" />
+                          <span>{t('incomeCategories.addNew')}</span>
+                        </span>
+                      </SelectItem>
+                    </div>
+                  </>
                 ) : (
                   CATEGORIES.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
@@ -370,6 +434,21 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Custom Income Category Dialog */}
+    <CustomIncomeCategoryDialog
+      open={incomeCategoryDialogOpen}
+      onOpenChange={setIncomeCategoryDialogOpen}
+      onSave={async (catData) => {
+        const newCat = await addCustomIncomeCategory(catData);
+        if (newCat) {
+          setCategory(newCat.id as IncomeCategory);
+          refetchIncomeCategories();
+        }
+        return newCat;
+      }}
+    />
+    </>
   );
 });
 

@@ -216,7 +216,12 @@
     "mortgage": "Hypothek",
     "personal_loan": "Privatkredit",
     "sale": "Verkauf",
-    "other_income": "Sonstiges"
+    "other_income": "Sonstiges",
+    "newCategory": "Neue Einkommenskategorie",
+    "editCategory": "Einkommenskategorie bearbeiten",
+    "dialogDescription": "Definieren Sie Name, Symbol und Farbe der Einkommenskategorie.",
+    "namePlaceholder": "Z.B. Dividenden, Miete...",
+    "addNew": "Neue Kategorie hinzufügen"
   },
   "paymentSources": {
     "cash": "Bargeld",

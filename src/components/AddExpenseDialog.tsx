@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, getCategoryInfo, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
@@ -14,6 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
@@ -55,6 +57,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
   const { incomeSources, isSourceOwner, refetch: refetchIncomeSources } = useIncomeSources();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
+  const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
+  const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
 
   // Set default payment source when dialog opens and sources are loaded
   useEffect(() => {
@@ -304,6 +308,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const categoryInfo = scannedData ? getCategoryInfo(scannedData.category) : null;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (isOpen) {
@@ -826,10 +831,30 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               {type === 'income' && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">{t('transactions.incomeCategory')}</Label>
-                  <Select value={category} onValueChange={(v) => setCategory(v as IncomeCategory)}>
+                  <Select 
+                    value={category} 
+                    onValueChange={(v) => {
+                      if (v === '__add_new__') {
+                        setIncomeCategoryDialogOpen(true);
+                      } else {
+                        setCategory(v as IncomeCategory);
+                      }
+                    }}
+                  >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
                       <SelectValue>
                         {(() => {
+                          // Check custom categories first
+                          const customCat = customIncomeCategories.find(c => c.id === category);
+                          if (customCat) {
+                            return (
+                              <span className="flex items-center gap-2">
+                                <span>{customCat.icon}</span>
+                                <span>{customCat.name}</span>
+                              </span>
+                            );
+                          }
+                          // Then check default categories
                           const cat = INCOME_CATEGORIES.find(c => c.id === category);
                           return cat ? (
                             <span className="flex items-center gap-2">
@@ -841,6 +866,31 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
+                      {/* Custom income categories first */}
+                      {customIncomeCategories.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {t('transactions.customSources')}
+                          </div>
+                          {customIncomeCategories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              <span className="flex items-center gap-2">
+                                <span 
+                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                                  style={{ backgroundColor: cat.color + '20', color: cat.color }}
+                                >
+                                  {cat.icon}
+                                </span>
+                                <span>{cat.name}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      {/* Default income categories */}
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {t('paymentSources.standardSources')}
+                      </div>
                       {INCOME_CATEGORIES.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
                           <span className="flex items-center gap-2">
@@ -849,6 +899,15 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                           </span>
                         </SelectItem>
                       ))}
+                      {/* Add new category option */}
+                      <div className="border-t border-border mt-1 pt-1">
+                        <SelectItem value="__add_new__" className="text-primary">
+                          <span className="flex items-center gap-2">
+                            <Plus className="w-4 h-4" />
+                            <span>{t('incomeCategories.addNew')}</span>
+                          </span>
+                        </SelectItem>
+                      </div>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1042,5 +1101,20 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Custom Income Category Dialog */}
+    <CustomIncomeCategoryDialog
+      open={incomeCategoryDialogOpen}
+      onOpenChange={setIncomeCategoryDialogOpen}
+      onSave={async (catData) => {
+        const newCat = await addCustomIncomeCategory(catData);
+        if (newCat) {
+          setCategory(newCat.id as IncomeCategory);
+          refetchIncomeCategories();
+        }
+        return newCat;
+      }}
+    />
+  </>
   );
 };
