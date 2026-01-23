@@ -199,7 +199,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       setOpen(false);
     } catch (error) {
       console.error('Error saving expense:', error);
-      toast.error('Greška pri spremanju troška');
+      toast.error(t('transactions.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -272,11 +272,11 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     
     let receiptUrl: string | undefined;
     if (saveReceipt && receiptImage) {
-      toast.info('Spremam sliku računa...');
+      toast.info(t('transactions.savingReceipt'));
       const uploadedUrl = await uploadReceiptImage(receiptImage);
       if (uploadedUrl) {
         receiptUrl = uploadedUrl;
-        toast.success('Slika računa spremljena!');
+        toast.success(t('transactions.receiptSaved'));
       }
     }
 
@@ -602,11 +602,11 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   <div className="relative rounded-xl overflow-hidden bg-muted/50 p-2">
                     <img 
                       src={receiptImage} 
-                      alt="Račun" 
+                      alt={t('scanner.scanReceipt')} 
                       className="w-full h-20 object-cover rounded-lg"
                     />
                     <div className="absolute top-2 right-2 bg-primary/90 text-primary-foreground text-xs px-2 py-0.5 rounded">
-                      AI skeniran
+                      {t('transactions.aiScanned')}
                     </div>
                   </div>
                 </div>
@@ -661,14 +661,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               {incomeSources.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
-                    {type === 'income' ? t('incomeSources.title') : 'Dodijeli projekt'}
+                    {type === 'income' ? t('incomeSources.title') : t('transactions.assignProject')}
                   </Label>
                   <Select 
                     value={incomeSourceId || 'none'} 
                     onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue placeholder={type === 'income' ? t('incomeSources.title') : 'Odaberi projekt'} />
+                      <SelectValue placeholder={type === 'income' ? t('incomeSources.title') : t('transactions.selectProject')} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
                       <SelectItem value="none">
@@ -690,7 +690,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               {/* Payment Source */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
-                  {type === 'income' ? 'Izvor prihoda' : 'Način plaćanja'}
+                  {type === 'income' ? t('transactions.incomeSourceLabel') : t('transactions.paymentMethod')}
                 </Label>
                 
                 <Select
@@ -701,14 +701,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   }}
                 >
                   <SelectTrigger className="h-12 rounded-xl bg-background">
-                    <SelectValue placeholder="Odaberi način plaćanja" />
+                    <SelectValue placeholder={t('transactions.selectPaymentMethod')} />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50 max-h-[300px]">
                     {/* Custom Payment Sources First - "Moji načini" */}
                     {customPaymentSources.length > 0 && (
                       <>
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Moji načini
+                          {t('transactions.myMethods')}
                         </div>
                         {customPaymentSources.map((source) => (
                           <SelectItem key={source.id} value={source.id}>
@@ -733,13 +733,15 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                     {PAYMENT_SOURCE_GROUPS.map((group) => (
                       <div key={group.label}>
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          {group.label}
+                          {t(`paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}`) !== `paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}` 
+                            ? t(`paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}`) 
+                            : group.label}
                         </div>
                         {group.sources.map((source) => (
                           <SelectItem key={source.id} value={source.id}>
                             <span className="flex items-center gap-2">
                               <span>{source.icon}</span>
-                              <span>{source.name}</span>
+                              <span>{t(`paymentSources.${source.id}`) !== `paymentSources.${source.id}` ? t(`paymentSources.${source.id}`) : source.name}</span>
                             </span>
                           </SelectItem>
                         ))}
@@ -756,7 +758,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   return (
                     <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
                       <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                        Odaberi karticu
+                        {t('transactions.selectCardLabel')}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -769,7 +771,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                               : "border-border bg-muted/50 hover:bg-muted"
                           )}
                         >
-                          Bez kartice
+                          {t('paymentSources.noCard')}
                         </button>
                         {selectedSource.cards.map((card) => (
                           <button
@@ -809,11 +811,11 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               {/* Merchant Name */}
               <div className="space-y-2">
                 <Label htmlFor="merchant" className="text-sm font-medium">
-                  {type === 'income' ? 'Izvor' : 'Trgovina / Naziv'}
+                  {type === 'income' ? t('transactions.merchantSource') : t('transactions.merchantStore')}
                 </Label>
                 <Input
                   id="merchant"
-                  placeholder={type === 'income' ? 'Npr. Plaća, Freelance...' : 'Npr. Konzum, Lidl...'}
+                  placeholder={type === 'income' ? t('transactions.merchantSourcePlaceholder') : t('transactions.merchantStorePlaceholder')}
                   value={merchantName}
                   onChange={(e) => setMerchantName(e.target.value)}
                   className="h-12 rounded-xl"
@@ -825,7 +827,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 <Collapsible open={showItems} onOpenChange={setShowItems}>
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium">
-                      Artikli na računu
+                      {t('transactions.expenseItems')}
                       {items.length > 0 && (
                         <span className="ml-2 text-xs text-primary font-bold">
                           ({items.length})
@@ -841,7 +843,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                         className="h-8 text-xs gap-1"
                       >
                         <Plus className="w-3 h-3" />
-                        Dodaj
+                        {t('transactions.addItem')}
                       </Button>
                       {items.length > 0 && (
                         <CollapsibleTrigger asChild>
@@ -858,7 +860,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                       <div key={index} className="flex gap-2 items-start p-3 bg-muted/50 rounded-xl">
                         <div className="flex-1 space-y-2">
                           <Input
-                            placeholder="Naziv artikla"
+                            placeholder={t('transactions.itemName')}
                             value={item.name}
                             onChange={(e) => updateItem(index, 'name', e.target.value)}
                             className="h-9 text-sm rounded-lg"
@@ -866,7 +868,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                           <div className="flex gap-2">
                             <Input
                               type="number"
-                              placeholder="Kol."
+                              placeholder={t('transactions.qty')}
                               value={item.quantity || ''}
                               onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 1)}
                               className="h-9 w-16 text-sm rounded-lg"
@@ -875,7 +877,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                             <Input
                               type="number"
                               step="0.01"
-                              placeholder="Cijena"
+                              placeholder={t('transactions.price')}
                               value={item.unit_price || ''}
                               onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
                               className="h-9 flex-1 text-sm rounded-lg"
@@ -883,7 +885,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                             <Input
                               type="number"
                               step="0.01"
-                              placeholder="Ukupno"
+                              placeholder={t('common.total')}
                               value={item.total_price || ''}
                               onChange={(e) => updateItem(index, 'total_price', parseFloat(e.target.value) || 0)}
                               className="h-9 w-24 text-sm rounded-lg font-medium"
@@ -896,6 +898,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                           size="icon"
                           onClick={() => removeItem(index)}
                           className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
+                          title={t('transactions.removeItem')}
                         >
                           <X className="w-4 h-4" />
                         </Button>
@@ -903,7 +906,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                     ))}
                     {items.length === 0 && (
                       <p className="text-xs text-muted-foreground text-center py-3">
-                        Skeniraj račun ili dodaj artikle ručno
+                        {t('scanner.scanReceipt')} {t('common.or').toLowerCase()} {t('transactions.addItem').toLowerCase()}
                       </p>
                     )}
                   </CollapsibleContent>
@@ -913,10 +916,10 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
               {/* Amount */}
               <div className="space-y-2">
                 <Label htmlFor="amount" className="text-sm font-medium">
-                  Ukupni iznos (€)
+                  {t('transactions.amountEur')}
                   {items.length > 0 && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      (izračunato iz artikala)
+                      ({t('common.total').toLowerCase()})
                     </span>
                   )}
                 </Label>
@@ -935,10 +938,10 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
 
               {/* Description */}
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium">Opis</Label>
+                <Label htmlFor="description" className="text-sm font-medium">{t('common.description')}</Label>
                 <Input
                   id="description"
-                  placeholder={type === 'income' ? 'Npr. Plaća za siječanj' : 'Npr. Tjedna kupovina'}
+                  placeholder={t('transactions.descriptionPlaceholder')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="h-12 rounded-xl"
@@ -964,7 +967,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                         )}
                       >
                         <span className="text-xl">{cat.icon}</span>
-                        <span className="text-xs font-medium text-muted-foreground">{cat.name}</span>
+                        <span className="text-xs font-medium text-muted-foreground">{t(`categories.${cat.id}`)}</span>
                       </button>
                     ))}
                   </div>

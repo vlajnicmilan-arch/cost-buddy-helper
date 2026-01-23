@@ -10,9 +10,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
+import { useTranslation } from 'react-i18next';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -22,6 +23,7 @@ interface EditTransactionDialogProps {
 }
 
 export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionDialogProps>(({ expense, open, onOpenChange, onSave }, ref) => {
+  const { t, i18n } = useTranslation();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category>('other');
@@ -34,6 +36,9 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
 
   const { incomeSources } = useIncomeSources();
   const { customPaymentSources } = useCustomPaymentSources();
+
+  // Get date locale based on current language
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   // Get cards for currently selected custom payment source
   const selectedSource = customPaymentSources.find(s => s.id === paymentSource);
@@ -76,19 +81,26 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
     }
   };
 
+  // Get dialog title based on transaction type
+  const getDialogTitle = () => {
+    if (type === 'income') return t('transactions.editIncome');
+    if (type === 'transfer') return t('transactions.editTransfer');
+    return t('transactions.editExpense');
+  };
+
   if (!expense) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Uredi {type === 'income' ? 'prihod' : type === 'transfer' ? 'prijenos' : 'trošak'}</DialogTitle>
+          <DialogTitle>{getDialogTitle()}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           {/* Type Toggle */}
           <div className="space-y-2">
-            <Label>Vrsta</Label>
+            <Label>{t('transactions.type')}</Label>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -96,7 +108,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                 className="flex-1"
                 onClick={() => setType('expense')}
               >
-                Trošak
+                {t('transactions.expense')}
               </Button>
               <Button
                 type="button"
@@ -104,7 +116,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                 className="flex-1"
                 onClick={() => setType('income')}
               >
-                Prihod
+                {t('transactions.income')}
               </Button>
               <Button
                 type="button"
@@ -117,7 +129,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
             </div>
             {type === 'transfer' && (
               <p className="text-xs text-muted-foreground">
-                Prijenosi između vlastitih računa ne utječu na bilance
+                {t('transactions.transferNote')}
               </p>
             )}
           </div>
@@ -125,17 +137,17 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
           {/* Income Source - For both income and expense */}
           {incomeSources.length > 0 && (
             <div className="space-y-2">
-              <Label>{type === 'income' ? 'Izvor prihoda' : 'Knjiži iz izvora'}</Label>
+              <Label>{type === 'income' ? t('transactions.incomeSource') : t('transactions.deductFromSource')}</Label>
               <Select 
                 value={incomeSourceId || 'none'} 
                 onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
               >
                 <SelectTrigger className="bg-background">
-                  <SelectValue placeholder={type === 'income' ? 'Odaberi izvor prihoda' : 'Odaberi izvor'} />
+                  <SelectValue placeholder={type === 'income' ? t('transactions.selectIncomeSource') : t('transactions.selectSource')} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
                   <SelectItem value="none">
-                    <span className="text-muted-foreground">Bez izvora</span>
+                    <span className="text-muted-foreground">{t('transactions.noSource')}</span>
                   </SelectItem>
                   {incomeSources.map((source) => (
                     <SelectItem key={source.id} value={source.id}>
@@ -149,7 +161,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
               </Select>
               {type === 'expense' && incomeSourceId && (
                 <p className="text-xs text-muted-foreground">
-                  Trošak će se oduzeti od ovog izvora prihoda
+                  {t('transactions.deductNote')}
                 </p>
               )}
             </div>
@@ -157,7 +169,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Iznos (€)</Label>
+            <Label htmlFor="amount">{t('transactions.amountEur')}</Label>
             <Input
               id="amount"
               type="number"
@@ -170,18 +182,18 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Opis</Label>
+            <Label htmlFor="description">{t('common.description')}</Label>
             <Input
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Opis transakcije"
+              placeholder={t('transactions.descriptionPlaceholder')}
             />
           </div>
 
           {/* Category */}
           <div className="space-y-2">
-            <Label>Kategorija</Label>
+            <Label>{t('common.category')}</Label>
             <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
               <SelectTrigger>
                 <SelectValue />
@@ -191,7 +203,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                   <SelectItem key={cat.id} value={cat.id}>
                     <span className="flex items-center gap-2">
                       <span>{cat.icon}</span>
-                      <span>{cat.name}</span>
+                      <span>{t(`categories.${cat.id}`)}</span>
                     </span>
                   </SelectItem>
                 ))}
@@ -201,7 +213,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
 
           {/* Payment Source */}
           <div className="space-y-2">
-            <Label>Izvor plaćanja</Label>
+            <Label>{t('transactions.paymentSource')}</Label>
             <Select 
               value={paymentSource} 
               onValueChange={(v) => {
@@ -232,7 +244,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                     return (
                       <span className="flex items-center gap-2">
                         <span>{info.icon}</span>
-                        <span>{info.name}</span>
+                        <span>{t(`paymentSources.${paymentSource}`) !== `paymentSources.${paymentSource}` ? t(`paymentSources.${paymentSource}`) : info.name}</span>
                       </span>
                     );
                   })()}
@@ -242,13 +254,15 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                 {PAYMENT_SOURCE_GROUPS.map((group) => (
                   <div key={group.label}>
                     <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      {group.label}
+                      {t(`paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}`) !== `paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}` 
+                        ? t(`paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}`) 
+                        : group.label}
                     </div>
                     {group.sources.map((src) => (
                       <SelectItem key={src.id} value={src.id}>
                         <span className="flex items-center gap-2">
                           <span>{src.icon}</span>
-                          <span>{src.name}</span>
+                          <span>{t(`paymentSources.${src.id}`) !== `paymentSources.${src.id}` ? t(`paymentSources.${src.id}`) : src.name}</span>
                         </span>
                       </SelectItem>
                     ))}
@@ -258,7 +272,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                 {customPaymentSources.length > 0 && (
                   <div>
                     <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      Prilagođeni
+                      {t('transactions.customSources')}
                     </div>
                     {customPaymentSources.map((src) => (
                       <SelectItem key={`custom-${src.id}`} value={src.id}>
@@ -282,16 +296,16 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
           {/* Card Selection - Show when custom payment source with cards is selected */}
           {availableCards.length > 0 && (
             <div className="space-y-2">
-              <Label>Kartica</Label>
+              <Label>{t('transactions.selectCard')}</Label>
               <Select 
                 value={selectedCardId || 'none'} 
                 onValueChange={(v) => setSelectedCardId(v === 'none' ? null : v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Odaberi karticu" />
+                  <SelectValue placeholder={t('transactions.selectCard')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Bez kartice</SelectItem>
+                  <SelectItem value="none">{t('transactions.noCard')}</SelectItem>
                   {availableCards.map((card) => (
                     <SelectItem key={card.id} value={card.id}>
                       <span className="flex items-center gap-2">
@@ -308,7 +322,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
 
           {/* Date */}
           <div className="space-y-2">
-            <Label>Datum</Label>
+            <Label>{t('common.date')}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -319,7 +333,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP", { locale: hr }) : "Odaberi datum"}
+                  {date ? format(date, "PPP", { locale: dateLocale }) : t('transactions.selectDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -327,7 +341,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                   mode="single"
                   selected={date}
                   onSelect={(d) => d && setDate(d)}
-                  locale={hr}
+                  locale={dateLocale}
                 />
               </PopoverContent>
             </Popover>
@@ -336,11 +350,11 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={saving || !amount || !description}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Spremi
+            {t('common.save')}
           </Button>
         </div>
       </DialogContent>
