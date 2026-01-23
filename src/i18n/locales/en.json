@@ -216,7 +216,12 @@
     "mortgage": "Mortgage",
     "personal_loan": "Personal Loan",
     "sale": "Sale",
-    "other_income": "Other"
+    "other_income": "Other",
+    "newCategory": "New income category",
+    "editCategory": "Edit income category",
+    "dialogDescription": "Define the name, icon and color of the income category.",
+    "namePlaceholder": "E.g. Dividends, Rent...",
+    "addNew": "Add new category"
   },
   "paymentSources": {
     "cash": "Cash",

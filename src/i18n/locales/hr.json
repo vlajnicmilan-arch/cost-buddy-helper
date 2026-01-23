@@ -216,7 +216,12 @@
     "mortgage": "Stambeni kredit",
     "personal_loan": "Nenamjenski kredit",
     "sale": "Prodaja",
-    "other_income": "Ostalo"
+    "other_income": "Ostalo",
+    "newCategory": "Nova kategorija prihoda",
+    "editCategory": "Uredi kategoriju prihoda",
+    "dialogDescription": "Definirajte naziv, ikonu i boju kategorije prihoda.",
+    "namePlaceholder": "Npr. Dividende, Najam...",
+    "addNew": "Dodaj novu kategoriju"
   },
   "paymentSources": {
     "cash": "Gotovina",
