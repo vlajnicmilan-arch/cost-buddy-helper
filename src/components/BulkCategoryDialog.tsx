@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Expense, Category, CATEGORIES, getCategoryInfo } from '@/types/expense';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Tags, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
@@ -57,6 +58,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<Category | 'all'>('all');
   const [saving, setSaving] = useState(false);
+  const { formatAmount } = useCurrency();
   
   const { customCategories } = useCustomCategories();
 
@@ -86,12 +88,6 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
     return stats;
   }, [expenses]);
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   const toggleSelect = (id: string) => {
     const newSet = new Set(selectedIds);

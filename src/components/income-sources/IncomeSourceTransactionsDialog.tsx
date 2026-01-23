@@ -9,6 +9,7 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters, MemberOp
 import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
 import { useIncomeSourceMembers } from '@/hooks/useIncomeSourceMembers';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -38,6 +39,7 @@ export const IncomeSourceTransactionsDialog = ({
 }: IncomeSourceTransactionsDialogProps) => {
   const { user } = useAuth();
   const { isOwner } = useIncomeSourceMembers(source?.id || null);
+  const { formatAmount } = useCurrency();
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [memberProfiles, setMemberProfiles] = useState<Record<string, string>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -101,12 +103,6 @@ export const IncomeSourceTransactionsDialog = ({
 
   const balance = totalIncome - totalExpenses;
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   // Selection handlers
   const toggleSelection = (id: string) => {

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense, getCategoryInfo } from '@/types/expense';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Link2, CircleDashed, Check, X, Loader2, Plus, Trash2 } from 'lucide-react';
@@ -33,6 +34,7 @@ export const UnassignedIncomeDialog = ({
   onDeleteExpense,
   onAddIncomeSource
 }: UnassignedIncomeDialogProps) => {
+  const { formatAmount } = useCurrency();
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [selectedSourceId, setSelectedSourceId] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -87,12 +89,6 @@ export const UnassignedIncomeDialog = ({
     [filteredUnassignedIncome]
   );
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   const handleStartAssign = (expenseId: string) => {
     setAssigningId(expenseId);

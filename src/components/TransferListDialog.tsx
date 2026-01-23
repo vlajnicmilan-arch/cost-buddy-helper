@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Expense, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { ArrowRight, ArrowLeftRight, Calendar } from 'lucide-react';
@@ -103,6 +104,7 @@ export const TransferListDialog = ({
   totalAmount
 }: TransferListDialogProps) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const { formatAmount } = useCurrency();
 
   // Apply filters
   const filteredTransfers = useMemo(() => {
@@ -114,12 +116,6 @@ export const TransferListDialog = ({
     [filteredTransfers]
   );
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   // Group transfers by month
   const groupedTransfers = filteredTransfers.reduce((acc, transfer) => {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CATEGORIES, CategoryInfo, Expense } from '@/types/expense';
 import { CategoryTransactionsDialog } from './CategoryTransactionsDialog';
 import { EditTransactionDialog } from './EditTransactionDialog';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { motion } from 'framer-motion';
 
 interface CategoryBreakdownProps {
@@ -25,13 +26,7 @@ export const CategoryBreakdown = ({
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
+  const { formatAmount } = useCurrency();
 
   const sortedCategories = CATEGORIES
     .map(cat => ({

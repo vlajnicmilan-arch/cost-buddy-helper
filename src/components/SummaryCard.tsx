@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface SummaryCardProps {
   title: string;
@@ -11,12 +12,7 @@ interface SummaryCardProps {
 }
 
 export const SummaryCard = ({ title, amount, variant, icon, isActive, onClick }: SummaryCardProps) => {
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
+  const { formatAmount } = useCurrency();
 
   return (
     <motion.div 

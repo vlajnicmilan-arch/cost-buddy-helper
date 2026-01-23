@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Expense, CategoryInfo, getCategoryInfo, getPaymentSourceInfo, CATEGORIES, Category } from '@/types/expense';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, Tag, CheckSquare } from 'lucide-react';
@@ -35,6 +36,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [changingCategoryId, setChangingCategoryId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const { formatAmount } = useCurrency();
 
   // All expenses in this category
   const categoryExpenses = useMemo(() => {
@@ -54,12 +56,6 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
     [filteredExpenses]
   );
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   // Selection handlers
   const toggleSelection = (id: string) => {
