@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2 } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -253,6 +253,16 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
+          {/* Floating close button for mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="fixed top-4 right-4 z-50 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border shadow-lg sm:hidden"
+            onClick={() => setOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </Button>
+          
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5" />
