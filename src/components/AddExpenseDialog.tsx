@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, getCategoryInfo, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
@@ -51,6 +52,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [scannedData, setScannedData] = useState<ScannedData | null>(null);
   const [showScannedPreview, setShowScannedPreview] = useState(false);
   const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
+  const [note, setNote] = useState('');
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
@@ -266,6 +268,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setScannedData(null);
     setShowScannedPreview(false);
     setIncomeSourceId(null);
+    setNote('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -298,7 +301,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       merchant_name: merchantName || undefined,
       receipt_url: receiptUrl,
       ai_extracted: scannedData !== null,
-      income_source_id: incomeSourceId
+      income_source_id: incomeSourceId,
+      note: note.trim() || undefined
     }, validItems.length > 0 ? validItems : undefined, isPendingForMember);
 
     resetForm();
@@ -1062,6 +1066,20 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Note - Show only for project transactions */}
+              {incomeSourceId && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('transactions.note')}</Label>
+                  <Textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={t('transactions.notePlaceholder')}
+                    rows={2}
+                    className="resize-none rounded-xl"
+                  />
                 </div>
               )}
 
