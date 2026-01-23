@@ -1,7 +1,13 @@
 {
   "transactions": {
     "note": "Napomena",
-    "notePlaceholder": "Dodaj napomenu uz transakciju..."
+    "notePlaceholder": "Dodaj napomenu uz transakciju...",
+    "notes": "Napomene",
+    "noNotes": "Nema napomena. Započni razgovor!",
+    "writeNote": "Napiši napomenu...",
+    "noteSent": "Napomena poslana",
+    "noteError": "Greška pri slanju napomene",
+    "initialNote": "Originalna napomena"
   },
   "common": {
     "save": "Spremi",
@@ -42,6 +48,9 @@
     "saving": "Spremanje...",
     "created": "Kreirano",
     "updated": "Ažurirano",
+    "you": "Ti",
+    "member": "Član",
+    "deleted": "Obrisano",
     "merchant": "Trgovac",
     "items": "Artikli",
     "cards": "kartica",

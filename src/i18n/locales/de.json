@@ -1,7 +1,13 @@
 {
   "transactions": {
     "note": "Notiz",
-    "notePlaceholder": "Notiz zu dieser Transaktion hinzufügen..."
+    "notePlaceholder": "Notiz zu dieser Transaktion hinzufügen...",
+    "notes": "Notizen",
+    "noNotes": "Noch keine Notizen. Starte das Gespräch!",
+    "writeNote": "Notiz schreiben...",
+    "noteSent": "Notiz gesendet",
+    "noteError": "Fehler beim Senden der Notiz",
+    "initialNote": "Ursprüngliche Notiz"
   },
   "common": {
     "save": "Speichern",
@@ -42,6 +48,9 @@
     "saving": "Speichern...",
     "created": "Erstellt",
     "updated": "Aktualisiert",
+    "you": "Du",
+    "member": "Mitglied",
+    "deleted": "Gelöscht",
     "merchant": "Händler",
     "items": "Artikel",
     "cards": "Karten",
