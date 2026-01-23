@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +55,13 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
   const { incomeSources, isSourceOwner, refetch: refetchIncomeSources } = useIncomeSources();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
+
+  // Set default payment source when dialog opens and sources are loaded
+  useEffect(() => {
+    if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
+      setPaymentSource(customPaymentSources[0].id as PaymentSource);
+    }
+  }, [open, customPaymentSources]);
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -244,7 +251,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setDescription('');
     setCategory('food');
     setMerchantName('');
-    setPaymentSource('cash');
+    // Reset to first custom payment source or cash
+    setPaymentSource(customPaymentSources.length > 0 ? customPaymentSources[0].id as PaymentSource : 'cash');
     setSelectedCardId(null);
     setExpenseDate(new Date().toISOString().split('T')[0]);
     setItems([]);
@@ -300,7 +308,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       setOpen(isOpen);
       if (isOpen) {
         refetchIncomeSources();
-        refetchPaymentSources();
+        refetchPaymentSources().then(() => {
+          // Set default payment source after fetching
+          if (customPaymentSources.length > 0) {
+            setPaymentSource(customPaymentSources[0].id as PaymentSource);
+          } else {
+            setPaymentSource('cash');
+          }
+        });
       } else {
         resetForm();
       }
