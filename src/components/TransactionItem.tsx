@@ -1,5 +1,6 @@
 import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
 import { Trash2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -15,6 +16,7 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
   const category = getCategoryInfo(expense.category);
   const paymentSource = getPaymentSourceInfo(expense.payment_source || 'cash');
   const { customPaymentSources } = useCustomPaymentSources();
+  const { formatAmount } = useCurrency();
 
   // Find card info if transaction has a card assigned
   const cardInfo = useMemo(() => {
@@ -31,12 +33,6 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
     return customPaymentSources.find(s => s.id === expense.payment_source);
   }, [expense.payment_source, customPaymentSources]);
   
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('hr-HR', {

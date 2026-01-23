@@ -6,6 +6,7 @@ import { Expense, getCategoryInfo, Category } from '@/types/expense';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare } from 'lucide-react';
@@ -35,6 +36,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const { formatAmount } = useCurrency();
 
   // Filter expenses for this payment source
   const sourceExpenses = useMemo(() => {
@@ -63,12 +65,6 @@ export const PaymentSourceTransactionsDialog = ({
     }, { totalIncome: 0, totalExpenses: 0, totalTransfers: 0 });
   }, [sourceExpenses]);
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/types/expense';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2 } from 'lucide-react';
@@ -30,6 +31,7 @@ export const TransactionDetailDialog = ({
   const [loadingItems, setLoadingItems] = useState(false);
   const { storageMode } = useStorage();
   const { user } = useAuth();
+  const { formatAmount } = useCurrency();
   const isLocalMode = storageMode === 'local' && !user;
 
   useEffect(() => {
@@ -67,12 +69,6 @@ export const TransactionDetailDialog = ({
   const categoryInfo = getCategoryInfo(expense.category);
   const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   const handleEdit = () => {
     onEdit(expense);

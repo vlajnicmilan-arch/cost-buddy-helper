@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Expense, PaymentSource, PAYMENT_SOURCE_GROUPS, getPaymentSourceInfo } from '@/types/expense';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { CreditCard, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
@@ -24,6 +25,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSource, setFilterSource] = useState<PaymentSource | 'all'>('all');
   const [saving, setSaving] = useState(false);
+  const { formatAmount } = useCurrency();
 
   // Filter expenses (exclude transfers, only show expenses and income)
   const filteredExpenses = useMemo(() => {
@@ -51,12 +53,6 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
     return stats;
   }, [expenses]);
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   const toggleSelect = (id: string) => {
     const newSet = new Set(selectedIds);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useIncomeSourceMembers } from '@/hooks/useIncomeSourceMembers';
 import { usePendingTransactions } from '@/hooks/usePendingTransactions';
 import { IncomeSource } from '@/types/incomeSource';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -40,6 +41,7 @@ interface MembersDialogProps {
 
 export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps) => {
   const { user } = useAuth();
+  const { formatAmount } = useCurrency();
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   
@@ -140,12 +142,6 @@ export const MembersDialog = ({ open, onOpenChange, source }: MembersDialogProps
     }
   };
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   if (!source) return null;
 

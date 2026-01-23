@@ -19,6 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Expense, getCategoryInfo, CATEGORIES } from '@/types/expense';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import {
   FileText,
   Download,
@@ -135,6 +136,7 @@ const calculateStats = (expenseList: Expense[]) => {
 export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const { t } = useTranslation();
   const { incomeSources } = useIncomeSources();
+  const { formatAmount, currency } = useCurrency();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('report');
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('this-month');
@@ -340,8 +342,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     });
   }, [categoryComparison, compareDateRanges]);
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(amount);
+  const formatCurrency = formatAmount;
 
   const formatPercent = (value: number) => {
     const sign = value > 0 ? '+' : '';
@@ -389,6 +390,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       byPaymentSource: stats.byPaymentSource,
       byIncomeSource: stats.byIncomeSource,
       selectedIncomeSource,
+      currency: { code: currency.code, symbol: currency.symbol, locale: currency.locale },
     };
   };
 

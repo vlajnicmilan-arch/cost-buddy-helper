@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
 import { useIncomeSourceStats } from '@/hooks/useIncomeSourceStats';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { IncomeSource } from '@/types/incomeSource';
 import { Expense } from '@/types/expense';
 import { IncomeSourceCard } from './IncomeSourceCard';
@@ -31,6 +32,7 @@ export const IncomeSourcesPanel = ({
 }: IncomeSourcesPanelProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { formatAmount } = useCurrency();
   const {
     incomeSources, 
     loading, 
@@ -143,12 +145,6 @@ export const IncomeSourcesPanel = ({
     setEditingTransaction(null);
   };
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   if (loading) {
     return (

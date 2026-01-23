@@ -7,6 +7,7 @@ import { EditTransactionDialog } from './EditTransactionDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, TrendingUp, TrendingDown, CheckSquare } from 'lucide-react';
@@ -39,6 +40,7 @@ export const TransactionListDialog = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { customPaymentSources } = useCustomPaymentSources();
+  const { formatAmount } = useCurrency();
 
   // Get all cards from all custom payment sources
   const allCards = useMemo(() => {
@@ -57,12 +59,6 @@ export const TransactionListDialog = ({
     return filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
   }, [filteredExpenses]);
 
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);

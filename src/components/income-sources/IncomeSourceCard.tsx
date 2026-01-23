@@ -2,6 +2,7 @@ import { IncomeSource } from '@/types/incomeSource';
 import { Pencil, Trash2, Users, Clock, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
 
 interface IncomeSourceCardProps {
@@ -33,12 +34,7 @@ export const IncomeSourceCard = ({
   onClick,
   onMembersClick
 }: IncomeSourceCardProps) => {
-  const formatAmount = (value: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
+  const { formatAmount } = useCurrency();
 
   const sourceColor = source.color || '#22c55e';
   const sourceIcon = source.icon || '💰';

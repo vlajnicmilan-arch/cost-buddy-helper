@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useIncomeSources } from '@/hooks/useIncomeSources';
 import { SummaryCard } from '@/components/SummaryCard';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
@@ -73,6 +74,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const { storageMode } = useStorage();
+  const { formatAmount, currency } = useCurrency();
   const navigate = useNavigate();
   const { incomeSources } = useIncomeSources();
   
@@ -223,11 +225,10 @@ const Dashboard = () => {
     };
   }, [expenses, dailySpendingData, categoryChartData]);
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(amount);
+  const formatCurrency = formatAmount;
 
   const formatAxisCurrency = (amount: number) =>
-    new Intl.NumberFormat('hr-HR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ' €';
+    new Intl.NumberFormat(currency.locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ` ${currency.symbol}`;
 
   if (authLoading && storageMode === 'cloud') {
     return (

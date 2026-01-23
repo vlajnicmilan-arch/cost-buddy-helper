@@ -3,6 +3,12 @@ import autoTable from 'jspdf-autotable';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo } from '@/types/expense';
 import { IncomeSource } from '@/types/incomeSource';
 
+export interface CurrencyConfig {
+  code: string;
+  symbol: string;
+  locale: string;
+}
+
 export interface ReportData {
   expenses: Expense[];
   incomeSources: IncomeSource[];
@@ -17,16 +23,19 @@ export interface ReportData {
   byPaymentSource: Record<string, number>;
   byIncomeSource: Record<string, { income: number; expenses: number; balance: number }>;
   selectedIncomeSource?: { id: string; name: string; icon: string } | null;
+  currency?: CurrencyConfig;
 }
 
 const formatDate = (date: Date): string => {
   return date.toLocaleDateString('hr-HR');
 };
 
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('hr-HR', {
+const formatCurrency = (amount: number, currency?: CurrencyConfig): string => {
+  const currencyCode = currency?.code || 'EUR';
+  const locale = currency?.locale || 'hr-HR';
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'EUR',
+    currency: currencyCode,
   }).format(amount);
 };
 
@@ -83,10 +92,10 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
   }
 
   const summaryData = [
-    [toAscii('Ukupni prihodi'), formatCurrency(data.totals.income)],
-    [toAscii('Ukupni troskovi'), formatCurrency(data.totals.expenses)],
-    ['Stanje', formatCurrency(data.totals.balance)],
-    ['Prijenosi', formatCurrency(data.totals.transfers)],
+    [toAscii('Ukupni prihodi'), formatCurrency(data.totals.income, data.currency)],
+    [toAscii('Ukupni troskovi'), formatCurrency(data.totals.expenses, data.currency)],
+    ['Stanje', formatCurrency(data.totals.balance, data.currency)],
+    ['Prijenosi', formatCurrency(data.totals.transfers, data.currency)],
   ];
 
   autoTable(doc, {
@@ -113,7 +122,7 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
       const percentage = data.totals.expenses > 0 
         ? ((amount / data.totals.expenses) * 100).toFixed(1) 
         : '0';
-      return [toAscii(info.name), formatCurrency(amount), `${percentage}%`];
+      return [toAscii(info.name), formatCurrency(amount, data.currency), `${percentage}%`];
     });
 
   if (categoryData.length > 0) {
@@ -141,9 +150,9 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
         const source = data.incomeSources.find(s => s.id === sourceId);
         return [
           toAscii(source?.name || 'Nepoznato'),
-          formatCurrency(stats.income),
-          formatCurrency(stats.expenses),
-          formatCurrency(stats.balance),
+          formatCurrency(stats.income, data.currency),
+          formatCurrency(stats.expenses, data.currency),
+          formatCurrency(stats.balance, data.currency),
         ];
       });
 
@@ -174,8 +183,8 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
         toAscii(expense.description),
         toAscii(categoryInfo.name),
         expense.type === 'expense' 
-          ? `-${formatCurrency(expense.amount)}` 
-          : formatCurrency(expense.amount),
+          ? `-${formatCurrency(expense.amount, data.currency)}` 
+          : formatCurrency(expense.amount, data.currency),
       ];
     });
 
