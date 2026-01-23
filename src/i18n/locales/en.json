@@ -1,4 +1,8 @@
 {
+  "transactions": {
+    "note": "Note",
+    "notePlaceholder": "Add a note to this transaction..."
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

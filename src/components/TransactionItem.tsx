@@ -2,10 +2,11 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense'
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { Trash2, Sparkles } from 'lucide-react';
+import { Trash2, Sparkles, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TransactionItemProps {
   expense: Expense;
@@ -72,6 +73,19 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
           <p className="font-medium text-foreground truncate">{expense.description}</p>
           {expense.ai_extracted && (
             <Sparkles className="w-3.5 h-3.5 text-accent shrink-0" />
+          )}
+          {expense.note && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative shrink-0">
+                  <MessageCircle className="w-4 h-4 text-primary" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p className="text-sm">{expense.note}</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
         <p className="text-sm text-muted-foreground flex items-center gap-1 flex-wrap">

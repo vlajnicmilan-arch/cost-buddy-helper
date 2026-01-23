@@ -127,6 +127,7 @@ export type Database = {
           id: string
           income_source_id: string | null
           merchant_name: string | null
+          note: string | null
           payment_source: string | null
           payment_source_card_id: string | null
           receipt_url: string | null
@@ -146,6 +147,7 @@ export type Database = {
           id?: string
           income_source_id?: string | null
           merchant_name?: string | null
+          note?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
           receipt_url?: string | null
@@ -165,6 +167,7 @@ export type Database = {
           id?: string
           income_source_id?: string | null
           merchant_name?: string | null
+          note?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
           receipt_url?: string | null

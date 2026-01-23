@@ -5,7 +5,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -237,6 +237,17 @@ export const TransactionDetailDialog = ({
                   <span className="text-xs">{t('common.merchant')}</span>
                 </div>
                 <p className="font-medium break-words whitespace-normal">{expense.merchant_name}</p>
+              </div>
+            )}
+
+            {/* Note */}
+            {expense.note && (
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 col-span-2">
+                <div className="flex items-center gap-2 text-primary mb-1">
+                  <MessageCircle className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-medium">{t('transactions.note')}</span>
+                </div>
+                <p className="text-sm break-words whitespace-normal">{expense.note}</p>
               </div>
             )}
           </div>
