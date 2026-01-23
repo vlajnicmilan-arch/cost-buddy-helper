@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Notification } from '@/types/notification';
+import { useNotificationSound, showBrowserNotification } from '@/hooks/useNotificationSound';
 
 export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { playNotificationSound } = useNotificationSound();
 
   const fetchNotifications = useCallback(async () => {
     if (!user) {
@@ -59,6 +61,10 @@ export const useNotifications = () => {
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
+          
+          // Play sound and show browser notification
+          playNotificationSound();
+          showBrowserNotification(newNotification.title, newNotification.message);
         }
       )
       .subscribe();

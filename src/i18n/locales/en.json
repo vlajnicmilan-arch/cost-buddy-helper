@@ -1,4 +1,16 @@
 {
+  "settings": {
+    "notifications": "Notifications",
+    "soundNotifications": "Sound notifications",
+    "soundNotificationsDesc": "Play a sound for new notifications",
+    "pushNotifications": "Push notifications",
+    "pushNotificationsDesc": "Show notifications when the app is in background",
+    "soundEnabled": "Sound notifications enabled",
+    "soundDisabled": "Sound notifications disabled",
+    "pushEnabled": "Push notifications enabled",
+    "pushDisabled": "Push notifications disabled",
+    "pushDenied": "Browser blocked push notifications"
+  },
   "transactions": {
     "note": "Note",
     "notePlaceholder": "Add a note to this transaction...",

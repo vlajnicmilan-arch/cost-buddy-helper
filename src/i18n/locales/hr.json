@@ -1,4 +1,16 @@
 {
+  "settings": {
+    "notifications": "Obavijesti",
+    "soundNotifications": "Zvučne obavijesti",
+    "soundNotificationsDesc": "Reproduciraj zvuk za nove obavijesti",
+    "pushNotifications": "Push obavijesti",
+    "pushNotificationsDesc": "Prikaži obavijesti kada je aplikacija u pozadini",
+    "soundEnabled": "Zvučne obavijesti uključene",
+    "soundDisabled": "Zvučne obavijesti isključene",
+    "pushEnabled": "Push obavijesti uključene",
+    "pushDisabled": "Push obavijesti isključene",
+    "pushDenied": "Preglednik je blokirao push obavijesti"
+  },
   "transactions": {
     "note": "Napomena",
     "notePlaceholder": "Dodaj napomenu uz transakciju...",
