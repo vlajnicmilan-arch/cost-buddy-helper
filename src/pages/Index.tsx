@@ -194,7 +194,7 @@ const Index = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div>
-                      <SettingsDialog />
+                      <SettingsDialog onDataImported={refetch} />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
