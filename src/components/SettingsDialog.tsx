@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -19,6 +19,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 import { exportLocalData, importLocalData } from '@/lib/storage/indexedDB';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  getNotificationSoundEnabled,
+  setNotificationSoundEnabled,
+  getPushNotificationsEnabled,
+  setPushNotificationsEnabled,
+  requestNotificationPermission
+} from '@/hooks/useNotificationSound';
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
@@ -28,6 +35,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [autoUpdate, setAutoUpdate] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   
   // Backup/Restore state
@@ -46,6 +55,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   useEffect(() => {
     if (open) {
       setAutoUpdate(getAutoUpdatePreference());
+      setSoundEnabled(getNotificationSoundEnabled());
+      setPushEnabled(getPushNotificationsEnabled());
     }
   }, [open]);
 
@@ -65,6 +76,29 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       await checkForUpdates();
     } finally {
       setIsCheckingUpdate(false);
+    }
+  };
+
+  const handleSoundToggle = (enabled: boolean) => {
+    setSoundEnabled(enabled);
+    setNotificationSoundEnabled(enabled);
+    toast.success(enabled ? t('settings.soundEnabled', 'Zvučne obavijesti uključene') : t('settings.soundDisabled', 'Zvučne obavijesti isključene'));
+  };
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (enabled) {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        setPushEnabled(true);
+        setPushNotificationsEnabled(true);
+        toast.success(t('settings.pushEnabled', 'Push obavijesti uključene'));
+      } else {
+        toast.error(t('settings.pushDenied', 'Preglednik je blokirao push obavijesti'));
+      }
+    } else {
+      setPushEnabled(false);
+      setPushNotificationsEnabled(false);
+      toast.info(t('settings.pushDisabled', 'Push obavijesti isključene'));
     }
   };
 
@@ -269,6 +303,59 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 )}
               {t('settings.checkForUpdates', 'Provjeri ažuriranja')}
             </Button>
+          </div>
+
+          <Separator />
+
+          {/* Notifications Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              {t('settings.notifications', 'Obavijesti')}
+            </h3>
+
+            {/* Sound notifications toggle */}
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Volume2 className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <Label htmlFor="sound-notifications" className="text-sm font-medium cursor-pointer">
+                    {t('settings.soundNotifications', 'Zvučne obavijesti')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.soundNotificationsDesc', 'Reproduciraj zvuk za nove obavijesti')}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="sound-notifications"
+                checked={soundEnabled}
+                onCheckedChange={handleSoundToggle}
+              />
+            </div>
+
+            {/* Push notifications toggle */}
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Bell className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <Label htmlFor="push-notifications" className="text-sm font-medium cursor-pointer">
+                    {t('settings.pushNotifications', 'Push obavijesti')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.pushNotificationsDesc', 'Prikaži obavijesti kada je aplikacija u pozadini')}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="push-notifications"
+                checked={pushEnabled}
+                onCheckedChange={handlePushToggle}
+              />
+            </div>
           </div>
 
           <Separator />

@@ -1,4 +1,16 @@
 {
+  "settings": {
+    "notifications": "Benachrichtigungen",
+    "soundNotifications": "Tonbenachrichtigungen",
+    "soundNotificationsDesc": "Ton für neue Benachrichtigungen abspielen",
+    "pushNotifications": "Push-Benachrichtigungen",
+    "pushNotificationsDesc": "Benachrichtigungen anzeigen, wenn die App im Hintergrund ist",
+    "soundEnabled": "Tonbenachrichtigungen aktiviert",
+    "soundDisabled": "Tonbenachrichtigungen deaktiviert",
+    "pushEnabled": "Push-Benachrichtigungen aktiviert",
+    "pushDisabled": "Push-Benachrichtigungen deaktiviert",
+    "pushDenied": "Browser hat Push-Benachrichtigungen blockiert"
+  },
   "transactions": {
     "note": "Notiz",
     "notePlaceholder": "Notiz zu dieser Transaktion hinzufügen...",
