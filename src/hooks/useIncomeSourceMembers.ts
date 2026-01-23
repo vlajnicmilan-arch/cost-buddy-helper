@@ -80,6 +80,28 @@ export const useIncomeSourceMembers = (incomeSourceId: string | null) => {
     }
 
     try {
+      // Get member info before deleting
+      const memberToRemove = members.find(m => m.id === memberId);
+      if (!memberToRemove) {
+        toast.error('Član nije pronađen');
+        return;
+      }
+
+      // Get income source name for notification
+      let sourceName = 'projekta';
+      if (incomeSourceId) {
+        const { data: sourceData } = await supabase
+          .from('income_sources')
+          .select('name')
+          .eq('id', incomeSourceId)
+          .single();
+        
+        if (sourceData) {
+          sourceName = sourceData.name;
+        }
+      }
+
+      // Delete the member
       const { error } = await supabase
         .from('income_source_members')
         .delete()
@@ -87,8 +109,19 @@ export const useIncomeSourceMembers = (incomeSourceId: string | null) => {
 
       if (error) throw error;
 
+      // Send notification to removed member
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: memberToRemove.user_id,
+          type: 'member_removed',
+          title: 'Uklonjen/a iz projekta',
+          message: `Vlasnik vas je uklonio iz projekta "${sourceName}".`,
+          data: { income_source_id: incomeSourceId, income_source_name: sourceName }
+        });
+
       setMembers(prev => prev.filter(m => m.id !== memberId));
-      toast.success('Član uklonjen iz kruga');
+      toast.success('Član uklonjen iz projekta');
     } catch (error) {
       console.error('Error removing member:', error);
       toast.error('Greška pri uklanjanju člana');
