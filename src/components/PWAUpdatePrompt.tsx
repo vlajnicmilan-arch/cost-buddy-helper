@@ -23,6 +23,7 @@ export const PWAUpdatePrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const [pendingUpdateCheck, setPendingUpdateCheck] = useState(false);
   
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -33,16 +34,15 @@ export const PWAUpdatePrompt = () => {
       // Store reference for manual check
       checkForUpdatesRef = async () => {
         setIsChecking(true);
+        setPendingUpdateCheck(true);
         try {
           await r?.update();
-          // Small delay to allow needRefresh to update
-          await new Promise(resolve => setTimeout(resolve, 500));
-          if (!needRefresh) {
-            toast.success(t('update.upToDate', 'Aplikacija je ažurna!'));
-          }
+          // Wait a bit for needRefresh to potentially update
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
           console.error('Update check failed:', error);
           toast.error(t('update.checkFailed', 'Provjera nije uspjela'));
+          setPendingUpdateCheck(false);
         } finally {
           setIsChecking(false);
         }
@@ -65,12 +65,29 @@ export const PWAUpdatePrompt = () => {
     (window as any).__pwaIsChecking = isChecking;
   }, [isChecking]);
 
+  // Handle the result of update check after needRefresh state is updated
   useEffect(() => {
-    if (needRefresh) {
+    if (pendingUpdateCheck && !isChecking) {
+      // Check finished, now we can reliably check needRefresh
+      if (needRefresh) {
+        // New version found - show update prompt, don't show "up to date"
+        setShowPrompt(true);
+        setIsTestMode(false);
+      } else {
+        // No new version - safe to show "up to date" message
+        toast.success(t('update.upToDate', 'Aplikacija je ažurna!'));
+      }
+      setPendingUpdateCheck(false);
+    }
+  }, [pendingUpdateCheck, isChecking, needRefresh, t]);
+
+  useEffect(() => {
+    if (needRefresh && !pendingUpdateCheck) {
+      // Only auto-show if not from manual check (manual check handles it in the effect above)
       setShowPrompt(true);
       setIsTestMode(false);
     }
-  }, [needRefresh]);
+  }, [needRefresh, pendingUpdateCheck]);
 
   const handleUpdate = () => {
     if (isTestMode) {
