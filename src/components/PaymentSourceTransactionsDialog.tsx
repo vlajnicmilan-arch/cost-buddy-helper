@@ -8,7 +8,7 @@ import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -180,20 +180,33 @@ export const PaymentSourceTransactionsDialog = ({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
-            <DialogTitle className="flex items-center gap-3">
-              <span 
-                className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
-                style={{ backgroundColor: paymentSource.color + '20', color: paymentSource.color }}
-              >
-                {paymentSource.icon}
-              </span>
-              <div>
-                <span className="block">{paymentSource.name}</span>
-                <span className="text-sm font-normal text-muted-foreground">
-                  {sourceExpenses.length} {t('transactions.transactions')}
+            <div className="flex items-center justify-between gap-3">
+              <DialogTitle className="flex items-center gap-3">
+                <span 
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+                  style={{ backgroundColor: paymentSource.color + '20', color: paymentSource.color }}
+                >
+                  {paymentSource.icon}
                 </span>
-              </div>
-            </DialogTitle>
+                <div>
+                  <span className="block">{paymentSource.name}</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {sourceExpenses.length} {t('transactions.transactions')}
+                  </span>
+                </div>
+              </DialogTitle>
+              {sourceExpenses.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={selectedIds.size === sourceExpenses.length ? clearSelection : selectAll}
+                  className="h-7 text-xs gap-1.5 shrink-0"
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  {selectedIds.size === sourceExpenses.length ? 'Poništi' : 'Odaberi sve'}
+                </Button>
+              )}
+            </div>
           </DialogHeader>
 
           {/* Bulk Actions Toolbar */}
