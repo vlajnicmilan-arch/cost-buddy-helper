@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Expense, getCategoryInfo } from '@/types/expense';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Expense, getCategoryInfo, Category } from '@/types/expense';
 import { EditTransactionDialog } from './EditTransactionDialog';
+import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -10,6 +12,7 @@ import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard } 
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -31,6 +34,7 @@ export const PaymentSourceTransactionsDialog = ({
   const { t } = useTranslation();
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Filter expenses for this payment source
   const sourceExpenses = useMemo(() => {
@@ -86,11 +90,94 @@ export const PaymentSourceTransactionsDialog = ({
     return paymentSource.cards.find(c => c.id === expense.payment_source_card_id);
   };
 
+  // Selection handlers
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(sourceExpenses.map(e => e.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Bulk operations
+  const handleBulkCategoryChange = async (category: Category) => {
+    const selectedExpenses = sourceExpenses.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onUpdate({ ...expense, category });
+        successCount++;
+      } catch (error) {
+        console.error('Error updating expense:', error);
+      }
+    }
+    
+    toast.success(`Kategorija promijenjena za ${successCount} transakcija`);
+    clearSelection();
+  };
+
+  const handleBulkPaymentSourceChange = async (newPaymentSource: string) => {
+    const selectedExpenses = sourceExpenses.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onUpdate({ 
+          ...expense, 
+          payment_source: newPaymentSource as any, // Custom sources use custom:id format
+          payment_source_card_id: null
+        });
+        successCount++;
+      } catch (error) {
+        console.error('Error updating expense:', error);
+      }
+    }
+    
+    toast.success(`Izvor plaćanja promijenjen za ${successCount} transakcija`);
+    clearSelection();
+  };
+
+  const handleBulkDelete = async () => {
+    const selectedExpenses = sourceExpenses.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    
+    for (const expense of selectedExpenses) {
+      try {
+        await onDelete(expense.id);
+        successCount++;
+      } catch (error) {
+        console.error('Error deleting expense:', error);
+      }
+    }
+    
+    toast.success(`Obrisano ${successCount} transakcija`);
+    clearSelection();
+  };
+
+  // Reset selection when dialog closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      clearSelection();
+    }
+    onOpenChange(open);
+  };
+
   if (!paymentSource) return null;
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-3">
@@ -108,6 +195,17 @@ export const PaymentSourceTransactionsDialog = ({
               </div>
             </DialogTitle>
           </DialogHeader>
+
+          {/* Bulk Actions Toolbar */}
+          <BulkActionsToolbar
+            selectedCount={selectedIds.size}
+            totalCount={sourceExpenses.length}
+            onSelectAll={selectAll}
+            onClearSelection={clearSelection}
+            onBulkCategoryChange={handleBulkCategoryChange}
+            onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
+            onBulkDelete={handleBulkDelete}
+          />
 
           {/* Balance & Summary */}
           <div className="grid grid-cols-2 gap-3 shrink-0">
@@ -167,6 +265,7 @@ export const PaymentSourceTransactionsDialog = ({
                 {sourceExpenses.map((expense) => {
                   const categoryInfo = getCategoryInfo(expense.category);
                   const cardInfo = getCardInfo(expense);
+                  const isSelected = selectedIds.has(expense.id);
                   
                   return (
                     <motion.div
@@ -174,8 +273,20 @@ export const PaymentSourceTransactionsDialog = ({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors group"
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl transition-colors group",
+                        isSelected 
+                          ? "bg-primary/10 border border-primary/30" 
+                          : "bg-muted/50 hover:bg-muted/80"
+                      )}
                     >
+                      {/* Checkbox */}
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelection(expense.id)}
+                        className="shrink-0"
+                      />
+
                       {/* Icon */}
                       <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg">
                         {expense.type === 'transfer' ? (
