@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -15,6 +16,7 @@ import {
 } from '@/components/PWAUpdatePrompt';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 import { exportLocalData, importLocalData } from '@/lib/storage/indexedDB';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,6 +40,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   
   const { storageMode } = useStorage();
   const { user } = useAuth();
+  const { currency, setCurrency } = useCurrency();
   const isLocalMode = storageMode === 'local';
 
   useEffect(() => {
@@ -264,54 +267,101 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 ) : (
                   <RefreshCw className="w-4 h-4" />
                 )}
-                {t('settings.checkForUpdates', 'Provjeri ažuriranja')}
-              </Button>
-            </div>
+              {t('settings.checkForUpdates', 'Provjeri ažuriranja')}
+            </Button>
+          </div>
 
-            <Separator />
+          <Separator />
 
-            {/* Data Section */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('settings.data', 'Podaci')}
-              </h3>
+          {/* Currency Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              {t('settings.display', 'Prikaz')}
+            </h3>
 
-              {/* Export button */}
-              <Button
-                variant="outline"
-                className="w-full gap-2 rounded-xl justify-start"
-                onClick={handleExport}
-                disabled={isExporting}
+            {/* Currency selector */}
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Coins className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">
+                    {t('settings.currency', 'Valuta')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.currencyDesc', 'Odaberi valutu za prikaz')}
+                  </p>
+                </div>
+              </div>
+              <Select
+                value={currency.code}
+                onValueChange={(value) => {
+                  setCurrency(value as CurrencyCode);
+                  toast.success(t('settings.currencyChanged', 'Valuta promijenjena'));
+                }}
               >
-                {isExporting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                {t('settings.export', 'Izvezi podatke (JSON)')}
-              </Button>
-
-              {/* Import button */}
-              <Button
-                variant="outline"
-                className="w-full gap-2 rounded-xl justify-start"
-                onClick={() => setShowImportDialog(true)}
-              >
-                <Upload className="w-4 h-4" />
-                {t('settings.import', 'Uvezi backup')}
-              </Button>
-            </div>
-
-            <Separator />
-
-            {/* App Info */}
-            <div className="text-center text-xs text-muted-foreground space-y-1">
-              <p>V&M Balance</p>
-              <p>Verzija 1.0.0</p>
+                <SelectTrigger className="w-[100px] rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((curr) => (
+                    <SelectItem key={curr.code} value={curr.code}>
+                      <span className="flex items-center gap-2">
+                        <span>{curr.symbol}</span>
+                        <span>{curr.code}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          <Separator />
+
+          {/* Data Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              {t('settings.data', 'Podaci')}
+            </h3>
+
+            {/* Export button */}
+            <Button
+              variant="outline"
+              className="w-full gap-2 rounded-xl justify-start"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {t('settings.export', 'Izvezi podatke (JSON)')}
+            </Button>
+
+            {/* Import button */}
+            <Button
+              variant="outline"
+              className="w-full gap-2 rounded-xl justify-start"
+              onClick={() => setShowImportDialog(true)}
+            >
+              <Upload className="w-4 h-4" />
+              {t('settings.import', 'Uvezi backup')}
+            </Button>
+          </div>
+
+          <Separator />
+
+          {/* App Info */}
+          <div className="text-center text-xs text-muted-foreground space-y-1">
+            <p>V&M Balance</p>
+            <p>Verzija 1.0.0</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={(isOpen) => {
