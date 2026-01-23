@@ -168,20 +168,27 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <div className="flex items-center justify-between gap-3">
-            <DialogTitle className="flex items-center gap-3">
-              <div 
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                style={{ backgroundColor: `hsl(var(--${category.color}) / 0.2)` }}
-              >
-                {category.icon}
-              </div>
-              <div>
-                <span>{category.name}</span>
-                <p className="text-sm text-muted-foreground font-normal">
-                  Troškovi u ovoj kategoriji
-                </p>
-              </div>
-            </DialogTitle>
+            <div className="flex items-center gap-3">
+              <DialogTitle className="flex items-center gap-3">
+                <div 
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                  style={{ backgroundColor: `hsl(var(--${category.color}) / 0.2)` }}
+                >
+                  {category.icon}
+                </div>
+                <div>
+                  <span>{category.name}</span>
+                  <p className="text-sm text-muted-foreground font-normal">
+                    Troškovi u ovoj kategoriji
+                  </p>
+                </div>
+              </DialogTitle>
+              {selectedIds.size > 0 && (
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
+                  {selectedIds.size} odabrano
+                </span>
+              )}
+            </div>
             {filteredExpenses.length > 0 && (
               <Button
                 variant="outline"
