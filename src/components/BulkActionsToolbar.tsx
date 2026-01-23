@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CATEGORIES, Category, PAYMENT_SOURCE_GROUPS } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
-import { Trash2, Tag, CreditCard, X, CheckSquare } from 'lucide-react';
+import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertDialog,
@@ -15,6 +15,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface BulkActionsToolbarProps {
   selectedCount: number;
@@ -112,71 +121,86 @@ export const BulkActionsToolbar = ({
 
             {/* Bulk actions */}
             <div className="flex flex-wrap gap-2">
-              {/* Category change */}
-              {showCategoryChange && (
-                <Select 
-                  onValueChange={(value) => handleCategoryChange(value as Category)}
-                  disabled={isProcessing}
-                >
-                  <SelectTrigger className="w-auto h-8 text-xs gap-2 bg-background">
-                    <Tag className="w-3 h-3" />
-                    <SelectValue placeholder="Promijeni kategoriju" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{cat.icon}</span>
-                          <span>{cat.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-
-              {/* Payment source change */}
-              {showPaymentSourceChange && (
-                <Select 
-                  onValueChange={handlePaymentSourceChange}
-                  disabled={isProcessing}
-                >
-                  <SelectTrigger className="w-auto h-8 text-xs gap-2 bg-background">
-                    <CreditCard className="w-3 h-3" />
-                    <SelectValue placeholder="Promijeni izvor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {/* Custom payment sources */}
-                    {customPaymentSources.length > 0 && (
-                      <>
-                        {customPaymentSources.map((source) => (
-                          <SelectItem key={source.id} value={`custom:${source.id}`}>
-                            <span className="flex items-center gap-2">
-                              <span 
-                                className="w-4 h-4 rounded-full flex items-center justify-center text-[10px]"
-                                style={{ backgroundColor: source.color + '30', color: source.color }}
-                              >
-                                {source.icon}
-                              </span>
-                              <span>{source.name}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </>
+              {/* Combined dropdown for category and payment source */}
+              {(showCategoryChange || showPaymentSourceChange) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 text-xs gap-2 bg-background"
+                      disabled={isProcessing}
+                    >
+                      <Settings2 className="w-3 h-3" />
+                      Grupna promjena
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    {/* Category submenu */}
+                    {showCategoryChange && (
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <Tag className="w-4 h-4 mr-2" />
+                          Kategorija
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+                          {CATEGORIES.map((cat) => (
+                            <DropdownMenuItem 
+                              key={cat.id} 
+                              onClick={() => handleCategoryChange(cat.id as Category)}
+                            >
+                              <span className="mr-2">{cat.icon}</span>
+                              {cat.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
                     )}
-                    {/* Standard payment sources */}
-                    {PAYMENT_SOURCE_GROUPS.map((group) => (
-                      group.sources.map((source) => (
-                        <SelectItem key={source.id} value={source.id}>
-                          <span className="flex items-center gap-2">
-                            <span>{source.icon}</span>
-                            <span>{source.name}</span>
-                          </span>
-                        </SelectItem>
-                      ))
-                    ))}
-                  </SelectContent>
-                </Select>
+
+                    {/* Payment source submenu */}
+                    {showPaymentSourceChange && (
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Plaćanje
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+                          {/* Custom payment sources */}
+                          {customPaymentSources.length > 0 && (
+                            <>
+                              {customPaymentSources.map((source) => (
+                                <DropdownMenuItem 
+                                  key={source.id} 
+                                  onClick={() => handlePaymentSourceChange(`custom:${source.id}`)}
+                                >
+                                  <span 
+                                    className="w-4 h-4 mr-2 rounded-full flex items-center justify-center text-[10px]"
+                                    style={{ backgroundColor: source.color + '30', color: source.color }}
+                                  >
+                                    {source.icon}
+                                  </span>
+                                  {source.name}
+                                </DropdownMenuItem>
+                              ))}
+                            </>
+                          )}
+                          {/* Standard payment sources */}
+                          {PAYMENT_SOURCE_GROUPS.map((group) => (
+                            group.sources.map((source) => (
+                              <DropdownMenuItem 
+                                key={source.id} 
+                                onClick={() => handlePaymentSourceChange(source.id)}
+                              >
+                                <span className="mr-2">{source.icon}</span>
+                                {source.name}
+                              </DropdownMenuItem>
+                            ))
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
 
               {/* Delete button */}
