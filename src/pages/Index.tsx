@@ -15,8 +15,7 @@ import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TransferListDialog } from '@/components/TransferListDialog';
-import { BulkPaymentSourceDialog } from '@/components/BulkPaymentSourceDialog';
-import { BulkCategoryDialog } from '@/components/BulkCategoryDialog';
+import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
@@ -279,8 +278,7 @@ const Index = () => {
           <div className="flex flex-wrap items-center gap-2">
             <LanguageSwitcher />
             <HelpDialog />
-            <BulkPaymentSourceDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
-            <BulkCategoryDialog expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
+            <BulkEditDropdown expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
             <ReportsDialog expenses={expenses} />
             <AddExpenseDialog onAdd={addExpense} />
           </div>
