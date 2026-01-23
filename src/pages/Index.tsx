@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { TransferListDialog } from '@/components/TransferListDialog';
 import { BulkPaymentSourceDialog } from '@/components/BulkPaymentSourceDialog';
 import { BulkCategoryDialog } from '@/components/BulkCategoryDialog';
+import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
@@ -26,19 +27,21 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import HelpDialog from '@/components/HelpDialog';
-import { Expense } from '@/types/expense';
+import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from 'react-i18next';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { toast } from 'sonner';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -57,6 +60,9 @@ const Index = () => {
   const [dashboardFilters, setDashboardFilters] = useState<FilterState>(defaultFilters);
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
+  
+  // Bulk selection state
+  const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
 
   // Get custom payment sources for card filtering (declare before useExpenses to use in callback)
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
@@ -102,6 +108,58 @@ const Index = () => {
 
   // Initialize auto-backup for local mode
   useAutoBackup();
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedTransactionIds(new Set());
+  }, [dashboardFilters]);
+
+  // Bulk selection handlers
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedTransactionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = filteredDashboardExpenses.map(e => e.id);
+    setSelectedTransactionIds(new Set(allIds));
+  }, [filteredDashboardExpenses]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTransactionIds(new Set());
+  }, []);
+
+  const handleBulkCategoryChange = useCallback(async (category: Category) => {
+    const selectedExpenses = filteredDashboardExpenses.filter(e => selectedTransactionIds.has(e.id));
+    const updatedExpenses = selectedExpenses.map(e => ({ ...e, category }));
+    await bulkUpdateExpenses(updatedExpenses);
+    setSelectedTransactionIds(new Set());
+    toast.success(`Kategorija promijenjena za ${selectedExpenses.length} transakcija`);
+  }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses]);
+
+  const handleBulkPaymentSourceChange = useCallback(async (paymentSource: string) => {
+    const selectedExpenses = filteredDashboardExpenses.filter(e => selectedTransactionIds.has(e.id));
+    const updatedExpenses = selectedExpenses.map(e => ({ ...e, paymentSource }));
+    await bulkUpdateExpenses(updatedExpenses);
+    setSelectedTransactionIds(new Set());
+    toast.success(`Izvor plaćanja promijenjen za ${selectedExpenses.length} transakcija`);
+  }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses]);
+
+  const handleBulkDelete = useCallback(async () => {
+    const idsToDelete = Array.from(selectedTransactionIds);
+    for (const id of idsToDelete) {
+      await deleteExpense(id);
+    }
+    setSelectedTransactionIds(new Set());
+    toast.success(`Obrisano ${idsToDelete.length} transakcija`);
+  }, [selectedTransactionIds, deleteExpense]);
 
   useEffect(() => {
     // Only redirect to auth if using cloud mode and not logged in
@@ -403,6 +461,17 @@ const Index = () => {
                   cards={allCards}
                 />
 
+                {/* Bulk Actions Toolbar */}
+                <BulkActionsToolbar
+                  selectedCount={selectedTransactionIds.size}
+                  onClearSelection={handleClearSelection}
+                  onSelectAll={handleSelectAll}
+                  totalCount={filteredDashboardExpenses.length}
+                  onBulkCategoryChange={handleBulkCategoryChange}
+                  onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
+                  onBulkDelete={handleBulkDelete}
+                />
+
                 {expensesLoading ? (
                   <div className="py-12 flex items-center justify-center">
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -424,15 +493,27 @@ const Index = () => {
                   <div className="max-h-[400px] overflow-y-auto space-y-1 pr-1">
                     <AnimatePresence>
                       {filteredDashboardExpenses.map((expense) => (
-                        <TransactionItem
-                          key={expense.id}
-                          expense={expense}
-                          onDelete={deleteExpense}
-                          onClick={(e) => {
-                            setSelectedTransaction(e);
-                            setDetailDialogOpen(true);
-                          }}
-                        />
+                        <div key={expense.id} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedTransactionIds.has(expense.id)}
+                            onCheckedChange={() => handleToggleSelect(expense.id)}
+                            className="shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <TransactionItem
+                              expense={expense}
+                              onDelete={deleteExpense}
+                              onClick={(e) => {
+                                if (selectedTransactionIds.size === 0) {
+                                  setSelectedTransaction(e);
+                                  setDetailDialogOpen(true);
+                                } else {
+                                  handleToggleSelect(e.id);
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
                       ))}
                     </AnimatePresence>
                   </div>
