@@ -19,7 +19,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 
-export const CustomPaymentSourcesPanel = () => {
+interface CustomPaymentSourcesPanelProps {
+  hideHeader?: boolean;
+}
+
+export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentSourcesPanelProps) => {
   const { customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard } = useCustomPaymentSources();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<CustomPaymentSource | null>(null);
@@ -84,6 +88,15 @@ export const CustomPaymentSourcesPanel = () => {
   );
 
   if (loading) {
+    if (hideHeader) {
+      return (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+      );
+    }
     return (
       <Card>
         <CardHeader className="pb-3">
@@ -98,6 +111,159 @@ export const CustomPaymentSourcesPanel = () => {
           ))}
         </CardContent>
       </Card>
+    );
+  }
+
+  const content = (
+    <div className="space-y-4">
+      {/* Existing custom sources */}
+      {customPaymentSources.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          Nemate prilagođenih izvora plaćanja.<br />
+          Dodajte novi ili odaberite iz predloženih.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {customPaymentSources.map((source) => (
+            <div
+              key={source.id}
+              className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                    style={{ backgroundColor: source.color }}
+                  >
+                    <span>{source.icon}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">{source.name}</span>
+                    {source.description && (
+                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{source.description}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`font-mono text-sm font-semibold ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}>
+                    €{(source.balance || 0).toFixed(2)}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleEdit(source)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(source)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              {/* Cards display */}
+              {source.cards && source.cards.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/50">
+                  {source.cards.map((card) => (
+                    <span 
+                      key={card.id} 
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted rounded text-xs"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                      {card.card_type && <span className="text-muted-foreground">{card.card_type}</span>}
+                      <span className="font-mono">****{card.last_four_digits}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Suggested Payment Sources */}
+      {availableSuggestions.length > 0 && (
+        <Collapsible open={suggestionsOpen} onOpenChange={setSuggestionsOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between text-muted-foreground hover:text-foreground">
+              <span className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Predloženi izvori ({availableSuggestions.length})
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${suggestionsOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-2">
+            <div className="flex flex-wrap gap-2">
+              {availableSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion.name}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors text-sm"
+                >
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
+                    style={{ backgroundColor: suggestion.color }}
+                  >
+                    {suggestion.icon}
+                  </span>
+                  <span>{suggestion.name}</span>
+                  <Plus className="h-3 w-3 text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* Add button when in accordion mode */}
+      {hideHeader && (
+        <Button size="sm" onClick={openNewDialog} className="w-full">
+          <Plus className="h-4 w-4 mr-1" />
+          Novi izvor plaćanja
+        </Button>
+      )}
+    </div>
+  );
+
+  if (hideHeader) {
+    return (
+      <>
+        {content}
+        <CustomPaymentSourceDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          source={editingSource}
+          onSave={handleSave}
+          onAddCard={addCard}
+          onDeleteCard={deleteCard}
+          initialData={initialData}
+        />
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Obrisati izvor plaćanja?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Jeste li sigurni da želite obrisati izvor plaćanja "{sourceToDelete?.name}"?
+                Transakcije koje koriste ovaj izvor neće biti obrisane, ali će im izvor biti promijenjen u "Ostalo".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Odustani</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Obriši
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
@@ -116,113 +282,8 @@ export const CustomPaymentSourcesPanel = () => {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Existing custom sources */}
-          {customPaymentSources.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Nemate prilagođenih izvora plaćanja.<br />
-              Dodajte novi ili odaberite iz predloženih.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {customPaymentSources.map((source) => (
-                <div
-                  key={source.id}
-                  className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white"
-                        style={{ backgroundColor: source.color }}
-                      >
-                        <span>{source.icon}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium">{source.name}</span>
-                        {source.description && (
-                          <p className="text-xs text-muted-foreground truncate max-w-[120px]">{source.description}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`font-mono text-sm font-semibold ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}>
-                        €{(source.balance || 0).toFixed(2)}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleEdit(source)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(source)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Cards display */}
-                  {source.cards && source.cards.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/50">
-                      {source.cards.map((card) => (
-                        <span 
-                          key={card.id} 
-                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted rounded text-xs"
-                        >
-                          <CreditCard className="w-3 h-3" />
-                          {card.card_type && <span className="text-muted-foreground">{card.card_type}</span>}
-                          <span className="font-mono">****{card.last_four_digits}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Suggested Payment Sources */}
-          {availableSuggestions.length > 0 && (
-            <Collapsible open={suggestionsOpen} onOpenChange={setSuggestionsOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between text-muted-foreground hover:text-foreground">
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Predloženi izvori ({availableSuggestions.length})
-                  </span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${suggestionsOpen ? 'rotate-180' : ''}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-2">
-                <div className="flex flex-wrap gap-2">
-                  {availableSuggestions.map((suggestion) => (
-                    <button
-                      key={suggestion.name}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors text-sm"
-                    >
-                      <span
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
-                        style={{ backgroundColor: suggestion.color }}
-                      >
-                        {suggestion.icon}
-                      </span>
-                      <span>{suggestion.name}</span>
-                      <Plus className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+        <CardContent>
+          {content}
         </CardContent>
       </Card>
 
