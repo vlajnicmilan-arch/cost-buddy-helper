@@ -39,7 +39,16 @@ import {
   Banknote,
   List,
 } from 'lucide-react';
-import { generatePDFReport, generateCSVReport, generateJSONExport, ReportData } from '@/lib/reportExport';
+import { 
+  generatePDFReport, 
+  generateCSVReport, 
+  generateJSONExport, 
+  generateIncomePDFReport,
+  generateIncomeCSVReport,
+  generateIncomeJSONExport,
+  ReportData, 
+  IncomeReportData 
+} from '@/lib/reportExport';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -488,6 +497,47 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       toast.success('JSON datoteka generirana!');
     } catch (error) {
       console.error('Error generating JSON:', error);
+      toast.error('Greška pri generiranju JSON-a');
+    }
+  };
+
+  // Income report data
+  const getIncomeReportData = (): IncomeReportData => {
+    return {
+      incomeTransactions,
+      dateRange,
+      totalIncome: stats.income,
+      byCategory: incomeByCategory,
+      currency: { code: currency.code, symbol: currency.symbol, locale: currency.locale },
+    };
+  };
+
+  const handleExportIncomePDF = () => {
+    try {
+      generateIncomePDFReport(getIncomeReportData());
+      toast.success('PDF izvješće prihoda generirano!');
+    } catch (error) {
+      console.error('Error generating income PDF:', error);
+      toast.error('Greška pri generiranju PDF-a');
+    }
+  };
+
+  const handleExportIncomeCSV = () => {
+    try {
+      generateIncomeCSVReport(getIncomeReportData());
+      toast.success('CSV datoteka prihoda generirana!');
+    } catch (error) {
+      console.error('Error generating income CSV:', error);
+      toast.error('Greška pri generiranju CSV-a');
+    }
+  };
+
+  const handleExportIncomeJSON = () => {
+    try {
+      generateIncomeJSONExport(getIncomeReportData());
+      toast.success('JSON datoteka prihoda generirana!');
+    } catch (error) {
+      console.error('Error generating income JSON:', error);
       toast.error('Greška pri generiranju JSON-a');
     }
   };
@@ -1007,6 +1057,51 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 Nema prihoda u odabranom razdoblju
               </p>
             )}
+
+            {/* Income Export Buttons */}
+            <div className="space-y-3 pt-4 border-t">
+              <Label className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Izvezi izvješće prihoda
+              </Label>
+              <div className="grid grid-cols-3 gap-3">
+                <Button
+                  variant="outline"
+                  className="gap-2 rounded-xl h-auto py-4 flex-col"
+                  onClick={handleExportIncomePDF}
+                  disabled={incomeTransactions.length === 0}
+                >
+                  <FileText className="w-6 h-6 text-income" />
+                  <span>PDF</span>
+                  <span className="text-xs text-muted-foreground">Izvješće</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2 rounded-xl h-auto py-4 flex-col"
+                  onClick={handleExportIncomeCSV}
+                  disabled={incomeTransactions.length === 0}
+                >
+                  <FileSpreadsheet className="w-6 h-6 text-income" />
+                  <span>CSV</span>
+                  <span className="text-xs text-muted-foreground">Excel/Sheets</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2 rounded-xl h-auto py-4 flex-col"
+                  onClick={handleExportIncomeJSON}
+                  disabled={incomeTransactions.length === 0}
+                >
+                  <FileJson className="w-6 h-6 text-income" />
+                  <span>JSON</span>
+                  <span className="text-xs text-muted-foreground">Backup</span>
+                </Button>
+              </div>
+              {incomeTransactions.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Nema prihoda u odabranom razdoblju
+                </p>
+              )}
+            </div>
           </TabsContent>
 
           {/* Compare Tab */}

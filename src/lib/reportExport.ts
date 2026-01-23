@@ -269,3 +269,164 @@ export const generateJSONExport = (data: ReportData): void => {
   link.click();
   URL.revokeObjectURL(link.href);
 };
+
+// ============= INCOME REPORT EXPORTS =============
+
+export interface IncomeReportData {
+  incomeTransactions: Expense[];
+  dateRange: { start: Date; end: Date };
+  totalIncome: number;
+  byCategory: Record<string, number>;
+  currency?: CurrencyConfig;
+}
+
+export const generateIncomePDFReport = (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima'): void => {
+  const doc = new jsPDF();
+  
+  // Title
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text(toAscii(reportTitle), 14, 20);
+  
+  // Date range
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(
+    `Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`,
+    14,
+    28
+  );
+  doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
+
+  // Summary section
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(toAscii('Sazetak prihoda'), 14, 46);
+
+  const summaryData = [
+    [toAscii('Ukupni prihodi'), formatCurrency(data.totalIncome, data.currency)],
+    ['Broj transakcija', data.incomeTransactions.length.toString()],
+  ];
+
+  autoTable(doc, {
+    startY: 50,
+    head: [['Stavka', 'Vrijednost']],
+    body: summaryData,
+    theme: 'striped',
+    headStyles: { fillColor: [34, 197, 94] },
+    margin: { left: 14 },
+    tableWidth: 80,
+  });
+
+  // Category breakdown
+  const categoryY = (doc as any).lastAutoTable.finalY + 15;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Prihodi po kategorijama', 14, categoryY);
+
+  const categoryData = Object.entries(data.byCategory)
+    .filter(([_, amount]) => amount > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([categoryId, amount]) => {
+      const percentage = data.totalIncome > 0 
+        ? ((amount / data.totalIncome) * 100).toFixed(1) 
+        : '0';
+      return [toAscii(categoryId), formatCurrency(amount, data.currency), `${percentage}%`];
+    });
+
+  if (categoryData.length > 0) {
+    autoTable(doc, {
+      startY: categoryY + 4,
+      head: [['Kategorija', 'Iznos', 'Udio']],
+      body: categoryData,
+      theme: 'striped',
+      headStyles: { fillColor: [34, 197, 94] },
+      margin: { left: 14 },
+      tableWidth: 120,
+    });
+  }
+
+  // Transaction list (new page)
+  doc.addPage();
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Popis prihoda', 14, 20);
+
+  const transactionData = data.incomeTransactions
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .map(income => {
+      return [
+        formatDate(income.date),
+        toAscii(income.description),
+        toAscii(income.category || 'Ostalo'),
+        formatCurrency(income.amount, data.currency),
+      ];
+    });
+
+  autoTable(doc, {
+    startY: 24,
+    head: [['Datum', 'Opis', 'Kategorija', 'Iznos']],
+    body: transactionData,
+    theme: 'striped',
+    headStyles: { fillColor: [34, 197, 94] },
+    margin: { left: 14 },
+    styles: { fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 30 },
+      1: { cellWidth: 80 },
+      2: { cellWidth: 40 },
+      3: { cellWidth: 35 },
+    },
+  });
+
+  // Save the PDF
+  const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`;
+  doc.save(fileName.replace(/\./g, '-'));
+};
+
+export const generateIncomeCSVReport = (data: IncomeReportData): void => {
+  const headers = ['Datum', 'Opis', 'Kategorija', 'Iznos'];
+  
+  const rows = data.incomeTransactions
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .map(income => {
+      return [
+        formatDate(income.date),
+        `"${income.description.replace(/"/g, '""')}"`,
+        income.category || 'Ostalo',
+        income.amount,
+      ].join(',');
+    });
+
+  const csvContent = [headers.join(','), ...rows].join('\n');
+  
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+};
+
+export const generateIncomeJSONExport = (data: IncomeReportData): void => {
+  const exportData = {
+    generatedAt: new Date().toISOString(),
+    dateRange: {
+      start: data.dateRange.start.toISOString(),
+      end: data.dateRange.end.toISOString(),
+    },
+    totalIncome: data.totalIncome,
+    byCategory: data.byCategory,
+    transactions: data.incomeTransactions.map(e => ({
+      ...e,
+      date: e.date.toISOString(),
+    })),
+  };
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+};
