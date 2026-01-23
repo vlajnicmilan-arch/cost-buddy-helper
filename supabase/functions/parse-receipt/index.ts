@@ -125,36 +125,104 @@ serve(async (req) => {
         
         if (src.cards?.length > 0) {
           src.cards.forEach((card: any) => {
-            cardsList.push(`  - Kartica "${card.card_name}" zadnje 4 znamenke: ${card.last_four_digits} (card_id: ${card.id}, source_id: ${src.id})`);
+            cardsList.push(`  - "${card.card_name}" → zadnje 4 znamenke: "${card.last_four_digits}" → card_id: "${card.id}" → source_id: "${src.id}"`);
           });
         }
       });
       
       paymentSourcesContext = `
 
-PRILAGOĐENI IZVORI PLAĆANJA KORISNIKA:
+=== KORISNIKOVI RAČUNI I KARTICE ===
+RAČUNI:
 ${sourcesList.join('\n')}
 
-KARTICE KORISNIKA:
-${cardsList.length > 0 ? cardsList.join('\n') : '(nema definiranih kartica)'}`;
+KARTICE (PRESUDNO ZA POVEZIVANJE):
+${cardsList.length > 0 ? cardsList.join('\n') : '(nema definiranih kartica)'}
+=== KRAJ POPISA ===`;
 
       cardMatchingRules = `
 
-KRITIČNA PRAVILA ZA PREPOZNAVANJE KARTICE:
-1. TRAŽI BROJ KARTICE na računu! Obično piše kao: "****1234", "XXXX1234", "1234****", ili samo "1234" blizu oznake kartice.
-2. Traži redove s tekstom: "KARTICA", "CARD", "PAN", "VISA", "MASTERCARD", "MAESTRO", "AMEX" - broj kartice je obično blizu.
-3. Ako pronađeš zadnje 4 znamenke (npr. "1234") koje TOČNO odgovaraju nekoj kartici iz popisa KARTICE KORISNIKA:
-   - Postavi custom_payment_source_id na odgovarajući source_id
-   - Postavi payment_source_card_id na odgovarajući card_id
-4. Ako prepoznaš samo naziv banke (npr. "ZABA", "PBZ", "Erste", "Revolut") ali NE vidiš broj kartice:
-   - Postavi custom_payment_source_id na odgovarajući source_id
-   - Ostavi payment_source_card_id kao null
-5. Ako nema podudaranja, koristi payment_method: "card" ili "cash".
+=== OBVEZNA PRAVILA ZA KARTICE ===
+KORAK 1: Pronađi broj kartice na računu
+- Traži sljedeće uzorke: "****1234", "XXXX1234", "xxxx1234", "1234****", "PAN: 1234", "Kartica: 1234"
+- Traži kraj redaka s brojevima: često su zadnje 4 znamenke na kraju retka iza VISA/MC/MAESTRO
+- Traži u blizini riječi: KARTICA, CARD, PAN, VISA, MASTERCARD, MC, MAESTRO, AMEX, DEBIT, CREDIT
+- Traži u blizini: "Kartično plaćanje", "Bezgotovinsko", "POS terminal"
 
-PRIMJER: Ako na računu piše "VISA ****5678" i u popisu kartica imaš karticu s last_four_digits: "5678", MORAŠ vratiti taj card_id!`;
+KORAK 2: Usporedi s popisom KARTICE iznad
+- Ako pronađeš 4 znamenke na računu, usporedi ih s SVAKOM karticom iz popisa
+- Ako se podudaraju → MORAŠ postaviti payment_source_card_id na taj card_id I custom_payment_source_id na taj source_id
+- Ovo je KRITIČNO - nemoj zaboraviti card_id!
+
+KORAK 3: Ako nema podudaranja brojeva
+- Ako vidiš naziv banke (ZABA, PBZ, Erste, Revolut, OTP, RBA, Addiko) bez broja kartice → postavi samo custom_payment_source_id
+- Ako je gotovina → payment_method: "cash", ostalo null
+- Ako ne možeš utvrditi → payment_method: "card", ostalo null
+=== KRAJ PRAVILA ===`;
     }
     
-    // Use Gemini for OCR and categorization with enhanced prompt for date and items
+    // Enhanced prompt for better OCR and item extraction
+    const systemPrompt = `Ti si precizni OCR asistent za analizu hrvatskih računa. TVOJ CILJ: izvući SVE podatke s računa.
+
+=== ŠTO MORAŠ PRONAĆI ===
+
+1. UKUPNI IZNOS
+   - Traži: "UKUPNO", "TOTAL", "ZA PLATITI", "SVEGA", "IZNOS"
+   - Vraća se kao broj u eurima (npr. 45.50)
+
+2. TRGOVINA/TRGOVAC
+   - Obično je na vrhu računa velikim slovima
+   - Može biti: KONZUM, LIDL, KAUFLAND, SPAR, PLODINE, TOMMY, STUDENAC, INTERSPAR, DM, MULLER itd.
+
+3. DATUM RAČUNA
+   - Traži format: DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD
+   - Često piše: "Datum:", "Date:", ili je blizu vremena (npr. "20.01.2025 15:30")
+   - VAŽNO: Uvijek vrati u formatu YYYY-MM-DD
+
+4. NAČIN PLAĆANJA (KRITIČNO!)
+   - Za karticu traži: VISA, MASTERCARD, MC, MAESTRO, AMEX, DEBIT, CREDIT, POS, KARTICA, CARD, KARTIČNO, BEZGOTOVINSKI, CONTACTLESS
+   - Za gotovinu traži: GOTOVINA, GOTOV., CASH, UPLAĆENO
+   - OBAVEZNO traži zadnje 4 znamenke kartice! (npr. ****5678, XXXX1234)
+
+5. SVI ARTIKLI - izvuci SVAKI proizvod s računa:
+   - name: puni naziv artikla (npr. "MLIJEKO DUKAT 1L", "KRUH BIJELI 500G")
+   - quantity: količina (broj, obično ispred cijene, default 1)
+   - unit_price: jedinična cijena ako je različita od ukupne (može biti null)
+   - total_price: ukupna cijena tog artikla (OBAVEZNO)
+${paymentSourcesContext}${cardMatchingRules}
+
+=== FORMAT ODGOVORA (SAMO JSON) ===
+{
+  "amount": 45.50,
+  "merchant": "Konzum",
+  "description": "Tjedna kupovina",
+  "category": "food",
+  "date": "2025-01-20",
+  "payment_method": "card",
+  "custom_payment_source_id": null,
+  "payment_source_card_id": null,
+  "items": [
+    {"name": "MLIJEKO DUKAT 1L", "quantity": 2, "unit_price": 1.29, "total_price": 2.58},
+    {"name": "KRUH BIJELI", "quantity": 1, "unit_price": null, "total_price": 1.50}
+  ]
+}
+
+KATEGORIJE: food, transport, shopping, entertainment, bills, health, other
+
+AKO NE MOŽEŠ PROČITATI:
+{"error": "Nije moguće pročitati račun"}`;
+
+    const userPrompt = `Analiziraj ovaj račun. 
+
+POSEBNO OBRATI PAŽNJU:
+1. Pronađi SVE artikle - svaki redak s proizvodom i cijenom
+2. Pronađi TOČAN DATUM na računu
+3. Pronađi BROJ KARTICE (zadnje 4 znamenke) i usporedi s popisom korisnikovih kartica
+4. Ako pronađeš podudaranje broja kartice → MORAŠ vratiti card_id i source_id
+
+Vrati SAMO JSON bez dodatnog teksta.`;
+
+    // Use Gemini for OCR and categorization with enhanced prompt
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -166,51 +234,14 @@ PRIMJER: Ako na računu piše "VISA ****5678" i u popisu kartica imaš karticu s
         messages: [
           {
             role: 'system',
-            content: `Ti si asistent za analizu računa. Analiziraj sliku računa i izvuci SVE podatke:
-
-1. Ukupni iznos (samo broj u eurima)
-2. Naziv trgovine/usluge
-3. Opis transakcije (kratko)
-4. Kategorija: food, transport, shopping, entertainment, bills, health, other
-5. DATUM računa - traži datum na računu (format: YYYY-MM-DD). Ako ne možeš pronaći, koristi null.
-6. NAČIN PLAĆANJA - traži na računu:
-   - "card" ako piše: VISA, MASTERCARD, MAESTRO, kartica, POS, AMEX, kartično plaćanje, bezgotovinski, contactless
-   - "cash" ako piše: gotovina, GOTOV., uplaćeno, cash
-   - null ako nije jasno
-7. SVE artikle s računa - za svaki artikl izvuci:
-   - name: naziv artikla
-   - quantity: količina (broj, default 1)
-   - unit_price: jedinična cijena ako postoji (broj ili null)
-   - total_price: ukupna cijena artikla (broj)
-${paymentSourcesContext}${cardMatchingRules}
-
-Odgovori SAMO u JSON formatu:
-{
-  "amount": 45.50,
-  "merchant": "Konzum",
-  "description": "Tjedna kupovina namirnica",
-  "category": "food",
-  "date": "2025-01-20",
-  "payment_method": "card",
-  "custom_payment_source_id": null,
-  "payment_source_card_id": null,
-  "items": [
-    {"name": "Mlijeko 1L", "quantity": 2, "unit_price": 1.20, "total_price": 2.40},
-    {"name": "Kruh", "quantity": 1, "unit_price": 1.50, "total_price": 1.50}
-  ]
-}
-
-Ako ne možeš pročitati račun, vrati:
-{
-  "error": "Nije moguće pročitati račun"
-}`
+            content: systemPrompt
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Analiziraj ovaj račun. VAŽNO: Pažljivo potraži broj kartice (zadnje 4 znamenke) na računu i usporedi ga s popisom kartica korisnika. Ako pronađeš podudaranje, vrati odgovarajući card_id i source_id.'
+                text: userPrompt
               },
               {
                 type: 'image_url',
@@ -220,7 +251,8 @@ Ako ne možeš pročitati račun, vrati:
               }
             ]
           }
-        ]
+        ],
+        temperature: 0.1  // Lower temperature for more consistent extraction
       })
     });
 
