@@ -208,6 +208,15 @@
     "deleteCategoryConfirm": "Are you sure you want to delete the category",
     "clickForDetailsAndChange": "Click for details and category change"
   },
+  "incomeCategories": {
+    "salary": "Salary",
+    "freelance": "Freelance",
+    "gift_income": "Gift",
+    "mortgage": "Mortgage",
+    "personal_loan": "Personal Loan",
+    "sale": "Sale",
+    "other_income": "Other"
+  },
   "paymentSources": {
     "cash": "Cash",
     "bank": "Bank",

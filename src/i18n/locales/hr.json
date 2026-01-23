@@ -208,6 +208,15 @@
     "deleteCategoryConfirm": "Jeste li sigurni da želite obrisati kategoriju",
     "clickForDetailsAndChange": "Klikni za detalje i promjenu kategorije"
   },
+  "incomeCategories": {
+    "salary": "Plaća",
+    "freelance": "Honorar",
+    "gift_income": "Poklon",
+    "mortgage": "Stambeni kredit",
+    "personal_loan": "Nenamjenski kredit",
+    "sale": "Prodaja",
+    "other_income": "Ostalo"
+  },
   "paymentSources": {
     "cash": "Gotovina",
     "bank": "Banka",

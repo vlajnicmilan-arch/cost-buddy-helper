@@ -208,6 +208,15 @@
     "deleteCategoryConfirm": "Sind Sie sicher, dass Sie die Kategorie löschen möchten",
     "clickForDetailsAndChange": "Klicken für Details und Kategorieänderung"
   },
+  "incomeCategories": {
+    "salary": "Gehalt",
+    "freelance": "Honorar",
+    "gift_income": "Geschenk",
+    "mortgage": "Hypothek",
+    "personal_loan": "Privatkredit",
+    "sale": "Verkauf",
+    "other_income": "Sonstiges"
+  },
   "paymentSources": {
     "cash": "Bargeld",
     "bank": "Bank",

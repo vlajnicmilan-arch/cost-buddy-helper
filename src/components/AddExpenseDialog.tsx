@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, getCategoryInfo, TransactionType } from '@/types/expense';
+import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, getCategoryInfo, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -37,7 +37,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<Category>('food');
+  const [category, setCategory] = useState<Category | IncomeCategory>('food');
   const [merchantName, setMerchantName] = useState('');
   const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -949,12 +949,29 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 />
               </div>
 
-              {/* Category - Only show for expenses */}
-              {type === 'expense' && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('common.category')}</Label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {CATEGORIES.map((cat) => (
+              {/* Category - Show for expenses and income */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('common.category')}</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {type === 'income' ? (
+                    INCOME_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setCategory(cat.id)}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
+                          category === cat.id 
+                            ? "border-income bg-income/5" 
+                            : "border-transparent bg-muted/50 hover:bg-muted"
+                        )}
+                      >
+                        <span className="text-xl">{cat.icon}</span>
+                        <span className="text-xs font-medium text-muted-foreground">{t(`incomeCategories.${cat.id}`)}</span>
+                      </button>
+                    ))
+                  ) : type === 'expense' ? (
+                    CATEGORIES.map((cat) => (
                       <button
                         key={cat.id}
                         type="button"
@@ -969,10 +986,10 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                         <span className="text-xl">{cat.icon}</span>
                         <span className="text-xs font-medium text-muted-foreground">{t(`categories.${cat.id}`)}</span>
                       </button>
-                    ))}
-                  </div>
+                    ))
+                  ) : null}
                 </div>
-              )}
+              </div>
 
               {/* Save Receipt Option */}
               {receiptImage && (
