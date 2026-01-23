@@ -271,6 +271,7 @@ export const IncomeSourcesPanel = ({
         expenses={expenses}
         onEditTransaction={handleEditTransaction}
         onDeleteTransaction={onDeleteExpense}
+        onUpdateTransaction={onUpdateExpense}
       />
 
       <EditTransactionDialog
