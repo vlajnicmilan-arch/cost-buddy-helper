@@ -808,7 +808,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 />
               </div>
 
-              {/* Merchant Name */}
+              {/* Merchant Name / Source */}
               <div className="space-y-2">
                 <Label htmlFor="merchant" className="text-sm font-medium">
                   {type === 'income' ? t('transactions.merchantSource') : t('transactions.merchantStore')}
@@ -821,6 +821,38 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   className="h-12 rounded-xl"
                 />
               </div>
+
+              {/* Income Category - Dropdown for income type */}
+              {type === 'income' && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('transactions.incomeCategory')}</Label>
+                  <Select value={category} onValueChange={(v) => setCategory(v as IncomeCategory)}>
+                    <SelectTrigger className="h-12 rounded-xl bg-background">
+                      <SelectValue>
+                        {(() => {
+                          const cat = INCOME_CATEGORIES.find(c => c.id === category);
+                          return cat ? (
+                            <span className="flex items-center gap-2">
+                              <span>{cat.icon}</span>
+                              <span>{t(`incomeCategories.${cat.id}`)}</span>
+                            </span>
+                          ) : t('common.category');
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      {INCOME_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          <span className="flex items-center gap-2">
+                            <span>{cat.icon}</span>
+                            <span>{t(`incomeCategories.${cat.id}`)}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Items Section - Only for expenses */}
               {type === 'expense' && (
@@ -949,29 +981,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 />
               </div>
 
-              {/* Category - Show for expenses and income */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">{t('common.category')}</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {type === 'income' ? (
-                    INCOME_CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => setCategory(cat.id)}
-                        className={cn(
-                          "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                          category === cat.id 
-                            ? "border-income bg-income/5" 
-                            : "border-transparent bg-muted/50 hover:bg-muted"
-                        )}
-                      >
-                        <span className="text-xl">{cat.icon}</span>
-                        <span className="text-xs font-medium text-muted-foreground">{t(`incomeCategories.${cat.id}`)}</span>
-                      </button>
-                    ))
-                  ) : type === 'expense' ? (
-                    CATEGORIES.map((cat) => (
+              {/* Category - Only show for expenses */}
+              {type === 'expense' && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('common.category')}</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {CATEGORIES.map((cat) => (
                       <button
                         key={cat.id}
                         type="button"
@@ -986,10 +1001,10 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                         <span className="text-xl">{cat.icon}</span>
                         <span className="text-xs font-medium text-muted-foreground">{t(`categories.${cat.id}`)}</span>
                       </button>
-                    ))
-                  ) : null}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Save Receipt Option */}
               {receiptImage && (

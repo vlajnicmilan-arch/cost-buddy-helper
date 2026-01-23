@@ -191,14 +191,14 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
             />
           </div>
 
-          {/* Category */}
+          {/* Category - Different label and options for income */}
           <div className="space-y-2">
-            <Label>{t('common.category')}</Label>
+            <Label>{type === 'income' ? t('transactions.incomeCategory') : t('common.category')}</Label>
             <Select value={category} onValueChange={(v) => setCategory(v as Category | IncomeCategory)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover z-50">
                 {type === 'income' ? (
                   INCOME_CATEGORIES.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
