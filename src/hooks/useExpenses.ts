@@ -155,6 +155,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             merchant_name: expense.merchant_name,
             ai_extracted: expense.ai_extracted,
             income_source_id: expense.income_source_id,
+            note: expense.note || null,
             status: isPendingMemberTransaction ? 'pending' : 'approved',
             submitted_by: isPendingMemberTransaction ? user.id : null
           })
@@ -186,6 +187,22 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             });
           } catch (notifyError) {
             console.error('Error sending notification:', notifyError);
+            // Don't fail the whole operation if notification fails
+          }
+        }
+
+        // Notify owner if a note was added with the transaction
+        if (expense.note && expense.income_source_id && data) {
+          try {
+            await supabase.functions.invoke('notify-note-added', {
+              body: {
+                expense_id: data.id,
+                income_source_id: expense.income_source_id,
+                note: expense.note
+              }
+            });
+          } catch (notifyError) {
+            console.error('Error sending note notification:', notifyError);
             // Don't fail the whole operation if notification fails
           }
         }
