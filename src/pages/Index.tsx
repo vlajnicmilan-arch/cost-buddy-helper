@@ -27,9 +27,9 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@
 import HelpDialog from '@/components/HelpDialog';
 import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { TrendingUp, TrendingDown, LogOut, Loader2, Settings, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { checkForUpdates } from '@/components/PWAUpdatePrompt';
+import { SettingsDialog } from '@/components/SettingsDialog';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -50,18 +50,12 @@ const Index = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Expense | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [dashboardFilters, setDashboardFilters] = useState<FilterState>(defaultFilters);
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
 
-  const handleCheckForUpdates = async () => {
-    setIsCheckingUpdate(true);
-    await checkForUpdates();
-    setIsCheckingUpdate(false);
-  };
-  
   // Get custom payment sources for card filtering (declare before useExpenses to use in callback)
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
 
@@ -182,24 +176,6 @@ const Index = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleCheckForUpdates}
-                      disabled={isCheckingUpdate}
-                      className="rounded-xl h-9 w-9"
-                    >
-                      <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{t('update.checkForUpdates', 'Provjeri ažuriranja')}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
                     <Button 
                       variant="outline" 
                       size="icon" 
@@ -217,17 +193,12 @@ const Index = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => navigate('/setup')}
-                      className="rounded-xl h-9 w-9"
-                    >
-                      <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </Button>
+                    <div>
+                      <SettingsDialog />
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{t('common.changeStorageMode')}</p>
+                    <p>{t('settings.title', 'Postavke')}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
