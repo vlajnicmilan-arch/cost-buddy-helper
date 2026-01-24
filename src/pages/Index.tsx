@@ -22,10 +22,8 @@ import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCate
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
-import HelpDialog from '@/components/HelpDialog';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3 } from 'lucide-react';
@@ -276,8 +274,6 @@ const Index = () => {
           
           {/* Bottom row: Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
-            <LanguageSwitcher />
-            <HelpDialog />
             <BulkEditDropdown expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
             <ReportsDialog expenses={expenses} />
             <AddExpenseDialog onAdd={addExpense} />
