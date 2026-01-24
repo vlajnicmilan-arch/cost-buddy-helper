@@ -27,7 +27,6 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3 } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -228,7 +227,6 @@ const Index = () => {
             
             {/* Navigation icons (right side) */}
             <div className="flex items-center gap-1 sm:gap-2">
-              <ThemeToggle />
               {!isLocalMode && <NotificationsDropdown />}
               <TooltipProvider>
                 <Tooltip>

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -43,6 +43,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   
   // Backup/Restore state
   const [isExporting, setIsExporting] = useState(false);
@@ -64,8 +65,23 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       setAutoUpdate(getAutoUpdatePreference());
       setSoundEnabled(getNotificationSoundEnabled());
       setPushEnabled(getPushNotificationsEnabled());
+      setIsDark(document.documentElement.classList.contains('dark'));
     }
   }, [open]);
+
+  const toggleTheme = () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    
+    if (newIsDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+    toast.success(newIsDark ? t('settings.darkMode', 'Tamna tema aktivirana') : t('settings.lightMode', 'Svijetla tema aktivirana'));
+  };
 
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode);
@@ -274,12 +290,35 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
           <ScrollArea className="max-h-[70vh]">
           <div className="space-y-6 py-4 pr-4">
-            {/* Language Section */}
+            {/* Appearance Section */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('settings.language', 'Jezik')}
+                {t('settings.appearance', 'Izgled')}
               </h3>
               
+              {/* Theme toggle */}
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    {isDark ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+                  </div>
+                  <div>
+                    <Label htmlFor="theme-toggle" className="text-sm font-medium cursor-pointer">
+                      {t('settings.theme', 'Tema')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {isDark ? t('settings.darkMode', 'Tamna tema') : t('settings.lightMode', 'Svijetla tema')}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="theme-toggle"
+                  checked={isDark}
+                  onCheckedChange={toggleTheme}
+                />
+              </div>
+
+              {/* Language */}
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
