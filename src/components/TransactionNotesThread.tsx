@@ -23,7 +23,8 @@ interface TransactionNote {
 
 interface TransactionNotesThreadProps {
   expenseId: string;
-  incomeSourceId: string | null;
+  incomeSourceId?: string | null;
+  projectId?: string | null;
   initialNote?: string | null;
   onNoteAdded?: () => void;
 }
@@ -31,6 +32,7 @@ interface TransactionNotesThreadProps {
 export const TransactionNotesThread = ({
   expenseId,
   incomeSourceId,
+  projectId,
   initialNote,
   onNoteAdded
 }: TransactionNotesThreadProps) => {
@@ -44,9 +46,9 @@ export const TransactionNotesThread = ({
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
-  // Fetch notes and profiles
+  // Fetch notes and profiles - works for both income sources and projects
   useEffect(() => {
-    if (!expenseId || !incomeSourceId) return;
+    if (!expenseId || (!incomeSourceId && !projectId)) return;
     
     const fetchNotes = async () => {
       setLoading(true);
@@ -84,10 +86,10 @@ export const TransactionNotesThread = ({
     };
 
     fetchNotes();
-  }, [expenseId, incomeSourceId]);
+  }, [expenseId, incomeSourceId, projectId]);
 
   const handleSendNote = async () => {
-    if (!newNote.trim() || !user || !incomeSourceId) return;
+    if (!newNote.trim() || !user || (!incomeSourceId && !projectId)) return;
 
     setSending(true);
     try {
@@ -122,17 +124,34 @@ export const TransactionNotesThread = ({
         }
       }
 
-      // Notify about new reply
-      try {
-        await supabase.functions.invoke('notify-note-added', {
-          body: {
-            expense_id: expenseId,
-            income_source_id: incomeSourceId,
-            note: newNote.trim()
-          }
-        });
-      } catch (notifyError) {
-        console.error('Error sending notification:', notifyError);
+      // Notify about new reply - for income sources
+      if (incomeSourceId) {
+        try {
+          await supabase.functions.invoke('notify-note-added', {
+            body: {
+              expense_id: expenseId,
+              income_source_id: incomeSourceId,
+              note: newNote.trim()
+            }
+          });
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError);
+        }
+      }
+      
+      // Notify about project transaction update - for projects
+      if (projectId) {
+        try {
+          await supabase.functions.invoke('notify-project-transaction', {
+            body: {
+              expense_id: expenseId,
+              project_id: projectId,
+              action: 'updated'
+            }
+          });
+        } catch (notifyError) {
+          console.error('Error sending project notification:', notifyError);
+        }
       }
 
       onNoteAdded?.();
@@ -162,8 +181,8 @@ export const TransactionNotesThread = ({
     }
   };
 
-  // Don't show for non-project transactions
-  if (!incomeSourceId) return null;
+  // Don't show for transactions without income source or project
+  if (!incomeSourceId && !projectId) return null;
 
   const allNotes = notes;
   const hasInitialNote = initialNote && initialNote.trim();
