@@ -3,24 +3,13 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
 import { 
   AlertTriangle, 
   TrendingUp, 
   TrendingDown, 
   Minus,
-  MoreHorizontal,
-  Calendar,
-  Edit,
-  Trash2,
-  RotateCcw
+  Calendar
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,7 +91,7 @@ export const BudgetCard = ({
             </div>
           </div>
 
-          {/* Actions and indicators */}
+          {/* Status indicators */}
           <div className="flex items-center gap-1.5 shrink-0">
             {(budget.isOverBudget || budget.isWarning) && (
               <div className={cn(
@@ -123,31 +112,6 @@ export const BudgetCard = ({
                 <TrendIcon className="w-4 h-4" />
               </div>
             )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  {t('common.edit', 'Uredi')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onReset?.(); }}>
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  {t('budget.reset', 'Resetiraj')}
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={(e) => { e.stopPropagation(); setDeleteDialogOpen(true); }}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {t('common.delete', 'Obriši')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
 
