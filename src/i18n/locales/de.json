@@ -21,7 +21,9 @@
     "noteError": "Fehler beim Senden der Notiz",
     "initialNote": "Ursprüngliche Notiz",
     "assignToProject": "Projekt",
-    "noProject": "Kein Projekt"
+    "noProject": "Kein Projekt",
+    "submittedBy": "Eingereicht von",
+    "addedBy": "Hinzugefügt von"
   },
   "common": {
     "save": "Speichern",

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,7 +20,7 @@ import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
-  Target, Trash2, Clock, Check, X, AlertCircle
+  Target, Trash2, Clock, Check, X, AlertCircle, User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -67,6 +68,33 @@ export const ProjectTransactionsTab = ({
     refetch: refetchPending,
     pendingCount
   } = useProjectPendingTransactions(projectId);
+
+  // User profiles for showing who added each transaction
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
+
+  // Fetch profiles for all transaction authors
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      // Get unique user IDs from expenses (use submitted_by if available, otherwise user_id)
+      const userIds = [...new Set(expenses.map(e => e.submitted_by || e.user_id))];
+      if (userIds.length === 0) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', userIds);
+
+      if (data) {
+        const profileMap: Record<string, string> = {};
+        data.forEach(p => {
+          profileMap[p.user_id] = p.display_name || 'Član';
+        });
+        setProfiles(profileMap);
+      }
+    };
+
+    fetchProfiles();
+  }, [expenses]);
 
   // Add expense dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -319,6 +347,9 @@ export const ProjectTransactionsTab = ({
             const categoryInfo = getCategoryInfo(expense.category as any);
             const isIncome = expense.type === 'income';
             const milestoneName = getMilestoneName(expense.milestone_id);
+            const authorId = expense.submitted_by || expense.user_id;
+            const authorName = profiles[authorId] || 'Član';
+            const isOwnExpense = authorId === user?.id;
 
             return (
               <div 
@@ -332,6 +363,11 @@ export const ProjectTransactionsTab = ({
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{expense.description}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {isOwnExpense ? t('common.you', 'Ti') : authorName}
+                    </span>
+                    <span>•</span>
                     <span>{categoryInfo.name}</span>
                     <span>•</span>
                     <span>{format(new Date(expense.date), 'd. MMM yyyy', { locale: hr })}</span>
