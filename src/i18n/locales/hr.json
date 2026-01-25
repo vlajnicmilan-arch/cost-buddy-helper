@@ -656,5 +656,14 @@
     "finances": "Financije",
     "account": "račun",
     "accounts": "računa"
+  },
+  "notifications": {
+    "title": "Obavijesti",
+    "markAllRead": "Označi sve",
+    "empty": "Nemate obavijesti",
+    "accept": "Prihvati",
+    "decline": "Odbij",
+    "invitationAccepted": "Pozivnica prihvaćena",
+    "invitationDeclined": "Pozivnica odbijena"
   }
 }

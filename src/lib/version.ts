@@ -1,3 +1,3 @@
 // App version - increment with each update
 // Pattern: 1.0.0 -> 1.0.1 -> ... -> 1.0.9 -> 1.1.0 -> 1.1.1 -> ... -> 1.1.9 -> 1.2.0 ...
-export const APP_VERSION = '1.0.2';
+export const APP_VERSION = '1.0.3';

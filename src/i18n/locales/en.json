@@ -656,5 +656,14 @@
     "finances": "Finances",
     "account": "account",
     "accounts": "accounts"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all",
+    "empty": "No notifications",
+    "accept": "Accept",
+    "decline": "Decline",
+    "invitationAccepted": "Invitation accepted",
+    "invitationDeclined": "Invitation declined"
   }
 }
