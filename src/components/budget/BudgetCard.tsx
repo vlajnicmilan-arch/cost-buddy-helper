@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, 
   TrendingUp, 
@@ -24,6 +25,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
+
+// Status labels for budget
+const BUDGET_STATUS_LABELS = {
+  active: 'Aktivan',
+  warning: 'Upozorenje',
+  overBudget: 'Prekoračen',
+} as const;
 
 interface BudgetCardProps {
   budget: BudgetWithStats;
@@ -55,6 +63,24 @@ export const BudgetCard = ({
     if (budget.isWarning) return 'bg-warning';
     return 'bg-primary';
   };
+
+  // Get budget status
+  const getBudgetStatus = () => {
+    if (budget.isOverBudget) return 'overBudget';
+    if (budget.isWarning) return 'warning';
+    return 'active';
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'active': return 'default';
+      case 'warning': return 'outline';
+      case 'overBudget': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
+  const budgetStatus = getBudgetStatus();
 
   // Determine border color based on status
   const getBorderColor = () => {
@@ -117,7 +143,12 @@ export const BudgetCard = ({
               {budget.icon || '💰'}
             </div>
             <div className="min-w-0">
-              <h3 className="font-semibold text-base sm:text-lg truncate">{budget.name}</h3>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="font-semibold text-base sm:text-lg truncate">{budget.name}</h3>
+                <Badge variant={getStatusBadgeVariant(budgetStatus)} className="text-xs shrink-0">
+                  {BUDGET_STATUS_LABELS[budgetStatus]}
+                </Badge>
+              </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="capitalize">{BUDGET_PERIOD_LABELS[budget.period_type]}</span>
                 {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
