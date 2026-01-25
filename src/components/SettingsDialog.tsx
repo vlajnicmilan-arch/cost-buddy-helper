@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2 } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -65,6 +65,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showDeleteConfirm1, setShowDeleteConfirm1] = useState(false);
   const [showDeleteConfirm2, setShowDeleteConfirm2] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Reset state
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   
   const { storageMode } = useStorage();
   const { user } = useAuth();
@@ -346,6 +350,83 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     setImportError('');
     setImportResult(null);
     setShowImportDialog(false);
+  };
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      if (isLocalMode) {
+        // Local mode: Clear expenses but keep payment sources
+        const { resetLocalData } = await import('@/lib/storage/indexedDB');
+        await resetLocalData();
+        
+        toast.success(t('settings.resetComplete', 'Podaci uspješno resetirani'));
+        onDataImported?.();
+      } else if (user) {
+        // Cloud mode: Delete expenses, projects, budgets but keep payment sources
+        
+        // 1. Get all user expenses to delete receipt_items
+        const { data: expenses } = await supabase
+          .from('expenses')
+          .select('id')
+          .eq('user_id', user.id);
+        
+        if (expenses && expenses.length > 0) {
+          const expenseIds = expenses.map(e => e.id);
+          await supabase.from('receipt_items').delete().in('expense_id', expenseIds);
+          await supabase.from('transaction_notes').delete().in('expense_id', expenseIds);
+        }
+        
+        // 2. Delete all expenses
+        await supabase.from('expenses').delete().eq('user_id', user.id);
+        
+        // 3. Get all user projects
+        const { data: projects } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('user_id', user.id);
+        
+        if (projects && projects.length > 0) {
+          const projectIds = projects.map(p => p.id);
+          // Delete project related data
+          await supabase.from('project_milestones').delete().in('project_id', projectIds);
+          await supabase.from('project_funding').delete().in('project_id', projectIds);
+          await supabase.from('project_members').delete().in('project_id', projectIds);
+          await supabase.from('project_invitations').delete().in('project_id', projectIds);
+        }
+        
+        // 4. Delete all projects
+        await supabase.from('projects').delete().eq('user_id', user.id);
+        
+        // 5. Get all user budgets
+        const { data: budgets } = await supabase
+          .from('budget_plans')
+          .select('id')
+          .eq('user_id', user.id);
+        
+        if (budgets && budgets.length > 0) {
+          const budgetIds = budgets.map(b => b.id);
+          // Delete budget related data
+          await supabase.from('budget_categories').delete().in('budget_id', budgetIds);
+          await supabase.from('savings_goals').delete().in('budget_id', budgetIds);
+          await supabase.from('budget_members').delete().in('budget_id', budgetIds);
+          await supabase.from('budget_invitations').delete().in('budget_id', budgetIds);
+        }
+        
+        // 6. Delete all budgets
+        await supabase.from('budget_plans').delete().eq('user_id', user.id);
+        
+        toast.success(t('settings.resetComplete', 'Podaci uspješno resetirani'));
+        onDataImported?.();
+      }
+      
+      setShowResetConfirm(false);
+    } catch (error) {
+      console.error('Reset error:', error);
+      toast.error(t('errors.generic', 'Došlo je do greške'));
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -862,6 +943,33 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               {t('settings.dangerZone', 'Opasna zona')}
             </h3>
             
+            {/* Reset data option */}
+            <div className="p-3 border border-amber-500/30 bg-amber-500/5 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <RotateCcw className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-sm font-medium text-amber-600">
+                    {t('settings.resetData', 'Kreni ispočetka')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.resetDataDesc', 'Briše sve transakcije, projekte i budžete. Novčanici ostaju sa svojim stanjima.')}
+                  </p>
+                </div>
+              </div>
+              
+              <Button
+                variant="outline"
+                className="w-full gap-2 rounded-xl border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600"
+                onClick={() => setShowResetConfirm(true)}
+              >
+                <RotateCcw className="w-4 h-4" />
+                {t('settings.resetDataBtn', 'Resetiraj podatke')}
+              </Button>
+            </div>
+            
+            {/* Delete account option */}
             <div className="p-3 border border-destructive/30 bg-destructive/5 rounded-xl">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center">
@@ -899,6 +1007,46 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         </ScrollArea>
       </DialogContent>
     </Dialog>
+
+      {/* Reset Data Confirmation */}
+      <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <RotateCcw className="w-5 h-5" />
+              {t('settings.resetConfirmTitle', 'Resetirati sve podatke?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>{t('settings.resetConfirmDesc', 'Ova radnja će obrisati:')}</p>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                <li>{t('settings.resetWillDelete1', 'Sve transakcije (prihode i rashode)')}</li>
+                <li>{t('settings.resetWillDelete2', 'Sve projekte i njihove podatke')}</li>
+                <li>{t('settings.resetWillDelete3', 'Sve budžete i njihove postavke')}</li>
+              </ul>
+              <p className="font-medium text-foreground mt-3">
+                {t('settings.resetWillKeep', 'Vaši novčanici (izvori plaćanja) ostaju sa svojim stanjima.')}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResetting}>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 text-white hover:bg-amber-700"
+              onClick={handleReset}
+              disabled={isResetting}
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t('settings.resetting', 'Resetiram...')}
+                </>
+              ) : (
+                t('settings.confirmReset', 'Resetiraj')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* First Delete Confirmation */}
       <AlertDialog open={showDeleteConfirm1} onOpenChange={setShowDeleteConfirm1}>

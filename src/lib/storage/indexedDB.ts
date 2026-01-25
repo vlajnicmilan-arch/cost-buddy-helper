@@ -286,3 +286,18 @@ export const clearLocalData = async (): Promise<void> => {
     transaction.onerror = () => reject(transaction.error);
   });
 };
+
+// Reset data - clear expenses and receipt items but keep settings
+export const resetLocalData = async (): Promise<void> => {
+  const database = await getDB();
+  
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(['expenses', 'receipt_items'], 'readwrite');
+    
+    transaction.objectStore('expenses').clear();
+    transaction.objectStore('receipt_items').clear();
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+};

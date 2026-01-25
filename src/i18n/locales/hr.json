@@ -45,7 +45,19 @@
     "noUndo": "UPOZORENJE: Ova radnja se NE MOŽE poništiti!",
     "deleteForever": "Obriši zauvijek",
     "deleting": "Brišem...",
-    "accountDeleted": "Račun uspješno obrisan"
+    "accountDeleted": "Račun uspješno obrisan",
+    "resetData": "Kreni ispočetka",
+    "resetDataDesc": "Briše sve transakcije, projekte i budžete. Novčanici ostaju sa svojim stanjima.",
+    "resetDataBtn": "Resetiraj podatke",
+    "resetConfirmTitle": "Resetirati sve podatke?",
+    "resetConfirmDesc": "Ova radnja će obrisati:",
+    "resetWillDelete1": "Sve transakcije (prihode i rashode)",
+    "resetWillDelete2": "Sve projekte i njihove podatke",
+    "resetWillDelete3": "Sve budžete i njihove postavke",
+    "resetWillKeep": "Vaši novčanici (izvori plaćanja) ostaju sa svojim stanjima.",
+    "confirmReset": "Resetiraj",
+    "resetting": "Resetiram...",
+    "resetComplete": "Podaci uspješno resetirani"
   },
   "transactions": {
     "note": "Napomena",

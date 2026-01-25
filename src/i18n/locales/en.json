@@ -45,7 +45,19 @@
     "noUndo": "WARNING: This action CANNOT be undone!",
     "deleteForever": "Delete forever",
     "deleting": "Deleting...",
-    "accountDeleted": "Account successfully deleted"
+    "accountDeleted": "Account successfully deleted",
+    "resetData": "Start Over",
+    "resetDataDesc": "Deletes all transactions, projects and budgets. Wallets remain with their balances.",
+    "resetDataBtn": "Reset data",
+    "resetConfirmTitle": "Reset all data?",
+    "resetConfirmDesc": "This action will delete:",
+    "resetWillDelete1": "All transactions (income and expenses)",
+    "resetWillDelete2": "All projects and their data",
+    "resetWillDelete3": "All budgets and their settings",
+    "resetWillKeep": "Your wallets (payment sources) will remain with their balances.",
+    "confirmReset": "Reset",
+    "resetting": "Resetting...",
+    "resetComplete": "Data successfully reset"
   },
   "transactions": {
     "note": "Note",
