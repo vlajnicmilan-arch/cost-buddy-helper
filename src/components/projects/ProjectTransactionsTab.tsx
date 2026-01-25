@@ -58,6 +58,7 @@ export const ProjectTransactionsTab = ({
   // Add expense dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [updatingMilestone, setUpdatingMilestone] = useState<string | null>(null);
   
   // Form state
   const [expenseType, setExpenseType] = useState<TransactionType>('expense');
@@ -74,6 +75,29 @@ export const ProjectTransactionsTab = ({
     setCategory('other');
     setDate(new Date());
     setMilestoneId('none');
+  };
+
+  // Quick milestone change handler
+  const handleMilestoneChange = async (expenseId: string, newMilestoneId: string) => {
+    setUpdatingMilestone(expenseId);
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .update({ 
+          milestone_id: newMilestoneId === 'none' ? null : newMilestoneId 
+        })
+        .eq('id', expenseId);
+
+      if (error) throw error;
+
+      toast.success(t('projects.milestoneUpdated', 'Faza ažurirana'));
+      onRefetch();
+    } catch (error) {
+      console.error('Error updating milestone:', error);
+      toast.error(t('common.error'));
+    } finally {
+      setUpdatingMilestone(null);
+    }
   };
 
   const handleAddExpense = async () => {
@@ -185,17 +209,53 @@ export const ProjectTransactionsTab = ({
                     <span>{categoryInfo.name}</span>
                     <span>•</span>
                     <span>{format(new Date(expense.date), 'd. MMM yyyy', { locale: hr })}</span>
-                    {milestoneName && (
-                      <>
-                        <span>•</span>
-                        <Badge variant="outline" className="h-5 gap-1 text-xs">
-                          <Target className="w-3 h-3" />
-                          {milestoneName}
-                        </Badge>
-                      </>
-                    )}
                   </div>
                 </div>
+
+                {/* Inline milestone dropdown */}
+                {isManager && milestones.length > 0 && (
+                  <Select
+                    value={expense.milestone_id || 'none'}
+                    onValueChange={(value) => handleMilestoneChange(expense.id, value)}
+                    disabled={updatingMilestone === expense.id}
+                  >
+                    <SelectTrigger className="w-[140px] h-8 text-xs shrink-0">
+                      {updatingMilestone === expense.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <SelectValue>
+                          {milestoneName ? (
+                            <span className="flex items-center gap-1">
+                              <Target className="w-3 h-3" />
+                              {milestoneName}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">{t('projects.noMilestone', 'Bez faze')}</span>
+                          )}
+                        </SelectValue>
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t('projects.noMilestone', 'Bez faze')}</SelectItem>
+                      {milestones.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          <span className="flex items-center gap-1">
+                            <Target className="w-3 h-3" />
+                            {m.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Show milestone badge for non-managers */}
+                {!isManager && milestoneName && (
+                  <Badge variant="outline" className="h-5 gap-1 text-xs shrink-0">
+                    <Target className="w-3 h-3" />
+                    {milestoneName}
+                  </Badge>
+                )}
 
                 <div className={cn(
                   "font-mono font-medium flex items-center gap-1 shrink-0",
