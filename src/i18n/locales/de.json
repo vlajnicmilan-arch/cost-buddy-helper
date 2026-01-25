@@ -97,7 +97,12 @@
     "noCustomPaymentSources": "Sie haben keine benutzerdefinierten Zahlungsquellen.",
     "clickNewToAdd": "Klicken Sie auf \"Neu\" zum Hinzufügen.",
     "preview": "Vorschau",
-    "transfersNoImpact": "Überweisungen beeinflussen den Saldo nicht"
+    "transfersNoImpact": "Überweisungen beeinflussen den Saldo nicht",
+    "greeting": "Hallo, {{name}}!",
+    "daysLeft": "Tage",
+    "finances": "Finanzen",
+    "account": "Konto",
+    "accounts": "Konten"
   },
   "nav": {
     "home": "Startseite",
@@ -627,13 +632,6 @@
     "manager": "Manager",
     "member": "Mitglied",
     "viewer": "Betrachter"
-  },
-  "common": {
-    "greeting": "Hallo, {{name}}!",
-    "daysLeft": "Tage",
-    "finances": "Finanzen",
-    "account": "Konto",
-    "accounts": "Konten"
   },
   "notifications": {
     "title": "Benachrichtigungen",
