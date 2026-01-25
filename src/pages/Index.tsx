@@ -405,7 +405,15 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-card/80 hover:border-primary/30 transition-all w-full"
+                whileHover={{ 
+                  scale: 1.01,
+                  boxShadow: '0 8px 25px -5px hsl(var(--primary) / 0.2)'
+                }}
+                className="p-3 sm:p-4 rounded-xl border bg-card cursor-pointer transition-colors w-full"
+                style={{ 
+                  borderLeftWidth: 4,
+                  borderLeftColor: 'hsl(var(--primary))'
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -485,7 +493,13 @@ const Index = () => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm text-center">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(var(--primary) / 0.2)' }}
+            className="p-3 sm:p-4 rounded-xl border bg-card text-center"
+            style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--primary))' }}
+          >
             <div className="flex items-center justify-center gap-2 mb-1">
               <Wallet className="w-4 h-4 text-primary" />
               <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.balance')}</span>
@@ -493,21 +507,31 @@ const Index = () => {
             <p className={`text-base sm:text-xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
               {formatAmount(balance)}
             </p>
-          </div>
-          <div 
-            className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm text-center cursor-pointer hover:bg-card/80 transition-colors"
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(var(--income) / 0.3)' }}
+            className="p-3 sm:p-4 rounded-xl border bg-card text-center cursor-pointer"
+            style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--income))' }}
             onClick={() => setIncomeDialogOpen(true)}
           >
             <div className="flex items-center justify-center gap-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-primary" />
+              <TrendingUp className="w-4 h-4 text-income" />
               <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalIncome')}</span>
             </div>
-            <p className="text-base sm:text-xl font-bold text-primary">
+            <p className="text-base sm:text-xl font-bold text-income">
               {formatAmount(totalIncome)}
             </p>
-          </div>
-          <div 
-            className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm text-center cursor-pointer hover:bg-card/80 transition-colors"
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(var(--destructive) / 0.3)' }}
+            className="p-3 sm:p-4 rounded-xl border bg-card text-center cursor-pointer"
+            style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--destructive))' }}
             onClick={() => setExpenseDialogOpen(true)}
           >
             <div className="flex items-center justify-center gap-2 mb-1">
@@ -517,22 +541,28 @@ const Index = () => {
             <p className="text-base sm:text-xl font-bold text-destructive">
               {formatAmount(totalExpenses)}
             </p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Transfers Summary - Clickable with toggle */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-4 bg-muted/30 border border-border/50 rounded-xl"
+          whileHover={{ 
+            scale: 1.01,
+            boxShadow: '0 8px 25px -5px hsl(var(--muted-foreground) / 0.2)'
+          }}
+          className="mb-8 p-4 rounded-xl border bg-card cursor-pointer"
+          style={{ 
+            borderLeftWidth: 4,
+            borderLeftColor: 'hsl(var(--muted-foreground))'
+          }}
+          onClick={() => setTransferDialogOpen(true)}
         >
-          <div 
-            onClick={() => setTransferDialogOpen(true)}
-            className="flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity"
-          >
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <ArrowLeftRight className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                <ArrowLeftRight className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-sm font-medium">{t('transactions.transfers')}</p>
