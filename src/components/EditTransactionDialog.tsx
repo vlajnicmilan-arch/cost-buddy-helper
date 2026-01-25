@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
+import { useProjects } from '@/hooks/useProjects';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, Plus } from 'lucide-react';
+import { CalendarIcon, Loader2, Plus, FolderKanban } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [type, setType] = useState<TransactionType>('expense');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
   const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -41,6 +43,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   
   const { customPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
+  const { projects } = useProjects();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
 
   // Get date locale based on current language
@@ -60,7 +63,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
       setSelectedCardId(expense.payment_source_card_id || null);
       setDate(expense.date instanceof Date ? expense.date : new Date(expense.date));
       setType(expense.type);
-      
+      setSelectedProjectId(expense.project_id || null);
       setNote(expense.note || '');
     }
   }, [open, expense]);
@@ -79,7 +82,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
         payment_source_card_id: selectedCardId,
         date,
         type,
-        
+        project_id: selectedProjectId,
         note: note.trim() || null,
         updated_at: new Date().toISOString()
       });
@@ -393,6 +396,61 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
               </PopoverContent>
             </Popover>
           </div>
+
+          {/* Project Assignment */}
+          {projects.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <FolderKanban className="w-4 h-4" />
+                {t('transactions.assignToProject')}
+              </Label>
+              <Select 
+                value={selectedProjectId || 'none'} 
+                onValueChange={(v) => setSelectedProjectId(v === 'none' ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue>
+                    {selectedProjectId ? (
+                      (() => {
+                        const project = projects.find(p => p.id === selectedProjectId);
+                        return project ? (
+                          <span className="flex items-center gap-2">
+                            <span 
+                              className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                              style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
+                            >
+                              {project.icon || '📁'}
+                            </span>
+                            <span>{project.name}</span>
+                          </span>
+                        ) : t('transactions.noProject');
+                      })()
+                    ) : (
+                      <span className="text-muted-foreground">{t('transactions.noProject')}</span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">{t('transactions.noProject')}</span>
+                  </SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      <span className="flex items-center gap-2">
+                        <span 
+                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                          style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
+                        >
+                          {project.icon || '📁'}
+                        </span>
+                        <span>{project.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
         </div>
 
