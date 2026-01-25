@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -32,6 +33,7 @@ export const TransactionDetailDialog = ({
 }: TransactionDetailDialogProps) => {
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [submitterName, setSubmitterName] = useState<string | null>(null);
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -40,6 +42,32 @@ export const TransactionDetailDialog = ({
   const isLocalMode = storageMode === 'local' && !user;
   
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+
+  // Fetch submitter name for project/income source transactions
+  useEffect(() => {
+    const fetchSubmitterName = async () => {
+      if (!expense || (!expense.project_id && !expense.income_source_id)) {
+        setSubmitterName(null);
+        return;
+      }
+
+      const authorId = expense.submitted_by || expense.user_id;
+      if (authorId === user?.id) {
+        setSubmitterName(t('common.you', 'Ti'));
+        return;
+      }
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', authorId)
+        .single();
+
+      setSubmitterName(data?.display_name || t('common.member', 'Član'));
+    };
+
+    fetchSubmitterName();
+  }, [expense, user, t]);
 
   useEffect(() => {
     if (expense && open) {
@@ -207,6 +235,24 @@ export const TransactionDetailDialog = ({
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-3">
+            {/* Submitted By - for project/income source transactions */}
+            {(expense.project_id || expense.income_source_id) && submitterName && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 col-span-2">
+                <div className="flex items-center gap-2 text-primary mb-1">
+                  <User className="w-4 h-4" />
+                  <span className="text-xs font-medium">{t('transactions.submittedBy', 'Unio/la')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Avatar className="w-6 h-6">
+                    <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                      {submitterName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="font-medium">{submitterName}</p>
+                </div>
+              </div>
+            )}
+
             {/* Date */}
             <div className="p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">

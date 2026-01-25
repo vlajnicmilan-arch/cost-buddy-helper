@@ -57,7 +57,9 @@
     "noteError": "Greška pri slanju napomene",
     "initialNote": "Originalna napomena",
     "assignToProject": "Projekt",
-    "noProject": "Bez projekta"
+    "noProject": "Bez projekta",
+    "submittedBy": "Unio/la",
+    "addedBy": "Dodao/la"
   },
   "common": {
     "save": "Spremi",

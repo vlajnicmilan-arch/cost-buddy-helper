@@ -57,7 +57,9 @@
     "noteError": "Error sending note",
     "initialNote": "Original note",
     "assignToProject": "Project",
-    "noProject": "No project"
+    "noProject": "No project",
+    "submittedBy": "Submitted by",
+    "addedBy": "Added by"
   },
   "common": {
     "save": "Save",
