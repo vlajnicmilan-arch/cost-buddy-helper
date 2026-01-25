@@ -1,17 +1,20 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
+import { useBudgetMembers } from '@/hooks/useBudgetMembers';
+import { BudgetMembersTab } from './BudgetMembersTab';
 import { cn } from '@/lib/utils';
 import { 
-  Edit, 
-  Calendar, 
+  Edit,
   AlertTriangle,
   TrendingUp,
   TrendingDown,
-  Minus
+  Minus,
+  BarChart3,
+  Users
 } from 'lucide-react';
 
 interface BudgetDetailDialogProps {
@@ -29,6 +32,7 @@ export const BudgetDetailDialog = ({
 }: BudgetDetailDialogProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { members, invitations, loading: membersLoading, isOwner, refetch: refetchMembers } = useBudgetMembers(budget?.id || null);
 
   if (!budget) return null;
 
@@ -71,126 +75,150 @@ export const BudgetDetailDialog = ({
           </div>
         </DialogHeader>
 
-        {/* Main Progress */}
-        <div className="space-y-4 mt-4">
-          <div className="p-4 rounded-xl bg-muted/30">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">{t('budget.overallProgress', 'Ukupni napredak')}</span>
-              <div className="flex items-center gap-2">
-                {(budget.isOverBudget || budget.isWarning) && (
-                  <AlertTriangle className={cn(
-                    "w-4 h-4",
-                    budget.isOverBudget ? "text-destructive" : "text-warning"
-                  )} />
-                )}
-                <span className={cn(
-                  "font-medium",
-                  budget.isOverBudget && "text-destructive",
-                  budget.isWarning && !budget.isOverBudget && "text-warning"
+        <Tabs defaultValue="overview" className="mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="overview" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              {t('budget.overview', 'Pregled')}
+            </TabsTrigger>
+            <TabsTrigger value="members" className="gap-2">
+              <Users className="w-4 h-4" />
+              {t('budget.members', 'Članovi')} ({members.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4 mt-4">
+            {/* Main Progress */}
+            <div className="p-4 rounded-xl bg-muted/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">{t('budget.overallProgress', 'Ukupni napredak')}</span>
+                <div className="flex items-center gap-2">
+                  {(budget.isOverBudget || budget.isWarning) && (
+                    <AlertTriangle className={cn(
+                      "w-4 h-4",
+                      budget.isOverBudget ? "text-destructive" : "text-warning"
+                    )} />
+                  )}
+                  <span className={cn(
+                    "font-medium",
+                    budget.isOverBudget && "text-destructive",
+                    budget.isWarning && !budget.isOverBudget && "text-warning"
+                  )}>
+                    {budget.percentage.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+              <div className="h-3 bg-muted rounded-full overflow-hidden mb-3">
+                <div 
+                  className={cn("h-full rounded-full transition-all", getProgressColor(budget.percentage, budget.isOverBudget, budget.isWarning))}
+                  style={{ width: `${Math.min(budget.percentage, 100)}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <div>
+                  <p className="font-mono font-bold text-lg">{formatAmount(budget.spent)}</p>
+                  <p className="text-xs text-muted-foreground">{t('budget.spent', 'Potrošeno')}</p>
+                </div>
+                <div className="text-right">
+                  <p className={cn(
+                    "font-mono font-bold text-lg",
+                    budget.remaining < 0 ? "text-destructive" : "text-income"
+                  )}>
+                    {formatAmount(budget.remaining)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t('budget.remaining', 'Preostalo')}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-muted/30">
+                <p className="text-xs text-muted-foreground mb-1">{t('budget.totalBudget', 'Ukupni budžet')}</p>
+                <p className="font-mono font-bold">{formatAmount(budget.total_amount)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30">
+                <p className="text-xs text-muted-foreground mb-1">{t('budget.dailyAverage', 'Prosj. dnevno')}</p>
+                <p className="font-mono font-bold">{formatAmount(budget.dailyAverage || 0)}</p>
+              </div>
+            </div>
+
+            {/* Trend */}
+            {budget.trend && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
+                <div className={cn(
+                  "p-2 rounded-lg",
+                  budget.trend === 'up' && "bg-expense/10 text-expense",
+                  budget.trend === 'down' && "bg-income/10 text-income",
+                  budget.trend === 'stable' && "bg-muted text-muted-foreground"
                 )}>
-                  {budget.percentage.toFixed(1)}%
-                </span>
+                  <TrendIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    {budget.trend === 'up' && t('budget.trendUp', 'Potrošnja raste')}
+                    {budget.trend === 'down' && t('budget.trendDown', 'Potrošnja pada')}
+                    {budget.trend === 'stable' && t('budget.trendStable', 'Potrošnja stabilna')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('budget.comparedToLastPeriod', 'U odnosu na prošli period')}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="h-3 bg-muted rounded-full overflow-hidden mb-3">
-              <div 
-                className={cn("h-full rounded-full transition-all", getProgressColor(budget.percentage, budget.isOverBudget, budget.isWarning))}
-                style={{ width: `${Math.min(budget.percentage, 100)}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <div>
-                <p className="font-mono font-bold text-lg">{formatAmount(budget.spent)}</p>
-                <p className="text-xs text-muted-foreground">{t('budget.spent', 'Potrošeno')}</p>
-              </div>
-              <div className="text-right">
-                <p className={cn(
-                  "font-mono font-bold text-lg",
-                  budget.remaining < 0 ? "text-destructive" : "text-income"
-                )}>
-                  {formatAmount(budget.remaining)}
-                </p>
-                <p className="text-xs text-muted-foreground">{t('budget.remaining', 'Preostalo')}</p>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-lg bg-muted/30">
-              <p className="text-xs text-muted-foreground mb-1">{t('budget.totalBudget', 'Ukupni budžet')}</p>
-              <p className="font-mono font-bold">{formatAmount(budget.total_amount)}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/30">
-              <p className="text-xs text-muted-foreground mb-1">{t('budget.dailyAverage', 'Prosj. dnevno')}</p>
-              <p className="font-mono font-bold">{formatAmount(budget.dailyAverage || 0)}</p>
-            </div>
-          </div>
-
-          {/* Trend */}
-          {budget.trend && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
-              <div className={cn(
-                "p-2 rounded-lg",
-                budget.trend === 'up' && "bg-expense/10 text-expense",
-                budget.trend === 'down' && "bg-income/10 text-income",
-                budget.trend === 'stable' && "bg-muted text-muted-foreground"
-              )}>
-                <TrendIcon className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">
-                  {budget.trend === 'up' && t('budget.trendUp', 'Potrošnja raste')}
-                  {budget.trend === 'down' && t('budget.trendDown', 'Potrošnja pada')}
-                  {budget.trend === 'stable' && t('budget.trendStable', 'Potrošnja stabilna')}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t('budget.comparedToLastPeriod', 'U odnosu na prošli period')}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Categories Breakdown */}
-          {budget.categories.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">{t('budget.byCategories', 'Po kategorijama')}</h4>
-              <div className="space-y-2">
-                {budget.categories.map((cat) => (
-                  <div key={cat.id} className="p-3 rounded-lg bg-muted/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{cat.icon || '📂'}</span>
-                        <span className="text-sm font-medium">{cat.category}</span>
+            {/* Categories Breakdown */}
+            {budget.categories.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">{t('budget.byCategories', 'Po kategorijama')}</h4>
+                <div className="space-y-2">
+                  {budget.categories.map((cat) => (
+                    <div key={cat.id} className="p-3 rounded-lg bg-muted/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{cat.icon || '📂'}</span>
+                          <span className="text-sm font-medium">{cat.category}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {(cat.isOverBudget || cat.isWarning) && (
+                            <AlertTriangle className={cn(
+                              "w-3.5 h-3.5",
+                              cat.isOverBudget ? "text-destructive" : "text-warning"
+                            )} />
+                          )}
+                          <span className="text-xs font-medium">{cat.percentage.toFixed(0)}%</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {(cat.isOverBudget || cat.isWarning) && (
-                          <AlertTriangle className={cn(
-                            "w-3.5 h-3.5",
-                            cat.isOverBudget ? "text-destructive" : "text-warning"
-                          )} />
-                        )}
-                        <span className="text-xs font-medium">{cat.percentage.toFixed(0)}%</span>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-1.5">
+                        <div 
+                          className={cn("h-full rounded-full", getProgressColor(cat.percentage, cat.isOverBudget, cat.isWarning))}
+                          style={{ width: `${Math.min(cat.percentage, 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{formatAmount(cat.spent)} / {formatAmount(cat.limit_amount)}</span>
+                        <span className={cat.remaining < 0 ? "text-destructive" : ""}>
+                          {cat.remaining < 0 ? '-' : ''}{formatAmount(Math.abs(cat.remaining))} {t('budget.left', 'preostalo')}
+                        </span>
                       </div>
                     </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-1.5">
-                      <div 
-                        className={cn("h-full rounded-full", getProgressColor(cat.percentage, cat.isOverBudget, cat.isWarning))}
-                        style={{ width: `${Math.min(cat.percentage, 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{formatAmount(cat.spent)} / {formatAmount(cat.limit_amount)}</span>
-                      <span className={cat.remaining < 0 ? "text-destructive" : ""}>
-                        {cat.remaining < 0 ? '-' : ''}{formatAmount(Math.abs(cat.remaining))} {t('budget.left', 'preostalo')}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="members" className="mt-4">
+            <BudgetMembersTab
+              budgetId={budget.id}
+              members={members}
+              invitations={invitations}
+              isOwner={isOwner}
+              loading={membersLoading}
+              onRefetch={refetchMembers}
+            />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
