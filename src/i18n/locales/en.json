@@ -300,7 +300,7 @@
     "digitalWallets": "Digital Wallets"
   },
   "incomeSources": {
-    "title": "Projects",
+    "title": "Sources",
     "addSource": "Add",
     "noSources": "No projects",
     "unassigned": "Unassigned",
