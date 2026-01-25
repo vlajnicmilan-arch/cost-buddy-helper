@@ -355,9 +355,16 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         // Clear IndexedDB for local mode
         const { clearLocalData } = await import('@/lib/storage/indexedDB');
         await clearLocalData();
+        
+        // Keep storage mode, clear user data only
+        const currentStorageMode = localStorage.getItem('storage_mode');
         localStorage.clear();
+        if (currentStorageMode) {
+          localStorage.setItem('storage_mode', currentStorageMode);
+        }
+        
         toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
-        window.location.href = '/storage-setup';
+        window.location.href = '/onboarding';
       } else if (user) {
         // Delete all user data from Supabase tables
         // Order matters due to foreign key constraints
@@ -406,9 +413,13 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         // 12. Delete profile
         await supabase.from('profiles').delete().eq('user_id', user.id);
         
-        // 13. Sign out and clear local storage
+        // 13. Sign out and clear local storage but keep storage mode
         await supabase.auth.signOut();
+        const currentStorageMode = localStorage.getItem('storage_mode');
         localStorage.clear();
+        if (currentStorageMode) {
+          localStorage.setItem('storage_mode', currentStorageMode);
+        }
         
         toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/auth';
