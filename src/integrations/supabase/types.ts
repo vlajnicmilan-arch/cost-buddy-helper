@@ -50,6 +50,171 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_categories: {
+        Row: {
+          budget_id: string
+          category: string
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          limit_amount: number
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          category: string
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          limit_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          category?: string
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          limit_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_categories_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_invitations: {
+        Row: {
+          budget_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_invitations_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_members: {
+        Row: {
+          budget_id: string
+          created_at: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_members_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_plans: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          period_type: string
+          start_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          period_type?: string
+          start_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          period_type?: string
+          start_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_categories: {
         Row: {
           color: string
@@ -444,13 +609,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "project_funding_income_source_id_fkey"
-            columns: ["income_source_id"]
-            isOneToOne: false
-            referencedRelation: "income_sources"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "project_funding_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -467,7 +625,7 @@ export type Database = {
           id: string
           invited_by: string
           project_id: string
-          role: Database["public"]["Enums"]["project_role"]
+          role: string
           status: string
           token: string
         }
@@ -478,7 +636,7 @@ export type Database = {
           id?: string
           invited_by: string
           project_id: string
-          role?: Database["public"]["Enums"]["project_role"]
+          role?: string
           status?: string
           token?: string
         }
@@ -489,7 +647,7 @@ export type Database = {
           id?: string
           invited_by?: string
           project_id?: string
-          role?: Database["public"]["Enums"]["project_role"]
+          role?: string
           status?: string
           token?: string
         }
@@ -506,26 +664,29 @@ export type Database = {
       project_members: {
         Row: {
           created_at: string
+          display_name: string | null
           id: string
           joined_at: string
           project_id: string
-          role: Database["public"]["Enums"]["project_role"]
+          role: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           id?: string
           joined_at?: string
           project_id: string
-          role?: Database["public"]["Enums"]["project_role"]
+          role?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           id?: string
           joined_at?: string
           project_id?: string
-          role?: Database["public"]["Enums"]["project_role"]
+          role?: string
           user_id?: string
         }
         Relationships: [
@@ -550,7 +711,7 @@ export type Database = {
           project_id: string
           sort_order: number
           start_date: string | null
-          status: Database["public"]["Enums"]["milestone_status"]
+          status: string
           updated_at: string
         }
         Insert: {
@@ -564,7 +725,7 @@ export type Database = {
           project_id: string
           sort_order?: number
           start_date?: string | null
-          status?: Database["public"]["Enums"]["milestone_status"]
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -578,7 +739,7 @@ export type Database = {
           project_id?: string
           sort_order?: number
           start_date?: string | null
-          status?: Database["public"]["Enums"]["milestone_status"]
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -601,7 +762,7 @@ export type Database = {
           id: string
           name: string
           start_date: string | null
-          status: Database["public"]["Enums"]["project_status"]
+          status: string
           total_budget: number
           updated_at: string
           user_id: string
@@ -615,7 +776,7 @@ export type Database = {
           id?: string
           name: string
           start_date?: string | null
-          status?: Database["public"]["Enums"]["project_status"]
+          status?: string
           total_budget?: number
           updated_at?: string
           user_id: string
@@ -629,7 +790,7 @@ export type Database = {
           id?: string
           name?: string
           start_date?: string | null
-          status?: Database["public"]["Enums"]["project_status"]
+          status?: string
           total_budget?: number
           updated_at?: string
           user_id?: string
@@ -674,6 +835,62 @@ export type Database = {
           },
         ]
       }
+      savings_goals: {
+        Row: {
+          budget_id: string
+          color: string | null
+          completed_at: string | null
+          created_at: string
+          current_amount: number
+          description: string | null
+          icon: string | null
+          id: string
+          is_completed: boolean | null
+          name: string
+          target_amount: number
+          target_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_amount?: number
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_completed?: boolean | null
+          name: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_amount?: number
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_completed?: boolean | null
+          name?: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_goals_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transaction_notes: {
         Row: {
           content: string
@@ -711,6 +928,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_budget_member: {
+        Args: { _budget_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_budget_owner: {
+        Args: { _budget_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_income_source_member: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
@@ -719,11 +944,11 @@ export type Database = {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
       }
-      is_project_manager: {
+      is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
-      is_project_member: {
+      is_project_owner: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }

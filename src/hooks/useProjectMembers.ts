@@ -53,6 +53,7 @@ export const useProjectMembers = (projectId: string | null) => {
 
       setMembers((membersData || []).map(m => ({
         ...m,
+        role: m.role as ProjectRole,
         display_name: profilesMap.get(m.user_id) || 'Nepoznato'
       })));
 
@@ -64,7 +65,10 @@ export const useProjectMembers = (projectId: string | null) => {
           .eq('project_id', projectId)
           .eq('status', 'pending');
 
-        setInvitations(invitationsData || []);
+        setInvitations((invitationsData || []).map(i => ({
+          ...i,
+          role: i.role as ProjectRole
+        })));
       }
     } catch (error) {
       console.error('Error fetching project members:', error);
