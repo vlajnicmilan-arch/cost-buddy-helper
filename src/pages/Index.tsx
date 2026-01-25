@@ -303,40 +303,75 @@ const Index = () => {
           </motion.div>
         )}
 
-        {/* Individual Payment Source Balances */}
+        {/* Finances Card - Collapsible Payment Sources */}
         {customPaymentSources.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
-            {customPaymentSources.map((source) => (
+          <Collapsible className="mb-4">
+            <CollapsibleTrigger asChild>
               <motion.div
-                key={source.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                onClick={() => {
-                  setSelectedPaymentSource(source);
-                  setPaymentSourceDialogOpen(true);
-                }}
-                className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-card/80 hover:border-primary/30 transition-all"
+                className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-card/80 hover:border-primary/30 transition-all w-full"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <span 
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-base"
-                    style={{ backgroundColor: source.color + '20', color: source.color }}
-                  >
-                    {source.icon}
-                  </span>
-                  <span className="text-xs sm:text-sm font-medium truncate flex-1">{source.name}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Wallet className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm sm:text-base font-semibold">{t('common.finances', 'Financije')}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {customPaymentSources.length} {customPaymentSources.length === 1 ? t('common.account', 'račun') : t('common.accounts', 'računa')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <p className={`text-base sm:text-xl font-bold ${customPaymentSources.reduce((sum, s) => sum + s.balance, 0) >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      {formatAmount(customPaymentSources.reduce((sum, s) => sum + s.balance, 0))}
+                    </p>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                  </div>
                 </div>
-                <p className={`text-base sm:text-lg font-bold ${source.balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  {formatAmount(source.balance)}
-                </p>
-                {source.cards && source.cards.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {source.cards.length} {source.cards.length === 1 ? t('common.card') : t('common.cards')}
-                  </p>
-                )}
               </motion.div>
-            ))}
-          </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3"
+              >
+                {customPaymentSources.map((source) => (
+                  <motion.div
+                    key={source.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    onClick={() => {
+                      setSelectedPaymentSource(source);
+                      setPaymentSourceDialogOpen(true);
+                    }}
+                    className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-card/80 hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span 
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-base"
+                        style={{ backgroundColor: source.color + '20', color: source.color }}
+                      >
+                        {source.icon}
+                      </span>
+                      <span className="text-xs sm:text-sm font-medium truncate flex-1">{source.name}</span>
+                    </div>
+                    <p className={`text-base sm:text-lg font-bold ${source.balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      {formatAmount(source.balance)}
+                    </p>
+                    {source.cards && source.cards.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {source.cards.length} {source.cards.length === 1 ? t('common.card') : t('common.cards')}
+                      </p>
+                    )}
+                  </motion.div>
+                ))}
+              </motion.div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         {/* Summary Cards */}
