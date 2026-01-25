@@ -624,9 +624,7 @@ const Index = () => {
             </div>
             
             {/* Projects Panel */}
-            <div className="hidden lg:block">
-              <ProjectsPanel onRefreshExpenses={refetch} />
-            </div>
+            <ProjectsPanel onRefreshExpenses={refetch} />
             <Accordion type="multiple" className="space-y-4">
               <AccordionItem value="categories" className="border-none">
                 <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
