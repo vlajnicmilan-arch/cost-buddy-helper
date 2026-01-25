@@ -1,5 +1,5 @@
 import { Project, ProjectWithOwnership, PROJECT_STATUS_LABELS, PROJECT_ROLE_LABELS } from '@/types/project';
-import { Pencil, Trash2, Users, Calendar, Target, Wallet } from 'lucide-react';
+import { Pencil, Trash2, Users, Calendar, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { motion } from 'framer-motion';
 
 interface ProjectCardProps {
   project: ProjectWithOwnership;
@@ -48,8 +49,14 @@ export const ProjectCard = ({
   };
 
   return (
-    <div 
-      className="relative group p-4 rounded-xl border bg-card hover:shadow-md transition-all cursor-pointer"
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ 
+        scale: 1.01,
+        boxShadow: `0 8px 25px -5px ${projectColor}30`
+      }}
+      className="relative group p-4 rounded-xl border bg-card cursor-pointer transition-colors"
       style={{ borderLeftColor: projectColor, borderLeftWidth: 4 }}
       onClick={() => onClick(project)}
     >
@@ -160,6 +167,6 @@ export const ProjectCard = ({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
