@@ -258,9 +258,13 @@ export const PaymentSourceTransactionsDialog = ({
           {paymentSource.cards && paymentSource.cards.length > 0 && (
             <div className="flex flex-wrap gap-2 shrink-0">
               {paymentSource.cards.map(card => (
-                <div 
+                <motion.div 
                   key={card.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs"
+                  whileHover={{ 
+                    scale: 1.05,
+                    boxShadow: `0 4px 15px -3px ${paymentSource.color}40`
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs cursor-default transition-colors"
                   style={{ 
                     borderColor: paymentSource.color + '40',
                     borderLeftWidth: 3,
@@ -271,7 +275,7 @@ export const PaymentSourceTransactionsDialog = ({
                   <CreditCard className="w-3 h-3" style={{ color: paymentSource.color }} />
                   <span className="font-medium">{card.card_name}</span>
                   <span className="text-muted-foreground">****{card.last_four_digits}</span>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}

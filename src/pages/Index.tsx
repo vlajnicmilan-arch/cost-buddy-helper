@@ -439,11 +439,15 @@ const Index = () => {
                     key={source.id}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ 
+                      scale: 1.02,
+                      boxShadow: `0 8px 25px -5px ${source.color}30`
+                    }}
                     onClick={() => {
                       setSelectedPaymentSource(source);
                       setPaymentSourceDialogOpen(true);
                     }}
-                    className="p-3 sm:p-4 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-card/80 hover:shadow-md transition-all"
+                    className="p-3 sm:p-4 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer transition-colors"
                     style={{ 
                       borderColor: source.color + '40',
                       borderLeftWidth: 4,
