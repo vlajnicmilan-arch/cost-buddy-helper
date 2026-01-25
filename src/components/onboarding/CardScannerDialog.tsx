@@ -206,13 +206,27 @@ export const CardScannerDialog = ({
             </div>
           )}
 
-          {/* Scanning indicator */}
+          {/* Scanning indicator with positioning frame */}
           {scanning && (
-            <div className="text-center py-8">
-              <div className="relative mx-auto w-20 h-20 mb-4">
-                <Loader2 className="w-20 h-20 animate-spin text-primary" />
-                <CreditCard className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <div className="text-center py-4">
+              {/* Card positioning frame during scan */}
+              <div className="relative mx-auto w-full max-w-[280px] aspect-[1.586/1] bg-muted/30 rounded-xl border-2 border-primary/50 flex items-center justify-center mb-4 overflow-hidden">
+                {/* Corner markers - visible during scan */}
+                <div className="absolute top-2 left-2 w-8 h-8 border-t-3 border-l-3 border-primary rounded-tl-lg animate-pulse" style={{ borderWidth: '3px' }} />
+                <div className="absolute top-2 right-2 w-8 h-8 border-t-3 border-r-3 border-primary rounded-tr-lg animate-pulse" style={{ borderWidth: '3px' }} />
+                <div className="absolute bottom-2 left-2 w-8 h-8 border-b-3 border-l-3 border-primary rounded-bl-lg animate-pulse" style={{ borderWidth: '3px' }} />
+                <div className="absolute bottom-2 right-2 w-8 h-8 border-b-3 border-r-3 border-primary rounded-br-lg animate-pulse" style={{ borderWidth: '3px' }} />
+                
+                {/* Scanning line animation */}
+                <div className="absolute inset-x-4 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-bounce" />
+                
+                {/* Center loader */}
+                <div className="relative w-16 h-16">
+                  <Loader2 className="w-16 h-16 animate-spin text-primary" />
+                  <CreditCard className="w-6 h-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                </div>
               </div>
+              
               <p className="text-sm font-medium">{t('onboarding.analyzing', 'Analiziram karticu...')}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {t('onboarding.analyzingNote', 'Slika se briše nakon analize')}
