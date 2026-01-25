@@ -101,7 +101,7 @@ export const BudgetFullScreenView = ({
                 <div className="min-w-0">
                   <h1 className="text-lg sm:text-xl font-bold truncate">{budget.name}</h1>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="capitalize">{BUDGET_PERIOD_LABELS[budget.period_type]}</span>
+                    <span className="capitalize">{t(`budget.period.${budget.period_type}`, BUDGET_PERIOD_LABELS[budget.period_type])}</span>
                     {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
                       <>
                         <span>•</span>

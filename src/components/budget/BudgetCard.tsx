@@ -24,14 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
+import { BudgetWithStats } from '@/types/budget';
 
-// Status labels for budget
-const BUDGET_STATUS_LABELS = {
-  active: 'Aktivan',
-  warning: 'Upozorenje',
-  overBudget: 'Prekoračen',
-} as const;
 
 interface BudgetCardProps {
   budget: BudgetWithStats;
@@ -146,11 +140,11 @@ export const BudgetCard = ({
               <div className="flex items-center gap-2 mb-0.5">
                 <h3 className="font-semibold text-base sm:text-lg truncate">{budget.name}</h3>
                 <Badge variant={getStatusBadgeVariant(budgetStatus)} className="text-xs shrink-0">
-                  {BUDGET_STATUS_LABELS[budgetStatus]}
+                  {t(`budget.status.${budgetStatus}`)}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="capitalize">{BUDGET_PERIOD_LABELS[budget.period_type]}</span>
+                <span className="capitalize">{t(`budget.period.${budget.period_type}`)}</span>
                 {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
                   <>
                     <span>•</span>

@@ -598,5 +598,63 @@
     "milestone": "Faza projekta",
     "selectMilestone": "Odaberi fazu (opcionalno)",
     "noMilestone": "Bez faze"
+  },
+  "budget": {
+    "title": "Budžeti",
+    "create": "Novi budžet",
+    "edit": "Uredi budžet",
+    "activeBudgets": "aktivnih budžeta",
+    "noBudgets": "Nema budžeta",
+    "noBudgetsHint": "Koristi gumb iznad za kreiranje prvog budžeta",
+    "spent": "Potrošeno",
+    "remaining": "preostalo",
+    "used": "iskorišteno",
+    "left": "preostalo",
+    "reset": "Resetiraj",
+    "deleteConfirmTitle": "Obriši budžet?",
+    "deleteConfirmDesc": "Ova radnja će trajno obrisati budžet \"{{name}}\" i sve njegove limite po kategorijama. Ovo se ne može poništiti.",
+    "status": {
+      "active": "Aktivan",
+      "warning": "Upozorenje",
+      "overBudget": "Prekoračen"
+    },
+    "period": {
+      "weekly": "Tjedni",
+      "monthly": "Mjesečni",
+      "yearly": "Godišnji",
+      "custom": "Prilagođeni"
+    },
+    "overview": "Pregled",
+    "members": "Članovi",
+    "categories": "Kategorije",
+    "noCategories": "Nema definiranih kategorija",
+    "addCategory": "Dodaj kategoriju",
+    "categoryLimit": "Limit kategorije",
+    "dailyAverage": "Prosječno dnevno",
+    "projectedSpend": "Projicirani trošak",
+    "onTrack": "U skladu",
+    "overSpending": "Prekoračenje",
+    "budgetCreated": "Budžet kreiran",
+    "budgetUpdated": "Budžet ažuriran",
+    "budgetDeleted": "Budžet obrisan",
+    "budgetReset": "Budžet resetiran"
+  },
+  "projectStatus": {
+    "draft": "Nacrt",
+    "active": "Aktivan",
+    "paused": "Pauziran",
+    "completed": "Završen",
+    "cancelled": "Otkazan"
+  },
+  "projectRoles": {
+    "manager": "Voditelj",
+    "member": "Član",
+    "viewer": "Promatrač"
+  },
+  "common": {
+    "daysLeft": "dana",
+    "finances": "Financije",
+    "account": "račun",
+    "accounts": "računa"
   }
 }

@@ -62,7 +62,7 @@ export const BudgetDetailDialog = ({
             <div className="flex-1">
               <DialogTitle className="text-xl">{budget.name}</DialogTitle>
               <p className="text-sm text-muted-foreground">
-                {BUDGET_PERIOD_LABELS[budget.period_type]}
+                {t(`budget.period.${budget.period_type}`, BUDGET_PERIOD_LABELS[budget.period_type])}
                 {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
                   <> • {budget.daysRemaining} {t('common.daysLeft', 'dana preostalo')}</>
                 )}

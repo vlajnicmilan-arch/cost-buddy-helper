@@ -163,7 +163,7 @@ export const ProjectFullScreenView = ({
                   <div className="flex items-center gap-2">
                     <h1 className="text-lg font-semibold truncate">{project.name}</h1>
                     <Badge variant="secondary" className="shrink-0">
-                      {PROJECT_STATUS_LABELS[project.status]}
+                      {t(`projectStatus.${project.status}`, PROJECT_STATUS_LABELS[project.status])}
                     </Badge>
                     {hasUnsavedChanges && (
                       <Badge variant="outline" className="shrink-0 text-warning border-warning">
