@@ -27,7 +27,7 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, displayName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -39,6 +39,16 @@ export const useAuth = () => {
     
     // Check if user needs email confirmation
     const needsEmailConfirmation = data?.user && !data?.session;
+    
+    // If registration successful and we have a session (auto-confirm enabled), update profile with display name
+    if (data?.user && data?.session && displayName?.trim()) {
+      setTimeout(async () => {
+        await supabase
+          .from('profiles')
+          .update({ display_name: displayName.trim() })
+          .eq('user_id', data.user!.id);
+      }, 0);
+    }
     
     return { data, error, needsEmailConfirmation };
   };
