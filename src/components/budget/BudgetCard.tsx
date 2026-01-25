@@ -133,12 +133,11 @@ export const BudgetCard = ({
               </div>
             )}
 
-            {budget.trend && (
+            {budget.trend && budget.trend !== 'stable' && (
               <div className={cn(
                 "p-1.5 rounded-md",
                 budget.trend === 'up' && "bg-expense/10 text-expense",
-                budget.trend === 'down' && "bg-income/10 text-income",
-                budget.trend === 'stable' && "bg-muted text-muted-foreground"
+                budget.trend === 'down' && "bg-income/10 text-income"
               )}>
                 <TrendIcon className="w-4 h-4" />
               </div>
