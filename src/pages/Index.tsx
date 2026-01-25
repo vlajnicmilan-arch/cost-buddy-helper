@@ -4,6 +4,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { supabase } from '@/integrations/supabase/client';
 import { SummaryCard } from '@/components/SummaryCard';
 import { TransactionItem } from '@/components/TransactionItem';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
@@ -59,6 +60,35 @@ const Index = () => {
   
   // Bulk selection state
   const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
+
+  // Get user display name
+  const [displayName, setDisplayName] = useState<string>('');
+  
+  useEffect(() => {
+    const loadDisplayName = async () => {
+      // Try localStorage first (works for both modes)
+      const localName = localStorage.getItem('user_display_name');
+      if (localName) {
+        setDisplayName(localName);
+        return;
+      }
+      
+      // For cloud mode, try to fetch from profiles
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data?.display_name) {
+          setDisplayName(data.display_name);
+          localStorage.setItem('user_display_name', data.display_name);
+        }
+      }
+    };
+    loadDisplayName();
+  }, [user]);
 
   // Get custom payment sources for card filtering (declare before useExpenses to use in callback)
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
@@ -196,7 +226,9 @@ const Index = () => {
             <div className="flex items-center gap-3">
               <img src={logo} alt="V&M Balance" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
               <div>
-                <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">V&M Balance</h1>
+                <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">
+                  {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
+                </h1>
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">{t('common.manageFinances')}</p>
                   <TooltipProvider>

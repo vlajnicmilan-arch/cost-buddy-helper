@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import StorageSetup from "./pages/StorageSetup";
 import Install from "./pages/Install";
 import JoinCircle from "./pages/JoinCircle";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -41,9 +42,13 @@ const AppRoutes = () => {
     );
   }
 
+  // Check if onboarding is completed
+  const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
+
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
+      <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/setup" element={<StorageSetup />} />
