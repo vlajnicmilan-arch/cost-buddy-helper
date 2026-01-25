@@ -9,7 +9,13 @@
     "soundDisabled": "Sound notifications disabled",
     "pushEnabled": "Push notifications enabled",
     "pushDisabled": "Push notifications disabled",
-    "pushDenied": "Browser blocked push notifications"
+    "pushDenied": "Browser blocked push notifications",
+    "profile": "Profile",
+    "displayName": "Your name",
+    "displayNameDesc": "Name used for personalized messages",
+    "noName": "Not set",
+    "nameRequired": "Name is required",
+    "nameSaved": "Name saved successfully"
   },
   "transactions": {
     "note": "Note",

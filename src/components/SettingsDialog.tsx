@@ -3,10 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -45,6 +46,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isDark, setIsDark] = useState(false);
   
+  // User profile state
+  const [displayName, setDisplayName] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [tempName, setTempName] = useState('');
+  
   // Backup/Restore state
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -66,8 +73,28 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       setSoundEnabled(getNotificationSoundEnabled());
       setPushEnabled(getPushNotificationsEnabled());
       setIsDark(document.documentElement.classList.contains('dark'));
+      
+      // Load display name
+      const loadName = async () => {
+        const localName = localStorage.getItem('user_display_name');
+        if (localName) {
+          setDisplayName(localName);
+          setTempName(localName);
+        } else if (user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('user_id', user.id)
+            .single();
+          if (data?.display_name) {
+            setDisplayName(data.display_name);
+            setTempName(data.display_name);
+          }
+        }
+      };
+      loadName();
     }
-  }, [open]);
+  }, [open, user]);
 
   const toggleTheme = () => {
     const newIsDark = !isDark;
@@ -86,6 +113,49 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode);
     toast.success(t('settings.languageChanged', 'Jezik promijenjen'));
+  };
+
+  const handleSaveName = async () => {
+    if (!tempName.trim()) {
+      toast.error(t('settings.nameRequired', 'Ime je obavezno'));
+      return;
+    }
+    
+    setSavingName(true);
+    try {
+      // Always save to localStorage for quick access
+      localStorage.setItem('user_display_name', tempName.trim());
+      
+      // If cloud mode, also save to Supabase
+      if (!isLocalMode && user) {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: user.id,
+            display_name: tempName.trim(),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+        
+        if (error) throw error;
+      }
+      
+      setDisplayName(tempName.trim());
+      setEditingName(false);
+      toast.success(t('settings.nameSaved', 'Ime uspješno spremljeno'));
+      
+      // Trigger a page refresh to update the greeting
+      window.dispatchEvent(new CustomEvent('displayNameChanged', { detail: tempName.trim() }));
+    } catch (error) {
+      console.error('Save name error:', error);
+      toast.error(t('errors.generic', 'Došlo je do greške'));
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleCancelEditName = () => {
+    setTempName(displayName);
+    setEditingName(false);
   };
 
   const handleAutoUpdateChange = (enabled: boolean) => {
@@ -290,6 +360,81 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
           <ScrollArea className="max-h-[70vh]">
           <div className="space-y-6 py-4 pr-4">
+            {/* Profile Section */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                {t('settings.profile', 'Profil')}
+              </h3>
+              
+              {/* Display Name */}
+              <div className="p-3 bg-muted/30 rounded-xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <User className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium">
+                      {t('settings.displayName', 'Vaše ime')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('settings.displayNameDesc', 'Ime koje se koristi za personalizirane poruke')}
+                    </p>
+                  </div>
+                  {!editingName && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setEditingName(true)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                
+                {editingName ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={tempName}
+                      onChange={(e) => setTempName(e.target.value)}
+                      placeholder={t('onboarding.namePlaceholder', 'npr. Marko')}
+                      className="flex-1"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveName();
+                        if (e.key === 'Escape') handleCancelEditName();
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleSaveName}
+                      disabled={savingName}
+                    >
+                      {savingName ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCancelEditName}
+                      disabled={savingName}
+                    >
+                      {t('common.cancel', 'Odustani')}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium pl-12">
+                    {displayName || t('settings.noName', 'Nije postavljeno')}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Appearance Section */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
