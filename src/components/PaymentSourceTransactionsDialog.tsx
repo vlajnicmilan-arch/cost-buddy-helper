@@ -260,10 +260,16 @@ export const PaymentSourceTransactionsDialog = ({
               {paymentSource.cards.map(card => (
                 <div 
                   key={card.id}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs"
+                  style={{ 
+                    borderColor: paymentSource.color + '40',
+                    borderLeftWidth: 3,
+                    borderLeftColor: paymentSource.color,
+                    backgroundColor: paymentSource.color + '10'
+                  }}
                 >
-                  <CreditCard className="w-3 h-3" />
-                  <span>{card.card_name}</span>
+                  <CreditCard className="w-3 h-3" style={{ color: paymentSource.color }} />
+                  <span className="font-medium">{card.card_name}</span>
                   <span className="text-muted-foreground">****{card.last_four_digits}</span>
                 </div>
               ))}
