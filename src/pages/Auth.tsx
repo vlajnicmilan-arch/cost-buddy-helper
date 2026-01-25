@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Mail, Lock, Loader2, CheckCircle, RefreshCw } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
+import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 
 const authSchema = z.object({
   email: z.string().trim().email('Nevažeća email adresa').max(255, 'Email je predugačak'),
@@ -23,6 +24,8 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
   
   const { signIn, signUp, resendVerificationEmail } = useAuth();
   const navigate = useNavigate();
@@ -85,8 +88,15 @@ const Auth = () => {
           setRegisteredEmail(email.trim());
           toast.success('Registracija uspješna! Provjerite email.');
         } else {
-          toast.success('Račun kreiran! Možete se prijaviti.');
-          navigate('/');
+          // Extract name from email for welcome message
+          const extractedName = email.trim().split('@')[0];
+          const formattedName = extractedName
+            .replace(/[._]/g, ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+          setNewUserName(formattedName);
+          setShowWelcome(true);
         }
       }
     } finally {
@@ -116,6 +126,19 @@ const Auth = () => {
     setEmail(registeredEmail);
     setPassword('');
   };
+
+  // Welcome screen with confetti for new users
+  if (showWelcome) {
+    return (
+      <WelcomeConfetti
+        displayName={newUserName}
+        onComplete={() => {
+          setShowWelcome(false);
+          navigate('/');
+        }}
+      />
+    );
+  }
 
   // Email verification waiting screen
   if (awaitingVerification) {
