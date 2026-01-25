@@ -899,6 +899,32 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               {t('settings.deleteConfirmDesc1', 'Ova radnja će trajno obrisati sve vaše transakcije, izvore prihoda, kategorije i ostale podatke. Ovo se ne može poništiti.')}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          {/* Export before delete option */}
+          <div className="p-3 bg-muted/50 border border-border rounded-xl space-y-2">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <Download className="w-4 h-4 text-primary" />
+              {t('settings.exportBeforeDelete', 'Želite li prvo izvesti podatke?')}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t('settings.exportBeforeDeleteDesc', 'Preporučujemo izvoz podataka prije brisanja računa kako biste imali sigurnosnu kopiju.')}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2 rounded-lg"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {t('settings.exportNow', 'Izvezi sada')}
+            </Button>
+          </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction
