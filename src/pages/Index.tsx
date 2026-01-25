@@ -730,7 +730,7 @@ const Index = () => {
         {/* Footer with version */}
         <footer className="mt-8 py-4 text-center border-t border-border/30">
           <p className="text-xs text-muted-foreground">
-            V&M Balance v1.0.0
+            V&M Balance v{APP_VERSION}
           </p>
         </footer>
 
@@ -801,10 +801,6 @@ const Index = () => {
         />
       )}
 
-      {/* Version Footer */}
-      <footer className="mt-8 pb-4 text-center">
-        <p className="text-xs text-muted-foreground/50">v{APP_VERSION}</p>
-      </footer>
     </div>
   );
 };
