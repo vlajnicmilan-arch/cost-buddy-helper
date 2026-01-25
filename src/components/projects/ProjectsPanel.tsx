@@ -41,9 +41,9 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     
     for (const project of projects) {
       // Fetch expenses for this project
-      const { data: expenses } = await supabase
+      const { data: expenses } = await (supabase
         .from('expenses')
-        .select('amount, type')
+        .select('amount, type') as any)
         .eq('project_id', project.id);
 
       const spent = (expenses || [])
@@ -51,14 +51,14 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
         .reduce((sum, e) => sum + Number(e.amount), 0);
 
       // Fetch member count
-      const { count: memberCount } = await supabase
-        .from('project_members')
+      const { count: memberCount } = await (supabase
+        .from('project_members') as any)
         .select('*', { count: 'exact', head: true })
         .eq('project_id', project.id);
 
       // Fetch milestone count
-      const { count: milestoneCount } = await supabase
-        .from('project_milestones')
+      const { count: milestoneCount } = await (supabase
+        .from('project_milestones') as any)
         .select('*', { count: 'exact', head: true })
         .eq('project_id', project.id);
 

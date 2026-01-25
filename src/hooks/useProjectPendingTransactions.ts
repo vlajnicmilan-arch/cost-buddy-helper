@@ -32,9 +32,9 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('expenses')
-        .select('*')
+        .select('*') as any)
         .eq('project_id', projectId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
@@ -42,7 +42,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
       if (error) throw error;
 
       // Fetch submitter names
-      const submitterIds = [...new Set((data || []).map(t => t.submitted_by).filter(Boolean))];
+      const submitterIds = [...new Set((data || []).map((t: any) => t.submitted_by).filter(Boolean))] as string[];
       let submitterMap = new Map<string, string>();
 
       if (submitterIds.length > 0) {

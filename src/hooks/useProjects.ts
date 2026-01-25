@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Project, ProjectWithOwnership, ProjectRole } from '@/types/project';
+import { Project, ProjectWithOwnership, ProjectRole, ProjectStatus } from '@/types/project';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -58,7 +58,11 @@ export const useProjects = () => {
             .in('id', memberProjectIds);
 
           if (!sharedError && shared) {
-            sharedProjects = shared;
+            sharedProjects = shared.map(p => ({
+              ...p,
+              status: p.status as ProjectStatus,
+              total_budget: Number(p.total_budget) || 0
+            }));
           }
         }
 
@@ -68,6 +72,7 @@ export const useProjects = () => {
         const allProjects: ProjectWithOwnership[] = [
           ...(ownedProjects || []).map(p => ({ 
             ...p, 
+            status: p.status as ProjectStatus,
             isOwner: true, 
             role: 'manager' as ProjectRole,
             total_budget: Number(p.total_budget) || 0
@@ -140,6 +145,7 @@ export const useProjects = () => {
 
       const newProject: ProjectWithOwnership = {
         ...data,
+        status: data.status as ProjectStatus,
         total_budget: Number(data.total_budget) || 0,
         isOwner: true,
         role: 'manager'

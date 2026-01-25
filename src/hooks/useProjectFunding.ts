@@ -36,9 +36,13 @@ export const useProjectFunding = (projectId: string | null) => {
       if (error) throw error;
 
       setFunding((data || []).map(f => ({
-        ...f,
+        id: f.id,
+        project_id: f.project_id,
+        income_source_id: f.income_source_id,
         allocated_amount: Number(f.allocated_amount) || 0,
         percentage: f.percentage ? Number(f.percentage) : null,
+        created_at: f.created_at,
+        updated_at: f.updated_at,
         income_source_name: (f.income_sources as any)?.name,
         income_source_icon: (f.income_sources as any)?.icon,
         income_source_color: (f.income_sources as any)?.color
@@ -83,9 +87,13 @@ export const useProjectFunding = (projectId: string | null) => {
       if (error) throw error;
 
       const newFunding: ProjectFunding = {
-        ...data,
+        id: data.id,
+        project_id: data.project_id,
+        income_source_id: data.income_source_id,
         allocated_amount: Number(data.allocated_amount) || 0,
         percentage: data.percentage ? Number(data.percentage) : null,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
         income_source_name: (data.income_sources as any)?.name,
         income_source_icon: (data.income_sources as any)?.icon,
         income_source_color: (data.income_sources as any)?.color

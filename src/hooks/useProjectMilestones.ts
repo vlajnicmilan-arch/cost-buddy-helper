@@ -47,6 +47,7 @@ export const useProjectMilestones = (projectId: string | null) => {
 
       setMilestones((data || []).map(m => ({
         ...m,
+        status: m.status as MilestoneStatus,
         budget: Number(m.budget) || 0,
         spent: spentByMilestone.get(m.id) || 0
       })));
@@ -86,6 +87,7 @@ export const useProjectMilestones = (projectId: string | null) => {
 
       const newMilestone: ProjectMilestone = {
         ...data,
+        status: data.status as MilestoneStatus,
         budget: Number(data.budget) || 0,
         spent: 0
       };

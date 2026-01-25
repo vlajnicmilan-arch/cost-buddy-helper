@@ -37,9 +37,9 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('expenses')
-        .select('id, user_id, amount, description, category, date, type, milestone_id, status')
+        .select('id, user_id, amount, description, category, date, type, milestone_id, status') as any)
         .eq('project_id', projectId)
         .eq('status', 'approved')
         .order('date', { ascending: false });

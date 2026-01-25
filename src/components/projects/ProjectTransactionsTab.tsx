@@ -102,7 +102,7 @@ export const ProjectTransactionsTab = ({
         .from('expenses')
         .update({ 
           milestone_id: newMilestoneId === 'none' ? null : newMilestoneId 
-        })
+        } as any)
         .eq('id', expenseId);
 
       if (error) throw error;
@@ -138,7 +138,7 @@ export const ProjectTransactionsTab = ({
           date: date.toISOString(),
           status,
           submitted_by: needsApproval ? user.id : null
-        });
+        } as any);
 
       if (error) throw error;
 
