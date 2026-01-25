@@ -6,7 +6,15 @@
     "totalMilestones": "Ukupno faza",
     "pending": "Na čekanju",
     "inProgress": "U tijeku",
-    "overdue": "Zakašnjelo"
+    "overdue": "Zakašnjelo",
+    "reports": "Izvještaji",
+    "budgetProgress": "Napredak budžeta",
+    "used": "Iskorišteno",
+    "spendingByMilestone": "Potrošnja po fazama",
+    "spendingByMember": "Potrošnja po članovima",
+    "milestoneBudgets": "Budžeti faza",
+    "ofTotal": "od ukupno",
+    "budget": "Budžet"
   },
   "settings": {
     "notifications": "Obavijesti",

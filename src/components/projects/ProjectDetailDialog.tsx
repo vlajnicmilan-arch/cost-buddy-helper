@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, Settings,
-  Plus, Calendar, AlertTriangle, CheckCircle2, GanttChart
+  Plus, Calendar, AlertTriangle, CheckCircle2, GanttChart, BarChart3
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -23,6 +23,7 @@ import { ProjectFundingTab } from './ProjectFundingTab';
 import { ProjectMembersTab } from './ProjectMembersTab';
 import { ProjectTransactionsTab } from './ProjectTransactionsTab';
 import { ProjectTimelineTab } from './ProjectTimelineTab';
+import { ProjectReportsDialog } from './ProjectReportsDialog';
 
 interface ProjectDetailDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ export const ProjectDetailDialog = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
+  const [reportsOpen, setReportsOpen] = useState(false);
 
   const { stats, expenses, loading: statsLoading, refetch: refetchStats } = useProjectStats(
     project?.id || null, 
@@ -78,8 +80,29 @@ export const ProjectDetailDialog = ({
                 <p className="text-sm text-muted-foreground truncate">{project.description}</p>
               )}
             </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setReportsOpen(true)}
+              className="shrink-0"
+            >
+              <BarChart3 className="w-4 h-4 mr-1" />
+              {t('projects.reports', 'Izvještaji')}
+            </Button>
           </div>
         </DialogHeader>
+
+        {/* Reports Dialog */}
+        <ProjectReportsDialog
+          open={reportsOpen}
+          onOpenChange={setReportsOpen}
+          project={project}
+          milestones={milestones}
+          members={members}
+          expenses={expenses}
+          totalSpent={stats.totalSpent}
+          totalAllocated={totalAllocated}
+        />
 
         {/* Budget Overview */}
         <div className="shrink-0 p-4 rounded-lg bg-muted/50 space-y-3">
