@@ -194,7 +194,7 @@ const Onboarding = () => {
       }
 
       localStorage.setItem('onboarding_completed', 'true');
-      toast.success(t('onboarding.complete', 'Dobrodošli, {{name}}!').replace('{{name}}', displayName.trim()));
+      localStorage.setItem('show_welcome_animation', 'true');
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Onboarding error:', error);
@@ -406,13 +406,39 @@ const Onboarding = () => {
         {step < totalSteps && (
           <div className="max-w-md mx-auto mt-2">
             <button 
-              onClick={() => {
-                localStorage.setItem('onboarding_completed', 'true');
-                navigate('/', { replace: true });
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  // Save a default name if none provided
+                  const nameToSave = displayName.trim() || 'Korisnik';
+                  if (isLocalMode) {
+                    localStorage.setItem('user_display_name', nameToSave);
+                  } else if (user) {
+                    await supabase
+                      .from('profiles')
+                      .upsert({
+                        user_id: user.id,
+                        display_name: nameToSave,
+                        updated_at: new Date().toISOString()
+                      }, { onConflict: 'user_id' });
+                  }
+                  localStorage.setItem('onboarding_completed', 'true');
+                  localStorage.setItem('show_welcome_animation', 'true');
+                  navigate('/', { replace: true });
+                } catch (error) {
+                  console.error('Skip error:', error);
+                  // Still complete onboarding even if save fails
+                  localStorage.setItem('onboarding_completed', 'true');
+                  localStorage.setItem('show_welcome_animation', 'true');
+                  navigate('/', { replace: true });
+                } finally {
+                  setSaving(false);
+                }
               }}
-              className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+              disabled={saving}
+              className="text-xs text-muted-foreground hover:text-foreground w-full text-center disabled:opacity-50"
             >
-              {t('onboarding.skipForNow', 'Preskoči za sada')}
+              {saving ? t('common.loading', 'Učitavanje...') : t('onboarding.skipForNow', 'Preskoči za sada')}
             </button>
           </div>
         )}
