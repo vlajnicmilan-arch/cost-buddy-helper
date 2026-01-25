@@ -43,6 +43,7 @@ import { useTranslation } from 'react-i18next';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
+import { APP_VERSION } from '@/lib/version';
 
 // Budget Section Wrapper to use hook inside component
 const BudgetSectionWrapper = () => {
@@ -753,6 +754,11 @@ const Index = () => {
           onComplete={() => setShowWelcome(false)}
         />
       )}
+
+      {/* Version Footer */}
+      <footer className="mt-8 pb-4 text-center">
+        <p className="text-xs text-muted-foreground/50">v{APP_VERSION}</p>
+      </footer>
     </div>
   );
 };
