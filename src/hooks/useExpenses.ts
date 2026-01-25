@@ -99,11 +99,17 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     fetchExpenses();
   }, [fetchOwnedSources, fetchExpenses]);
 
-  // Filter expenses for dashboard display (exclude shared source transactions where user is not owner)
+  // Filter expenses for dashboard display (exclude shared source transactions where user is not owner, and exclude project transactions)
   const dashboardExpenses = useMemo(() => {
-    if (isLocalMode) return expenses;
+    if (isLocalMode) {
+      // In local mode, still filter out project transactions from dashboard
+      return expenses.filter(expense => !expense.project_id);
+    }
     
     return expenses.filter(expense => {
+      // Project transaction - hide from dashboard (show only in project view)
+      if (expense.project_id) return false;
+      
       // Personal transaction (no income source) - always show
       if (!expense.income_source_id) return true;
       
@@ -155,6 +161,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             merchant_name: expense.merchant_name,
             ai_extracted: expense.ai_extracted,
             income_source_id: expense.income_source_id,
+            project_id: expense.project_id || null,
             note: expense.note || null,
             status: isPendingMemberTransaction ? 'pending' : 'approved',
             submitted_by: isPendingMemberTransaction ? user.id : null
