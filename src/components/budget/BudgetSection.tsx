@@ -181,18 +181,14 @@ export const BudgetSection = ({
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : budgets.length === 0 ? (
-        <div className="text-center py-12 px-4">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
-            <Target className="w-8 h-8 text-muted-foreground" />
+        <div className="text-center py-8 px-4">
+          <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-muted/50 flex items-center justify-center">
+            <Target className="w-7 h-7 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium mb-2">{t('budget.noBudgets', 'Nema budžeta')}</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {t('budget.noBudgetsHint', 'Kreiraj prvi budžet za praćenje potrošnje')}
+          <h3 className="text-base font-medium mb-1">{t('budget.noBudgets', 'Nema budžeta')}</h3>
+          <p className="text-sm text-muted-foreground">
+            {t('budget.noBudgetsHint', 'Koristi gumb iznad za kreiranje prvog budžeta')}
           </p>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            {t('budget.createFirst', 'Kreiraj budžet')}
-          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
