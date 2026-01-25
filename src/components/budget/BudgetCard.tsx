@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +13,8 @@ import {
   Calendar,
   Edit,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  ChevronDown
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
 
 interface BudgetCardProps {
@@ -49,6 +51,7 @@ export const BudgetCard = ({
   onReset 
 }: BudgetCardProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
 
@@ -65,72 +68,209 @@ export const BudgetCard = ({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "glass-card rounded-xl sm:rounded-2xl p-4 sm:p-5 transition-all duration-200",
-        onClick && "cursor-pointer hover:scale-[1.01] hover:shadow-lg",
-        budget.isOverBudget && "ring-2 ring-destructive/50",
-        budget.isWarning && !budget.isOverBudget && "ring-2 ring-warning/50"
-      )}
-      onClick={onClick}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div 
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0"
-            style={{ backgroundColor: `${budget.color}20` }}
-          >
-            {budget.icon || '💰'}
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-semibold text-sm sm:text-base truncate">{budget.name}</h3>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="capitalize">{BUDGET_PERIOD_LABELS[budget.period_type]}</span>
-              {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
-                <>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {budget.daysRemaining} {t('common.daysLeft', 'dana')}
-                  </span>
-                </>
-              )}
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn(
+          "glass-card rounded-xl sm:rounded-2xl transition-all duration-200",
+          budget.isOverBudget && "ring-2 ring-destructive/50",
+          budget.isWarning && !budget.isOverBudget && "ring-2 ring-warning/50"
+        )}
+      >
+        {/* Collapsed Header - Always Visible */}
+        <CollapsibleTrigger asChild>
+          <div className="p-4 sm:p-5 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl sm:rounded-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div 
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0"
+                  style={{ backgroundColor: `${budget.color}20` }}
+                >
+                  {budget.icon || '💰'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-sm sm:text-base truncate">{budget.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="capitalize">{BUDGET_PERIOD_LABELS[budget.period_type]}</span>
+                    <span>•</span>
+                    <span className={cn(
+                      "font-medium",
+                      budget.isOverBudget ? "text-destructive" : budget.isWarning ? "text-warning" : "text-primary"
+                    )}>
+                      {budget.percentage.toFixed(0)}%
+                    </span>
+                    {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
+                      <>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {budget.daysRemaining}d
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Warning/Status indicators */}
+                {(budget.isOverBudget || budget.isWarning) && (
+                  <div className={cn(
+                    "p-1.5 rounded-lg",
+                    budget.isOverBudget ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
+                  )}>
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                )}
+
+                {/* Quick amount preview */}
+                <div className="text-right hidden sm:block">
+                  <p className={cn(
+                    "text-sm font-mono font-bold",
+                    budget.isOverBudget ? "text-destructive" : "text-foreground"
+                  )}>
+                    {formatAmount(budget.remaining)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    / {formatAmount(budget.total_amount)}
+                  </p>
+                </div>
+
+                {/* Expand indicator */}
+                <ChevronDown className={cn(
+                  "w-5 h-5 text-muted-foreground transition-transform duration-200",
+                  isOpen && "rotate-180"
+                )} />
+              </div>
             </div>
           </div>
-        </div>
+        </CollapsibleTrigger>
 
-        {/* Quick Actions */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>
-              <Edit className="w-4 h-4 mr-2" />
-              {t('common.edit', 'Uredi')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onReset?.(); }}>
-              <RotateCcw className="w-4 h-4 mr-2" />
-              {t('budget.reset', 'Resetiraj')}
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={(e) => { e.stopPropagation(); setDeleteDialogOpen(true); }}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              {t('common.delete', 'Obriši')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Expanded Content */}
+        <CollapsibleContent>
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="px-4 sm:px-5 pb-4 sm:pb-5 border-t border-border/30"
+              >
+                {/* Actions Row */}
+                <div className="flex items-center justify-between pt-3 mb-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onClick}
+                    className="text-xs"
+                  >
+                    {t('budget.viewDetails', 'Otvori detalje')}
+                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEdit?.()}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        {t('common.edit', 'Uredi')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onReset?.()}>
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        {t('budget.reset', 'Resetiraj')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setDeleteDialogOpen(true)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {t('common.delete', 'Obriši')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Progress */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs text-muted-foreground">
+                      {t('budget.spent', 'Potrošeno')}: {formatAmount(budget.spent)}
+                    </span>
+                    <span className="text-xs font-medium">
+                      {budget.percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      className={cn("h-full rounded-full", getProgressColor())}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(budget.percentage, 100)}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </div>
+                </div>
+
+                {/* Stats Row */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={cn(
+                      "text-lg sm:text-xl font-mono font-bold",
+                      budget.isOverBudget ? "text-destructive" : "text-foreground"
+                    )}>
+                      {formatAmount(budget.remaining)}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
+                      {t('budget.remaining', 'Preostalo')} / {formatAmount(budget.total_amount)}
+                    </p>
+                  </div>
+
+                  {/* Trend indicator */}
+                  {budget.trend && (
+                    <div className={cn(
+                      "p-1.5 rounded-lg",
+                      budget.trend === 'up' && "bg-expense/10 text-expense",
+                      budget.trend === 'down' && "bg-income/10 text-income",
+                      budget.trend === 'stable' && "bg-muted text-muted-foreground"
+                    )}>
+                      <TrendIcon className="w-4 h-4" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Category mini-bars (top 3) */}
+                {budget.categories.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
+                    {budget.categories.slice(0, 3).map((cat) => (
+                      <div key={cat.id} className="flex items-center gap-2">
+                        <span className="text-xs w-16 truncate">{cat.icon || '📂'} {cat.category}</span>
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={cn(
+                              "h-full rounded-full",
+                              cat.isOverBudget ? "bg-destructive" : cat.isWarning ? "bg-warning" : "bg-primary/70"
+                            )}
+                            style={{ width: `${Math.min(cat.percentage, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground w-8 text-right">
+                          {cat.percentage.toFixed(0)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CollapsibleContent>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>{t('budget.deleteConfirmTitle', 'Obriši budžet?')}</AlertDialogTitle>
               <AlertDialogDescription>
@@ -148,89 +288,7 @@ export const BudgetCard = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-
-      {/* Progress */}
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-muted-foreground">
-            {t('budget.spent', 'Potrošeno')}: {formatAmount(budget.spent)}
-          </span>
-          <span className="text-xs font-medium">
-            {budget.percentage.toFixed(0)}%
-          </span>
-        </div>
-        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            className={cn("h-full rounded-full", getProgressColor())}
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(budget.percentage, 100)}%` }}
-            transition={{ duration: 0.5 }}
-          />
-        </div>
-      </div>
-
-      {/* Stats Row */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn(
-            "text-lg sm:text-xl font-mono font-bold",
-            budget.isOverBudget ? "text-destructive" : "text-foreground"
-          )}>
-            {formatAmount(budget.remaining)}
-          </p>
-          <p className="text-[10px] sm:text-xs text-muted-foreground">
-            {t('budget.remaining', 'Preostalo')} / {formatAmount(budget.total_amount)}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Warning indicator */}
-          {(budget.isOverBudget || budget.isWarning) && (
-            <div className={cn(
-              "p-1.5 rounded-lg",
-              budget.isOverBudget ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
-            )}>
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-          )}
-
-          {/* Trend indicator */}
-          {budget.trend && (
-            <div className={cn(
-              "p-1.5 rounded-lg",
-              budget.trend === 'up' && "bg-expense/10 text-expense",
-              budget.trend === 'down' && "bg-income/10 text-income",
-              budget.trend === 'stable' && "bg-muted text-muted-foreground"
-            )}>
-              <TrendIcon className="w-4 h-4" />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Category mini-bars (top 3) */}
-      {budget.categories.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
-          {budget.categories.slice(0, 3).map((cat) => (
-            <div key={cat.id} className="flex items-center gap-2">
-              <span className="text-xs w-16 truncate">{cat.icon || '📂'} {cat.category}</span>
-              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className={cn(
-                    "h-full rounded-full",
-                    cat.isOverBudget ? "bg-destructive" : cat.isWarning ? "bg-warning" : "bg-primary/70"
-                  )}
-                  style={{ width: `${Math.min(cat.percentage, 100)}%` }}
-                />
-              </div>
-              <span className="text-[10px] text-muted-foreground w-8 text-right">
-                {cat.percentage.toFixed(0)}%
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </motion.div>
+      </motion.div>
+    </Collapsible>
   );
 };
