@@ -77,7 +77,7 @@ export const ProjectDetailDialog = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <DialogTitle className="truncate">{project.name}</DialogTitle>
-                <Badge variant="secondary">{PROJECT_STATUS_LABELS[project.status]}</Badge>
+                <Badge variant="secondary">{t(`projectStatus.${project.status}`, PROJECT_STATUS_LABELS[project.status])}</Badge>
               </div>
               {project.description && (
                 <p className="text-sm text-muted-foreground truncate">{project.description}</p>

@@ -598,5 +598,63 @@
     "milestone": "Project Milestone",
     "selectMilestone": "Select milestone (optional)",
     "noMilestone": "No milestone"
+  },
+  "budget": {
+    "title": "Budgets",
+    "create": "New budget",
+    "edit": "Edit budget",
+    "activeBudgets": "active budgets",
+    "noBudgets": "No budgets",
+    "noBudgetsHint": "Use the button above to create your first budget",
+    "spent": "Spent",
+    "remaining": "remaining",
+    "used": "used",
+    "left": "left",
+    "reset": "Reset",
+    "deleteConfirmTitle": "Delete budget?",
+    "deleteConfirmDesc": "This action will permanently delete the budget \"{{name}}\" and all its category limits. This cannot be undone.",
+    "status": {
+      "active": "Active",
+      "warning": "Warning",
+      "overBudget": "Over Budget"
+    },
+    "period": {
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "custom": "Custom"
+    },
+    "overview": "Overview",
+    "members": "Members",
+    "categories": "Categories",
+    "noCategories": "No categories defined",
+    "addCategory": "Add category",
+    "categoryLimit": "Category limit",
+    "dailyAverage": "Daily average",
+    "projectedSpend": "Projected spend",
+    "onTrack": "On track",
+    "overSpending": "Over spending",
+    "budgetCreated": "Budget created",
+    "budgetUpdated": "Budget updated",
+    "budgetDeleted": "Budget deleted",
+    "budgetReset": "Budget reset"
+  },
+  "projectStatus": {
+    "draft": "Draft",
+    "active": "Active",
+    "paused": "Paused",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "projectRoles": {
+    "manager": "Manager",
+    "member": "Member",
+    "viewer": "Viewer"
+  },
+  "common": {
+    "daysLeft": "days",
+    "finances": "Finances",
+    "account": "account",
+    "accounts": "accounts"
   }
 }

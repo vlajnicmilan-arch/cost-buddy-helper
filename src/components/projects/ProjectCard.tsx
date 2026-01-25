@@ -74,7 +74,7 @@ export const ProjectCard = ({
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold truncate">{project.name}</h3>
             <Badge variant={getStatusBadgeVariant(project.status)} className="text-xs">
-              {PROJECT_STATUS_LABELS[project.status]}
+              {t(`projectStatus.${project.status}`, PROJECT_STATUS_LABELS[project.status])}
             </Badge>
           </div>
           
@@ -130,7 +130,7 @@ export const ProjectCard = ({
             </div>
             {!project.isOwner && (
               <Badge variant="secondary" className="text-xs">
-                {PROJECT_ROLE_LABELS[project.role]}
+                {t(`projectRoles.${project.role}`, PROJECT_ROLE_LABELS[project.role])}
               </Badge>
             )}
           </div>
