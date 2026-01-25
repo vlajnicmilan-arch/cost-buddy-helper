@@ -607,50 +607,11 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 )}
               </div>
 
-              {/* Income Source Filter */}
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Banknote className="w-4 h-4" />
-                  Izvor prihoda
-                </Label>
-                <Select value={selectedIncomeSourceId} onValueChange={setSelectedIncomeSourceId}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Svi izvori" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      <span className="flex items-center gap-2">
-                        📊 Svi izvori
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="unassigned">
-                      <span className="flex items-center gap-2">
-                        📭 Bez izvora
-                      </span>
-                    </SelectItem>
-                    {incomeSources.map((source) => (
-                      <SelectItem key={source.id} value={source.id}>
-                        <span className="flex items-center gap-2">
-                          {source.icon} {source.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <p className="text-sm text-muted-foreground">
               {dateRange.start.toLocaleDateString('hr-HR')} - {dateRange.end.toLocaleDateString('hr-HR')}
               <span className="ml-2">({stats.transactionCount} transakcija)</span>
-              {selectedIncomeSourceId !== 'all' && (
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
-                  {selectedIncomeSourceId === 'unassigned' 
-                    ? '📭 Bez izvora' 
-                    : `${incomeSources.find(s => s.id === selectedIncomeSourceId)?.icon || ''} ${incomeSources.find(s => s.id === selectedIncomeSourceId)?.name || ''}`
-                  }
-                </span>
-              )}
             </p>
 
             {/* Summary Cards */}
