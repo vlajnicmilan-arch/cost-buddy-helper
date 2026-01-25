@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, Settings,
-  Plus, Calendar, AlertTriangle, CheckCircle2
+  Plus, Calendar, AlertTriangle, CheckCircle2, GanttChart
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -22,6 +22,7 @@ import { ProjectMilestonesTab } from './ProjectMilestonesTab';
 import { ProjectFundingTab } from './ProjectFundingTab';
 import { ProjectMembersTab } from './ProjectMembersTab';
 import { ProjectTransactionsTab } from './ProjectTransactionsTab';
+import { ProjectTimelineTab } from './ProjectTimelineTab';
 
 interface ProjectDetailDialogProps {
   open: boolean;
@@ -126,10 +127,14 @@ export const ProjectDetailDialog = ({
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="shrink-0 grid grid-cols-5 w-full">
+          <TabsList className="shrink-0 grid grid-cols-6 w-full">
             <TabsTrigger value="overview" className="gap-1">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">{t('projects.overview')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="gap-1">
+              <GanttChart className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('projects.timeline')}</span>
             </TabsTrigger>
             <TabsTrigger value="milestones" className="gap-1">
               <Target className="w-4 h-4" />
@@ -222,6 +227,16 @@ export const ProjectDetailDialog = ({
                   )}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="timeline" className="m-0">
+              <ProjectTimelineTab
+                projectId={project.id}
+                milestones={milestones}
+                projectStartDate={project.start_date}
+                projectEndDate={project.end_date}
+                loading={milestonesLoading}
+              />
             </TabsContent>
 
             <TabsContent value="milestones" className="m-0">
