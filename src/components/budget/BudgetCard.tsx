@@ -81,67 +81,86 @@ export const BudgetCard = ({
         {/* Collapsed Header - Always Visible */}
         <CollapsibleTrigger asChild>
           <div className="p-4 sm:p-5 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl sm:rounded-2xl">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div 
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-2xl sm:text-3xl shrink-0"
                   style={{ backgroundColor: `${budget.color}20` }}
                 >
                   {budget.icon || '💰'}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-sm sm:text-base truncate">{budget.name}</h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <h3 className="font-semibold text-base sm:text-lg truncate">{budget.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                     <span className="capitalize">{BUDGET_PERIOD_LABELS[budget.period_type]}</span>
-                    <span>•</span>
-                    <span className={cn(
-                      "font-medium",
-                      budget.isOverBudget ? "text-destructive" : budget.isWarning ? "text-warning" : "text-primary"
-                    )}>
-                      {budget.percentage.toFixed(0)}%
-                    </span>
                     {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
                       <>
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {budget.daysRemaining}d
+                          {budget.daysRemaining} {t('common.daysLeft', 'dana')}
                         </span>
                       </>
                     )}
                   </div>
+                  
+                  {/* Progress bar in collapsed state */}
+                  <div className="mt-2">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <motion.div
+                        className={cn("h-full rounded-full", getProgressColor())}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(budget.percentage, 100)}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Warning/Status indicators */}
-                {(budget.isOverBudget || budget.isWarning) && (
-                  <div className={cn(
-                    "p-1.5 rounded-lg",
-                    budget.isOverBudget ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
-                  )}>
-                    <AlertTriangle className="w-4 h-4" />
-                  </div>
-                )}
-
-                {/* Quick amount preview */}
-                <div className="text-right hidden sm:block">
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                {/* Amount and percentage */}
+                <div className="text-right">
                   <p className={cn(
-                    "text-sm font-mono font-bold",
+                    "text-lg sm:text-xl font-mono font-bold",
                     budget.isOverBudget ? "text-destructive" : "text-foreground"
                   )}>
                     {formatAmount(budget.remaining)}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    / {formatAmount(budget.total_amount)}
+                  <p className="text-xs text-muted-foreground">
+                    / {formatAmount(budget.total_amount)} ({budget.percentage.toFixed(0)}%)
                   </p>
                 </div>
 
-                {/* Expand indicator */}
-                <ChevronDown className={cn(
-                  "w-5 h-5 text-muted-foreground transition-transform duration-200",
-                  isOpen && "rotate-180"
-                )} />
+                <div className="flex items-center gap-1.5 mt-1">
+                  {/* Warning/Status indicators */}
+                  {(budget.isOverBudget || budget.isWarning) && (
+                    <div className={cn(
+                      "p-1 rounded-md",
+                      budget.isOverBudget ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
+                    )}>
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+
+                  {/* Trend indicator */}
+                  {budget.trend && (
+                    <div className={cn(
+                      "p-1 rounded-md",
+                      budget.trend === 'up' && "bg-expense/10 text-expense",
+                      budget.trend === 'down' && "bg-income/10 text-income",
+                      budget.trend === 'stable' && "bg-muted text-muted-foreground"
+                    )}>
+                      <TrendIcon className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+
+                  {/* Expand indicator */}
+                  <ChevronDown className={cn(
+                    "w-5 h-5 text-muted-foreground transition-transform duration-200",
+                    isOpen && "rotate-180"
+                  )} />
+                </div>
               </div>
             </div>
           </div>
