@@ -192,6 +192,22 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           }
         }
 
+        // Notify project members when a transaction is added to a project
+        if (expense.project_id && data) {
+          try {
+            await supabase.functions.invoke('notify-project-transaction', {
+              body: {
+                expense_id: data.id,
+                project_id: expense.project_id,
+                action: 'created'
+              }
+            });
+          } catch (notifyError) {
+            console.error('Error sending project notification:', notifyError);
+            // Don't fail the whole operation if notification fails
+          }
+        }
+
         // Notify owner if a note was added with the transaction
         if (expense.note && expense.income_source_id && data) {
           try {
@@ -297,7 +313,28 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           );
         }
 
-        // Notify owner if a note was added and this is a project transaction
+        // Notify project members if project changed or transaction was updated
+        const projectChanged = expense.project_id !== oldExpense?.project_id;
+        const significantChange = expense.amount !== oldExpense?.amount || 
+                                  expense.description !== oldExpense?.description ||
+                                  expense.type !== oldExpense?.type;
+        
+        if (expense.project_id && (projectChanged || significantChange)) {
+          try {
+            await supabase.functions.invoke('notify-project-transaction', {
+              body: {
+                expense_id: expense.id,
+                project_id: expense.project_id,
+                action: 'updated'
+              }
+            });
+          } catch (notifyError) {
+            console.error('Error sending project notification:', notifyError);
+            // Don't fail the whole operation if notification fails
+          }
+        }
+
+        // Notify owner if a note was added and this is an income source transaction
         const noteWasAdded = expense.note && (!oldExpense?.note || oldExpense.note !== expense.note);
         if (noteWasAdded && expense.income_source_id) {
           try {
