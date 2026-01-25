@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, getCategoryInfo, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
-import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
+import { useProjects } from '@/hooks/useProjects';
+import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 
@@ -53,12 +54,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [showScannedPreview, setShowScannedPreview] = useState(false);
   
   const [note, setNote] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
+  const { projects } = useProjects();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
 
   // Set default payment source when dialog opens and sources are loaded
@@ -226,6 +229,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setScannedData(null);
     setShowScannedPreview(false);
     setNote('');
+    setSelectedProjectId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,7 +259,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       merchant_name: merchantName || undefined,
       receipt_url: receiptUrl,
       ai_extracted: scannedData !== null,
-      note: note.trim() || undefined
+      note: note.trim() || undefined,
+      project_id: selectedProjectId || undefined
     }, validItems.length > 0 ? validItems : undefined);
 
     resetForm();
@@ -739,6 +744,61 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   className="h-12 rounded-xl"
                 />
               </div>
+
+              {/* Project Assignment */}
+              {projects.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <FolderKanban className="w-4 h-4" />
+                    {t('transactions.assignToProject')}
+                  </Label>
+                  <Select 
+                    value={selectedProjectId || 'none'} 
+                    onValueChange={(v) => setSelectedProjectId(v === 'none' ? null : v)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl bg-background">
+                      <SelectValue>
+                        {selectedProjectId ? (
+                          (() => {
+                            const project = projects.find(p => p.id === selectedProjectId);
+                            return project ? (
+                              <span className="flex items-center gap-2">
+                                <span 
+                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                                  style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
+                                >
+                                  {project.icon || '📁'}
+                                </span>
+                                <span>{project.name}</span>
+                              </span>
+                            ) : t('transactions.noProject');
+                          })()
+                        ) : (
+                          <span className="text-muted-foreground">{t('transactions.noProject')}</span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">{t('transactions.noProject')}</span>
+                      </SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          <span className="flex items-center gap-2">
+                            <span 
+                              className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                              style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
+                            >
+                              {project.icon || '📁'}
+                            </span>
+                            <span>{project.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Merchant Name / Source */}
               <div className="space-y-2">
