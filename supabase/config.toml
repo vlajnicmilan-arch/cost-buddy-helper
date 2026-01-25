@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.notify-note-added]
 verify_jwt = false
+
+[functions.send-member-invitation]
+verify_jwt = false
+
+[functions.respond-to-invitation]
+verify_jwt = false

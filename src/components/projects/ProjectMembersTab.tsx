@@ -7,8 +7,9 @@ import { ProjectMember, ProjectInvitation, ProjectRole, PROJECT_ROLE_LABELS } fr
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2 } from 'lucide-react';
+import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectMembersTabProps {
   projectId: string;
@@ -33,6 +34,8 @@ export const ProjectMembersTab = ({
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [inviteRole, setInviteRole] = useState<ProjectRole>('member');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [sendingInvite, setSendingInvite] = useState(false);
 
   const handleGenerateLink = async () => {
     setGeneratingLink(true);
@@ -50,6 +53,49 @@ export const ProjectMembersTab = ({
     if (inviteLink) {
       await navigator.clipboard.writeText(inviteLink);
       toast.success(t('projects.linkCopied'));
+    }
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteEmail.trim()) {
+      toast.error(t('projects.enterEmail', 'Unesite email adresu'));
+      return;
+    }
+
+    setSendingInvite(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-member-invitation', {
+        body: {
+          type: 'project',
+          targetId: projectId,
+          invitedEmail: inviteEmail.trim(),
+          role: inviteRole,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data.error) {
+        if (data.error === 'user_not_found') {
+          toast.error(t('projects.userNotFound', 'Korisnik s tim emailom nije pronađen'));
+        } else if (data.error === 'already_member') {
+          toast.error(t('projects.alreadyMember', 'Korisnik je već član'));
+        } else if (data.error === 'already_invited') {
+          toast.error(t('projects.alreadyInvited', 'Korisnik već ima aktivnu pozivnicu'));
+        } else {
+          toast.error(data.message || t('common.error'));
+        }
+        return;
+      }
+
+      toast.success(t('projects.invitationSent', 'Pozivnica poslana'));
+      setInviteEmail('');
+      onRefetch();
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      toast.error(t('common.error'));
+    } finally {
+      setSendingInvite(false);
     }
   };
 
@@ -82,45 +128,82 @@ export const ProjectMembersTab = ({
     <div className="space-y-6">
       {/* Invite section - managers only */}
       {isManager && (
-        <div className="p-4 rounded-lg border bg-muted/50 space-y-3">
+        <div className="p-4 rounded-lg border bg-muted/50 space-y-4">
           <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4" />
+            <UserPlus className="w-4 h-4" />
             <span className="font-medium">{t('projects.inviteMembers')}</span>
           </div>
           
-          <div className="flex gap-2">
-            <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as ProjectRole)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="member">{PROJECT_ROLE_LABELS.member}</SelectItem>
-                <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Button onClick={handleGenerateLink} disabled={generatingLink} className="flex-1">
-              {generatingLink ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Link2 className="w-4 h-4 mr-2" />
-              )}
-              {t('projects.generateLink')}
-            </Button>
-          </div>
-
-          {inviteLink && (
+          {/* Email invitation */}
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{t('projects.inviteByEmail', 'Pozovi putem emaila')}</p>
             <div className="flex gap-2">
-              <Input value={inviteLink} readOnly className="text-sm" />
-              <Button variant="outline" size="icon" onClick={copyLink}>
-                <Copy className="w-4 h-4" />
+              <Input 
+                type="email"
+                placeholder={t('projects.emailPlaceholder', 'email@primjer.com')}
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="flex-1"
+              />
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as ProjectRole)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">{PROJECT_ROLE_LABELS.member}</SelectItem>
+                  <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={handleSendInvite} disabled={sendingInvite}>
+                {sendingInvite ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4" />
+                )}
               </Button>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground">
+              {t('projects.inviteByEmailHint', 'Korisnik će dobiti obavijest u aplikaciji')}
+            </p>
+          </div>
 
-          <p className="text-xs text-muted-foreground">
-            {t('projects.inviteLinkExpires')}
-          </p>
+          {/* Link invitation */}
+          <div className="space-y-2 pt-2 border-t">
+            <p className="text-sm text-muted-foreground">{t('projects.orGenerateLink', 'Ili generiraj pozivni link')}</p>
+            <div className="flex gap-2">
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as ProjectRole)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">{PROJECT_ROLE_LABELS.member}</SelectItem>
+                  <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button onClick={handleGenerateLink} disabled={generatingLink} variant="outline" className="flex-1">
+                {generatingLink ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Link2 className="w-4 h-4 mr-2" />
+                )}
+                {t('projects.generateLink')}
+              </Button>
+            </div>
+
+            {inviteLink && (
+              <div className="flex gap-2">
+                <Input value={inviteLink} readOnly className="text-sm" />
+                <Button variant="outline" size="icon" onClick={copyLink}>
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              {t('projects.inviteLinkExpires')}
+            </p>
+          </div>
         </div>
       )}
 

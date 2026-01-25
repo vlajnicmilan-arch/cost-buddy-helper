@@ -634,5 +634,14 @@
     "finances": "Finanzen",
     "account": "Konto",
     "accounts": "Konten"
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "markAllRead": "Alle markieren",
+    "empty": "Keine Benachrichtigungen",
+    "accept": "Akzeptieren",
+    "decline": "Ablehnen",
+    "invitationAccepted": "Einladung angenommen",
+    "invitationDeclined": "Einladung abgelehnt"
   }
 }
