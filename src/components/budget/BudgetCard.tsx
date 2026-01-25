@@ -3,12 +3,15 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { 
   AlertTriangle, 
   TrendingUp, 
   TrendingDown, 
   Minus,
-  Calendar
+  Calendar,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -59,12 +62,40 @@ export const BudgetCard = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "glass-card rounded-xl sm:rounded-2xl p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:scale-[1.01] hover:shadow-lg",
+          "relative group glass-card rounded-xl sm:rounded-2xl p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-lg",
           budget.isOverBudget && "ring-2 ring-destructive/50",
           budget.isWarning && !budget.isOverBudget && "ring-2 ring-warning/50"
         )}
         onClick={onClick}
       >
+        {/* Hover Actions */}
+        <div className={cn(
+          "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+          "absolute top-2 right-2"
+        )}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit?.();
+            }}
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteDialogOpen(true);
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
         {/* Header row - Icon, Name, Actions */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
