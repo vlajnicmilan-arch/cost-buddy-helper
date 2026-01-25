@@ -208,7 +208,7 @@ const Index = () => {
   useEffect(() => {
     // Only redirect to auth if using cloud mode and not logged in
     if (!authLoading && !user && storageMode === 'cloud') {
-      navigate('/auth');
+      navigate('/auth', { replace: true });
     }
   }, [user, authLoading, navigate, storageMode]);
 
@@ -237,8 +237,7 @@ const Index = () => {
   }
 
   if (!user && storageMode === 'cloud') {
-    // Redirect to auth if not logged in
-    navigate('/auth', { replace: true });
+    // useEffect will handle navigation, just show loader
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
