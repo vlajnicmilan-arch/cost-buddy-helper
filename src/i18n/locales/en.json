@@ -134,7 +134,11 @@
     "noCustomPaymentSources": "You have no custom payment sources.",
     "clickNewToAdd": "Click \"New\" to add one.",
     "preview": "Preview",
-    "transfersNoImpact": "Transfers don't affect balances"
+    "transfersNoImpact": "Transfers don't affect balances",
+    "daysLeft": "days",
+    "finances": "Finances",
+    "account": "account",
+    "accounts": "accounts"
   },
   "nav": {
     "home": "Home",
@@ -650,12 +654,6 @@
     "manager": "Manager",
     "member": "Member",
     "viewer": "Viewer"
-  },
-  "common": {
-    "daysLeft": "days",
-    "finances": "Finances",
-    "account": "account",
-    "accounts": "accounts"
   },
   "notifications": {
     "title": "Notifications",
