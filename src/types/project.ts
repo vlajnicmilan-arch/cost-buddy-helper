@@ -106,7 +106,7 @@ export const MILESTONE_STATUS_LABELS: Record<MilestoneStatus, string> = {
 };
 
 export const PROJECT_ROLE_LABELS: Record<ProjectRole, string> = {
-  manager: 'Manager',
-  member: 'Član',
+  manager: 'Voditelj',
+  member: 'Punopravni član',
   viewer: 'Promatrač'
 };

@@ -39,8 +39,9 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
     try {
       const { data, error } = await supabase
         .from('expenses')
-        .select('id, user_id, amount, description, category, date, type, milestone_id')
+        .select('id, user_id, amount, description, category, date, type, milestone_id, status')
         .eq('project_id', projectId)
+        .eq('status', 'approved')
         .order('date', { ascending: false });
 
       if (error) throw error;

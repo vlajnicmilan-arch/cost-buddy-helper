@@ -50,6 +50,9 @@ export const ProjectDetailDialog = ({
   const { milestones, loading: milestonesLoading, refetch: refetchMilestones } = useProjectMilestones(project?.id || null);
   const { funding, totalAllocated, loading: fundingLoading, refetch: refetchFunding } = useProjectFunding(project?.id || null);
   const { members, invitations, isManager, loading: membersLoading, refetch: refetchMembers } = useProjectMembers(project?.id || null);
+  
+  // Get current user's role in the project
+  const currentUserRole = project?.role || 'viewer';
 
   if (!project) return null;
 
@@ -301,6 +304,7 @@ export const ProjectDetailDialog = ({
                 expenses={expenses}
                 milestones={milestones}
                 isManager={isManager}
+                userRole={currentUserRole}
                 loading={statsLoading}
                 onRefetch={() => {
                   refetchStats();
