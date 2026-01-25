@@ -285,7 +285,9 @@ const Index = () => {
           {/* Top row: Logo, title, and navigation icons */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src={logo} alt="V&M Balance" className="w-10 h-10 sm:w-12 sm:h-12 scale-[1.8] object-cover" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden flex-shrink-0">
+                <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
+              </div>
               <div>
                 <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">
                   {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
