@@ -222,8 +222,8 @@ const Index = () => {
       } catch (error) {
         console.error('Sign out error:', error);
       } finally {
-        // Always navigate to auth after signout attempt
-        navigate('/auth', { replace: true });
+        // Navigate to auth without replace so user can go back
+        navigate('/auth');
       }
     }
   };
