@@ -573,6 +573,11 @@
     "deleted": "Projekt obrisan",
     "deleteConfirmTitle": "Obriši projekt?",
     "deleteConfirmMessage": "Ova radnja će trajno obrisati projekt, sve faze i financiranje. Transakcije neće biti obrisane.",
-    "budgetOverview": "Pregled budžeta"
+    "budgetOverview": "Pregled budžeta",
+    "addExpense": "Dodaj trošak",
+    "expenseAdded": "Trošak dodan na projekt",
+    "milestone": "Faza projekta",
+    "selectMilestone": "Odaberi fazu (opcionalno)",
+    "noMilestone": "Bez faze"
   }
 }

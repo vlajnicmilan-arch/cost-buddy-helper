@@ -573,6 +573,11 @@
     "deleted": "Project deleted",
     "deleteConfirmTitle": "Delete project?",
     "deleteConfirmMessage": "This will permanently delete the project, all milestones and funding. Transactions will not be deleted.",
-    "budgetOverview": "Budget Overview"
+    "budgetOverview": "Budget Overview",
+    "addExpense": "Add Expense",
+    "expenseAdded": "Expense added to project",
+    "milestone": "Project Milestone",
+    "selectMilestone": "Select milestone (optional)",
+    "noMilestone": "No milestone"
   }
 }

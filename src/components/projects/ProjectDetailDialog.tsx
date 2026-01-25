@@ -261,10 +261,12 @@ export const ProjectDetailDialog = ({
               <ProjectTransactionsTab
                 projectId={project.id}
                 expenses={expenses}
+                milestones={milestones}
                 isManager={isManager}
                 loading={statsLoading}
                 onRefetch={() => {
                   refetchStats();
+                  refetchMilestones();
                   onRefreshExpenses?.();
                 }}
               />
