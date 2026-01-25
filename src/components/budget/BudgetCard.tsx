@@ -1,8 +1,8 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { 
   AlertTriangle, 
@@ -21,6 +21,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
 
 interface BudgetCardProps {
@@ -38,6 +48,7 @@ export const BudgetCard = ({
   onDelete,
   onReset 
 }: BudgetCardProps) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
 
@@ -108,7 +119,7 @@ export const BudgetCard = ({
               {t('budget.reset', 'Resetiraj')}
             </DropdownMenuItem>
             <DropdownMenuItem 
-              onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+              onClick={(e) => { e.stopPropagation(); setDeleteDialogOpen(true); }}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -116,6 +127,27 @@ export const BudgetCard = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('budget.deleteConfirmTitle', 'Obriši budžet?')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('budget.deleteConfirmDesc', 'Ova radnja će trajno obrisati budžet "{{name}}" i sve njegove limite po kategorijama. Ovo se ne može poništiti.').replace('{{name}}', budget.name)}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => { onDelete?.(); setDeleteDialogOpen(false); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {t('common.delete', 'Obriši')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Progress */}
