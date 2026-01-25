@@ -56,16 +56,27 @@ export const BudgetCard = ({
     return 'bg-primary';
   };
 
+  // Determine border color based on status
+  const getBorderColor = () => {
+    if (budget.isOverBudget) return 'hsl(var(--destructive))';
+    if (budget.isWarning) return 'hsl(var(--warning))';
+    return budget.color || 'hsl(var(--primary))';
+  };
+
   return (
     <>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn(
-          "relative group glass-card rounded-xl sm:rounded-2xl p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-lg",
-          budget.isOverBudget && "ring-2 ring-destructive/50",
-          budget.isWarning && !budget.isOverBudget && "ring-2 ring-warning/50"
-        )}
+        whileHover={{ 
+          scale: 1.01,
+          boxShadow: `0 8px 25px -5px ${budget.color}30`
+        }}
+        className="relative group p-4 rounded-xl border bg-card cursor-pointer transition-colors"
+        style={{ 
+          borderLeftColor: getBorderColor(),
+          borderLeftWidth: 4
+        }}
         onClick={onClick}
       >
         {/* Hover Actions */}
