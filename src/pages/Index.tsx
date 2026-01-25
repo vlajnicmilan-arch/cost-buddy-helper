@@ -290,7 +290,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">
-                  {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
+                  {displayName ? t('common.greeting', { name: displayName }) : 'V&M Balance'}
                 </h1>
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">{t('common.manageFinances')}</p>
