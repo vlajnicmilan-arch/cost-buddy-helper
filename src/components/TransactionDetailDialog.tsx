@@ -242,17 +242,18 @@ export const TransactionDetailDialog = ({
             )}
           </div>
 
-          {/* Notes Thread - for project transactions */}
-          {expense.income_source_id && (
+          {/* Notes Thread - for income source and project transactions */}
+          {(expense.income_source_id || expense.project_id) && (
             <TransactionNotesThread
               expenseId={expense.id}
               incomeSourceId={expense.income_source_id}
+              projectId={expense.project_id}
               initialNote={expense.note}
             />
           )}
 
-          {/* Single note display for non-project transactions */}
-          {!expense.income_source_id && expense.note && (
+          {/* Single note display for personal transactions */}
+          {!expense.income_source_id && !expense.project_id && expense.note && (
             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
               <div className="flex items-center gap-2 text-primary mb-1">
                 <MessageCircle className="w-4 h-4 shrink-0" />
