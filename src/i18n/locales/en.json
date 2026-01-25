@@ -1,4 +1,7 @@
 {
+  "projects": {
+    "milestoneUpdated": "Milestone updated"
+  },
   "settings": {
     "notifications": "Notifications",
     "soundNotifications": "Sound notifications",
