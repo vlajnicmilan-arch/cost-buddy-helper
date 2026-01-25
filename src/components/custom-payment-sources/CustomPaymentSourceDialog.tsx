@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomPaymentSource, PaymentSourceCard, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
-import { Plus, X, CreditCard } from 'lucide-react';
+import { Plus, X, CreditCard, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-
+import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 interface CardInput {
   id?: string;
   card_name: string;
@@ -50,8 +50,9 @@ export const CustomPaymentSourceDialog = ({
   const [description, setDescription] = useState('');
   const [cards, setCards] = useState<CardInput[]>([]);
   const [saving, setSaving] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
   const { t } = useTranslation();
-
   useEffect(() => {
     if (open) {
       if (source) {
@@ -130,6 +131,31 @@ export const CustomPaymentSourceDialog = ({
     setCards([...cards, { card_name: t('common.card'), last_four_digits: '', card_type: '' }]);
   };
 
+  const addCardWithScan = () => {
+    const newIndex = cards.length;
+    setCards([...cards, { card_name: t('common.card'), last_four_digits: '', card_type: '' }]);
+    setScanningCardIndex(newIndex);
+    setScannerOpen(true);
+  };
+
+  const openScannerForCard = (index: number) => {
+    setScanningCardIndex(index);
+    setScannerOpen(true);
+  };
+
+  const handleCardScanned = (cardType: string) => {
+    if (scanningCardIndex !== null && scanningCardIndex < cards.length) {
+      const newCards = [...cards];
+      newCards[scanningCardIndex] = { 
+        ...newCards[scanningCardIndex], 
+        card_type: cardType,
+        card_name: cardType
+      };
+      setCards(newCards);
+    }
+    setScanningCardIndex(null);
+  };
+
   const updateCard = (index: number, field: keyof CardInput, value: string) => {
     const newCards = [...cards];
     newCards[index] = { ...newCards[index], [field]: value };
@@ -195,15 +221,21 @@ export const CustomPaymentSourceDialog = ({
                 <CreditCard className="w-4 h-4" />
                 {t('common.cards')}
               </Label>
-              <Button type="button" variant="ghost" size="sm" onClick={addCard}>
-                <Plus className="w-4 h-4 mr-1" />
-                {t('common.addCard')}
-              </Button>
+              <div className="flex gap-1">
+                <Button type="button" variant="ghost" size="sm" onClick={addCardWithScan}>
+                  <ScanLine className="w-4 h-4 mr-1" />
+                  {t('common.scan', 'Skeniraj')}
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={addCard}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  {t('common.addCard')}
+                </Button>
+              </div>
             </div>
             
             {cards.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-2">
-                Nema kartica. Kliknite "Dodaj karticu" za povezivanje.
+                {t('paymentSources.noCards', 'Nema kartica. Kliknite "Skeniraj" ili "Dodaj karticu" za povezivanje.')}
               </p>
             ) : (
               <div className="space-y-2">
@@ -217,12 +249,24 @@ export const CustomPaymentSourceDialog = ({
                           onChange={(e) => updateCard(index, 'card_name', e.target.value)}
                           className="h-9 text-sm"
                         />
-                        <Input
-                          placeholder={t('common.cardType')}
-                          value={card.card_type || ''}
-                          onChange={(e) => updateCard(index, 'card_type', e.target.value)}
-                          className="h-9 text-sm w-24"
-                        />
+                        <div className="flex gap-1">
+                          <Input
+                            placeholder={t('common.cardType')}
+                            value={card.card_type || ''}
+                            onChange={(e) => updateCard(index, 'card_type', e.target.value)}
+                            className="h-9 text-sm w-20"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openScannerForCard(index)}
+                            className="h-9 w-9 shrink-0"
+                            title={t('common.scanCard', 'Skeniraj karticu')}
+                          >
+                            <ScanLine className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">**** **** ****</span>
@@ -339,6 +383,13 @@ export const CustomPaymentSourceDialog = ({
           </Button>
         </div>
       </DialogContent>
+
+      {/* Card Scanner Dialog */}
+      <CardScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onCardDetected={handleCardScanned}
+      />
     </Dialog>
   );
 };
