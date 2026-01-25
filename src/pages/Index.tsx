@@ -19,7 +19,7 @@ import { TransferListDialog } from '@/components/TransferListDialog';
 import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
 import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
-import { BudgetPanel } from '@/components/budget/BudgetPanel';
+import { ProjectsPanel } from '@/components/projects/ProjectsPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
@@ -623,8 +623,8 @@ const Index = () => {
               />
             </div>
             
-            {/* Budget Panel */}
-            <BudgetPanel />
+            {/* Projects Panel */}
+            <ProjectsPanel onRefreshExpenses={refetch} />
             <Accordion type="multiple" className="space-y-4">
               <AccordionItem value="categories" className="border-none">
                 <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
