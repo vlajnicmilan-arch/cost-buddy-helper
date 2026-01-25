@@ -356,69 +356,82 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         const { clearLocalData } = await import('@/lib/storage/indexedDB');
         await clearLocalData();
         
-        // Keep storage mode, clear user data only
-        const currentStorageMode = localStorage.getItem('storage_mode');
+        // Keep storage config, clear user data only
+        const storageConfig = localStorage.getItem('finmate-storage-config');
         localStorage.clear();
-        if (currentStorageMode) {
-          localStorage.setItem('storage_mode', currentStorageMode);
+        if (storageConfig) {
+          localStorage.setItem('finmate-storage-config', storageConfig);
         }
         
         toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/onboarding';
       } else if (user) {
         // Delete all user data from Supabase tables
-        // Order matters due to foreign key constraints
+        // Order matters due to foreign key constraints and RLS
         
-        // 1. Delete receipt_items (via expense cascade or manually)
-        const { data: expenses } = await supabase
-          .from('expenses')
-          .select('id')
-          .eq('user_id', user.id);
-        
-        if (expenses && expenses.length > 0) {
-          const expenseIds = expenses.map(e => e.id);
-          await supabase.from('receipt_items').delete().in('expense_id', expenseIds);
+        try {
+          // 1. Get all expenses to delete receipt_items
+          const { data: expenses } = await supabase
+            .from('expenses')
+            .select('id')
+            .eq('user_id', user.id);
+          
+          if (expenses && expenses.length > 0) {
+            const expenseIds = expenses.map(e => e.id);
+            await supabase.from('receipt_items').delete().in('expense_id', expenseIds);
+          }
+          
+          // 2. Delete transaction_notes
+          await supabase.from('transaction_notes').delete().eq('user_id', user.id);
+          
+          // 3. Delete expenses
+          await supabase.from('expenses').delete().eq('user_id', user.id);
+          
+          // 4. Get income sources owned by user
+          const { data: ownedSources } = await supabase
+            .from('income_sources')
+            .select('id')
+            .eq('user_id', user.id);
+          
+          if (ownedSources && ownedSources.length > 0) {
+            const sourceIds = ownedSources.map(s => s.id);
+            // Delete members of owned sources (as owner, we can do this)
+            await supabase.from('income_source_members').delete().in('income_source_id', sourceIds);
+            // Delete invitations for owned sources
+            await supabase.from('income_source_invitations').delete().in('income_source_id', sourceIds);
+          }
+          
+          // 5. Delete income_sources owned by user
+          await supabase.from('income_sources').delete().eq('user_id', user.id);
+          
+          // 6. Delete payment_source_cards
+          await supabase.from('payment_source_cards').delete().eq('user_id', user.id);
+          
+          // 7. Delete custom_payment_sources
+          await supabase.from('custom_payment_sources').delete().eq('user_id', user.id);
+          
+          // 8. Delete custom_categories
+          await supabase.from('custom_categories').delete().eq('user_id', user.id);
+          
+          // 9. Delete bank_connections
+          await supabase.from('bank_connections').delete().eq('user_id', user.id);
+          
+          // 10. Delete notifications
+          await supabase.from('notifications').delete().eq('user_id', user.id);
+          
+          // 11. Delete profile
+          await supabase.from('profiles').delete().eq('user_id', user.id);
+        } catch (dbError) {
+          console.error('Error deleting data:', dbError);
+          // Continue with sign out even if some deletes fail
         }
         
-        // 2. Delete transaction_notes
-        await supabase.from('transaction_notes').delete().eq('user_id', user.id);
-        
-        // 3. Delete expenses
-        await supabase.from('expenses').delete().eq('user_id', user.id);
-        
-        // 4. Delete income_source_members
-        await supabase.from('income_source_members').delete().eq('user_id', user.id);
-        
-        // 5. Delete income_source_invitations
-        await supabase.from('income_source_invitations').delete().eq('invited_by', user.id);
-        
-        // 6. Delete income_sources
-        await supabase.from('income_sources').delete().eq('user_id', user.id);
-        
-        // 7. Delete payment_source_cards
-        await supabase.from('payment_source_cards').delete().eq('user_id', user.id);
-        
-        // 8. Delete custom_payment_sources
-        await supabase.from('custom_payment_sources').delete().eq('user_id', user.id);
-        
-        // 9. Delete custom_categories
-        await supabase.from('custom_categories').delete().eq('user_id', user.id);
-        
-        // 10. Delete bank_connections
-        await supabase.from('bank_connections').delete().eq('user_id', user.id);
-        
-        // 11. Delete notifications
-        await supabase.from('notifications').delete().eq('user_id', user.id);
-        
-        // 12. Delete profile
-        await supabase.from('profiles').delete().eq('user_id', user.id);
-        
-        // 13. Sign out and clear local storage but keep storage mode
+        // 12. Sign out and clear local storage but keep storage config
         await supabase.auth.signOut();
-        const currentStorageMode = localStorage.getItem('storage_mode');
+        const storageConfig = localStorage.getItem('finmate-storage-config');
         localStorage.clear();
-        if (currentStorageMode) {
-          localStorage.setItem('storage_mode', currentStorageMode);
+        if (storageConfig) {
+          localStorage.setItem('finmate-storage-config', storageConfig);
         }
         
         toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
