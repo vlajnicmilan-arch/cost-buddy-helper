@@ -275,6 +275,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             payment_source_card_id: expense.payment_source_card_id || null,
             merchant_name: expense.merchant_name,
             income_source_id: expense.income_source_id,
+            project_id: expense.project_id || null,
             note: expense.note || null,
             updated_at: new Date().toISOString()
           })
