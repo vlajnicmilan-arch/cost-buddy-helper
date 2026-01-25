@@ -217,8 +217,14 @@ const Index = () => {
       // For local mode, go to setup to change storage
       navigate('/setup');
     } else {
-      await signOut();
-      navigate('/auth');
+      try {
+        await signOut();
+      } catch (error) {
+        console.error('Sign out error:', error);
+      } finally {
+        // Always navigate to auth after signout attempt
+        navigate('/auth', { replace: true });
+      }
     }
   };
 
@@ -231,7 +237,13 @@ const Index = () => {
   }
 
   if (!user && storageMode === 'cloud') {
-    return null;
+    // Redirect to auth if not logged in
+    navigate('/auth', { replace: true });
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
