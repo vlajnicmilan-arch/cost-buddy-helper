@@ -76,107 +76,110 @@ export const BudgetCard = ({
         )}
         onClick={onClick}
       >
-        <div className="flex items-center justify-between gap-4">
-          {/* Left side - Icon and Info */}
-          <div className="flex items-center gap-4 flex-1 min-w-0">
+        {/* Header row - Icon, Name, Actions */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
             <div 
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center text-2xl sm:text-3xl shrink-0"
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
               style={{ backgroundColor: `${budget.color}20` }}
             >
               {budget.icon || '💰'}
             </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-lg sm:text-xl truncate">{budget.name}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-base sm:text-lg truncate">{budget.name}</h3>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="capitalize">{BUDGET_PERIOD_LABELS[budget.period_type]}</span>
                 {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
                   <>
                     <span>•</span>
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
+                      <Calendar className="w-3 h-3" />
                       {budget.daysRemaining} {t('common.daysLeft', 'dana')}
                     </span>
                   </>
                 )}
               </div>
-              
-              {/* Progress bar */}
-              <div className="mt-3">
-                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                  <motion.div
-                    className={cn("h-full rounded-full", getProgressColor())}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(budget.percentage, 100)}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Right side - Amount and Actions */}
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <div className="text-right">
-              <p className={cn(
-                "text-lg sm:text-xl font-mono font-bold",
-                budget.isOverBudget ? "text-destructive" : "text-foreground"
+          {/* Actions and indicators */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {(budget.isOverBudget || budget.isWarning) && (
+              <div className={cn(
+                "p-1.5 rounded-md",
+                budget.isOverBudget ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
               )}>
-                {formatAmount(budget.remaining)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                / {formatAmount(budget.total_amount)} ({budget.percentage.toFixed(0)}%)
-              </p>
-            </div>
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+            )}
 
-            <div className="flex items-center gap-1.5">
-              {/* Warning/Status indicators */}
-              {(budget.isOverBudget || budget.isWarning) && (
-                <div className={cn(
-                  "p-1 rounded-md",
-                  budget.isOverBudget ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
-                )}>
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                </div>
-              )}
+            {budget.trend && (
+              <div className={cn(
+                "p-1.5 rounded-md",
+                budget.trend === 'up' && "bg-expense/10 text-expense",
+                budget.trend === 'down' && "bg-income/10 text-income",
+                budget.trend === 'stable' && "bg-muted text-muted-foreground"
+              )}>
+                <TrendIcon className="w-4 h-4" />
+              </div>
+            )}
 
-              {/* Trend indicator */}
-              {budget.trend && (
-                <div className={cn(
-                  "p-1 rounded-md",
-                  budget.trend === 'up' && "bg-expense/10 text-expense",
-                  budget.trend === 'down' && "bg-income/10 text-income",
-                  budget.trend === 'stable' && "bg-muted text-muted-foreground"
-                )}>
-                  <TrendIcon className="w-3.5 h-3.5" />
-                </div>
-              )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  {t('common.edit', 'Uredi')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onReset?.(); }}>
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  {t('budget.reset', 'Resetiraj')}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={(e) => { e.stopPropagation(); setDeleteDialogOpen(true); }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {t('common.delete', 'Obriši')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
-              {/* Actions Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    {t('common.edit', 'Uredi')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onReset?.(); }}>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    {t('budget.reset', 'Resetiraj')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={(e) => { e.stopPropagation(); setDeleteDialogOpen(true); }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    {t('common.delete', 'Obriši')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+        {/* Progress section */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{t('budget.spent', 'Potrošeno')}</span>
+            <span className={cn(
+              "font-mono font-semibold",
+              budget.isOverBudget ? "text-destructive" : "text-foreground"
+            )}>
+              {formatAmount(budget.total_amount - budget.remaining)} / {formatAmount(budget.total_amount)}
+            </span>
+          </div>
+          
+          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+            <motion.div
+              className={cn("h-full rounded-full", getProgressColor())}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(budget.percentage, 100)}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{budget.percentage.toFixed(0)}% {t('budget.used', 'iskorišteno')}</span>
+            <span className={cn(
+              "font-medium",
+              budget.isOverBudget ? "text-destructive" : "text-primary"
+            )}>
+              {formatAmount(budget.remaining)} {t('budget.remaining', 'preostalo')}
+            </span>
           </div>
         </div>
       </motion.div>
