@@ -188,13 +188,15 @@ export const ProjectDialog = ({
             <div className="relative">
               <Input
                 id="budget"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={totalBudget}
-                onChange={(e) => setTotalBudget(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
+                  setTotalBudget(value);
+                }}
                 placeholder="0.00"
                 className="pr-12"
-                min="0"
-                step="0.01"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 {currency.symbol}
