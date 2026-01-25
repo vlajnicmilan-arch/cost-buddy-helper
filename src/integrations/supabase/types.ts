@@ -50,6 +50,171 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_categories: {
+        Row: {
+          budget_id: string
+          category: string
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          limit_amount: number
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          category: string
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          limit_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          category?: string
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          limit_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_categories_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_invitations: {
+        Row: {
+          budget_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_invitations_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_members: {
+        Row: {
+          budget_id: string
+          created_at: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_members_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_plans: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          period_type: string
+          start_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          period_type?: string
+          start_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          period_type?: string
+          start_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_categories: {
         Row: {
           color: string
@@ -127,11 +292,9 @@ export type Database = {
           id: string
           income_source_id: string | null
           merchant_name: string | null
-          milestone_id: string | null
           note: string | null
           payment_source: string | null
           payment_source_card_id: string | null
-          project_id: string | null
           receipt_url: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
@@ -149,11 +312,9 @@ export type Database = {
           id?: string
           income_source_id?: string | null
           merchant_name?: string | null
-          milestone_id?: string | null
           note?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
-          project_id?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
@@ -171,11 +332,9 @@ export type Database = {
           id?: string
           income_source_id?: string | null
           merchant_name?: string | null
-          milestone_id?: string | null
           note?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
-          project_id?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
@@ -185,24 +344,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "expenses_milestone_id_fkey"
-            columns: ["milestone_id"]
-            isOneToOne: false
-            referencedRelation: "project_milestones"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "expenses_payment_source_card_id_fkey"
             columns: ["payment_source_card_id"]
             isOneToOne: false
             referencedRelation: "payment_source_cards"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "expenses_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -414,228 +559,6 @@ export type Database = {
         }
         Relationships: []
       }
-      project_funding: {
-        Row: {
-          allocated_amount: number
-          created_at: string
-          id: string
-          income_source_id: string
-          percentage: number | null
-          project_id: string
-          updated_at: string
-        }
-        Insert: {
-          allocated_amount?: number
-          created_at?: string
-          id?: string
-          income_source_id: string
-          percentage?: number | null
-          project_id: string
-          updated_at?: string
-        }
-        Update: {
-          allocated_amount?: number
-          created_at?: string
-          id?: string
-          income_source_id?: string
-          percentage?: number | null
-          project_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_funding_income_source_id_fkey"
-            columns: ["income_source_id"]
-            isOneToOne: false
-            referencedRelation: "income_sources"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_funding_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_invitations: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          invited_by: string
-          project_id: string
-          role: Database["public"]["Enums"]["project_role"]
-          status: string
-          token: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at?: string
-          id?: string
-          invited_by: string
-          project_id: string
-          role?: Database["public"]["Enums"]["project_role"]
-          status?: string
-          token?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          invited_by?: string
-          project_id?: string
-          role?: Database["public"]["Enums"]["project_role"]
-          status?: string
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_invitations_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_members: {
-        Row: {
-          created_at: string
-          id: string
-          joined_at: string
-          project_id: string
-          role: Database["public"]["Enums"]["project_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          joined_at?: string
-          project_id: string
-          role?: Database["public"]["Enums"]["project_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          joined_at?: string
-          project_id?: string
-          role?: Database["public"]["Enums"]["project_role"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_milestones: {
-        Row: {
-          budget: number
-          completed_at: string | null
-          created_at: string
-          description: string | null
-          due_date: string | null
-          id: string
-          name: string
-          project_id: string
-          sort_order: number
-          start_date: string | null
-          status: Database["public"]["Enums"]["milestone_status"]
-          updated_at: string
-        }
-        Insert: {
-          budget?: number
-          completed_at?: string | null
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          name: string
-          project_id: string
-          sort_order?: number
-          start_date?: string | null
-          status?: Database["public"]["Enums"]["milestone_status"]
-          updated_at?: string
-        }
-        Update: {
-          budget?: number
-          completed_at?: string | null
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          name?: string
-          project_id?: string
-          sort_order?: number
-          start_date?: string | null
-          status?: Database["public"]["Enums"]["milestone_status"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_milestones_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      projects: {
-        Row: {
-          color: string | null
-          created_at: string
-          description: string | null
-          end_date: string | null
-          icon: string | null
-          id: string
-          name: string
-          start_date: string | null
-          status: Database["public"]["Enums"]["project_status"]
-          total_budget: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          end_date?: string | null
-          icon?: string | null
-          id?: string
-          name: string
-          start_date?: string | null
-          status?: Database["public"]["Enums"]["project_status"]
-          total_budget?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          end_date?: string | null
-          icon?: string | null
-          id?: string
-          name?: string
-          start_date?: string | null
-          status?: Database["public"]["Enums"]["project_status"]
-          total_budget?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       receipt_items: {
         Row: {
           created_at: string
@@ -670,6 +593,62 @@ export type Database = {
             columns: ["expense_id"]
             isOneToOne: false
             referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      savings_goals: {
+        Row: {
+          budget_id: string
+          color: string | null
+          completed_at: string | null
+          created_at: string
+          current_amount: number
+          description: string | null
+          icon: string | null
+          id: string
+          is_completed: boolean | null
+          name: string
+          target_amount: number
+          target_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_amount?: number
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_completed?: boolean | null
+          name: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_amount?: number
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_completed?: boolean | null
+          name?: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_goals_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -711,20 +690,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_budget_member: {
+        Args: { _budget_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_budget_owner: {
+        Args: { _budget_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_income_source_member: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
       }
       is_income_source_owner: {
         Args: { _source_id: string; _user_id: string }
-        Returns: boolean
-      }
-      is_project_manager: {
-        Args: { _project_id: string; _user_id: string }
-        Returns: boolean
-      }
-      is_project_member: {
-        Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
     }
