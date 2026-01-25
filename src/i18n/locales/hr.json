@@ -134,7 +134,11 @@
     "noCustomPaymentSources": "Nemate prilagođenih izvora plaćanja.",
     "clickNewToAdd": "Kliknite \"Nova\" za dodavanje.",
     "preview": "Pregled",
-    "transfersNoImpact": "Prijenosi ne utječu na bilance"
+    "transfersNoImpact": "Prijenosi ne utječu na bilance",
+    "daysLeft": "dana",
+    "finances": "Financije",
+    "account": "račun",
+    "accounts": "računa"
   },
   "nav": {
     "home": "Početna",
@@ -650,12 +654,6 @@
     "manager": "Voditelj",
     "member": "Član",
     "viewer": "Promatrač"
-  },
-  "common": {
-    "daysLeft": "dana",
-    "finances": "Financije",
-    "account": "račun",
-    "accounts": "računa"
   },
   "notifications": {
     "title": "Obavijesti",
