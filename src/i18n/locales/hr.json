@@ -456,6 +456,17 @@
     "orSelectManually": "Ili odaberite ručno:",
     "complete": "Dobrodošli, {{name}}!",
     "startUsing": "Započni koristiti",
-    "skipForNow": "Preskoči za sada"
+    "skipForNow": "Preskoči za sada",
+    "privacyTitle": "Vaša privatnost je zaštićena",
+    "privacyNoSave": "Slike kartica se NE spremaju",
+    "privacyNoNumbers": "Brojevi kartica se NE pohranjuju",
+    "privacyFrontOnly": "Fotografirajte samo PREDNJU stranu",
+    "positionCard": "Pozicionirajte karticu unutar okvira",
+    "analyzingNote": "Slika se briše nakon analize",
+    "imageBlurred": "Slika je zamagljena radi sigurnosti",
+    "manualEntryPrompt": "Unesite tip kartice ručno ili odaberite iz popisa ispod.",
+    "enterCardType": "Unesite tip kartice",
+    "cardTypePlaceholder": "npr. Visa, Mastercard...",
+    "cardRecognized": "Kartica prepoznata: {{type}}"
   }
 }

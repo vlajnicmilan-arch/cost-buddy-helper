@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
-import { Camera, Upload, Loader2, CreditCard, ScanLine, AlertCircle } from 'lucide-react';
+import { Camera, Loader2, CreditCard, ScanLine, AlertCircle, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CardScannerDialogProps {
   open: boolean;
@@ -14,12 +15,14 @@ interface CardScannerDialogProps {
 }
 
 const CARD_TYPES = [
-  { id: 'visa', name: 'Visa', pattern: /^4/, color: '#1A1F71' },
-  { id: 'mastercard', name: 'Mastercard', pattern: /^5[1-5]|^2[2-7]/, color: '#EB001B' },
-  { id: 'amex', name: 'American Express', pattern: /^3[47]/, color: '#006FCF' },
-  { id: 'maestro', name: 'Maestro', pattern: /^(50|5[6-9]|6)/, color: '#0066CC' },
-  { id: 'diners', name: 'Diners Club', pattern: /^3(0[0-5]|[68])/, color: '#004A97' },
-  { id: 'discover', name: 'Discover', pattern: /^6011|^65/, color: '#FF6000' },
+  { id: 'visa', name: 'Visa' },
+  { id: 'mastercard', name: 'Mastercard' },
+  { id: 'amex', name: 'American Express' },
+  { id: 'maestro', name: 'Maestro' },
+  { id: 'diners', name: 'Diners Club' },
+  { id: 'discover', name: 'Discover' },
+  { id: 'revolut', name: 'Revolut' },
+  { id: 'n26', name: 'N26' },
 ];
 
 export const CardScannerDialog = ({
@@ -32,6 +35,8 @@ export const CardScannerDialog = ({
   const [preview, setPreview] = useState<string | null>(null);
   const [detectedType, setDetectedType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualCardType, setManualCardType] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = () => {
@@ -39,6 +44,8 @@ export const CardScannerDialog = ({
     setPreview(null);
     setDetectedType(null);
     setError(null);
+    setShowManualEntry(false);
+    setManualCardType('');
   };
 
   const handleClose = () => {
@@ -50,6 +57,7 @@ export const CardScannerDialog = ({
     setScanning(true);
     setError(null);
     setDetectedType(null);
+    setShowManualEntry(false);
 
     try {
       // Create preview
@@ -66,63 +74,32 @@ export const CardScannerDialog = ({
         r.readAsDataURL(file);
       });
 
-      // Call AI to detect card type
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: `Analyze this image of a payment card and identify the card network/type. 
-                  
-Look for:
-- Card network logos (Visa, Mastercard, American Express, Maestro, Diners Club, Discover)
-- Any visible text indicating the card type
-- Card design patterns typical of specific networks
-
-Respond with ONLY the card type name in a single word or two (e.g., "Visa", "Mastercard", "American Express", "Maestro", "Diners Club", "Discover", or "Unknown" if you cannot determine).
-
-Do not include any other text or explanation.`
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: base64
-                  }
-                }
-              ]
-            }
-          ],
-          temperature: 0.1,
-          max_tokens: 50
-        })
+      // Call edge function to detect card type
+      const { data, error: funcError } = await supabase.functions.invoke('scan-card', {
+        body: { imageBase64: base64 }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to analyze image');
+      if (funcError) {
+        throw new Error(funcError.message);
       }
 
-      const data = await response.json();
-      const cardType = data.choices?.[0]?.message?.content?.trim() || 'Unknown';
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const cardType = data?.cardType || 'Unknown';
       
-      // Clean up the response
-      const cleanedType = cardType.replace(/['"]/g, '').trim();
-      
-      if (cleanedType.toLowerCase() === 'unknown') {
-        setError(t('onboarding.cardNotRecognized', 'Nije moguće prepoznati tip kartice. Pokušajte ponovo ili odaberite ručno.'));
+      if (cardType.toLowerCase() === 'unknown') {
+        setError(t('onboarding.cardNotRecognized', 'Nije moguće prepoznati tip kartice.'));
+        setShowManualEntry(true);
       } else {
-        setDetectedType(cleanedType);
+        setDetectedType(cardType);
+        toast.success(t('onboarding.cardRecognized', 'Kartica prepoznata: {{type}}').replace('{{type}}', cardType));
       }
     } catch (err) {
       console.error('Card scan error:', err);
-      setError(t('onboarding.scanError', 'Greška pri skeniranju. Pokušajte ponovo.'));
+      setError(t('onboarding.scanError', 'Greška pri skeniranju.'));
+      setShowManualEntry(true);
     } finally {
       setScanning(false);
     }
@@ -133,11 +110,20 @@ Do not include any other text or explanation.`
     if (file) {
       processImage(file);
     }
+    // Reset input so same file can be selected again
+    e.target.value = '';
   };
 
   const handleConfirm = () => {
     if (detectedType) {
       onCardDetected(detectedType);
+      handleClose();
+    }
+  };
+
+  const handleManualSubmit = () => {
+    if (manualCardType.trim()) {
+      onCardDetected(manualCardType.trim());
       handleClose();
     }
   };
@@ -149,7 +135,7 @@ Do not include any other text or explanation.`
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ScanLine className="w-5 h-5" />
@@ -161,19 +147,54 @@ Do not include any other text or explanation.`
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Upload area */}
+          {/* Privacy notice */}
+          <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-primary">
+                  {t('onboarding.privacyTitle', 'Vaša privatnost je zaštićena')}
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• {t('onboarding.privacyNoSave', 'Slike kartica se NE spremaju')}</li>
+                  <li>• {t('onboarding.privacyNoNumbers', 'Brojevi kartica se NE pohranjuju')}</li>
+                  <li>• {t('onboarding.privacyFrontOnly', 'Fotografirajte samo PREDNJU stranu')}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Upload area with card frame */}
           {!preview && !scanning && (
             <div 
-              className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              className="relative border-2 border-dashed border-muted-foreground/25 rounded-xl p-4 text-center hover:border-primary/50 transition-colors cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
             >
-              <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
-                <Camera className="w-8 h-8 text-muted-foreground" />
+              {/* Card positioning frame */}
+              <div className="relative mx-auto w-full max-w-[280px] aspect-[1.586/1] bg-muted/30 rounded-xl border-2 border-primary/30 flex items-center justify-center mb-4 overflow-hidden">
+                {/* Corner markers */}
+                <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-lg" />
+                <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-primary rounded-tr-lg" />
+                <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-primary rounded-bl-lg" />
+                <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-lg" />
+                
+                {/* Center content */}
+                <div className="text-center">
+                  <CreditCard className="w-12 h-12 text-primary/40 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {t('onboarding.positionCard', 'Pozicionirajte karticu unutar okvira')}
+                  </p>
+                </div>
               </div>
-              <p className="text-sm font-medium mb-1">{t('onboarding.tapToScan', 'Dodirnite za fotografiranje')}</p>
+
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Camera className="w-5 h-5 text-primary" />
+                <p className="text-sm font-medium">{t('onboarding.tapToScan', 'Dodirnite za fotografiranje')}</p>
+              </div>
               <p className="text-xs text-muted-foreground">
                 {t('onboarding.orUpload', 'ili odaberite sliku iz galerije')}
               </p>
+              
               <input
                 ref={fileInputRef}
                 type="file"
@@ -188,8 +209,14 @@ Do not include any other text or explanation.`
           {/* Scanning indicator */}
           {scanning && (
             <div className="text-center py-8">
-              <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+              <div className="relative mx-auto w-20 h-20 mb-4">
+                <Loader2 className="w-20 h-20 animate-spin text-primary" />
+                <CreditCard className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
               <p className="text-sm font-medium">{t('onboarding.analyzing', 'Analiziram karticu...')}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('onboarding.analyzingNote', 'Slika se briše nakon analize')}
+              </p>
             </div>
           )}
 
@@ -197,8 +224,13 @@ Do not include any other text or explanation.`
           {preview && !scanning && (
             <div className="space-y-4">
               <div className="relative rounded-xl overflow-hidden">
-                <img src={preview} alt="Card preview" className="w-full h-40 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <img src={preview} alt="Card preview" className="w-full h-40 object-cover blur-sm" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/30 flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <CreditCard className="w-8 h-8 mx-auto mb-1 opacity-80" />
+                    <p className="text-xs opacity-70">{t('onboarding.imageBlurred', 'Slika je zamagljena radi sigurnosti')}</p>
+                  </div>
+                </div>
               </div>
 
               {detectedType && (
@@ -214,9 +246,36 @@ Do not include any other text or explanation.`
               )}
 
               {error && (
-                <div className="p-4 bg-destructive/10 rounded-xl flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
-                  <p className="text-sm text-destructive">{error}</p>
+                <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-destructive">{error}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('onboarding.manualEntryPrompt', 'Unesite tip kartice ručno ili odaberite iz popisa ispod.')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Manual entry when detection fails */}
+              {showManualEntry && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    {t('onboarding.enterCardType', 'Unesite tip kartice')}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={manualCardType}
+                      onChange={(e) => setManualCardType(e.target.value)}
+                      placeholder={t('onboarding.cardTypePlaceholder', 'npr. Visa, Mastercard...')}
+                      className="flex-1"
+                    />
+                    <Button onClick={handleManualSubmit} disabled={!manualCardType.trim()}>
+                      {t('common.confirm', 'Potvrdi')}
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -233,19 +292,19 @@ Do not include any other text or explanation.`
             </div>
           )}
 
-          {/* Manual selection */}
+          {/* Quick selection buttons */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">
-              {t('onboarding.orSelectManually', 'Ili odaberite ručno:')}
+              {t('onboarding.orSelectManually', 'Ili odaberite brzo:')}
             </Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {CARD_TYPES.map((card) => (
                 <button
                   key={card.id}
                   onClick={() => selectManualType(card.name)}
                   className="p-2 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors text-center"
                 >
-                  <span className="text-sm font-medium">{card.name}</span>
+                  <span className="text-xs font-medium">{card.name}</span>
                 </button>
               ))}
             </div>

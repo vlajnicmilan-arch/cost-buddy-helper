@@ -456,6 +456,17 @@
     "orSelectManually": "Or select manually:",
     "complete": "Welcome, {{name}}!",
     "startUsing": "Start using",
-    "skipForNow": "Skip for now"
+    "skipForNow": "Skip for now",
+    "privacyTitle": "Your privacy is protected",
+    "privacyNoSave": "Card images are NOT saved",
+    "privacyNoNumbers": "Card numbers are NOT stored",
+    "privacyFrontOnly": "Only photograph the FRONT side",
+    "positionCard": "Position your card within the frame",
+    "analyzingNote": "Image is deleted after analysis",
+    "imageBlurred": "Image is blurred for security",
+    "manualEntryPrompt": "Enter the card type manually or select from the list below.",
+    "enterCardType": "Enter card type",
+    "cardTypePlaceholder": "e.g. Visa, Mastercard...",
+    "cardRecognized": "Card recognized: {{type}}"
   }
 }
