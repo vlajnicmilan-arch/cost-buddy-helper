@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { BudgetCard } from './BudgetCard';
-import { BudgetDetailDialog } from './BudgetDetailDialog';
+import { BudgetFullScreenView } from './BudgetFullScreenView';
 import { BudgetDialog } from './BudgetDialog';
 import { BudgetWithStats } from '@/types/budget';
 import { Plus, Target, Loader2 } from 'lucide-react';
@@ -28,13 +28,13 @@ export const BudgetSection = ({
 }: BudgetSectionProps) => {
   const { t } = useTranslation();
   const [selectedBudget, setSelectedBudget] = useState<BudgetWithStats | null>(null);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<BudgetWithStats | null>(null);
 
   const handleCardClick = (budget: BudgetWithStats) => {
     setSelectedBudget(budget);
-    setDetailDialogOpen(true);
+    setFullScreenOpen(true);
   };
 
   const handleEdit = (budget: BudgetWithStats) => {
@@ -45,6 +45,11 @@ export const BudgetSection = ({
   const handleDialogClose = () => {
     setCreateDialogOpen(false);
     setEditingBudget(null);
+  };
+
+  const handleCloseFullScreen = () => {
+    setFullScreenOpen(false);
+    setSelectedBudget(null);
   };
 
   return (
@@ -72,8 +77,7 @@ export const BudgetSection = ({
         </Button>
       </div>
 
-
-      {/* Budget Cards Grid */}
+      {/* Budget Cards */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -103,14 +107,14 @@ export const BudgetSection = ({
         </div>
       )}
 
-      {/* Detail Dialog */}
-      <BudgetDetailDialog
+      {/* Full-Screen Budget View */}
+      <BudgetFullScreenView
+        open={fullScreenOpen}
+        onClose={handleCloseFullScreen}
         budget={selectedBudget}
-        open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
         onEdit={() => {
           if (selectedBudget) {
-            setDetailDialogOpen(false);
+            setFullScreenOpen(false);
             handleEdit(selectedBudget);
           }
         }}
