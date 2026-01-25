@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Check, Lock } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Lock } from 'lucide-react';
 import { useStorage } from '@/contexts/StorageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
 import { cn } from '@/lib/utils';
 import { initLocalDB } from '@/lib/storage/indexedDB';
@@ -11,9 +12,18 @@ import logo from '@/assets/logo.png';
 
 const StorageSetup = () => {
   const navigate = useNavigate();
-  const { setStorageMode } = useStorage();
-  const [selectedMode, setSelectedMode] = useState<StorageMode | null>(null);
+  const location = useLocation();
+  const { storageMode: currentMode, setStorageMode } = useStorage();
+  const { user } = useAuth();
+  const [selectedMode, setSelectedMode] = useState<StorageMode | null>(currentMode);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check if user came from settings (has existing mode)
+  const isChangingMode = !!currentMode;
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
 
   const handleContinue = async () => {
     if (!selectedMode) return;
@@ -27,7 +37,12 @@ const StorageSetup = () => {
         navigate('/');
       } else if (selectedMode === 'cloud') {
         setStorageMode('cloud');
-        navigate('/auth');
+        // If user is already logged in, go to dashboard, otherwise go to auth
+        if (user) {
+          navigate('/');
+        } else {
+          navigate('/auth');
+        }
       } else {
         // Google Drive / iCloud - coming soon
         setStorageMode(selectedMode);
@@ -47,6 +62,17 @@ const StorageSetup = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
+        {/* Back button - only show when changing mode */}
+        {isChangingMode && (
+          <button
+            onClick={handleGoBack}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Natrag</span>
+          </button>
+        )}
+
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 mx-auto mb-4">
@@ -54,7 +80,9 @@ const StorageSetup = () => {
           </div>
           <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
-            Gdje želiš spremati svoje podatke?
+            {isChangingMode 
+              ? 'Promijeni način pohrane podataka'
+              : 'Gdje želiš spremati svoje podatke?'}
           </p>
         </div>
 
@@ -122,23 +150,32 @@ const StorageSetup = () => {
         {/* Continue Button */}
         <Button
           onClick={handleContinue}
-          disabled={!selectedMode || isLoading}
+          disabled={!selectedMode || isLoading || (isChangingMode && selectedMode === currentMode)}
           className="w-full h-14 rounded-xl text-lg font-medium gap-2"
         >
-          {isLoading ? 'Postavljam...' : 'Nastavi'}
+          {isLoading ? 'Postavljam...' : isChangingMode ? 'Spremi promjene' : 'Nastavi'}
           <ArrowRight className="w-5 h-5" />
         </Button>
 
-        {/* Skip for later */}
-        <button
-          onClick={() => {
-            setStorageMode('local');
-            navigate('/');
-          }}
-          className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Preskoči za sada (lokalna pohrana)
-        </button>
+        {/* Skip/Cancel button */}
+        {isChangingMode ? (
+          <button
+            onClick={handleGoBack}
+            className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Odustani
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              setStorageMode('local');
+              navigate('/');
+            }}
+            className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Preskoči za sada (lokalna pohrana)
+          </button>
+        )}
       </motion.div>
     </div>
   );
