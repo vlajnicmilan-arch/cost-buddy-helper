@@ -20,7 +20,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
     // Get the authorization header to identify the user
     const authHeader = req.headers.get('Authorization');
@@ -35,13 +34,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Extract token from header
     const token = authHeader.replace('Bearer ', '');
 
-    // Create client with user's token to get their info
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
+    // Create admin client for privileged operations (including user verification)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // CRITICAL: Must pass token explicitly when verify_jwt=false
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser(token);
+    // Verify the token and get user using admin client with service role
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     if (userError || !user) {
       console.log('User auth error:', userError);
       return new Response(
@@ -49,6 +46,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Authenticated user:', user.id);
 
     // Parse request body
     const { expense_id, income_source_id, note }: NotifyNoteAddedRequest = await req.json();
@@ -60,9 +59,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Create admin client for privileged operations
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the income source to find the owner
     const { data: source, error: sourceError } = await supabaseAdmin
