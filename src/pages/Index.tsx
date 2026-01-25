@@ -18,7 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { TransferListDialog } from '@/components/TransferListDialog';
 import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
-import { IncomeSourcesPanel } from '@/components/income-sources/IncomeSourcesPanel';
+
 import { ProjectsPanel } from '@/components/projects/ProjectsPanel';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
@@ -515,15 +515,6 @@ const Index = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Income Sources - Mobile First (visible only on mobile, above transactions) */}
-          <div className="lg:hidden">
-            <IncomeSourcesPanel
-              expenses={allExpenses}
-              onUpdateExpense={updateExpense}
-              onDeleteExpense={deleteExpense}
-              onRefreshExpenses={refetch}
-            />
-          </div>
 
           {/* Transactions */}
           <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen} className="lg:col-span-2">
@@ -613,15 +604,6 @@ const Index = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Income Sources - Desktop (hidden on mobile since it's shown above) */}
-            <div className="hidden lg:block">
-              <IncomeSourcesPanel
-                expenses={allExpenses}
-                onUpdateExpense={updateExpense}
-                onDeleteExpense={deleteExpense}
-                onRefreshExpenses={refetch}
-              />
-            </div>
             
             {/* Projects Panel */}
             <ProjectsPanel onRefreshExpenses={refetch} />

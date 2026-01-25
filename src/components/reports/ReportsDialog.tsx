@@ -19,7 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Expense, getCategoryInfo, getIncomeCategoryInfo, CATEGORIES, INCOME_CATEGORIES, IncomeCategory } from '@/types/expense';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
-import { useIncomeSources } from '@/hooks/useIncomeSources';
+
 import { useCurrency } from '@/contexts/CurrencyContext';
 import {
   FileText,
@@ -157,7 +157,7 @@ const calculateStats = (expenseList: Expense[]) => {
 
 export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const { t } = useTranslation();
-  const { incomeSources } = useIncomeSources();
+  
   const { customIncomeCategories } = useCustomIncomeCategories();
   const { formatAmount, currency } = useCurrency();
   const [open, setOpen] = useState(false);
@@ -440,22 +440,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   };
 
   const getReportData = (): ReportData => {
-    // Get selected income source info
-    let selectedIncomeSource: { id: string; name: string; icon: string } | null = null;
-    if (selectedIncomeSourceId !== 'all') {
-      if (selectedIncomeSourceId === 'unassigned') {
-        selectedIncomeSource = { id: 'unassigned', name: 'Bez izvora', icon: '📭' };
-      } else {
-        const source = incomeSources.find(s => s.id === selectedIncomeSourceId);
-        if (source) {
-          selectedIncomeSource = { id: source.id, name: source.name, icon: source.icon || '💰' };
-        }
-      }
-    }
 
     return {
       expenses: filteredExpenses,
-      incomeSources,
       dateRange,
       totals: {
         income: stats.income,
@@ -465,8 +452,6 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       },
       byCategory: stats.byCategory,
       byPaymentSource: stats.byPaymentSource,
-      byIncomeSource: stats.byIncomeSource,
-      selectedIncomeSource,
       currency: { code: currency.code, symbol: currency.symbol, locale: currency.locale },
     };
   };
