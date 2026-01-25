@@ -443,7 +443,12 @@ const Index = () => {
                       setSelectedPaymentSource(source);
                       setPaymentSourceDialogOpen(true);
                     }}
-                    className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-card/80 hover:border-primary/30 transition-all"
+                    className="p-3 sm:p-4 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer hover:bg-card/80 hover:shadow-md transition-all"
+                    style={{ 
+                      borderColor: source.color + '40',
+                      borderLeftWidth: 4,
+                      borderLeftColor: source.color
+                    }}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span 
@@ -454,8 +459,13 @@ const Index = () => {
                       </span>
                       <span className="text-xs sm:text-sm font-medium truncate flex-1">{source.name}</span>
                     </div>
-                    <p className={`text-base sm:text-lg font-bold ${source.balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                      {formatAmount(source.balance)}
+                    <p 
+                      className="text-base sm:text-lg font-bold"
+                      style={{ color: source.balance >= 0 ? source.color : undefined }}
+                    >
+                      <span className={source.balance < 0 ? 'text-destructive' : ''}>
+                        {formatAmount(source.balance)}
+                      </span>
                     </p>
                     {source.cards && source.cards.length > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
