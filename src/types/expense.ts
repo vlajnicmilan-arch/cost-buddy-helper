@@ -192,6 +192,8 @@ export interface Expense {
   merchant_name?: string | null;
   ai_extracted?: boolean | null;
   income_source_id?: string | null;
+  project_id?: string | null;
+  milestone_id?: string | null;
   status?: TransactionStatus | null;
   submitted_by?: string | null;
   note?: string | null;
