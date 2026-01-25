@@ -24,21 +24,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // Get the authorization header to identify the user
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.log('Missing authorization header');
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.log('Missing or invalid authorization header');
       return new Response(
         JSON.stringify({ error: 'Nedostaje autorizacija' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Extract token from header
+    const token = authHeader.replace('Bearer ', '');
+
     // Create client with user's token to get their info
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Get the current user
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    // CRITICAL: Must pass token explicitly when verify_jwt=false
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser(token);
     if (userError || !user) {
       console.log('User auth error:', userError);
       return new Response(
