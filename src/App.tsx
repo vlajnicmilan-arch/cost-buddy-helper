@@ -26,10 +26,25 @@ const AppRoutes = () => {
     localStorage.getItem('onboarding_completed') === 'true'
   );
 
-  // Re-check onboarding status when location changes
+  // Re-check onboarding status when location changes or custom event fires
   useEffect(() => {
-    const completed = localStorage.getItem('onboarding_completed') === 'true';
-    setOnboardingCompleted(completed);
+    const checkCompleted = () => {
+      const completed = localStorage.getItem('onboarding_completed') === 'true';
+      setOnboardingCompleted(completed);
+    };
+    
+    checkCompleted();
+    
+    // Listen for custom event from onboarding
+    const handleOnboardingComplete = () => {
+      setOnboardingCompleted(true);
+    };
+    
+    window.addEventListener('onboardingComplete', handleOnboardingComplete);
+    
+    return () => {
+      window.removeEventListener('onboardingComplete', handleOnboardingComplete);
+    };
   }, [location]);
 
   if (!isInitialized) {

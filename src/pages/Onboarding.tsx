@@ -195,6 +195,8 @@ const Onboarding = () => {
 
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('show_welcome_animation', 'true');
+      // Dispatch event before navigation so App.tsx updates state
+      window.dispatchEvent(new Event('onboardingComplete'));
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Onboarding error:', error);
@@ -424,12 +426,15 @@ const Onboarding = () => {
                   }
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
+                  // Dispatch event before navigation so App.tsx updates state
+                  window.dispatchEvent(new Event('onboardingComplete'));
                   navigate('/', { replace: true });
                 } catch (error) {
                   console.error('Skip error:', error);
                   // Still complete onboarding even if save fails
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
+                  window.dispatchEvent(new Event('onboardingComplete'));
                   navigate('/', { replace: true });
                 } finally {
                   setSaving(false);
