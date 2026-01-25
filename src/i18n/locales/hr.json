@@ -468,5 +468,10 @@
     "enterCardType": "Unesite tip kartice",
     "cardTypePlaceholder": "npr. Visa, Mastercard...",
     "cardRecognized": "Kartica prepoznata: {{type}}"
+  },
+  "welcome": {
+    "title": "Dobrodošli",
+    "subtitle": "Spremni ste za upravljanje financijama!",
+    "autoHide": "Automatski nestaje za trenutak..."
   }
 }

@@ -468,5 +468,10 @@
     "enterCardType": "Enter card type",
     "cardTypePlaceholder": "e.g. Visa, Mastercard...",
     "cardRecognized": "Card recognized: {{type}}"
+  },
+  "welcome": {
+    "title": "Welcome",
+    "subtitle": "You're ready to manage your finances!",
+    "autoHide": "Automatically hiding in a moment..."
   }
 }

@@ -39,6 +39,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useTranslation } from 'react-i18next';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
+import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -61,6 +62,9 @@ const Index = () => {
   // Bulk selection state
   const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
 
+  // Welcome animation state
+  const [showWelcome, setShowWelcome] = useState(false);
+
   // Get user display name
   const [displayName, setDisplayName] = useState<string>('');
   
@@ -70,11 +74,8 @@ const Index = () => {
       const localName = localStorage.getItem('user_display_name');
       if (localName) {
         setDisplayName(localName);
-        return;
-      }
-      
-      // For cloud mode, try to fetch from profiles
-      if (user) {
+      } else if (user) {
+        // For cloud mode, try to fetch from profiles
         const { data } = await supabase
           .from('profiles')
           .select('display_name')
@@ -85,6 +86,13 @@ const Index = () => {
           setDisplayName(data.display_name);
           localStorage.setItem('user_display_name', data.display_name);
         }
+      }
+      
+      // Check if we should show welcome animation
+      const shouldShowWelcome = localStorage.getItem('show_welcome_animation');
+      if (shouldShowWelcome === 'true') {
+        setShowWelcome(true);
+        localStorage.removeItem('show_welcome_animation');
       }
     };
     loadDisplayName();
@@ -697,6 +705,14 @@ const Index = () => {
         onUpdate={updateExpense}
         onDelete={deleteExpense}
       />
+
+      {/* Welcome Animation with Confetti */}
+      {showWelcome && (
+        <WelcomeConfetti
+          displayName={displayName || 'Korisnik'}
+          onComplete={() => setShowWelcome(false)}
+        />
+      )}
     </div>
   );
 };
