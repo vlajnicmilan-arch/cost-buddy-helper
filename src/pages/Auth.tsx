@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Mail, Lock, Loader2, CheckCircle, RefreshCw } from 'lucide-react';
+import { Mail, Lock, Loader2, CheckCircle, RefreshCw, User } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
@@ -19,6 +19,7 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -73,7 +74,7 @@ const Auth = () => {
         toast.success('Dobrodošli natrag!');
         navigate('/');
       } else {
-        const { error, needsEmailConfirmation } = await signUp(email.trim(), password);
+        const { error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error('Korisnik s ovim emailom već postoji');
@@ -88,14 +89,17 @@ const Auth = () => {
           setRegisteredEmail(email.trim());
           toast.success('Registracija uspješna! Provjerite email.');
         } else {
-          // Extract name from email for welcome message
-          const extractedName = email.trim().split('@')[0];
-          const formattedName = extractedName
-            .replace(/[._]/g, ' ')
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ');
-          setNewUserName(formattedName);
+          // Use entered name or fallback to email-extracted name
+          let welcomeName = displayName.trim();
+          if (!welcomeName) {
+            const extractedName = email.trim().split('@')[0];
+            welcomeName = extractedName
+              .replace(/[._]/g, ' ')
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ');
+          }
+          setNewUserName(welcomeName);
           setShowWelcome(true);
         }
       }
@@ -242,6 +246,28 @@ const Auth = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-6">
+          {/* Name field - only for registration */}
+          {!isLogin && (
+            <div className="space-y-2">
+              <Label htmlFor="displayName">Ime (opcionalno)</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="Vaše ime"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                  maxLength={50}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Ako ne unesete ime, koristit će se ime iz email adrese
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
