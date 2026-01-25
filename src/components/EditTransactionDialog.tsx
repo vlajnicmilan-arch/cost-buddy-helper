@@ -14,7 +14,7 @@ import { CalendarIcon, Loader2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useIncomeSources } from '@/hooks/useIncomeSources';
+
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 
@@ -34,11 +34,11 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [type, setType] = useState<TransactionType>('expense');
-  const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
+  
   const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
-  const { incomeSources } = useIncomeSources();
+  
   const { customPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
@@ -60,7 +60,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
       setSelectedCardId(expense.payment_source_card_id || null);
       setDate(expense.date instanceof Date ? expense.date : new Date(expense.date));
       setType(expense.type);
-      setIncomeSourceId(expense.income_source_id || null);
+      
       setNote(expense.note || '');
     }
   }, [open, expense]);
@@ -79,7 +79,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
         payment_source_card_id: selectedCardId,
         date,
         type,
-        income_source_id: incomeSourceId,
+        
         note: note.trim() || null,
         updated_at: new Date().toISOString()
       });
@@ -143,38 +143,6 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
             )}
           </div>
 
-          {/* Income Source - For both income and expense */}
-          {incomeSources.length > 0 && (
-            <div className="space-y-2">
-              <Label>{type === 'income' ? t('transactions.incomeSource') : t('transactions.deductFromSource')}</Label>
-              <Select 
-                value={incomeSourceId || 'none'} 
-                onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder={type === 'income' ? t('transactions.selectIncomeSource') : t('transactions.selectSource')} />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="none">
-                    <span className="text-muted-foreground">{t('transactions.noSource')}</span>
-                  </SelectItem>
-                  {incomeSources.map((source) => (
-                    <SelectItem key={source.id} value={source.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{source.icon || '💰'}</span>
-                        <span>{source.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {type === 'expense' && incomeSourceId && (
-                <p className="text-xs text-muted-foreground">
-                  {t('transactions.deductNote')}
-                </p>
-              )}
-            </div>
-          )}
 
           {/* Amount */}
           <div className="space-y-2">
@@ -426,19 +394,6 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
             </Popover>
           </div>
 
-          {/* Note - Show only for project transactions */}
-          {incomeSourceId && (
-            <div className="space-y-2">
-              <Label>{t('transactions.note')}</Label>
-              <Textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t('transactions.notePlaceholder')}
-                rows={2}
-                className="resize-none"
-              />
-            </div>
-          )}
         </div>
 
         <div className="flex gap-2 justify-end">

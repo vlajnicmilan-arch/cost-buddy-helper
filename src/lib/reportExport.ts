@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo } from '@/types/expense';
-import { IncomeSource } from '@/types/incomeSource';
+
 
 export interface CurrencyConfig {
   code: string;
@@ -11,7 +11,6 @@ export interface CurrencyConfig {
 
 export interface ReportData {
   expenses: Expense[];
-  incomeSources: IncomeSource[];
   dateRange: { start: Date; end: Date };
   totals: {
     income: number;
@@ -21,8 +20,6 @@ export interface ReportData {
   };
   byCategory: Record<string, number>;
   byPaymentSource: Record<string, number>;
-  byIncomeSource: Record<string, { income: number; expenses: number; balance: number }>;
-  selectedIncomeSource?: { id: string; name: string; icon: string } | null;
   currency?: CurrencyConfig;
 }
 
@@ -77,19 +74,7 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
   doc.setFont('helvetica', 'bold');
   doc.text(toAscii('Sazetak'), 14, 46);
 
-  // Show selected income source name if filtered
-  let summaryStartY = 50;
-  if (data.selectedIncomeSource) {
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(59, 130, 246); // Blue color
-    const sourceName = data.selectedIncomeSource.id === 'unassigned' 
-      ? 'Bez izvora' 
-      : data.selectedIncomeSource.name;
-    doc.text(`Izvor: ${toAscii(sourceName)}`, 14, 52);
-    doc.setTextColor(0, 0, 0); // Reset to black
-    summaryStartY = 58;
-  }
+  const summaryStartY = 50;
 
   const summaryData = [
     [toAscii('Ukupni prihodi'), formatCurrency(data.totals.income, data.currency)],
@@ -134,35 +119,6 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
       headStyles: { fillColor: [239, 68, 68] },
       margin: { left: 14 },
       tableWidth: 120,
-    });
-  }
-
-  // Income sources breakdown (only show if not filtered by single source)
-  const incomeSourceY = (doc as any).lastAutoTable?.finalY + 15 || categoryY + 20;
-  
-  if (Object.keys(data.byIncomeSource).length > 0 && !data.selectedIncomeSource) {
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Po izvorima prihoda', 14, incomeSourceY);
-
-    const sourceData = Object.entries(data.byIncomeSource)
-      .map(([sourceId, stats]) => {
-        const source = data.incomeSources.find(s => s.id === sourceId);
-        return [
-          toAscii(source?.name || 'Nepoznato'),
-          formatCurrency(stats.income, data.currency),
-          formatCurrency(stats.expenses, data.currency),
-          formatCurrency(stats.balance, data.currency),
-        ];
-      });
-
-    autoTable(doc, {
-      startY: incomeSourceY + 4,
-      head: [['Izvor', 'Prihodi', toAscii('Troskovi'), 'Stanje']],
-      body: sourceData,
-      theme: 'striped',
-      headStyles: { fillColor: [59, 130, 246] },
-      margin: { left: 14 },
     });
   }
 
@@ -211,7 +167,7 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
 };
 
 export const generateCSVReport = (data: ReportData): void => {
-  const headers = ['Datum', 'Tip', 'Opis', 'Kategorija', 'Način plaćanja', 'Iznos', 'Izvor prihoda'];
+  const headers = ['Datum', 'Tip', 'Opis', 'Kategorija', 'Način plaćanja', 'Iznos'];
   
   const rows = data.expenses
     .sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -219,9 +175,6 @@ export const generateCSVReport = (data: ReportData): void => {
       const typeInfo = getTransactionTypeInfo(expense.type);
       const categoryInfo = getCategoryInfo(expense.category);
       const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
-      const incomeSource = expense.income_source_id 
-        ? data.incomeSources.find(s => s.id === expense.income_source_id)?.name || '' 
-        : '';
       
       return [
         formatDate(expense.date),
@@ -230,7 +183,6 @@ export const generateCSVReport = (data: ReportData): void => {
         categoryInfo.name,
         paymentInfo.name,
         expense.type === 'expense' ? -expense.amount : expense.amount,
-        incomeSource,
       ].join(',');
     });
 
@@ -254,12 +206,10 @@ export const generateJSONExport = (data: ReportData): void => {
     summary: data.totals,
     byCategory: data.byCategory,
     byPaymentSource: data.byPaymentSource,
-    byIncomeSource: data.byIncomeSource,
     transactions: data.expenses.map(e => ({
       ...e,
       date: e.date.toISOString(),
     })),
-    incomeSources: data.incomeSources,
   };
 
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });

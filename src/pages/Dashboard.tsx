@@ -3,7 +3,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { useIncomeSources } from '@/hooks/useIncomeSources';
+
 import { SummaryCard } from '@/components/SummaryCard';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
 import { 
@@ -76,7 +76,7 @@ const Dashboard = () => {
   const { storageMode } = useStorage();
   const { formatAmount, currency } = useCurrency();
   const navigate = useNavigate();
-  const { incomeSources } = useIncomeSources();
+  
   
   const { 
     expenses, 
@@ -140,31 +140,22 @@ const Dashboard = () => {
       });
   }, [expensesByCategory]);
 
-  // Income sources distribution
+  // Income distribution (by category since income sources removed)
   const incomeSourceData = useMemo(() => {
-    const sourceMap: Record<string, number> = {};
+    const categoryMap: Record<string, number> = {};
     
     expenses
-      .filter(e => e.type === 'income' && e.income_source_id)
+      .filter(e => e.type === 'income')
       .forEach(e => {
-        const source = incomeSources.find(s => s.id === e.income_source_id);
-        const name = source?.name || 'Ostalo';
-        sourceMap[name] = (sourceMap[name] || 0) + e.amount;
+        const name = e.category || 'Ostalo';
+        categoryMap[name] = (categoryMap[name] || 0) + e.amount;
       });
     
-    const unassigned = expenses
-      .filter(e => e.type === 'income' && !e.income_source_id)
-      .reduce((sum, e) => sum + e.amount, 0);
-    
-    if (unassigned > 0) {
-      sourceMap['Neraspoređeno'] = unassigned;
-    }
-    
-    return Object.entries(sourceMap).map(([name, amount]) => ({
+    return Object.entries(categoryMap).map(([name, amount]) => ({
       name,
       value: amount,
     }));
-  }, [expenses, incomeSources]);
+  }, [expenses]);
 
   // Daily spending for current month
   const dailySpendingData = useMemo(() => {

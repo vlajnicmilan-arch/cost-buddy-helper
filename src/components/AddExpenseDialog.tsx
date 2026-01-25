@@ -11,7 +11,7 @@ import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
-import { useIncomeSources } from '@/hooks/useIncomeSources';
+
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
@@ -51,13 +51,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [scannedData, setScannedData] = useState<ScannedData | null>(null);
   const [showScannedPreview, setShowScannedPreview] = useState(false);
-  const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
+  
   const [note, setNote] = useState('');
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
-  const { incomeSources, isSourceOwner, refetch: refetchIncomeSources } = useIncomeSources();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
@@ -146,46 +145,6 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         finalPaymentSource = scannedData.payment_source;
       }
 
-      // Auto-match income source based on payment method
-      let matchedIncomeSourceId: string | null = null;
-      if (finalPaymentSource && finalPaymentSource !== 'cash' && incomeSources.length > 0) {
-        // Keywords to match for different payment sources
-        const paymentSourceKeywords: Record<PaymentSource, string[]> = {
-          bank: ['banka', 'bank', 'račun', 'pbz', 'zaba', 'otp', 'rba', 'addiko'],
-          visa: ['visa'],
-          visa_gold: ['visa gold'],
-          visa_platinum: ['visa platinum'],
-          visa_kekspay: ['kekspay', 'keks pay'],
-          visa_erste: ['erste', 'erstebank'],
-          mastercard: ['mastercard', 'master card'],
-          mastercard_gold: ['mastercard gold'],
-          mastercard_platinum: ['mastercard platinum'],
-          maestro: ['maestro'],
-          amex: ['amex', 'american express'],
-          diners: ['diners', 'diners club'],
-          revolut: ['revolut'],
-          aircash: ['aircash', 'air cash'],
-          crypto: ['crypto', 'kripto', 'bitcoin', 'btc', 'eth'],
-          cash: [],
-          other: []
-        };
-        
-        const keywords = paymentSourceKeywords[finalPaymentSource] || [];
-        
-        // Find matching income source by name
-        const matchedSource = incomeSources.find(source => {
-          const sourceName = source.name.toLowerCase();
-          return keywords.some(keyword => sourceName.includes(keyword));
-        });
-        
-        if (matchedSource) {
-          matchedIncomeSourceId = matchedSource.id;
-          console.log(`Auto-matched payment source "${finalPaymentSource}" to income source "${matchedSource.name}"`);
-        }
-      }
-
-      // Check if user is just a member (not owner) of the matched income source
-      const isPendingForMember = matchedIncomeSourceId ? !isSourceOwner(matchedIncomeSourceId) : false;
 
       await onAdd({
         amount: scannedData.amount,
@@ -197,9 +156,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         payment_source_card_id: finalCardId,
         merchant_name: scannedData.merchant || undefined,
         receipt_url: receiptUrl,
-        ai_extracted: true,
-        income_source_id: matchedIncomeSourceId
-      }, validItems.length > 0 ? validItems : undefined, isPendingForMember);
+        ai_extracted: true
+      }, validItems.length > 0 ? validItems : undefined);
 
       resetForm();
       setOpen(false);
@@ -267,7 +225,6 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setSaveReceipt(false);
     setScannedData(null);
     setShowScannedPreview(false);
-    setIncomeSourceId(null);
     setNote('');
   };
 
@@ -287,9 +244,6 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       }
     }
 
-    // Check if user is just a member (not owner) of the selected income source
-    const isPendingForMember = incomeSourceId ? !isSourceOwner(incomeSourceId) : false;
-
     onAdd({
       amount: parseFloat(amount),
       description,
@@ -301,9 +255,8 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       merchant_name: merchantName || undefined,
       receipt_url: receiptUrl,
       ai_extracted: scannedData !== null,
-      income_source_id: incomeSourceId,
       note: note.trim() || undefined
-    }, validItems.length > 0 ? validItems : undefined, isPendingForMember);
+    }, validItems.length > 0 ? validItems : undefined);
 
     resetForm();
     setOpen(false);
@@ -316,7 +269,6 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (isOpen) {
-        refetchIncomeSources();
         refetchPaymentSources().then(() => {
           // Set default payment source after fetching
           if (customPaymentSources.length > 0) {
@@ -666,35 +618,6 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 </p>
               )}
 
-              {/* Project Assignment - For both income and expense */}
-              {incomeSources.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    {type === 'income' ? t('incomeSources.title') : t('transactions.assignProject')}
-                  </Label>
-                  <Select 
-                    value={incomeSourceId || 'none'} 
-                    onValueChange={(v) => setIncomeSourceId(v === 'none' ? null : v)}
-                  >
-                    <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue placeholder={type === 'income' ? t('incomeSources.title') : t('transactions.selectProject')} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      <SelectItem value="none">
-                        <span className="text-muted-foreground">{t('incomeSources.unassigned')}</span>
-                      </SelectItem>
-                      {incomeSources.map((source) => (
-                        <SelectItem key={source.id} value={source.id}>
-                          <span className="flex items-center gap-2">
-                            <span>{source.icon || '💰'}</span>
-                            <span>{source.name}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
 
               {/* Payment Source */}
               <div className="space-y-3">
@@ -1069,19 +992,6 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                 </div>
               )}
 
-              {/* Note - Show only for project transactions */}
-              {incomeSourceId && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('transactions.note')}</Label>
-                  <Textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder={t('transactions.notePlaceholder')}
-                    rows={2}
-                    className="resize-none rounded-xl"
-                  />
-                </div>
-              )}
 
               {/* Save Receipt Option */}
               {receiptImage && (
