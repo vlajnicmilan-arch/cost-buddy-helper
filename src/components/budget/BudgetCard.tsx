@@ -80,24 +80,24 @@ export const BudgetCard = ({
       >
         {/* Collapsed Header - Always Visible */}
         <CollapsibleTrigger asChild>
-          <div className="p-4 sm:p-5 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl sm:rounded-2xl">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="p-5 sm:p-6 cursor-pointer hover:bg-muted/30 transition-colors rounded-xl sm:rounded-2xl">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div 
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center text-2xl sm:text-3xl shrink-0"
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center text-2xl sm:text-3xl shrink-0"
                   style={{ backgroundColor: `${budget.color}20` }}
                 >
                   {budget.icon || '💰'}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-base sm:text-lg truncate">{budget.name}</h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                  <h3 className="font-semibold text-lg sm:text-xl truncate">{budget.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                     <span className="capitalize">{BUDGET_PERIOD_LABELS[budget.period_type]}</span>
                     {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
                       <>
                         <span>•</span>
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
+                          <Calendar className="w-3.5 h-3.5" />
                           {budget.daysRemaining} {t('common.daysLeft', 'dana')}
                         </span>
                       </>
@@ -105,8 +105,8 @@ export const BudgetCard = ({
                   </div>
                   
                   {/* Progress bar in collapsed state */}
-                  <div className="mt-2">
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="mt-3">
+                    <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                       <motion.div
                         className={cn("h-full rounded-full", getProgressColor())}
                         initial={{ width: 0 }}
