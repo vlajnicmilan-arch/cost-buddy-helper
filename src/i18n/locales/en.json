@@ -6,7 +6,15 @@
     "totalMilestones": "Total milestones",
     "pending": "Pending",
     "inProgress": "In progress",
-    "overdue": "Overdue"
+    "overdue": "Overdue",
+    "reports": "Reports",
+    "budgetProgress": "Budget progress",
+    "used": "Used",
+    "spendingByMilestone": "Spending by milestone",
+    "spendingByMember": "Spending by member",
+    "milestoneBudgets": "Milestone budgets",
+    "ofTotal": "of total",
+    "budget": "Budget"
   },
   "settings": {
     "notifications": "Notifications",
