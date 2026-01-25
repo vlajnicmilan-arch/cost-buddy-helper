@@ -4,6 +4,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useBudgets } from '@/hooks/useBudgets';
 import { supabase } from '@/integrations/supabase/client';
 import { SummaryCard } from '@/components/SummaryCard';
 import { TransactionItem } from '@/components/TransactionItem';
@@ -20,6 +21,7 @@ import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
 
 import { ProjectsPanel } from '@/components/projects/ProjectsPanel';
+import { BudgetSection } from '@/components/budget';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
@@ -41,6 +43,34 @@ import { useTranslation } from 'react-i18next';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
+
+// Budget Section Wrapper to use hook inside component
+const BudgetSectionWrapper = () => {
+  const { 
+    budgets, 
+    loading, 
+    createBudget, 
+    updateBudget, 
+    deleteBudget, 
+    resetBudget, 
+    trendData,
+    isLocalMode 
+  } = useBudgets();
+
+  if (isLocalMode) return null;
+
+  return (
+    <BudgetSection
+      budgets={budgets}
+      loading={loading}
+      onCreateBudget={createBudget}
+      onUpdateBudget={updateBudget}
+      onDeleteBudget={deleteBudget}
+      onResetBudget={resetBudget}
+      trendData={trendData}
+    />
+  );
+};
 
 const Index = () => {
   const { t } = useTranslation();
@@ -607,6 +637,9 @@ const Index = () => {
             
             {/* Projects Panel */}
             <ProjectsPanel onRefreshExpenses={refetch} />
+            
+            {/* Budget Section */}
+            <BudgetSectionWrapper />
             <Accordion type="multiple" className="space-y-4">
               <AccordionItem value="categories" className="border-none">
                 <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
