@@ -15,7 +15,20 @@
     "displayNameDesc": "Ime koje se koristi za personalizirane poruke",
     "noName": "Nije postavljeno",
     "nameRequired": "Ime je obavezno",
-    "nameSaved": "Ime uspješno spremljeno"
+    "nameSaved": "Ime uspješno spremljeno",
+    "dangerZone": "Opasna zona",
+    "deleteAccount": "Obriši račun",
+    "deleteAccountDesc": "Trajno briše sve vaše podatke. Ova radnja se ne može poništiti.",
+    "deleteAccountBtn": "Obriši moj račun",
+    "deleteConfirmTitle": "Jeste li sigurni?",
+    "deleteConfirmDesc1": "Ova radnja će trajno obrisati sve vaše transakcije, izvore prihoda, kategorije i ostale podatke. Ovo se ne može poništiti.",
+    "continueDelete": "Nastavi s brisanjem",
+    "finalConfirmTitle": "Posljednja provjera!",
+    "finalConfirmDesc": "Ovo je vaša posljednja prilika da odustanete. Nakon što kliknete \"Obriši zauvijek\", svi podaci će biti nepovratno izgubljeni.",
+    "noUndo": "UPOZORENJE: Ova radnja se NE MOŽE poništiti!",
+    "deleteForever": "Obriši zauvijek",
+    "deleting": "Brišem...",
+    "accountDeleted": "Račun uspješno obrisan"
   },
   "transactions": {
     "note": "Napomena",

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -59,6 +60,11 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [importError, setImportError] = useState('');
   const [showImportDialog, setShowImportDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Account deletion state
+  const [showDeleteConfirm1, setShowDeleteConfirm1] = useState(false);
+  const [showDeleteConfirm2, setShowDeleteConfirm2] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const { storageMode } = useStorage();
   const { user } = useAuth();
@@ -340,6 +346,80 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     setImportError('');
     setImportResult(null);
     setShowImportDialog(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      if (isLocalMode) {
+        // Clear IndexedDB for local mode
+        const { clearLocalData } = await import('@/lib/storage/indexedDB');
+        await clearLocalData();
+        localStorage.clear();
+        toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
+        window.location.href = '/storage-setup';
+      } else if (user) {
+        // Delete all user data from Supabase tables
+        // Order matters due to foreign key constraints
+        
+        // 1. Delete receipt_items (via expense cascade or manually)
+        const { data: expenses } = await supabase
+          .from('expenses')
+          .select('id')
+          .eq('user_id', user.id);
+        
+        if (expenses && expenses.length > 0) {
+          const expenseIds = expenses.map(e => e.id);
+          await supabase.from('receipt_items').delete().in('expense_id', expenseIds);
+        }
+        
+        // 2. Delete transaction_notes
+        await supabase.from('transaction_notes').delete().eq('user_id', user.id);
+        
+        // 3. Delete expenses
+        await supabase.from('expenses').delete().eq('user_id', user.id);
+        
+        // 4. Delete income_source_members
+        await supabase.from('income_source_members').delete().eq('user_id', user.id);
+        
+        // 5. Delete income_source_invitations
+        await supabase.from('income_source_invitations').delete().eq('invited_by', user.id);
+        
+        // 6. Delete income_sources
+        await supabase.from('income_sources').delete().eq('user_id', user.id);
+        
+        // 7. Delete payment_source_cards
+        await supabase.from('payment_source_cards').delete().eq('user_id', user.id);
+        
+        // 8. Delete custom_payment_sources
+        await supabase.from('custom_payment_sources').delete().eq('user_id', user.id);
+        
+        // 9. Delete custom_categories
+        await supabase.from('custom_categories').delete().eq('user_id', user.id);
+        
+        // 10. Delete bank_connections
+        await supabase.from('bank_connections').delete().eq('user_id', user.id);
+        
+        // 11. Delete notifications
+        await supabase.from('notifications').delete().eq('user_id', user.id);
+        
+        // 12. Delete profile
+        await supabase.from('profiles').delete().eq('user_id', user.id);
+        
+        // 13. Sign out and clear local storage
+        await supabase.auth.signOut();
+        localStorage.clear();
+        
+        toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
+        window.location.href = '/auth';
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+      toast.error(t('errors.generic', 'Došlo je do greške'));
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm2(false);
+    }
   };
 
   return (
@@ -752,6 +832,40 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
           <Separator />
 
+          {/* Danger Zone */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-destructive uppercase tracking-wide">
+              {t('settings.dangerZone', 'Opasna zona')}
+            </h3>
+            
+            <div className="p-3 border border-destructive/30 bg-destructive/5 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center">
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-sm font-medium text-destructive">
+                    {t('settings.deleteAccount', 'Obriši račun')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.deleteAccountDesc', 'Trajno briše sve vaše podatke. Ova radnja se ne može poništiti.')}
+                  </p>
+                </div>
+              </div>
+              
+              <Button
+                variant="destructive"
+                className="w-full gap-2 rounded-xl"
+                onClick={() => setShowDeleteConfirm1(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                {t('settings.deleteAccountBtn', 'Obriši moj račun')}
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* App Info */}
           <div className="text-center text-xs text-muted-foreground space-y-1">
             <p>V&M Balance</p>
@@ -761,6 +875,68 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         </ScrollArea>
       </DialogContent>
     </Dialog>
+
+      {/* First Delete Confirmation */}
+      <AlertDialog open={showDeleteConfirm1} onOpenChange={setShowDeleteConfirm1}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              {t('settings.deleteConfirmTitle', 'Jeste li sigurni?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('settings.deleteConfirmDesc1', 'Ova radnja će trajno obrisati sve vaše transakcije, izvore prihoda, kategorije i ostale podatke. Ovo se ne može poništiti.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                setShowDeleteConfirm1(false);
+                setShowDeleteConfirm2(true);
+              }}
+            >
+              {t('settings.continueDelete', 'Nastavi s brisanjem')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Second Delete Confirmation */}
+      <AlertDialog open={showDeleteConfirm2} onOpenChange={setShowDeleteConfirm2}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              {t('settings.finalConfirmTitle', 'Posljednja provjera!')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>{t('settings.finalConfirmDesc', 'Ovo je vaša posljednja prilika da odustanete. Nakon što kliknete "Obriši zauvijek", svi podaci će biti nepovratno izgubljeni.')}</p>
+              <p className="font-semibold text-destructive">
+                {t('settings.noUndo', 'UPOZORENJE: Ova radnja se NE MOŽE poništiti!')}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t('settings.deleting', 'Brišem...')}
+                </>
+              ) : (
+                t('settings.deleteForever', 'Obriši zauvijek')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Help Dialog */}
       <HelpDialogContent open={showHelpDialog} onOpenChange={setShowHelpDialog} />

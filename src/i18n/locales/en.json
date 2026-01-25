@@ -15,7 +15,20 @@
     "displayNameDesc": "Name used for personalized messages",
     "noName": "Not set",
     "nameRequired": "Name is required",
-    "nameSaved": "Name saved successfully"
+    "nameSaved": "Name saved successfully",
+    "dangerZone": "Danger Zone",
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Permanently deletes all your data. This action cannot be undone.",
+    "deleteAccountBtn": "Delete my account",
+    "deleteConfirmTitle": "Are you sure?",
+    "deleteConfirmDesc1": "This action will permanently delete all your transactions, income sources, categories and other data. This cannot be undone.",
+    "continueDelete": "Continue with deletion",
+    "finalConfirmTitle": "Final check!",
+    "finalConfirmDesc": "This is your last chance to back out. After clicking \"Delete forever\", all data will be permanently lost.",
+    "noUndo": "WARNING: This action CANNOT be undone!",
+    "deleteForever": "Delete forever",
+    "deleting": "Deleting...",
+    "accountDeleted": "Account successfully deleted"
   },
   "transactions": {
     "note": "Note",
