@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, Check, Lock } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Lock, Loader2 } from 'lucide-react';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
@@ -12,9 +12,8 @@ import logo from '@/assets/logo.png';
 
 const StorageSetup = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { storageMode: currentMode, setStorageMode } = useStorage();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [selectedMode, setSelectedMode] = useState<StorageMode | null>(currentMode);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,7 +21,12 @@ const StorageSetup = () => {
   const isChangingMode = !!currentMode;
 
   const handleGoBack = () => {
-    navigate(-1);
+    // Always go back to home when changing mode from settings
+    if (isChangingMode) {
+      navigate('/');
+    } else {
+      navigate(-1);
+    }
   };
 
   const handleContinue = async () => {
@@ -36,12 +40,20 @@ const StorageSetup = () => {
         setStorageMode('local');
         navigate('/');
       } else if (selectedMode === 'cloud') {
+        // Wait for auth to finish loading before deciding
+        if (authLoading) {
+          // Wait a bit for auth to settle
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         setStorageMode('cloud');
         // If user is already logged in, go to dashboard, otherwise go to auth
-        if (user) {
+        // Re-check session directly for most accurate state
+        const { data: { session } } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
+        if (session?.user) {
           navigate('/');
         } else {
-          navigate('/auth');
+          navigate('/auth', { state: { from: '/setup' } });
         }
       } else {
         // Google Drive / iCloud - coming soon

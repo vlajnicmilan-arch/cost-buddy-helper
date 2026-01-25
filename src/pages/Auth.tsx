@@ -3,12 +3,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Mail, Lock, Loader2, CheckCircle, RefreshCw, User } from 'lucide-react';
+import { Mail, Lock, Loader2, CheckCircle, RefreshCw, User, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
+import { useStorage } from '@/contexts/StorageContext';
 
 const authSchema = z.object({
   email: z.string().trim().email('Nevažeća email adresa').max(255, 'Email je predugačak'),
@@ -30,6 +31,20 @@ const Auth = () => {
   
   const { signIn, signUp, resendVerificationEmail } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { storageMode } = useStorage();
+  
+  // Check if user came from storage setup - allow going back
+  const cameFromSetup = (location.state as any)?.from === '/setup';
+  const canGoBack = cameFromSetup || storageMode;
+
+  const handleGoBack = () => {
+    if (cameFromSetup) {
+      navigate('/setup');
+    } else if (storageMode) {
+      navigate('/');
+    }
+  };
 
   const validateForm = () => {
     try {
@@ -233,6 +248,17 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
+        {/* Back button - show when user can go back */}
+        {canGoBack && (
+          <button
+            onClick={handleGoBack}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Natrag</span>
+          </button>
+        )}
+        
         {/* Logo */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
