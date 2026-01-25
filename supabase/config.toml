@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.auto-reject-pending]
 verify_jwt = false
+
+[functions.notify-project-transaction]
+verify_jwt = false
