@@ -1,8 +1,9 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { StorageProvider, useStorage } from "@/contexts/StorageContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
@@ -20,6 +21,16 @@ const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
+  const location = useLocation();
+  const [onboardingCompleted, setOnboardingCompleted] = useState(() => 
+    localStorage.getItem('onboarding_completed') === 'true'
+  );
+
+  // Re-check onboarding status when location changes
+  useEffect(() => {
+    const completed = localStorage.getItem('onboarding_completed') === 'true';
+    setOnboardingCompleted(completed);
+  }, [location]);
 
   if (!isInitialized) {
     return (
@@ -41,9 +52,6 @@ const AppRoutes = () => {
       </Routes>
     );
   }
-
-  // Check if onboarding is completed
-  const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
 
   return (
     <Routes>

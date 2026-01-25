@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Confetti from 'react-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,12 @@ export const WelcomeConfetti = ({ displayName, onComplete }: WelcomeConfettiProp
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [showConfetti, setShowConfetti] = useState(true);
   const [numberOfPieces, setNumberOfPieces] = useState(300);
+  const onCompleteRef = useRef(onComplete);
+  
+  // Keep ref updated
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -36,7 +42,7 @@ export const WelcomeConfetti = ({ displayName, onComplete }: WelcomeConfettiProp
 
     // Complete animation and hide overlay
     const completeTimer = setTimeout(() => {
-      onComplete();
+      onCompleteRef.current();
     }, 5000);
 
     return () => {
@@ -44,7 +50,7 @@ export const WelcomeConfetti = ({ displayName, onComplete }: WelcomeConfettiProp
       clearTimeout(stopTimer);
       clearTimeout(completeTimer);
     };
-  }, [onComplete]);
+  }, []);
 
   const confettiColors = [
     '#21D4AE', // primary teal
