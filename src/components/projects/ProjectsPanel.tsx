@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
@@ -6,7 +6,7 @@ import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { Project, ProjectWithOwnership } from '@/types/project';
 import { ProjectCard } from './ProjectCard';
 import { ProjectDialog } from './ProjectDialog';
-import { ProjectDetailDialog } from './ProjectDetailDialog';
+import { ProjectFullScreenView } from './ProjectFullScreenView';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +14,6 @@ import { Plus, FolderKanban, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useCallback } from 'react';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
@@ -100,6 +99,13 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     setDetailDialogOpen(true);
   };
 
+  const handleCloseFullScreen = () => {
+    setDetailDialogOpen(false);
+    setSelectedProject(null);
+    refetch();
+    fetchAllStats();
+  };
+
   const handleSave = async (projectData: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     await addProject(projectData);
   };
@@ -170,10 +176,10 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
         onUpdate={handleUpdate}
       />
 
-      {/* Detail Dialog */}
-      <ProjectDetailDialog
+      {/* Full-screen Project View */}
+      <ProjectFullScreenView
         open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
+        onClose={handleCloseFullScreen}
         project={selectedProject}
         onRefreshExpenses={() => {
           refetch();
