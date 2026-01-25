@@ -59,6 +59,10 @@ export default {
           DEFAULT: "hsl(var(--income))",
           foreground: "hsl(var(--income-foreground))",
         },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
         category: {
           food: "hsl(var(--category-food))",
           transport: "hsl(var(--category-transport))",

@@ -36,6 +36,9 @@
     --income: 160 75% 42%;
     --income-foreground: 0 0% 100%;
 
+    --warning: 43 96% 56%;
+    --warning-foreground: 30 60% 20%;
+
     --border: 170 25% 88%;
     --input: 170 25% 88%;
     --ring: 172 66% 40%;
@@ -99,6 +102,9 @@
     /* #21D4AE for income amounts */
     --income: 167 73% 48%;
     --income-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
 
     /* #1C324E - border/input */
     --border: 214 47% 21%;

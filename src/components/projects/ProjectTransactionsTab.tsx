@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,13 +12,14 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getCategoryInfo, CATEGORIES, Category, TransactionType } from '@/types/expense';
-import { ProjectMilestone } from '@/types/project';
+import { ProjectMilestone, ProjectRole } from '@/types/project';
+import { useProjectPendingTransactions } from '@/hooks/useProjectPendingTransactions';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
-  Target, Pencil, Trash2 
+  Target, Trash2, Clock, Check, X, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +32,8 @@ interface ProjectExpense {
   date: string;
   type: string;
   milestone_id?: string | null;
+  status?: string | null;
+  submitted_by?: string | null;
 }
 
 interface ProjectTransactionsTabProps {
@@ -39,6 +41,7 @@ interface ProjectTransactionsTabProps {
   expenses: ProjectExpense[];
   milestones: ProjectMilestone[];
   isManager: boolean;
+  userRole: ProjectRole;
   loading: boolean;
   onRefetch: () => void;
 }
@@ -48,12 +51,22 @@ export const ProjectTransactionsTab = ({
   expenses,
   milestones,
   isManager,
+  userRole,
   loading,
   onRefetch
 }: ProjectTransactionsTabProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { user } = useAuth();
+
+  // Pending transactions hook
+  const { 
+    pendingTransactions, 
+    approveTransaction, 
+    rejectTransaction,
+    refetch: refetchPending,
+    pendingCount
+  } = useProjectPendingTransactions(projectId);
 
   // Add expense dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -67,6 +80,10 @@ export const ProjectTransactionsTab = ({
   const [category, setCategory] = useState<Category>('other');
   const [date, setDate] = useState<Date>(new Date());
   const [milestoneId, setMilestoneId] = useState<string>('none');
+
+  // Check if viewer can add transactions (needs approval)
+  const canAddTransaction = isManager || userRole === 'member' || userRole === 'viewer';
+  const needsApproval = userRole === 'viewer';
 
   const resetForm = () => {
     setExpenseType('expense');
@@ -105,6 +122,9 @@ export const ProjectTransactionsTab = ({
 
     setSaving(true);
     try {
+      // Viewers submit with 'pending' status, managers/members submit as 'approved'
+      const status = needsApproval ? 'pending' : 'approved';
+      
       const { error } = await supabase
         .from('expenses')
         .insert({
@@ -116,20 +136,39 @@ export const ProjectTransactionsTab = ({
           category,
           type: expenseType,
           date: date.toISOString(),
-          status: 'approved'
+          status,
+          submitted_by: needsApproval ? user.id : null
         });
 
       if (error) throw error;
 
-      toast.success(t('projects.expenseAdded', 'Trošak dodan'));
+      if (needsApproval) {
+        toast.success(t('projects.expenseSubmitted', 'Transakcija poslana na odobrenje'));
+      } else {
+        toast.success(t('projects.expenseAdded', 'Trošak dodan'));
+      }
       setAddDialogOpen(false);
       resetForm();
       onRefetch();
+      if (needsApproval) {
+        refetchPending();
+      }
     } catch (error) {
       console.error('Error adding expense:', error);
       toast.error(t('common.error'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleApprove = async (transactionId: string) => {
+    await approveTransaction(transactionId);
+    onRefetch();
+  };
+
+  const handleReject = async (transactionId: string) => {
+    if (confirm(t('projects.confirmRejectTransaction', 'Jeste li sigurni da želite odbiti ovu transakciju?'))) {
+      await rejectTransaction(transactionId);
     }
   };
 
@@ -171,12 +210,99 @@ export const ProjectTransactionsTab = ({
 
   return (
     <div className="space-y-4">
-      {/* Add button */}
-      {isManager && (
-        <div className="flex justify-end">
-          <Button onClick={() => setAddDialogOpen(true)} size="sm">
+      {/* Pending Transactions Section - only visible to managers */}
+      {isManager && pendingCount > 0 && (
+        <div className="p-4 rounded-lg border-2 border-warning/50 bg-warning/10 space-y-3">
+          <div className="flex items-center gap-2 text-warning-foreground">
+            <Clock className="w-5 h-5" />
+            <span className="font-medium">
+              {t('projects.pendingApproval', 'Transakcije na čekanju')} ({pendingCount})
+            </span>
+          </div>
+          
+          <div className="space-y-2">
+            {pendingTransactions.map((tx) => {
+              const categoryInfo = getCategoryInfo(tx.category as any);
+              const isIncome = tx.type === 'income';
+              
+              return (
+                <div 
+                  key={tx.id}
+                  className="p-3 rounded-lg bg-card border flex items-center gap-3"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">
+                    {categoryInfo.icon}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{tx.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                      <span>{categoryInfo.name}</span>
+                      <span>•</span>
+                      <span>{format(new Date(tx.date), 'd. MMM yyyy', { locale: hr })}</span>
+                      {tx.submitter_name && (
+                        <>
+                          <span>•</span>
+                          <span className="text-warning-foreground">
+                            {t('projects.submittedBy', 'Podnio')}: {tx.submitter_name}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={cn(
+                    "font-mono font-medium flex items-center gap-1 shrink-0",
+                    isIncome ? "text-income" : "text-expense"
+                  )}>
+                    {isIncome ? (
+                      <TrendingUp className="w-4 h-4" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4" />
+                    )}
+                    {isIncome ? '+' : '-'}{formatAmount(tx.amount)}
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-income hover:text-income hover:bg-income/10"
+                      onClick={() => handleApprove(tx.id)}
+                    >
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      onClick={() => handleReject(tx.id)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Add button - visible to managers, members, and viewers */}
+      {canAddTransaction && (
+        <div className="flex justify-between items-center">
+          {needsApproval && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <AlertCircle className="w-4 h-4" />
+              {t('projects.viewerNote', 'Vaše transakcije zahtijevaju odobrenje člana')}
+            </div>
+          )}
+          <Button onClick={() => setAddDialogOpen(true)} size="sm" className={needsApproval ? '' : 'ml-auto'}>
             <Plus className="w-4 h-4 mr-2" />
-            {t('projects.addExpense', 'Dodaj trošak')}
+            {needsApproval 
+              ? t('projects.submitExpense', 'Predloži trošak')
+              : t('projects.addExpense', 'Dodaj trošak')
+            }
           </Button>
         </div>
       )}
