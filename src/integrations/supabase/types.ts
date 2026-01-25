@@ -181,7 +181,9 @@ export type Database = {
           is_active: boolean | null
           name: string
           period_type: string
+          project_id: string | null
           start_date: string | null
+          total_amount: number
           updated_at: string
           user_id: string
         }
@@ -195,7 +197,9 @@ export type Database = {
           is_active?: boolean | null
           name: string
           period_type?: string
+          project_id?: string | null
           start_date?: string | null
+          total_amount?: number
           updated_at?: string
           user_id: string
         }
@@ -209,11 +213,21 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           period_type?: string
+          project_id?: string | null
           start_date?: string | null
+          total_amount?: number
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "budget_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_categories: {
         Row: {
