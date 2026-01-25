@@ -96,6 +96,16 @@ const Index = () => {
       }
     };
     loadDisplayName();
+
+    // Listen for name changes from settings
+    const handleNameChange = (event: CustomEvent<string>) => {
+      setDisplayName(event.detail);
+    };
+    window.addEventListener('displayNameChanged', handleNameChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('displayNameChanged', handleNameChange as EventListener);
+    };
   }, [user]);
 
   // Get custom payment sources for card filtering (declare before useExpenses to use in callback)

@@ -9,7 +9,13 @@
     "soundDisabled": "Zvučne obavijesti isključene",
     "pushEnabled": "Push obavijesti uključene",
     "pushDisabled": "Push obavijesti isključene",
-    "pushDenied": "Preglednik je blokirao push obavijesti"
+    "pushDenied": "Preglednik je blokirao push obavijesti",
+    "profile": "Profil",
+    "displayName": "Vaše ime",
+    "displayNameDesc": "Ime koje se koristi za personalizirane poruke",
+    "noName": "Nije postavljeno",
+    "nameRequired": "Ime je obavezno",
+    "nameSaved": "Ime uspješno spremljeno"
   },
   "transactions": {
     "note": "Napomena",
