@@ -1,6 +1,12 @@
 {
   "projects": {
-    "milestoneUpdated": "Milestone updated"
+    "milestoneUpdated": "Milestone updated",
+    "addMilestonesToSeeTimeline": "Add milestones to see timeline",
+    "today": "Today",
+    "totalMilestones": "Total milestones",
+    "pending": "Pending",
+    "inProgress": "In progress",
+    "overdue": "Overdue"
   },
   "settings": {
     "notifications": "Notifications",

@@ -1,6 +1,12 @@
 {
   "projects": {
-    "milestoneUpdated": "Faza ažurirana"
+    "milestoneUpdated": "Faza ažurirana",
+    "addMilestonesToSeeTimeline": "Dodajte faze za prikaz timeline-a",
+    "today": "Danas",
+    "totalMilestones": "Ukupno faza",
+    "pending": "Na čekanju",
+    "inProgress": "U tijeku",
+    "overdue": "Zakašnjelo"
   },
   "settings": {
     "notifications": "Obavijesti",
