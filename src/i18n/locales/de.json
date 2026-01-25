@@ -19,7 +19,9 @@
     "writeNote": "Notiz schreiben...",
     "noteSent": "Notiz gesendet",
     "noteError": "Fehler beim Senden der Notiz",
-    "initialNote": "Ursprüngliche Notiz"
+    "initialNote": "Ursprüngliche Notiz",
+    "assignToProject": "Projekt",
+    "noProject": "Kein Projekt"
   },
   "common": {
     "save": "Speichern",

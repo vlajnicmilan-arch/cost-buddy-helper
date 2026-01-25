@@ -55,7 +55,9 @@
     "writeNote": "Write a note...",
     "noteSent": "Note sent",
     "noteError": "Error sending note",
-    "initialNote": "Original note"
+    "initialNote": "Original note",
+    "assignToProject": "Project",
+    "noProject": "No project"
   },
   "common": {
     "save": "Save",

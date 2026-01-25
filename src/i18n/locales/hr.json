@@ -55,7 +55,9 @@
     "writeNote": "Napiši napomenu...",
     "noteSent": "Napomena poslana",
     "noteError": "Greška pri slanju napomene",
-    "initialNote": "Originalna napomena"
+    "initialNote": "Originalna napomena",
+    "assignToProject": "Projekt",
+    "noProject": "Bez projekta"
   },
   "common": {
     "save": "Spremi",
