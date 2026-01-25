@@ -641,7 +641,12 @@
     "budgetCreated": "Budget created",
     "budgetUpdated": "Budget updated",
     "budgetDeleted": "Budget deleted",
-    "budgetReset": "Budget reset"
+    "budgetReset": "Budget reset",
+    "pendingApproval": "Pending transactions",
+    "autoRejectNote": "Transactions not approved within 24 hours will be automatically rejected.",
+    "transactionApproved": "Transaction approved",
+    "transactionRejected": "Transaction rejected",
+    "viewerNote": "Your transactions require approval from the budget owner"
   },
   "projectStatus": {
     "draft": "Draft",

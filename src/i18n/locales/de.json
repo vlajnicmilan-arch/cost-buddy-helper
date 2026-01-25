@@ -619,7 +619,12 @@
     "budgetCreated": "Budget erstellt",
     "budgetUpdated": "Budget aktualisiert",
     "budgetDeleted": "Budget gelöscht",
-    "budgetReset": "Budget zurückgesetzt"
+    "budgetReset": "Budget zurückgesetzt",
+    "pendingApproval": "Ausstehende Transaktionen",
+    "autoRejectNote": "Transaktionen, die nicht innerhalb von 24 Stunden genehmigt werden, werden automatisch abgelehnt.",
+    "transactionApproved": "Transaktion genehmigt",
+    "transactionRejected": "Transaktion abgelehnt",
+    "viewerNote": "Ihre Transaktionen erfordern die Genehmigung des Budget-Eigentümers"
   },
   "projectStatus": {
     "draft": "Entwurf",

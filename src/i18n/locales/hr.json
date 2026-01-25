@@ -641,7 +641,12 @@
     "budgetCreated": "Budžet kreiran",
     "budgetUpdated": "Budžet ažuriran",
     "budgetDeleted": "Budžet obrisan",
-    "budgetReset": "Budžet resetiran"
+    "budgetReset": "Budžet resetiran",
+    "pendingApproval": "Transakcije na čekanju",
+    "autoRejectNote": "Transakcije koje nisu odobrene unutar 24 sata bit će automatski odbijene.",
+    "transactionApproved": "Transakcija odobrena",
+    "transactionRejected": "Transakcija odbijena",
+    "viewerNote": "Vaše transakcije zahtijevaju odobrenje vlasnika budžeta"
   },
   "projectStatus": {
     "draft": "Nacrt",
