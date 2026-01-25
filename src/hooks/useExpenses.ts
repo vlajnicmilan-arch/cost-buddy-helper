@@ -155,6 +155,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             merchant_name: expense.merchant_name,
             ai_extracted: expense.ai_extracted,
             income_source_id: expense.income_source_id,
+            project_id: expense.project_id || null,
             note: expense.note || null,
             status: isPendingMemberTransaction ? 'pending' : 'approved',
             submitted_by: isPendingMemberTransaction ? user.id : null
