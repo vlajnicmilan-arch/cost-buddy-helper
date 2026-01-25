@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.respond-to-invitation]
 verify_jwt = false
+
+[functions.auto-reject-pending]
+verify_jwt = false
