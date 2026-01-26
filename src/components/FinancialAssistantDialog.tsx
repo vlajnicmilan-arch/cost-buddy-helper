@@ -283,11 +283,17 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="space-y-4">
-              <div className="text-center text-muted-foreground py-6">
-                <Bot className="w-12 h-12 mx-auto mb-4 text-primary/50" />
-                <p className="font-medium">Pozdrav! Ja sam tvoj financijski asistent.</p>
-                <p className="text-sm mt-2">
-                  Postavi mi pitanje ili generiraj mjesečni izvještaj.
+              <div className="text-center py-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  <Bot className="w-8 h-8 text-primary" />
+                </div>
+                <p className="font-semibold text-foreground text-lg">Bok! 👋</p>
+                <p className="text-muted-foreground mt-2 leading-relaxed max-w-sm mx-auto">
+                  Ja sam tvoj osobni financijski asistent. Tu sam da ti pomognem 
+                  razumjeti svoje financije i donositi mirnije odluke — bez pritiska i bez stresa.
+                </p>
+                <p className="text-sm text-muted-foreground/80 mt-3 italic">
+                  Kako ti danas mogu pomoći?
                 </p>
               </div>
 
@@ -300,12 +306,12 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
                 <FileText className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-semibold">Generiraj mjesečni izvještaj</div>
-                  <div className="text-xs opacity-80">Analiza + preporuke za uštedu</div>
+                  <div className="text-xs opacity-80">Pregled stanja + savjeti za napredak</div>
                 </div>
               </Button>
 
               <div className="text-xs text-muted-foreground text-center pt-2">
-                Ili postavi brzo pitanje:
+                Ili odaberi jedno od čestih pitanja:
               </div>
 
               <div className="grid grid-cols-1 gap-2">
@@ -314,7 +320,7 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
                     key={i}
                     variant="outline"
                     size="sm"
-                    className="justify-start text-left h-auto py-2 px-3 text-sm"
+                    className="justify-start text-left h-auto py-2.5 px-3 text-sm hover:bg-primary/5"
                     onClick={() => {
                       sendMessage(q);
                     }}
