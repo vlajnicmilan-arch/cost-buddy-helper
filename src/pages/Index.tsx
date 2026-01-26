@@ -5,6 +5,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useBudgets } from '@/hooks/useBudgets';
+import { useProjects } from '@/hooks/useProjects';
 import { supabase } from '@/integrations/supabase/client';
 import { SummaryCard } from '@/components/SummaryCard';
 import { TransactionItem } from '@/components/TransactionItem';
@@ -159,6 +160,12 @@ const Index = () => {
 
   // Get custom payment sources for card filtering (declare before useExpenses to use in callback)
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
+  
+  // Get budgets for AI assistant
+  const { budgets: budgetsWithStats } = useBudgets();
+  
+  // Get projects for AI assistant  
+  const { projects } = useProjects();
 
   const { 
     expenses, 
@@ -198,6 +205,42 @@ const Index = () => {
   const filteredDashboardExpenses = useMemo(() => {
     return applyFilters(expenses, dashboardFilters, user?.id);
   }, [expenses, dashboardFilters, user?.id]);
+
+  // Prepare budgets data for AI assistant
+  const budgetsForAssistant = useMemo(() => {
+    return budgetsWithStats.map(b => ({
+      name: b.name,
+      total_amount: b.total_amount,
+      spent: b.spent,
+      period_type: b.period_type,
+      is_active: b.is_active ?? true,
+      categories: b.categories?.map(c => ({
+        category: c.category,
+        limit_amount: c.limit_amount,
+        spent: c.spent
+      }))
+    }));
+  }, [budgetsWithStats]);
+
+  // Prepare projects data for AI assistant with spent calculations
+  const projectsForAssistant = useMemo(() => {
+    return projects.map(p => {
+      // Calculate spent from allExpenses for this project
+      const projectExpenses = allExpenses.filter(
+        e => e.project_id === p.id && e.type === 'expense' && e.status === 'approved'
+      );
+      const spent = projectExpenses.reduce((sum, e) => sum + e.amount, 0);
+      
+      return {
+        name: p.name,
+        total_budget: p.total_budget,
+        spent,
+        status: p.status,
+        description: p.description,
+        milestones: [] // Would need useProjectMilestones for each project - keeping simple
+      };
+    });
+  }, [projects, allExpenses]);
 
   // Initialize auto-backup for local mode
   useAutoBackup();
@@ -394,6 +437,8 @@ const Index = () => {
                 totalExpenses={totalExpenses}
                 balance={balance}
                 paymentSources={customPaymentSources}
+                budgets={budgetsForAssistant}
+                projects={projectsForAssistant}
                 open={assistantDialogOpen}
                 onOpenChange={setAssistantDialogOpen}
                 hideTrigger

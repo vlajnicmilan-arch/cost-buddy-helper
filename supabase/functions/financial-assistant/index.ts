@@ -66,8 +66,18 @@ ${financialContext.paymentSources || 'Nema podataka o izvorima plaćanja'}
 NEDAVNE TRANSAKCIJE:
 ${financialContext.recentTransactions || 'Nema nedavnih transakcija'}
 
-BUDŽETI:
+BUDŽETI (limiti potrošnje po kategorijama):
 ${financialContext.budgets || 'Nema aktivnih budžeta'}
+- Budžeti su alati za praćenje potrošnje s postavljenim limitima.
+- Ako korisnik ima budžete, analiziraj koliko je potrošio vs. limit.
+- Upozori ako je blizu ili preko limita.
+
+PROJEKTI (višemjesečni financijski ciljevi s fazama):
+${financialContext.projects || 'Nema aktivnih projekata'}
+- Projekti su dugoročni financijski ciljevi s definiranim budžetom i fazama (milestones).
+- Svaki projekt ima ukupni budžet i može imati članove tima.
+- Faze projekta omogućuju praćenje napretka kroz različite etape.
+- Ako korisnik ima projekte, analiziraj napredak i preostali budžet.
 
 POVIJEST PO MJESECIMA (zadnjih 6 mjeseci):
 ${financialContext.historicalTrends || 'Nema povijesnih podataka'}
