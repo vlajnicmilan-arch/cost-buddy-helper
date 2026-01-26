@@ -1,5 +1,4 @@
-import { useState, useCallback } from 'react';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { useState, useCallback, useEffect } from 'react';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -15,6 +14,8 @@ interface FinancialContext {
   paymentSources: string;
   recentTransactions: string;
   budgets: string;
+  historicalTrends?: string;
+  trendAnalysis?: string;
 }
 
 interface UseFinancialAssistantProps {
@@ -24,6 +25,18 @@ interface UseFinancialAssistantProps {
 export const useFinancialAssistant = ({ financialContext }: UseFinancialAssistantProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Listen for data reset event to clear conversation
+  useEffect(() => {
+    const handleDataReset = () => {
+      setMessages([]);
+    };
+
+    window.addEventListener('financialDataReset', handleDataReset);
+    return () => {
+      window.removeEventListener('financialDataReset', handleDataReset);
+    };
+  }, []);
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: ChatMessage = { role: 'user', content: input };

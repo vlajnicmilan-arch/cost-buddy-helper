@@ -420,6 +420,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         onDataImported?.();
       }
       
+      // Dispatch event to reset AI assistant conversation
+      window.dispatchEvent(new CustomEvent('financialDataReset'));
+      
       setShowResetConfirm(false);
     } catch (error) {
       console.error('Reset error:', error);
