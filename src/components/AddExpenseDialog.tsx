@@ -9,6 +9,7 @@ import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useProjects } from '@/hooks/useProjects';
+import { useInstallments } from '@/hooks/useInstallments';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
@@ -18,6 +19,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
+import { InstallmentToggle } from '@/components/installments';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
@@ -55,6 +57,12 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   
   const [note, setNote] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  
+  // Installment state
+  const [isInstallment, setIsInstallment] = useState(false);
+  const [installmentCount, setInstallmentCount] = useState(12);
+  const [firstPaymentDate, setFirstPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
@@ -62,6 +70,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { projects } = useProjects();
+  const { createPlan: createInstallmentPlan } = useInstallments();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
 
   // Set default payment source when dialog opens and sources are loaded
@@ -230,11 +239,35 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setShowScannedPreview(false);
     setNote('');
     setSelectedProjectId(null);
+    // Reset installment state
+    setIsInstallment(false);
+    setInstallmentCount(12);
+    setFirstPaymentDate(new Date().toISOString().split('T')[0]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !description) return;
+
+    const parsedAmount = parseFloat(amount);
+
+    // Handle installment creation
+    if (isInstallment && type !== 'transfer') {
+      await createInstallmentPlan({
+        description,
+        total_amount: parsedAmount,
+        installment_count: installmentCount,
+        first_payment_date: new Date(firstPaymentDate),
+        category,
+        payment_source: paymentSource,
+        payment_source_card_id: selectedCardId,
+        type: type as 'expense' | 'income'
+      });
+      
+      resetForm();
+      setOpen(false);
+      return;
+    }
 
     const validItems = items.filter(item => item.name && item.total_price > 0);
     
@@ -249,7 +282,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     }
 
     onAdd({
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       description,
       category,
       date: new Date(expenseDate),
@@ -744,6 +777,19 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
                   className="h-12 rounded-xl"
                 />
               </div>
+
+              {/* Installment Toggle - Only for expenses and income, not transfers */}
+              {type !== 'transfer' && (
+                <InstallmentToggle
+                  enabled={isInstallment}
+                  onEnabledChange={setIsInstallment}
+                  installmentCount={installmentCount}
+                  onInstallmentCountChange={setInstallmentCount}
+                  firstPaymentDate={firstPaymentDate}
+                  onFirstPaymentDateChange={setFirstPaymentDate}
+                  totalAmount={parseFloat(amount) || 0}
+                />
+              )}
 
               {/* Project Assignment */}
               {projects.length > 0 && (

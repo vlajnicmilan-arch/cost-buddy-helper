@@ -682,5 +682,26 @@
     "decline": "Decline",
     "invitationAccepted": "Invitation accepted",
     "invitationDeclined": "Invitation declined"
+  },
+  "installments": {
+    "title": "Installment Payments",
+    "payInInstallments": "Pay in installments",
+    "numberOfInstallments": "Number of installments",
+    "firstPaymentDate": "First payment",
+    "monthlyPayment": "Monthly payment",
+    "total": "Total",
+    "remaining": "Remaining",
+    "remainingShort": "remaining",
+    "progress": "Progress",
+    "allInstallments": "All installments",
+    "rataProgress": "Installment {{current}}/{{total}}",
+    "nextPayment": "Next payment",
+    "overdue": "Overdue",
+    "next": "Next",
+    "deletePlan": "Delete plan",
+    "deleteConfirmTitle": "Delete payment plan?",
+    "deleteConfirmMessage": "This action will permanently delete the plan and all related installments. This cannot be undone.",
+    "noPlans": "No active installment payment plans",
+    "addHint": "Add a new expense or income and select the \"Installments\" option"
   }
 }

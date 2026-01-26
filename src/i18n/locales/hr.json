@@ -682,5 +682,26 @@
     "decline": "Odbij",
     "invitationAccepted": "Pozivnica prihvaćena",
     "invitationDeclined": "Pozivnica odbijena"
+  },
+  "installments": {
+    "title": "Plaćanja na rate",
+    "payInInstallments": "Plaćanje na rate",
+    "numberOfInstallments": "Broj rata",
+    "firstPaymentDate": "Prva rata",
+    "monthlyPayment": "Mjesečna rata",
+    "total": "Ukupno",
+    "remaining": "Preostalo",
+    "remainingShort": "preostalo",
+    "progress": "Napredak",
+    "allInstallments": "Sve rate",
+    "rataProgress": "Rata {{current}}/{{total}}",
+    "nextPayment": "Sljedeća rata",
+    "overdue": "Kasni",
+    "next": "Sljedeća",
+    "deletePlan": "Obriši plan",
+    "deleteConfirmTitle": "Obrisati plan plaćanja?",
+    "deleteConfirmMessage": "Ova radnja će trajno obrisati plan i sve povezane rate. Ovo se ne može poništiti.",
+    "noPlans": "Nema aktivnih planova plaćanja na rate",
+    "addHint": "Dodaj novi trošak ili prihod i odaberi opciju \"Na rate\""
   }
 }
