@@ -102,6 +102,7 @@ export type Database = {
           role: string
           status: string
           token: string
+          used_at: string | null
         }
         Insert: {
           budget_id: string
@@ -113,6 +114,7 @@ export type Database = {
           role?: string
           status?: string
           token?: string
+          used_at?: string | null
         }
         Update: {
           budget_id?: string
@@ -124,6 +126,7 @@ export type Database = {
           role?: string
           status?: string
           token?: string
+          used_at?: string | null
         }
         Relationships: [
           {
@@ -752,6 +755,7 @@ export type Database = {
           role: string
           status: string
           token: string
+          used_at: string | null
         }
         Insert: {
           created_at?: string
@@ -763,6 +767,7 @@ export type Database = {
           role?: string
           status?: string
           token?: string
+          used_at?: string | null
         }
         Update: {
           created_at?: string
@@ -774,6 +779,7 @@ export type Database = {
           role?: string
           status?: string
           token?: string
+          used_at?: string | null
         }
         Relationships: [
           {
@@ -1052,6 +1058,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_invitation_token: {
+        Args: { _invitation_type: string; _token: string }
+        Returns: {
+          invitation_id: string
+          invited_by: string
+          role: string
+          target_id: string
+          target_name: string
+        }[]
+      }
       is_budget_member: {
         Args: { _budget_id: string; _user_id: string }
         Returns: boolean
