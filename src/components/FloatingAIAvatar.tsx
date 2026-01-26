@@ -14,38 +14,6 @@ interface FloatingAIAvatarProps {
   className?: string;
 }
 
-// Facial expression configurations for each mood
-const moodExpressions: Record<AvatarMood, {
-  leftEyebrow: { rotate: number; y: number };
-  rightEyebrow: { rotate: number; y: number };
-  mouth: { scaleX: number; scaleY: number; y: number; rotate: number };
-}> = {
-  happy: {
-    leftEyebrow: { rotate: -10, y: -2 },
-    rightEyebrow: { rotate: 10, y: -2 },
-    mouth: { scaleX: 1.2, scaleY: 1, y: 0, rotate: 0 },
-  },
-  thinking: {
-    leftEyebrow: { rotate: 15, y: 0 },
-    rightEyebrow: { rotate: -5, y: -3 },
-    mouth: { scaleX: 0.7, scaleY: 0.8, y: 1, rotate: -5 },
-  },
-  worried: {
-    leftEyebrow: { rotate: 20, y: 2 },
-    rightEyebrow: { rotate: -20, y: 2 },
-    mouth: { scaleX: 0.8, scaleY: 0.6, y: 2, rotate: 0 },
-  },
-  proud: {
-    leftEyebrow: { rotate: -15, y: -4 },
-    rightEyebrow: { rotate: 15, y: -4 },
-    mouth: { scaleX: 1.3, scaleY: 1.2, y: -1, rotate: 0 },
-  },
-  neutral: {
-    leftEyebrow: { rotate: 0, y: 0 },
-    rightEyebrow: { rotate: 0, y: 0 },
-    mouth: { scaleX: 1, scaleY: 1, y: 0, rotate: 0 },
-  },
-};
 
 const moodColors: Record<AvatarMood, string> = {
   happy: 'from-green-400/30 to-emerald-500/20',
@@ -55,54 +23,19 @@ const moodColors: Record<AvatarMood, string> = {
   neutral: 'from-primary/20 to-primary/10',
 };
 
-// Animated facial expressions component
-const FacialExpressions = ({ mood, isBlinking }: { mood: AvatarMood; isBlinking: boolean }) => {
-  const expression = moodExpressions[mood];
-  
+// Blinking eyes component - subtle overlay that works with any avatar size
+const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
   return (
     <>
-      {/* Left eyebrow */}
-      <motion.div
-        className="absolute bg-[#2a5a5a] rounded-full"
-        style={{
-          width: '16%',
-          height: '4%',
-          top: '32%',
-          left: '22%',
-          transformOrigin: 'center',
-        }}
-        animate={{
-          rotate: expression.leftEyebrow.rotate,
-          y: expression.leftEyebrow.y,
-        }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      />
-      
-      {/* Right eyebrow */}
-      <motion.div
-        className="absolute bg-[#2a5a5a] rounded-full"
-        style={{
-          width: '16%',
-          height: '4%',
-          top: '32%',
-          right: '22%',
-          transformOrigin: 'center',
-        }}
-        animate={{
-          rotate: expression.rightEyebrow.rotate,
-          y: expression.rightEyebrow.y,
-        }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      />
-
       {/* Left eye blink overlay */}
       <motion.div
-        className="absolute bg-[#d4e8e8] rounded-full"
+        className="absolute rounded-full"
         style={{
-          width: '18%',
-          height: '8%',
-          top: '38%',
-          left: '24%',
+          width: '14%',
+          height: '6%',
+          top: '40%',
+          left: '26%',
+          backgroundColor: '#c8dede',
         }}
         initial={{ scaleY: 0 }}
         animate={{ scaleY: isBlinking ? 1 : 0 }}
@@ -111,41 +44,17 @@ const FacialExpressions = ({ mood, isBlinking }: { mood: AvatarMood; isBlinking:
       
       {/* Right eye blink overlay */}
       <motion.div
-        className="absolute bg-[#d4e8e8] rounded-full"
+        className="absolute rounded-full"
         style={{
-          width: '18%',
-          height: '8%',
-          top: '38%',
-          right: '24%',
+          width: '14%',
+          height: '6%',
+          top: '40%',
+          right: '26%',
+          backgroundColor: '#c8dede',
         }}
         initial={{ scaleY: 0 }}
         animate={{ scaleY: isBlinking ? 1 : 0 }}
         transition={{ duration: 0.05 }}
-      />
-
-      {/* Mouth expression overlay */}
-      <motion.div
-        className="absolute rounded-full"
-        style={{
-          width: '20%',
-          height: '8%',
-          bottom: '28%',
-          left: '50%',
-          x: '-50%',
-          background: mood === 'happy' || mood === 'proud' 
-            ? 'linear-gradient(to bottom, transparent 40%, #e85a7a 40%)' 
-            : mood === 'worried'
-            ? 'linear-gradient(to top, transparent 40%, #e85a7a 40%)'
-            : '#e85a7a',
-          borderRadius: mood === 'happy' || mood === 'proud' ? '0 0 50% 50%' : mood === 'worried' ? '50% 50% 0 0' : '50%',
-        }}
-        animate={{
-          scaleX: expression.mouth.scaleX,
-          scaleY: expression.mouth.scaleY,
-          y: expression.mouth.y,
-          rotate: expression.mouth.rotate,
-        }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
       />
     </>
   );
@@ -342,8 +251,8 @@ export const FloatingAIAvatar = ({
               className="w-full h-full object-contain drop-shadow-md"
             />
             
-            {/* Animated facial expressions */}
-            <FacialExpressions mood={mood} isBlinking={isBlinking} />
+            {/* Blinking eyes overlay */}
+            <BlinkingEyes isBlinking={isBlinking} />
           </motion.div>
         </motion.div>
 
