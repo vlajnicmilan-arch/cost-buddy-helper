@@ -8,6 +8,7 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { FloatingAIAvatar, useAvatarMood, AvatarMood } from './FloatingAIAvatar';
 
 interface AIInsightBubbleProps {
   expenses: Expense[];
@@ -200,91 +201,116 @@ export const AIInsightBubble = ({
     }
   };
 
+  // Determine avatar mood based on current insight
+  const getAvatarMood = useCallback((type: InsightType): AvatarMood => {
+    switch (type) {
+      case 'status':
+        return balance >= 0 ? 'happy' : 'worried';
+      case 'trend':
+        return 'thinking';
+      case 'warning':
+        return 'worried';
+      case 'motivation':
+        return 'proud';
+      default:
+        return 'neutral';
+    }
+  }, [balance]);
+
+  const avatarMood = getAvatarMood(currentInsight.type);
+
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: -20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.9 }}
-          transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-          className="fixed top-20 right-3 sm:right-4 z-40 max-w-[280px] sm:max-w-sm"
-        >
-          {/* Speech bubble pointer - positioned to point at AI button */}
-          <div 
-            className={cn(
-              "absolute -top-2 w-4 h-4 rotate-45 bg-card border-l border-t border-border",
-              isMobile ? "right-[72px]" : "right-[100px]"
-            )} 
-          />
-          
+    <div className="fixed top-20 right-3 sm:right-4 z-40 flex items-start gap-2">
+      {/* Speech bubble */}
+      <AnimatePresence>
+        {isVisible && (
           <motion.div
-            onClick={handleClick}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={cn(
-              'relative p-3 sm:p-4 rounded-2xl border shadow-lg cursor-pointer backdrop-blur-sm bg-card',
-              getBackgroundClass(currentInsight.type)
-            )}
+            initial={{ opacity: 0, x: 20, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 20, scale: 0.9 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            className="max-w-[220px] sm:max-w-[260px]"
           >
-            {/* Close button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDismiss}
-              className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border shadow-sm hover:bg-muted"
-            >
-              <X className="w-3 h-3" />
-            </Button>
-
-            {/* Content */}
-            <div className="flex items-start gap-2 sm:gap-3">
-              <div className={cn(
-                'flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center',
+            <motion.div
+              onClick={handleClick}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={cn(
+                'relative p-3 rounded-2xl border shadow-lg cursor-pointer backdrop-blur-sm bg-card',
                 getBackgroundClass(currentInsight.type)
-              )}>
-                <span className={getIconClass(currentInsight.type)}>
-                  {currentInsight.icon}
-                </span>
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <AnimatePresence mode="wait">
-                  <motion.p
-                    key={currentInsightIndex}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.3 }}
-                    className="text-xs sm:text-sm font-medium leading-relaxed"
-                  >
-                    {currentInsight.message}
-                  </motion.p>
-                </AnimatePresence>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  {t('insights.tapForMore', 'Klikni za više savjeta')}
-                </p>
-              </div>
-            </div>
+              )}
+            >
+              {/* Speech bubble pointer pointing to avatar */}
+              <div 
+                className="absolute top-4 -right-2 w-3 h-3 rotate-45 bg-card border-r border-t border-border"
+              />
 
-            {/* Progress dots */}
-            {insights.length > 1 && (
-              <div className="flex justify-center gap-1 mt-2 sm:mt-3">
-                {insights.map((_, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      'w-1.5 h-1.5 rounded-full transition-colors',
-                      index === currentInsightIndex ? 'bg-foreground/60' : 'bg-foreground/20'
-                    )}
-                  />
-                ))}
+              {/* Close button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDismiss}
+                className="absolute -top-2 -left-2 h-5 w-5 rounded-full bg-background border shadow-sm hover:bg-muted"
+              >
+                <X className="w-2.5 h-2.5" />
+              </Button>
+
+              {/* Content */}
+              <div className="flex items-start gap-2">
+                <div className={cn(
+                  'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center',
+                  getBackgroundClass(currentInsight.type)
+                )}>
+                  <span className={getIconClass(currentInsight.type)}>
+                    {currentInsight.icon}
+                  </span>
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={currentInsightIndex}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-xs font-medium leading-relaxed"
+                    >
+                      {currentInsight.message}
+                    </motion.p>
+                  </AnimatePresence>
+                  <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    {t('insights.tapForMore', 'Klikni za savjete')}
+                  </p>
+                </div>
               </div>
-            )}
+
+              {/* Progress dots */}
+              {insights.length > 1 && (
+                <div className="flex justify-center gap-1 mt-2">
+                  {insights.map((_, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        'w-1 h-1 rounded-full transition-colors',
+                        index === currentInsightIndex ? 'bg-foreground/60' : 'bg-foreground/20'
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+
+      {/* Floating AI Avatar - always visible */}
+      <FloatingAIAvatar
+        mood={avatarMood}
+        onQuickTap={() => setIsVisible(prev => !prev)}
+        onLongPress={onOpenAssistant}
+      />
+    </div>
   );
 };
