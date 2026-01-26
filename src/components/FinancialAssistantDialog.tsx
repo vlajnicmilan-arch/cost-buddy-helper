@@ -10,6 +10,8 @@ import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { hr } from 'date-fns/locale';
 
 interface FinancialAssistantDialogProps {
   expenses: Expense[];
@@ -34,9 +36,11 @@ export const FinancialAssistantDialog = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const { formatAmount } = useCurrency();
 
-  // Build financial context from props
+  // Build financial context from props with historical data
   const financialContext = useMemo(() => {
-    // Category breakdown
+    const now = new Date();
+    
+    // Category breakdown for current month
     const categoryTotals: Record<string, number> = {};
     expenses.forEach(e => {
       if (e.type === 'expense') {
@@ -64,6 +68,100 @@ export const FinancialAssistantDialog = ({
       ? budgets.map(b => `- ${b.name}: ${formatAmount(b.spent || 0)} / ${formatAmount(b.total_amount)}`).join('\n')
       : 'Nema aktivnih budžeta';
 
+    // === HISTORICAL TREND ANALYSIS (last 6 months) ===
+    const monthlyData: Array<{
+      month: string;
+      income: number;
+      expenses: number;
+      balance: number;
+      topCategories: Array<{ category: string; amount: number }>;
+    }> = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = subMonths(now, i);
+      const monthStart = startOfMonth(monthDate);
+      const monthEnd = endOfMonth(monthDate);
+      const monthName = format(monthDate, 'LLLL yyyy', { locale: hr });
+
+      const monthExpenses = expenses.filter(e => 
+        isWithinInterval(e.date, { start: monthStart, end: monthEnd })
+      );
+
+      const monthIncome = monthExpenses
+        .filter(e => e.type === 'income')
+        .reduce((sum, e) => sum + e.amount, 0);
+      
+      const monthExpenseTotal = monthExpenses
+        .filter(e => e.type === 'expense')
+        .reduce((sum, e) => sum + e.amount, 0);
+
+      // Top categories for this month
+      const monthCategoryTotals: Record<string, number> = {};
+      monthExpenses
+        .filter(e => e.type === 'expense')
+        .forEach(e => {
+          monthCategoryTotals[e.category] = (monthCategoryTotals[e.category] || 0) + e.amount;
+        });
+
+      const topCategories = Object.entries(monthCategoryTotals)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([category, amount]) => ({ category, amount }));
+
+      monthlyData.push({
+        month: monthName,
+        income: monthIncome,
+        expenses: monthExpenseTotal,
+        balance: monthIncome - monthExpenseTotal,
+        topCategories,
+      });
+    }
+
+    // Format historical trends as string
+    const historicalTrends = monthlyData.map(m => {
+      const topCatsStr = m.topCategories.length > 0
+        ? m.topCategories.map(c => `${c.category}: ${formatAmount(c.amount)}`).join(', ')
+        : 'Nema podataka';
+      return `${m.month}:
+  - Prihodi: ${formatAmount(m.income)}
+  - Rashodi: ${formatAmount(m.expenses)}
+  - Bilanca: ${m.balance >= 0 ? '+' : ''}${formatAmount(m.balance)}
+  - Top kategorije: ${topCatsStr}`;
+    }).join('\n\n');
+
+    // Calculate trend analysis
+    const avgMonthlyExpense = monthlyData.reduce((sum, m) => sum + m.expenses, 0) / monthlyData.length;
+    const avgMonthlyIncome = monthlyData.reduce((sum, m) => sum + m.income, 0) / monthlyData.length;
+    
+    const currentMonthData = monthlyData[monthlyData.length - 1];
+    const previousMonthData = monthlyData[monthlyData.length - 2];
+    
+    const expenseChange = previousMonthData && previousMonthData.expenses > 0
+      ? ((currentMonthData.expenses - previousMonthData.expenses) / previousMonthData.expenses * 100).toFixed(1)
+      : null;
+    
+    const incomeChange = previousMonthData && previousMonthData.income > 0
+      ? ((currentMonthData.income - previousMonthData.income) / previousMonthData.income * 100).toFixed(1)
+      : null;
+
+    // Find categories with biggest increase
+    const categoryTrends: Record<string, number[]> = {};
+    monthlyData.forEach((m, monthIndex) => {
+      m.topCategories.forEach(c => {
+        if (!categoryTrends[c.category]) {
+          categoryTrends[c.category] = new Array(6).fill(0);
+        }
+        categoryTrends[c.category][monthIndex] = c.amount;
+      });
+    });
+
+    const trendAnalysis = `
+ANALIZA TRENDOVA:
+- Prosječni mjesečni rashodi (6 mj.): ${formatAmount(avgMonthlyExpense)}
+- Prosječni mjesečni prihodi (6 mj.): ${formatAmount(avgMonthlyIncome)}
+${expenseChange !== null ? `- Promjena rashoda u odnosu na prošli mjesec: ${Number(expenseChange) > 0 ? '+' : ''}${expenseChange}%` : ''}
+${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Number(incomeChange) > 0 ? '+' : ''}${incomeChange}%` : ''}`;
+
     return {
       balance: formatAmount(balance),
       totalIncome: formatAmount(totalIncome),
@@ -73,6 +171,8 @@ export const FinancialAssistantDialog = ({
       paymentSources: paymentSourcesStr,
       recentTransactions: recentTx,
       budgets: budgetsStr,
+      historicalTrends,
+      trendAnalysis,
     };
   }, [expenses, totalIncome, totalExpenses, balance, paymentSources, budgets, formatAmount]);
 
@@ -105,7 +205,8 @@ export const FinancialAssistantDialog = ({
     'Kako mogu uštedjeti više novca?',
     'Koja kategorija troši najviše?',
     'Analiza mojih financija',
-    'Savjeti za budžetiranje',
+    'Kakvi su moji trendovi potrošnje?',
+    'Usporedi ovaj mjesec s prošlim',
   ];
 
   return (

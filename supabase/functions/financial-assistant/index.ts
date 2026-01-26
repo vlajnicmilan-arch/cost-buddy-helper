@@ -18,8 +18,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build a comprehensive system prompt with financial context
-    const systemPrompt = `Ti si financijski asistent u aplikaciji V&M Balance. Pomaži korisniku upravljati osobnim financijama na temelju njihovih podataka.
+    // Build a comprehensive system prompt with financial context including historical data
+    const systemPrompt = `Ti si financijski asistent u aplikaciji V&M Balance. Pomaži korisniku upravljati osobnim financijama na temelju njihovih podataka, uključujući analizu trendova kroz vrijeme.
 
 KONTEKST KORISNIKOVIH FINANCIJA:
 ${financialContext ? `
@@ -28,7 +28,7 @@ ${financialContext ? `
 - Ukupni rashodi ovaj mjesec: ${financialContext.totalExpenses}
 - Broj transakcija: ${financialContext.transactionCount}
 
-RASPODJELA TROŠKOVA PO KATEGORIJAMA:
+RASPODJELA TROŠKOVA PO KATEGORIJAMA (ovaj mjesec):
 ${financialContext.categoryBreakdown || 'Nema podataka o kategorijama'}
 
 IZVORI PLAĆANJA:
@@ -39,6 +39,11 @@ ${financialContext.recentTransactions || 'Nema nedavnih transakcija'}
 
 BUDŽETI:
 ${financialContext.budgets || 'Nema aktivnih budžeta'}
+
+POVIJEST PO MJESECIMA (zadnjih 6 mjeseci):
+${financialContext.historicalTrends || 'Nema povijesnih podataka'}
+
+${financialContext.trendAnalysis || ''}
 ` : 'Korisnik još nema podataka o financijama.'}
 
 PRAVILA:
@@ -49,7 +54,10 @@ PRAVILA:
 5. Predloži načine za poboljšanje financijske situacije
 6. Budi prijateljski i poticajan, ali i realan
 7. Ako korisnik pita nešto što ne možeš saznati iz podataka, reci to iskreno
-8. Formatiraj odgovore s markdown formatiranjem za bolju čitljivost`;
+8. Formatiraj odgovore s markdown formatiranjem za bolju čitljivost
+9. Koristi povijesne podatke za identifikaciju trendova - npr. porast/pad potrošnje, sezonski obrasci
+10. Usporedi trenutni mjesec s prethodnim mjesecima i prosjecima
+11. Ako primijetiš zabrinjavajući trend (npr. stalni rast troškova), upozori korisnika`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
