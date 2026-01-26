@@ -7,7 +7,8 @@ const corsHeaders = {
 
 interface NotifyNoteAddedRequest {
   expense_id: string;
-  income_source_id: string;
+  income_source_id?: string;
+  project_id?: string;
   note: string;
 }
 
@@ -50,37 +51,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.log('Authenticated user:', user.id);
 
     // Parse request body
-    const { expense_id, income_source_id, note }: NotifyNoteAddedRequest = await req.json();
-    console.log('Received request:', { expense_id, income_source_id, note: note?.substring(0, 50) });
+    const { expense_id, income_source_id, project_id, note }: NotifyNoteAddedRequest = await req.json();
+    console.log('Received request:', { expense_id, income_source_id, project_id, note: note?.substring(0, 50) });
 
-    if (!expense_id || !income_source_id || !note) {
+    if (!expense_id || (!income_source_id && !project_id) || !note) {
       return new Response(
         JSON.stringify({ error: 'Nedostaju potrebni podaci' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get the income source to find the owner
-    const { data: source, error: sourceError } = await supabaseAdmin
-      .from('income_sources')
-      .select('id, name, icon, user_id')
-      .eq('id', income_source_id)
-      .single();
-
-    if (sourceError || !source) {
-      console.error('Error fetching income source:', sourceError);
-      return new Response(
-        JSON.stringify({ error: 'Projekt nije pronađen' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Don't notify if the user adding the note is the owner
-    if (source.user_id === user.id) {
-      console.log('User is owner, skipping notification');
-      return new Response(
-        JSON.stringify({ success: true, message: 'Vlasnik ne treba notifikaciju' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -109,38 +86,157 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const memberName = profile?.display_name || user.email?.split('@')[0] || 'Član';
     const truncatedNote = note.length > 100 ? note.substring(0, 100) + '...' : note;
 
-    // Create notification for the owner
-    const { error: notificationError } = await supabaseAdmin
-      .from('notifications')
-      .insert({
-        user_id: source.user_id,
-        type: 'note_added',
-        title: `Nova napomena na transakciji`,
-        message: `${memberName} je dodao napomenu uz transakciju "${expense.description}" u projektu "${source.name}": "${truncatedNote}"`,
+    // Handle PROJECT notes
+    if (project_id) {
+      // Get the project details
+      const { data: project, error: projectError } = await supabaseAdmin
+        .from('projects')
+        .select('id, name, icon, color, user_id')
+        .eq('id', project_id)
+        .single();
+
+      if (projectError || !project) {
+        console.error('Error fetching project:', projectError);
+        return new Response(
+          JSON.stringify({ error: 'Projekt nije pronađen' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get all project members to notify (except the current user)
+      const { data: members, error: membersError } = await supabaseAdmin
+        .from('project_members')
+        .select('user_id')
+        .eq('project_id', project_id)
+        .neq('user_id', user.id);
+
+      if (membersError) {
+        console.error('Error fetching project members:', membersError);
+        return new Response(
+          JSON.stringify({ error: 'Greška pri dohvaćanju članova' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Also notify the project owner if they're not the current user
+      const usersToNotify = new Set<string>();
+      
+      if (project.user_id !== user.id) {
+        usersToNotify.add(project.user_id);
+      }
+      
+      members?.forEach(m => usersToNotify.add(m.user_id));
+
+      if (usersToNotify.size === 0) {
+        console.log('No users to notify (current user is the only member/owner)');
+        return new Response(
+          JSON.stringify({ success: true, message: 'Nema korisnika za obavijestiti' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Create notifications for all relevant users
+      const notifications = Array.from(usersToNotify).map(userId => ({
+        user_id: userId,
+        type: 'project_note_added',
+        title: `Novi komentar u projektu "${project.name}"`,
+        message: `${memberName} je komentirao transakciju "${expense.description}": "${truncatedNote}"`,
         data: {
           expense_id: expense.id,
-          income_source_id: source.id,
-          income_source_name: source.name,
-          income_source_icon: source.icon,
+          project_id: project.id,
+          project_name: project.name,
+          project_icon: project.icon,
+          project_color: project.color,
           member_name: memberName,
           note: note,
           description: expense.description
         }
-      });
+      }));
 
-    if (notificationError) {
-      console.error('Error creating notification:', notificationError);
+      const { error: notificationError } = await supabaseAdmin
+        .from('notifications')
+        .insert(notifications);
+
+      if (notificationError) {
+        console.error('Error creating notifications:', notificationError);
+        return new Response(
+          JSON.stringify({ error: 'Greška pri slanju obavijesti' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Project note notifications sent to ${usersToNotify.size} user(s) from ${memberName}`);
+
       return new Response(
-        JSON.stringify({ error: 'Greška pri slanju obavijesti' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, message: `Obavijesti poslane (${usersToNotify.size})` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Note notification sent to owner ${source.user_id} from ${memberName}`);
+    // Handle INCOME SOURCE notes (original logic)
+    if (income_source_id) {
+      // Get the income source to find the owner
+      const { data: source, error: sourceError } = await supabaseAdmin
+        .from('income_sources')
+        .select('id, name, icon, user_id')
+        .eq('id', income_source_id)
+        .single();
+
+      if (sourceError || !source) {
+        console.error('Error fetching income source:', sourceError);
+        return new Response(
+          JSON.stringify({ error: 'Izvor prihoda nije pronađen' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Don't notify if the user adding the note is the owner
+      if (source.user_id === user.id) {
+        console.log('User is owner, skipping notification');
+        return new Response(
+          JSON.stringify({ success: true, message: 'Vlasnik ne treba notifikaciju' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Create notification for the owner
+      const { error: notificationError } = await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: source.user_id,
+          type: 'note_added',
+          title: `Nova napomena na transakciji`,
+          message: `${memberName} je dodao napomenu uz transakciju "${expense.description}" u projektu "${source.name}": "${truncatedNote}"`,
+          data: {
+            expense_id: expense.id,
+            income_source_id: source.id,
+            income_source_name: source.name,
+            income_source_icon: source.icon,
+            member_name: memberName,
+            note: note,
+            description: expense.description
+          }
+        });
+
+      if (notificationError) {
+        console.error('Error creating notification:', notificationError);
+        return new Response(
+          JSON.stringify({ error: 'Greška pri slanju obavijesti' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Note notification sent to owner ${source.user_id} from ${memberName}`);
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Obavijest poslana vlasniku' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Obavijest poslana vlasniku' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Nedostaje project_id ili income_source_id' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {

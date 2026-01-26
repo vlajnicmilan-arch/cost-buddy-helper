@@ -15,12 +15,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { getCategoryInfo, CATEGORIES, Category, TransactionType } from '@/types/expense';
 import { ProjectMilestone, ProjectRole } from '@/types/project';
 import { useProjectPendingTransactions } from '@/hooks/useProjectPendingTransactions';
+import { TransactionNotesThread } from '@/components/TransactionNotesThread';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
-  Target, Trash2, Clock, Check, X, AlertCircle, User
+  Target, Trash2, Clock, Check, X, AlertCircle, User, MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -100,6 +101,10 @@ export const ProjectTransactionsTab = ({
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [updatingMilestone, setUpdatingMilestone] = useState<string | null>(null);
+  
+  // Transaction detail/notes dialog state
+  const [selectedExpense, setSelectedExpense] = useState<ProjectExpense | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   
   // Form state
   const [expenseType, setExpenseType] = useState<TransactionType>('expense');
@@ -431,6 +436,19 @@ export const ProjectTransactionsTab = ({
                   {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
                 </div>
 
+                {/* Comments button - visible to all members */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary shrink-0"
+                  onClick={() => {
+                    setSelectedExpense(expense);
+                    setDetailDialogOpen(true);
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </Button>
+
                 {/* Delete button - visible on hover for managers */}
                 {isManager && (
                   <Button
@@ -599,6 +617,48 @@ export const ProjectTransactionsTab = ({
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transaction Notes/Comments Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              {t('transactions.comments', 'Komentari')}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedExpense && (
+            <div className="space-y-4">
+              {/* Transaction summary */}
+              <div className="p-3 rounded-lg bg-muted/50 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg shrink-0">
+                  {getCategoryInfo(selectedExpense.category as any).icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{selectedExpense.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(selectedExpense.date), 'd. MMM yyyy', { locale: hr })}
+                  </p>
+                </div>
+                <div className={cn(
+                  "font-mono font-medium shrink-0",
+                  selectedExpense.type === 'income' ? "text-income" : "text-expense"
+                )}>
+                  {selectedExpense.type === 'income' ? '+' : '-'}{formatAmount(selectedExpense.amount)}
+                </div>
+              </div>
+
+              {/* Notes thread */}
+              <TransactionNotesThread
+                expenseId={selectedExpense.id}
+                projectId={projectId}
+                onNoteAdded={onRefetch}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
