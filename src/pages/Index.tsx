@@ -835,8 +835,8 @@ const Index = () => {
         />
       )}
 
-      {/* AI Insight Bubble */}
-      {!isLocalMode && aiAssistantEnabled && (
+      {/* AI Insight Bubble - shown in both modes if enabled */}
+      {aiAssistantEnabled && (
         <AIInsightBubble
           expenses={expenses}
           totalIncome={totalIncome}
