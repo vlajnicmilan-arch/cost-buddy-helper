@@ -1,11 +1,128 @@
 import { motion } from 'framer-motion';
+import { AvatarMood } from './useAvatarMood';
 
 interface SVGAvatarProps {
   isBlinking: boolean;
+  mood?: AvatarMood;
   className?: string;
 }
 
-export const SVGAvatar = ({ isBlinking, className }: SVGAvatarProps) => {
+// Get eyebrow paths based on mood
+const getEyebrowPaths = (mood: AvatarMood) => {
+  switch (mood) {
+    case 'happy':
+      // Raised, curved upward (excited)
+      return {
+        left: "M 56 86 Q 68 80 80 86",
+        right: "M 120 86 Q 132 80 144 86",
+      };
+    case 'thinking':
+      // One raised, one neutral (curious)
+      return {
+        left: "M 58 90 Q 68 88 78 90",
+        right: "M 120 84 Q 132 78 144 86",
+      };
+    case 'worried':
+      // Angled inward (concerned)
+      return {
+        left: "M 56 84 Q 68 90 80 88",
+        right: "M 120 88 Q 132 90 144 84",
+      };
+    case 'proud':
+      // Confident, slightly raised
+      return {
+        left: "M 54 84 Q 68 80 82 84",
+        right: "M 118 84 Q 132 80 146 84",
+      };
+    default: // neutral
+      return {
+        left: "M 58 88 Q 68 84 78 88",
+        right: "M 122 88 Q 132 84 142 88",
+      };
+  }
+};
+
+// Get mouth path based on mood
+const getMouthPath = (mood: AvatarMood) => {
+  switch (mood) {
+    case 'happy':
+      // Big smile with open mouth
+      return {
+        path: "M 80 138 Q 100 160 120 138",
+        fill: "#4a8080",
+        strokeWidth: 0,
+      };
+    case 'thinking':
+      // Slightly pursed, sideways
+      return {
+        path: "M 90 145 Q 100 143 115 148",
+        fill: "none",
+        strokeWidth: 3,
+      };
+    case 'worried':
+      // Slight frown
+      return {
+        path: "M 85 150 Q 100 142 115 150",
+        fill: "none",
+        strokeWidth: 3,
+      };
+    case 'proud':
+      // Confident smile
+      return {
+        path: "M 82 140 Q 100 158 118 140",
+        fill: "none",
+        strokeWidth: 3.5,
+      };
+    default: // neutral
+      return {
+        path: "M 85 140 Q 100 155 115 140",
+        fill: "none",
+        strokeWidth: 3,
+      };
+  }
+};
+
+// Get eye expression based on mood
+const getEyeExpression = (mood: AvatarMood) => {
+  switch (mood) {
+    case 'happy':
+      // Slightly squinted (happy eyes)
+      return { scaleY: 0.9, translateY: 2 };
+    case 'thinking':
+      // Looking up/side
+      return { scaleY: 1, translateY: 0, pupilOffset: { x: 3, y: -3 } };
+    case 'worried':
+      // Slightly wider
+      return { scaleY: 1.05, translateY: 0 };
+    case 'proud':
+      // Normal but confident
+      return { scaleY: 0.95, translateY: 1 };
+    default:
+      return { scaleY: 1, translateY: 0 };
+  }
+};
+
+// Get cheek intensity based on mood
+const getCheekOpacity = (mood: AvatarMood) => {
+  switch (mood) {
+    case 'happy':
+      return 1;
+    case 'proud':
+      return 0.8;
+    case 'worried':
+      return 0.4;
+    default:
+      return 0.6;
+  }
+};
+
+export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatarProps) => {
+  const eyebrows = getEyebrowPaths(mood);
+  const mouth = getMouthPath(mood);
+  const eyeExpr = getEyeExpression(mood);
+  const cheekOpacity = getCheekOpacity(mood);
+  const pupilOffset = eyeExpr.pupilOffset || { x: 0, y: 0 };
+
   return (
     <svg
       viewBox="0 0 200 240"
@@ -112,24 +229,35 @@ export const SVGAvatar = ({ isBlinking, className }: SVGAvatarProps) => {
         />
       </motion.g>
       
-      {/* Eyebrows */}
-      <path
-        d="M 58 88 Q 68 84 78 88"
+      {/* Eyebrows - animated based on mood */}
+      <motion.path
+        d={eyebrows.left}
         fill="none"
         stroke="#4a9a9a"
-        strokeWidth="2"
+        strokeWidth="2.5"
         strokeLinecap="round"
+        animate={{ d: eyebrows.left }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
       />
-      <path
-        d="M 122 88 Q 132 84 142 88"
+      <motion.path
+        d={eyebrows.right}
         fill="none"
         stroke="#4a9a9a"
-        strokeWidth="2"
+        strokeWidth="2.5"
         strokeLinecap="round"
+        animate={{ d: eyebrows.right }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
       />
       
       {/* Left Eye */}
-      <g>
+      <motion.g
+        animate={{
+          scaleY: eyeExpr.scaleY,
+          translateY: eyeExpr.translateY,
+        }}
+        transition={{ duration: 0.3 }}
+        style={{ transformOrigin: '68px 110px' }}
+      >
         {/* Eye white/base */}
         <ellipse
           cx="68"
@@ -140,31 +268,37 @@ export const SVGAvatar = ({ isBlinking, className }: SVGAvatarProps) => {
         />
         
         {/* Iris ring */}
-        <ellipse
-          cx="68"
-          cy="112"
+        <motion.ellipse
+          cx={68 + pupilOffset.x}
+          cy={112 + pupilOffset.y}
           rx="14"
           ry="16"
           fill="url(#eyeRingGradient)"
+          animate={{ cx: 68 + pupilOffset.x, cy: 112 + pupilOffset.y }}
+          transition={{ duration: 0.3 }}
         />
         
         {/* Pupil */}
-        <ellipse
-          cx="68"
-          cy="112"
+        <motion.ellipse
+          cx={68 + pupilOffset.x}
+          cy={112 + pupilOffset.y}
           rx="10"
           ry="12"
           fill="url(#eyeGradient)"
+          animate={{ cx: 68 + pupilOffset.x, cy: 112 + pupilOffset.y }}
+          transition={{ duration: 0.3 }}
         />
         
         {/* Eye highlight */}
-        <ellipse
-          cx="73"
-          cy="106"
+        <motion.ellipse
+          cx={73 + pupilOffset.x}
+          cy={106 + pupilOffset.y}
           rx="4"
           ry="5"
           fill="white"
           opacity="0.95"
+          animate={{ cx: 73 + pupilOffset.x, cy: 106 + pupilOffset.y }}
+          transition={{ duration: 0.3 }}
         />
         
         {/* Eyelid (blink) */}
@@ -191,10 +325,17 @@ export const SVGAvatar = ({ isBlinking, className }: SVGAvatarProps) => {
           animate={{ opacity: isBlinking ? 1 : 0 }}
           transition={{ duration: 0.08 }}
         />
-      </g>
+      </motion.g>
       
       {/* Right Eye */}
-      <g>
+      <motion.g
+        animate={{
+          scaleY: eyeExpr.scaleY,
+          translateY: eyeExpr.translateY,
+        }}
+        transition={{ duration: 0.3 }}
+        style={{ transformOrigin: '132px 110px' }}
+      >
         {/* Eye white/base */}
         <ellipse
           cx="132"
@@ -205,31 +346,37 @@ export const SVGAvatar = ({ isBlinking, className }: SVGAvatarProps) => {
         />
         
         {/* Iris ring */}
-        <ellipse
-          cx="132"
-          cy="112"
+        <motion.ellipse
+          cx={132 + pupilOffset.x}
+          cy={112 + pupilOffset.y}
           rx="14"
           ry="16"
           fill="url(#eyeRingGradient)"
+          animate={{ cx: 132 + pupilOffset.x, cy: 112 + pupilOffset.y }}
+          transition={{ duration: 0.3 }}
         />
         
         {/* Pupil */}
-        <ellipse
-          cx="132"
-          cy="112"
+        <motion.ellipse
+          cx={132 + pupilOffset.x}
+          cy={112 + pupilOffset.y}
           rx="10"
           ry="12"
           fill="url(#eyeGradient)"
+          animate={{ cx: 132 + pupilOffset.x, cy: 112 + pupilOffset.y }}
+          transition={{ duration: 0.3 }}
         />
         
         {/* Eye highlight */}
-        <ellipse
-          cx="137"
-          cy="106"
+        <motion.ellipse
+          cx={137 + pupilOffset.x}
+          cy={106 + pupilOffset.y}
           rx="4"
           ry="5"
           fill="white"
           opacity="0.95"
+          animate={{ cx: 137 + pupilOffset.x, cy: 106 + pupilOffset.y }}
+          transition={{ duration: 0.3 }}
         />
         
         {/* Eyelid (blink) */}
@@ -256,32 +403,52 @@ export const SVGAvatar = ({ isBlinking, className }: SVGAvatarProps) => {
           animate={{ opacity: isBlinking ? 1 : 0 }}
           transition={{ duration: 0.08 }}
         />
-      </g>
+      </motion.g>
       
-      {/* Cheeks */}
-      <ellipse
+      {/* Cheeks - animated opacity based on mood */}
+      <motion.ellipse
         cx="45"
         cy="125"
         rx="12"
         ry="8"
         fill="url(#cheekGradient)"
+        animate={{ opacity: cheekOpacity }}
+        transition={{ duration: 0.3 }}
       />
-      <ellipse
+      <motion.ellipse
         cx="155"
         cy="125"
         rx="12"
         ry="8"
         fill="url(#cheekGradient)"
+        animate={{ opacity: cheekOpacity }}
+        transition={{ duration: 0.3 }}
       />
       
-      {/* Smile */}
-      <path
-        d="M 85 140 Q 100 155 115 140"
-        fill="none"
-        stroke="#5a9090"
-        strokeWidth="3"
+      {/* Mouth - animated based on mood */}
+      <motion.path
+        d={mouth.path}
+        fill={mouth.fill}
+        stroke={mouth.fill === "none" ? "#5a9090" : "none"}
+        strokeWidth={mouth.strokeWidth}
         strokeLinecap="round"
+        animate={{ d: mouth.path }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
       />
+      
+      {/* Happy mood: add teeth/tongue hint */}
+      {mood === 'happy' && (
+        <motion.ellipse
+          cx="100"
+          cy="148"
+          rx="8"
+          ry="4"
+          fill="#ff9090"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        />
+      )}
     </svg>
   );
 };
