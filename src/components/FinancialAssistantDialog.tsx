@@ -52,7 +52,7 @@ export const FinancialAssistantDialog = ({
     }
   };
   const [input, setInput] = useState('');
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { formatAmount } = useCurrency();
 
@@ -202,8 +202,13 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        setTimeout(() => {
+          viewport.scrollTop = viewport.scrollHeight;
+        }, 10);
+      }
     }
   }, [messages]);
 
@@ -286,7 +291,7 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           {messages.length === 0 ? (
             <div className="space-y-4">
               <div className="text-center py-4">
