@@ -7,6 +7,7 @@ import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AIInsightBubbleProps {
   expenses: Expense[];
@@ -35,6 +36,7 @@ export const AIInsightBubble = ({
 }: AIInsightBubbleProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const isMobile = useIsMobile();
   const [isVisible, setIsVisible] = useState(true);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
@@ -223,8 +225,13 @@ export const AIInsightBubble = ({
           transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           className="fixed top-20 right-3 sm:right-4 z-40 max-w-[280px] sm:max-w-sm"
         >
-          {/* Speech bubble pointer */}
-          <div className="absolute -top-2 right-8 w-4 h-4 rotate-45 bg-card border-l border-t border-border" />
+          {/* Speech bubble pointer - positioned to point at AI button */}
+          <div 
+            className={cn(
+              "absolute -top-2 w-4 h-4 rotate-45 bg-card border-l border-t border-border",
+              isMobile ? "right-[72px]" : "right-[100px]"
+            )} 
+          />
           
           <motion.div
             onClick={handleClick}
