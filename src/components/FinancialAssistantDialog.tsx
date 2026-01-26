@@ -2,8 +2,9 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, Loader2, Trash2, Sparkles } from 'lucide-react';
+import { Bot, Send, Loader2, Trash2, Sparkles, FileText, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react';
 import { useFinancialAssistant, ChatMessage } from '@/hooks/useFinancialAssistant';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Expense } from '@/types/expense';
@@ -201,12 +202,37 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
     setInput('');
   };
 
+  const generateMonthlyReport = () => {
+    const reportPrompt = `Generiraj detaljan mjesečni financijski izvještaj za ovaj mjesec. Izvještaj treba uključivati:
+
+1. **📊 SAŽETAK MJESECA**
+   - Ukupni prihodi i rashodi
+   - Neto bilanca (prihodi - rashodi)
+   - Usporedba s prošlim mjesecom
+
+2. **📈 ANALIZA POTROŠNJE**
+   - Top 3 kategorije s najvećom potrošnjom
+   - Kategorije koje su porasle u odnosu na prošli mjesec
+   - Kategorije gdje je došlo do uštede
+
+3. **💡 PREPORUKE ZA UŠTEDU**
+   - 3-5 konkretnih savjeta za uštedu temeljenih na mojim podacima
+   - Područja gdje mogu smanjiti troškove
+   - Realistični ciljevi uštede za sljedeći mjesec
+
+4. **🎯 CILJEVI ZA SLJEDEĆI MJESEC**
+   - Predloženi budžet po kategorijama
+   - Konkretni koraci za poboljšanje financija
+
+Koristi moje stvarne podatke i budi što konkretniji!`;
+    
+    sendMessage(reportPrompt);
+  };
+
   const quickQuestions = [
     'Kako mogu uštedjeti više novca?',
     'Koja kategorija troši najviše?',
-    'Analiza mojih financija',
     'Kakvi su moji trendovi potrošnje?',
-    'Usporedi ovaj mjesec s prošlim',
   ];
 
   return (
@@ -242,21 +268,39 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="space-y-4">
-              <div className="text-center text-muted-foreground py-8">
+              <div className="text-center text-muted-foreground py-6">
                 <Bot className="w-12 h-12 mx-auto mb-4 text-primary/50" />
                 <p className="font-medium">Pozdrav! Ja sam tvoj financijski asistent.</p>
                 <p className="text-sm mt-2">
-                  Postavi mi pitanje o tvojim financijama ili odaberi jedno od brzih pitanja ispod.
+                  Postavi mi pitanje ili generiraj mjesečni izvještaj.
                 </p>
               </div>
+
+              {/* Monthly Report Button */}
+              <Button
+                onClick={generateMonthlyReport}
+                disabled={isLoading}
+                className="w-full gap-2 h-auto py-4 bg-gradient-to-r from-primary to-primary/80"
+              >
+                <FileText className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Generiraj mjesečni izvještaj</div>
+                  <div className="text-xs opacity-80">Analiza + preporuke za uštedu</div>
+                </div>
+              </Button>
+
+              <div className="text-xs text-muted-foreground text-center pt-2">
+                Ili postavi brzo pitanje:
+              </div>
+
               <div className="grid grid-cols-1 gap-2">
                 {quickQuestions.map((q, i) => (
                   <Button
                     key={i}
                     variant="outline"
-                    className="justify-start text-left h-auto py-3 px-4"
+                    size="sm"
+                    className="justify-start text-left h-auto py-2 px-3 text-sm"
                     onClick={() => {
-                      setInput(q);
                       sendMessage(q);
                     }}
                     disabled={isLoading}
