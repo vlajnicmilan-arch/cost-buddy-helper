@@ -217,18 +217,21 @@ export const AIInsightBubble = ({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          initial={{ opacity: 0, y: -20, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.9 }}
+          exit={{ opacity: 0, y: -20, scale: 0.9 }}
           transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-          className="fixed bottom-4 right-4 z-50 max-w-xs sm:max-w-sm"
+          className="fixed top-20 right-3 sm:right-4 z-40 max-w-[280px] sm:max-w-sm"
         >
+          {/* Speech bubble pointer */}
+          <div className="absolute -top-2 right-8 w-4 h-4 rotate-45 bg-card border-l border-t border-border" />
+          
           <motion.div
             onClick={handleClick}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              'relative p-4 rounded-2xl border shadow-lg cursor-pointer backdrop-blur-sm',
+              'relative p-3 sm:p-4 rounded-2xl border shadow-lg cursor-pointer backdrop-blur-sm bg-card',
               getBackgroundClass(currentInsight.type)
             )}
           >
@@ -243,9 +246,9 @@ export const AIInsightBubble = ({
             </Button>
 
             {/* Content */}
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2 sm:gap-3">
               <div className={cn(
-                'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+                'flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center',
                 getBackgroundClass(currentInsight.type)
               )}>
                 <span className={getIconClass(currentInsight.type)}>
@@ -261,12 +264,12 @@ export const AIInsightBubble = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -5 }}
                     transition={{ duration: 0.3 }}
-                    className="text-sm font-medium leading-relaxed"
+                    className="text-xs sm:text-sm font-medium leading-relaxed"
                   >
                     {currentInsight.message}
                   </motion.p>
                 </AnimatePresence>
-                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   {t('insights.tapForMore', 'Klikni za više savjeta')}
                 </p>
@@ -275,7 +278,7 @@ export const AIInsightBubble = ({
 
             {/* Progress dots */}
             {insights.length > 1 && (
-              <div className="flex justify-center gap-1 mt-3">
+              <div className="flex justify-center gap-1 mt-2 sm:mt-3">
                 {insights.map((_, index) => (
                   <div
                     key={index}
