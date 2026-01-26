@@ -179,8 +179,8 @@ const Index = () => {
 
   // Apply filters to dashboard expenses
   const filteredDashboardExpenses = useMemo(() => {
-    return applyFilters(expenses, dashboardFilters);
-  }, [expenses, dashboardFilters]);
+    return applyFilters(expenses, dashboardFilters, user?.id);
+  }, [expenses, dashboardFilters, user?.id]);
 
   // Initialize auto-backup for local mode
   useAutoBackup();
@@ -615,6 +615,7 @@ const Index = () => {
                   filters={dashboardFilters}
                   onFiltersChange={setDashboardFilters}
                   showCardFilter={allCards.length > 0}
+                  showScopeFilter={!isLocalMode}
                   cards={allCards}
                 />
 

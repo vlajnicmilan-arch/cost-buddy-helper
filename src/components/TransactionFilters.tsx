@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X, CalendarIcon, Filter, Users, CreditCard } from 'lucide-react';
+import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,8 @@ export interface MemberOption {
   displayName: string;
 }
 
+export type TransactionScope = 'all' | 'personal' | 'project';
+
 export interface FilterState {
   searchTerm: string;
   dateRange: DateRange | undefined;
@@ -23,6 +25,7 @@ export interface FilterState {
   maxAmount: number | undefined;
   memberId: string | undefined;
   cardId: string | undefined;
+  scope: TransactionScope;
 }
 
 interface TransactionFiltersProps {
@@ -31,6 +34,7 @@ interface TransactionFiltersProps {
   showAmountFilter?: boolean;
   showMemberFilter?: boolean;
   showCardFilter?: boolean;
+  showScopeFilter?: boolean;
   members?: MemberOption[];
   cards?: PaymentSourceCard[];
   className?: string;
@@ -66,6 +70,7 @@ export const TransactionFilters = ({
   showAmountFilter = true,
   showMemberFilter = false,
   showCardFilter = false,
+  showScopeFilter = false,
   members = [],
   cards = [],
   className,
@@ -78,7 +83,8 @@ export const TransactionFilters = ({
     filters.minAmount !== undefined ||
     filters.maxAmount !== undefined ||
     filters.memberId !== undefined ||
-    filters.cardId !== undefined;
+    filters.cardId !== undefined ||
+    filters.scope !== 'all';
 
   const clearFilters = () => {
     onFiltersChange({
@@ -88,6 +94,7 @@ export const TransactionFilters = ({
       maxAmount: undefined,
       memberId: undefined,
       cardId: undefined,
+      scope: 'all',
     });
   };
 
@@ -117,7 +124,7 @@ export const TransactionFilters = ({
       </div>
 
       {/* Filter Toggle & Quick Filters */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button
           variant="outline"
           size="sm"
@@ -134,6 +141,47 @@ export const TransactionFilters = ({
           )}
         </Button>
 
+        {/* Scope Filter Buttons */}
+        {showScopeFilter && (
+          <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-7 text-xs px-2.5 rounded-md',
+                filters.scope === 'all' && 'bg-background shadow-sm'
+              )}
+              onClick={() => updateFilter('scope', 'all')}
+            >
+              Sve
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-7 text-xs px-2.5 rounded-md gap-1',
+                filters.scope === 'personal' && 'bg-background shadow-sm'
+              )}
+              onClick={() => updateFilter('scope', 'personal')}
+            >
+              <User className="w-3 h-3" />
+              Osobno
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-7 text-xs px-2.5 rounded-md gap-1',
+                filters.scope === 'project' && 'bg-background shadow-sm'
+              )}
+              onClick={() => updateFilter('scope', 'project')}
+            >
+              <FolderKanban className="w-3 h-3" />
+              Projekti
+            </Button>
+          </div>
+        )}
+
         {/* Preset Date Buttons */}
         {presetRanges.map((preset) => (
           <Button
@@ -141,7 +189,7 @@ export const TransactionFilters = ({
             variant="ghost"
             size="sm"
             className={cn(
-              'h-8 text-xs px-2',
+              'h-8 text-xs px-2 hidden sm:flex',
               filters.dateRange?.from?.getTime() === preset.getValue().from.getTime() &&
                 'bg-primary/10 text-primary'
             )}
@@ -284,11 +332,25 @@ export const TransactionFilters = ({
 };
 
 // Helper function to apply filters to expenses
-export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null }>(
+export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null }>(
   items: T[],
-  filters: FilterState
+  filters: FilterState,
+  currentUserId?: string
 ): T[] => {
   return items.filter((item) => {
+    // Scope filter
+    if (filters.scope !== 'all') {
+      if (filters.scope === 'personal') {
+        // Personal = no project_id AND (user owns it or no project association)
+        if (item.project_id) return false;
+      } else if (filters.scope === 'project') {
+        // Project = has project_id AND user is owner
+        if (!item.project_id) return false;
+        // Only show project transactions that belong to the current user
+        if (currentUserId && item.user_id !== currentUserId) return false;
+      }
+    }
+
     // Search filter
     if (filters.searchTerm) {
       const search = filters.searchTerm.toLowerCase();
@@ -347,4 +409,5 @@ export const defaultFilters: FilterState = {
   maxAmount: undefined,
   memberId: undefined,
   cardId: undefined,
+  scope: 'all',
 };
