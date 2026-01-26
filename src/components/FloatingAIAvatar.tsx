@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import aiAvatarImage from '@/assets/ai-avatar-transparent.png';
+import aiAvatarImage from '@/assets/ai-avatar.png';
 
 export type AvatarMood = 'happy' | 'thinking' | 'worried' | 'proud' | 'neutral';
 
@@ -211,9 +211,11 @@ export const FloatingAIAvatar = ({
           transition={{
             duration: 3,
             repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
+          ease: "easeInOut",
+        }}
+      >
+        {/* Animated Halo */}
+        <AnimatedHalo />
           
           {/* Avatar image */}
           <motion.div
