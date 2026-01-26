@@ -45,7 +45,7 @@ const JoinProject = () => {
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke('accept-project-invitation', {
-        body: { token }
+        body: { token, type: 'project' }
       });
 
       if (fnError) {
@@ -56,7 +56,8 @@ const JoinProject = () => {
         setError(data.error);
       } else if (data?.success) {
         setSuccess(true);
-        setProjectData(data.project);
+        // Use 'target' from unified response, fallback to 'project' for backward compat
+        setProjectData(data.target || data.project);
         
         // Redirect after short delay
         setTimeout(() => {

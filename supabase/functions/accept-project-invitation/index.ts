@@ -5,8 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface AcceptProjectInvitationRequest {
+interface AcceptInvitationRequest {
   token: string;
+  type?: 'project' | 'budget'; // defaults to 'project' for backward compatibility
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -20,7 +21,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    console.log('Accept project invitation - starting...');
+    console.log('Accept invitation - starting...');
 
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
@@ -49,7 +50,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.log('User verified:', user.id);
 
     // Parse request body
-    const { token }: AcceptProjectInvitationRequest = await req.json();
+    const { token, type = 'project' }: AcceptInvitationRequest = await req.json();
     if (!token) {
       console.log('No token provided');
       return new Response(
@@ -58,65 +59,71 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log('Token received:', token);
+    // Validate token format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(token)) {
+      console.log('Invalid token format');
+      return new Response(
+        JSON.stringify({ error: 'Neispravan format tokena' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Token received:', token, 'type:', type);
 
     // Use service role client for database operations
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // Find the invitation
-    const { data: invitation, error: inviteError } = await supabaseAdmin
-      .from('project_invitations')
-      .select('*, projects(id, name, icon, color, user_id)')
-      .eq('token', token)
-      .single();
+    // Use atomic function to consume token - this prevents race conditions
+    // The function marks the token as used in one atomic operation
+    const { data: consumedToken, error: consumeError } = await supabaseAdmin
+      .rpc('consume_invitation_token', {
+        _token: token,
+        _invitation_type: type
+      });
 
-    if (inviteError) {
-      console.log('Invitation query error:', inviteError.message);
+    if (consumeError) {
+      console.error('Error consuming token:', consumeError);
       return new Response(
-        JSON.stringify({ error: 'Pozivnica nije pronađena ili je istekla' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Greška pri validaciji tokena' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!invitation) {
-      console.log('Invitation not found');
+    // Check if token was valid and consumed
+    if (!consumedToken || consumedToken.length === 0) {
+      console.log('Token not found, expired, or already used');
       return new Response(
-        JSON.stringify({ error: 'Pozivnica nije pronađena' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Invitation found:', invitation.id, 'status:', invitation.status);
-
-    // Check if invitation is still valid
-    if (new Date(invitation.expires_at) < new Date()) {
-      console.log('Invitation expired');
-      return new Response(
-        JSON.stringify({ error: 'Pozivnica je istekla' }),
+        JSON.stringify({ error: 'Pozivnica nije pronađena, istekla je ili je već iskorištena' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (invitation.status !== 'pending') {
-      console.log('Invitation already used, status:', invitation.status);
-      return new Response(
-        JSON.stringify({ error: 'Pozivnica je već iskorištena' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const invitation = consumedToken[0];
+    console.log('Token consumed successfully, invitation:', invitation.invitation_id);
+
+    const memberTable = type === 'project' ? 'project_members' : 'budget_members';
+    const idColumn = type === 'project' ? 'project_id' : 'budget_id';
+    const invitationTable = type === 'project' ? 'project_invitations' : 'budget_invitations';
 
     // Check if user is already a member
     const { data: existingMember } = await supabaseAdmin
-      .from('project_members')
+      .from(memberTable)
       .select('id')
-      .eq('project_id', invitation.project_id)
+      .eq(idColumn, invitation.target_id)
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (existingMember) {
       console.log('User is already a member');
+      // Mark as accepted since token was already consumed
+      await supabaseAdmin
+        .from(invitationTable)
+        .update({ status: 'accepted' })
+        .eq('id', invitation.invitation_id);
+        
       return new Response(
-        JSON.stringify({ error: 'Već ste član ovog projekta' }),
+        JSON.stringify({ error: type === 'project' ? 'Već ste član ovog projekta' : 'Već ste član ovog budžeta' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -131,48 +138,61 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const memberName = profile?.display_name || 'Nepoznato';
 
     // Add user as member
+    const memberData: Record<string, unknown> = {
+      [idColumn]: invitation.target_id,
+      user_id: user.id,
+      role: invitation.role,
+    };
+
+    // For project_members, add display_name
+    if (type === 'project') {
+      memberData.display_name = memberName;
+    }
+
     const { error: memberError } = await supabaseAdmin
-      .from('project_members')
-      .insert({
-        project_id: invitation.project_id,
-        user_id: user.id,
-        role: invitation.role,
-        display_name: memberName
-      });
+      .from(memberTable)
+      .insert(memberData);
 
     if (memberError) {
       console.error('Error adding member:', memberError);
       return new Response(
-        JSON.stringify({ error: 'Greška pri pridruživanju projektu: ' + memberError.message }),
+        JSON.stringify({ error: 'Greška pri pridruživanju: ' + memberError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log('Member added successfully');
 
-    // Update invitation status
+    // Update invitation status to accepted
     const { error: updateError } = await supabaseAdmin
-      .from('project_invitations')
+      .from(invitationTable)
       .update({ status: 'accepted' })
-      .eq('id', invitation.id);
+      .eq('id', invitation.invitation_id);
 
     if (updateError) {
       console.log('Error updating invitation status:', updateError.message);
     }
 
-    const project = invitation.projects as any;
+    // Get target details for response
+    const targetTable = type === 'project' ? 'projects' : 'budget_plans';
+    const { data: targetData } = await supabaseAdmin
+      .from(targetTable)
+      .select('id, name, icon, color, user_id')
+      .eq('id', invitation.target_id)
+      .single();
 
-    // Send notification to project owner
-    if (project?.user_id) {
+    // Send notification to owner/inviter
+    const ownerId = targetData?.user_id || invitation.invited_by;
+    if (ownerId && ownerId !== user.id) {
       const { error: notifyError } = await supabaseAdmin
         .from('notifications')
         .insert({
-          user_id: project.user_id,
-          type: 'member_joined_project',
-          title: 'Novi član projekta',
-          message: `${memberName} se pridružio/la projektu "${project.name}"`,
+          user_id: ownerId,
+          type: type === 'project' ? 'member_joined_project' : 'member_joined_budget',
+          title: type === 'project' ? 'Novi član projekta' : 'Novi član budžeta',
+          message: `${memberName} se pridružio/la ${type === 'project' ? 'projektu' : 'budžetu'} "${invitation.target_name}"`,
           data: {
-            project_id: invitation.project_id,
+            target_id: invitation.target_id,
             member_id: user.id,
             member_name: memberName
           }
@@ -183,24 +203,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log('Accept project invitation completed successfully');
+    console.log('Accept invitation completed successfully');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Uspješno ste se pridružili projektu',
-        project: {
-          id: project?.id,
-          name: project?.name,
-          icon: project?.icon,
-          color: project?.color
+        message: type === 'project' ? 'Uspješno ste se pridružili projektu' : 'Uspješno ste se pridružili budžetu',
+        target: {
+          id: targetData?.id,
+          name: targetData?.name || invitation.target_name,
+          icon: targetData?.icon,
+          color: targetData?.color
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error in accept-project-invitation:', errorMessage);
+    console.error('Error in accept-invitation:', errorMessage);
     return new Response(
       JSON.stringify({ error: 'Interna greška servera: ' + errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
