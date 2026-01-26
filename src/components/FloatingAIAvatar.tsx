@@ -214,8 +214,6 @@ export const FloatingAIAvatar = ({
           ease: "easeInOut",
         }}
       >
-        {/* Animated Halo */}
-        <AnimatedHalo />
           
           {/* Avatar image */}
           <motion.div
