@@ -14,7 +14,8 @@ export const setNotificationSoundEnabled = (enabled: boolean): void => {
 
 export const getPushNotificationsEnabled = (): boolean => {
   const stored = localStorage.getItem(PUSH_NOTIFICATIONS_ENABLED_KEY);
-  return stored === 'true';
+  // Default to true if not set
+  return stored === null ? true : stored === 'true';
 };
 
 export const setPushNotificationsEnabled = (enabled: boolean): void => {
@@ -42,7 +43,8 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 export const showBrowserNotification = (title: string, body: string): void => {
   if (!getPushNotificationsEnabled()) return;
   
-  if (Notification.permission === 'granted' && document.hidden) {
+  // Show notification even when app is active (removed document.hidden check)
+  if (Notification.permission === 'granted') {
     const notification = new Notification(title, {
       body,
       icon: '/logo-192.png',
