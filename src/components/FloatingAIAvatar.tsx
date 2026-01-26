@@ -182,10 +182,10 @@ export const FloatingAIAvatar = ({
       </AnimatePresence>
 
 
-      {/* Avatar container */}
+      {/* Avatar container - 72px * 1.2 = 86px */}
       <motion.button
         className={cn(
-          "relative w-[72px] h-[72px] rounded-full cursor-pointer select-none touch-none",
+          "relative w-[86px] h-[86px] rounded-full cursor-pointer select-none touch-none",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
         onMouseDown={handlePressStart}
@@ -200,22 +200,6 @@ export const FloatingAIAvatar = ({
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
         aria-label="AI Asistent"
       >
-        {/* Glow effect based on mood */}
-        <motion.div
-          className={cn(
-            "absolute inset-0 rounded-full bg-gradient-to-br blur-lg",
-            moodColors[mood]
-          )}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 0.8, 0.5],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
 
         {/* Avatar image with floating animation */}
         <motion.div
