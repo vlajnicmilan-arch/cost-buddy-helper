@@ -23,7 +23,7 @@ const moodColors: Record<AvatarMood, string> = {
   neutral: 'from-primary/20 to-primary/10',
 };
 
-// Blinking eyes component - subtle overlay that works with any avatar size
+// Blinking eyes component - adjusted for new avatar
 const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
   return (
     <>
@@ -31,11 +31,11 @@ const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
       <motion.div
         className="absolute rounded-full"
         style={{
-          width: '14%',
-          height: '6%',
-          top: '40%',
-          left: '26%',
-          backgroundColor: '#c8dede',
+          width: '12%',
+          height: '5%',
+          top: '42%',
+          left: '24%',
+          backgroundColor: '#d4eded',
         }}
         initial={{ scaleY: 0 }}
         animate={{ scaleY: isBlinking ? 1 : 0 }}
@@ -46,11 +46,11 @@ const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
       <motion.div
         className="absolute rounded-full"
         style={{
-          width: '14%',
-          height: '6%',
-          top: '40%',
-          right: '26%',
-          backgroundColor: '#c8dede',
+          width: '12%',
+          height: '5%',
+          top: '42%',
+          right: '24%',
+          backgroundColor: '#d4eded',
         }}
         initial={{ scaleY: 0 }}
         animate={{ scaleY: isBlinking ? 1 : 0 }}
@@ -58,6 +58,52 @@ const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
       />
     </>
   );
+};
+
+// Mood expression animations
+const getMoodAnimation = (mood: AvatarMood) => {
+  switch (mood) {
+    case 'happy':
+      return {
+        scale: [1, 1.05, 1],
+        rotate: [0, 2, -2, 0],
+      };
+    case 'thinking':
+      return {
+        rotate: [0, -8, 8, -5, 5, 0],
+        y: [0, -2, 0],
+      };
+    case 'worried':
+      return {
+        scale: [1, 0.95, 1],
+        x: [-1, 1, -1, 0],
+      };
+    case 'proud':
+      return {
+        scale: [1, 1.1, 1.05, 1.1, 1],
+        y: [0, -5, 0],
+      };
+    default:
+      return {
+        scale: 1,
+        rotate: 0,
+      };
+  }
+};
+
+const getMoodTransition = (mood: AvatarMood): { duration: number; repeat?: number; ease?: "easeInOut" | "easeOut" } => {
+  switch (mood) {
+    case 'happy':
+      return { duration: 0.6, repeat: 2, ease: "easeInOut" };
+    case 'thinking':
+      return { duration: 2, repeat: Infinity, ease: "easeInOut" };
+    case 'worried':
+      return { duration: 0.3, repeat: 3, ease: "easeInOut" };
+    case 'proud':
+      return { duration: 1.5, repeat: 1, ease: "easeOut" };
+    default:
+      return { duration: 0.3 };
+  }
 };
 
 // Hook for blinking animation
@@ -182,10 +228,10 @@ export const FloatingAIAvatar = ({
       </AnimatePresence>
 
 
-      {/* Avatar container - 86px, no background */}
+      {/* Avatar container - 112px (30% larger), no background */}
       <motion.button
         className={cn(
-          "relative w-[86px] h-[86px] cursor-pointer select-none touch-none bg-transparent",
+          "relative w-[112px] h-[112px] cursor-pointer select-none touch-none bg-transparent",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
         style={{ background: 'transparent' }}
@@ -215,18 +261,11 @@ export const FloatingAIAvatar = ({
         }}
       >
           
-          {/* Avatar image */}
+          {/* Avatar image with mood expressions */}
           <motion.div
             className="relative w-full h-full"
-            animate={{
-              rotate: mood === 'thinking' ? [0, -5, 5, 0] : 0,
-              scale: mood === 'proud' ? [1, 1.1, 1] : 1,
-            }}
-            transition={{
-              duration: mood === 'thinking' ? 2 : 0.5,
-              repeat: mood === 'thinking' ? Infinity : 0,
-              ease: "easeInOut",
-            }}
+            animate={getMoodAnimation(mood)}
+            transition={getMoodTransition(mood)}
           >
             <img
               src={aiAvatarImage}
