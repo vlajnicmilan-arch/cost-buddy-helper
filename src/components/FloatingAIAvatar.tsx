@@ -234,6 +234,10 @@ export const FloatingAIAvatar = ({
               src={aiAvatarImage}
               alt="AI Asistent"
               className="w-full h-full object-contain drop-shadow-md"
+              style={{ 
+                mixBlendMode: 'multiply',
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+              }}
             />
             
             {/* Blinking eyes overlay */}
