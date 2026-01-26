@@ -138,7 +138,7 @@ export const ProjectFullScreenView = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-background"
+            className="fixed inset-0 z-50 bg-background overflow-y-auto"
           >
             {/* Header */}
             <div className="sticky top-0 z-10 bg-background border-b">
