@@ -290,9 +290,9 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
           {messages.length === 0 ? (
             <div className="space-y-4">
               <div className="text-center py-4">
-                {/* Animated AI Avatar */}
+                {/* Animated AI Avatar - 20% larger (24 -> 28) */}
                 <motion.div
-                  className="relative w-24 h-24 mx-auto mb-4"
+                  className="relative w-28 h-28 mx-auto mb-4"
                   animate={{
                     y: [0, -8, 0],
                   }}
@@ -344,14 +344,15 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
                 <Button
                   onClick={generateMonthlyReport}
                   disabled={isLoading}
-                  className="w-full gap-2 h-auto py-4 bg-gradient-to-r from-primary to-primary/80"
+                  size="sm"
+                  className="w-full gap-2 h-auto py-2.5 bg-gradient-to-r from-primary to-primary/80"
                 >
-                <FileText className="w-5 h-5" />
-                <div className="text-left">
-                  <div className="font-semibold">Generiraj mjesečni izvještaj</div>
-                  <div className="text-xs opacity-80">Pregled stanja + savjeti za napredak</div>
-                </div>
-              </Button>
+                  <FileText className="w-4 h-4" />
+                  <div className="text-left">
+                    <div className="font-medium text-sm">Generiraj mjesečni izvještaj</div>
+                    <div className="text-xs opacity-80">Pregled stanja + savjeti</div>
+                  </div>
+                </Button>
               </motion.div>
 
               <motion.div
