@@ -99,11 +99,16 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     fetchExpenses();
   }, [fetchOwnedSources, fetchExpenses]);
 
-  // Filter expenses for dashboard display (exclude shared source transactions where user is not owner)
+  // Filter expenses for dashboard display (exclude shared source/project transactions where user is not owner)
   const dashboardExpenses = useMemo(() => {
-    if (isLocalMode) return expenses;
+    if (isLocalMode || !user) return expenses;
     
     return expenses.filter(expense => {
+      // Project transaction - only show if user is the owner (user_id matches)
+      if (expense.project_id) {
+        return expense.user_id === user.id;
+      }
+      
       // Personal transaction (no income source) - always show
       if (!expense.income_source_id) return true;
       
@@ -113,7 +118,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       // Transaction from shared source where user is member but not owner - hide from dashboard
       return false;
     });
-  }, [expenses, ownedSourceIds, isLocalMode]);
+  }, [expenses, ownedSourceIds, isLocalMode, user]);
 
   const addExpense = async (
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
