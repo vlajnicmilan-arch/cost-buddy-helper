@@ -27,6 +27,7 @@ import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/C
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
+import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
@@ -369,6 +370,15 @@ const Index = () => {
           <div className="flex flex-wrap items-center gap-2">
             <BulkEditDropdown expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
             <ReportsDialog expenses={expenses} />
+            {!isLocalMode && (
+              <FinancialAssistantDialog
+                expenses={expenses}
+                totalIncome={totalIncome}
+                totalExpenses={totalExpenses}
+                balance={balance}
+                paymentSources={customPaymentSources}
+              />
+            )}
             <AddExpenseDialog onAdd={addExpense} />
           </div>
         </header>
