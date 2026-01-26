@@ -23,7 +23,7 @@ const moodColors: Record<AvatarMood, string> = {
   neutral: 'from-primary/20 to-primary/10',
 };
 
-// Blinking eyes component - positioned for cute robot avatar
+// Blinking eyes component - natural human-like blink timing
 const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
   return (
     <>
@@ -43,7 +43,10 @@ const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
           scaleY: isBlinking ? 1 : 0,
           opacity: isBlinking ? 1 : 0
         }}
-        transition={{ duration: 0.08 }}
+        transition={{ 
+          duration: isBlinking ? 0.12 : 0.15,
+          ease: "easeInOut"
+        }}
       />
       
       {/* Right eye blink overlay - matches the right eye of the avatar */}
@@ -62,7 +65,10 @@ const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
           scaleY: isBlinking ? 1 : 0,
           opacity: isBlinking ? 1 : 0
         }}
-        transition={{ duration: 0.08 }}
+        transition={{ 
+          duration: isBlinking ? 0.12 : 0.15,
+          ease: "easeInOut"
+        }}
       />
     </>
   );
@@ -114,19 +120,21 @@ const getMoodTransition = (mood: AvatarMood): { duration: number; repeat?: numbe
   }
 };
 
-// Hook for blinking animation
+// Hook for blinking animation - natural human blink timing
 const useBlinking = () => {
   const [isBlinking, setIsBlinking] = useState(false);
 
   useEffect(() => {
     const scheduleBlink = () => {
-      const delay = 2000 + Math.random() * 3000;
+      // Humans blink every 3-5 seconds on average
+      const delay = 3000 + Math.random() * 2000;
       return setTimeout(() => {
         setIsBlinking(true);
+        // Human blink lasts about 300-400ms total
         setTimeout(() => {
           setIsBlinking(false);
           scheduleBlink();
-        }, 150);
+        }, 280);
       }, delay);
     };
 
