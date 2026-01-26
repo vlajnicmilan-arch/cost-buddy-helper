@@ -14,6 +14,7 @@ interface FinancialContext {
   paymentSources: string;
   recentTransactions: string;
   budgets: string;
+  projects: string;
   historicalTrends?: string;
   trendAnalysis?: string;
 }

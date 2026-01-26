@@ -16,13 +16,32 @@ import { hr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import aiAvatarImage from '@/assets/ai-avatar.png';
 
+interface BudgetInfo {
+  name: string;
+  total_amount: number;
+  spent?: number;
+  period_type?: string;
+  is_active?: boolean;
+  categories?: Array<{ category: string; limit_amount: number; spent?: number }>;
+}
+
+interface ProjectInfo {
+  name: string;
+  total_budget: number;
+  spent?: number;
+  status?: string;
+  description?: string | null;
+  milestones?: Array<{ name: string; budget: number; spent?: number; status?: string }>;
+}
+
 interface FinancialAssistantDialogProps {
   expenses: Expense[];
   totalIncome: number;
   totalExpenses: number;
   balance: number;
   paymentSources: CustomPaymentSource[];
-  budgets?: Array<{ name: string; total_amount: number; spent?: number }>;
+  budgets?: BudgetInfo[];
+  projects?: ProjectInfo[];
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
@@ -35,6 +54,7 @@ export const FinancialAssistantDialog = ({
   balance,
   paymentSources,
   budgets = [],
+  projects = [],
   open: controlledOpen,
   onOpenChange,
   hideTrigger = false,
@@ -83,10 +103,42 @@ export const FinancialAssistantDialog = ({
       .map(e => `- ${e.date.toLocaleDateString('hr-HR')}: ${e.description} (${e.type === 'income' ? '+' : '-'}${formatAmount(e.amount)})`)
       .join('\n') || 'Nema transakcija';
 
-    // Budgets
+    // Budgets - detailed info
     const budgetsStr = budgets.length > 0
-      ? budgets.map(b => `- ${b.name}: ${formatAmount(b.spent || 0)} / ${formatAmount(b.total_amount)}`).join('\n')
+      ? budgets.map(b => {
+          const percentage = b.total_amount > 0 ? Math.round(((b.spent || 0) / b.total_amount) * 100) : 0;
+          const status = b.is_active ? 'Aktivan' : 'Pauziran';
+          const period = b.period_type || 'mjesečni';
+          let categoryInfo = '';
+          if (b.categories && b.categories.length > 0) {
+            categoryInfo = '\n    Kategorije: ' + b.categories.map(c => {
+              const catSpent = c.spent || 0;
+              const catPercentage = c.limit_amount > 0 ? Math.round((catSpent / c.limit_amount) * 100) : 0;
+              return `${c.category} (${formatAmount(catSpent)}/${formatAmount(c.limit_amount)}, ${catPercentage}%)`;
+            }).join(', ');
+          }
+          return `- ${b.name} (${period}, ${status}): ${formatAmount(b.spent || 0)} / ${formatAmount(b.total_amount)} (${percentage}%)${categoryInfo}`;
+        }).join('\n')
       : 'Nema aktivnih budžeta';
+
+    // Projects - detailed info
+    const projectsStr = projects.length > 0
+      ? projects.map(p => {
+          const spent = p.spent || 0;
+          const percentage = p.total_budget > 0 ? Math.round((spent / p.total_budget) * 100) : 0;
+          const remaining = p.total_budget - spent;
+          const statusLabel = p.status === 'active' ? 'Aktivan' : p.status === 'completed' ? 'Završen' : p.status === 'paused' ? 'Pauziran' : p.status || 'Nacrt';
+          let milestoneInfo = '';
+          if (p.milestones && p.milestones.length > 0) {
+            milestoneInfo = '\n    Faze: ' + p.milestones.map(m => {
+              const mSpent = m.spent || 0;
+              const mStatus = m.status === 'completed' ? '✅' : m.status === 'in_progress' ? '🔄' : m.status === 'overdue' ? '⚠️' : '⏳';
+              return `${mStatus} ${m.name} (${formatAmount(mSpent)}/${formatAmount(m.budget)})`;
+            }).join(', ');
+          }
+          return `- ${p.name} (${statusLabel}): Potrošeno ${formatAmount(spent)} od ${formatAmount(p.total_budget)} (${percentage}%), preostalo ${formatAmount(remaining)}${p.description ? `\n    Opis: ${p.description}` : ''}${milestoneInfo}`;
+        }).join('\n')
+      : 'Nema aktivnih projekata';
 
     // === HISTORICAL TREND ANALYSIS (last 6 months) ===
     const monthlyData: Array<{
@@ -191,10 +243,11 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
       paymentSources: paymentSourcesStr,
       recentTransactions: recentTx,
       budgets: budgetsStr,
+      projects: projectsStr,
       historicalTrends,
       trendAnalysis,
     };
-  }, [expenses, totalIncome, totalExpenses, balance, paymentSources, budgets, formatAmount]);
+  }, [expenses, totalIncome, totalExpenses, balance, paymentSources, budgets, projects, formatAmount]);
 
   const { messages, isLoading, sendMessage, clearMessages } = useFinancialAssistant({
     financialContext,
