@@ -138,6 +138,11 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         // Update payment source balance for local mode
         await updateBalance(expense.payment_source, expense.amount, expense.type);
         
+        // Dispatch event for AI avatar reaction
+        window.dispatchEvent(new CustomEvent(expense.type === 'income' ? 'incomeAdded' : 'expenseAdded', {
+          detail: { amount: expense.amount }
+        }));
+        
         toast.success(expense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
       } else {
         if (!user) {
@@ -243,6 +248,11 @@ export const useExpenses = (options?: UseExpensesOptions) => {
 
         // Update payment source balance
         await updateBalance(expense.payment_source, expense.amount, expense.type);
+        
+        // Dispatch event for AI avatar reaction
+        window.dispatchEvent(new CustomEvent(expense.type === 'income' ? 'incomeAdded' : 'expenseAdded', {
+          detail: { amount: expense.amount }
+        }));
         
         if (isPendingMemberTransaction) {
           toast.success('Transakcija poslana vlasniku na odobrenje');
