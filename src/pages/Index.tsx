@@ -28,6 +28,7 @@ import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTrans
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
+import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import { InstallmentsPanel } from '@/components/installments';
 import { Expense, Category } from '@/types/expense';
@@ -98,6 +99,9 @@ const Index = () => {
 
   // Welcome animation state
   const [showWelcome, setShowWelcome] = useState(false);
+  
+  // AI Assistant dialog state (controlled mode for bubble)
+  const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
 
   // Get user display name
   const [displayName, setDisplayName] = useState<string>('');
@@ -378,6 +382,8 @@ const Index = () => {
                 totalExpenses={totalExpenses}
                 balance={balance}
                 paymentSources={customPaymentSources}
+                open={assistantDialogOpen}
+                onOpenChange={setAssistantDialogOpen}
               />
             )}
             <AddExpenseDialog onAdd={addExpense} />
@@ -813,6 +819,18 @@ const Index = () => {
         <WelcomeConfetti
           displayName={displayName || 'Korisnik'}
           onComplete={() => setShowWelcome(false)}
+        />
+      )}
+
+      {/* AI Insight Bubble */}
+      {!isLocalMode && (
+        <AIInsightBubble
+          expenses={expenses}
+          totalIncome={totalIncome}
+          totalExpenses={totalExpenses}
+          balance={balance}
+          paymentSources={customPaymentSources}
+          onOpenAssistant={() => setAssistantDialogOpen(true)}
         />
       )}
 

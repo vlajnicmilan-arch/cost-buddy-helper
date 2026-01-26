@@ -21,6 +21,8 @@ interface FinancialAssistantDialogProps {
   balance: number;
   paymentSources: CustomPaymentSource[];
   budgets?: Array<{ name: string; total_amount: number; spent?: number }>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const FinancialAssistantDialog = ({
@@ -30,8 +32,21 @@ export const FinancialAssistantDialog = ({
   balance,
   paymentSources,
   budgets = [],
+  open: controlledOpen,
+  onOpenChange,
 }: FinancialAssistantDialogProps) => {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (value: boolean) => {
+    if (isControlled && onOpenChange) {
+      onOpenChange(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

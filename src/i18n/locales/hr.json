@@ -703,5 +703,19 @@
     "deleteConfirmMessage": "Ova radnja će trajno obrisati plan i sve povezane rate. Ovo se ne može poništiti.",
     "noPlans": "Nema aktivnih planova plaćanja na rate",
     "addHint": "Dodaj novi trošak ili prihod i odaberi opciju \"Na rate\""
+  },
+  "insights": {
+    "positiveBalance": "Odlično! Tvoje stanje je {{amount}} u plusu.",
+    "negativeBalance": "Pazi! Tvoje stanje je {{amount}} u minusu.",
+    "spendingUp": "Ovaj mjesec trošiš {{percent}}% više nego prošli mjesec.",
+    "spendingDown": "Bravo! Trošiš {{percent}}% manje nego prošli mjesec.",
+    "lowSavings": "Štediš samo {{percent}}% prihoda. Razmisli o smanjenju troškova.",
+    "highCategorySpending": "{{percent}}% troškova ide na {{category}}. Možda previše?",
+    "motivation1": "Svaka ušteda danas je sloboda sutra! 💪",
+    "motivation2": "Mali koraci vode do velikih ciljeva! 🎯",
+    "motivation3": "Kontroliraš svoje financije - to je super! ⭐",
+    "motivation4": "Nastavi pratiti troškove, radiš odličan posao! 🌟",
+    "default": "Klikni za AI savjete o tvojim financijama!",
+    "tapForMore": "Klikni za više savjeta"
   }
 }
