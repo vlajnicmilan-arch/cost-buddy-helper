@@ -160,7 +160,8 @@ export const FloatingAIAvatar = ({
             transition={getMoodTransition(mood)}
           >
             <SVGAvatar 
-              isBlinking={isBlinking} 
+              isBlinking={isBlinking}
+              mood={mood}
               className="w-full h-full"
             />
           </motion.div>
