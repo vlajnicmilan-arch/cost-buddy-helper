@@ -703,5 +703,19 @@
     "deleteConfirmMessage": "This action will permanently delete the plan and all related installments. This cannot be undone.",
     "noPlans": "No active installment payment plans",
     "addHint": "Add a new expense or income and select the \"Installments\" option"
+  },
+  "insights": {
+    "positiveBalance": "Great! Your balance is {{amount}} in the positive.",
+    "negativeBalance": "Watch out! Your balance is {{amount}} in the negative.",
+    "spendingUp": "You're spending {{percent}}% more this month than last month.",
+    "spendingDown": "Great job! You're spending {{percent}}% less than last month.",
+    "lowSavings": "You're only saving {{percent}}% of your income. Consider reducing expenses.",
+    "highCategorySpending": "{{percent}}% of expenses go to {{category}}. Maybe too much?",
+    "motivation1": "Every saving today is freedom tomorrow! 💪",
+    "motivation2": "Small steps lead to big goals! 🎯",
+    "motivation3": "You're in control of your finances - that's awesome! ⭐",
+    "motivation4": "Keep tracking your expenses, you're doing great! 🌟",
+    "default": "Tap for AI tips about your finances!",
+    "tapForMore": "Tap for more tips"
   }
 }
