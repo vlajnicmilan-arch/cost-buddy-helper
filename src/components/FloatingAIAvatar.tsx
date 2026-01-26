@@ -23,51 +23,61 @@ const moodColors: Record<AvatarMood, string> = {
   neutral: 'from-primary/20 to-primary/10',
 };
 
-// Blinking eyes component - natural human-like blink timing
+// Simple blinking overlay - shows curved lines when eyes are closed
 const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
+  if (!isBlinking) return null;
+  
   return (
     <>
-      {/* Left eye blink overlay - matches the left eye of the avatar */}
-      <motion.div
-        className="absolute"
+      {/* Left eye closed - curved smile line */}
+      <div
+        className="absolute z-20"
         style={{
-          width: '18%',
-          height: '12%',
-          top: '32%',
-          left: '18%',
-          backgroundColor: '#c5e8e8',
-          borderRadius: '50%',
-        }}
-        initial={{ scaleY: 0, opacity: 0 }}
-        animate={{ 
-          scaleY: isBlinking ? 1 : 0,
-          opacity: isBlinking ? 1 : 0
-        }}
-        transition={{ 
-          duration: isBlinking ? 0.12 : 0.15,
-          ease: "easeInOut"
+          width: '12%',
+          height: '6%',
+          top: '36%',
+          left: '23%',
+          borderBottom: '2.5px solid #2d5a5a',
+          borderRadius: '0 0 50% 50%',
         }}
       />
       
-      {/* Right eye blink overlay - matches the right eye of the avatar */}
-      <motion.div
-        className="absolute"
+      {/* Right eye closed - curved smile line */}
+      <div
+        className="absolute z-20"
         style={{
-          width: '18%',
-          height: '12%',
+          width: '12%',
+          height: '6%',
+          top: '36%',
+          right: '23%',
+          borderBottom: '2.5px solid #2d5a5a',
+          borderRadius: '0 0 50% 50%',
+        }}
+      />
+
+      {/* Left eye cover */}
+      <div
+        className="absolute z-10"
+        style={{
+          width: '16%',
+          height: '14%',
           top: '32%',
-          right: '18%',
-          backgroundColor: '#c5e8e8',
+          left: '21%',
+          backgroundColor: '#daf5f5',
           borderRadius: '50%',
         }}
-        initial={{ scaleY: 0, opacity: 0 }}
-        animate={{ 
-          scaleY: isBlinking ? 1 : 0,
-          opacity: isBlinking ? 1 : 0
-        }}
-        transition={{ 
-          duration: isBlinking ? 0.12 : 0.15,
-          ease: "easeInOut"
+      />
+      
+      {/* Right eye cover */}
+      <div
+        className="absolute z-10"
+        style={{
+          width: '16%',
+          height: '14%',
+          top: '32%',
+          right: '21%',
+          backgroundColor: '#daf5f5',
+          borderRadius: '50%',
         }}
       />
     </>
