@@ -124,7 +124,7 @@ export const TransactionNotesThread = ({
         }
       }
 
-      // Notify about new reply - for income sources
+      // Notify about new comment - for income sources
       if (incomeSourceId) {
         try {
           await supabase.functions.invoke('notify-note-added', {
@@ -139,14 +139,14 @@ export const TransactionNotesThread = ({
         }
       }
       
-      // Notify about project transaction update - for projects
+      // Notify about new comment - for projects
       if (projectId) {
         try {
-          await supabase.functions.invoke('notify-project-transaction', {
+          await supabase.functions.invoke('notify-note-added', {
             body: {
               expense_id: expenseId,
               project_id: projectId,
-              action: 'updated'
+              note: newNote.trim()
             }
           });
         } catch (notifyError) {
