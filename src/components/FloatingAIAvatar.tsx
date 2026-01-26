@@ -30,6 +30,98 @@ const moodColors: Record<AvatarMood, string> = {
   neutral: 'from-primary/20 to-primary/10',
 };
 
+// Blinking animation component
+const BlinkingEyes = () => {
+  const [isBlinking, setIsBlinking] = useState(false);
+
+  useEffect(() => {
+    // Random blink interval between 2-5 seconds
+    const scheduleBlink = () => {
+      const delay = 2000 + Math.random() * 3000;
+      return setTimeout(() => {
+        setIsBlinking(true);
+        // Blink duration
+        setTimeout(() => {
+          setIsBlinking(false);
+          scheduleBlink();
+        }, 150);
+      }, delay);
+    };
+
+    const timer = scheduleBlink();
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isBlinking) return null;
+
+  return (
+    <>
+      {/* Left eye blink overlay */}
+      <motion.div
+        initial={{ scaleY: 0 }}
+        animate={{ scaleY: 1 }}
+        exit={{ scaleY: 0 }}
+        className="absolute bg-[#d4e8e8] rounded-full"
+        style={{
+          width: '18%',
+          height: '8%',
+          top: '38%',
+          left: '24%',
+        }}
+      />
+      {/* Right eye blink overlay */}
+      <motion.div
+        initial={{ scaleY: 0 }}
+        animate={{ scaleY: 1 }}
+        exit={{ scaleY: 0 }}
+        className="absolute bg-[#d4e8e8] rounded-full"
+        style={{
+          width: '18%',
+          height: '8%',
+          top: '38%',
+          right: '24%',
+        }}
+      />
+    </>
+  );
+};
+
+// Animated halo component
+const AnimatedHalo = () => {
+  return (
+    <motion.div
+      className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-3"
+      animate={{
+        y: [0, -3, 0, -2, 0],
+        rotateZ: [-5, 5, -3, 4, -5],
+        scale: [1, 1.05, 1, 1.03, 1],
+      }}
+      transition={{
+        duration: 4,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    >
+      {/* Halo ring */}
+      <motion.div
+        className="w-full h-full rounded-full border-2 border-cyan-300/60"
+        style={{
+          background: 'linear-gradient(135deg, rgba(103, 232, 249, 0.3), rgba(34, 211, 238, 0.1))',
+          boxShadow: '0 0 8px rgba(103, 232, 249, 0.4)',
+        }}
+        animate={{
+          opacity: [0.7, 1, 0.7],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+    </motion.div>
+  );
+};
+
 export const FloatingAIAvatar = ({
   mood = 'neutral',
   onQuickTap,
@@ -162,10 +254,12 @@ export const FloatingAIAvatar = ({
             ease: "easeInOut",
           }}
         >
-          <motion.img
-            src={aiAvatarImage}
-            alt="AI Asistent"
-            className="w-full h-full object-contain drop-shadow-md"
+          {/* Animated Halo */}
+          <AnimatedHalo />
+          
+          {/* Avatar image */}
+          <motion.div
+            className="relative w-full h-full"
             animate={{
               rotate: mood === 'thinking' ? [0, -5, 5, 0] : 0,
               scale: mood === 'proud' ? [1, 1.1, 1] : 1,
@@ -175,7 +269,16 @@ export const FloatingAIAvatar = ({
               repeat: mood === 'thinking' ? Infinity : 0,
               ease: "easeInOut",
             }}
-          />
+          >
+            <img
+              src={aiAvatarImage}
+              alt="AI Asistent"
+              className="w-full h-full object-contain drop-shadow-md"
+            />
+            
+            {/* Blinking eyes overlay */}
+            <BlinkingEyes />
+          </motion.div>
         </motion.div>
 
         {/* Pulse ring for interaction hint */}
