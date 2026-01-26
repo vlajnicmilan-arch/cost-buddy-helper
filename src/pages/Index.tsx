@@ -102,7 +102,11 @@ const Index = () => {
   
   // AI Assistant dialog state (controlled mode for bubble)
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
-
+  
+  // AI Assistant enabled state
+  const [aiAssistantEnabled, setAiAssistantEnabled] = useState(() => 
+    localStorage.getItem('ai_assistant_enabled') !== 'false'
+  );
   // Get user display name
   const [displayName, setDisplayName] = useState<string>('');
   
@@ -141,8 +145,15 @@ const Index = () => {
     };
     window.addEventListener('displayNameChanged', handleNameChange as EventListener);
     
+    // Listen for AI assistant toggle from settings
+    const handleAiToggle = (event: CustomEvent<boolean>) => {
+      setAiAssistantEnabled(event.detail);
+    };
+    window.addEventListener('aiAssistantToggled', handleAiToggle as EventListener);
+    
     return () => {
       window.removeEventListener('displayNameChanged', handleNameChange as EventListener);
+      window.removeEventListener('aiAssistantToggled', handleAiToggle as EventListener);
     };
   }, [user]);
 
@@ -375,7 +386,7 @@ const Index = () => {
           <div className="flex flex-wrap items-center gap-2">
             <BulkEditDropdown expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
             <ReportsDialog expenses={expenses} />
-            {!isLocalMode && (
+            {!isLocalMode && aiAssistantEnabled && (
               <FinancialAssistantDialog
                 expenses={expenses}
                 totalIncome={totalIncome}
@@ -823,7 +834,7 @@ const Index = () => {
       )}
 
       {/* AI Insight Bubble */}
-      {!isLocalMode && (
+      {!isLocalMode && aiAssistantEnabled && (
         <AIInsightBubble
           expenses={expenses}
           totalIncome={totalIncome}

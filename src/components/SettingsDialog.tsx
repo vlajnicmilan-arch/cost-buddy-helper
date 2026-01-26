@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -44,6 +44,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [autoUpdate, setAutoUpdate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [aiAssistantEnabled, setAiAssistantEnabled] = useState(true);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isDark, setIsDark] = useState(false);
   
@@ -82,6 +83,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       setAutoUpdate(getAutoUpdatePreference());
       setSoundEnabled(getNotificationSoundEnabled());
       setPushEnabled(getPushNotificationsEnabled());
+      setAiAssistantEnabled(localStorage.getItem('ai_assistant_enabled') !== 'false');
       setIsDark(document.documentElement.classList.contains('dark'));
       
       // Load display name
@@ -855,6 +857,38 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 onCheckedChange={handlePushToggle}
               />
             </div>
+
+            {/* AI Assistant toggle - Cloud only */}
+            {!isLocalMode && (
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <Label htmlFor="ai-assistant" className="text-sm font-medium cursor-pointer">
+                      {t('settings.aiAssistant', 'AI Asistent')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('settings.aiAssistantDesc', 'Prikaži AI savjete i asistenta')}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="ai-assistant"
+                  checked={aiAssistantEnabled}
+                  onCheckedChange={(checked) => {
+                    setAiAssistantEnabled(checked);
+                    localStorage.setItem('ai_assistant_enabled', checked.toString());
+                    window.dispatchEvent(new CustomEvent('aiAssistantToggled', { detail: checked }));
+                    toast.success(checked 
+                      ? t('settings.aiEnabled', 'AI asistent uključen') 
+                      : t('settings.aiDisabled', 'AI asistent isključen')
+                    );
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <Separator />
