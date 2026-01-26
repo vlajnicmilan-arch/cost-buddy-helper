@@ -182,12 +182,13 @@ export const FloatingAIAvatar = ({
       </AnimatePresence>
 
 
-      {/* Avatar container - 72px * 1.2 = 86px */}
+      {/* Avatar container - 86px, no background */}
       <motion.button
         className={cn(
-          "relative w-[86px] h-[86px] rounded-full cursor-pointer select-none touch-none",
+          "relative w-[86px] h-[86px] cursor-pointer select-none touch-none bg-transparent",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
+        style={{ background: 'transparent' }}
         onMouseDown={handlePressStart}
         onMouseUp={handlePressEnd}
         onMouseLeave={handlePressCancel}
