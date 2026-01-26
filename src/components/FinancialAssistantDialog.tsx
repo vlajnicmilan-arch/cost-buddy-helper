@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { motion } from 'framer-motion';
+import aiAvatarImage from '@/assets/ai-avatar.png';
 
 interface FinancialAssistantDialogProps {
   expenses: Expense[];
@@ -283,53 +285,98 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="space-y-4">
-              <div className="text-center py-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <Bot className="w-8 h-8 text-primary" />
-                </div>
-                <p className="font-semibold text-foreground text-lg">Bok! 👋</p>
-                <p className="text-muted-foreground mt-2 leading-relaxed max-w-sm mx-auto">
-                  Ja sam tvoj osobni financijski asistent. Tu sam da ti pomognem 
-                  razumjeti svoje financije i donositi mirnije odluke — bez pritiska i bez stresa.
-                </p>
-                <p className="text-sm text-muted-foreground/80 mt-3 italic">
-                  Kako ti danas mogu pomoći?
-                </p>
+              <div className="text-center py-4">
+                {/* Animated AI Avatar */}
+                <motion.div
+                  className="relative w-24 h-24 mx-auto mb-4"
+                  animate={{
+                    y: [0, -8, 0],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <motion.img
+                    src={aiAvatarImage}
+                    alt="AI Asistent"
+                    className="w-full h-full object-contain drop-shadow-lg"
+                    animate={{
+                      scale: [1, 1.02, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 -z-10 bg-primary/20 rounded-full blur-xl scale-75" />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <p className="font-semibold text-foreground text-lg">Bok! 👋</p>
+                  <p className="text-muted-foreground mt-2 leading-relaxed max-w-sm mx-auto text-sm">
+                    Ja sam tvoj osobni financijski asistent. Tu sam da ti pomognem 
+                    razumjeti svoje financije i donositi mirnije odluke — bez pritiska i bez stresa.
+                  </p>
+                  <p className="text-sm text-muted-foreground/80 mt-3 italic">
+                    Kako ti danas mogu pomoći?
+                  </p>
+                </motion.div>
               </div>
 
               {/* Monthly Report Button */}
-              <Button
-                onClick={generateMonthlyReport}
-                disabled={isLoading}
-                className="w-full gap-2 h-auto py-4 bg-gradient-to-r from-primary to-primary/80"
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
               >
+                <Button
+                  onClick={generateMonthlyReport}
+                  disabled={isLoading}
+                  className="w-full gap-2 h-auto py-4 bg-gradient-to-r from-primary to-primary/80"
+                >
                 <FileText className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-semibold">Generiraj mjesečni izvještaj</div>
                   <div className="text-xs opacity-80">Pregled stanja + savjeti za napredak</div>
                 </div>
               </Button>
+              </motion.div>
 
-              <div className="text-xs text-muted-foreground text-center pt-2">
-                Ili odaberi jedno od čestih pitanja:
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="space-y-2"
+              >
+                <div className="text-xs text-muted-foreground text-center pt-2">
+                  Ili odaberi jedno od čestih pitanja:
+                </div>
 
-              <div className="grid grid-cols-1 gap-2">
-                {quickQuestions.map((q, i) => (
-                  <Button
-                    key={i}
-                    variant="outline"
-                    size="sm"
-                    className="justify-start text-left h-auto py-2.5 px-3 text-sm hover:bg-primary/5"
-                    onClick={() => {
-                      sendMessage(q);
-                    }}
-                    disabled={isLoading}
-                  >
-                    {q}
-                  </Button>
-                ))}
-              </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {quickQuestions.map((q, i) => (
+                    <Button
+                      key={i}
+                      variant="outline"
+                      size="sm"
+                      className="justify-start text-left h-auto py-2.5 px-3 text-sm hover:bg-primary/5"
+                      onClick={() => {
+                        sendMessage(q);
+                      }}
+                      disabled={isLoading}
+                    >
+                      {q}
+                    </Button>
+                  ))}
+                </div>
+              </motion.div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -374,10 +421,29 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
   const isUser = message.role === 'user';
 
   return (
-    <div className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
+    <div className={cn('flex gap-2', isUser ? 'justify-end' : 'justify-start')}>
+      {!isUser && (
+        <motion.div 
+          className="flex-shrink-0 w-8 h-8 mt-1"
+          animate={{
+            y: [0, -2, 0],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <img
+            src={aiAvatarImage}
+            alt="AI"
+            className="w-full h-full object-contain"
+          />
+        </motion.div>
+      )}
       <div
         className={cn(
-          'max-w-[85%] rounded-2xl px-4 py-2',
+          'max-w-[80%] rounded-2xl px-4 py-2',
           isUser
             ? 'bg-primary text-primary-foreground'
             : 'bg-muted'
