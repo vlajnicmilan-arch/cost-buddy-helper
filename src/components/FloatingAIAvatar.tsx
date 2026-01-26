@@ -23,38 +23,46 @@ const moodColors: Record<AvatarMood, string> = {
   neutral: 'from-primary/20 to-primary/10',
 };
 
-// Blinking eyes component - adjusted for new avatar
+// Blinking eyes component - positioned for cute robot avatar
 const BlinkingEyes = ({ isBlinking }: { isBlinking: boolean }) => {
   return (
     <>
-      {/* Left eye blink overlay */}
+      {/* Left eye blink overlay - matches the left eye of the avatar */}
       <motion.div
-        className="absolute rounded-full"
+        className="absolute"
         style={{
-          width: '12%',
-          height: '5%',
-          top: '42%',
-          left: '24%',
-          backgroundColor: '#d4eded',
+          width: '18%',
+          height: '12%',
+          top: '32%',
+          left: '18%',
+          backgroundColor: '#c5e8e8',
+          borderRadius: '50%',
         }}
-        initial={{ scaleY: 0 }}
-        animate={{ scaleY: isBlinking ? 1 : 0 }}
-        transition={{ duration: 0.05 }}
+        initial={{ scaleY: 0, opacity: 0 }}
+        animate={{ 
+          scaleY: isBlinking ? 1 : 0,
+          opacity: isBlinking ? 1 : 0
+        }}
+        transition={{ duration: 0.08 }}
       />
       
-      {/* Right eye blink overlay */}
+      {/* Right eye blink overlay - matches the right eye of the avatar */}
       <motion.div
-        className="absolute rounded-full"
+        className="absolute"
         style={{
-          width: '12%',
-          height: '5%',
-          top: '42%',
-          right: '24%',
-          backgroundColor: '#d4eded',
+          width: '18%',
+          height: '12%',
+          top: '32%',
+          right: '18%',
+          backgroundColor: '#c5e8e8',
+          borderRadius: '50%',
         }}
-        initial={{ scaleY: 0 }}
-        animate={{ scaleY: isBlinking ? 1 : 0 }}
-        transition={{ duration: 0.05 }}
+        initial={{ scaleY: 0, opacity: 0 }}
+        animate={{ 
+          scaleY: isBlinking ? 1 : 0,
+          opacity: isBlinking ? 1 : 0
+        }}
+        transition={{ duration: 0.08 }}
       />
     </>
   );
