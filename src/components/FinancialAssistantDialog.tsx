@@ -25,6 +25,7 @@ interface FinancialAssistantDialogProps {
   budgets?: Array<{ name: string; total_amount: number; spent?: number }>;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
 export const FinancialAssistantDialog = ({
@@ -36,6 +37,7 @@ export const FinancialAssistantDialog = ({
   budgets = [],
   open: controlledOpen,
   onOpenChange,
+  hideTrigger = false,
 }: FinancialAssistantDialogProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
   
@@ -254,12 +256,14 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 rounded-xl">
-          <Sparkles className="w-4 h-4" />
-          <span className="hidden sm:inline">AI Asistent</span>
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl">
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">AI Asistent</span>
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px] h-[85vh] sm:h-[600px] flex flex-col p-0">
         <DialogHeader className="p-4 pb-2 border-b">
           <div className="flex items-center justify-between">

@@ -386,6 +386,7 @@ const Index = () => {
           <div className="flex flex-wrap items-center gap-2">
             <BulkEditDropdown expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
             <ReportsDialog expenses={expenses} />
+            {/* AI Assistant dialog - controlled by avatar, no button here */}
             {!isLocalMode && aiAssistantEnabled && (
               <FinancialAssistantDialog
                 expenses={expenses}
@@ -395,6 +396,7 @@ const Index = () => {
                 paymentSources={customPaymentSources}
                 open={assistantDialogOpen}
                 onOpenChange={setAssistantDialogOpen}
+                hideTrigger
               />
             )}
             <AddExpenseDialog onAdd={addExpense} />
