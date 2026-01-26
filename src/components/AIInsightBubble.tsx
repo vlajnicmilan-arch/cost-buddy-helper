@@ -158,25 +158,10 @@ export const AIInsightBubble = ({
     return () => clearInterval(interval);
   }, [insights.length]);
 
-  // Check if user dismissed the bubble today
-  useEffect(() => {
-    const dismissed = localStorage.getItem('ai_bubble_dismissed');
-    if (dismissed) {
-      const dismissedDate = new Date(dismissed);
-      const today = new Date();
-      // Show again after 24 hours
-      if (today.getTime() - dismissedDate.getTime() < 24 * 60 * 60 * 1000) {
-        setIsVisible(false);
-      } else {
-        localStorage.removeItem('ai_bubble_dismissed');
-      }
-    }
-  }, []);
-
+  // Dismiss only hides for current session - bubble reappears on next visit
   const handleDismiss = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setIsVisible(false);
-    localStorage.setItem('ai_bubble_dismissed', new Date().toISOString());
   }, []);
 
   const handleClick = useCallback(() => {
