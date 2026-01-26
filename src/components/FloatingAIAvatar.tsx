@@ -276,7 +276,7 @@ export const FloatingAIAvatar = ({
       {/* Avatar container */}
       <motion.button
         className={cn(
-          "relative w-14 h-14 rounded-full cursor-pointer select-none touch-none",
+          "relative w-[72px] h-[72px] rounded-full cursor-pointer select-none touch-none",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
         onMouseDown={handlePressStart}
