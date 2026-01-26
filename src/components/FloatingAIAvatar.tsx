@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import aiAvatarImage from '@/assets/ai-avatar.png';
+import aiAvatarImage from '@/assets/ai-avatar-transparent.png';
 
 export type AvatarMood = 'happy' | 'thinking' | 'worried' | 'proud' | 'neutral';
 
@@ -214,8 +214,6 @@ export const FloatingAIAvatar = ({
             ease: "easeInOut",
           }}
         >
-          {/* Animated Halo */}
-          <AnimatedHalo />
           
           {/* Avatar image */}
           <motion.div
@@ -233,11 +231,7 @@ export const FloatingAIAvatar = ({
             <img
               src={aiAvatarImage}
               alt="AI Asistent"
-              className="w-full h-full object-contain drop-shadow-md"
-              style={{ 
-                mixBlendMode: 'multiply',
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-              }}
+              className="w-full h-full object-contain drop-shadow-lg"
             />
             
             {/* Blinking eyes overlay */}
