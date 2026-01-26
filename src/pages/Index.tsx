@@ -29,6 +29,7 @@ import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
+import { InstallmentsPanel } from '@/components/installments';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3 } from 'lucide-react';
@@ -692,6 +693,9 @@ const Index = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
+            
+            {/* Installments Panel */}
+            <InstallmentsPanel />
             
             {/* Projects Panel */}
             <ProjectsPanel onRefreshExpenses={refetch} />

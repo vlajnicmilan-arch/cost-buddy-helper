@@ -495,6 +495,116 @@ export type Database = {
         }
         Relationships: []
       }
+      installment_plans: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          first_payment_date: string
+          id: string
+          installment_count: number
+          payment_source: string | null
+          payment_source_card_id: string | null
+          total_amount: number
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description: string
+          first_payment_date: string
+          id?: string
+          installment_count: number
+          payment_source?: string | null
+          payment_source_card_id?: string | null
+          total_amount: number
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          first_payment_date?: string
+          id?: string
+          installment_count?: number
+          payment_source?: string | null
+          payment_source_card_id?: string | null
+          total_amount?: number
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installment_plans_payment_source_card_id_fkey"
+            columns: ["payment_source_card_id"]
+            isOneToOne: false
+            referencedRelation: "payment_source_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installments: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          expense_id: string | null
+          id: string
+          installment_number: number
+          paid_at: string | null
+          plan_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_date: string
+          expense_id?: string | null
+          id?: string
+          installment_number: number
+          paid_at?: string | null
+          plan_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          expense_id?: string | null
+          id?: string
+          installment_number?: number
+          paid_at?: string | null
+          plan_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installments_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "installment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
