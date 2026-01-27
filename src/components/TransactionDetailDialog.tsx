@@ -6,7 +6,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useTranslation } from 'react-i18next';
 import { TransactionNotesThread } from './TransactionNotesThread';
-
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 interface TransactionDetailDialogProps {
   expense: Expense | null;
   open: boolean;
@@ -34,6 +34,8 @@ export const TransactionDetailDialog = ({
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [submitterName, setSubmitterName] = useState<string | null>(null);
+  const [showReceiptImage, setShowReceiptImage] = useState(false);
+  const [imageZoom, setImageZoom] = useState(1);
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -288,6 +290,31 @@ export const TransactionDetailDialog = ({
             )}
           </div>
 
+          {/* Receipt Image */}
+          {expense.receipt_url && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Receipt className="w-4 h-4" />
+                <span className="text-sm font-medium">{t('transactions.receiptImage', 'Slika računa')}</span>
+              </div>
+              <div 
+                className="relative cursor-pointer group rounded-lg overflow-hidden border"
+                onClick={() => setShowReceiptImage(true)}
+              >
+                <AspectRatio ratio={4/3}>
+                  <img 
+                    src={expense.receipt_url} 
+                    alt={t('transactions.receiptImage', 'Slika računa')}
+                    className="object-cover w-full h-full transition-transform group-hover:scale-105"
+                  />
+                </AspectRatio>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Notes Thread - for income source and project transactions */}
           {(expense.income_source_id || expense.project_id) && (
             <TransactionNotesThread
@@ -372,6 +399,63 @@ export const TransactionDetailDialog = ({
           </Button>
         </div>
       </DialogContent>
+
+      {/* Receipt Image Fullscreen Modal */}
+      {showReceiptImage && expense.receipt_url && (
+        <Dialog open={showReceiptImage} onOpenChange={setShowReceiptImage}>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 border-0 bg-black/95">
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Close button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 z-50 bg-black/50 hover:bg-black/70 text-white"
+                onClick={() => {
+                  setShowReceiptImage(false);
+                  setImageZoom(1);
+                }}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+
+              {/* Zoom controls */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex gap-2 bg-black/50 rounded-full p-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 h-8 w-8"
+                  onClick={() => setImageZoom(prev => Math.max(0.5, prev - 0.25))}
+                  disabled={imageZoom <= 0.5}
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+                <span className="text-white text-sm flex items-center px-2 min-w-[3rem] justify-center">
+                  {Math.round(imageZoom * 100)}%
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 h-8 w-8"
+                  onClick={() => setImageZoom(prev => Math.min(3, prev + 0.25))}
+                  disabled={imageZoom >= 3}
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Image */}
+              <div className="overflow-auto max-w-full max-h-[90vh] p-4">
+                <img 
+                  src={expense.receipt_url} 
+                  alt={t('transactions.receiptImage', 'Slika računa')}
+                  className="max-w-none transition-transform duration-200"
+                  style={{ transform: `scale(${imageZoom})`, transformOrigin: 'center' }}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 };
