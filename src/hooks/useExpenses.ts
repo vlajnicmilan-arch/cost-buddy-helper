@@ -4,6 +4,7 @@ import { Expense, Category, PaymentSource, ReceiptItem, TransactionType } from '
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useBalanceUpdater } from './useBalanceUpdater';
+import { useBudgetAlerts } from './useBudgetAlerts';
 import { toast } from 'sonner';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import {
@@ -25,6 +26,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({
     onBalanceUpdated: options?.onBalanceUpdated
   });
+  const { checkBudgetAlerts } = useBudgetAlerts();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -248,6 +250,11 @@ export const useExpenses = (options?: UseExpensesOptions) => {
 
         // Update payment source balance
         await updateBalance(expense.payment_source, expense.amount, expense.type);
+        
+        // Check budget alerts for expense transactions
+        if (expense.type === 'expense') {
+          checkBudgetAlerts(expense.category, expense.amount, expense.date);
+        }
         
         // Dispatch event for AI avatar reaction
         window.dispatchEvent(new CustomEvent(expense.type === 'income' ? 'incomeAdded' : 'expenseAdded', {
