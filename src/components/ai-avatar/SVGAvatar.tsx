@@ -121,9 +121,11 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
       className={className}
       style={{ 
         filter: 'drop-shadow(0 6px 16px rgba(80, 200, 200, 0.25))',
-        colorScheme: 'light',
-        WebkitFilter: 'none',
+        colorScheme: 'only light',
+        mixBlendMode: 'normal',
       }}
+      data-darkreader-inline-filter=""
+      data-darkreader-mode="dynamic"
     >
       <defs>
         {/* Main body gradient - soft mint/cyan - SOLID COLORS */}
