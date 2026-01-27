@@ -106,7 +106,15 @@ export const FloatingAIAvatar = ({
   }, []);
 
   return (
-    <div className={cn("relative", className)}>
+    <div 
+      className={cn("relative", className)}
+      style={{
+        // Force light appearance to prevent Samsung Internet dark mode
+        colorScheme: 'only light',
+        WebkitTextFillColor: 'initial',
+        forcedColorAdjust: 'none',
+      } as React.CSSProperties}
+    >
       {/* Tooltip */}
       <AnimatePresence>
         {showTooltip && tooltipMessage && (
@@ -149,31 +157,40 @@ export const FloatingAIAvatar = ({
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
         aria-label="AI Asistent"
       >
-        {/* Avatar with floating animation */}
-        <motion.div
-          className="relative w-full h-full"
-          animate={{
-            y: [0, -4, 0],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
+        {/* Avatar wrapper with light background to isolate from dark mode */}
+        <div 
+          className="relative w-full h-full rounded-full overflow-hidden"
+          style={{
+            backgroundColor: 'transparent',
+            isolation: 'isolate',
           }}
         >
-          {/* Avatar with mood expressions */}
+          {/* Avatar with floating animation */}
           <motion.div
             className="relative w-full h-full"
-            animate={getMoodAnimation(mood)}
-            transition={getMoodTransition(mood)}
+            animate={{
+              y: [0, -4, 0],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           >
-            <SVGAvatar 
-              isBlinking={isBlinking}
-              mood={mood}
-              className="w-full h-full"
-            />
+            {/* Avatar with mood expressions */}
+            <motion.div
+              className="relative w-full h-full"
+              animate={getMoodAnimation(mood)}
+              transition={getMoodTransition(mood)}
+            >
+              <SVGAvatar 
+                isBlinking={isBlinking}
+                mood={mood}
+                className="w-full h-full"
+              />
+            </motion.div>
           </motion.div>
-        </motion.div>
+        </div>
 
         {/* Pulse ring for interaction hint */}
         <motion.div
