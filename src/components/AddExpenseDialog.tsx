@@ -20,9 +20,18 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 import { InstallmentToggle } from '@/components/installments';
+import { DuplicateWarningDialog } from '@/components/DuplicateWarningDialog';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
+  checkDuplicate?: (transaction: {
+    amount: number;
+    description: string;
+    date: Date;
+    type: string;
+    category?: string;
+    merchant_name?: string;
+  }) => Expense | null;
 }
 
 interface ScannedData {
@@ -37,7 +46,7 @@ interface ScannedData {
   items: ReceiptItem[];
 }
 
-export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
+export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<TransactionType>('expense');
@@ -62,6 +71,14 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(12);
   const [firstPaymentDate, setFirstPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Duplicate detection state
+  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
+  const [duplicateOf, setDuplicateOf] = useState<Expense | null>(null);
+  const [pendingTransaction, setPendingTransaction] = useState<{
+    expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+    items?: ReceiptItem[];
+  } | null>(null);
   
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -157,22 +174,43 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         finalPaymentSource = scannedData.payment_source;
       }
 
-
-      await onAdd({
+      const newExpense = {
         amount: scannedData.amount,
         description: scannedData.description,
         category: scannedData.category,
         date: new Date(scannedData.date || expenseDate),
-        type: 'expense',
+        type: 'expense' as TransactionType,
         payment_source: finalPaymentSource,
         payment_source_card_id: finalCardId,
         merchant_name: scannedData.merchant || undefined,
         receipt_url: receiptUrl,
         ai_extracted: true
-      }, validItems.length > 0 ? validItems : undefined);
+      };
 
-      resetForm();
-      setOpen(false);
+      // Check for duplicates
+      if (checkDuplicate) {
+        const duplicate = checkDuplicate({
+          amount: scannedData.amount,
+          description: scannedData.description,
+          date: new Date(scannedData.date || expenseDate),
+          type: 'expense',
+          category: scannedData.category,
+          merchant_name: scannedData.merchant || undefined
+        });
+
+        if (duplicate) {
+          setDuplicateOf(duplicate);
+          setPendingTransaction({
+            expense: newExpense,
+            items: validItems.length > 0 ? validItems : undefined
+          });
+          setDuplicateWarningOpen(true);
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
     } catch (error) {
       console.error('Error saving expense:', error);
       toast.error(t('transactions.saveError'));
@@ -245,6 +283,32 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
     setFirstPaymentDate(new Date().toISOString().split('T')[0]);
   };
 
+  // Helper to actually add the transaction (after duplicate check passes)
+  const executeAdd = async (
+    expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    validItems?: ReceiptItem[]
+  ) => {
+    await onAdd(expense, validItems);
+    resetForm();
+    setOpen(false);
+  };
+
+  // Handle duplicate confirmation
+  const handleDuplicateConfirm = async () => {
+    if (pendingTransaction) {
+      await executeAdd(pendingTransaction.expense, pendingTransaction.items);
+      setPendingTransaction(null);
+      setDuplicateOf(null);
+    }
+    setDuplicateWarningOpen(false);
+  };
+
+  const handleDuplicateCancel = () => {
+    setPendingTransaction(null);
+    setDuplicateOf(null);
+    setDuplicateWarningOpen(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !description) return;
@@ -281,7 +345,7 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       }
     }
 
-    onAdd({
+    const newExpense = {
       amount: parsedAmount,
       description,
       category,
@@ -294,10 +358,31 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
       ai_extracted: scannedData !== null,
       note: note.trim() || undefined,
       project_id: selectedProjectId || undefined
-    }, validItems.length > 0 ? validItems : undefined);
+    };
 
-    resetForm();
-    setOpen(false);
+    // Check for duplicates (skip for transfers)
+    if (checkDuplicate && type !== 'transfer') {
+      const duplicate = checkDuplicate({
+        amount: parsedAmount,
+        description,
+        date: new Date(expenseDate),
+        type,
+        category,
+        merchant_name: merchantName || undefined
+      });
+
+      if (duplicate) {
+        setDuplicateOf(duplicate);
+        setPendingTransaction({
+          expense: newExpense,
+          items: validItems.length > 0 ? validItems : undefined
+        });
+        setDuplicateWarningOpen(true);
+        return;
+      }
+    }
+
+    await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
   };
 
   const categoryInfo = scannedData ? getCategoryInfo(scannedData.category) : null;
@@ -1148,6 +1233,23 @@ export const AddExpenseDialog = ({ onAdd }: AddExpenseDialogProps) => {
         }
         return newCat;
       }}
+    />
+
+    {/* Duplicate Warning Dialog */}
+    <DuplicateWarningDialog
+      open={duplicateWarningOpen}
+      onOpenChange={setDuplicateWarningOpen}
+      duplicateOf={duplicateOf}
+      newTransaction={pendingTransaction ? {
+        amount: pendingTransaction.expense.amount,
+        description: pendingTransaction.expense.description,
+        date: pendingTransaction.expense.date instanceof Date ? pendingTransaction.expense.date : new Date(pendingTransaction.expense.date),
+        type: pendingTransaction.expense.type,
+        category: pendingTransaction.expense.category,
+        merchant_name: pendingTransaction.expense.merchant_name
+      } : null}
+      onConfirm={handleDuplicateConfirm}
+      onCancel={handleDuplicateCancel}
     />
   </>
   );

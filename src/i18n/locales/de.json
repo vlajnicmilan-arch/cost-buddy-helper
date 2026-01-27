@@ -674,5 +674,12 @@
     "decline": "Ablehnen",
     "invitationAccepted": "Einladung angenommen",
     "invitationDeclined": "Einladung abgelehnt"
+  },
+  "duplicates": {
+    "possibleDuplicate": "Mögliche doppelte Transaktion",
+    "foundSimilar": "Wir haben eine ähnliche Transaktion in Ihren Aufzeichnungen gefunden. Sind Sie sicher, dass Sie eine neue hinzufügen möchten?",
+    "existingTransaction": "Bestehende Transaktion",
+    "newTransaction": "Neue Transaktion",
+    "addAnyway": "Trotzdem hinzufügen"
   }
 }

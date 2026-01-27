@@ -722,5 +722,12 @@
     "motivation4": "Keep tracking your expenses, you're doing great! 🌟",
     "default": "Tap for AI tips about your finances!",
     "tapForMore": "Tap for more tips"
+  },
+  "duplicates": {
+    "possibleDuplicate": "Possible duplicate transaction",
+    "foundSimilar": "We found a similar transaction in your records. Are you sure you want to add a new one?",
+    "existingTransaction": "Existing transaction",
+    "newTransaction": "New transaction",
+    "addAnyway": "Add anyway"
   }
 }

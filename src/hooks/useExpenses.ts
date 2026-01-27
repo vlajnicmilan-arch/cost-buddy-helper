@@ -497,6 +497,51 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     return { duplicates, unique };
   }, [expenses]);
 
+  // Check if a single transaction might be a duplicate - returns the matching existing transaction
+  const checkDuplicate = useCallback((transaction: {
+    amount: number;
+    description: string;
+    date: Date;
+    type: string;
+    category?: string;
+    merchant_name?: string;
+  }): Expense | null => {
+    const match = expenses.find(existing => {
+      const sameDate = existing.date.toDateString() === transaction.date.toDateString();
+      const sameAmount = Math.abs(Number(existing.amount) - transaction.amount) < 0.01;
+      const sameType = existing.type === transaction.type;
+      
+      if (!sameDate || !sameAmount || !sameType) return false;
+      
+      // Check description similarity
+      const existingDesc = existing.description.toLowerCase().trim();
+      const newDesc = transaction.description.toLowerCase().trim();
+      
+      // Exact match
+      if (existingDesc === newDesc) return true;
+      
+      // One contains the other
+      if (existingDesc.includes(newDesc) || newDesc.includes(existingDesc)) return true;
+      
+      // Merchant name match
+      if (existing.merchant_name && transaction.merchant_name) {
+        const existingMerchant = existing.merchant_name.toLowerCase().trim();
+        const newMerchant = transaction.merchant_name.toLowerCase().trim();
+        if (existingMerchant === newMerchant) return true;
+      }
+      
+      // Check for word overlap (at least 2 common words of 3+ chars)
+      const existingWords = existingDesc.split(/\s+/).filter(w => w.length >= 3);
+      const newWords = newDesc.split(/\s+/).filter(w => w.length >= 3);
+      const commonWords = existingWords.filter(w => newWords.includes(w));
+      if (commonWords.length >= 2) return true;
+      
+      return false;
+    });
+
+    return match || null;
+  }, [expenses]);
+
   const importFromCSV = async (transactions: ParsedTransaction[]) => {
     try {
       if (isLocalMode) {
@@ -609,6 +654,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     deleteExpense,
     importFromCSV,
     findDuplicates,
+    checkDuplicate,
     totalExpenses,
     totalIncome,
     totalTransfers,
