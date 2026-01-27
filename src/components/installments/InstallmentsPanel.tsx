@@ -41,14 +41,14 @@ import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
-interface InstallmentDetailDialogProps {
+interface InstallmentDetailContentProps {
   plan: InstallmentPlanWithProgress;
   onMarkPaid: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-const InstallmentDetailDialog = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: InstallmentDetailDialogProps) => {
+const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: InstallmentDetailContentProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -322,7 +322,7 @@ export const InstallmentsPanel = () => {
                     </div>
                   </motion.div>
                 </DialogTrigger>
-                <InstallmentDetailDialog
+                <InstallmentDetailContent
                   plan={plan}
                   onMarkPaid={markInstallmentPaid}
                   onMarkUnpaid={markInstallmentUnpaid}
