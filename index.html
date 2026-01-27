@@ -27,10 +27,13 @@
   <body>
     <script>
       // Initialize theme before page loads to prevent flash
+      // Only apply dark theme if explicitly set in localStorage
       (function() {
         const theme = localStorage.getItem('theme');
-        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        if (theme === 'dark') {
           document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
         }
       })();
     </script>
