@@ -185,6 +185,22 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         </filter>
       </defs>
       
+      {/* Solid white background behind avatar to prevent dark mode bleed-through */}
+      <ellipse
+        cx="100"
+        cy="105"
+        rx="70"
+        ry="64"
+        fill="white"
+      />
+      <ellipse
+        cx="100"
+        cy="188"
+        rx="28"
+        ry="32"
+        fill="white"
+      />
+      
       {/* Body/Neck - mushroom-like shape */}
       <ellipse
         cx="100"
