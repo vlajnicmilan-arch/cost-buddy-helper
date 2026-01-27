@@ -128,6 +128,15 @@ export const FloatingAIAvatar = ({
           "relative w-[112px] h-[112px] cursor-pointer select-none touch-none",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
+        style={{
+          // Prevent Samsung Internet and other browsers from applying dark mode filters
+          colorScheme: 'only light',
+          filter: 'none',
+          WebkitFilter: 'none',
+          isolation: 'isolate',
+        }}
+        data-darkreader-inline-filter=""
+        data-darkreader-mode="dynamic"
         onMouseDown={handlePressStart}
         onMouseUp={handlePressEnd}
         onMouseLeave={handlePressCancel}
