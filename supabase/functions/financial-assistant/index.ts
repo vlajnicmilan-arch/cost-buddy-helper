@@ -60,8 +60,14 @@ ${financialContext ? `
 RASPODJELA TROŠKOVA PO KATEGORIJAMA (ovaj mjesec):
 ${financialContext.categoryBreakdown || 'Nema podataka o kategorijama'}
 
-IZVORI PLAĆANJA:
+IZVORI PLAĆANJA (računi):
 ${financialContext.paymentSources || 'Nema podataka o izvorima plaćanja'}
+
+KARTICE KORISNIKA:
+${financialContext.cards || 'Nema povezanih kartica'}
+- Kartice su povezane s izvorima plaćanja (računima).
+- Svaka kartica ima tip (Visa, Mastercard, itd.) i zadnje 4 znamenke.
+- Komentiraj kartice kad je relevantno (npr. "Vidim da koristiš Visa karticu na OTP računu").
 
 NEDAVNE TRANSAKCIJE:
 ${financialContext.recentTransactions || 'Nema nedavnih transakcija'}

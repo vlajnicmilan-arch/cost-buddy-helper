@@ -97,6 +97,13 @@ export const FinancialAssistantDialog = ({
       .map(ps => `- ${ps.name}: ${formatAmount(ps.balance)}`)
       .join('\n') || 'Nema izvora plaćanja';
 
+    // Cards from payment sources
+    const cardsStr = paymentSources.flatMap(ps => 
+      (ps.cards || []).map(card => 
+        `- ${card.card_name} (${card.card_type || 'Kartica'} ****${card.last_four_digits}) - povezana s ${ps.name}`
+      )
+    ).join('\n') || 'Nema povezanih kartica';
+
     // Recent transactions (last 10)
     const recentTx = expenses
       .slice(0, 10)
@@ -241,6 +248,7 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
       transactionCount: expenses.length,
       categoryBreakdown,
       paymentSources: paymentSourcesStr,
+      cards: cardsStr,
       recentTransactions: recentTx,
       budgets: budgetsStr,
       projects: projectsStr,

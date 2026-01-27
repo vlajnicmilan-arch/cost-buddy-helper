@@ -12,6 +12,7 @@ interface FinancialContext {
   transactionCount: number;
   categoryBreakdown: string;
   paymentSources: string;
+  cards: string;
   recentTransactions: string;
   budgets: string;
   projects: string;
