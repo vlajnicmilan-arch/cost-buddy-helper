@@ -258,7 +258,8 @@
     "aiScanned": "AI scanned",
     "savingReceipt": "Saving receipt image...",
     "receiptSaved": "Receipt image saved!",
-    "saveError": "Error saving expense"
+    "saveError": "Error saving expense",
+    "receiptImage": "Receipt image"
   },
   "categories": {
     "food": "Food",

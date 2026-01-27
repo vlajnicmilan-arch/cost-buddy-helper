@@ -258,7 +258,8 @@
     "aiScanned": "AI skeniran",
     "savingReceipt": "Spremam sliku računa...",
     "receiptSaved": "Slika računa spremljena!",
-    "saveError": "Greška pri spremanju troška"
+    "saveError": "Greška pri spremanju troška",
+    "receiptImage": "Slika računa"
   },
   "categories": {
     "food": "Hrana",

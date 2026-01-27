@@ -231,7 +231,8 @@
     "aiScanned": "KI gescannt",
     "savingReceipt": "Belegbild wird gespeichert...",
     "receiptSaved": "Belegbild gespeichert!",
-    "saveError": "Fehler beim Speichern der Ausgabe"
+    "saveError": "Fehler beim Speichern der Ausgabe",
+    "receiptImage": "Belegbild"
   },
   "categories": {
     "food": "Essen",
