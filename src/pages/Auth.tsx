@@ -23,13 +23,16 @@ const Auth = () => {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
   const [newUserName, setNewUserName] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   
-  const { signIn, signUp, resendVerificationEmail } = useAuth();
+  const { signIn, signUp, resendVerificationEmail, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { storageMode } = useStorage();
@@ -146,6 +149,45 @@ const Auth = () => {
     setPassword('');
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setErrors({ email: 'Unesite email adresu' });
+      return;
+    }
+    
+    try {
+      z.string().email().parse(trimmedEmail);
+    } catch {
+      setErrors({ email: 'Nevažeća email adresa' });
+      return;
+    }
+    
+    setResetLoading(true);
+    setErrors({});
+    
+    try {
+      const { error } = await resetPassword(trimmedEmail);
+      if (error) {
+        toast.error(error.message || 'Greška pri slanju emaila');
+        return;
+      }
+      setResetEmailSent(true);
+      setRegisteredEmail(trimmedEmail);
+      toast.success('Email za resetiranje lozinke je poslan!');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const backToLogin = () => {
+    setShowForgotPassword(false);
+    setResetEmailSent(false);
+    setErrors({});
+  };
+
   // Welcome screen with confetti for new users
   if (showWelcome) {
     return (
@@ -245,6 +287,124 @@ const Auth = () => {
     );
   }
 
+  // Password reset email sent screen
+  if (resetEmailSent) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8 animate-fade-in">
+          {/* Logo */}
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+              <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
+          </div>
+
+          <div className="glass-card rounded-2xl p-8 space-y-6 text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+              <Mail className="w-8 h-8 text-primary" />
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold">Provjerite svoj email</h2>
+              <p className="text-muted-foreground text-sm">
+                Poslali smo link za resetiranje lozinke na:
+              </p>
+              <p className="font-medium text-primary">{registeredEmail}</p>
+            </div>
+
+            <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground space-y-2">
+              <p className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <span>Kliknite na link u emailu za resetiranje lozinke</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <span>Provjerite spam/junk folder ako ne vidite email</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <span>Link vrijedi 1 sat</span>
+              </p>
+            </div>
+
+            <Button
+              className="w-full h-12 rounded-xl"
+              onClick={backToLogin}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Natrag na prijavu
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Forgot password form
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8 animate-fade-in">
+          {/* Logo */}
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+              <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
+            <p className="text-muted-foreground mt-2">
+              Zaboravljena lozinka
+            </p>
+          </div>
+
+          <form onSubmit={handleForgotPassword} className="glass-card rounded-2xl p-6 space-y-6">
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Unesite svoju email adresu i poslat ćemo vam link za resetiranje lozinke.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="resetEmail">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="resetEmail"
+                  type="email"
+                  placeholder="vas@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`pl-10 h-12 rounded-xl ${errors.email ? 'border-destructive' : ''}`}
+                  required
+                  maxLength={255}
+                />
+              </div>
+              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full h-12 rounded-xl font-medium"
+              disabled={resetLoading}
+            >
+              {resetLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Pošalji link za resetiranje
+            </Button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={backToLogin}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4 inline mr-1" />
+                Natrag na prijavu
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
@@ -313,7 +473,21 @@ const Auth = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Lozinka</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Lozinka</Label>
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setErrors({});
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Zaboravljena lozinka?
+                </button>
+              )}
+            </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
