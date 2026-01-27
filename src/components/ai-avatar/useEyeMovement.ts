@@ -31,8 +31,9 @@ export const useEyeMovement = (mood: AvatarMood, isActive: boolean = true) => {
   }, []);
 
   useEffect(() => {
-    // Only animate eyes when in neutral mood and active
-    if (mood !== 'neutral' || !isActive) {
+    // Only animate eyes when active and NOT in thinking mood (which has fixed position)
+    // Allow eye movement in neutral, happy, worried, proud moods
+    if (mood === 'thinking' || !isActive) {
       setEyePosition({ x: 0, y: 0 });
       return;
     }
