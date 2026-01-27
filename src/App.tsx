@@ -10,6 +10,7 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import StorageSetup from "./pages/StorageSetup";
 import Install from "./pages/Install";
 
@@ -64,6 +65,7 @@ const AppRoutes = () => {
         <Route path="/setup" element={<StorageSetup />} />
         <Route path="/install" element={<Install />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/setup" replace />} />
       </Routes>
     );
@@ -75,6 +77,7 @@ const AppRoutes = () => {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/setup" element={<StorageSetup />} />
       <Route path="/install" element={<Install />} />
       
