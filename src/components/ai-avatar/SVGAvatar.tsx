@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import { AvatarMood } from './useAvatarMood';
 
 interface SVGAvatarProps {
@@ -111,81 +112,78 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
   const cheekOpacity = getCheekOpacity(mood);
   const pupilOffset = eyeExpr.pupilOffset || { x: 0, y: 0 };
 
+  // Generate unique IDs for gradients to avoid conflicts
+  const uniqueId = useMemo(() => Math.random().toString(36).substring(2, 9), []);
+
   return (
     <svg
       viewBox="0 0 200 220"
       className={className}
       style={{ 
         filter: 'drop-shadow(0 6px 16px rgba(80, 200, 200, 0.25))',
-        isolation: 'isolate', // Isolate from parent stacking context
       }}
     >
       <defs>
-        {/* Main body gradient - soft mint/cyan */}
-        <radialGradient id="bodyGradient" cx="50%" cy="70%" r="60%">
-          <stop offset="0%" stopColor="#e8fafa" />
-          <stop offset="50%" stopColor="#c5eded" />
-          <stop offset="100%" stopColor="#9ddede" />
+        {/* Main body gradient - soft mint/cyan - SOLID COLORS */}
+        <radialGradient id={`bodyGrad_${uniqueId}`} cx="50%" cy="70%" r="60%">
+          <stop offset="0%" stopColor="#e8fafa" stopOpacity="1" />
+          <stop offset="50%" stopColor="#c5eded" stopOpacity="1" />
+          <stop offset="100%" stopColor="#9ddede" stopOpacity="1" />
         </radialGradient>
         
-        {/* Head gradient - lighter, more 3D feel */}
-        <radialGradient id="headGradient" cx="40%" cy="35%" r="70%">
-          <stop offset="0%" stopColor="#f5ffff" />
-          <stop offset="40%" stopColor="#e8fafa" />
-          <stop offset="70%" stopColor="#d0f0f0" />
-          <stop offset="100%" stopColor="#a8e4e4" />
+        {/* Head gradient - SOLID COLORS */}
+        <radialGradient id={`headGrad_${uniqueId}`} cx="40%" cy="35%" r="70%">
+          <stop offset="0%" stopColor="#f5ffff" stopOpacity="1" />
+          <stop offset="40%" stopColor="#e8fafa" stopOpacity="1" />
+          <stop offset="70%" stopColor="#d0f0f0" stopOpacity="1" />
+          <stop offset="100%" stopColor="#a8e4e4" stopOpacity="1" />
         </radialGradient>
         
         {/* Eye white gradient */}
-        <radialGradient id="eyeWhiteGradient" cx="45%" cy="40%" r="55%">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#f0f8f8" />
+        <radialGradient id={`eyeWhiteGrad_${uniqueId}`} cx="45%" cy="40%" r="55%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+          <stop offset="100%" stopColor="#f0f8f8" stopOpacity="1" />
         </radialGradient>
         
         {/* Iris gradient - deep teal/cyan */}
-        <radialGradient id="irisGradient" cx="45%" cy="40%" r="50%">
-          <stop offset="0%" stopColor="#4db8c7" />
-          <stop offset="60%" stopColor="#2a98a8" />
-          <stop offset="100%" stopColor="#1a7888" />
+        <radialGradient id={`irisGrad_${uniqueId}`} cx="45%" cy="40%" r="50%">
+          <stop offset="0%" stopColor="#4db8c7" stopOpacity="1" />
+          <stop offset="60%" stopColor="#2a98a8" stopOpacity="1" />
+          <stop offset="100%" stopColor="#1a7888" stopOpacity="1" />
         </radialGradient>
         
         {/* Pupil gradient - very dark */}
-        <radialGradient id="pupilGradient" cx="40%" cy="35%" r="60%">
-          <stop offset="0%" stopColor="#1a4550" />
-          <stop offset="50%" stopColor="#0d2830" />
-          <stop offset="100%" stopColor="#051820" />
+        <radialGradient id={`pupilGrad_${uniqueId}`} cx="40%" cy="35%" r="60%">
+          <stop offset="0%" stopColor="#1a4550" stopOpacity="1" />
+          <stop offset="50%" stopColor="#0d2830" stopOpacity="1" />
+          <stop offset="100%" stopColor="#051820" stopOpacity="1" />
         </radialGradient>
         
-        {/* Halo gradient - glowing cyan */}
-        <linearGradient id="haloGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#80f0f0" stopOpacity="0.9" />
-          <stop offset="50%" stopColor="#60e8e8" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="#50e0e0" stopOpacity="0.85" />
+        {/* Halo gradient - glowing cyan - SOLID */}
+        <linearGradient id={`haloGrad_${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#80f0f0" stopOpacity="1" />
+          <stop offset="50%" stopColor="#60e8e8" stopOpacity="1" />
+          <stop offset="100%" stopColor="#50e0e0" stopOpacity="1" />
         </linearGradient>
         
-        {/* Halo inner glow */}
-        <radialGradient id="haloInnerGradient" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#a0ffff" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="#70f0f0" stopOpacity="0" />
-        </radialGradient>
-        
-        {/* Cheek blush gradient - soft peach/pink */}
-        <radialGradient id="cheekGradient" cx="50%" cy="50%" r="50%">
+        {/* Cheek blush gradient */}
+        <radialGradient id={`cheekGrad_${uniqueId}`} cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#ffb8a8" stopOpacity="0.5" />
           <stop offset="70%" stopColor="#ffb8a8" stopOpacity="0.2" />
           <stop offset="100%" stopColor="#ffb8a8" stopOpacity="0" />
         </radialGradient>
         
-        {/* Antenna gradient */}
-        <radialGradient id="antennaGradient" cx="40%" cy="30%" r="70%">
-          <stop offset="0%" stopColor="#f8ffff" />
-          <stop offset="100%" stopColor="#d8f0f0" />
+        {/* Antenna gradient - SOLID */}
+        <radialGradient id={`antennaGrad_${uniqueId}`} cx="40%" cy="30%" r="70%">
+          <stop offset="0%" stopColor="#f8ffff" stopOpacity="1" />
+          <stop offset="100%" stopColor="#d8f0f0" stopOpacity="1" />
         </radialGradient>
         
-        {/* Subtle shadow for depth */}
-        <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#5aa" floodOpacity="0.15"/>
-        </filter>
+        {/* Eyelid gradient - SOLID for blink */}
+        <radialGradient id={`eyelidGrad_${uniqueId}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#e0f5f5" stopOpacity="1" />
+          <stop offset="100%" stopColor="#d0eeee" stopOpacity="1" />
+        </radialGradient>
       </defs>
       
       {/* Body/Neck - mushroom-like shape */}
@@ -194,14 +192,14 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         cy="195"
         rx="26"
         ry="20"
-        fill="url(#bodyGradient)"
+        fill={`url(#bodyGrad_${uniqueId})`}
       />
       <ellipse
         cx="100"
         cy="180"
         rx="18"
         ry="12"
-        fill="url(#bodyGradient)"
+        fill={`url(#bodyGrad_${uniqueId})`}
       />
       
       {/* Head - main rounded shape */}
@@ -210,8 +208,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         cy="105"
         rx="68"
         ry="62"
-        fill="url(#headGradient)"
-        filter="url(#softShadow)"
+        fill={`url(#headGrad_${uniqueId})`}
       />
       
       {/* Head highlight - top shine */}
@@ -220,7 +217,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         cy="70"
         rx="25"
         ry="12"
-        fill="white"
+        fill="#ffffff"
         opacity="0.3"
       />
       
@@ -230,7 +227,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         cy="58"
         rx="6"
         ry="12"
-        fill="url(#antennaGradient)"
+        fill={`url(#antennaGrad_${uniqueId})`}
         transform="rotate(25 142 58)"
       />
       
@@ -254,16 +251,8 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           rx="26"
           ry="9"
           fill="none"
-          stroke="url(#haloGradient)"
+          stroke={`url(#haloGrad_${uniqueId})`}
           strokeWidth="5"
-        />
-        {/* Halo inner glow */}
-        <ellipse
-          cx="100"
-          cy="25"
-          rx="22"
-          ry="7"
-          fill="url(#haloInnerGradient)"
         />
         {/* Halo highlight */}
         <ellipse
@@ -271,7 +260,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           cy="22"
           rx="8"
           ry="3"
-          fill="white"
+          fill="#ffffff"
           opacity="0.5"
         />
       </motion.g>
@@ -305,13 +294,13 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         transition={{ duration: 0.3 }}
         style={{ transformOrigin: '72px 100px' }}
       >
-        {/* Eye white/base - slightly larger, more oval */}
+        {/* Eye white/base */}
         <ellipse
           cx="72"
           cy="100"
           rx="18"
           ry="20"
-          fill="url(#eyeWhiteGradient)"
+          fill={`url(#eyeWhiteGrad_${uniqueId})`}
           stroke="#c0e8e8"
           strokeWidth="0.5"
         />
@@ -322,7 +311,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           cy={102 + pupilOffset.y}
           rx="14"
           ry="15"
-          fill="url(#irisGradient)"
+          fill={`url(#irisGrad_${uniqueId})`}
           animate={{ cx: 72 + pupilOffset.x, cy: 102 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
@@ -333,34 +322,34 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           cy={102 + pupilOffset.y}
           rx="9"
           ry="10"
-          fill="url(#pupilGradient)"
+          fill={`url(#pupilGrad_${uniqueId})`}
           animate={{ cx: 72 + pupilOffset.x, cy: 102 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
-        {/* Main eye highlight - big white dot */}
+        {/* Main eye highlight */}
         <motion.ellipse
           cx={78 + pupilOffset.x}
           cy={96 + pupilOffset.y}
           rx="4"
           ry="5"
-          fill="white"
+          fill="#ffffff"
           animate={{ cx: 78 + pupilOffset.x, cy: 96 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
-        {/* Secondary eye highlight - smaller */}
+        {/* Secondary eye highlight */}
         <motion.circle
           cx={68 + pupilOffset.x}
           cy={108 + pupilOffset.y}
           r="2"
-          fill="white"
+          fill="#ffffff"
           opacity="0.6"
           animate={{ cx: 68 + pupilOffset.x, cy: 108 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
-        {/* Eyelid (blink) */}
+        {/* Eyelid (blink) - solid color */}
         <motion.ellipse
           cx="72"
           cy="100"
@@ -401,7 +390,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           cy="100"
           rx="18"
           ry="20"
-          fill="url(#eyeWhiteGradient)"
+          fill={`url(#eyeWhiteGrad_${uniqueId})`}
           stroke="#c0e8e8"
           strokeWidth="0.5"
         />
@@ -412,7 +401,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           cy={102 + pupilOffset.y}
           rx="14"
           ry="15"
-          fill="url(#irisGradient)"
+          fill={`url(#irisGrad_${uniqueId})`}
           animate={{ cx: 128 + pupilOffset.x, cy: 102 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
@@ -423,7 +412,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           cy={102 + pupilOffset.y}
           rx="9"
           ry="10"
-          fill="url(#pupilGradient)"
+          fill={`url(#pupilGrad_${uniqueId})`}
           animate={{ cx: 128 + pupilOffset.x, cy: 102 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
@@ -434,7 +423,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           cy={96 + pupilOffset.y}
           rx="4"
           ry="5"
-          fill="white"
+          fill="#ffffff"
           animate={{ cx: 134 + pupilOffset.x, cy: 96 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
@@ -444,13 +433,13 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           cx={124 + pupilOffset.x}
           cy={108 + pupilOffset.y}
           r="2"
-          fill="white"
+          fill="#ffffff"
           opacity="0.6"
           animate={{ cx: 124 + pupilOffset.x, cy: 108 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
-        {/* Eyelid (blink) */}
+        {/* Eyelid (blink) - solid color */}
         <motion.ellipse
           cx="128"
           cy="100"
@@ -482,7 +471,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         cy="115"
         rx="12"
         ry="8"
-        fill="url(#cheekGradient)"
+        fill={`url(#cheekGrad_${uniqueId})`}
         animate={{ opacity: cheekOpacity }}
         transition={{ duration: 0.3 }}
       />
@@ -491,7 +480,7 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         cy="115"
         rx="12"
         ry="8"
-        fill="url(#cheekGradient)"
+        fill={`url(#cheekGrad_${uniqueId})`}
         animate={{ opacity: cheekOpacity }}
         transition={{ duration: 0.3 }}
       />
