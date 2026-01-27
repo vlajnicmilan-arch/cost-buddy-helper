@@ -328,6 +328,7 @@
   },
   "summary": {
     "balance": "Saldo",
+    "netWorth": "Nettovermögen",
     "totalIncome": "Gesamteinnahmen",
     "totalExpenses": "Gesamtausgaben",
     "transfers": "Überweisungen",

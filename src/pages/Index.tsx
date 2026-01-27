@@ -4,6 +4,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useInstallments } from '@/hooks/useInstallments';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,7 +35,7 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@
 import { InstallmentsPanel } from '@/components/installments';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3, PiggyBank } from 'lucide-react';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -161,6 +162,9 @@ const Index = () => {
   // Get custom payment sources for card filtering (declare before useExpenses to use in callback)
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   
+  // Get installment plans for net worth calculation
+  const { plans: installmentPlans } = useInstallments();
+  
   // Get budgets for AI assistant
   const { budgets: budgetsWithStats } = useBudgets();
   
@@ -241,6 +245,13 @@ const Index = () => {
       };
     });
   }, [projects, allExpenses]);
+
+  // Calculate Net Worth: Total account balances - Remaining installment obligations
+  const netWorth = useMemo(() => {
+    const totalAccountBalances = customPaymentSources.reduce((sum, source) => sum + (source.balance || 0), 0);
+    const remainingObligations = installmentPlans.reduce((sum, plan) => sum + (plan.remainingAmount || 0), 0);
+    return totalAccountBalances - remainingObligations;
+  }, [customPaymentSources, installmentPlans]);
 
   // Initialize auto-backup for local mode
   useAutoBackup();
@@ -567,7 +578,7 @@ const Index = () => {
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -587,6 +598,22 @@ const Index = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
+            whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(168 80% 50% / 0.3)' }}
+            className="p-3 sm:p-4 rounded-xl border bg-card text-center"
+            style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(168 80% 50%)' }}
+          >
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <PiggyBank className="w-4 h-4" style={{ color: 'hsl(168 80% 50%)' }} />
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.netWorth')}</span>
+            </div>
+            <p className={`text-base sm:text-xl font-bold`} style={{ color: netWorth >= 0 ? 'hsl(168 80% 50%)' : 'hsl(var(--destructive))' }}>
+              {formatAmount(netWorth)}
+            </p>
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
             whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(var(--income) / 0.3)' }}
             className="p-3 sm:p-4 rounded-xl border bg-card text-center cursor-pointer"
             style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--income))' }}
@@ -603,7 +630,7 @@ const Index = () => {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.15 }}
             whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(var(--destructive) / 0.3)' }}
             className="p-3 sm:p-4 rounded-xl border bg-card text-center cursor-pointer"
             style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--destructive))' }}
