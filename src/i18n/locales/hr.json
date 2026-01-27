@@ -722,5 +722,12 @@
     "motivation4": "Nastavi pratiti troškove, radiš odličan posao! 🌟",
     "default": "Klikni za AI savjete o tvojim financijama!",
     "tapForMore": "Klikni za više savjeta"
+  },
+  "duplicates": {
+    "possibleDuplicate": "Moguća duplirana transakcija",
+    "foundSimilar": "Pronašli smo sličnu transakciju u vašoj evidenciji. Jeste li sigurni da želite dodati novu?",
+    "existingTransaction": "Postojeća transakcija",
+    "newTransaction": "Nova transakcija",
+    "addAnyway": "Dodaj svejedno"
   }
 }

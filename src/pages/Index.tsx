@@ -181,6 +181,7 @@ const Index = () => {
     deleteExpense, 
     importFromCSV,
     findDuplicates,
+    checkDuplicate,
     totalExpenses, 
     totalIncome, 
     totalTransfers,
@@ -455,7 +456,7 @@ const Index = () => {
                 hideTrigger
               />
             )}
-            <AddExpenseDialog onAdd={addExpense} />
+            <AddExpenseDialog onAdd={addExpense} checkDuplicate={checkDuplicate} />
           </div>
         </header>
 
