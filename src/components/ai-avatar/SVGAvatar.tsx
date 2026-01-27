@@ -319,49 +319,50 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', eyePosition, className
           strokeWidth="0.5"
         />
         
-        {/* Iris - teal ring */}
-        <motion.ellipse
-          cx={72 + pupilOffset.x}
-          cy={102 + pupilOffset.y}
-          rx="14"
-          ry="15"
-          fill="url(#irisGradient)"
-          animate={{ cx: 72 + pupilOffset.x, cy: 102 + pupilOffset.y }}
-          transition={{ duration: 0.3 }}
-        />
-        
-        {/* Pupil - dark center */}
-        <motion.ellipse
-          cx={72 + pupilOffset.x}
-          cy={102 + pupilOffset.y}
-          rx="9"
-          ry="10"
-          fill="url(#pupilGradient)"
-          animate={{ cx: 72 + pupilOffset.x, cy: 102 + pupilOffset.y }}
-          transition={{ duration: 0.3 }}
-        />
-        
-        {/* Main eye highlight - big white dot */}
-        <motion.ellipse
-          cx={78 + pupilOffset.x}
-          cy={96 + pupilOffset.y}
-          rx="4"
-          ry="5"
-          fill="white"
-          animate={{ cx: 78 + pupilOffset.x, cy: 96 + pupilOffset.y }}
-          transition={{ duration: 0.3 }}
-        />
-        
-        {/* Secondary eye highlight - smaller */}
-        <motion.circle
-          cx={68 + pupilOffset.x}
-          cy={108 + pupilOffset.y}
-          r="2"
-          fill="white"
-          opacity="0.6"
-          animate={{ cx: 68 + pupilOffset.x, cy: 108 + pupilOffset.y }}
-          transition={{ duration: 0.3 }}
-        />
+        {/* Moving parts of the eye (iris, pupil, highlights) */}
+        <motion.g
+          animate={{
+            x: pupilOffset.x,
+            y: pupilOffset.y,
+          }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          {/* Iris - teal ring */}
+          <ellipse
+            cx="72"
+            cy="102"
+            rx="14"
+            ry="15"
+            fill="url(#irisGradient)"
+          />
+          
+          {/* Pupil - dark center */}
+          <ellipse
+            cx="72"
+            cy="102"
+            rx="9"
+            ry="10"
+            fill="url(#pupilGradient)"
+          />
+          
+          {/* Main eye highlight - big white dot */}
+          <ellipse
+            cx="78"
+            cy="96"
+            rx="4"
+            ry="5"
+            fill="white"
+          />
+          
+          {/* Secondary eye highlight - smaller */}
+          <circle
+            cx="68"
+            cy="108"
+            r="2"
+            fill="white"
+            opacity="0.6"
+          />
+        </motion.g>
         
         {/* Eyelid (blink) */}
         <motion.ellipse
@@ -409,49 +410,50 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', eyePosition, className
           strokeWidth="0.5"
         />
         
-        {/* Iris - teal ring */}
-        <motion.ellipse
-          cx={128 + pupilOffset.x}
-          cy={102 + pupilOffset.y}
-          rx="14"
-          ry="15"
-          fill="url(#irisGradient)"
-          animate={{ cx: 128 + pupilOffset.x, cy: 102 + pupilOffset.y }}
-          transition={{ duration: 0.3 }}
-        />
-        
-        {/* Pupil - dark center */}
-        <motion.ellipse
-          cx={128 + pupilOffset.x}
-          cy={102 + pupilOffset.y}
-          rx="9"
-          ry="10"
-          fill="url(#pupilGradient)"
-          animate={{ cx: 128 + pupilOffset.x, cy: 102 + pupilOffset.y }}
-          transition={{ duration: 0.3 }}
-        />
-        
-        {/* Main eye highlight */}
-        <motion.ellipse
-          cx={134 + pupilOffset.x}
-          cy={96 + pupilOffset.y}
-          rx="4"
-          ry="5"
-          fill="white"
-          animate={{ cx: 134 + pupilOffset.x, cy: 96 + pupilOffset.y }}
-          transition={{ duration: 0.3 }}
-        />
-        
-        {/* Secondary eye highlight */}
-        <motion.circle
-          cx={124 + pupilOffset.x}
-          cy={108 + pupilOffset.y}
-          r="2"
-          fill="white"
-          opacity="0.6"
-          animate={{ cx: 124 + pupilOffset.x, cy: 108 + pupilOffset.y }}
-          transition={{ duration: 0.3 }}
-        />
+        {/* Moving parts of the eye (iris, pupil, highlights) */}
+        <motion.g
+          animate={{
+            x: pupilOffset.x,
+            y: pupilOffset.y,
+          }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          {/* Iris - teal ring */}
+          <ellipse
+            cx="128"
+            cy="102"
+            rx="14"
+            ry="15"
+            fill="url(#irisGradient)"
+          />
+          
+          {/* Pupil - dark center */}
+          <ellipse
+            cx="128"
+            cy="102"
+            rx="9"
+            ry="10"
+            fill="url(#pupilGradient)"
+          />
+          
+          {/* Main eye highlight */}
+          <ellipse
+            cx="134"
+            cy="96"
+            rx="4"
+            ry="5"
+            fill="white"
+          />
+          
+          {/* Secondary eye highlight */}
+          <circle
+            cx="124"
+            cy="108"
+            r="2"
+            fill="white"
+            opacity="0.6"
+          />
+        </motion.g>
         
         {/* Eyelid (blink) */}
         <motion.ellipse
