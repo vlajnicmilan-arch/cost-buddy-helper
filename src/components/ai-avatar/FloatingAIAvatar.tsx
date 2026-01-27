@@ -106,15 +106,7 @@ export const FloatingAIAvatar = ({
   }, []);
 
   return (
-    <div 
-      className={cn("relative", className)}
-      style={{
-        // Force light appearance to prevent Samsung Internet dark mode
-        colorScheme: 'only light',
-        WebkitTextFillColor: 'initial',
-        forcedColorAdjust: 'none',
-      } as React.CSSProperties}
-    >
+    <div className={cn("relative", className)}>
       {/* Tooltip */}
       <AnimatePresence>
         {showTooltip && tooltipMessage && (
@@ -136,15 +128,6 @@ export const FloatingAIAvatar = ({
           "relative w-[112px] h-[112px] cursor-pointer select-none touch-none",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
-        style={{
-          // Prevent Samsung Internet and other browsers from applying dark mode filters
-          colorScheme: 'only light',
-          filter: 'none',
-          WebkitFilter: 'none',
-          isolation: 'isolate',
-        }}
-        data-darkreader-inline-filter=""
-        data-darkreader-mode="dynamic"
         onMouseDown={handlePressStart}
         onMouseUp={handlePressEnd}
         onMouseLeave={handlePressCancel}
@@ -157,40 +140,31 @@ export const FloatingAIAvatar = ({
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
         aria-label="AI Asistent"
       >
-        {/* Avatar wrapper with light background to isolate from dark mode */}
-        <div 
-          className="relative w-full h-full rounded-full overflow-hidden"
-          style={{
-            backgroundColor: 'transparent',
-            isolation: 'isolate',
+        {/* Avatar with floating animation */}
+        <motion.div
+          className="relative w-full h-full"
+          animate={{
+            y: [0, -4, 0],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut",
           }}
         >
-          {/* Avatar with floating animation */}
+          {/* Avatar with mood expressions */}
           <motion.div
             className="relative w-full h-full"
-            animate={{
-              y: [0, -4, 0],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            animate={getMoodAnimation(mood)}
+            transition={getMoodTransition(mood)}
           >
-            {/* Avatar with mood expressions */}
-            <motion.div
-              className="relative w-full h-full"
-              animate={getMoodAnimation(mood)}
-              transition={getMoodTransition(mood)}
-            >
-              <SVGAvatar 
-                isBlinking={isBlinking}
-                mood={mood}
-                className="w-full h-full"
-              />
-            </motion.div>
+            <SVGAvatar 
+              isBlinking={isBlinking}
+              mood={mood}
+              className="w-full h-full"
+            />
           </motion.div>
-        </div>
+        </motion.div>
 
         {/* Pulse ring for interaction hint */}
         <motion.div

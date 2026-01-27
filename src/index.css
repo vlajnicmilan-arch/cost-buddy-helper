@@ -136,12 +136,6 @@
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
-
-  /* Prevent browser dark mode from affecting AI avatar */
-  [data-darkreader-inline-filter] {
-    filter: none !important;
-    -webkit-filter: none !important;
-  }
 }
 
 @layer components {
