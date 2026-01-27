@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { SVGAvatar } from './SVGAvatar';
 import { useBlinking } from './useBlinking';
+import { useEyeMovement } from './useEyeMovement';
 import { AvatarMood } from './useAvatarMood';
 
 interface FloatingAIAvatarProps {
@@ -72,6 +73,7 @@ export const FloatingAIAvatar = ({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const wasLongPress = useRef(false);
   const isBlinking = useBlinking();
+  const eyePosition = useEyeMovement(mood);
 
   const handlePressStart = useCallback(() => {
     setIsPressed(true);
@@ -162,6 +164,7 @@ export const FloatingAIAvatar = ({
             <SVGAvatar 
               isBlinking={isBlinking}
               mood={mood}
+              eyePosition={eyePosition}
               className="w-full h-full"
             />
           </motion.div>
