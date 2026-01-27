@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { AvatarMood } from './useAvatarMood';
+import { EyePosition } from './useEyeMovement';
 
 interface SVGAvatarProps {
   isBlinking: boolean;
   mood?: AvatarMood;
+  eyePosition?: EyePosition;
   className?: string;
 }
 
@@ -74,19 +76,19 @@ const getMouthPath = (mood: AvatarMood) => {
   }
 };
 
-// Get eye expression based on mood
+// Get eye expression based on mood (without pupil offset - now handled separately)
 const getEyeExpression = (mood: AvatarMood) => {
   switch (mood) {
     case 'happy':
-      return { scaleY: 0.85, translateY: 2, pupilOffset: { x: 0, y: 0 } };
+      return { scaleY: 0.85, translateY: 2 };
     case 'thinking':
-      return { scaleY: 1, translateY: 0, pupilOffset: { x: 3, y: -2 } };
+      return { scaleY: 1, translateY: 0 };
     case 'worried':
-      return { scaleY: 1.05, translateY: 0, pupilOffset: { x: 0, y: 0 } };
+      return { scaleY: 1.05, translateY: 0 };
     case 'proud':
-      return { scaleY: 0.92, translateY: 1, pupilOffset: { x: 0, y: 0 } };
+      return { scaleY: 0.92, translateY: 1 };
     default:
-      return { scaleY: 1, translateY: 0, pupilOffset: { x: 0, y: 0 } };
+      return { scaleY: 1, translateY: 0 };
   }
 };
 
@@ -104,12 +106,16 @@ const getCheekOpacity = (mood: AvatarMood) => {
   }
 };
 
-export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatarProps) => {
+export const SVGAvatar = ({ isBlinking, mood = 'neutral', eyePosition, className }: SVGAvatarProps) => {
   const eyebrows = getEyebrowPaths(mood);
   const mouth = getMouthPath(mood);
   const eyeExpr = getEyeExpression(mood);
   const cheekOpacity = getCheekOpacity(mood);
-  const pupilOffset = eyeExpr.pupilOffset || { x: 0, y: 0 };
+  
+  // Use mood-specific offset for thinking, otherwise use dynamic eye movement
+  const pupilOffset = mood === 'thinking' 
+    ? { x: 3, y: -2 } 
+    : eyePosition || { x: 0, y: 0 };
 
   return (
     <svg
