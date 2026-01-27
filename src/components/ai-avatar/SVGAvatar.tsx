@@ -115,7 +115,10 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
     <svg
       viewBox="0 0 200 220"
       className={className}
-      style={{ filter: 'drop-shadow(0 6px 16px rgba(80, 200, 200, 0.25))' }}
+      style={{ 
+        filter: 'drop-shadow(0 6px 16px rgba(80, 200, 200, 0.25))',
+        isolation: 'isolate', // Isolate from parent stacking context
+      }}
     >
       <defs>
         {/* Main body gradient - soft mint/cyan */}
@@ -184,22 +187,6 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#5aa" floodOpacity="0.15"/>
         </filter>
       </defs>
-      
-      {/* Solid white background behind avatar to prevent dark mode bleed-through */}
-      <ellipse
-        cx="100"
-        cy="105"
-        rx="70"
-        ry="64"
-        fill="white"
-      />
-      <ellipse
-        cx="100"
-        cy="188"
-        rx="28"
-        ry="32"
-        fill="white"
-      />
       
       {/* Body/Neck - mushroom-like shape */}
       <ellipse
