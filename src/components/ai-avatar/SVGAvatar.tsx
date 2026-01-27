@@ -11,33 +11,29 @@ interface SVGAvatarProps {
 const getEyebrowPaths = (mood: AvatarMood) => {
   switch (mood) {
     case 'happy':
-      // Raised, curved upward (excited)
       return {
-        left: "M 56 86 Q 68 80 80 86",
-        right: "M 120 86 Q 132 80 144 86",
+        left: "M 62 72 Q 72 66 82 72",
+        right: "M 118 72 Q 128 66 138 72",
       };
     case 'thinking':
-      // One raised, one neutral (curious)
       return {
-        left: "M 58 90 Q 68 88 78 90",
-        right: "M 120 84 Q 132 78 144 86",
+        left: "M 64 76 Q 72 74 80 76",
+        right: "M 118 70 Q 128 64 138 72",
       };
     case 'worried':
-      // Angled inward (concerned)
       return {
-        left: "M 56 84 Q 68 90 80 88",
-        right: "M 120 88 Q 132 90 144 84",
+        left: "M 62 70 Q 72 76 82 74",
+        right: "M 118 74 Q 128 76 138 70",
       };
     case 'proud':
-      // Confident, slightly raised
       return {
-        left: "M 54 84 Q 68 80 82 84",
-        right: "M 118 84 Q 132 80 146 84",
+        left: "M 60 70 Q 72 64 84 70",
+        right: "M 116 70 Q 128 64 140 70",
       };
     default: // neutral
       return {
-        left: "M 58 88 Q 68 84 78 88",
-        right: "M 122 88 Q 132 84 142 88",
+        left: "M 64 74 Q 72 70 80 74",
+        right: "M 120 74 Q 128 70 136 74",
       };
   }
 };
@@ -46,38 +42,34 @@ const getEyebrowPaths = (mood: AvatarMood) => {
 const getMouthPath = (mood: AvatarMood) => {
   switch (mood) {
     case 'happy':
-      // Big smile with open mouth
       return {
-        path: "M 80 138 Q 100 160 120 138",
-        fill: "#4a8080",
+        path: "M 82 138 Q 100 155 118 138",
+        fill: "#3a7a7a",
         strokeWidth: 0,
       };
     case 'thinking':
-      // Slightly pursed, sideways
       return {
-        path: "M 90 145 Q 100 143 115 148",
+        path: "M 92 142 Q 100 140 112 145",
         fill: "none",
-        strokeWidth: 3,
+        strokeWidth: 2.5,
       };
     case 'worried':
-      // Slight frown
       return {
-        path: "M 85 150 Q 100 142 115 150",
+        path: "M 88 147 Q 100 140 112 147",
         fill: "none",
-        strokeWidth: 3,
+        strokeWidth: 2.5,
       };
     case 'proud':
-      // Confident smile
       return {
-        path: "M 82 140 Q 100 158 118 140",
+        path: "M 85 138 Q 100 152 115 138",
         fill: "none",
-        strokeWidth: 3.5,
+        strokeWidth: 2.5,
       };
     default: // neutral
       return {
-        path: "M 85 140 Q 100 155 115 140",
+        path: "M 88 138 Q 100 150 112 138",
         fill: "none",
-        strokeWidth: 3,
+        strokeWidth: 2.5,
       };
   }
 };
@@ -86,19 +78,15 @@ const getMouthPath = (mood: AvatarMood) => {
 const getEyeExpression = (mood: AvatarMood) => {
   switch (mood) {
     case 'happy':
-      // Slightly squinted (happy eyes)
-      return { scaleY: 0.9, translateY: 2 };
+      return { scaleY: 0.85, translateY: 2, pupilOffset: { x: 0, y: 0 } };
     case 'thinking':
-      // Looking up/side
-      return { scaleY: 1, translateY: 0, pupilOffset: { x: 3, y: -3 } };
+      return { scaleY: 1, translateY: 0, pupilOffset: { x: 3, y: -2 } };
     case 'worried':
-      // Slightly wider
-      return { scaleY: 1.05, translateY: 0 };
+      return { scaleY: 1.05, translateY: 0, pupilOffset: { x: 0, y: 0 } };
     case 'proud':
-      // Normal but confident
-      return { scaleY: 0.95, translateY: 1 };
+      return { scaleY: 0.92, translateY: 1, pupilOffset: { x: 0, y: 0 } };
     default:
-      return { scaleY: 1, translateY: 0 };
+      return { scaleY: 1, translateY: 0, pupilOffset: { x: 0, y: 0 } };
   }
 };
 
@@ -108,11 +96,11 @@ const getCheekOpacity = (mood: AvatarMood) => {
     case 'happy':
       return 1;
     case 'proud':
-      return 0.8;
+      return 0.9;
     case 'worried':
-      return 0.4;
+      return 0.5;
     default:
-      return 0.6;
+      return 0.7;
   }
 };
 
@@ -125,116 +113,172 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
 
   return (
     <svg
-      viewBox="0 0 200 240"
+      viewBox="0 0 200 220"
       className={className}
-      style={{ filter: 'drop-shadow(0 4px 12px rgba(0, 200, 200, 0.3))' }}
+      style={{ filter: 'drop-shadow(0 6px 16px rgba(80, 200, 200, 0.25))' }}
     >
       <defs>
-        {/* Gradients */}
-        <radialGradient id="headGradient" cx="50%" cy="40%" r="60%">
-          <stop offset="0%" stopColor="#f0fafa" />
-          <stop offset="60%" stopColor="#d4f5f5" />
-          <stop offset="100%" stopColor="#9de8e8" />
+        {/* Main body gradient - soft mint/cyan */}
+        <radialGradient id="bodyGradient" cx="50%" cy="70%" r="60%">
+          <stop offset="0%" stopColor="#e8fafa" />
+          <stop offset="50%" stopColor="#c5eded" />
+          <stop offset="100%" stopColor="#9ddede" />
         </radialGradient>
         
-        <radialGradient id="bodyGradient" cx="50%" cy="30%" r="70%">
-          <stop offset="0%" stopColor="#d4f5f5" />
-          <stop offset="100%" stopColor="#8dd8d8" />
+        {/* Head gradient - lighter, more 3D feel */}
+        <radialGradient id="headGradient" cx="40%" cy="35%" r="70%">
+          <stop offset="0%" stopColor="#f5ffff" />
+          <stop offset="40%" stopColor="#e8fafa" />
+          <stop offset="70%" stopColor="#d0f0f0" />
+          <stop offset="100%" stopColor="#a8e4e4" />
         </radialGradient>
         
-        <radialGradient id="eyeGradient" cx="40%" cy="30%" r="60%">
-          <stop offset="0%" stopColor="#1a4a5a" />
-          <stop offset="50%" stopColor="#0d3a4a" />
-          <stop offset="100%" stopColor="#082830" />
+        {/* Eye white gradient */}
+        <radialGradient id="eyeWhiteGradient" cx="45%" cy="40%" r="55%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#f0f8f8" />
         </radialGradient>
         
-        <radialGradient id="eyeRingGradient" cx="50%" cy="50%" r="50%">
-          <stop offset="60%" stopColor="#2a8a9a" />
-          <stop offset="100%" stopColor="#1a6a7a" />
+        {/* Iris gradient - deep teal/cyan */}
+        <radialGradient id="irisGradient" cx="45%" cy="40%" r="50%">
+          <stop offset="0%" stopColor="#4db8c7" />
+          <stop offset="60%" stopColor="#2a98a8" />
+          <stop offset="100%" stopColor="#1a7888" />
         </radialGradient>
         
-        <radialGradient id="haloGradient" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#80efef" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#60dfdf" stopOpacity="0.4" />
+        {/* Pupil gradient - very dark */}
+        <radialGradient id="pupilGradient" cx="40%" cy="35%" r="60%">
+          <stop offset="0%" stopColor="#1a4550" />
+          <stop offset="50%" stopColor="#0d2830" />
+          <stop offset="100%" stopColor="#051820" />
         </radialGradient>
         
-        <radialGradient id="cheekGradient" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ffb8b8" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="#ffb8b8" stopOpacity="0" />
-        </radialGradient>
-        
-        <linearGradient id="antennaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f0fafa" />
-          <stop offset="100%" stopColor="#c4e8e8" />
+        {/* Halo gradient - glowing cyan */}
+        <linearGradient id="haloGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#80f0f0" stopOpacity="0.9" />
+          <stop offset="50%" stopColor="#60e8e8" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#50e0e0" stopOpacity="0.85" />
         </linearGradient>
+        
+        {/* Halo inner glow */}
+        <radialGradient id="haloInnerGradient" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#a0ffff" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#70f0f0" stopOpacity="0" />
+        </radialGradient>
+        
+        {/* Cheek blush gradient - soft peach/pink */}
+        <radialGradient id="cheekGradient" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#ffb8a8" stopOpacity="0.5" />
+          <stop offset="70%" stopColor="#ffb8a8" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#ffb8a8" stopOpacity="0" />
+        </radialGradient>
+        
+        {/* Antenna gradient */}
+        <radialGradient id="antennaGradient" cx="40%" cy="30%" r="70%">
+          <stop offset="0%" stopColor="#f8ffff" />
+          <stop offset="100%" stopColor="#d8f0f0" />
+        </radialGradient>
+        
+        {/* Subtle shadow for depth */}
+        <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#5aa" floodOpacity="0.15"/>
+        </filter>
       </defs>
       
-      {/* Body */}
+      {/* Body/Neck - mushroom-like shape */}
       <ellipse
         cx="100"
-        cy="215"
-        rx="28"
-        ry="22"
+        cy="195"
+        rx="26"
+        ry="20"
+        fill="url(#bodyGradient)"
+      />
+      <ellipse
+        cx="100"
+        cy="180"
+        rx="18"
+        ry="12"
         fill="url(#bodyGradient)"
       />
       
-      {/* Head */}
+      {/* Head - main rounded shape */}
       <ellipse
         cx="100"
-        cy="115"
-        rx="72"
-        ry="68"
+        cy="105"
+        rx="68"
+        ry="62"
         fill="url(#headGradient)"
+        filter="url(#softShadow)"
+      />
+      
+      {/* Head highlight - top shine */}
+      <ellipse
+        cx="85"
+        cy="70"
+        rx="25"
+        ry="12"
+        fill="white"
+        opacity="0.3"
       />
       
       {/* Antenna stem */}
       <ellipse
-        cx="145"
-        cy="65"
-        rx="8"
-        ry="14"
+        cx="142"
+        cy="58"
+        rx="6"
+        ry="12"
         fill="url(#antennaGradient)"
-        transform="rotate(30 145 65)"
+        transform="rotate(25 142 58)"
       />
       
-      {/* Halo */}
+      {/* Floating Halo */}
       <motion.g
         animate={{
-          y: [0, -2, 0, -1, 0],
-          rotate: [-5, 5, -3, 4, -5],
+          y: [0, -3, 0, -2, 0],
+          rotate: [-8, 8, -5, 6, -8],
         }}
         transition={{
           duration: 4,
           repeat: Infinity,
           ease: "easeInOut",
         }}
+        style={{ transformOrigin: '100px 25px' }}
       >
+        {/* Halo outer ring */}
         <ellipse
           cx="100"
-          cy="30"
-          rx="28"
-          ry="8"
+          cy="25"
+          rx="26"
+          ry="9"
           fill="none"
           stroke="url(#haloGradient)"
-          strokeWidth="4"
-          opacity="0.9"
+          strokeWidth="5"
         />
+        {/* Halo inner glow */}
         <ellipse
           cx="100"
-          cy="30"
-          rx="28"
-          ry="8"
-          fill="url(#haloGradient)"
-          opacity="0.3"
+          cy="25"
+          rx="22"
+          ry="7"
+          fill="url(#haloInnerGradient)"
+        />
+        {/* Halo highlight */}
+        <ellipse
+          cx="88"
+          cy="22"
+          rx="8"
+          ry="3"
+          fill="white"
+          opacity="0.5"
         />
       </motion.g>
       
-      {/* Eyebrows - animated based on mood */}
+      {/* Eyebrows */}
       <motion.path
         d={eyebrows.left}
         fill="none"
-        stroke="#4a9a9a"
-        strokeWidth="2.5"
+        stroke="#5a9a9a"
+        strokeWidth="2"
         strokeLinecap="round"
         animate={{ d: eyebrows.left }}
         transition={{ duration: 0.3, ease: "easeOut" }}
@@ -242,8 +286,8 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
       <motion.path
         d={eyebrows.right}
         fill="none"
-        stroke="#4a9a9a"
-        strokeWidth="2.5"
+        stroke="#5a9a9a"
+        strokeWidth="2"
         strokeLinecap="round"
         animate={{ d: eyebrows.right }}
         transition={{ duration: 0.3, ease: "easeOut" }}
@@ -256,70 +300,82 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           translateY: eyeExpr.translateY,
         }}
         transition={{ duration: 0.3 }}
-        style={{ transformOrigin: '68px 110px' }}
+        style={{ transformOrigin: '72px 100px' }}
       >
-        {/* Eye white/base */}
+        {/* Eye white/base - slightly larger, more oval */}
         <ellipse
-          cx="68"
-          cy="110"
+          cx="72"
+          cy="100"
           rx="18"
           ry="20"
-          fill="#f8ffff"
+          fill="url(#eyeWhiteGradient)"
+          stroke="#c0e8e8"
+          strokeWidth="0.5"
         />
         
-        {/* Iris ring */}
+        {/* Iris - teal ring */}
         <motion.ellipse
-          cx={68 + pupilOffset.x}
-          cy={112 + pupilOffset.y}
+          cx={72 + pupilOffset.x}
+          cy={102 + pupilOffset.y}
           rx="14"
-          ry="16"
-          fill="url(#eyeRingGradient)"
-          animate={{ cx: 68 + pupilOffset.x, cy: 112 + pupilOffset.y }}
+          ry="15"
+          fill="url(#irisGradient)"
+          animate={{ cx: 72 + pupilOffset.x, cy: 102 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
-        {/* Pupil */}
+        {/* Pupil - dark center */}
         <motion.ellipse
-          cx={68 + pupilOffset.x}
-          cy={112 + pupilOffset.y}
-          rx="10"
-          ry="12"
-          fill="url(#eyeGradient)"
-          animate={{ cx: 68 + pupilOffset.x, cy: 112 + pupilOffset.y }}
+          cx={72 + pupilOffset.x}
+          cy={102 + pupilOffset.y}
+          rx="9"
+          ry="10"
+          fill="url(#pupilGradient)"
+          animate={{ cx: 72 + pupilOffset.x, cy: 102 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
-        {/* Eye highlight */}
+        {/* Main eye highlight - big white dot */}
         <motion.ellipse
-          cx={73 + pupilOffset.x}
-          cy={106 + pupilOffset.y}
+          cx={78 + pupilOffset.x}
+          cy={96 + pupilOffset.y}
           rx="4"
           ry="5"
           fill="white"
-          opacity="0.95"
-          animate={{ cx: 73 + pupilOffset.x, cy: 106 + pupilOffset.y }}
+          animate={{ cx: 78 + pupilOffset.x, cy: 96 + pupilOffset.y }}
+          transition={{ duration: 0.3 }}
+        />
+        
+        {/* Secondary eye highlight - smaller */}
+        <motion.circle
+          cx={68 + pupilOffset.x}
+          cy={108 + pupilOffset.y}
+          r="2"
+          fill="white"
+          opacity="0.6"
+          animate={{ cx: 68 + pupilOffset.x, cy: 108 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
         {/* Eyelid (blink) */}
         <motion.ellipse
-          cx="68"
-          cy="110"
-          rx="20"
-          ry="22"
-          fill="#d4f5f5"
+          cx="72"
+          cy="100"
+          rx="19"
+          ry="21"
+          fill="#d8f2f2"
           initial={{ scaleY: 0 }}
           animate={{ scaleY: isBlinking ? 1 : 0 }}
           transition={{ duration: 0.08 }}
-          style={{ transformOrigin: '68px 110px' }}
+          style={{ transformOrigin: '72px 100px' }}
         />
         
         {/* Closed eye line (when blinking) */}
         <motion.path
-          d="M 50 110 Q 68 118 86 110"
+          d="M 54 100 Q 72 108 90 100"
           fill="none"
-          stroke="#4a9a9a"
-          strokeWidth="2.5"
+          stroke="#5a9a9a"
+          strokeWidth="2"
           strokeLinecap="round"
           initial={{ opacity: 0 }}
           animate={{ opacity: isBlinking ? 1 : 0 }}
@@ -334,70 +390,82 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
           translateY: eyeExpr.translateY,
         }}
         transition={{ duration: 0.3 }}
-        style={{ transformOrigin: '132px 110px' }}
+        style={{ transformOrigin: '128px 100px' }}
       >
         {/* Eye white/base */}
         <ellipse
-          cx="132"
-          cy="110"
+          cx="128"
+          cy="100"
           rx="18"
           ry="20"
-          fill="#f8ffff"
+          fill="url(#eyeWhiteGradient)"
+          stroke="#c0e8e8"
+          strokeWidth="0.5"
         />
         
-        {/* Iris ring */}
+        {/* Iris - teal ring */}
         <motion.ellipse
-          cx={132 + pupilOffset.x}
-          cy={112 + pupilOffset.y}
+          cx={128 + pupilOffset.x}
+          cy={102 + pupilOffset.y}
           rx="14"
-          ry="16"
-          fill="url(#eyeRingGradient)"
-          animate={{ cx: 132 + pupilOffset.x, cy: 112 + pupilOffset.y }}
+          ry="15"
+          fill="url(#irisGradient)"
+          animate={{ cx: 128 + pupilOffset.x, cy: 102 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
-        {/* Pupil */}
+        {/* Pupil - dark center */}
         <motion.ellipse
-          cx={132 + pupilOffset.x}
-          cy={112 + pupilOffset.y}
-          rx="10"
-          ry="12"
-          fill="url(#eyeGradient)"
-          animate={{ cx: 132 + pupilOffset.x, cy: 112 + pupilOffset.y }}
+          cx={128 + pupilOffset.x}
+          cy={102 + pupilOffset.y}
+          rx="9"
+          ry="10"
+          fill="url(#pupilGradient)"
+          animate={{ cx: 128 + pupilOffset.x, cy: 102 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
-        {/* Eye highlight */}
+        {/* Main eye highlight */}
         <motion.ellipse
-          cx={137 + pupilOffset.x}
-          cy={106 + pupilOffset.y}
+          cx={134 + pupilOffset.x}
+          cy={96 + pupilOffset.y}
           rx="4"
           ry="5"
           fill="white"
-          opacity="0.95"
-          animate={{ cx: 137 + pupilOffset.x, cy: 106 + pupilOffset.y }}
+          animate={{ cx: 134 + pupilOffset.x, cy: 96 + pupilOffset.y }}
+          transition={{ duration: 0.3 }}
+        />
+        
+        {/* Secondary eye highlight */}
+        <motion.circle
+          cx={124 + pupilOffset.x}
+          cy={108 + pupilOffset.y}
+          r="2"
+          fill="white"
+          opacity="0.6"
+          animate={{ cx: 124 + pupilOffset.x, cy: 108 + pupilOffset.y }}
           transition={{ duration: 0.3 }}
         />
         
         {/* Eyelid (blink) */}
         <motion.ellipse
-          cx="132"
-          cy="110"
-          rx="20"
-          ry="22"
-          fill="#d4f5f5"
+          cx="128"
+          cy="100"
+          rx="19"
+          ry="21"
+          fill="#d8f2f2"
           initial={{ scaleY: 0 }}
           animate={{ scaleY: isBlinking ? 1 : 0 }}
           transition={{ duration: 0.08 }}
-          style={{ transformOrigin: '132px 110px' }}
+          style={{ transformOrigin: '128px 100px' }}
         />
         
         {/* Closed eye line (when blinking) */}
         <motion.path
-          d="M 114 110 Q 132 118 150 110"
+          d="M 110 100 Q 128 108 146 100"
           fill="none"
-          stroke="#4a9a9a"
-          strokeWidth="2.5"
+          stroke="#5a9a9a"
+          strokeWidth="2"
           strokeLinecap="round"
           initial={{ opacity: 0 }}
           animate={{ opacity: isBlinking ? 1 : 0 }}
@@ -405,10 +473,10 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         />
       </motion.g>
       
-      {/* Cheeks - animated opacity based on mood */}
+      {/* Cheeks - soft blush */}
       <motion.ellipse
-        cx="45"
-        cy="125"
+        cx="48"
+        cy="115"
         rx="12"
         ry="8"
         fill="url(#cheekGradient)"
@@ -416,8 +484,8 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         transition={{ duration: 0.3 }}
       />
       <motion.ellipse
-        cx="155"
-        cy="125"
+        cx="152"
+        cy="115"
         rx="12"
         ry="8"
         fill="url(#cheekGradient)"
@@ -425,27 +493,27 @@ export const SVGAvatar = ({ isBlinking, mood = 'neutral', className }: SVGAvatar
         transition={{ duration: 0.3 }}
       />
       
-      {/* Mouth - animated based on mood */}
+      {/* Mouth */}
       <motion.path
         d={mouth.path}
         fill={mouth.fill}
-        stroke={mouth.fill === "none" ? "#5a9090" : "none"}
+        stroke={mouth.fill === "none" ? "#4a8888" : "none"}
         strokeWidth={mouth.strokeWidth}
         strokeLinecap="round"
         animate={{ d: mouth.path }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       />
       
-      {/* Happy mood: add teeth/tongue hint */}
+      {/* Happy mood: add tongue hint */}
       {mood === 'happy' && (
         <motion.ellipse
           cx="100"
-          cy="148"
-          rx="8"
-          ry="4"
-          fill="#ff9090"
+          cy="146"
+          rx="6"
+          ry="3"
+          fill="#ff8080"
           initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
+          animate={{ opacity: 0.8, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         />
       )}
