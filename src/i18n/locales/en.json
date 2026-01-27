@@ -355,6 +355,7 @@
   },
   "summary": {
     "balance": "Balance",
+    "netWorth": "Net Worth",
     "totalIncome": "Total Income",
     "totalExpenses": "Total Expenses",
     "transfers": "Transfers",

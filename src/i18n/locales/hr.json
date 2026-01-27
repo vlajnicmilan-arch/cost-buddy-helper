@@ -355,6 +355,7 @@
   },
   "summary": {
     "balance": "Stanje",
+    "netWorth": "Neto vrijednost",
     "totalIncome": "Ukupni prihodi",
     "totalExpenses": "Ukupni troškovi",
     "transfers": "Prijenosi",
