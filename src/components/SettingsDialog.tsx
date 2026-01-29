@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -45,6 +45,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [aiAssistantEnabled, setAiAssistantEnabled] = useState(true);
+  const [simpleModeEnabled, setSimpleModeEnabled] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isDark, setIsDark] = useState(false);
   
@@ -84,6 +85,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       setSoundEnabled(getNotificationSoundEnabled());
       setPushEnabled(getPushNotificationsEnabled());
       setAiAssistantEnabled(localStorage.getItem('ai_assistant_enabled') !== 'false');
+      setSimpleModeEnabled(localStorage.getItem('simple_mode_enabled') === 'true');
       setIsDark(document.documentElement.classList.contains('dark'));
       
       // Load display name
@@ -889,6 +891,36 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 />
               </div>
             )}
+
+            {/* Simple Mode toggle */}
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <Label htmlFor="simple-mode" className="text-sm font-medium cursor-pointer">
+                    {t('settings.simpleMode', 'Jednostavni način')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.simpleModeDesc', 'Samo novčanik, transakcije i neto vrijednost')}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="simple-mode"
+                checked={simpleModeEnabled}
+                onCheckedChange={(checked) => {
+                  setSimpleModeEnabled(checked);
+                  localStorage.setItem('simple_mode_enabled', checked.toString());
+                  window.dispatchEvent(new CustomEvent('simpleModeToggled', { detail: checked }));
+                  toast.success(checked 
+                    ? t('settings.simpleModeEnabled', 'Jednostavni način uključen') 
+                    : t('settings.simpleModeDisabled', 'Puni način vraćen')
+                  );
+                }}
+              />
+            </div>
           </div>
 
           <Separator />

@@ -109,6 +109,12 @@ const Index = () => {
   const [aiAssistantEnabled, setAiAssistantEnabled] = useState(() => 
     localStorage.getItem('ai_assistant_enabled') !== 'false'
   );
+  
+  // Simple mode state - hides projects, budgets, installments, reports
+  const [simpleModeEnabled, setSimpleModeEnabled] = useState(() => 
+    localStorage.getItem('simple_mode_enabled') === 'true'
+  );
+  
   // Get user display name
   const [displayName, setDisplayName] = useState<string>('');
   
@@ -153,9 +159,16 @@ const Index = () => {
     };
     window.addEventListener('aiAssistantToggled', handleAiToggle as EventListener);
     
+    // Listen for simple mode toggle from settings
+    const handleSimpleModeToggle = (event: CustomEvent<boolean>) => {
+      setSimpleModeEnabled(event.detail);
+    };
+    window.addEventListener('simpleModeToggled', handleSimpleModeToggle as EventListener);
+    
     return () => {
       window.removeEventListener('displayNameChanged', handleNameChange as EventListener);
       window.removeEventListener('aiAssistantToggled', handleAiToggle as EventListener);
+      window.removeEventListener('simpleModeToggled', handleSimpleModeToggle as EventListener);
     };
   }, [user]);
 
@@ -439,10 +452,10 @@ const Index = () => {
           
           {/* Bottom row: Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
-            <BulkEditDropdown expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />
-            <ReportsDialog expenses={expenses} />
+            {!simpleModeEnabled && <BulkEditDropdown expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />}
+            {!simpleModeEnabled && <ReportsDialog expenses={expenses} />}
             {/* AI Assistant dialog - controlled by avatar, no button here */}
-            {!isLocalMode && aiAssistantEnabled && (
+            {!isLocalMode && aiAssistantEnabled && !simpleModeEnabled && (
               <FinancialAssistantDialog
                 expenses={expenses}
                 totalIncome={totalIncome}
@@ -786,50 +799,59 @@ const Index = () => {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             
-            {/* Installments Panel */}
-            <InstallmentsPanel />
+            {/* Installments Panel - hidden in simple mode */}
+            {!simpleModeEnabled && <InstallmentsPanel />}
             
-            {/* Projects Panel */}
-            <ProjectsPanel onRefreshExpenses={refetch} />
+            {/* Projects Panel - hidden in simple mode */}
+            {!simpleModeEnabled && <ProjectsPanel onRefreshExpenses={refetch} />}
             
-            {/* Budget Section */}
-            <BudgetSectionWrapper />
-            <Accordion type="multiple" className="space-y-4">
-              <AccordionItem value="categories" className="border-none">
-                <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
-                  <div className="flex items-center gap-2">
-                    <Grid3X3 className="h-5 w-5 text-primary" />
-                    <span className="text-lg font-semibold">Po kategorijama</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="glass-card rounded-b-2xl px-6 pb-6 pt-0 border-t-0">
-                  <CategoryBreakdown 
-                    expensesByCategory={expensesByCategory} 
-                    total={totalExpenses}
-                    expenses={expenses}
-                    onUpdateExpense={updateExpense}
-                    onDeleteExpense={deleteExpense}
-                    hideHeader
-                  />
-                </AccordionContent>
-              </AccordionItem>
-              
-              <AccordionItem value="payment-sources" className="border-none">
-                <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-primary" />
-                    <span className="text-lg font-semibold">Prilagođeni izvori plaćanja</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="glass-card rounded-b-2xl px-6 pb-6 pt-0 border-t-0">
-                  <CustomPaymentSourcesPanel hideHeader />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            {/* Budget Section - hidden in simple mode */}
+            {!simpleModeEnabled && <BudgetSectionWrapper />}
             
-            <CustomCategoriesPanel />
-            <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
-            <BackupRestore onDataImported={refetch} />
+            {/* Category breakdown and payment sources - hidden in simple mode */}
+            {!simpleModeEnabled && (
+              <Accordion type="multiple" className="space-y-4">
+                <AccordionItem value="categories" className="border-none">
+                  <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
+                    <div className="flex items-center gap-2">
+                      <Grid3X3 className="h-5 w-5 text-primary" />
+                      <span className="text-lg font-semibold">Po kategorijama</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="glass-card rounded-b-2xl px-6 pb-6 pt-0 border-t-0">
+                    <CategoryBreakdown 
+                      expensesByCategory={expensesByCategory} 
+                      total={totalExpenses}
+                      expenses={expenses}
+                      onUpdateExpense={updateExpense}
+                      onDeleteExpense={deleteExpense}
+                      hideHeader
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="payment-sources" className="border-none">
+                  <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                      <span className="text-lg font-semibold">Prilagođeni izvori plaćanja</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="glass-card rounded-b-2xl px-6 pb-6 pt-0 border-t-0">
+                    <CustomPaymentSourcesPanel hideHeader />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+            
+            {/* Custom categories - hidden in simple mode */}
+            {!simpleModeEnabled && <CustomCategoriesPanel />}
+            
+            {/* Bank connection - hidden in simple mode */}
+            {!simpleModeEnabled && <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />}
+            
+            {/* Backup restore - hidden in simple mode */}
+            {!simpleModeEnabled && <BackupRestore onDataImported={refetch} />}
           </div>
           </div>
         </div>
@@ -908,8 +930,8 @@ const Index = () => {
         />
       )}
 
-      {/* AI Insight Bubble - shown in both modes if enabled */}
-      {aiAssistantEnabled && (
+      {/* AI Insight Bubble - hidden in simple mode */}
+      {aiAssistantEnabled && !simpleModeEnabled && (
         <AIInsightBubble
           expenses={expenses}
           totalIncome={totalIncome}
