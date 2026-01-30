@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { StorageProvider, useStorage } from "@/contexts/StorageContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { TutorialProvider } from "@/contexts/TutorialContext";
+import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -94,12 +96,15 @@ const App = () => (
     <TooltipProvider>
       <StorageProvider>
         <CurrencyProvider>
-          <Toaster />
-          <Sonner />
-          <PWAUpdatePrompt />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+          <TutorialProvider>
+            <Toaster />
+            <Sonner />
+            <PWAUpdatePrompt />
+            <TutorialOverlay />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </TutorialProvider>
         </CurrencyProvider>
       </StorageProvider>
     </TooltipProvider>
