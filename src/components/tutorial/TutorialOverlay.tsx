@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface HighlightPosition {
   top: number;
@@ -23,7 +24,8 @@ interface TooltipPosition {
 }
 
 export const TutorialOverlay = () => {
-  const { isActive, currentStep, steps, nextStep, prevStep, skipTutorial } = useTutorial();
+  const { t } = useTranslation();
+  const { isActive, currentStep, steps, nextStep, prevStep, skipTutorial, getStepTitle, getStepDescription } = useTutorial();
   const [highlightPosition, setHighlightPosition] = useState<HighlightPosition | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition>({});
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -205,10 +207,10 @@ export const TutorialOverlay = () => {
 
               {/* Content */}
               <h3 className="font-semibold text-foreground mb-2">
-                {currentStepData.title}
+                {getStepTitle(currentStepData)}
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {currentStepData.description}
+                {getStepDescription(currentStepData)}
               </p>
 
               {/* Navigation */}
@@ -221,7 +223,7 @@ export const TutorialOverlay = () => {
                   className="gap-1"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  Natrag
+                  {t('tutorial.back', 'Natrag')}
                 </Button>
                 
                 <div className="flex gap-1">
@@ -245,7 +247,7 @@ export const TutorialOverlay = () => {
                   onClick={nextStep}
                   className="gap-1"
                 >
-                  {currentStep === steps.length - 1 ? 'Završi' : 'Dalje'}
+                  {currentStep === steps.length - 1 ? t('tutorial.finish', 'Završi') : t('tutorial.next', 'Dalje')}
                   {currentStep < steps.length - 1 && <ChevronRight className="w-4 h-4" />}
                 </Button>
               </div>

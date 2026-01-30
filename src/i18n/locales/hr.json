@@ -734,5 +734,40 @@
     "existingTransaction": "Postojeća transakcija",
     "newTransaction": "Nova transakcija",
     "addAnyway": "Dodaj svejedno"
+  },
+  "tutorial": {
+    "start": "Pokreni vodič",
+    "restart": "Ponovi vodič",
+    "skip": "Preskoči",
+    "next": "Dalje",
+    "back": "Natrag",
+    "finish": "Završi",
+    "step": "Korak {{current}} od {{total}}",
+    "steps": {
+      "welcome": {
+        "title": "Dobrodošli u V&M Balance! 👋",
+        "description": "Ovaj kratki vodič će vam pokazati ključne funkcionalnosti aplikacije. Krenimo!"
+      },
+      "summaryCards": {
+        "title": "Financijski pregled 📊",
+        "description": "Ovdje vidite ukupne prihode, rashode i vaš trenutni balans. Kliknite na kartice za detalje."
+      },
+      "addTransaction": {
+        "title": "Dodajte transakcije ➕",
+        "description": "Koristite ove gumbe za brzo dodavanje prihoda, rashoda ili prijenosa između računa."
+      },
+      "paymentSources": {
+        "title": "Izvori plaćanja 💳",
+        "description": "Upravljajte svojim bankovnim računima, karticama i gotovinom. Pratite stanje na svakom izvoru."
+      },
+      "transactions": {
+        "title": "Popis transakcija 📋",
+        "description": "Sve vaše transakcije na jednom mjestu. Koristite filtere za lakše pretraživanje i označite više transakcija za grupno uređivanje."
+      },
+      "aiAssistant": {
+        "title": "AI financijski asistent 🤖",
+        "description": "Vaš osobni financijski savjetnik! Postavite pitanja o potrošnji, dobijte savjete za uštedu i analizirajte svoje financije."
+      }
+    }
   }
 }

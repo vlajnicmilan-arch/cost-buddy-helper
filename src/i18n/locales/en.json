@@ -734,5 +734,40 @@
     "existingTransaction": "Existing transaction",
     "newTransaction": "New transaction",
     "addAnyway": "Add anyway"
+  },
+  "tutorial": {
+    "start": "Start guide",
+    "restart": "Restart guide",
+    "skip": "Skip",
+    "next": "Next",
+    "back": "Back",
+    "finish": "Finish",
+    "step": "Step {{current}} of {{total}}",
+    "steps": {
+      "welcome": {
+        "title": "Welcome to V&M Balance! 👋",
+        "description": "This short guide will show you the key features of the app. Let's get started!"
+      },
+      "summaryCards": {
+        "title": "Financial Overview 📊",
+        "description": "Here you can see your total income, expenses, and current balance. Click on the cards for details."
+      },
+      "addTransaction": {
+        "title": "Add Transactions ➕",
+        "description": "Use these buttons to quickly add income, expenses, or transfers between accounts."
+      },
+      "paymentSources": {
+        "title": "Payment Sources 💳",
+        "description": "Manage your bank accounts, cards, and cash. Track the balance on each source."
+      },
+      "transactions": {
+        "title": "Transaction List 📋",
+        "description": "All your transactions in one place. Use filters for easier searching and select multiple transactions for bulk editing."
+      },
+      "aiAssistant": {
+        "title": "AI Financial Assistant 🤖",
+        "description": "Your personal financial advisor! Ask questions about spending, get savings tips, and analyze your finances."
+      }
+    }
   }
 }

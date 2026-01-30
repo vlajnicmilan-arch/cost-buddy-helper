@@ -690,5 +690,40 @@
     "existingTransaction": "Bestehende Transaktion",
     "newTransaction": "Neue Transaktion",
     "addAnyway": "Trotzdem hinzufügen"
+  },
+  "tutorial": {
+    "start": "Anleitung starten",
+    "restart": "Anleitung wiederholen",
+    "skip": "Überspringen",
+    "next": "Weiter",
+    "back": "Zurück",
+    "finish": "Fertig",
+    "step": "Schritt {{current}} von {{total}}",
+    "steps": {
+      "welcome": {
+        "title": "Willkommen bei V&M Balance! 👋",
+        "description": "Diese kurze Anleitung zeigt Ihnen die wichtigsten Funktionen der App. Los geht's!"
+      },
+      "summaryCards": {
+        "title": "Finanzübersicht 📊",
+        "description": "Hier sehen Sie Ihre Gesamteinnahmen, Ausgaben und Ihren aktuellen Saldo. Klicken Sie auf die Karten für Details."
+      },
+      "addTransaction": {
+        "title": "Transaktionen hinzufügen ➕",
+        "description": "Verwenden Sie diese Schaltflächen, um schnell Einnahmen, Ausgaben oder Überweisungen zwischen Konten hinzuzufügen."
+      },
+      "paymentSources": {
+        "title": "Zahlungsquellen 💳",
+        "description": "Verwalten Sie Ihre Bankkonten, Karten und Bargeld. Verfolgen Sie den Saldo jeder Quelle."
+      },
+      "transactions": {
+        "title": "Transaktionsliste 📋",
+        "description": "Alle Ihre Transaktionen an einem Ort. Verwenden Sie Filter für eine einfachere Suche und wählen Sie mehrere Transaktionen für die Massenbearbeitung."
+      },
+      "aiAssistant": {
+        "title": "KI-Finanzassistent 🤖",
+        "description": "Ihr persönlicher Finanzberater! Stellen Sie Fragen zu Ausgaben, erhalten Sie Spartipps und analysieren Sie Ihre Finanzen."
+      }
+    }
   }
 }
