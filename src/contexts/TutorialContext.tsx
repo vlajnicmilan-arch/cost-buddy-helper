@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface TutorialStep {
   id: string;
   targetSelector: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
   action?: 'click' | 'hover' | 'none';
 }
@@ -20,6 +21,8 @@ interface TutorialContextType {
   skipTutorial: () => void;
   hasCompletedTutorial: boolean;
   resetTutorial: () => void;
+  getStepTitle: (step: TutorialStep) => string;
+  getStepDescription: (step: TutorialStep) => string;
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
@@ -31,54 +34,63 @@ const DEFAULT_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
     targetSelector: '[data-tutorial="header"]',
-    title: 'Dobrodošli u V&M Balance! 👋',
-    description: 'Ovaj kratki vodič će vam pokazati ključne funkcionalnosti aplikacije. Krenimo!',
+    titleKey: 'tutorial.steps.welcome.title',
+    descriptionKey: 'tutorial.steps.welcome.description',
     position: 'bottom',
   },
   {
     id: 'summary-cards',
     targetSelector: '[data-tutorial="summary-cards"]',
-    title: 'Financijski pregled 📊',
-    description: 'Ovdje vidite ukupne prihode, rashode i vaš trenutni balans. Kliknite na kartice za detalje.',
+    titleKey: 'tutorial.steps.summaryCards.title',
+    descriptionKey: 'tutorial.steps.summaryCards.description',
     position: 'bottom',
   },
   {
     id: 'add-transaction',
     targetSelector: '[data-tutorial="add-buttons"]',
-    title: 'Dodajte transakcije ➕',
-    description: 'Koristite ove gumbe za brzo dodavanje prihoda, rashoda ili prijenosa između računa.',
+    titleKey: 'tutorial.steps.addTransaction.title',
+    descriptionKey: 'tutorial.steps.addTransaction.description',
     position: 'top',
   },
   {
     id: 'payment-sources',
     targetSelector: '[data-tutorial="payment-sources"]',
-    title: 'Izvori plaćanja 💳',
-    description: 'Upravljajte svojim bankovnim računima, karticama i gotovinom. Pratite stanje na svakom izvoru.',
+    titleKey: 'tutorial.steps.paymentSources.title',
+    descriptionKey: 'tutorial.steps.paymentSources.description',
     position: 'top',
   },
   {
     id: 'transactions',
     targetSelector: '[data-tutorial="transactions"]',
-    title: 'Popis transakcija 📋',
-    description: 'Sve vaše transakcije na jednom mjestu. Koristite filtere za lakše pretraživanje i označite više transakcija za grupno uređivanje.',
+    titleKey: 'tutorial.steps.transactions.title',
+    descriptionKey: 'tutorial.steps.transactions.description',
     position: 'top',
   },
   {
     id: 'ai-assistant',
     targetSelector: '[data-tutorial="ai-assistant"]',
-    title: 'AI financijski asistent 🤖',
-    description: 'Vaš osobni financijski savjetnik! Postavite pitanja o potrošnji, dobijte savjete za uštedu i analizirajte svoje financije.',
+    titleKey: 'tutorial.steps.aiAssistant.title',
+    descriptionKey: 'tutorial.steps.aiAssistant.description',
     position: 'top',
   },
 ];
 
 export const TutorialProvider = ({ children }: { children: ReactNode }) => {
+  const { t } = useTranslation();
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [steps] = useState<TutorialStep[]>(DEFAULT_STEPS);
   const [hasCompletedTutorial, setHasCompletedTutorial] = useState(() => 
     localStorage.getItem(TUTORIAL_STORAGE_KEY) === 'true'
   );
+
+  const getStepTitle = useCallback((step: TutorialStep) => {
+    return t(step.titleKey);
+  }, [t]);
+
+  const getStepDescription = useCallback((step: TutorialStep) => {
+    return t(step.descriptionKey);
+  }, [t]);
 
   // Auto-start tutorial for new users (after onboarding)
   useEffect(() => {
@@ -150,6 +162,8 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
       skipTutorial,
       hasCompletedTutorial,
       resetTutorial,
+      getStepTitle,
+      getStepDescription,
     }}>
       {children}
     </TutorialContext.Provider>
