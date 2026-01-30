@@ -49,6 +49,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { toast } from 'sonner';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { APP_VERSION } from '@/lib/version';
+import { TutorialButton } from '@/components/tutorial';
 
 // Budget Section Wrapper to use hook inside component
 const BudgetSectionWrapper = () => {
@@ -366,7 +367,7 @@ const Index = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <header className="flex flex-col gap-4 mb-6 sm:mb-8">
+        <header className="flex flex-col gap-4 mb-6 sm:mb-8" data-tutorial="header">
           {/* Top row: Logo, title, and navigation icons */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -407,6 +408,7 @@ const Index = () => {
             
             {/* Navigation icons (right side) */}
             <div className="flex items-center gap-1 sm:gap-2">
+              <TutorialButton className="rounded-xl h-9 w-9" />
               {!isLocalMode && <NotificationsDropdown />}
               <TooltipProvider>
                 <Tooltip>
@@ -451,7 +453,7 @@ const Index = () => {
           </div>
           
           {/* Bottom row: Action buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2" data-tutorial="add-buttons">
             {!simpleModeEnabled && <BulkEditDropdown expenses={expenses} onUpdateExpenses={bulkUpdateExpenses} />}
             {!simpleModeEnabled && <ReportsDialog expenses={expenses} />}
             {/* AI Assistant dialog - controlled by avatar, no button here */}
@@ -500,7 +502,7 @@ const Index = () => {
 
         {/* Finances Card - Collapsible Payment Sources */}
         {customPaymentSources.length > 0 && (
-          <Collapsible className="mb-4">
+          <Collapsible className="mb-4" data-tutorial="payment-sources">
             <CollapsibleTrigger asChild>
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -592,7 +594,7 @@ const Index = () => {
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4" data-tutorial="summary-cards">
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -710,7 +712,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Transactions */}
-          <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen} className="lg:col-span-2">
+          <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen} className="lg:col-span-2" data-tutorial="transactions">
             <div className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 ${transactionsOpen ? 'p-6' : 'p-4'}`}>
               <CollapsibleTrigger asChild>
                 <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
@@ -932,14 +934,16 @@ const Index = () => {
 
       {/* AI Insight Bubble - hidden in simple mode */}
       {aiAssistantEnabled && !simpleModeEnabled && (
-        <AIInsightBubble
-          expenses={expenses}
-          totalIncome={totalIncome}
-          totalExpenses={totalExpenses}
-          balance={balance}
-          paymentSources={customPaymentSources}
-          onOpenAssistant={() => setAssistantDialogOpen(true)}
-        />
+        <div data-tutorial="ai-assistant">
+          <AIInsightBubble
+            expenses={expenses}
+            totalIncome={totalIncome}
+            totalExpenses={totalExpenses}
+            balance={balance}
+            paymentSources={customPaymentSources}
+            onOpenAssistant={() => setAssistantDialogOpen(true)}
+          />
+        </div>
       )}
 
     </div>
