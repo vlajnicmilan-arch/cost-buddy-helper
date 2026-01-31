@@ -123,9 +123,18 @@ export const ProjectFullScreenView = ({
   if (!project) return null;
 
   const budget = project.total_budget || 0;
-  const remaining = budget - stats.totalSpent;
-  const budgetWarning = stats.budgetUsedPercentage >= 90;
-  const completedMilestones = milestones.filter(m => m.status === 'completed').length;
+  
+  // Calculate spent from completed milestones (unified logic)
+  const completedMilestonesList = milestones.filter(m => m.status === 'completed');
+  const spentFromMilestones = completedMilestonesList.reduce((sum, m) => sum + (m.budget || 0), 0);
+  const completedMilestones = completedMilestonesList.length;
+  
+  // Remaining = Allocated (received funds) - Spent (completed milestones)
+  const remaining = totalAllocated - spentFromMilestones;
+  const budgetUsedPercentage = totalAllocated > 0 
+    ? (spentFromMilestones / totalAllocated) * 100 
+    : 0;
+  const budgetWarning = budgetUsedPercentage >= 90;
   const overdueMilestones = milestones.filter(m => m.status === 'overdue').length;
 
   return (
@@ -202,7 +211,7 @@ export const ProjectFullScreenView = ({
 
             {/* Main content */}
             <div className="max-w-6xl mx-auto p-4 pb-24">
-              {/* Budget Overview */}
+              {/* Budget Overview - Unified logic based on completed milestones */}
               <div className="p-4 rounded-lg bg-muted/50 space-y-3 mb-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -217,32 +226,35 @@ export const ProjectFullScreenView = ({
                   )}
                 </div>
                 
-                {budget > 0 ? (
+                {totalAllocated > 0 ? (
                   <>
-                    <Progress value={stats.budgetUsedPercentage} className="h-3" />
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                    <Progress 
+                      value={Math.min(budgetUsedPercentage, 100)} 
+                      className={cn(
+                        "h-3",
+                        budgetUsedPercentage >= 90 && "[&>div]:bg-destructive",
+                        budgetUsedPercentage >= 70 && budgetUsedPercentage < 90 && "[&>div]:bg-warning"
+                      )}
+                    />
+                    <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
-                        <p className="text-xl sm:text-2xl font-bold">{formatAmount(budget)}</p>
-                        <p className="text-xs text-muted-foreground">{t('projects.totalBudget')}</p>
+                        <p className="text-xl sm:text-2xl font-bold text-income">{formatAmount(totalAllocated)}</p>
+                        <p className="text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
                       </div>
                       <div>
-                        <p className="text-xl sm:text-2xl font-bold text-expense">{formatAmount(stats.totalSpent)}</p>
-                        <p className="text-xs text-muted-foreground">{t('projects.spent')}</p>
+                        <p className="text-xl sm:text-2xl font-bold text-expense">{formatAmount(spentFromMilestones)}</p>
+                        <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
                       </div>
                       <div>
                         <p className={cn("text-xl sm:text-2xl font-bold", remaining >= 0 ? "text-income" : "text-destructive")}>
                           {formatAmount(remaining)}
                         </p>
-                        <p className="text-xs text-muted-foreground">{t('projects.remaining')}</p>
-                      </div>
-                      <div>
-                        <p className="text-xl sm:text-2xl font-bold">{formatAmount(totalAllocated)}</p>
-                        <p className="text-xs text-muted-foreground">{t('projects.allocated')}</p>
+                        <p className="text-xs text-muted-foreground">{t('projects.remaining', 'Preostalo')}</p>
                       </div>
                     </div>
                   </>
                 ) : (
-                  <p className="text-center text-muted-foreground py-2">{t('projects.noBudgetSet')}</p>
+                  <p className="text-center text-muted-foreground py-2">{t('projects.noFundingYet', 'Nema primljenih sredstava')}</p>
                 )}
               </div>
 
