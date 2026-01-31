@@ -31,7 +31,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
-  // Fetch stats for all projects
+  // Fetch stats for all projects - unified logic: spent = sum of completed milestones budgets
   const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
 
   const fetchAllStats = useCallback(async () => {
@@ -40,29 +40,49 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     const stats: Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }> = {};
     
     for (const project of projects) {
-      // Fetch expenses for this project (approved or null status = approved)
-      const { data: expenses, error } = await (supabase
+      // Fetch income transactions for this project (approved or null status = approved)
+      const { data: expenses, error: expError } = await (supabase
         .from('expenses')
         .select('amount, type, status') as any)
         .eq('project_id', project.id);
 
-      if (error) {
-        console.error('Error fetching project expenses:', error);
-        continue;
+      if (expError) {
+        console.error('Error fetching project expenses:', expError);
       }
 
-      // Filter only approved transactions (status is 'approved' or null for legacy data)
-      const approvedExpenses = (expenses || []).filter(
-        (e: any) => !e.status || e.status === 'approved'
+      // Filter only approved income transactions
+      const approvedIncomes = (expenses || []).filter(
+        (e: any) => e.type === 'income' && (!e.status || e.status === 'approved')
       );
 
-      const spent = approvedExpenses
-        .filter((e: any) => e.type === 'expense')
-        .reduce((sum: number, e: any) => sum + Number(e.amount), 0);
+      const income = approvedIncomes.reduce((sum: number, e: any) => sum + Number(e.amount), 0);
 
-      const income = approvedExpenses
-        .filter((e: any) => e.type === 'income')
-        .reduce((sum: number, e: any) => sum + Number(e.amount), 0);
+      // Fetch project_funding to add allocated amounts
+      const { data: fundingData, error: fundError } = await supabase
+        .from('project_funding')
+        .select('allocated_amount')
+        .eq('project_id', project.id);
+
+      if (fundError) {
+        console.error('Error fetching project funding:', fundError);
+      }
+
+      const fundingTotal = (fundingData || []).reduce((sum, f) => sum + Number(f.allocated_amount || 0), 0);
+      const totalIncome = income + fundingTotal;
+
+      // Fetch milestones to calculate spent (sum of completed milestones budgets)
+      const { data: milestones, error: msError } = await supabase
+        .from('project_milestones')
+        .select('budget, status')
+        .eq('project_id', project.id);
+
+      if (msError) {
+        console.error('Error fetching milestones:', msError);
+      }
+
+      const completedMilestones = (milestones || []).filter((m: any) => m.status === 'completed');
+      const spent = completedMilestones.reduce((sum: number, m: any) => sum + Number(m.budget || 0), 0);
+      const milestoneCount = (milestones || []).length;
 
       // Fetch member count
       const { count: memberCount } = await (supabase
@@ -70,17 +90,11 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
         .select('*', { count: 'exact', head: true })
         .eq('project_id', project.id);
 
-      // Fetch milestone count
-      const { count: milestoneCount } = await (supabase
-        .from('project_milestones') as any)
-        .select('*', { count: 'exact', head: true })
-        .eq('project_id', project.id);
-
       stats[project.id] = {
         spent,
-        income,
+        income: totalIncome,
         memberCount: memberCount || 0,
-        milestoneCount: milestoneCount || 0
+        milestoneCount
       };
     }
 
