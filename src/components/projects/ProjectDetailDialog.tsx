@@ -48,7 +48,7 @@ export const ProjectDetailDialog = ({
     project?.total_budget || 0
   );
   const { milestones, loading: milestonesLoading, refetch: refetchMilestones } = useProjectMilestones(project?.id || null);
-  const { funding, totalAllocated, loading: fundingLoading, refetch: refetchFunding } = useProjectFunding(project?.id || null);
+  const { funding, incomeSources, totalAllocated, totalSourcesCount, loading: fundingLoading, refetch: refetchFunding } = useProjectFunding(project?.id || null);
   const { members, invitations, isManager, loading: membersLoading, refetch: refetchMembers } = useProjectMembers(project?.id || null);
   
   // Get current user's role in the project
@@ -279,6 +279,7 @@ export const ProjectDetailDialog = ({
               <ProjectFundingTab
                 projectId={project.id}
                 funding={funding}
+                incomeSources={incomeSources}
                 totalAllocated={totalAllocated}
                 projectBudget={budget}
                 isManager={isManager}

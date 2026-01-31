@@ -60,7 +60,7 @@ export const ProjectFullScreenView = ({
     project?.total_budget || 0
   );
   const { milestones, loading: milestonesLoading, refetch: refetchMilestones } = useProjectMilestones(project?.id || null);
-  const { funding, totalAllocated, loading: fundingLoading, refetch: refetchFunding } = useProjectFunding(project?.id || null);
+  const { funding, incomeSources, totalAllocated, totalSourcesCount, loading: fundingLoading, refetch: refetchFunding } = useProjectFunding(project?.id || null);
   const { members, invitations, isManager, loading: membersLoading, refetch: refetchMembers } = useProjectMembers(project?.id || null);
   
   const currentUserRole = project?.role || 'viewer';
@@ -297,7 +297,7 @@ export const ProjectFullScreenView = ({
                       <p className="text-sm text-muted-foreground">{t('projects.members')}</p>
                     </div>
                     <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{funding.length}</p>
+                      <p className="text-3xl font-bold">{totalSourcesCount}</p>
                       <p className="text-sm text-muted-foreground">{t('projects.fundingSources')}</p>
                     </div>
                   </div>
@@ -376,6 +376,7 @@ export const ProjectFullScreenView = ({
                   <ProjectFundingTab
                     projectId={project.id}
                     funding={funding}
+                    incomeSources={incomeSources}
                     totalAllocated={totalAllocated}
                     projectBudget={budget}
                     isManager={isManager}

@@ -5,23 +5,33 @@ import { ProjectFunding } from '@/types/project';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
+export interface ProjectIncomeSource {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  category: string;
+}
+
 export const useProjectFunding = (projectId: string | null) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [funding, setFunding] = useState<ProjectFunding[]>([]);
+  const [incomeSources, setIncomeSources] = useState<ProjectIncomeSource[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFunding = useCallback(async () => {
     if (!projectId || !user) {
       setFunding([]);
+      setIncomeSources([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      // Fetch funding with income source details
-      const { data, error } = await supabase
+      // Fetch funding with income source details (from project_funding table)
+      const { data: fundingData, error: fundingError } = await supabase
         .from('project_funding')
         .select(`
           *,
@@ -33,9 +43,11 @@ export const useProjectFunding = (projectId: string | null) => {
         `)
         .eq('project_id', projectId);
 
-      if (error) throw error;
+      if (fundingError) {
+        console.error('Error fetching project_funding:', fundingError);
+      }
 
-      setFunding((data || []).map(f => ({
+      setFunding((fundingData || []).map(f => ({
         id: f.id,
         project_id: f.project_id,
         income_source_id: f.income_source_id,
@@ -47,6 +59,27 @@ export const useProjectFunding = (projectId: string | null) => {
         income_source_icon: (f.income_sources as any)?.icon,
         income_source_color: (f.income_sources as any)?.color
       })));
+
+      // Also fetch income transactions linked to this project (type = 'income')
+      const { data: incomeData, error: incomeError } = await supabase
+        .from('expenses')
+        .select('id, description, amount, date, category')
+        .eq('project_id', projectId)
+        .eq('type', 'income')
+        .eq('status', 'approved');
+
+      if (incomeError) {
+        console.error('Error fetching project income:', incomeError);
+      }
+
+      setIncomeSources((incomeData || []).map(inc => ({
+        id: inc.id,
+        description: inc.description,
+        amount: Number(inc.amount) || 0,
+        date: inc.date,
+        category: inc.category
+      })));
+
     } catch (error) {
       console.error('Error fetching project funding:', error);
     } finally {
@@ -158,12 +191,24 @@ export const useProjectFunding = (projectId: string | null) => {
     }
   };
 
-  const totalAllocated = funding.reduce((sum, f) => sum + f.allocated_amount, 0);
+  // Total allocated from project_funding table
+  const totalAllocatedFromFunding = funding.reduce((sum, f) => sum + f.allocated_amount, 0);
+  
+  // Total income from project income transactions
+  const totalIncomeFromTransactions = incomeSources.reduce((sum, inc) => sum + inc.amount, 0);
+  
+  // Combined total
+  const totalAllocated = totalAllocatedFromFunding + totalIncomeFromTransactions;
+
+  // Total sources count (funding entries + income transactions)
+  const totalSourcesCount = funding.length + incomeSources.length;
 
   return {
     funding,
+    incomeSources,
     loading,
     totalAllocated,
+    totalSourcesCount,
     addFunding,
     updateFunding,
     deleteFunding,
