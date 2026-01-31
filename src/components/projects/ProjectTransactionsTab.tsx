@@ -21,7 +21,8 @@ import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
-  Target, Trash2, Clock, Check, X, AlertCircle, User, MessageCircle
+  Target, Trash2, Clock, Check, X, AlertCircle, User, MessageCircle,
+  Eye, Pencil
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -105,6 +106,16 @@ export const ProjectTransactionsTab = ({
   // Transaction detail/notes dialog state
   const [selectedExpense, setSelectedExpense] = useState<ProjectExpense | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<ProjectExpense | null>(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategory, setEditCategory] = useState<Category>('other');
+  const [editDate, setEditDate] = useState<Date>(new Date());
+  const [editMilestoneId, setEditMilestoneId] = useState<string>('none');
+  const [editType, setEditType] = useState<TransactionType>('expense');
   
   // Form state
   const [expenseType, setExpenseType] = useState<TransactionType>('expense');
@@ -223,6 +234,50 @@ export const ProjectTransactionsTab = ({
     } catch (error) {
       console.error('Error deleting expense:', error);
       toast.error(t('common.error'));
+    }
+  };
+
+  // Open edit dialog
+  const handleOpenEdit = (expense: ProjectExpense) => {
+    setEditingExpense(expense);
+    setEditType(expense.type as TransactionType);
+    setEditAmount(expense.amount.toString());
+    setEditDescription(expense.description);
+    setEditCategory(expense.category as Category);
+    setEditDate(new Date(expense.date));
+    setEditMilestoneId(expense.milestone_id || 'none');
+    setEditDialogOpen(true);
+  };
+
+  // Save edited expense
+  const handleSaveEdit = async () => {
+    if (!editingExpense || !editAmount || !editDescription.trim()) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .update({
+          type: editType,
+          amount: parseFloat(editAmount),
+          description: editDescription.trim(),
+          category: editCategory,
+          date: editDate.toISOString(),
+          milestone_id: editMilestoneId !== 'none' ? editMilestoneId : null
+        } as any)
+        .eq('id', editingExpense.id);
+
+      if (error) throw error;
+
+      toast.success(t('common.saved', 'Spremljeno'));
+      setEditDialogOpen(false);
+      setEditingExpense(null);
+      onRefetch();
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      toast.error(t('common.error'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -436,30 +491,62 @@ export const ProjectTransactionsTab = ({
                   {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
                 </div>
 
-                {/* Comments button - visible to all members */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary shrink-0"
-                  onClick={() => {
-                    setSelectedExpense(expense);
-                    setDetailDialogOpen(true);
-                  }}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </Button>
-
-                {/* Delete button - visible on hover for managers */}
-                {isManager && (
+                {/* Action buttons - grouped together */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {/* View/Comments button */}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive shrink-0"
-                    onClick={() => handleDeleteExpense(expense.id)}
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => {
+                      setSelectedExpense(expense);
+                      setDetailDialogOpen(true);
+                    }}
+                    title={t('common.view', 'Pregledaj')}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Eye className="w-4 h-4" />
                   </Button>
-                )}
+
+                  {/* Edit button - visible for managers or own expenses */}
+                  {(isManager || isOwnExpense) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => handleOpenEdit(expense)}
+                      title={t('common.edit', 'Uredi')}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  )}
+
+                  {/* Delete button - visible for managers or own expenses */}
+                  {(isManager || isOwnExpense) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDeleteExpense(expense.id)}
+                      title={t('common.delete', 'Obriši')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+
+                  {/* Notes/Comments button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => {
+                      setSelectedExpense(expense);
+                      setDetailDialogOpen(true);
+                    }}
+                    title={t('common.notes', 'Bilješke')}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             );
           })}
@@ -659,6 +746,147 @@ export const ProjectTransactionsTab = ({
               />
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Transaction Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('transactions.edit', 'Uredi transakciju')}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Type selector */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={editType === 'expense' ? 'default' : 'outline'}
+                className="flex-1"
+                onClick={() => setEditType('expense')}
+              >
+                <TrendingDown className="w-4 h-4 mr-2" />
+                {t('transactions.expense', 'Trošak')}
+              </Button>
+              <Button
+                type="button"
+                variant={editType === 'income' ? 'default' : 'outline'}
+                className="flex-1"
+                onClick={() => setEditType('income')}
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                {t('transactions.income', 'Prihod')}
+              </Button>
+            </div>
+
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label>{t('common.amount')}</Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="pr-12 text-lg"
+                  min="0"
+                  step="0.01"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {currency.symbol}
+                </span>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label>{t('common.description')}</Label>
+              <Input
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder={t('transactions.descriptionPlaceholder', 'npr. Materijali za gradnju')}
+              />
+            </div>
+
+            {/* Milestone */}
+            {milestones.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  {t('projects.milestone', 'Faza projekta')}
+                </Label>
+                <Select value={editMilestoneId} onValueChange={setEditMilestoneId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('projects.selectMilestone', 'Odaberi fazu (opcionalno)')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t('projects.noMilestone', 'Bez faze')}</SelectItem>
+                    {milestones.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Category */}
+            <div className="space-y-2">
+              <Label>{t('common.category')}</Label>
+              <Select value={editCategory} onValueChange={(v) => setEditCategory(v as Category)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CATEGORIES).map(([key, cat]) => (
+                    <SelectItem key={key} value={key}>
+                      <span className="flex items-center gap-2">
+                        <span>{cat.icon}</span>
+                        <span>{cat.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date */}
+            <div className="space-y-2">
+              <Label>{t('common.date')}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start font-normal">
+                    <CalendarIcon className="w-4 h-4 mr-2" />
+                    {format(editDate, 'd. MMMM yyyy', { locale: hr })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editDate}
+                    onSelect={(d) => d && setEditDate(d)}
+                    initialFocus
+                    locale={hr}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleSaveEdit}
+                disabled={saving || !editAmount || !editDescription.trim()}
+              >
+                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {t('common.save')}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
