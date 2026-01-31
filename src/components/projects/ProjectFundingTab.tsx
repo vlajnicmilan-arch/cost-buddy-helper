@@ -1,8 +1,8 @@
-import { ProjectFunding } from '@/types/project';
+import { ProjectFunding, ProjectMilestone } from '@/types/project';
 import { ProjectIncomeSource } from '@/hooks/useProjectFunding';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Wallet, Loader2, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react';
+import { Wallet, Loader2, TrendingUp, TrendingDown, PiggyBank, CheckCircle2, Clock } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -12,8 +12,8 @@ interface ProjectFundingTabProps {
   projectId: string;
   funding: ProjectFunding[];
   incomeSources: ProjectIncomeSource[];
+  milestones: ProjectMilestone[];
   totalAllocated: number;
-  totalSpent: number;
   projectBudget: number;
   isManager: boolean;
   loading: boolean;
@@ -24,8 +24,8 @@ export const ProjectFundingTab = ({
   projectId,
   funding,
   incomeSources,
+  milestones,
   totalAllocated,
-  totalSpent,
   projectBudget,
   isManager,
   loading,
@@ -34,9 +34,17 @@ export const ProjectFundingTab = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
 
-  const remaining = totalAllocated - totalSpent;
+  // Calculate spent from completed milestones
+  const completedMilestones = milestones.filter(m => m.status === 'completed');
+  const spentFromMilestones = completedMilestones.reduce((sum, m) => sum + (m.budget || 0), 0);
+  
+  // Pending milestones (in progress or pending)
+  const pendingMilestones = milestones.filter(m => m.status === 'in_progress' || m.status === 'pending');
+  const reservedForPending = pendingMilestones.reduce((sum, m) => sum + (m.budget || 0), 0);
+
+  const remaining = totalAllocated - spentFromMilestones;
   const usagePercentage = totalAllocated > 0 
-    ? (totalSpent / totalAllocated) * 100 
+    ? (spentFromMilestones / totalAllocated) * 100 
     : 0;
 
   const hasAnySource = funding.length > 0 || incomeSources.length > 0;
@@ -64,15 +72,15 @@ export const ProjectFundingTab = ({
               <TrendingUp className="w-4 h-4 text-income" />
             </div>
             <p className="text-xl font-bold text-income">{formatAmount(totalAllocated)}</p>
-            <p className="text-xs text-muted-foreground">{t('projects.available', 'Dostupno')}</p>
+            <p className="text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
           </div>
           
           <div className="p-3 rounded-lg bg-background/50">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingDown className="w-4 h-4 text-expense" />
+              <CheckCircle2 className="w-4 h-4 text-expense" />
             </div>
-            <p className="text-xl font-bold text-expense">{formatAmount(totalSpent)}</p>
-            <p className="text-xs text-muted-foreground">{t('projects.spent', 'Potrošeno')}</p>
+            <p className="text-xl font-bold text-expense">{formatAmount(spentFromMilestones)}</p>
+            <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
           </div>
           
           <div className="p-3 rounded-lg bg-background/50">
@@ -88,6 +96,17 @@ export const ProjectFundingTab = ({
             <p className="text-xs text-muted-foreground">{t('projects.remaining', 'Preostalo')}</p>
           </div>
         </div>
+
+        {/* Reserved for pending milestones */}
+        {reservedForPending > 0 && (
+          <div className="flex items-center justify-between text-sm p-2 rounded bg-warning/10 mb-3">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              {t('projects.reservedForPending', 'Rezervirano za aktivne faze')}:
+            </span>
+            <span className="font-medium">{formatAmount(reservedForPending)}</span>
+          </div>
+        )}
 
         {/* Usage progress bar */}
         {totalAllocated > 0 && (
@@ -113,6 +132,35 @@ export const ProjectFundingTab = ({
           </div>
         )}
       </div>
+
+      {/* Completed milestones breakdown */}
+      {completedMilestones.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-income" />
+            {t('projects.completedMilestones', 'Završene faze')} ({completedMilestones.length})
+          </h4>
+          {completedMilestones.map((m) => (
+            <div 
+              key={m.id}
+              className="p-3 rounded-lg border bg-income/5 border-income/20 flex items-center gap-3"
+            >
+              <CheckCircle2 className="w-5 h-5 text-income shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{m.name}</p>
+                {m.completed_at && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('projects.completedOn', 'Završeno')}: {format(new Date(m.completed_at), 'd. MMM yyyy', { locale: hr })}
+                  </p>
+                )}
+              </div>
+              <p className="text-lg font-semibold text-expense">
+                -{formatAmount(m.budget || 0)}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Sources list */}
       {!hasAnySource ? (
@@ -149,7 +197,7 @@ export const ProjectFundingTab = ({
                   </div>
                   
                   <p className="text-lg font-semibold text-income">
-                    {formatAmount(inc.amount)}
+                    +{formatAmount(inc.amount)}
                   </p>
                 </div>
               ))}
