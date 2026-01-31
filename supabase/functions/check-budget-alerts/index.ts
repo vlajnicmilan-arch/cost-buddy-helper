@@ -27,23 +27,31 @@ serve(async (req) => {
 
     // Get authorization header to identify user
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Missing authorization" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get user from token
+    // Create client with user's auth context for getClaims
+    const userSupabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Validate JWT using getClaims
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const { data: claimsData, error: claimsError } = await userSupabase.auth.getClaims(token);
     
-    if (userError || !user) {
+    if (claimsError || !claimsData?.claims) {
+      console.error("JWT validation error:", claimsError);
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userId = claimsData.claims.sub;
 
     const { category, amount, expense_date } = await req.json();
 
@@ -51,7 +59,7 @@ serve(async (req) => {
     const { data: budgets, error: budgetsError } = await supabase
       .from("budget_plans")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("is_active", true);
 
     if (budgetsError) {
@@ -106,7 +114,7 @@ serve(async (req) => {
       const { data: expenses, error: expensesError } = await supabase
         .from("expenses")
         .select("amount, category")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("type", "expense")
         .gte("date", startDate.toISOString())
         .lte("date", endDate.toISOString());
@@ -134,7 +142,7 @@ serve(async (req) => {
           const { data: existingNotifications } = await supabase
             .from("notifications")
             .select("id")
-            .eq("user_id", user.id)
+            .eq("user_id", userId)
             .eq("type", "budget_alert")
             .gte("created_at", startDate.toISOString())
             .like("data->>alert_key", alertKey);
@@ -162,7 +170,7 @@ serve(async (req) => {
           const { error: notifError } = await supabase
             .from("notifications")
             .insert({
-              user_id: user.id,
+              user_id: userId,
               type: "budget_alert",
               title,
               message,
