@@ -167,15 +167,9 @@ export const ProjectMilestonesTab = ({
                     )}
 
                     {milestone.budget > 0 && (
-                      <div className="mb-2">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span>{formatAmount(milestone.spent || 0)} / {formatAmount(milestone.budget)}</span>
-                          <span className={budgetUsed > 100 ? 'text-destructive' : 'text-muted-foreground'}>
-                            {budgetUsed.toFixed(0)}%
-                          </span>
-                        </div>
-                        <Progress value={Math.min(budgetUsed, 100)} className="h-1.5" />
-                      </div>
+                      <p className="text-sm font-medium text-primary mb-2">
+                        {formatAmount(milestone.budget)}
+                      </p>
                     )}
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
