@@ -414,138 +414,142 @@ export const ProjectTransactionsTab = ({
             return (
               <div 
                 key={expense.id}
-                className="p-3 rounded-lg border bg-card flex items-center gap-3 group"
+                className="p-3 rounded-lg border bg-card group overflow-hidden"
               >
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">
-                  {categoryInfo.icon}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{expense.description}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {isOwnExpense ? t('common.you', 'Ti') : authorName}
-                    </span>
-                    <span>•</span>
-                    <span>{categoryInfo.name}</span>
-                    <span>•</span>
-                    <span>{format(new Date(expense.date), 'd. MMM yyyy', { locale: hr })}</span>
+                {/* Main row - icon, description, amount */}
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">
+                    {categoryInfo.icon}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{expense.description}</p>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {isOwnExpense ? t('common.you', 'Ti') : authorName}
+                      </span>
+                      <span>•</span>
+                      <span>{categoryInfo.name}</span>
+                      <span>•</span>
+                      <span>{format(new Date(expense.date), 'd. MMM', { locale: hr })}</span>
+                    </div>
+                  </div>
+
+                  {/* Amount - always visible */}
+                  <div className={cn(
+                    "font-mono font-medium flex items-center gap-1 shrink-0 text-sm",
+                    isIncome ? "text-income" : "text-expense"
+                  )}>
+                    {isIncome ? (
+                      <TrendingUp className="w-4 h-4" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4" />
+                    )}
+                    {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
                   </div>
                 </div>
 
-                {/* Inline milestone dropdown */}
-                {isManager && milestones.length > 0 && (
-                  <Select
-                    value={expense.milestone_id || 'none'}
-                    onValueChange={(value) => handleMilestoneChange(expense.id, value)}
-                    disabled={updatingMilestone === expense.id}
-                  >
-                    <SelectTrigger className="w-[140px] h-8 text-xs shrink-0">
-                      {updatingMilestone === expense.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <SelectValue>
-                          {milestoneName ? (
-                            <span className="flex items-center gap-1">
-                              <Target className="w-3 h-3" />
-                              {milestoneName}
-                            </span>
+                {/* Second row - milestone and action buttons */}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+                  {/* Left side - milestone */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    {isManager && milestones.length > 0 ? (
+                      <Select
+                        value={expense.milestone_id || 'none'}
+                        onValueChange={(value) => handleMilestoneChange(expense.id, value)}
+                        disabled={updatingMilestone === expense.id}
+                      >
+                        <SelectTrigger className="w-[120px] h-7 text-xs">
+                          {updatingMilestone === expense.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
-                            <span className="text-muted-foreground">{t('projects.noMilestone', 'Bez faze')}</span>
+                            <SelectValue>
+                              {milestoneName ? (
+                                <span className="flex items-center gap-1 truncate">
+                                  <Target className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{milestoneName}</span>
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">{t('projects.noMilestone', 'Bez faze')}</span>
+                              )}
+                            </SelectValue>
                           )}
-                        </SelectValue>
-                      )}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t('projects.noMilestone', 'Bez faze')}</SelectItem>
-                      {milestones.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          <span className="flex items-center gap-1">
-                            <Target className="w-3 h-3" />
-                            {m.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">{t('projects.noMilestone', 'Bez faze')}</SelectItem>
+                          {milestones.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              <span className="flex items-center gap-1">
+                                <Target className="w-3 h-3" />
+                                {m.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : milestoneName ? (
+                      <Badge variant="outline" className="h-6 gap-1 text-xs">
+                        <Target className="w-3 h-3" />
+                        {milestoneName}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{t('projects.noMilestone', 'Bez faze')}</span>
+                    )}
+                  </div>
 
-                {/* Show milestone badge for non-managers */}
-                {!isManager && milestoneName && (
-                  <Badge variant="outline" className="h-5 gap-1 text-xs shrink-0">
-                    <Target className="w-3 h-3" />
-                    {milestoneName}
-                  </Badge>
-                )}
-
-                <div className={cn(
-                  "font-mono font-medium flex items-center gap-1 shrink-0",
-                  isIncome ? "text-income" : "text-expense"
-                )}>
-                  {isIncome ? (
-                    <TrendingUp className="w-4 h-4" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4" />
-                  )}
-                  {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
-                </div>
-
-                {/* Action buttons - grouped together */}
-                <div className="flex items-center gap-0.5 shrink-0">
-                  {/* View/Comments button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                    onClick={() => {
-                      setSelectedExpense(expense);
-                      setDetailDialogOpen(true);
-                    }}
-                    title={t('common.view', 'Pregledaj')}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-
-                  {/* Edit button - visible for managers or own expenses */}
-                  {(isManager || isOwnExpense) && (
+                  {/* Right side - action buttons */}
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      onClick={() => handleOpenEdit(expense)}
-                      title={t('common.edit', 'Uredi')}
+                      className="h-7 w-7 text-muted-foreground hover:text-primary"
+                      onClick={() => {
+                        setSelectedExpense(expense);
+                        setDetailDialogOpen(true);
+                      }}
+                      title={t('common.view', 'Pregledaj')}
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Eye className="w-3.5 h-3.5" />
                     </Button>
-                  )}
 
-                  {/* Delete button - visible for managers or own expenses */}
-                  {(isManager || isOwnExpense) && (
+                    {(isManager || isOwnExpense) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        onClick={() => handleOpenEdit(expense)}
+                        title={t('common.edit', 'Uredi')}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+
+                    {(isManager || isOwnExpense) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteExpense(expense.id)}
+                        title={t('common.delete', 'Obriši')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDeleteExpense(expense.id)}
-                      title={t('common.delete', 'Obriši')}
+                      className="h-7 w-7 text-muted-foreground hover:text-primary"
+                      onClick={() => {
+                        setSelectedExpense(expense);
+                        setDetailDialogOpen(true);
+                      }}
+                      title={t('common.notes', 'Bilješke')}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <MessageCircle className="w-3.5 h-3.5" />
                     </Button>
-                  )}
-
-                  {/* Notes/Comments button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                    onClick={() => {
-                      setSelectedExpense(expense);
-                      setDetailDialogOpen(true);
-                    }}
-                    title={t('common.notes', 'Bilješke')}
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                  </Button>
+                  </div>
                 </div>
               </div>
             );
