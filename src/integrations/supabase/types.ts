@@ -736,6 +736,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "project_funding_income_source_id_fkey"
+            columns: ["income_source_id"]
+            isOneToOne: false
+            referencedRelation: "income_sources"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_funding_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
