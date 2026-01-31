@@ -59,79 +59,16 @@ export const ProjectFundingTab = ({
 
   return (
     <div className="space-y-6">
-      {/* Financial summary card */}
-      <div className="p-4 rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 border">
-        <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
-          <PiggyBank className="w-4 h-4" />
-          {t('projects.financialSummary', 'Financijski pregled')}
-        </h3>
-        
-        <div className="grid grid-cols-3 gap-4 text-center mb-4">
-          <div className="p-3 rounded-lg bg-background/50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingUp className="w-4 h-4 text-income" />
-            </div>
-            <p className="text-xl font-bold text-income">{formatAmount(totalAllocated)}</p>
-            <p className="text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
-          </div>
-          
-          <div className="p-3 rounded-lg bg-background/50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <CheckCircle2 className="w-4 h-4 text-expense" />
-            </div>
-            <p className="text-xl font-bold text-expense">{formatAmount(spentFromMilestones)}</p>
-            <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
-          </div>
-          
-          <div className="p-3 rounded-lg bg-background/50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Wallet className="w-4 h-4 text-primary" />
-            </div>
-            <p className={cn(
-              "text-xl font-bold",
-              remaining >= 0 ? "text-income" : "text-destructive"
-            )}>
-              {formatAmount(remaining)}
-            </p>
-            <p className="text-xs text-muted-foreground">{t('projects.remaining', 'Preostalo')}</p>
-          </div>
+      {/* Reserved for pending milestones - only show this summary info, main financial overview is in header */}
+      {reservedForPending > 0 && (
+        <div className="flex items-center justify-between text-sm p-3 rounded-lg bg-warning/10 border border-warning/20">
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            {t('projects.reservedForPending', 'Rezervirano za aktivne faze')}:
+          </span>
+          <span className="font-medium">{formatAmount(reservedForPending)}</span>
         </div>
-
-        {/* Reserved for pending milestones */}
-        {reservedForPending > 0 && (
-          <div className="flex items-center justify-between text-sm p-2 rounded bg-warning/10 mb-3">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              {t('projects.reservedForPending', 'Rezervirano za aktivne faze')}:
-            </span>
-            <span className="font-medium">{formatAmount(reservedForPending)}</span>
-          </div>
-        )}
-
-        {/* Usage progress bar */}
-        {totalAllocated > 0 && (
-          <div>
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-muted-foreground">{t('projects.fundsUsage', 'Iskorištenost sredstava')}</span>
-              <span className={cn(
-                "font-medium",
-                usagePercentage >= 90 ? "text-destructive" : 
-                usagePercentage >= 70 ? "text-warning" : "text-muted-foreground"
-              )}>
-                {usagePercentage.toFixed(0)}%
-              </span>
-            </div>
-            <Progress 
-              value={Math.min(usagePercentage, 100)} 
-              className={cn(
-                "h-2",
-                usagePercentage >= 90 && "[&>div]:bg-destructive",
-                usagePercentage >= 70 && usagePercentage < 90 && "[&>div]:bg-warning"
-              )}
-            />
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Completed milestones breakdown */}
       {completedMilestones.length > 0 && (
