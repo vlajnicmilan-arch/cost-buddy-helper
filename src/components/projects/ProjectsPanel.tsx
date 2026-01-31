@@ -32,22 +32,27 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   // Fetch stats for all projects
-  const [projectStats, setProjectStats] = useState<Record<string, { spent: number; memberCount: number; milestoneCount: number }>>({});
+  const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
 
   const fetchAllStats = useCallback(async () => {
     if (projects.length === 0) return;
 
-    const stats: Record<string, { spent: number; memberCount: number; milestoneCount: number }> = {};
+    const stats: Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }> = {};
     
     for (const project of projects) {
-      // Fetch expenses for this project
+      // Fetch expenses for this project (only approved)
       const { data: expenses } = await (supabase
         .from('expenses')
         .select('amount, type') as any)
-        .eq('project_id', project.id);
+        .eq('project_id', project.id)
+        .eq('status', 'approved');
 
       const spent = (expenses || [])
         .filter(e => e.type === 'expense')
+        .reduce((sum, e) => sum + Number(e.amount), 0);
+
+      const income = (expenses || [])
+        .filter(e => e.type === 'income')
         .reduce((sum, e) => sum + Number(e.amount), 0);
 
       // Fetch member count
@@ -64,6 +69,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
 
       stats[project.id] = {
         spent,
+        income,
         memberCount: memberCount || 0,
         milestoneCount: milestoneCount || 0
       };
@@ -155,6 +161,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
                 <ProjectCard
                   project={project}
                   spent={projectStats[project.id]?.spent || 0}
+                  income={projectStats[project.id]?.income || 0}
                   memberCount={projectStats[project.id]?.memberCount || 0}
                   milestoneCount={projectStats[project.id]?.milestoneCount || 0}
                   onEdit={handleEdit}

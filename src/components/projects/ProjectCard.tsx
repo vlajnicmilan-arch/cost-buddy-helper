@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 interface ProjectCardProps {
   project: ProjectWithOwnership;
   spent: number;
+  income: number;
   memberCount: number;
   milestoneCount: number;
   onEdit: (project: Project) => void;
@@ -23,6 +24,7 @@ interface ProjectCardProps {
 export const ProjectCard = ({
   project,
   spent,
+  income,
   memberCount,
   milestoneCount,
   onEdit,
@@ -37,6 +39,7 @@ export const ProjectCard = ({
   const budget = project.total_budget || 0;
   const budgetUsed = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
   const remaining = budget - spent;
+  const netBalance = income - spent;
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -109,6 +112,31 @@ export const ProjectCard = ({
                   {remaining >= 0 ? '+' : ''}{formatAmount(remaining)} {t('projects.remaining')}
                 </span>
               </div>
+            </div>
+          )}
+
+          {/* Income/Expense summary when no budget */}
+          {budget === 0 && (income > 0 || spent > 0) && (
+            <div className="mb-3 flex items-center gap-4 text-sm">
+              {income > 0 && (
+                <span className="text-income font-medium">+{formatAmount(income)}</span>
+              )}
+              {spent > 0 && (
+                <span className="text-expense font-medium">-{formatAmount(spent)}</span>
+              )}
+              <span className={cn(
+                "font-medium",
+                netBalance >= 0 ? "text-income" : "text-destructive"
+              )}>
+                = {netBalance >= 0 ? '+' : ''}{formatAmount(netBalance)}
+              </span>
+            </div>
+          )}
+
+          {/* Show income if budget exists and income > 0 */}
+          {budget > 0 && income > 0 && (
+            <div className="mb-2 text-xs text-income font-medium">
+              {t('projects.incomeReceived', 'Primljeno')}: +{formatAmount(income)}
             </div>
           )}
 
