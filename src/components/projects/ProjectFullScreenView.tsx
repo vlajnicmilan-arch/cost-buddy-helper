@@ -236,20 +236,20 @@ export const ProjectFullScreenView = ({
                         budgetUsedPercentage >= 70 && budgetUsedPercentage < 90 && "[&>div]:bg-warning"
                       )}
                     />
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-xl sm:text-2xl font-bold text-income">{formatAmount(totalAllocated)}</p>
-                        <p className="text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                      <div className="p-2 sm:p-3 rounded-lg bg-income/10 text-center">
+                        <p className="text-base sm:text-2xl font-bold text-income truncate">{formatAmount(totalAllocated)}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
                       </div>
-                      <div>
-                        <p className="text-xl sm:text-2xl font-bold text-expense">{formatAmount(spentFromMilestones)}</p>
-                        <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
+                      <div className="p-2 sm:p-3 rounded-lg bg-expense/10 text-center">
+                        <p className="text-base sm:text-2xl font-bold text-expense truncate">{formatAmount(spentFromMilestones)}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
                       </div>
-                      <div>
-                        <p className={cn("text-xl sm:text-2xl font-bold", remaining >= 0 ? "text-income" : "text-destructive")}>
+                      <div className="p-2 sm:p-3 rounded-lg bg-primary/10 text-center">
+                        <p className={cn("text-base sm:text-2xl font-bold truncate", remaining >= 0 ? "text-primary" : "text-destructive")}>
                           {formatAmount(remaining)}
                         </p>
-                        <p className="text-xs text-muted-foreground">{t('projects.remaining', 'Preostalo')}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.remaining', 'Preostalo')}</p>
                       </div>
                     </div>
                   </>
