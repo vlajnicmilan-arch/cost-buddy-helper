@@ -100,8 +100,15 @@ export const useBudgets = () => {
       }
 
       // Filter expenses within the period
+      // Only include:
+      // 1. Expense type (not income)
+      // 2. Within the date range
+      // 3. Approved status only
+      // 4. NOT linked to a project (project expenses are separate from personal budgets)
       const periodExpenses = expenses.filter(e => {
         if (e.type !== 'expense') return false;
+        if (e.project_id) return false; // Exclude project transactions
+        if (e.status && e.status !== 'approved') return false; // Only approved
         const expDate = e.date;
         return expDate >= startDate && expDate <= endDate;
       });
@@ -125,6 +132,8 @@ export const useBudgets = () => {
       
       const prevPeriodExpenses = expenses.filter(e => {
         if (e.type !== 'expense') return false;
+        if (e.project_id) return false; // Exclude project transactions
+        if (e.status && e.status !== 'approved') return false; // Only approved
         const expDate = e.date;
         return expDate >= prevStartDate && expDate <= prevEndDate;
       });
@@ -329,6 +338,8 @@ export const useBudgets = () => {
 
       const dayExpenses = expenses.filter(e => {
         if (e.type !== 'expense') return false;
+        if (e.project_id) return false; // Exclude project transactions
+        if (e.status && e.status !== 'approved') return false; // Only approved
         const expDate = e.date;
         return expDate >= date && expDate <= dayEnd;
       });
