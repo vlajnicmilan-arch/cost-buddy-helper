@@ -206,6 +206,11 @@ export const InstallmentsPanel = () => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const [selectedPlan, setSelectedPlan] = useState<InstallmentPlanWithProgress | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Calculate totals for collapsed view
+  const totalRemaining = plans.reduce((sum, plan) => sum + plan.remainingAmount, 0);
+  const totalPlans = plans.length;
 
   if (loading) {
     return (
@@ -247,92 +252,126 @@ export const InstallmentsPanel = () => {
 
   return (
     <Card className="glass-card border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <CreditCard className="w-5 h-5" />
-          {t('installments.title', 'Plaćanja na rate')}
-          <Badge variant="secondary" className="ml-auto">
-            {plans.length}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <AnimatePresence mode="popLayout">
-          {plans.map((plan) => {
-            const categoryInfo = getCategoryInfo(plan.category as any);
-            const progressPercent = (plan.paidCount / plan.totalCount) * 100;
-            
-            return (
-              <Dialog key={plan.id}>
-                <DialogTrigger asChild>
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    whileHover={{ scale: 1.01 }}
-                    className="p-4 rounded-xl border bg-card hover:bg-muted/30 cursor-pointer transition-colors"
-                    onClick={() => setSelectedPlan(plan)}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                          style={{ backgroundColor: `hsl(var(--${categoryInfo.color}) / 0.1)` }}
+      <motion.div
+        className="cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+        whileHover={{ scale: 1.005 }}
+        whileTap={{ scale: 0.995 }}
+      >
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CreditCard className="w-5 h-5" />
+            {t('installments.title', 'Plaćanja na rate')}
+            <Badge variant="secondary" className="ml-2">
+              {totalPlans}
+            </Badge>
+            <div className="ml-auto flex items-center gap-3">
+              <span className="text-sm font-normal text-muted-foreground">
+                {formatAmount(totalRemaining)} {t('installments.remainingShort', 'preostalo')}
+              </span>
+              <motion.div
+                animate={{ rotate: isExpanded ? 90 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </motion.div>
+            </div>
+          </CardTitle>
+        </CardHeader>
+      </motion.div>
+      
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <CardContent className="space-y-3 pt-0">
+              <AnimatePresence mode="popLayout">
+                {plans.map((plan) => {
+                  const categoryInfo = getCategoryInfo(plan.category as any);
+                  const progressPercent = (plan.paidCount / plan.totalCount) * 100;
+                  
+                  return (
+                    <Dialog key={plan.id}>
+                      <DialogTrigger asChild>
+                        <motion.div
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          whileHover={{ scale: 1.01 }}
+                          className="p-4 rounded-xl border bg-card hover:bg-muted/30 cursor-pointer transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPlan(plan);
+                          }}
                         >
-                          {categoryInfo.icon}
-                        </div>
-                        <div>
-                          <p className="font-medium">{plan.description}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {plan.type === 'expense' ? (
-                              <TrendingDown className="w-3 h-3 text-expense" />
-                            ) : (
-                              <TrendingUp className="w-3 h-3 text-income" />
-                            )}
-                            <span>{formatAmount(plan.total_amount)}</span>
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                                style={{ backgroundColor: `hsl(var(--${categoryInfo.color}) / 0.1)` }}
+                              >
+                                {categoryInfo.icon}
+                              </div>
+                              <div>
+                                <p className="font-medium">{plan.description}</p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  {plan.type === 'expense' ? (
+                                    <TrendingDown className="w-3 h-3 text-expense" />
+                                  ) : (
+                                    <TrendingUp className="w-3 h-3 text-income" />
+                                  )}
+                                  <span>{formatAmount(plan.total_amount)}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-muted-foreground" />
                           </div>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          {t('installments.rataProgress', 'Rata {{current}}/{{total}}', { 
-                            current: plan.paidCount, 
-                            total: plan.totalCount 
-                          })}
-                        </span>
-                        <span className="font-medium text-primary">
-                          {formatAmount(plan.remainingAmount)} {t('installments.remainingShort', 'preostalo')}
-                        </span>
-                      </div>
-                      <Progress value={progressPercent} className="h-1.5" />
-                      
-                      {plan.nextInstallment && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>
-                            {t('installments.nextPayment', 'Sljedeća rata')}: {format(plan.nextInstallment.due_date, 'd. MMM', { locale: hr })} • {formatAmount(plan.nextInstallment.amount)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                </DialogTrigger>
-                <InstallmentDetailContent
-                  plan={plan}
-                  onMarkPaid={markInstallmentPaid}
-                  onMarkUnpaid={markInstallmentUnpaid}
-                  onDelete={deletePlan}
-                />
-              </Dialog>
-            );
-          })}
-        </AnimatePresence>
-      </CardContent>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">
+                                {t('installments.rataProgress', 'Rata {{current}}/{{total}}', { 
+                                  current: plan.paidCount, 
+                                  total: plan.totalCount 
+                                })}
+                              </span>
+                              <span className="font-medium text-primary">
+                                {formatAmount(plan.remainingAmount)} {t('installments.remainingShort', 'preostalo')}
+                              </span>
+                            </div>
+                            <Progress value={progressPercent} className="h-1.5" />
+                            
+                            {plan.nextInstallment && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>
+                                  {t('installments.nextPayment', 'Sljedeća rata')}: {format(plan.nextInstallment.due_date, 'd. MMM', { locale: hr })} • {formatAmount(plan.nextInstallment.amount)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      </DialogTrigger>
+                      <InstallmentDetailContent
+                        plan={plan}
+                        onMarkPaid={markInstallmentPaid}
+                        onMarkUnpaid={markInstallmentUnpaid}
+                        onDelete={deletePlan}
+                      />
+                    </Dialog>
+                  );
+                })}
+              </AnimatePresence>
+            </CardContent>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Card>
   );
 };
