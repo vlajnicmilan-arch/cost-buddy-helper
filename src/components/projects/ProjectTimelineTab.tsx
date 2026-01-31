@@ -211,10 +211,6 @@ export const ProjectTimelineTab = ({
       <div className="space-y-3">
         {milestones.map((milestone) => {
           const barStyle = getMilestoneBarStyle(milestone);
-          const spent = milestone.spent || 0;
-          const budgetPercent = milestone.budget > 0 
-            ? Math.min((spent / milestone.budget) * 100, 100) 
-            : 0;
           
           return (
             <div key={milestone.id} className="space-y-1">
@@ -231,10 +227,8 @@ export const ProjectTimelineTab = ({
                 </div>
                 <div className="text-sm text-muted-foreground shrink-0">
                   {milestone.budget > 0 && (
-                    <span className={cn(
-                      spent > milestone.budget ? 'text-destructive' : ''
-                    )}>
-                      {formatAmount(spent)} / {formatAmount(milestone.budget)}
+                    <span className="font-medium text-primary">
+                      {formatAmount(milestone.budget)}
                     </span>
                   )}
                 </div>
@@ -250,15 +244,7 @@ export const ProjectTimelineTab = ({
                     "opacity-80"
                   )}
                   style={barStyle}
-                >
-                  {/* Inner progress bar for budget spent */}
-                  {milestone.budget > 0 && (
-                    <div 
-                      className="absolute bottom-0 left-0 h-1 bg-black/20 rounded-b"
-                      style={{ width: `${budgetPercent}%` }}
-                    />
-                  )}
-                </div>
+                />
 
                 {/* Date labels inside the bar */}
                 <div
