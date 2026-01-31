@@ -378,6 +378,7 @@ export const ProjectFullScreenView = ({
                     funding={funding}
                     incomeSources={incomeSources}
                     totalAllocated={totalAllocated}
+                    totalSpent={stats.totalSpent}
                     projectBudget={budget}
                     isManager={isManager}
                     loading={fundingLoading}
