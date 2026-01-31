@@ -190,9 +190,10 @@ export const ProjectReportsDialog = ({
     }
   };
 
-  const remaining = project.total_budget - totalSpent;
-  const usedPercent = project.total_budget > 0 
-    ? (totalSpent / project.total_budget) * 100 
+  // Use unified logic: Remaining = Allocated (received) - Spent (completed milestones)
+  const remaining = totalAllocated - totalSpent;
+  const usedPercent = totalAllocated > 0 
+    ? (totalSpent / totalAllocated) * 100 
     : 0;
 
   return (
@@ -240,37 +241,40 @@ export const ProjectReportsDialog = ({
           <div className="flex-1 overflow-y-auto mt-4">
             {/* Overview Tab */}
             <TabsContent value="overview" className="m-0 space-y-6">
-              {/* Budget summary cards */}
+              {/* Budget summary cards - unified logic */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg border text-center">
-                  <p className="text-2xl font-bold">{formatAmount(project.total_budget)}</p>
-                  <p className="text-xs text-muted-foreground">{t('projects.totalBudget', 'Ukupni budžet')}</p>
+                <div className="p-4 rounded-lg border bg-income/10 text-center">
+                  <p className="text-2xl font-bold text-income">{formatAmount(totalAllocated)}</p>
+                  <p className="text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
                 </div>
-                <div className="p-4 rounded-lg border text-center">
+                <div className="p-4 rounded-lg border bg-expense/10 text-center">
                   <p className="text-2xl font-bold text-expense">{formatAmount(totalSpent)}</p>
-                  <p className="text-xs text-muted-foreground">{t('projects.spent', 'Potrošeno')}</p>
+                  <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
                 </div>
-                <div className="p-4 rounded-lg border text-center">
-                  <p className={cn("text-2xl font-bold", remaining >= 0 ? "text-income" : "text-destructive")}>
+                <div className="p-4 rounded-lg border bg-primary/10 text-center">
+                  <p className={cn("text-2xl font-bold", remaining >= 0 ? "text-primary" : "text-destructive")}>
                     {formatAmount(remaining)}
                   </p>
                   <p className="text-xs text-muted-foreground">{t('projects.remaining', 'Preostalo')}</p>
                 </div>
                 <div className="p-4 rounded-lg border text-center">
-                  <p className="text-2xl font-bold">{usedPercent.toFixed(1)}%</p>
-                  <p className="text-xs text-muted-foreground">{t('projects.used', 'Iskorišteno')}</p>
+                  <p className="text-2xl font-bold">{formatAmount(project.total_budget)}</p>
+                  <p className="text-xs text-muted-foreground">{t('projects.totalBudget', 'Ukupni proračun')}</p>
                 </div>
               </div>
 
-              {/* Budget progress */}
+              {/* Funds usage progress */}
               <div className="p-4 rounded-lg border space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>{t('projects.budgetProgress', 'Napredak budžeta')}</span>
+                  <span>{t('projects.fundsUsage', 'Iskorištenost sredstava')}</span>
                   <span className={usedPercent > 100 ? 'text-destructive' : ''}>
-                    {formatAmount(totalSpent)} / {formatAmount(project.total_budget)}
+                    {formatAmount(totalSpent)} / {formatAmount(totalAllocated)}
                   </span>
                 </div>
-                <Progress value={Math.min(usedPercent, 100)} className="h-3" />
+                <Progress 
+                  value={Math.min(usedPercent, 100)} 
+                  className={cn("h-3", usedPercent >= 90 && "[&>div]:bg-destructive")} 
+                />
               </div>
 
               {/* Spending by milestone pie chart */}

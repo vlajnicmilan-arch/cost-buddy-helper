@@ -205,7 +205,7 @@ export const ProjectFullScreenView = ({
               milestones={milestones}
               members={members}
               expenses={expenses}
-              totalSpent={stats.totalSpent}
+              totalSpent={spentFromMilestones}
               totalAllocated={totalAllocated}
             />
 
