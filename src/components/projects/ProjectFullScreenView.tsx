@@ -412,7 +412,6 @@ export const ProjectFullScreenView = ({
                     onRefetch={() => {
                       refetchStats();
                       refetchMilestones();
-                      onRefreshExpenses?.();
                       markAsChanged();
                     }}
                   />
