@@ -40,20 +40,29 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     const stats: Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }> = {};
     
     for (const project of projects) {
-      // Fetch expenses for this project (only approved)
-      const { data: expenses } = await (supabase
+      // Fetch expenses for this project (approved or null status = approved)
+      const { data: expenses, error } = await (supabase
         .from('expenses')
-        .select('amount, type') as any)
-        .eq('project_id', project.id)
-        .eq('status', 'approved');
+        .select('amount, type, status') as any)
+        .eq('project_id', project.id);
 
-      const spent = (expenses || [])
-        .filter(e => e.type === 'expense')
-        .reduce((sum, e) => sum + Number(e.amount), 0);
+      if (error) {
+        console.error('Error fetching project expenses:', error);
+        continue;
+      }
 
-      const income = (expenses || [])
-        .filter(e => e.type === 'income')
-        .reduce((sum, e) => sum + Number(e.amount), 0);
+      // Filter only approved transactions (status is 'approved' or null for legacy data)
+      const approvedExpenses = (expenses || []).filter(
+        (e: any) => !e.status || e.status === 'approved'
+      );
+
+      const spent = approvedExpenses
+        .filter((e: any) => e.type === 'expense')
+        .reduce((sum: number, e: any) => sum + Number(e.amount), 0);
+
+      const income = approvedExpenses
+        .filter((e: any) => e.type === 'income')
+        .reduce((sum: number, e: any) => sum + Number(e.amount), 0);
 
       // Fetch member count
       const { count: memberCount } = await (supabase
