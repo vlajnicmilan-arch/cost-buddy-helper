@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -117,6 +118,14 @@ export const ProjectTransactionsTab = ({
   const [editMilestoneId, setEditMilestoneId] = useState<string>('none');
   const [editType, setEditType] = useState<TransactionType>('expense');
   
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
+  
+  // Reject confirmation dialog state
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [transactionToReject, setTransactionToReject] = useState<string | null>(null);
+  
   // Form state
   const [expenseType, setExpenseType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -210,22 +219,32 @@ export const ProjectTransactionsTab = ({
     onRefetch();
   };
 
-  const handleReject = async (transactionId: string) => {
-    if (confirm(t('projects.confirmRejectTransaction', 'Jeste li sigurni da želite odbiti ovu transakciju?'))) {
-      await rejectTransaction(transactionId);
+  const handleReject = (transactionId: string) => {
+    setTransactionToReject(transactionId);
+    setRejectDialogOpen(true);
+  };
+
+  const confirmReject = async () => {
+    if (transactionToReject) {
+      await rejectTransaction(transactionToReject);
+      setRejectDialogOpen(false);
+      setTransactionToReject(null);
     }
   };
 
-  const handleDeleteExpense = async (expenseId: string) => {
-    if (!confirm(t('transactions.confirmDelete', 'Jeste li sigurni da želite obrisati ovu transakciju?'))) {
-      return;
-    }
+  const handleDeleteExpense = (expenseId: string) => {
+    setExpenseToDelete(expenseId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!expenseToDelete) return;
 
     try {
       const { error } = await supabase
         .from('expenses')
         .delete()
-        .eq('id', expenseId);
+        .eq('id', expenseToDelete);
 
       if (error) throw error;
 
@@ -234,6 +253,9 @@ export const ProjectTransactionsTab = ({
     } catch (error) {
       console.error('Error deleting expense:', error);
       toast.error(t('common.error'));
+    } finally {
+      setDeleteDialogOpen(false);
+      setExpenseToDelete(null);
     }
   };
 
@@ -893,6 +915,48 @@ export const ProjectTransactionsTab = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('transactions.deleteTitle', 'Obriši transakciju')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('transactions.confirmDelete', 'Jeste li sigurni da želite obrisati ovu transakciju?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Confirmation Dialog */}
+      <AlertDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('projects.rejectTitle', 'Odbij transakciju')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('projects.confirmRejectTransaction', 'Jeste li sigurni da želite odbiti ovu transakciju?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmReject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('common.reject', 'Odbij')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
