@@ -1,12 +1,16 @@
 import { ProjectFunding } from '@/types/project';
+import { ProjectIncomeSource } from '@/hooks/useProjectFunding';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Wallet, Loader2 } from 'lucide-react';
+import { Wallet, Loader2, TrendingUp } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { format } from 'date-fns';
+import { hr } from 'date-fns/locale';
 
 interface ProjectFundingTabProps {
   projectId: string;
   funding: ProjectFunding[];
+  incomeSources: ProjectIncomeSource[];
   totalAllocated: number;
   projectBudget: number;
   isManager: boolean;
@@ -17,6 +21,7 @@ interface ProjectFundingTabProps {
 export const ProjectFundingTab = ({
   projectId,
   funding,
+  incomeSources,
   totalAllocated,
   projectBudget,
   isManager,
@@ -29,6 +34,8 @@ export const ProjectFundingTab = ({
   const allocationPercentage = projectBudget > 0 
     ? (totalAllocated / projectBudget) * 100 
     : 0;
+
+  const hasAnySource = funding.length > 0 || incomeSources.length > 0;
 
   if (loading) {
     return (
@@ -56,7 +63,7 @@ export const ProjectFundingTab = ({
         </div>
       )}
 
-      {funding.length === 0 ? (
+      {!hasAnySource ? (
         <div className="text-center py-8 text-muted-foreground">
           <Wallet className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>{t('projects.noFunding')}</p>
@@ -64,27 +71,69 @@ export const ProjectFundingTab = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {funding.map((f) => (
-            <div 
-              key={f.id}
-              className="p-4 rounded-lg border bg-card flex items-center gap-3"
-            >
-              <div 
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
-                style={{ backgroundColor: `${f.income_source_color}20` }}
-              >
-                {f.income_source_icon || '💰'}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{f.income_source_name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatAmount(f.allocated_amount)}
-                  {f.percentage && ` (${f.percentage}%)`}
-                </p>
-              </div>
-            </div>
-          ))}
+          {/* Project income transactions (e.g., advances from clients) */}
+          {incomeSources.length > 0 && (
+            <>
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" />
+                {t('projects.projectIncome', 'Prihodi projekta')}
+              </h4>
+              {incomeSources.map((inc) => (
+                <div 
+                  key={inc.id}
+                  className="p-4 rounded-lg border bg-card flex items-center gap-3"
+                >
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0 bg-income/20"
+                  >
+                    💵
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{inc.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(inc.date), 'd. MMM yyyy', { locale: hr })}
+                    </p>
+                  </div>
+                  
+                  <p className="text-lg font-semibold text-income">
+                    {formatAmount(inc.amount)}
+                  </p>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Linked income sources from project_funding table */}
+          {funding.length > 0 && (
+            <>
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2 mt-4">
+                <Wallet className="w-4 h-4" />
+                {t('projects.linkedSources', 'Povezani izvori')}
+              </h4>
+              {funding.map((f) => (
+                <div 
+                  key={f.id}
+                  className="p-4 rounded-lg border bg-card flex items-center gap-3"
+                >
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                    style={{ backgroundColor: `${f.income_source_color}20` }}
+                  >
+                    {f.income_source_icon || '💰'}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{f.income_source_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatAmount(f.allocated_amount)}
+                      {f.percentage && ` (${f.percentage}%)`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>
