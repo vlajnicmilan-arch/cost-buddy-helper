@@ -203,6 +203,16 @@ export const ProjectReportsDialog = ({
   const usedPercent = totalAllocated > 0 
     ? (totalSpent / totalAllocated) * 100 
     : 0;
+  
+  // Budget status indicators
+  const isOverBudget = remaining < 0;
+  const isWarning = usedPercent >= 80 && usedPercent < 100;
+  const overBudgetAmount = isOverBudget ? Math.abs(remaining) : 0;
+
+  // Count milestones over budget
+  const milestonesOverBudget = milestoneProgressData.filter(m => 
+    m.budget > 0 && m.spent > m.budget
+  ).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -249,6 +259,33 @@ export const ProjectReportsDialog = ({
           <div className="flex-1 overflow-y-auto mt-4">
             {/* Overview Tab */}
             <TabsContent value="overview" className="m-0 space-y-6">
+              {/* Over Budget Warning */}
+              {isOverBudget && (
+                <div className="p-4 rounded-lg border-2 border-destructive/50 bg-destructive/10 space-y-2">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="w-5 h-5" />
+                    <span className="font-semibold">{t('projects.overBudgetWarning', 'Prekoračenje budžeta!')}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {t('projects.overBudgetDescription', 'Potrošnja je premašila primljena sredstva za')} {' '}
+                    <span className="font-bold text-destructive">{formatAmount(overBudgetAmount)}</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Warning (approaching limit) */}
+              {isWarning && !isOverBudget && (
+                <div className="p-4 rounded-lg border-2 border-warning/50 bg-warning/10 space-y-2">
+                  <div className="flex items-center gap-2 text-warning-foreground">
+                    <AlertTriangle className="w-5 h-5" />
+                    <span className="font-semibold">{t('projects.budgetWarningTitle', 'Upozorenje: Približavanje limitu')}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {t('projects.budgetWarningDescription', 'Iskorišteno je')} {usedPercent.toFixed(1)}% {t('projects.ofAvailableFunds', 'dostupnih sredstava')}.
+                  </p>
+                </div>
+              )}
+
               {/* Budget summary cards - unified logic */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-lg border bg-income/10 text-center">
@@ -259,11 +296,16 @@ export const ProjectReportsDialog = ({
                   <p className="text-2xl font-bold text-expense">{formatAmount(totalSpent)}</p>
                   <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
                 </div>
-                <div className="p-4 rounded-lg border bg-primary/10 text-center">
+                <div className={cn(
+                  "p-4 rounded-lg border text-center",
+                  isOverBudget ? "bg-destructive/10 border-destructive/30" : "bg-primary/10"
+                )}>
                   <p className={cn("text-2xl font-bold", remaining >= 0 ? "text-primary" : "text-destructive")}>
-                    {formatAmount(remaining)}
+                    {isOverBudget && '-'}{formatAmount(Math.abs(remaining))}
                   </p>
-                  <p className="text-xs text-muted-foreground">{t('projects.remaining', 'Preostalo')}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isOverBudget ? t('projects.overBudget', 'Prekoračeno') : t('projects.remaining', 'Preostalo')}
+                  </p>
                 </div>
                 <div className="p-4 rounded-lg border text-center">
                   <p className="text-2xl font-bold">{formatAmount(project.total_budget)}</p>
@@ -344,15 +386,35 @@ export const ProjectReportsDialog = ({
                     </div>
                   </div>
 
+                  {/* Milestones over budget warning */}
+                  {milestonesOverBudget > 0 && (
+                    <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/10 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-destructive" />
+                      <span className="text-sm">
+                        {milestonesOverBudget} {milestonesOverBudget === 1 
+                          ? t('projects.milestoneOverBudget', 'faza je prekoračila budžet') 
+                          : t('projects.milestonesOverBudget', 'faze su prekoračile budžet')}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Milestone list with details */}
                   <div className="space-y-3">
                     {milestones.map((milestone) => {
-                      const spent = milestone.spent || 0;
+                      // For completed milestones, spent equals budget
+                      const spent = milestone.status === 'completed' ? milestone.budget : (milestone.spent || 0);
                       const percent = milestone.budget > 0 ? (spent / milestone.budget) * 100 : 0;
-                      const isOverBudget = percent > 100;
+                      const isMilestoneOverBudget = percent > 100;
+                      const overAmount = isMilestoneOverBudget ? spent - milestone.budget : 0;
 
                       return (
-                        <div key={milestone.id} className="p-4 rounded-lg border">
+                        <div 
+                          key={milestone.id} 
+                          className={cn(
+                            "p-4 rounded-lg border",
+                            isMilestoneOverBudget && "border-destructive/30 bg-destructive/5"
+                          )}
+                        >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               {milestone.status === 'completed' && <CheckCircle2 className="w-4 h-4 text-income" />}
@@ -361,18 +423,31 @@ export const ProjectReportsDialog = ({
                               {milestone.status === 'pending' && <Clock className="w-4 h-4 text-muted-foreground" />}
                               <span className="font-medium">{milestone.name}</span>
                               <Badge variant="outline">{MILESTONE_STATUS_LABELS[milestone.status]}</Badge>
+                              {isMilestoneOverBudget && (
+                                <Badge variant="destructive" className="gap-1">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  {t('projects.overBudget', 'Prekoračeno')}
+                                </Badge>
+                              )}
                             </div>
-                            <span className={cn("font-mono", isOverBudget && "text-destructive")}>
+                            <span className={cn("font-mono", isMilestoneOverBudget && "text-destructive")}>
                               {formatAmount(spent)} / {formatAmount(milestone.budget)}
                             </span>
                           </div>
                           <Progress 
                             value={Math.min(percent, 100)} 
-                            className={cn("h-2", isOverBudget && "[&>div]:bg-destructive")} 
+                            className={cn("h-2", isMilestoneOverBudget && "[&>div]:bg-destructive")} 
                           />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {percent.toFixed(1)}% {t('projects.used', 'iskorišteno')}
-                          </p>
+                          <div className="flex justify-between items-center mt-1">
+                            <p className="text-xs text-muted-foreground">
+                              {percent.toFixed(1)}% {t('projects.used', 'iskorišteno')}
+                            </p>
+                            {isMilestoneOverBudget && (
+                              <p className="text-xs text-destructive font-medium">
+                                +{formatAmount(overAmount)} {t('projects.overBudgetBy', 'prekoračenje')}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
