@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, Sparkles } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
@@ -19,19 +19,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface CustomPaymentSourcesPanelProps {
   hideHeader?: boolean;
 }
 
 export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentSourcesPanelProps) => {
-  const { customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard } = useCustomPaymentSources();
+  const { customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<CustomPaymentSource | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [sourceToDelete, setSourceToDelete] = useState<CustomPaymentSource | null>(null);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [initialData, setInitialData] = useState<{ name: string; icon: string; color: string; balance?: number } | undefined>();
+  const [reorderMode, setReorderMode] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const { t } = useTranslation();
 
   const handleSave = async (data: { name: string; icon: string; color: string; balance: number; description?: string }) => {
@@ -89,6 +93,27 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
     )
   );
 
+  // Drag and drop handlers
+  const handleDragStart = useCallback((index: number) => {
+    setDraggedIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newSources = [...customPaymentSources];
+    const [draggedItem] = newSources.splice(draggedIndex, 1);
+    newSources.splice(index, 0, draggedItem);
+    
+    reorderPaymentSources(newSources);
+    setDraggedIndex(index);
+  }, [draggedIndex, customPaymentSources, reorderPaymentSources]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null);
+  }, []);
+
   if (loading) {
     if (hideHeader) {
       return (
@@ -118,6 +143,20 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
 
   const content = (
     <div className="space-y-4">
+      {/* Reorder toggle */}
+      {customPaymentSources.length > 1 && (
+        <div className="flex items-center justify-end gap-2">
+          <Label htmlFor="reorder-mode" className="text-sm text-muted-foreground cursor-pointer">
+            {t('common.reorderMode', 'Preslagivanje')}
+          </Label>
+          <Switch
+            id="reorder-mode"
+            checked={reorderMode}
+            onCheckedChange={setReorderMode}
+          />
+        </div>
+      )}
+
       {/* Existing custom sources */}
       {customPaymentSources.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">
@@ -126,15 +165,26 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
         </p>
       ) : (
         <div className="space-y-2">
-          {customPaymentSources.map((source) => (
+          {customPaymentSources.map((source, index) => (
             <div
               key={source.id}
-              className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+              draggable={reorderMode}
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragEnd={handleDragEnd}
+              className={`p-3 rounded-lg border bg-card transition-all ${
+                reorderMode 
+                  ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' 
+                  : 'hover:bg-muted/50'
+              } ${draggedIndex === index ? 'opacity-50 scale-[0.98]' : ''}`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
+                  {reorderMode && (
+                    <GripVertical className="h-5 w-5 text-muted-foreground shrink-0" />
+                  )}
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0"
                     style={{ backgroundColor: source.color }}
                   >
                     <span>{source.icon}</span>
@@ -150,24 +200,26 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
                   <span className={`font-mono text-sm font-semibold ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}>
                     €{(source.balance || 0).toFixed(2)}
                   </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleEdit(source)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(source)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {!reorderMode && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEdit(source)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(source)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Cards display */}

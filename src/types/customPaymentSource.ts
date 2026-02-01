@@ -16,6 +16,7 @@ export interface CustomPaymentSource {
   color: string;
   balance: number;
   description?: string | null;
+  sort_order?: number;
   created_at: string;
   updated_at: string;
   cards?: PaymentSourceCard[];
