@@ -17,7 +17,10 @@ export const useCustomPaymentSources = () => {
     if (isLocalMode) {
       const stored = localStorage.getItem('customPaymentSources');
       if (stored) {
-        setCustomPaymentSources(JSON.parse(stored));
+        const parsed = JSON.parse(stored) as CustomPaymentSource[];
+        // Sort by sort_order for local mode as well
+        parsed.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setCustomPaymentSources(parsed);
       }
       setLoading(false);
       return;
@@ -285,12 +288,12 @@ export const useCustomPaymentSources = () => {
   };
 
   const reorderPaymentSources = async (reorderedSources: CustomPaymentSource[]) => {
-    // Update local state immediately for smooth UX
-    setCustomPaymentSources(reorderedSources);
+    // Update sort_order values and local state immediately for smooth UX
+    const updatedWithOrder = reorderedSources.map((src, index) => ({ ...src, sort_order: index }));
+    setCustomPaymentSources(updatedWithOrder);
 
     if (isLocalMode) {
-      const updated = reorderedSources.map((src, index) => ({ ...src, sort_order: index }));
-      localStorage.setItem('customPaymentSources', JSON.stringify(updated));
+      localStorage.setItem('customPaymentSources', JSON.stringify(updatedWithOrder));
       return;
     }
 
