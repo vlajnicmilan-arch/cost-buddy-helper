@@ -616,7 +616,16 @@
     "spendingByMilestone": "Ausgaben nach Meilenstein",
     "spendingByMember": "Ausgaben nach Mitglied",
     "milestoneBudgets": "Meilenstein-Budgets",
-    "ofTotal": "von gesamt"
+    "ofTotal": "von gesamt",
+    "overBudget": "Überschritten",
+    "overBudgetWarning": "Budgetüberschreitung!",
+    "overBudgetDescription": "Die Ausgaben haben die erhaltenen Mittel überschritten um",
+    "budgetWarningTitle": "Warnung: Limit nähert sich",
+    "budgetWarningDescription": "Verwendet",
+    "ofAvailableFunds": "der verfügbaren Mittel",
+    "milestoneOverBudget": "Meilenstein hat das Budget überschritten",
+    "milestonesOverBudget": "Meilensteine haben das Budget überschritten",
+    "overBudgetBy": "Überschreitung"
   },
   "budget": {
     "title": "Budgets",

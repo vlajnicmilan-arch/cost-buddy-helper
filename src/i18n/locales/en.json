@@ -14,7 +14,16 @@
     "spendingByMember": "Spending by member",
     "milestoneBudgets": "Milestone budgets",
     "ofTotal": "of total",
-    "budget": "Budget"
+    "budget": "Budget",
+    "overBudget": "Over budget",
+    "overBudgetWarning": "Budget exceeded!",
+    "overBudgetDescription": "Spending has exceeded received funds by",
+    "budgetWarningTitle": "Warning: Approaching limit",
+    "budgetWarningDescription": "Used",
+    "ofAvailableFunds": "of available funds",
+    "milestoneOverBudget": "milestone is over budget",
+    "milestonesOverBudget": "milestones are over budget",
+    "overBudgetBy": "over budget"
   },
   "settings": {
     "notifications": "Notifications",

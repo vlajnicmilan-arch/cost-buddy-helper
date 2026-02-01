@@ -14,7 +14,16 @@
     "spendingByMember": "Potrošnja po članovima",
     "milestoneBudgets": "Budžeti faza",
     "ofTotal": "od ukupno",
-    "budget": "Budžet"
+    "budget": "Budžet",
+    "overBudget": "Prekoračeno",
+    "overBudgetWarning": "Prekoračenje budžeta!",
+    "overBudgetDescription": "Potrošnja je premašila primljena sredstva za",
+    "budgetWarningTitle": "Upozorenje: Približavanje limitu",
+    "budgetWarningDescription": "Iskorišteno je",
+    "ofAvailableFunds": "dostupnih sredstava",
+    "milestoneOverBudget": "faza je prekoračila budžet",
+    "milestonesOverBudget": "faze su prekoračile budžet",
+    "overBudgetBy": "prekoračenje"
   },
   "settings": {
     "notifications": "Obavijesti",
