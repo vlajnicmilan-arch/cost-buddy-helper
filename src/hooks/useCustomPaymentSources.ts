@@ -68,6 +68,18 @@ export const useCustomPaymentSources = () => {
     fetchCustomPaymentSources();
   }, [fetchCustomPaymentSources]);
 
+  // Listen for reorder events from other hook instances to sync state
+  useEffect(() => {
+    const handleReorder = (e: CustomEvent<CustomPaymentSource[]>) => {
+      setCustomPaymentSources(e.detail);
+    };
+
+    window.addEventListener('paymentSourcesReordered', handleReorder as EventListener);
+    return () => {
+      window.removeEventListener('paymentSourcesReordered', handleReorder as EventListener);
+    };
+  }, []);
+
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (isLocalMode) {
       const maxSortOrder = customPaymentSources.reduce((max, src) => Math.max(max, src.sort_order || 0), -1);
@@ -291,6 +303,9 @@ export const useCustomPaymentSources = () => {
     // Update sort_order values and local state immediately for smooth UX
     const updatedWithOrder = reorderedSources.map((src, index) => ({ ...src, sort_order: index }));
     setCustomPaymentSources(updatedWithOrder);
+
+    // Dispatch event for other components to sync
+    window.dispatchEvent(new CustomEvent('paymentSourcesReordered', { detail: updatedWithOrder }));
 
     if (isLocalMode) {
       localStorage.setItem('customPaymentSources', JSON.stringify(updatedWithOrder));
