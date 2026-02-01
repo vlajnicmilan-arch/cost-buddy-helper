@@ -29,12 +29,12 @@ export const useCustomPaymentSources = () => {
     }
 
     try {
-      // Fetch payment sources
+      // Fetch payment sources ordered by sort_order
       const { data: sources, error: sourcesError } = await supabase
         .from('custom_payment_sources' as any)
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('sort_order', { ascending: true });
 
       if (sourcesError) throw sourcesError;
 
@@ -67,14 +67,16 @@ export const useCustomPaymentSources = () => {
 
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (isLocalMode) {
+      const maxSortOrder = customPaymentSources.reduce((max, src) => Math.max(max, src.sort_order || 0), -1);
       const newSource: CustomPaymentSource = {
         ...source,
         id: crypto.randomUUID(),
         user_id: 'local',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        sort_order: maxSortOrder + 1,
       };
-      const updated = [newSource, ...customPaymentSources];
+      const updated = [...customPaymentSources, newSource];
       setCustomPaymentSources(updated);
       localStorage.setItem('customPaymentSources', JSON.stringify(updated));
       toast.success('Izvor plaćanja dodan');
@@ -87,19 +89,22 @@ export const useCustomPaymentSources = () => {
     }
 
     try {
+      // Get max sort_order for this user
+      const maxSortOrder = customPaymentSources.reduce((max, src) => Math.max(max, src.sort_order || 0), -1);
       const { cards, ...sourceData } = source;
       const { data, error } = await supabase
         .from('custom_payment_sources' as any)
         .insert({
           ...sourceData,
           user_id: user.id,
+          sort_order: maxSortOrder + 1,
         })
         .select()
         .single();
 
       if (error) throw error;
       const newSource = { ...(data as object), cards: [] } as CustomPaymentSource;
-      setCustomPaymentSources(prev => [newSource, ...prev]);
+      setCustomPaymentSources(prev => [...prev, newSource]);
       toast.success('Izvor plaćanja dodan');
       return newSource;
     } catch (error) {
@@ -279,6 +284,34 @@ export const useCustomPaymentSources = () => {
     }
   };
 
+  const reorderPaymentSources = async (reorderedSources: CustomPaymentSource[]) => {
+    // Update local state immediately for smooth UX
+    setCustomPaymentSources(reorderedSources);
+
+    if (isLocalMode) {
+      const updated = reorderedSources.map((src, index) => ({ ...src, sort_order: index }));
+      localStorage.setItem('customPaymentSources', JSON.stringify(updated));
+      return;
+    }
+
+    try {
+      // Update sort_order for each source in the database
+      const updates = reorderedSources.map((src, index) => 
+        supabase
+          .from('custom_payment_sources' as any)
+          .update({ sort_order: index })
+          .eq('id', src.id)
+      );
+      
+      await Promise.all(updates);
+    } catch (error) {
+      console.error('Error reordering payment sources:', error);
+      toast.error('Greška pri preslagivanju izvora plaćanja');
+      // Refetch to restore correct order on error
+      fetchCustomPaymentSources();
+    }
+  };
+
   return {
     customPaymentSources,
     loading,
@@ -288,6 +321,7 @@ export const useCustomPaymentSources = () => {
     addCard,
     updateCard,
     deleteCard,
+    reorderPaymentSources,
     refetch: fetchCustomPaymentSources,
   };
 };
