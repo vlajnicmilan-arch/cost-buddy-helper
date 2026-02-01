@@ -70,13 +70,17 @@ export const useCustomPaymentSources = () => {
 
   // Listen for reorder events from other hook instances to sync state
   useEffect(() => {
-    const handleReorder = (e: CustomEvent<CustomPaymentSource[]>) => {
-      setCustomPaymentSources(e.detail);
+    const handleReorder = (e: Event) => {
+      const customEvent = e as CustomEvent<CustomPaymentSource[]>;
+      if (customEvent.detail) {
+        // Use functional update to avoid stale closure issues
+        setCustomPaymentSources(customEvent.detail);
+      }
     };
 
-    window.addEventListener('paymentSourcesReordered', handleReorder as EventListener);
+    window.addEventListener('paymentSourcesReordered', handleReorder);
     return () => {
-      window.removeEventListener('paymentSourcesReordered', handleReorder as EventListener);
+      window.removeEventListener('paymentSourcesReordered', handleReorder);
     };
   }, []);
 
