@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,7 +93,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
     )
   );
 
-  // Drag and drop handlers
+  // Drag and drop handlers (desktop)
   const handleDragStart = useCallback((index: number) => {
     setDraggedIndex(index);
   }, []);
@@ -111,6 +111,50 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
   }, [draggedIndex, customPaymentSources, reorderPaymentSources]);
 
   const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null);
+  }, []);
+
+  // Touch handlers for mobile drag-and-drop
+  const touchStartY = useRef<number>(0);
+  const touchStartIndex = useRef<number | null>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent, index: number) => {
+    if (!reorderMode) return;
+    touchStartY.current = e.touches[0].clientY;
+    touchStartIndex.current = index;
+    setDraggedIndex(index);
+  }, [reorderMode]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!reorderMode || touchStartIndex.current === null) return;
+    e.preventDefault(); // Prevent scrolling while dragging
+    
+    const currentY = e.touches[0].clientY;
+    const currentIndex = touchStartIndex.current;
+    
+    // Find which item we're hovering over
+    for (let i = 0; i < itemRefs.current.length; i++) {
+      const item = itemRefs.current[i];
+      if (item && i !== currentIndex) {
+        const rect = item.getBoundingClientRect();
+        if (currentY >= rect.top && currentY <= rect.bottom) {
+          // Swap items
+          const newSources = [...customPaymentSources];
+          const [draggedItem] = newSources.splice(currentIndex, 1);
+          newSources.splice(i, 0, draggedItem);
+          
+          reorderPaymentSources(newSources);
+          touchStartIndex.current = i;
+          setDraggedIndex(i);
+          break;
+        }
+      }
+    }
+  }, [reorderMode, customPaymentSources, reorderPaymentSources]);
+
+  const handleTouchEnd = useCallback(() => {
+    touchStartIndex.current = null;
     setDraggedIndex(null);
   }, []);
 
@@ -168,11 +212,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
           {customPaymentSources.map((source, index) => (
             <div
               key={source.id}
+              ref={(el) => { itemRefs.current[index] = el; }}
               draggable={reorderMode}
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
-              className={`p-3 rounded-lg border bg-card transition-all ${
+              onTouchStart={(e) => handleTouchStart(e, index)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              className={`p-3 rounded-lg border bg-card transition-all touch-none ${
                 reorderMode 
                   ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' 
                   : 'hover:bg-muted/50'
