@@ -220,11 +220,18 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
               onTouchStart={(e) => handleTouchStart(e, index)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              className={`p-3 rounded-lg border bg-card transition-all touch-none ${
+              className={`p-3 rounded-lg border bg-card transition-all duration-200 touch-none ${
                 reorderMode 
                   ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' 
                   : 'hover:bg-muted/50'
-              } ${draggedIndex === index ? 'opacity-50 scale-[0.98]' : ''}`}
+              } ${draggedIndex === index 
+                ? 'scale-105 shadow-xl shadow-primary/20 border-primary z-10 relative bg-card/95 backdrop-blur-sm' 
+                : ''
+              }`}
+              style={draggedIndex === index ? { 
+                boxShadow: `0 20px 40px -10px ${source.color}40, 0 10px 20px -5px rgba(0,0,0,0.2)`,
+                borderColor: source.color 
+              } : undefined}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
