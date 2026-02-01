@@ -21,6 +21,9 @@ interface ProjectStats {
   budgetUsedPercentage: number;
   expensesByCategory: Record<string, number>;
   expensesByMilestone: Record<string, number>;
+  // Legacy expense-based totals (for backward compatibility)
+  totalExpenseTransactions: number;
+  totalIncomeTransactions: number;
 }
 
 export const useProjectStats = (projectId: string | null, totalBudget: number) => {
@@ -95,7 +98,10 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
       transactionCount: expenses.length,
       budgetUsedPercentage,
       expensesByCategory,
-      expensesByMilestone
+      expensesByMilestone,
+      // Legacy fields for backward compatibility
+      totalExpenseTransactions: totalSpent,
+      totalIncomeTransactions: totalIncome
     };
   }, [expenses, totalBudget]);
 
