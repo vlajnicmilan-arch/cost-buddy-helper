@@ -67,7 +67,11 @@ export const ProjectReportsDialog = ({
   const { formatAmount, currency } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Calculate spending by milestone
+  // Calculate completed milestones budget as "spent" (unified logic)
+  const completedMilestones = milestones.filter(m => m.status === 'completed');
+  const spentFromCompletedMilestones = completedMilestones.reduce((sum, m) => sum + (m.budget || 0), 0);
+
+  // Calculate spending by milestone (for chart visualization - shows expense transactions per milestone)
   const spendingByMilestone = useMemo(() => {
     const byMilestone: Record<string, number> = {};
     let unassigned = 0;
@@ -82,10 +86,12 @@ export const ProjectReportsDialog = ({
       }
     });
 
+    // Use milestone budget for completed milestones, expense sum for others
     const data = milestones.map((m, i) => ({
       name: m.name,
-      spent: byMilestone[m.id] || 0,
+      spent: m.status === 'completed' ? m.budget : (byMilestone[m.id] || 0),
       budget: m.budget,
+      status: m.status,
       color: COLORS[i % COLORS.length],
     }));
 
@@ -94,6 +100,7 @@ export const ProjectReportsDialog = ({
         name: t('projects.noMilestone', 'Bez faze'),
         spent: unassigned,
         budget: 0,
+        status: 'pending',
         color: '#94a3b8',
       });
     }
@@ -119,10 +126,11 @@ export const ProjectReportsDialog = ({
     }));
   }, [expenses, members]);
 
-  // Milestone progress data for chart
+  // Milestone progress data for chart - use budget for completed milestones
   const milestoneProgressData = useMemo(() => {
     return milestones.map(m => {
-      const spent = m.spent || 0;
+      // For completed milestones, "spent" equals budget (the full budget is consumed)
+      const spent = m.status === 'completed' ? m.budget : (m.spent || 0);
       const percent = m.budget > 0 ? (spent / m.budget) * 100 : 0;
       return {
         name: m.name.length > 15 ? m.name.substring(0, 15) + '...' : m.name,
