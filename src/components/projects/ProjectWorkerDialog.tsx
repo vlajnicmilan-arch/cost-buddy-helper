@@ -16,6 +16,8 @@ interface ProjectWorkerDialogProps {
     position: string;
     work_hours: number;
     hourly_rate: number;
+    work_start_time: string;
+    work_end_time: string;
   }) => void;
 }
 
@@ -31,6 +33,8 @@ export const ProjectWorkerDialog = ({
   const [position, setPosition] = useState('');
   const [workHours, setWorkHours] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
+  const [workStartTime, setWorkStartTime] = useState('08:00');
+  const [workEndTime, setWorkEndTime] = useState('16:00');
 
   const isEditing = !!worker;
 
@@ -41,12 +45,16 @@ export const ProjectWorkerDialog = ({
       setPosition(worker.position);
       setWorkHours(worker.work_hours.toString());
       setHourlyRate(worker.hourly_rate.toString());
+      setWorkStartTime(worker.work_start_time?.slice(0, 5) || '08:00');
+      setWorkEndTime(worker.work_end_time?.slice(0, 5) || '16:00');
     } else {
       setFirstName('');
       setLastName('');
       setPosition('');
       setWorkHours('');
       setHourlyRate('');
+      setWorkStartTime('08:00');
+      setWorkEndTime('16:00');
     }
   }, [worker, open]);
 
@@ -60,7 +68,9 @@ export const ProjectWorkerDialog = ({
       last_name: lastName.trim(),
       position: position.trim(),
       work_hours: parseFloat(workHours) || 0,
-      hourly_rate: parseFloat(hourlyRate) || 0
+      hourly_rate: parseFloat(hourlyRate) || 0,
+      work_start_time: workStartTime,
+      work_end_time: workEndTime
     });
 
     onOpenChange(false);
@@ -110,9 +120,38 @@ export const ProjectWorkerDialog = ({
             />
           </div>
 
+          {/* Work schedule */}
+          <div className="space-y-2">
+            <Label>{t('workers.workSchedule', 'Radno vrijeme')}</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="workStartTime" className="text-xs text-muted-foreground">
+                  {t('workers.from', 'Od')}
+                </Label>
+                <Input
+                  id="workStartTime"
+                  type="time"
+                  value={workStartTime}
+                  onChange={(e) => setWorkStartTime(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="workEndTime" className="text-xs text-muted-foreground">
+                  {t('workers.to', 'Do')}
+                </Label>
+                <Input
+                  id="workEndTime"
+                  type="time"
+                  value={workEndTime}
+                  onChange={(e) => setWorkEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="workHours">{t('workers.workHours', 'Radni sati')}</Label>
+              <Label htmlFor="workHours">{t('workers.defaultHours', 'Zadani sati')}</Label>
               <Input
                 id="workHours"
                 type="number"
