@@ -206,7 +206,7 @@ export const ProjectMilestonesTab = ({
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent showBackButton={false}>
           <DialogHeader>
             <DialogTitle>
               {editingMilestone ? t('projects.editMilestone') : t('projects.addMilestone')}

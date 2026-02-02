@@ -179,7 +179,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
 
       {/* PDF Preview Dialog */}
       <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
-        <DialogContent className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
+        <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('import.foundTransactions')}</DialogTitle>
           </DialogHeader>
@@ -260,7 +260,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
 
       {/* Duplicate Warning Dialog */}
       <Dialog open={duplicateWarningOpen} onOpenChange={setDuplicateWarningOpen}>
-        <DialogContent className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
+        <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-orange-500" />

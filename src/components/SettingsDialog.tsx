@@ -1213,7 +1213,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         if (!isOpen) resetImportState();
         setShowImportDialog(isOpen);
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent showBackButton={false} className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileJson className="w-5 h-5" />

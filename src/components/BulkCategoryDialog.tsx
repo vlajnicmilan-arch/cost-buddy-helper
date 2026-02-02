@@ -173,7 +173,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
           {t('bulk.category')}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent showBackButton={false} className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 pb-2 space-y-4">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
