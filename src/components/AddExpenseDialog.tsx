@@ -1223,52 +1223,85 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 />
               </div>
 
-              {/* Category - Only show for expenses */}
+              {/* Category - Only show for expenses - Dropdown select */}
               {type === 'expense' && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">{t('common.category')}</Label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {/* Custom expense categories first */}
-                    {customCategories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => setCategory(cat.id as Category)}
-                        className={cn(
-                          "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                          category === cat.id 
-                            ? "border-primary bg-primary/5" 
-                            : "border-transparent bg-muted/50 hover:bg-muted"
-                        )}
-                        style={{ 
-                          borderColor: category === cat.id ? cat.color : undefined,
-                          backgroundColor: category === cat.id ? cat.color + '10' : undefined
-                        }}
-                      >
-                        <span className="text-xl">{cat.icon}</span>
-                        <span className="text-xs font-medium text-muted-foreground">{cat.name}</span>
-                      </button>
-                    ))}
-                    {/* Default categories */}
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => setCategory(cat.id)}
-                        className={cn(
-                          "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                          category === cat.id 
-                            ? "border-primary bg-primary/5" 
-                            : "border-transparent bg-muted/50 hover:bg-muted"
-                        )}
-                      >
-                        <span className="text-xl">{cat.icon}</span>
-                        <span className="text-xs font-medium text-muted-foreground">{t(`categories.${cat.id}`)}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <Select 
+                    value={category} 
+                    onValueChange={(v) => setCategory(v as Category)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl bg-background">
+                      <SelectValue>
+                        {(() => {
+                          // Check custom categories first
+                          const customCat = customCategories.find(c => c.id === category);
+                          if (customCat) {
+                            return (
+                              <span className="flex items-center gap-2">
+                                <span 
+                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                                  style={{ backgroundColor: customCat.color + '20', color: customCat.color }}
+                                >
+                                  {customCat.icon}
+                                </span>
+                                <span>{customCat.name}</span>
+                              </span>
+                            );
+                          }
+                          // Check default categories
+                          const defaultCat = CATEGORIES.find(c => c.id === category);
+                          if (defaultCat) {
+                            return (
+                              <span className="flex items-center gap-2">
+                                <span>{defaultCat.icon}</span>
+                                <span>{t(`categories.${defaultCat.id}`)}</span>
+                              </span>
+                            );
+                          }
+                          return t('common.category');
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50 max-h-[300px]">
+                      {/* Custom expense categories first */}
+                      {customCategories.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {t('transactions.customSources', 'Prilagođene')}
+                          </div>
+                          {customCategories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              <span className="flex items-center gap-2">
+                                <span 
+                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                                  style={{ backgroundColor: cat.color + '20', color: cat.color }}
+                                >
+                                  {cat.icon}
+                                </span>
+                                <span>{cat.name}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      {/* Default categories */}
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {t('paymentSources.standardSources', 'Standardne')}
+                      </div>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          <span className="flex items-center gap-2">
+                            <span>{cat.icon}</span>
+                            <span>{t(`categories.${cat.id}`)}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
+
 
 
               {/* Save Receipt Option */}
