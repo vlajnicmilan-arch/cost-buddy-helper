@@ -51,7 +51,7 @@ const DialogContent = React.forwardRef<
       >
         {children}
         {isMobile && showBackButton ? (
-          <DialogPrimitive.Close className="absolute left-3 top-3 z-10 flex h-8 items-center gap-1.5 rounded-full bg-muted/90 px-3 text-foreground opacity-90 ring-offset-background transition-all hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+          <DialogPrimitive.Close className="absolute right-3 top-3 z-10 flex h-8 items-center gap-1.5 rounded-full bg-muted/90 px-3 text-foreground opacity-90 ring-offset-background transition-all hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm font-medium">Povratak</span>
           </DialogPrimitive.Close>
