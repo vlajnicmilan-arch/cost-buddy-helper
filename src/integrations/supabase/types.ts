@@ -902,6 +902,57 @@ export type Database = {
           },
         ]
       }
+      project_work_entries: {
+        Row: {
+          actual_hours: number
+          created_at: string
+          id: string
+          note: string | null
+          project_id: string
+          scheduled_hours: number
+          updated_at: string
+          work_date: string
+          worker_id: string
+        }
+        Insert: {
+          actual_hours?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          project_id: string
+          scheduled_hours?: number
+          updated_at?: string
+          work_date: string
+          worker_id: string
+        }
+        Update: {
+          actual_hours?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          project_id?: string
+          scheduled_hours?: number
+          updated_at?: string
+          work_date?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_work_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_work_entries_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "project_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_workers: {
         Row: {
           created_at: string
@@ -912,7 +963,9 @@ export type Database = {
           position: string
           project_id: string
           updated_at: string
+          work_end_time: string | null
           work_hours: number
+          work_start_time: string | null
         }
         Insert: {
           created_at?: string
@@ -923,7 +976,9 @@ export type Database = {
           position: string
           project_id: string
           updated_at?: string
+          work_end_time?: string | null
           work_hours?: number
+          work_start_time?: string | null
         }
         Update: {
           created_at?: string
@@ -934,7 +989,9 @@ export type Database = {
           position?: string
           project_id?: string
           updated_at?: string
+          work_end_time?: string | null
           work_hours?: number
+          work_start_time?: string | null
         }
         Relationships: [
           {

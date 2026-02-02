@@ -15,9 +15,10 @@ import {
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { ProjectWorker } from '@/types/projectWorker';
 import { ProjectWorkerDialog } from './ProjectWorkerDialog';
+import { WorkerScheduleDialog } from './WorkerScheduleDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays } from 'lucide-react';
 
 interface ProjectWorkersTabProps {
   projectId: string;
@@ -40,6 +41,7 @@ export const ProjectWorkersTab = ({
   const [editingWorker, setEditingWorker] = useState<ProjectWorker | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
+  const [scheduleWorker, setScheduleWorker] = useState<ProjectWorker | null>(null);
 
   const handleAdd = () => {
     setEditingWorker(null);
@@ -71,6 +73,8 @@ export const ProjectWorkersTab = ({
     position: string;
     work_hours: number;
     hourly_rate: number;
+    work_start_time: string;
+    work_end_time: string;
   }) => {
     if (editingWorker) {
       await updateWorker({ ...editingWorker, ...data });
@@ -79,6 +83,10 @@ export const ProjectWorkersTab = ({
     }
     refetch();
     onRefetch?.();
+  };
+
+  const handleOpenSchedule = (worker: ProjectWorker) => {
+    setScheduleWorker(worker);
   };
 
   if (loading || externalLoading) {
@@ -140,7 +148,9 @@ export const ProjectWorkersTab = ({
                     <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        <span>{worker.work_hours} {t('workers.hours', 'sati')}</span>
+                        <span>
+                          {worker.work_start_time?.slice(0, 5) || '08:00'} - {worker.work_end_time?.slice(0, 5) || '16:00'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Banknote className="w-4 h-4" />
@@ -149,11 +159,19 @@ export const ProjectWorkersTab = ({
                     </div>
 
                     <div className="mt-2 text-sm font-medium">
-                      {t('workers.total', 'Ukupno')}: <span className="text-primary">{formatAmount(workerTotal)}</span>
+                      {t('workers.defaultHours', 'Zadani sati')}: {worker.work_hours}h = <span className="text-primary">{formatAmount(workerTotal)}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => handleOpenSchedule(worker)}
+                      title={t('workers.openSchedule', 'Otvori raspored')}
+                    >
+                      <CalendarDays className="w-4 h-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(worker)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
@@ -177,6 +195,17 @@ export const ProjectWorkersTab = ({
         worker={editingWorker}
         onSave={handleSave}
       />
+
+      {/* Schedule Dialog */}
+      {scheduleWorker && (
+        <WorkerScheduleDialog
+          open={!!scheduleWorker}
+          onOpenChange={(open) => !open && setScheduleWorker(null)}
+          worker={scheduleWorker}
+          projectId={projectId}
+          isManager={isManager}
+        />
+      )}
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

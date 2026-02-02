@@ -55,7 +55,9 @@ export const useProjectWorkers = (projectId: string | null) => {
           last_name: worker.last_name,
           position: worker.position,
           work_hours: worker.work_hours,
-          hourly_rate: worker.hourly_rate
+          hourly_rate: worker.hourly_rate,
+          work_start_time: worker.work_start_time || '08:00',
+          work_end_time: worker.work_end_time || '16:00'
         })
         .select()
         .single();
@@ -87,7 +89,9 @@ export const useProjectWorkers = (projectId: string | null) => {
           last_name: worker.last_name,
           position: worker.position,
           work_hours: worker.work_hours,
-          hourly_rate: worker.hourly_rate
+          hourly_rate: worker.hourly_rate,
+          work_start_time: worker.work_start_time,
+          work_end_time: worker.work_end_time
         })
         .eq('id', worker.id);
 
