@@ -10,8 +10,9 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useProjects } from '@/hooks/useProjects';
+import { useBudgets } from '@/hooks/useBudgets';
 import { useInstallments } from '@/hooks/useInstallments';
-import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban } from 'lucide-react';
+import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 
@@ -67,6 +68,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   
   const [note, setNote] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   
   // Installment state
   const [isInstallment, setIsInstallment] = useState(false);
@@ -89,6 +91,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { customCategories, refetch: refetchCustomCategories } = useCustomCategories();
   const { projects } = useProjects();
+  const { budgets } = useBudgets();
   const { createPlan: createInstallmentPlan } = useInstallments();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
@@ -280,6 +283,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setShowScannedPreview(false);
     setNote('');
     setSelectedProjectId(null);
+    setSelectedBudgetId(null);
     // Reset installment state
     setIsInstallment(false);
     setInstallmentCount(12);
@@ -360,7 +364,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       receipt_url: receiptUrl,
       ai_extracted: scannedData !== null,
       note: note.trim() || undefined,
-      project_id: selectedProjectId || undefined
+      project_id: selectedProjectId || undefined,
+      budget_id: selectedBudgetId || undefined
     };
 
     // Check for duplicates (skip for transfers)
@@ -936,7 +941,62 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 </div>
               )}
 
-              {/* Merchant Name / Source */}
+              {/* Budget Assignment - only for expense type */}
+              {type === 'expense' && budgets.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <PiggyBank className="w-4 h-4" />
+                    {t('transactions.assignToBudget', 'Pridruži budžetu')}
+                  </Label>
+                  <Select 
+                    value={selectedBudgetId || 'none'} 
+                    onValueChange={(v) => setSelectedBudgetId(v === 'none' ? null : v)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl bg-background">
+                      <SelectValue>
+                        {selectedBudgetId ? (
+                          (() => {
+                            const budget = budgets.find(b => b.id === selectedBudgetId);
+                            return budget ? (
+                              <span className="flex items-center gap-2">
+                                <span 
+                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                                  style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
+                                >
+                                  {budget.icon || '💰'}
+                                </span>
+                                <span>{budget.name}</span>
+                              </span>
+                            ) : t('transactions.noBudget', 'Bez budžeta');
+                          })()
+                        ) : (
+                          <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
+                      </SelectItem>
+                      {budgets.filter(b => b.is_active).map((budget) => (
+                        <SelectItem key={budget.id} value={budget.id}>
+                          <span className="flex items-center gap-2">
+                            <span 
+                              className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                              style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
+                            >
+                              {budget.icon || '💰'}
+                            </span>
+                            <span>{budget.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+
               <div className="space-y-2">
                 <Label htmlFor="merchant" className="text-sm font-medium">
                   {type === 'income' ? t('transactions.merchantSource') : t('transactions.merchantStore')}
