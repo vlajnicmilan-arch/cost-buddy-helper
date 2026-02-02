@@ -138,7 +138,7 @@ export const BudgetDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent showBackButton={false} className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {budget ? t('budget.editBudget', 'Uredi budžet') : t('budget.createBudget', 'Novi budžet')}

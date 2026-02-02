@@ -58,7 +58,7 @@ export const CustomIncomeCategoryDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showBackButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {category ? t('incomeCategories.editCategory', 'Uredi kategoriju prihoda') : t('incomeCategories.newCategory', 'Nova kategorija prihoda')}

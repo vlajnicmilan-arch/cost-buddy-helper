@@ -171,7 +171,7 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => isOpen ? onOpenChange(true) : handleClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent showBackButton={false} className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 pb-2 space-y-4">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
@@ -379,7 +379,7 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => isOpen ? onOpenChange(true) : handleClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent showBackButton={false} className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 pb-2 space-y-4">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">

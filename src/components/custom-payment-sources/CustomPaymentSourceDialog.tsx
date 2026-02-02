@@ -170,7 +170,7 @@ export const CustomPaymentSourceDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent showBackButton={false} className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {source ? t('common.editPaymentSource') : t('common.newPaymentSource')}
