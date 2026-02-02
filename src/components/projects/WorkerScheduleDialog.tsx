@@ -411,6 +411,7 @@ export const WorkerScheduleDialog = ({
               {entries.map((entry) => {
                 const difference = entry.actual_hours - entry.scheduled_hours;
                 const hasDifference = difference !== 0;
+                const entryCost = entry.actual_hours * worker.hourly_rate;
                 
                 return (
                   <Card key={entry.id} className="p-3">
@@ -432,6 +433,7 @@ export const WorkerScheduleDialog = ({
                         <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                           <span>{t('workers.scheduled', 'Plan')}: {entry.scheduled_hours}h</span>
                           <span>{t('workers.actual', 'Odrađeno')}: {entry.actual_hours}h</span>
+                          <span className="text-primary font-medium">= {formatAmount(entryCost)}</span>
                         </div>
                         {getMilestoneNames(entry.milestone_ids) && (
                           <div className="flex flex-wrap gap-1 mt-1">
