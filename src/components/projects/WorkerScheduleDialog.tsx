@@ -8,7 +8,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useProjectWorkEntries } from '@/hooks/useProjectWorkEntries';
+import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { ProjectWorker, ProjectWorkEntry } from '@/types/projectWorker';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +19,7 @@ import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { 
   CalendarIcon, Plus, Clock, Pencil, Trash2, 
-  ChevronDown, ChevronUp, AlertCircle
+  ChevronDown, ChevronUp, AlertCircle, Flag
 } from 'lucide-react';
 
 interface WorkerScheduleDialogProps {
@@ -47,10 +49,13 @@ export const WorkerScheduleDialog = ({
     refetch
   } = useProjectWorkEntries(worker.id, projectId);
 
+  const { milestones } = useProjectMilestones(projectId);
+
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [scheduledHours, setScheduledHours] = useState('8');
   const [actualHours, setActualHours] = useState('8');
   const [note, setNote] = useState('');
+  const [selectedMilestones, setSelectedMilestones] = useState<string[]>([]);
   const [editingEntry, setEditingEntry] = useState<ProjectWorkEntry | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -72,12 +77,14 @@ export const WorkerScheduleDialog = ({
       work_date: format(selectedDate, 'yyyy-MM-dd'),
       scheduled_hours: parseFloat(scheduledHours) || 8,
       actual_hours: parseFloat(actualHours) || 8,
-      note: note || undefined
+      note: note || undefined,
+      milestone_ids: selectedMilestones
     });
 
     if (result) {
       setShowAddForm(false);
       setNote('');
+      setSelectedMilestones([]);
       // Reset to default hours
       if (worker.work_start_time && worker.work_end_time) {
         const start = worker.work_start_time.split(':').map(Number);
@@ -96,11 +103,13 @@ export const WorkerScheduleDialog = ({
       ...editingEntry,
       scheduled_hours: parseFloat(scheduledHours) || 8,
       actual_hours: parseFloat(actualHours) || 8,
-      note: note || null
+      note: note || null,
+      milestone_ids: selectedMilestones
     });
 
     setEditingEntry(null);
     setNote('');
+    setSelectedMilestones([]);
   };
 
   const handleStartEdit = (entry: ProjectWorkEntry) => {
@@ -108,12 +117,14 @@ export const WorkerScheduleDialog = ({
     setScheduledHours(entry.scheduled_hours.toString());
     setActualHours(entry.actual_hours.toString());
     setNote(entry.note || '');
+    setSelectedMilestones(entry.milestone_ids || []);
     setShowAddForm(false);
   };
 
   const handleCancelEdit = () => {
     setEditingEntry(null);
     setNote('');
+    setSelectedMilestones([]);
     // Reset to default hours
     if (worker.work_start_time && worker.work_end_time) {
       const start = worker.work_start_time.split(':').map(Number);
@@ -122,6 +133,25 @@ export const WorkerScheduleDialog = ({
       setScheduledHours(hours.toString());
       setActualHours(hours.toString());
     }
+  };
+
+  const toggleMilestone = (milestoneId: string) => {
+    setSelectedMilestones(prev => {
+      if (prev.includes(milestoneId)) {
+        return prev.filter(id => id !== milestoneId);
+      }
+      if (prev.length >= 3) {
+        return prev; // Max 3 milestones
+      }
+      return [...prev, milestoneId];
+    });
+  };
+
+  const getMilestoneNames = (milestoneIds: string[] | null | undefined) => {
+    if (!milestoneIds || milestoneIds.length === 0) return null;
+    return milestoneIds
+      .map(id => milestones.find(m => m.id === id)?.name)
+      .filter(Boolean);
   };
 
   // Get dates that have entries for calendar highlighting
@@ -258,6 +288,40 @@ export const WorkerScheduleDialog = ({
               </div>
             </div>
 
+            {/* Milestone Selection */}
+            {milestones.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Flag className="w-4 h-4" />
+                  {t('workers.milestones', 'Faze rada')} ({selectedMilestones.length}/3)
+                </Label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {milestones.map((milestone) => (
+                    <div 
+                      key={milestone.id}
+                      className="flex items-center gap-2"
+                    >
+                      <Checkbox
+                        id={`milestone-${milestone.id}`}
+                        checked={selectedMilestones.includes(milestone.id)}
+                        onCheckedChange={() => toggleMilestone(milestone.id)}
+                        disabled={!selectedMilestones.includes(milestone.id) && selectedMilestones.length >= 3}
+                      />
+                      <label 
+                        htmlFor={`milestone-${milestone.id}`}
+                        className={cn(
+                          "text-sm cursor-pointer",
+                          !selectedMilestones.includes(milestone.id) && selectedMilestones.length >= 3 && "opacity-50"
+                        )}
+                      >
+                        {milestone.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>{t('workers.note', 'Napomena')} ({t('common.optional', 'opcionalno')})</Label>
               <Textarea
@@ -323,6 +387,16 @@ export const WorkerScheduleDialog = ({
                           <span>{t('workers.scheduled', 'Plan')}: {entry.scheduled_hours}h</span>
                           <span>{t('workers.actual', 'Odrađeno')}: {entry.actual_hours}h</span>
                         </div>
+                        {getMilestoneNames(entry.milestone_ids) && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {getMilestoneNames(entry.milestone_ids)?.map((name, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                <Flag className="w-2.5 h-2.5 mr-1" />
+                                {name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                         {entry.note && (
                           <p className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
                             <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />

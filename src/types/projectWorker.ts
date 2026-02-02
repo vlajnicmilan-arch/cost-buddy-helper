@@ -21,6 +21,7 @@ export interface ProjectWorkEntry {
   work_date: string;
   scheduled_hours: number;
   actual_hours: number;
+  milestone_ids?: string[] | null;
   note?: string | null;
   created_at?: string;
   updated_at?: string;
