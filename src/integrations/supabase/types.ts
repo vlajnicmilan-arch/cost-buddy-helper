@@ -907,6 +907,7 @@ export type Database = {
           actual_hours: number
           created_at: string
           id: string
+          milestone_ids: string[] | null
           note: string | null
           project_id: string
           scheduled_hours: number
@@ -918,6 +919,7 @@ export type Database = {
           actual_hours?: number
           created_at?: string
           id?: string
+          milestone_ids?: string[] | null
           note?: string | null
           project_id: string
           scheduled_hours?: number
@@ -929,6 +931,7 @@ export type Database = {
           actual_hours?: number
           created_at?: string
           id?: string
+          milestone_ids?: string[] | null
           note?: string | null
           project_id?: string
           scheduled_hours?: number

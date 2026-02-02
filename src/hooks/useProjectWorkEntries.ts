@@ -47,6 +47,7 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
     scheduled_hours: number;
     actual_hours: number;
     note?: string;
+    milestone_ids?: string[];
   }): Promise<ProjectWorkEntry | null> => {
     if (!workerId || !projectId) return null;
 
@@ -59,7 +60,8 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
           work_date: entry.work_date,
           scheduled_hours: entry.scheduled_hours,
           actual_hours: entry.actual_hours,
-          note: entry.note || null
+          note: entry.note || null,
+          milestone_ids: entry.milestone_ids || []
         })
         .select()
         .single();
@@ -95,7 +97,8 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
         .update({
           scheduled_hours: entry.scheduled_hours,
           actual_hours: entry.actual_hours,
-          note: entry.note
+          note: entry.note,
+          milestone_ids: entry.milestone_ids || []
         })
         .eq('id', entry.id);
 
