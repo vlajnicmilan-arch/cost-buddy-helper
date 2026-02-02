@@ -100,17 +100,26 @@ export const useBudgets = () => {
       }
 
       // Filter expenses within the period
-      // Only include:
-      // 1. Expense type (not income)
+      // Include expenses that:
+      // 1. Are expense type (not income)
       // 2. Within the date range
       // 3. Approved status only
-      // 4. NOT linked to a project (project expenses are separate from personal budgets)
+      // 4. Either:
+      //    a) Manually linked to this budget (budget_id matches)
+      //    b) OR NOT linked to a project (project expenses are separate from personal budgets)
       const periodExpenses = expenses.filter(e => {
         if (e.type !== 'expense') return false;
-        if (e.project_id) return false; // Exclude project transactions
         if (e.status && e.status !== 'approved') return false; // Only approved
         const expDate = e.date;
-        return expDate >= startDate && expDate <= endDate;
+        const inPeriod = expDate >= startDate && expDate <= endDate;
+        if (!inPeriod) return false;
+        
+        // If manually assigned to this budget, always include
+        if (e.budget_id === budget.id) return true;
+        
+        // Otherwise, only include if not a project expense (automatic tracking by category)
+        if (e.project_id) return false;
+        return true;
       });
 
       // Calculate total spent
@@ -132,10 +141,17 @@ export const useBudgets = () => {
       
       const prevPeriodExpenses = expenses.filter(e => {
         if (e.type !== 'expense') return false;
-        if (e.project_id) return false; // Exclude project transactions
         if (e.status && e.status !== 'approved') return false; // Only approved
         const expDate = e.date;
-        return expDate >= prevStartDate && expDate <= prevEndDate;
+        const inPeriod = expDate >= prevStartDate && expDate <= prevEndDate;
+        if (!inPeriod) return false;
+        
+        // If manually assigned to this budget, always include
+        if (e.budget_id === budget.id) return true;
+        
+        // Otherwise, only include if not a project expense
+        if (e.project_id) return false;
+        return true;
       });
       const prevSpent = prevPeriodExpenses.reduce((sum, e) => sum + e.amount, 0);
       

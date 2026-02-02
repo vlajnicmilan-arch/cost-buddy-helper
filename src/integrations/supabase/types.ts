@@ -305,6 +305,7 @@ export type Database = {
         Row: {
           ai_extracted: boolean | null
           amount: number
+          budget_id: string | null
           category: string
           created_at: string
           date: string
@@ -327,6 +328,7 @@ export type Database = {
         Insert: {
           ai_extracted?: boolean | null
           amount: number
+          budget_id?: string | null
           category?: string
           created_at?: string
           date?: string
@@ -349,6 +351,7 @@ export type Database = {
         Update: {
           ai_extracted?: boolean | null
           amount?: number
+          budget_id?: string | null
           category?: string
           created_at?: string
           date?: string
@@ -369,6 +372,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_milestone_id_fkey"
             columns: ["milestone_id"]

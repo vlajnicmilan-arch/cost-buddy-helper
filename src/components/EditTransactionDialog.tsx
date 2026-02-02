@@ -9,9 +9,10 @@ import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, Tr
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useProjects } from '@/hooks/useProjects';
+import { useBudgets } from '@/hooks/useBudgets';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, Plus, FolderKanban } from 'lucide-react';
+import { CalendarIcon, Loader2, Plus, FolderKanban, PiggyBank } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const [date, setDate] = useState<Date>(new Date());
   const [type, setType] = useState<TransactionType>('expense');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   
   const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -44,6 +46,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   const { customPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { projects } = useProjects();
+  const { budgets } = useBudgets();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
 
   // Get date locale based on current language
@@ -64,6 +67,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
       setDate(expense.date instanceof Date ? expense.date : new Date(expense.date));
       setType(expense.type);
       setSelectedProjectId(expense.project_id || null);
+      setSelectedBudgetId(expense.budget_id || null);
       setNote(expense.note || '');
     }
   }, [open, expense]);
@@ -83,6 +87,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
         date,
         type,
         project_id: selectedProjectId,
+        budget_id: selectedBudgetId,
         note: note.trim() || null,
         updated_at: new Date().toISOString()
       });
@@ -444,6 +449,61 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                           {project.icon || '📁'}
                         </span>
                         <span>{project.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Budget Assignment - only for expense type */}
+          {type === 'expense' && budgets.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <PiggyBank className="w-4 h-4" />
+                {t('transactions.assignToBudget', 'Pridruži budžetu')}
+              </Label>
+              <Select 
+                value={selectedBudgetId || 'none'} 
+                onValueChange={(v) => setSelectedBudgetId(v === 'none' ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue>
+                    {selectedBudgetId ? (
+                      (() => {
+                        const budget = budgets.find(b => b.id === selectedBudgetId);
+                        return budget ? (
+                          <span className="flex items-center gap-2">
+                            <span 
+                              className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                              style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
+                            >
+                              {budget.icon || '💰'}
+                            </span>
+                            <span>{budget.name}</span>
+                          </span>
+                        ) : t('transactions.noBudget', 'Bez budžeta');
+                      })()
+                    ) : (
+                      <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
+                  </SelectItem>
+                  {budgets.filter(b => b.is_active).map((budget) => (
+                    <SelectItem key={budget.id} value={budget.id}>
+                      <span className="flex items-center gap-2">
+                        <span 
+                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                          style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
+                        >
+                          {budget.icon || '💰'}
+                        </span>
+                        <span>{budget.name}</span>
                       </span>
                     </SelectItem>
                   ))}
