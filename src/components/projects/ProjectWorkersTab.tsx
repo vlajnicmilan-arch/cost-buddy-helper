@@ -35,7 +35,7 @@ export const ProjectWorkersTab = ({
 }: ProjectWorkersTabProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { workers, loading, addWorker, updateWorker, deleteWorker, totalCost, refetch } = useProjectWorkers(projectId);
+  const { workers, loading, addWorker, updateWorker, deleteWorker, totalCost, totalActualHours, refetch } = useProjectWorkers(projectId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState<ProjectWorker | null>(null);
@@ -116,7 +116,10 @@ export const ProjectWorkersTab = ({
       {workers.length > 0 && (
         <Card className="p-4 bg-muted/50">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{t('workers.totalCost', 'Ukupni trošak rada')}:</span>
+            <div className="flex flex-col">
+              <span className="text-sm text-muted-foreground">{t('workers.totalCost', 'Ukupni trošak rada')}:</span>
+              <span className="text-xs text-muted-foreground">{totalActualHours}h odrađeno</span>
+            </div>
             <span className="text-lg font-bold text-primary">{formatAmount(totalCost)}</span>
           </div>
         </Card>
@@ -132,8 +135,6 @@ export const ProjectWorkersTab = ({
       ) : (
         <div className="space-y-3">
           {workers.map((worker) => {
-            const workerTotal = worker.work_hours * worker.hourly_rate;
-            
             return (
               <Card key={worker.id} className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -159,7 +160,7 @@ export const ProjectWorkersTab = ({
                     </div>
 
                     <div className="mt-2 text-sm font-medium">
-                      {t('workers.defaultHours', 'Zadani sati')}: {worker.work_hours}h = <span className="text-primary">{formatAmount(workerTotal)}</span>
+                      {t('workers.workedHours', 'Odrađeno')}: {worker.actualHoursTotal}h = <span className="text-primary">{formatAmount(worker.actualCostTotal)}</span>
                     </div>
                   </div>
 

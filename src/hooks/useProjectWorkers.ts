@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ProjectWorker, ProjectWorkerInput } from '@/types/projectWorker';
+import { ProjectWorker, ProjectWorkerInput, ProjectWorkEntry } from '@/types/projectWorker';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
+interface WorkerWithStats extends ProjectWorker {
+  actualHoursTotal: number;
+  actualCostTotal: number;
+}
+
 export const useProjectWorkers = (projectId: string | null) => {
   const { t } = useTranslation();
-  const [workers, setWorkers] = useState<ProjectWorker[]>([]);
+  const [workers, setWorkers] = useState<WorkerWithStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchWorkers = useCallback(async () => {
@@ -18,19 +23,42 @@ export const useProjectWorkers = (projectId: string | null) => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('project_workers')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
+      // Fetch workers and their work entries in parallel
+      const [workersRes, entriesRes] = await Promise.all([
+        supabase
+          .from('project_workers')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('project_work_entries')
+          .select('worker_id, actual_hours')
+          .eq('project_id', projectId)
+      ]);
 
-      if (error) throw error;
+      if (workersRes.error) throw workersRes.error;
       
-      setWorkers((data || []).map(w => ({
-        ...w,
-        work_hours: Number(w.work_hours),
-        hourly_rate: Number(w.hourly_rate)
-      })));
+      const entries = entriesRes.data || [];
+      
+      // Calculate actual hours per worker
+      const hoursByWorker: Record<string, number> = {};
+      entries.forEach(entry => {
+        hoursByWorker[entry.worker_id] = (hoursByWorker[entry.worker_id] || 0) + Number(entry.actual_hours);
+      });
+      
+      const workersWithStats: WorkerWithStats[] = (workersRes.data || []).map(w => {
+        const actualHours = hoursByWorker[w.id] || 0;
+        const hourlyRate = Number(w.hourly_rate);
+        return {
+          ...w,
+          work_hours: Number(w.work_hours),
+          hourly_rate: hourlyRate,
+          actualHoursTotal: actualHours,
+          actualCostTotal: actualHours * hourlyRate
+        };
+      });
+      
+      setWorkers(workersWithStats);
     } catch (error) {
       console.error('Error fetching project workers:', error);
       toast.error(t('common.error'));
@@ -64,10 +92,12 @@ export const useProjectWorkers = (projectId: string | null) => {
 
       if (error) throw error;
 
-      const newWorker: ProjectWorker = {
+      const newWorker: WorkerWithStats = {
         ...data,
         work_hours: Number(data.work_hours),
-        hourly_rate: Number(data.hourly_rate)
+        hourly_rate: Number(data.hourly_rate),
+        actualHoursTotal: 0,
+        actualCostTotal: 0
       };
 
       setWorkers(prev => [newWorker, ...prev]);
@@ -97,7 +127,16 @@ export const useProjectWorkers = (projectId: string | null) => {
 
       if (error) throw error;
 
-      setWorkers(prev => prev.map(w => w.id === worker.id ? worker : w));
+      setWorkers(prev => prev.map(w => {
+        if (w.id === worker.id) {
+          return {
+            ...worker,
+            actualHoursTotal: w.actualHoursTotal,
+            actualCostTotal: w.actualHoursTotal * worker.hourly_rate
+          };
+        }
+        return w;
+      }));
       toast.success(t('workers.updated', 'Radnik ažuriran'));
     } catch (error) {
       console.error('Error updating worker:', error);
@@ -122,7 +161,9 @@ export const useProjectWorkers = (projectId: string | null) => {
     }
   };
 
-  const totalCost = workers.reduce((sum, w) => sum + (w.work_hours * w.hourly_rate), 0);
+  // Total cost based on actual worked hours
+  const totalCost = workers.reduce((sum, w) => sum + w.actualCostTotal, 0);
+  const totalActualHours = workers.reduce((sum, w) => sum + w.actualHoursTotal, 0);
 
   return {
     workers,
@@ -131,6 +172,7 @@ export const useProjectWorkers = (projectId: string | null) => {
     updateWorker,
     deleteWorker,
     refetch: fetchWorkers,
-    totalCost
+    totalCost,
+    totalActualHours
   };
 };
