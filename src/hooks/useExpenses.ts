@@ -292,6 +292,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             expense.amount,
             expense.type
           );
+          // CRITICAL: Trigger balance updated callback immediately
+          options?.onBalanceUpdated?.();
         }
         
         toast.success('Ažurirano');
@@ -333,6 +335,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             expense.amount,
             expense.type
           );
+          // CRITICAL: Trigger balance updated callback immediately after DB update
+          options?.onBalanceUpdated?.();
         }
 
         // Notify project members if project changed or transaction was updated
