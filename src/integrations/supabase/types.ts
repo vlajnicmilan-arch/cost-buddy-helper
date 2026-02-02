@@ -902,6 +902,50 @@ export type Database = {
           },
         ]
       }
+      project_workers: {
+        Row: {
+          created_at: string
+          first_name: string
+          hourly_rate: number
+          id: string
+          last_name: string
+          position: string
+          project_id: string
+          updated_at: string
+          work_hours: number
+        }
+        Insert: {
+          created_at?: string
+          first_name: string
+          hourly_rate?: number
+          id?: string
+          last_name: string
+          position: string
+          project_id: string
+          updated_at?: string
+          work_hours?: number
+        }
+        Update: {
+          created_at?: string
+          first_name?: string
+          hourly_rate?: number
+          id?: string
+          last_name?: string
+          position?: string
+          project_id?: string
+          updated_at?: string
+          work_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_workers_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           color: string | null
