@@ -52,7 +52,7 @@ import { APP_VERSION } from '@/lib/version';
 import { TutorialButton } from '@/components/tutorial';
 
 // Budget Section Wrapper to use hook inside component
-const BudgetSectionWrapper = () => {
+const BudgetSectionWrapper = ({ expenses }: { expenses: Expense[] }) => {
   const { 
     budgets, 
     loading, 
@@ -62,7 +62,7 @@ const BudgetSectionWrapper = () => {
     resetBudget, 
     trendData,
     isLocalMode 
-  } = useBudgets();
+  } = useBudgets({ externalExpenses: expenses });
 
   if (isLocalMode) return null;
 
@@ -808,7 +808,7 @@ const Index = () => {
             {!simpleModeEnabled && <ProjectsPanel onRefreshExpenses={refetch} />}
             
             {/* Budget Section - hidden in simple mode */}
-            {!simpleModeEnabled && <BudgetSectionWrapper />}
+            {!simpleModeEnabled && <BudgetSectionWrapper expenses={expenses} />}
             
             {/* Category breakdown and payment sources - hidden in simple mode */}
             {!simpleModeEnabled && (

@@ -12,12 +12,20 @@ import {
   BudgetCategoryWithStats,
   BudgetPeriod 
 } from '@/types/budget';
+import { Expense } from '@/types/expense';
 
-export const useBudgets = () => {
+interface UseBudgetsOptions {
+  externalExpenses?: Expense[];
+}
+
+export const useBudgets = (options?: UseBudgetsOptions) => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
-  const { expenses } = useExpenses();
+  const { expenses: internalExpenses } = useExpenses();
   const { t } = useTranslation();
+  
+  // Use external expenses if provided, otherwise use internal
+  const expenses = options?.externalExpenses ?? internalExpenses;
   
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<BudgetCategory[]>([]);
