@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, getCategoryInfo, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useProjects } from '@/hooks/useProjects';
 import { useInstallments } from '@/hooks/useInstallments';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban } from 'lucide-react';
@@ -86,9 +87,11 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
+  const { customCategories, refetch: refetchCustomCategories } = useCustomCategories();
   const { projects } = useProjects();
   const { createPlan: createInstallmentPlan } = useInstallments();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
+  const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
 
   // Set default payment source when dialog opens and sources are loaded
   useEffect(() => {
@@ -392,6 +395,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (isOpen) {
+        // Refetch all needed data when dialog opens
         refetchPaymentSources().then(() => {
           // Set default payment source after fetching
           if (customPaymentSources.length > 0) {
@@ -400,6 +404,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
             setPaymentSource('cash');
           }
         });
+        refetchCustomCategories();
       } else {
         resetForm();
       }
@@ -1163,6 +1168,28 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">{t('common.category')}</Label>
                   <div className="grid grid-cols-4 gap-2">
+                    {/* Custom expense categories first */}
+                    {customCategories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setCategory(cat.id as Category)}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
+                          category === cat.id 
+                            ? "border-primary bg-primary/5" 
+                            : "border-transparent bg-muted/50 hover:bg-muted"
+                        )}
+                        style={{ 
+                          borderColor: category === cat.id ? cat.color : undefined,
+                          backgroundColor: category === cat.id ? cat.color + '10' : undefined
+                        }}
+                      >
+                        <span className="text-xl">{cat.icon}</span>
+                        <span className="text-xs font-medium text-muted-foreground">{cat.name}</span>
+                      </button>
+                    ))}
+                    {/* Default categories */}
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat.id}
