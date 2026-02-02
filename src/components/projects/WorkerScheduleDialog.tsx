@@ -19,8 +19,9 @@ import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { 
   CalendarIcon, Plus, Clock, Pencil, Trash2, 
-  ChevronDown, ChevronUp, AlertCircle, Flag
+  ChevronDown, ChevronUp, AlertCircle, Flag, Calendar as CalendarWeekIcon
 } from 'lucide-react';
+import { WeeklyWorkEntryForm } from './WeeklyWorkEntryForm';
 
 interface WorkerScheduleDialogProps {
   open: boolean;
@@ -42,7 +43,8 @@ export const WorkerScheduleDialog = ({
   const { 
     entries, 
     loading, 
-    addEntry, 
+    addEntry,
+    addMultipleEntries,
     updateEntry, 
     deleteEntry,
     totalActualHours,
@@ -58,6 +60,7 @@ export const WorkerScheduleDialog = ({
   const [selectedMilestones, setSelectedMilestones] = useState<string[]>([]);
   const [editingEntry, setEditingEntry] = useState<ProjectWorkEntry | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showWeeklyForm, setShowWeeklyForm] = useState(false);
 
   // Calculate default scheduled hours from work times
   useEffect(() => {
@@ -189,24 +192,67 @@ export const WorkerScheduleDialog = ({
           )}
         </Card>
 
-        {/* Add new entry button */}
-        <Button 
-          variant={showAddForm ? "secondary" : "default"}
-          onClick={() => { setShowAddForm(!showAddForm); setEditingEntry(null); }}
-          className="w-full"
-        >
-          {showAddForm ? (
-            <>
-              <ChevronUp className="w-4 h-4 mr-2" />
-              {t('common.cancel')}
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4 mr-2" />
-              {t('workers.addWorkDay', 'Dodaj radni dan')}
-            </>
-          )}
-        </Button>
+        {/* Add buttons */}
+        <div className="flex gap-2">
+          <Button 
+            variant={showAddForm ? "secondary" : "default"}
+            onClick={() => { 
+              setShowAddForm(!showAddForm); 
+              setEditingEntry(null); 
+              setShowWeeklyForm(false);
+            }}
+            className="flex-1"
+          >
+            {showAddForm ? (
+              <>
+                <ChevronUp className="w-4 h-4 mr-2" />
+                {t('common.cancel')}
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4 mr-2" />
+                {t('workers.addDay', 'Jedan dan')}
+              </>
+            )}
+          </Button>
+          <Button 
+            variant={showWeeklyForm ? "secondary" : "outline"}
+            onClick={() => { 
+              setShowWeeklyForm(!showWeeklyForm); 
+              setEditingEntry(null); 
+              setShowAddForm(false);
+            }}
+            className="flex-1"
+          >
+            {showWeeklyForm ? (
+              <>
+                <ChevronUp className="w-4 h-4 mr-2" />
+                {t('common.cancel')}
+              </>
+            ) : (
+              <>
+                <CalendarWeekIcon className="w-4 h-4 mr-2" />
+                {t('workers.addWeek', 'Cijeli tjedan')}
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Weekly Entry Form */}
+        {showWeeklyForm && (
+          <WeeklyWorkEntryForm
+            worker={worker}
+            milestones={milestones}
+            existingDates={entries.map(e => e.work_date)}
+            onSubmit={async (newEntries) => {
+              const success = await addMultipleEntries(newEntries);
+              if (success) {
+                setShowWeeklyForm(false);
+              }
+            }}
+            onCancel={() => setShowWeeklyForm(false)}
+          />
+        )}
 
         {/* Add/Edit Form */}
         {(showAddForm || editingEntry) && (
