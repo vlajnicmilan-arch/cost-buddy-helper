@@ -129,6 +129,50 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
     }
   };
 
+  const addMultipleEntries = async (entriesData: {
+    work_date: string;
+    scheduled_hours: number;
+    actual_hours: number;
+    milestone_ids?: string[];
+  }[]): Promise<boolean> => {
+    if (!workerId || !projectId || entriesData.length === 0) return false;
+
+    try {
+      const inserts = entriesData.map(entry => ({
+        worker_id: workerId,
+        project_id: projectId,
+        work_date: entry.work_date,
+        scheduled_hours: entry.scheduled_hours,
+        actual_hours: entry.actual_hours,
+        milestone_ids: entry.milestone_ids || []
+      }));
+
+      const { data, error } = await supabase
+        .from('project_work_entries')
+        .insert(inserts)
+        .select();
+
+      if (error) throw error;
+
+      const newEntries: ProjectWorkEntry[] = (data || []).map(e => ({
+        ...e,
+        scheduled_hours: Number(e.scheduled_hours),
+        actual_hours: Number(e.actual_hours)
+      }));
+
+      setEntries(prev => [...newEntries, ...prev].sort((a, b) => 
+        new Date(b.work_date).getTime() - new Date(a.work_date).getTime()
+      ));
+      
+      toast.success(t('workers.entriesAdded', '{{count}} radnih dana dodano', { count: newEntries.length }));
+      return true;
+    } catch (error: any) {
+      console.error('Error adding work entries:', error);
+      toast.error(t('common.error'));
+      return false;
+    }
+  };
+
   const totalActualHours = entries.reduce((sum, e) => sum + e.actual_hours, 0);
   const totalScheduledHours = entries.reduce((sum, e) => sum + e.scheduled_hours, 0);
 
@@ -136,6 +180,7 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
     entries,
     loading,
     addEntry,
+    addMultipleEntries,
     updateEntry,
     deleteEntry,
     refetch: fetchEntries,
