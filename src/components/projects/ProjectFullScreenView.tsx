@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
-  Calendar, AlertTriangle, GanttChart, BarChart3
+  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -33,6 +33,7 @@ import { ProjectMembersTab } from './ProjectMembersTab';
 import { ProjectTransactionsTab } from './ProjectTransactionsTab';
 import { ProjectTimelineTab } from './ProjectTimelineTab';
 import { ProjectReportsDialog } from './ProjectReportsDialog';
+import { ProjectWorkersTab } from './ProjectWorkersTab';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProjectFullScreenViewProps {
@@ -260,7 +261,7 @@ export const ProjectFullScreenView = ({
 
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-6 w-full mb-6">
+                <TabsList className="grid grid-cols-7 w-full mb-6">
                   <TabsTrigger value="overview" className="gap-1">
                     <TrendingUp className="w-4 h-4" />
                     <span className="hidden sm:inline">{t('projects.overview')}</span>
@@ -277,6 +278,10 @@ export const ProjectFullScreenView = ({
                         {completedMilestones}/{milestones.length}
                       </Badge>
                     )}
+                  </TabsTrigger>
+                  <TabsTrigger value="workers" className="gap-1">
+                    <ClipboardList className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t('workers.tab', 'Evidencija')}</span>
                   </TabsTrigger>
                   <TabsTrigger value="funding" className="gap-1">
                     <Wallet className="w-4 h-4" />
@@ -381,6 +386,14 @@ export const ProjectFullScreenView = ({
                       refetchMilestones();
                       markAsChanged();
                     }}
+                  />
+                </TabsContent>
+
+                <TabsContent value="workers" className="m-0">
+                  <ProjectWorkersTab
+                    projectId={project.id}
+                    isManager={isManager}
+                    onRefetch={markAsChanged}
                   />
                 </TabsContent>
 
