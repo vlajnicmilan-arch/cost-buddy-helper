@@ -43,8 +43,12 @@ export const PaymentSourceTransactionsDialog = ({
     if (!paymentSource) return [];
     
     return expenses.filter(e => {
-      // Match by custom payment source ID in payment_source field
+      // Match by custom payment source ID in payment_source field (with custom: prefix)
       if (e.payment_source?.startsWith(`custom:${paymentSource.id}`)) {
+        return true;
+      }
+      // Match by payment source ID directly (without prefix) - for newer transactions
+      if (e.payment_source === paymentSource.id) {
         return true;
       }
       // Match by payment_source_card_id if it belongs to this source
