@@ -185,13 +185,13 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
             const descLower = (e.description || '').toLowerCase();
             const merchantLower = (e.merchant_name || '').toLowerCase();
             
-            // Map common category keywords
+            // Map common category keywords - use more specific patterns
             const categoryKeywords: Record<string, string[]> = {
-              'rent': ['stanarin', 'najam', 'rent', 'stan'],
-              'housing': ['stanarin', 'najam', 'rent', 'stan', 'kuća', 'dom'],
-              'utilities': ['struja', 'voda', 'plin', 'komunalije', 'internet', 'telefon'],
-              'food': ['hrana', 'namirnic', 'market', 'dućan', 'restoran'],
-              'transport': ['gorivo', 'benzin', 'bus', 'tramvaj', 'taxi', 'uber'],
+              'rent': ['stanarin', 'najamnin', 'rent ', 'monthly rent'],
+              'housing': ['stanarin', 'najamnin', 'rent ', 'kuća', 'dom ', 'nekretnin'],
+              'utilities': ['struja', 'voda', 'plin', 'komunalij', 'rezij', 'internet', 'telefon', 'hep', 'gradska plinara'],
+              'food': ['hrana', 'namirnic', 'market', 'dućan', 'restoran', 'lidl', 'konzum', 'spar', 'kaufland', 'plodine'],
+              'transport': ['gorivo', 'benzin', 'bus', 'tramvaj', 'taxi', 'uber', 'bolt', 'ina ', 'petrol', 'tifon'],
             };
             
             const keywords = categoryKeywords[catLower] || [catLower];
