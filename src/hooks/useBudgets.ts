@@ -227,6 +227,13 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         const catRemaining = cat.limit_amount - catSpent;
         const catPercentage = cat.limit_amount > 0 ? (catSpent / cat.limit_amount) * 100 : 0;
 
+        // Collect unique original categories that differ from the budget category
+        const originalCategories = [...new Set(
+          catExpenses
+            .filter(e => e.category && e.category.toLowerCase() !== cat.category.toLowerCase())
+            .map(e => e.category)
+        )] as string[];
+
         return {
           ...cat,
           spent: catSpent,
@@ -234,6 +241,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
           percentage: catPercentage,
           isOverBudget: catPercentage >= 100,
           isWarning: catPercentage >= 80 && catPercentage < 100,
+          originalCategories: originalCategories.length > 0 ? originalCategories : undefined,
         };
       });
 
