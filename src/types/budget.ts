@@ -50,6 +50,8 @@ export interface BudgetCategoryWithStats extends BudgetCategory {
   percentage: number;
   isOverBudget: boolean;
   isWarning: boolean;
+  // For manually assigned expenses - shows which original categories are included
+  originalCategories?: string[];
 }
 
 export const BUDGET_PERIOD_LABELS: Record<BudgetPeriod, string> = {
