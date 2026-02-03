@@ -171,8 +171,35 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       }
 
       // Calculate category stats
+      // For manually assigned expenses (with budget_id), we check if the expense category
+      // matches OR if the expense description/merchant contains the category name
       const categoriesWithStats: BudgetCategoryWithStats[] = budgetCategories.map(cat => {
-        const catExpenses = periodExpenses.filter(e => e.category === cat.category);
+        const catExpenses = periodExpenses.filter(e => {
+          // Direct category match
+          if (e.category === cat.category) return true;
+          
+          // For manually assigned expenses, also check if description/merchant matches category
+          // This handles cases like "Stanarina" expense with category "investments" but budget category "rent"
+          if (e.budget_id === budget.id) {
+            const catLower = cat.category.toLowerCase();
+            const descLower = (e.description || '').toLowerCase();
+            const merchantLower = (e.merchant_name || '').toLowerCase();
+            
+            // Map common category keywords
+            const categoryKeywords: Record<string, string[]> = {
+              'rent': ['stanarin', 'najam', 'rent', 'stan'],
+              'housing': ['stanarin', 'najam', 'rent', 'stan', 'kuća', 'dom'],
+              'utilities': ['struja', 'voda', 'plin', 'komunalije', 'internet', 'telefon'],
+              'food': ['hrana', 'namirnic', 'market', 'dućan', 'restoran'],
+              'transport': ['gorivo', 'benzin', 'bus', 'tramvaj', 'taxi', 'uber'],
+            };
+            
+            const keywords = categoryKeywords[catLower] || [catLower];
+            return keywords.some(kw => descLower.includes(kw) || merchantLower.includes(kw));
+          }
+          
+          return false;
+        });
         const catSpent = catExpenses.reduce((sum, e) => sum + e.amount, 0);
         const catRemaining = cat.limit_amount - catSpent;
         const catPercentage = cat.limit_amount > 0 ? (catSpent / cat.limit_amount) * 100 : 0;
