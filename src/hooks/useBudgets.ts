@@ -179,50 +179,50 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         else if (changePercent < -10) trend = 'down';
       }
 
-      // Calculate category stats
-      // For manually assigned expenses (with budget_id), we check if the expense category
-      // matches OR if the expense description/merchant contains the category name
+      // Helper function to check if expense matches a category
+      const expenseMatchesCategory = (e: Expense, cat: BudgetCategory): boolean => {
+        const catLower = cat.category.toLowerCase();
+        
+        // Direct category match
+        if (e.category === cat.category) return true;
+        
+        // Category synonyms - similar categories that should be grouped together
+        const categorySynonyms: Record<string, string[]> = {
+          'transport': ['car', 'auto', 'automobil'],
+          'food': ['groceries', 'namirnice'],
+          'bills': ['utilities', 'režije'],
+          'shopping': ['clothing', 'odjeća'],
+          'health': ['beauty', 'ljepota', 'sports', 'sport'],
+        };
+        
+        // Check if expense category is a synonym of budget category
+        const synonyms = categorySynonyms[catLower] || [];
+        const expenseCatLower = (e.category || '').toLowerCase();
+        if (synonyms.includes(expenseCatLower)) return true;
+        
+        // For manually assigned expenses, also check description/merchant keywords
+        if (e.budget_id === budget.id) {
+          const descLower = (e.description || '').toLowerCase();
+          const merchantLower = (e.merchant_name || '').toLowerCase();
+          
+          const categoryKeywords: Record<string, string[]> = {
+            'rent': ['stanarin', 'najamnin', 'rent ', 'monthly rent'],
+            'housing': ['stanarin', 'najamnin', 'rent ', 'kuća', 'dom ', 'nekretnin'],
+            'utilities': ['struja', 'voda', 'plin', 'komunalij', 'rezij', 'internet', 'telefon', 'hep', 'gradska plinara'],
+            'food': ['hrana', 'namirnic', 'market', 'dućan', 'restoran', 'lidl', 'konzum', 'spar', 'kaufland', 'plodine'],
+            'transport': ['gorivo', 'benzin', 'bus', 'tramvaj', 'taxi', 'uber', 'bolt', 'ina ', 'petrol', 'tifon', 'auto', 'automobil'],
+          };
+          
+          const keywords = categoryKeywords[catLower] || [catLower];
+          if (keywords.some(kw => descLower.includes(kw) || merchantLower.includes(kw))) return true;
+        }
+        
+        return false;
+      };
+
+      // Calculate category stats for defined categories
       const categoriesWithStats: BudgetCategoryWithStats[] = budgetCategories.map(cat => {
-        const catExpenses = periodExpenses.filter(e => {
-          // Direct category match
-          if (e.category === cat.category) return true;
-          
-          // For manually assigned expenses, also check if description/merchant matches category
-          // This handles cases like "Stanarina" expense with category "investments" but budget category "rent"
-          if (e.budget_id === budget.id) {
-            const catLower = cat.category.toLowerCase();
-            const descLower = (e.description || '').toLowerCase();
-            const merchantLower = (e.merchant_name || '').toLowerCase();
-            
-            // Map common category keywords - use more specific patterns
-            // Category synonyms - similar categories that should be grouped together
-            const categorySynonyms: Record<string, string[]> = {
-              'transport': ['car', 'auto', 'automobil'],
-              'food': ['groceries', 'namirnice'],
-              'bills': ['utilities', 'režije'],
-              'shopping': ['clothing', 'odjeća'],
-              'health': ['beauty', 'ljepota', 'sports', 'sport'],
-            };
-            
-            // Check if expense category is a synonym of budget category
-            const synonyms = categorySynonyms[catLower] || [];
-            const expenseCatLower = (e.category || '').toLowerCase();
-            if (synonyms.includes(expenseCatLower)) return true;
-            
-            const categoryKeywords: Record<string, string[]> = {
-              'rent': ['stanarin', 'najamnin', 'rent ', 'monthly rent'],
-              'housing': ['stanarin', 'najamnin', 'rent ', 'kuća', 'dom ', 'nekretnin'],
-              'utilities': ['struja', 'voda', 'plin', 'komunalij', 'rezij', 'internet', 'telefon', 'hep', 'gradska plinara'],
-              'food': ['hrana', 'namirnic', 'market', 'dućan', 'restoran', 'lidl', 'konzum', 'spar', 'kaufland', 'plodine'],
-              'transport': ['gorivo', 'benzin', 'bus', 'tramvaj', 'taxi', 'uber', 'bolt', 'ina ', 'petrol', 'tifon', 'auto', 'automobil'],
-            };
-            
-            const keywords = categoryKeywords[catLower] || [catLower];
-            return keywords.some(kw => descLower.includes(kw) || merchantLower.includes(kw));
-          }
-          
-          return false;
-        });
+        const catExpenses = periodExpenses.filter(e => expenseMatchesCategory(e, cat));
         const catSpent = catExpenses.reduce((sum, e) => sum + e.amount, 0);
         const catRemaining = cat.limit_amount - catSpent;
         const catPercentage = cat.limit_amount > 0 ? (catSpent / cat.limit_amount) * 100 : 0;
@@ -235,7 +235,41 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
           isOverBudget: catPercentage >= 100,
           isWarning: catPercentage >= 80 && catPercentage < 100,
         };
-      }).sort((a, b) => b.percentage - a.percentage);
+      });
+
+      // Find manually assigned expenses that don't match any defined category
+      const manuallyAssignedExpenses = periodExpenses.filter(e => {
+        if (e.budget_id !== budget.id) return false;
+        // Check if this expense matches any of the budget's categories
+        return !budgetCategories.some(cat => expenseMatchesCategory(e, cat));
+      });
+
+      // Add "Manually Assigned" category if there are unmatched expenses
+      if (manuallyAssignedExpenses.length > 0) {
+        const manualSpent = manuallyAssignedExpenses.reduce((sum, e) => sum + e.amount, 0);
+        categoriesWithStats.push({
+          id: `${budget.id}-manual`,
+          budget_id: budget.id,
+          category: 'Ručno dodijeljeno',
+          limit_amount: 0, // No limit for manually assigned
+          icon: '📌',
+          color: '#6b7280',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          spent: manualSpent,
+          remaining: 0,
+          percentage: 0,
+          isOverBudget: false,
+          isWarning: false,
+        });
+      }
+
+      // Sort by percentage (but keep "Manually Assigned" at the end if it has no limit)
+      categoriesWithStats.sort((a, b) => {
+        if (a.limit_amount === 0 && b.limit_amount > 0) return 1;
+        if (b.limit_amount === 0 && a.limit_amount > 0) return -1;
+        return b.percentage - a.percentage;
+      });
 
       return {
         ...budget,
