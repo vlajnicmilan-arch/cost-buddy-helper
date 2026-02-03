@@ -107,6 +107,9 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
       }
 
+      // Get list of categories in this budget for automatic matching
+      const budgetCategoryNames = budgetCategories.map(c => c.category.toLowerCase());
+
       // Filter expenses within the period
       // Include expenses that:
       // 1. Are expense type (not income)
@@ -114,7 +117,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       // 3. Approved status only
       // 4. Either:
       //    a) Manually linked to this budget (budget_id matches)
-      //    b) OR NOT linked to a project (project expenses are separate from personal budgets)
+      //    b) OR category matches one of the budget's categories (and not a project expense)
       const periodExpenses = expenses.filter(e => {
         if (e.type !== 'expense') return false;
         if (e.status && e.status !== 'approved') return false; // Only approved
@@ -125,9 +128,12 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         // If manually assigned to this budget, always include
         if (e.budget_id === budget.id) return true;
         
-        // Otherwise, only include if not a project expense (automatic tracking by category)
+        // Project expenses are excluded from automatic category matching
         if (e.project_id) return false;
-        return true;
+        
+        // Only include if category matches one of the budget's defined categories
+        const expenseCategory = (e.category || '').toLowerCase();
+        return budgetCategoryNames.includes(expenseCategory);
       });
 
       // Calculate total spent
@@ -157,9 +163,12 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         // If manually assigned to this budget, always include
         if (e.budget_id === budget.id) return true;
         
-        // Otherwise, only include if not a project expense
+        // Project expenses are excluded from automatic category matching
         if (e.project_id) return false;
-        return true;
+        
+        // Only include if category matches one of the budget's defined categories
+        const expenseCategory = (e.category || '').toLowerCase();
+        return budgetCategoryNames.includes(expenseCategory);
       });
       const prevSpent = prevPeriodExpenses.reduce((sum, e) => sum + e.amount, 0);
       
