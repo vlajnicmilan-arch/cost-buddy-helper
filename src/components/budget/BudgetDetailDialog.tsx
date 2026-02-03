@@ -1,11 +1,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
 import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { BudgetMembersTab } from './BudgetMembersTab';
+import { getCategoryInfo, CATEGORIES } from '@/types/expense';
 import { cn } from '@/lib/utils';
 import { 
   Edit,
@@ -172,12 +174,35 @@ export const BudgetDetailDialog = ({
               <div className="space-y-3">
                 <h4 className="text-sm font-medium">{t('budget.byCategories', 'Po kategorijama')}</h4>
                 <div className="space-y-2">
-                  {budget.categories.map((cat) => (
+                  {budget.categories.map((cat) => {
+                    // Get category info for displaying original categories
+                    const getCategoryDisplay = (categoryId: string) => {
+                      const catInfo = CATEGORIES.find(c => c.id === categoryId);
+                      return catInfo ? { name: catInfo.name, icon: catInfo.icon } : { name: categoryId, icon: '📂' };
+                    };
+                    
+                    return (
                     <div key={cat.id} className="p-3 rounded-lg bg-muted/20">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{cat.icon || '📂'}</span>
-                          <span className="text-sm font-medium">{cat.category}</span>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{cat.category}</span>
+                            {/* Show original categories for manually assigned expenses */}
+                            {cat.originalCategories && cat.originalCategories.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {cat.originalCategories.map(origCat => {
+                                  const catDisplay = getCategoryDisplay(origCat);
+                                  return (
+                                    <Badge key={origCat} variant="secondary" className="text-xs py-0 px-1.5">
+                                      <span className="mr-1">{catDisplay.icon}</span>
+                                      {catDisplay.name}
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           {(cat.isOverBudget || cat.isWarning) && (
@@ -202,7 +227,8 @@ export const BudgetDetailDialog = ({
                         </span>
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               </div>
             )}

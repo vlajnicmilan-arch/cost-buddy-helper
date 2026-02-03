@@ -247,6 +247,12 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       // Add "Manually Assigned" category if there are unmatched expenses
       if (manuallyAssignedExpenses.length > 0) {
         const manualSpent = manuallyAssignedExpenses.reduce((sum, e) => sum + e.amount, 0);
+        
+        // Collect unique original categories from manually assigned expenses
+        const originalCategories = [...new Set(
+          manuallyAssignedExpenses.map(e => e.category).filter(Boolean)
+        )] as string[];
+        
         categoriesWithStats.push({
           id: `${budget.id}-manual`,
           budget_id: budget.id,
@@ -261,6 +267,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
           percentage: 0,
           isOverBudget: false,
           isWarning: false,
+          originalCategories,
         });
       }
 
