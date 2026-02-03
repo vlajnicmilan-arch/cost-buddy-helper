@@ -766,7 +766,36 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   }}
                 >
                   <SelectTrigger className="h-12 rounded-xl bg-background">
-                    <SelectValue placeholder={t('transactions.selectPaymentMethod')} />
+                    <SelectValue placeholder={t('transactions.selectPaymentMethod')}>
+                      {(() => {
+                        // First check custom payment sources
+                        const customSource = customPaymentSources.find(s => s.id === paymentSource);
+                        if (customSource) {
+                          return (
+                            <span className="flex items-center gap-2">
+                              <span 
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                                style={{ backgroundColor: customSource.color + '20', color: customSource.color }}
+                              >
+                                {customSource.icon}
+                              </span>
+                              <span>{customSource.name}</span>
+                            </span>
+                          );
+                        }
+                        // Then check standard payment sources
+                        const standardSource = PAYMENT_SOURCES.find(s => s.id === paymentSource);
+                        if (standardSource) {
+                          return (
+                            <span className="flex items-center gap-2">
+                              <span>{standardSource.icon}</span>
+                              <span>{t(`paymentSources.${standardSource.id}`) !== `paymentSources.${standardSource.id}` ? t(`paymentSources.${standardSource.id}`) : standardSource.name}</span>
+                            </span>
+                          );
+                        }
+                        return t('transactions.selectPaymentMethod');
+                      })()}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50 max-h-[300px]">
                     {/* Custom Payment Sources First - "Moji načini" */}
