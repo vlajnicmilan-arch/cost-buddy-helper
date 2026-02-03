@@ -808,7 +808,7 @@ const Index = () => {
             {!simpleModeEnabled && <ProjectsPanel onRefreshExpenses={refetch} />}
             
             {/* Budget Section - hidden in simple mode */}
-            {!simpleModeEnabled && <BudgetSectionWrapper expenses={expenses} />}
+            {!simpleModeEnabled && <BudgetSectionWrapper expenses={allExpenses} />}
             
             {/* Category breakdown and payment sources - hidden in simple mode */}
             {!simpleModeEnabled && (
