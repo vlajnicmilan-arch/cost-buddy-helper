@@ -2,7 +2,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense'
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { Trash2, Sparkles, MessageCircle } from 'lucide-react';
+import { Trash2, Sparkles, MessageCircle, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +50,10 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
     }
   };
 
+  // Determine display title - prefer merchant name for OCR scanned receipts
+  const displayTitle = expense.merchant_name || expense.description;
+  const hasSecondaryText = expense.merchant_name && expense.description !== expense.merchant_name;
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
@@ -57,29 +61,41 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
       exit={{ opacity: 0, x: 20 }}
       onClick={handleClick}
       className={cn(
-        "group flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors",
+        "group flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50",
         onClick && "cursor-pointer"
       )}
     >
+      {/* Category Icon */}
       <div 
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0"
-        style={{ backgroundColor: `hsl(var(--${category.color}) / 0.1)` }}
+        className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0"
+        style={{ backgroundColor: `hsl(var(--${category.color}) / 0.15)` }}
       >
         {category.icon}
       </div>
       
+      {/* Main Content */}
       <div className="flex-1 min-w-0">
+        {/* Title Row */}
         <div className="flex items-center gap-2">
-          <p className="font-medium text-foreground truncate">{expense.description}</p>
+          <p className="font-semibold text-foreground truncate text-sm">
+            {displayTitle}
+          </p>
           {expense.ai_extracted && (
-            <Sparkles className="w-3.5 h-3.5 text-accent shrink-0" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Sparkles className="w-3.5 h-3.5 text-accent shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-xs">{t('transactions.aiExtracted', 'Skenirano s računa')}</p>
+              </TooltipContent>
+            </Tooltip>
           )}
           {expense.note && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="relative shrink-0">
-                  <MessageCircle className="w-4 h-4 text-primary" />
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <MessageCircle className="w-3.5 h-3.5 text-primary" />
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-primary rounded-full" />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs">
@@ -88,45 +104,76 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
             </Tooltip>
           )}
         </div>
-        <p className="text-sm text-muted-foreground flex items-center gap-1 flex-wrap">
-          {expense.merchant_name && <span>{expense.merchant_name} •</span>}
-          <span className="inline-flex items-center gap-0.5">
+        
+        {/* Info Row - simplified and cleaner */}
+        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+          {/* Payment Source */}
+          <span className="inline-flex items-center gap-1">
             {customSource ? (
               <>
                 <span 
-                  className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[10px]"
-                  style={{ backgroundColor: customSource.color }}
+                  className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px]"
+                  style={{ backgroundColor: customSource.color, color: 'white' }}
                 >
                   {customSource.icon}
                 </span>
-                <span>{customSource.name}</span>
+                <span className="truncate max-w-[60px]">{customSource.name}</span>
               </>
             ) : (
               <>
-                <span>{paymentSource.icon}</span>
+                <span className="text-xs">{paymentSource.icon}</span>
                 <span>{paymentSource.name}</span>
               </>
             )}
           </span>
+          
+          {/* Card Info */}
           {cardInfo && (
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
-              💳 •••• {cardInfo.last_four_digits}
-            </span>
+            <>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-mono">
+                •••• {cardInfo.last_four_digits}
+              </span>
+            </>
           )}
-          {expense.type === 'transfer' && (
-            <span className="text-primary">• {t('transactions.transfer')}</span>
-          )}
+          
+          {/* Category for expenses */}
           {expense.type === 'expense' && (
-            <span>• {category.name}</span>
+            <>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="truncate max-w-[80px]">{category.name}</span>
+            </>
           )}
-          <span>• {formatDate(expense.date)}</span>
-        </p>
+          
+          {/* Transfer indicator */}
+          {expense.type === 'transfer' && (
+            <>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="text-primary font-medium">{t('transactions.transfer')}</span>
+            </>
+          )}
+          
+          {/* Date */}
+          <span className="text-muted-foreground/50">•</span>
+          <span className="inline-flex items-center gap-0.5">
+            <Calendar className="w-3 h-3" />
+            {formatDate(expense.date)}
+          </span>
+        </div>
+        
+        {/* Secondary description if merchant exists */}
+        {hasSecondaryText && (
+          <p className="text-xs text-muted-foreground/70 mt-0.5 truncate italic">
+            {expense.description}
+          </p>
+        )}
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* Amount & Delete */}
+      <div className="flex items-center gap-2 shrink-0">
         <p className={cn(
-          "font-mono font-semibold text-right",
-          expense.type === 'expense' ? 'text-expense' : 
+          "font-mono font-bold text-sm text-right min-w-[70px]",
+          expense.type === 'expense' ? 'text-destructive' : 
           expense.type === 'transfer' ? 'text-muted-foreground' : 'text-income'
         )}>
           {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount))}
@@ -137,7 +184,7 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
             e.stopPropagation();
             onDelete(expense.id);
           }}
-          className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
         >
           <Trash2 className="w-4 h-4" />
         </button>
