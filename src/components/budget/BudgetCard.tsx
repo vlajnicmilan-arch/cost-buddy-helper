@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { BudgetWithStats } from '@/types/budget';
+import { CATEGORIES } from '@/types/expense';
 
 
 interface BudgetCardProps {
@@ -82,6 +83,15 @@ export const BudgetCard = ({
     if (budget.isWarning) return 'hsl(var(--warning))';
     return budget.color || 'hsl(var(--primary))';
   };
+
+  // Helper to get category display info
+  const getCategoryDisplay = (categoryId: string) => {
+    const catInfo = CATEGORIES.find(c => c.id === categoryId);
+    return catInfo ? { name: catInfo.name, icon: catInfo.icon } : { name: categoryId, icon: '📂' };
+  };
+
+  // Find manually assigned category if exists
+  const manualCategory = budget.categories.find(c => c.category === 'Ručno dodijeljeno');
 
   return (
     <>
@@ -211,6 +221,22 @@ export const BudgetCard = ({
               {formatAmount(budget.remaining)} {t('budget.remaining', 'preostalo')}
             </span>
           </div>
+
+          {/* Show manually assigned categories */}
+          {manualCategory && manualCategory.originalCategories && manualCategory.originalCategories.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-border/50">
+              <span className="text-xs text-muted-foreground mr-1">📌</span>
+              {manualCategory.originalCategories.map(origCat => {
+                const catDisplay = getCategoryDisplay(origCat);
+                return (
+                  <Badge key={origCat} variant="secondary" className="text-xs py-0 px-1.5">
+                    <span className="mr-0.5">{catDisplay.icon}</span>
+                    {catDisplay.name}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
         </div>
       </motion.div>
 
