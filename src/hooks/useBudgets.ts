@@ -195,12 +195,26 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
             const merchantLower = (e.merchant_name || '').toLowerCase();
             
             // Map common category keywords - use more specific patterns
+            // Category synonyms - similar categories that should be grouped together
+            const categorySynonyms: Record<string, string[]> = {
+              'transport': ['car', 'auto', 'automobil'],
+              'food': ['groceries', 'namirnice'],
+              'bills': ['utilities', 'režije'],
+              'shopping': ['clothing', 'odjeća'],
+              'health': ['beauty', 'ljepota', 'sports', 'sport'],
+            };
+            
+            // Check if expense category is a synonym of budget category
+            const synonyms = categorySynonyms[catLower] || [];
+            const expenseCatLower = (e.category || '').toLowerCase();
+            if (synonyms.includes(expenseCatLower)) return true;
+            
             const categoryKeywords: Record<string, string[]> = {
               'rent': ['stanarin', 'najamnin', 'rent ', 'monthly rent'],
               'housing': ['stanarin', 'najamnin', 'rent ', 'kuća', 'dom ', 'nekretnin'],
               'utilities': ['struja', 'voda', 'plin', 'komunalij', 'rezij', 'internet', 'telefon', 'hep', 'gradska plinara'],
               'food': ['hrana', 'namirnic', 'market', 'dućan', 'restoran', 'lidl', 'konzum', 'spar', 'kaufland', 'plodine'],
-              'transport': ['gorivo', 'benzin', 'bus', 'tramvaj', 'taxi', 'uber', 'bolt', 'ina ', 'petrol', 'tifon'],
+              'transport': ['gorivo', 'benzin', 'bus', 'tramvaj', 'taxi', 'uber', 'bolt', 'ina ', 'petrol', 'tifon', 'auto', 'automobil'],
             };
             
             const keywords = categoryKeywords[catLower] || [catLower];
