@@ -1,4 +1,4 @@
-import { Expense, getCategoryInfo, getPaymentSourceInfo } from '@/types/expense';
+import { Expense, getCategoryInfo, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
@@ -31,10 +31,31 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
     return null;
   }, [expense.payment_source_card_id, customPaymentSources]);
 
-  // Check if payment source is a custom one
+  // Check if payment source is a custom one (can be UUID or "custom:UUID" format)
   const customSource = useMemo(() => {
-    return customPaymentSources.find(s => s.id === expense.payment_source);
+    const sourceId = expense.payment_source;
+    if (!sourceId) return null;
+    
+    // Direct UUID match
+    let source = customPaymentSources.find(s => s.id === sourceId);
+    if (source) return source;
+    
+    // Handle "custom:UUID" format
+    if (sourceId.startsWith('custom:')) {
+      const uuid = sourceId.replace('custom:', '');
+      source = customPaymentSources.find(s => s.id === uuid);
+      if (source) return source;
+    }
+    
+    return null;
   }, [expense.payment_source, customPaymentSources]);
+
+  // Determine if this is a standard payment source (not custom)
+  const isStandardSource = useMemo(() => {
+    const sourceId = expense.payment_source;
+    if (!sourceId) return false;
+    return PAYMENT_SOURCES.some(s => s.id === sourceId);
+  }, [expense.payment_source]);
   
 
   const formatDate = (date: Date) => {
