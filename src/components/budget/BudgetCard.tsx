@@ -90,8 +90,13 @@ export const BudgetCard = ({
     return catInfo ? { name: catInfo.name, icon: catInfo.icon } : { name: categoryId, icon: '📂' };
   };
 
-  // Find manually assigned category if exists
-  const manualCategory = budget.categories.find(c => c.category === 'Ručno dodijeljeno');
+  // Collect all original categories from all budget categories that have them
+  const allOriginalCategories = budget.categories
+    .filter(c => c.originalCategories && c.originalCategories.length > 0)
+    .flatMap(c => c.originalCategories || []);
+  
+  // Remove duplicates
+  const uniqueOriginalCategories = [...new Set(allOriginalCategories)];
 
   return (
     <>
@@ -222,11 +227,11 @@ export const BudgetCard = ({
             </span>
           </div>
 
-          {/* Show manually assigned categories */}
-          {manualCategory && manualCategory.originalCategories && manualCategory.originalCategories.length > 0 && (
+          {/* Show original categories from all budget categories */}
+          {uniqueOriginalCategories.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-border/50">
               <span className="text-xs text-muted-foreground mr-1">📌</span>
-              {manualCategory.originalCategories.map(origCat => {
+              {uniqueOriginalCategories.map(origCat => {
                 const catDisplay = getCategoryDisplay(origCat);
                 return (
                   <Badge key={origCat} variant="secondary" className="text-xs py-0 px-1.5">
