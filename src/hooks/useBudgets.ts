@@ -111,29 +111,13 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       const budgetCategoryNames = budgetCategories.map(c => c.category.toLowerCase());
 
       // Filter expenses within the period
-      // Include expenses that:
-      // 1. Are expense type (not income)
-      // 2. Within the date range
-      // 3. Approved status only
-      // 4. Either:
-      //    a) Manually linked to this budget (budget_id matches)
-      //    b) OR category matches one of the budget's categories (and not a project expense)
+      // Only include expenses explicitly assigned to this budget via budget_id
       const periodExpenses = expenses.filter(e => {
         if (e.type !== 'expense') return false;
-        if (e.status && e.status !== 'approved') return false; // Only approved
+        if (e.status && e.status !== 'approved') return false;
+        if (e.budget_id !== budget.id) return false;
         const expDate = e.date;
-        const inPeriod = expDate >= startDate && expDate <= endDate;
-        if (!inPeriod) return false;
-        
-        // If manually assigned to this budget, always include
-        if (e.budget_id === budget.id) return true;
-        
-        // Project expenses are excluded from automatic category matching
-        if (e.project_id) return false;
-        
-        // Only include if category matches one of the budget's defined categories
-        const expenseCategory = (e.category || '').toLowerCase();
-        return budgetCategoryNames.includes(expenseCategory);
+        return expDate >= startDate && expDate <= endDate;
       });
 
       // Calculate total spent
@@ -155,20 +139,10 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       
       const prevPeriodExpenses = expenses.filter(e => {
         if (e.type !== 'expense') return false;
-        if (e.status && e.status !== 'approved') return false; // Only approved
+        if (e.status && e.status !== 'approved') return false;
+        if (e.budget_id !== budget.id) return false;
         const expDate = e.date;
-        const inPeriod = expDate >= prevStartDate && expDate <= prevEndDate;
-        if (!inPeriod) return false;
-        
-        // If manually assigned to this budget, always include
-        if (e.budget_id === budget.id) return true;
-        
-        // Project expenses are excluded from automatic category matching
-        if (e.project_id) return false;
-        
-        // Only include if category matches one of the budget's defined categories
-        const expenseCategory = (e.category || '').toLowerCase();
-        return budgetCategoryNames.includes(expenseCategory);
+        return expDate >= prevStartDate && expDate <= prevEndDate;
       });
       const prevSpent = prevPeriodExpenses.reduce((sum, e) => sum + e.amount, 0);
       
