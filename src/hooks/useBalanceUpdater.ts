@@ -61,17 +61,50 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
       if (!user) return;
 
       try {
-        // First, get current balance
-        const { data: sourceData, error: fetchError } = await supabase
+        // First try to find by ID (custom payment source UUID)
+        let { data: sourceData, error: fetchError } = await supabase
           .from('custom_payment_sources')
-          .select('balance')
+          .select('balance, id')
           .eq('id', paymentSource)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (fetchError) {
-          // Source might not be a custom payment source (could be standard like 'cash', 'visa', etc.)
-          // In that case, just skip the balance update
+        // If not found by ID, try matching by name (for standard sources like 'diners' -> 'Diners Club')
+        if (!sourceData) {
+          // Map standard payment source IDs to common names for matching
+          const standardNameMap: Record<string, string[]> = {
+            'diners': ['diners', 'diners club'],
+            'visa': ['visa'],
+            'visa_gold': ['visa gold'],
+            'visa_platinum': ['visa platinum'],
+            'mastercard': ['mastercard'],
+            'mastercard_gold': ['mastercard gold'],
+            'mastercard_platinum': ['mastercard platinum'],
+            'maestro': ['maestro'],
+            'amex': ['american express', 'amex'],
+            'revolut': ['revolut'],
+            'aircash': ['aircash'],
+            'cash': ['gotovina', 'cash'],
+            'bank': ['banka', 'bank'],
+            'crypto': ['kripto', 'crypto'],
+          };
+          
+          const searchNames = standardNameMap[paymentSource.toLowerCase()];
+          if (searchNames) {
+            const { data: matchedSource } = await supabase
+              .from('custom_payment_sources')
+              .select('balance, id')
+              .eq('user_id', user.id)
+              .ilike('name', `%${searchNames[searchNames.length > 1 ? 1 : 0]}%`)
+              .maybeSingle();
+            
+            if (matchedSource) {
+              sourceData = matchedSource;
+            }
+          }
+        }
+
+        if (!sourceData) {
           console.log('Payment source not found or not custom:', paymentSource);
           return;
         }
@@ -86,7 +119,7 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
             balance: newBalance,
             updated_at: new Date().toISOString()
           })
-          .eq('id', paymentSource)
+          .eq('id', sourceData.id)
           .eq('user_id', user.id);
 
         if (updateError) {

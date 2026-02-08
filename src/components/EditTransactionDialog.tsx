@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { Calendar } from '@/components/ui/calendar';
@@ -45,6 +46,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   
   const { customPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
+  const { customCategories } = useCustomCategories();
   const { projects } = useProjects();
   const { budgets } = useBudgets();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
@@ -191,16 +193,27 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
             >
               <SelectTrigger>
                 <SelectValue>
-                  {type === 'income' && (() => {
-                    // Check custom categories first
-                    const customCat = customIncomeCategories.find(c => c.id === category);
-                    if (customCat) {
-                      return (
-                        <span className="flex items-center gap-2">
-                          <span>{customCat.icon}</span>
-                          <span>{customCat.name}</span>
-                        </span>
-                      );
+                  {(() => {
+                    if (type === 'income') {
+                      const customCat = customIncomeCategories.find(c => c.id === category);
+                      if (customCat) {
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span>{customCat.icon}</span>
+                            <span>{customCat.name}</span>
+                          </span>
+                        );
+                      }
+                    } else {
+                      const customCat = customCategories.find(c => c.id === category);
+                      if (customCat) {
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span>{customCat.icon}</span>
+                            <span>{customCat.name}</span>
+                          </span>
+                        );
+                      }
                     }
                     return null;
                   })()}
@@ -253,14 +266,41 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                     </div>
                   </>
                 ) : (
-                  CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{cat.icon}</span>
-                        <span>{t(`categories.${cat.id}`)}</span>
-                      </span>
-                    </SelectItem>
-                  ))
+                  <>
+                    {/* Custom expense categories first */}
+                    {customCategories.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          {t('transactions.customSources', 'Prilagođene')}
+                        </div>
+                        {customCategories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            <span className="flex items-center gap-2">
+                              <span 
+                                className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                                style={{ backgroundColor: cat.color + '20', color: cat.color }}
+                              >
+                                {cat.icon}
+                              </span>
+                              <span>{cat.name}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {/* Standard categories */}
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {t('paymentSources.standardSources', 'Standardne')}
+                    </div>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{cat.icon}</span>
+                          <span>{t(`categories.${cat.id}`)}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </>
                 )}
               </SelectContent>
             </Select>
