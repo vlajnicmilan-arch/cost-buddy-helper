@@ -6,7 +6,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -293,9 +293,20 @@ export const TransactionDetailDialog = ({
           {/* Receipt Image */}
           {expense.receipt_url && (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Receipt className="w-4 h-4" />
-                <span className="text-sm font-medium">{t('transactions.receiptImage', 'Slika računa')}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Receipt className="w-4 h-4" />
+                  <span className="text-sm font-medium">{t('transactions.receiptImage', 'Slika računa')}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs text-muted-foreground"
+                  onClick={() => window.open(expense.receipt_url!, '_blank', 'noopener,noreferrer')}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {t('common.openInNewWindow', 'Otvori u novom prozoru')}
+                </Button>
               </div>
               <div 
                 className="relative cursor-pointer group rounded-lg overflow-hidden border"
@@ -440,6 +451,15 @@ export const TransactionDetailDialog = ({
                   disabled={imageZoom >= 3}
                 >
                   <ZoomIn className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 h-8 w-8"
+                  onClick={() => window.open(expense.receipt_url!, '_blank', 'noopener,noreferrer')}
+                  title={t('common.openInNewWindow', 'Otvori u novom prozoru')}
+                >
+                  <ExternalLink className="w-4 h-4" />
                 </Button>
               </div>
 
