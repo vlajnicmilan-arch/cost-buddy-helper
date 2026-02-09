@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useBackButton } from '@/hooks/useBackButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ export const ProjectFullScreenView = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
+  useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);

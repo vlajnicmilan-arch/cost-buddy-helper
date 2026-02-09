@@ -42,6 +42,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useBackButton } from '@/hooks/useBackButton';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from 'react-i18next';
@@ -119,6 +120,15 @@ const Index = () => {
   // Get user display name
   const [displayName, setDisplayName] = useState<string>('');
   
+  // Back button support for all dialogs
+  useBackButton(incomeDialogOpen, () => setIncomeDialogOpen(false));
+  useBackButton(expenseDialogOpen, () => setExpenseDialogOpen(false));
+  useBackButton(transferDialogOpen, () => setTransferDialogOpen(false));
+  useBackButton(detailDialogOpen, () => setDetailDialogOpen(false));
+  useBackButton(editDialogOpen, () => setEditDialogOpen(false));
+  useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
+  useBackButton(assistantDialogOpen, () => setAssistantDialogOpen(false));
+
   useEffect(() => {
     const loadDisplayName = async () => {
       // Try localStorage first (works for both modes)
