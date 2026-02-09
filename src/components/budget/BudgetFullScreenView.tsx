@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useBackButton } from '@/hooks/useBackButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -42,6 +43,7 @@ export const BudgetFullScreenView = ({
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
+  useBackButton(open, onClose);
   const { members, invitations, loading: membersLoading, isOwner, refetch: refetchMembers } = useBudgetMembers(budget?.id || null);
   const { 
     pendingTransactions, 
