@@ -213,8 +213,8 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
           spent: catSpent,
           remaining: catRemaining,
           percentage: catPercentage,
-          isOverBudget: catPercentage >= 100,
-          isWarning: catPercentage >= 80 && catPercentage < 100,
+          isOverBudget: catSpent > cat.limit_amount,
+          isWarning: catPercentage >= 80 && catSpent <= cat.limit_amount,
           originalCategories: originalCategories.length > 0 ? originalCategories : undefined,
         };
       });
@@ -266,8 +266,8 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         remaining,
         percentage,
         categories: categoriesWithStats,
-        isOverBudget: percentage >= 100,
-        isWarning: percentage >= 80 && percentage < 100,
+        isOverBudget: spent > budget.total_amount,
+        isWarning: percentage >= 80 && spent <= budget.total_amount,
         daysRemaining,
         dailyAverage,
         trend,
