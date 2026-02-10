@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { ProjectMilestone } from '@/types/project';
@@ -9,7 +15,9 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2 } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface WorkEntry {
   id: string;
@@ -27,6 +35,8 @@ interface Worker {
   last_name: string;
   position: string;
   hourly_rate: number;
+  work_start_time?: string | null;
+  work_end_time?: string | null;
 }
 
 interface WorkCalendarOverviewProps {
@@ -43,6 +53,16 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [month, setMonth] = useState<Date>(new Date());
 
+  // Add entry form state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addDate, setAddDate] = useState<Date | null>(null);
+  const [selectedWorkerId, setSelectedWorkerId] = useState('');
+  const [scheduledHours, setScheduledHours] = useState('8');
+  const [actualHours, setActualHours] = useState('8');
+  const [selectedMilestones, setSelectedMilestones] = useState<string[]>([]);
+  const [note, setNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -53,7 +73,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
           .eq('project_id', projectId),
         supabase
           .from('project_workers')
-          .select('id, first_name, last_name, position, hourly_rate')
+          .select('id, first_name, last_name, position, hourly_rate, work_start_time, work_end_time')
           .eq('project_id', projectId)
       ]);
 
@@ -80,10 +100,8 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
     fetchData();
   }, [fetchData]);
 
-  // Dates that have entries
   const workDates = entries.map(e => parseISO(e.work_date));
 
-  // Entries for selected date
   const selectedDateEntries = selectedDate
     ? entries.filter(e => isSameDay(parseISO(e.work_date), selectedDate))
     : [];
@@ -95,7 +113,6 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
     return milestoneIds.map(id => milestones.find(m => m.id === id)?.name).filter(Boolean);
   };
 
-  // Count unique work dates
   const uniqueWorkDates = new Set(entries.map(e => e.work_date)).size;
   const totalHours = entries.reduce((sum, e) => sum + e.actual_hours, 0);
 
@@ -103,6 +120,92 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
     const hasEntries = entries.some(e => isSameDay(parseISO(e.work_date), day));
     if (hasEntries) {
       setSelectedDate(day);
+    }
+  };
+
+  // Add entry helpers
+  const getDefaultHours = (worker: Worker | undefined) => {
+    if (worker?.work_start_time && worker?.work_end_time) {
+      const start = worker.work_start_time.split(':').map(Number);
+      const end = worker.work_end_time.split(':').map(Number);
+      return ((end[0] + end[1] / 60) - (start[0] + start[1] / 60)).toString();
+    }
+    return '8';
+  };
+
+  const openAddForm = (date?: Date) => {
+    setAddDate(date || new Date());
+    setSelectedWorkerId('');
+    setScheduledHours('8');
+    setActualHours('8');
+    setSelectedMilestones([]);
+    setNote('');
+    setShowAddForm(true);
+  };
+
+  const handleWorkerChange = (workerId: string) => {
+    setSelectedWorkerId(workerId);
+    const worker = workers.find(w => w.id === workerId);
+    const hours = getDefaultHours(worker);
+    setScheduledHours(hours);
+    setActualHours(hours);
+  };
+
+  const toggleMilestone = (milestoneId: string) => {
+    setSelectedMilestones(prev => {
+      if (prev.includes(milestoneId)) return prev.filter(id => id !== milestoneId);
+      if (prev.length >= 3) return prev;
+      return [...prev, milestoneId];
+    });
+  };
+
+  const handleAddSubmit = async () => {
+    if (!selectedWorkerId || !addDate) return;
+
+    const dateStr = format(addDate, 'yyyy-MM-dd');
+    const alreadyExists = entries.some(
+      e => e.worker_id === selectedWorkerId && e.work_date === dateStr
+    );
+    if (alreadyExists) {
+      toast.error(t('workers.entryExists', 'Unos za ovaj datum već postoji'));
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from('project_work_entries')
+        .insert({
+          worker_id: selectedWorkerId,
+          project_id: projectId,
+          work_date: dateStr,
+          scheduled_hours: parseFloat(scheduledHours) || 8,
+          actual_hours: parseFloat(actualHours) || 8,
+          milestone_ids: selectedMilestones,
+          note: note.trim() || null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setEntries(prev => [...prev, {
+        ...data,
+        scheduled_hours: Number(data.scheduled_hours),
+        actual_hours: Number(data.actual_hours)
+      }]);
+
+      toast.success(t('workers.entryAdded', 'Radni dan dodan'));
+      setShowAddForm(false);
+    } catch (error: any) {
+      if (error.code === '23505') {
+        toast.error(t('workers.entryExists', 'Unos za ovaj datum već postoji'));
+      } else {
+        console.error('Error adding entry:', error);
+        toast.error(t('common.error'));
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -130,6 +233,14 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
         </div>
       </Card>
 
+      {/* Add button */}
+      {workers.length > 0 && (
+        <Button onClick={() => openAddForm()} className="w-full" variant="outline">
+          <Plus className="w-4 h-4 mr-2" />
+          {t('workers.addWorkDay', 'Dodaj radni dan')}
+        </Button>
+      )}
+
       {/* Calendar */}
       <Card className="p-2 flex justify-center">
         <Calendar
@@ -153,6 +264,136 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       <p className="text-xs text-muted-foreground text-center">
         {t('workers.calendarHint', 'Kliknite na označeni datum za detalje')}
       </p>
+
+      {/* Add Entry Dialog */}
+      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" showBackButton>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              {t('workers.addWorkDay', 'Dodaj radni dan')}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Date picker */}
+            <div className="space-y-2">
+              <Label>{t('workers.date', 'Datum')}</Label>
+              <Card className="p-1 flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={addDate || undefined}
+                  onSelect={(day) => day && setAddDate(day)}
+                  locale={hr}
+                  className="p-2 pointer-events-auto"
+                />
+              </Card>
+              {addDate && (
+                <p className="text-sm font-medium text-center">
+                  {format(addDate, 'EEEE, d. MMMM yyyy', { locale: hr })}
+                </p>
+              )}
+            </div>
+
+            {/* Worker select */}
+            <div className="space-y-2">
+              <Label>{t('workers.worker', 'Djelatnik')}</Label>
+              <Select value={selectedWorkerId} onValueChange={handleWorkerChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('workers.selectWorker', 'Odaberi djelatnika')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {workers.map(w => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.first_name} {w.last_name} — {w.position}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Hours */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('workers.scheduledHours', 'Planirano sati')}</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="24"
+                  value={scheduledHours}
+                  onChange={(e) => setScheduledHours(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('workers.actualHours', 'Odrađeno sati')}</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="24"
+                  value={actualHours}
+                  onChange={(e) => setActualHours(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Milestones */}
+            {milestones.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Flag className="w-4 h-4" />
+                  {t('workers.milestones', 'Faze rada')} ({selectedMilestones.length}/3)
+                </Label>
+                <div className="space-y-2 max-h-28 overflow-y-auto">
+                  {milestones.map((milestone) => (
+                    <div key={milestone.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`cal-milestone-${milestone.id}`}
+                        checked={selectedMilestones.includes(milestone.id)}
+                        onCheckedChange={() => toggleMilestone(milestone.id)}
+                        disabled={!selectedMilestones.includes(milestone.id) && selectedMilestones.length >= 3}
+                      />
+                      <label
+                        htmlFor={`cal-milestone-${milestone.id}`}
+                        className={cn(
+                          "text-sm cursor-pointer",
+                          !selectedMilestones.includes(milestone.id) && selectedMilestones.length >= 3 && "opacity-50"
+                        )}
+                      >
+                        {milestone.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Note */}
+            <div className="space-y-2">
+              <Label>{t('workers.note', 'Napomena')}</Label>
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')}
+                rows={2}
+              />
+            </div>
+
+            {/* Submit */}
+            <Button
+              onClick={handleAddSubmit}
+              className="w-full"
+              disabled={!selectedWorkerId || !addDate || isSubmitting}
+            >
+              {isSubmitting
+                ? t('common.saving', 'Spremanje...')
+                : t('workers.addWorkDay', 'Dodaj radni dan')
+              }
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Day Detail Dialog */}
       <Dialog open={!!selectedDate} onOpenChange={(open) => !open && setSelectedDate(null)}>
