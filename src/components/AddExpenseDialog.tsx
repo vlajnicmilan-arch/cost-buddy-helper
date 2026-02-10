@@ -997,26 +997,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     onValueChange={(v) => setSelectedProjectId(v === 'none' ? null : v)}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue>
-                        {selectedProjectId ? (
-                          (() => {
-                            const project = projects.find(p => p.id === selectedProjectId);
-                            return project ? (
-                              <span className="flex items-center gap-2">
-                                <span 
-                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                                  style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
-                                >
-                                  {project.icon || '📁'}
-                                </span>
-                                <span>{project.name}</span>
-                              </span>
-                            ) : t('transactions.noProject');
-                          })()
-                        ) : (
-                          <span className="text-muted-foreground">{t('transactions.noProject')}</span>
-                        )}
-                      </SelectValue>
+                      <SelectValue placeholder={t('transactions.noProject')} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
                       <SelectItem value="none">
@@ -1052,26 +1033,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     onValueChange={(v) => setSelectedBudgetId(v === 'none' ? null : v)}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue>
-                        {selectedBudgetId ? (
-                          (() => {
-                            const budget = budgets.find(b => b.id === selectedBudgetId);
-                            return budget ? (
-                              <span className="flex items-center gap-2">
-                                <span 
-                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                                  style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
-                                >
-                                  {budget.icon || '💰'}
-                                </span>
-                                <span>{budget.name}</span>
-                              </span>
-                            ) : t('transactions.noBudget', 'Bez budžeta');
-                          })()
-                        ) : (
-                          <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
-                        )}
-                      </SelectValue>
+                      <SelectValue placeholder={t('transactions.noBudget', 'Bez budžeta')} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
                       <SelectItem value="none">
@@ -1124,28 +1086,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     }}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue>
-                        {(() => {
-                          // Check custom categories first
-                          const customCat = customIncomeCategories.find(c => c.id === category);
-                          if (customCat) {
-                            return (
-                              <span className="flex items-center gap-2">
-                                <span>{customCat.icon}</span>
-                                <span>{customCat.name}</span>
-                              </span>
-                            );
-                          }
-                          // Then check default categories
-                          const cat = INCOME_CATEGORIES.find(c => c.id === category);
-                          return cat ? (
-                            <span className="flex items-center gap-2">
-                              <span>{cat.icon}</span>
-                              <span>{t(`incomeCategories.${cat.id}`)}</span>
-                            </span>
-                          ) : t('common.category');
-                        })()}
-                      </SelectValue>
+                      <SelectValue placeholder={t('common.category')} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
                       {/* Custom income categories first */}
@@ -1331,36 +1272,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     onValueChange={(v) => setCategory(v as Category)}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue>
-                        {(() => {
-                          // Check custom categories first
-                          const customCat = customCategories.find(c => c.id === category);
-                          if (customCat) {
-                            return (
-                              <span className="flex items-center gap-2">
-                                <span 
-                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                                  style={{ backgroundColor: customCat.color + '20', color: customCat.color }}
-                                >
-                                  {customCat.icon}
-                                </span>
-                                <span>{customCat.name}</span>
-                              </span>
-                            );
-                          }
-                          // Check default categories
-                          const defaultCat = CATEGORIES.find(c => c.id === category);
-                          if (defaultCat) {
-                            return (
-                              <span className="flex items-center gap-2">
-                                <span>{defaultCat.icon}</span>
-                                <span>{t(`categories.${defaultCat.id}`)}</span>
-                              </span>
-                            );
-                          }
-                          return t('common.category');
-                        })()}
-                      </SelectValue>
+                      <SelectValue placeholder={t('common.category')} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50 max-h-[300px]">
                       {/* Custom expense categories first */}

@@ -675,12 +675,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   onValueChange={handleLanguageChange}
                 >
                   <SelectTrigger className="w-[130px] rounded-xl">
-                    <SelectValue>
-                      <span className="flex items-center gap-2">
-                        <span>{currentLanguage.flag}</span>
-                        <span>{currentLanguage.name}</span>
-                      </span>
-                    </SelectValue>
+                    <SelectValue placeholder="Language" />
                   </SelectTrigger>
                   <SelectContent>
                     {languages.map((lang) => (

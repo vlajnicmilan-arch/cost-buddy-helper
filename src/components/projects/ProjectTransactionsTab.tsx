@@ -486,16 +486,7 @@ export const ProjectTransactionsTab = ({
                           {updatingMilestone === expense.id ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
-                            <SelectValue>
-                              {milestoneName ? (
-                                <span className="flex items-center gap-1 truncate">
-                                  <Target className="w-3 h-3 shrink-0" />
-                                  <span className="truncate">{milestoneName}</span>
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">{t('projects.noMilestone', 'Bez faze')}</span>
-                              )}
-                            </SelectValue>
+                            <SelectValue placeholder={t('projects.noMilestone', 'Bez faze')} />
                           )}
                         </SelectTrigger>
                         <SelectContent>
