@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ interface EditTransactionDialogProps {
   onSave: (expense: Expense) => Promise<void>;
 }
 
-export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionDialogProps>(({ expense, open, onOpenChange, onSave }, ref) => {
+export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: EditTransactionDialogProps) => {
   const { t, i18n } = useTranslation();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -66,18 +66,28 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   // Initialize form when dialog opens or expense changes
   useEffect(() => {
     if (open && expense) {
-      setAmount(expense.amount.toString());
-      setDescription(expense.description);
-      setCategory(expense.category);
-      // Normalize "custom:UUID" to just "UUID" for select matching
-      const ps = expense.payment_source || 'cash';
-      setPaymentSource((ps.startsWith('custom:') ? ps.replace('custom:', '') : ps) as PaymentSource);
-      setSelectedCardId(expense.payment_source_card_id || null);
-      setDate(expense.date instanceof Date ? expense.date : new Date(expense.date));
-      setType(expense.type);
-      setSelectedProjectId(expense.project_id || null);
-      setSelectedBudgetId(expense.budget_id || null);
-      setNote(expense.note || '');
+      try {
+        setAmount(expense.amount?.toString() || '0');
+        setDescription(expense.description || '');
+        setCategory(expense.category || 'other');
+        // Normalize "custom:UUID" to just "UUID" for select matching
+        const ps = expense.payment_source || 'cash';
+        setPaymentSource((ps.startsWith('custom:') ? ps.replace('custom:', '') : ps) as PaymentSource);
+        setSelectedCardId(expense.payment_source_card_id || null);
+        // Safe date parsing
+        const parsedDate = expense.date instanceof Date ? expense.date : new Date(expense.date);
+        setDate(isNaN(parsedDate.getTime()) ? new Date() : parsedDate);
+        setType(expense.type || 'expense');
+        setSelectedProjectId(expense.project_id || null);
+        setSelectedBudgetId(expense.budget_id || null);
+        setNote(expense.note || '');
+      } catch (err) {
+        console.error('Error initializing edit form:', err);
+        // Set safe defaults
+        setDate(new Date());
+        setCategory('other');
+        setPaymentSource('cash');
+      }
     }
   }, [open, expense]);
 
@@ -453,7 +463,7 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP", { locale: dateLocale }) : t('transactions.selectDate')}
+                  {date && !isNaN(date.getTime()) ? format(date, "PPP", { locale: dateLocale }) : t('transactions.selectDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -606,6 +616,5 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
     />
     </>
   );
-});
+};
 
-EditTransactionDialog.displayName = 'EditTransactionDialog';
