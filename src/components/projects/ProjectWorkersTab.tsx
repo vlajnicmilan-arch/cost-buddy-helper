@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,19 +12,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
-import { ProjectWorker } from '@/types/projectWorker';
+import { ProjectWorker, ProjectWorkEntry } from '@/types/projectWorker';
 import { ProjectWorkerDialog } from './ProjectWorkerDialog';
 import { WorkerScheduleDialog } from './WorkerScheduleDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List } from 'lucide-react';
+import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List, Download, FileText, FileSpreadsheet, FileJson } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WorkCalendarOverview } from './WorkCalendarOverview';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
+import { supabase } from '@/integrations/supabase/client';
+import { generateWorkRecordsPDF, generateWorkRecordsCSV, generateWorkRecordsJSON, WorkExportConfig } from '@/lib/workRecordsExport';
+import { toast } from 'sonner';
 
 interface ProjectWorkersTabProps {
   projectId: string;
+  projectName?: string;
   isManager: boolean;
   loading?: boolean;
   onRefetch?: () => void;
@@ -32,12 +42,13 @@ interface ProjectWorkersTabProps {
 
 export const ProjectWorkersTab = ({
   projectId,
+  projectName = 'Projekt',
   isManager,
   loading: externalLoading,
   onRefetch
 }: ProjectWorkersTabProps) => {
   const { t } = useTranslation();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency } = useCurrency();
   const { workers, loading, addWorker, updateWorker, deleteWorker, totalCost, totalActualHours, refetch } = useProjectWorkers(projectId);
   const { milestones } = useProjectMilestones(projectId);
   const [viewMode, setViewMode] = useState<string>('list');
@@ -47,6 +58,50 @@ export const ProjectWorkersTab = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
   const [scheduleWorker, setScheduleWorker] = useState<ProjectWorker | null>(null);
+
+  const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
+    try {
+      const { data: entriesData, error } = await supabase
+        .from('project_work_entries')
+        .select('id, worker_id, work_date, scheduled_hours, actual_hours, note, milestone_ids')
+        .eq('project_id', projectId);
+
+      if (error) throw error;
+
+      const entries = (entriesData || []).map(e => ({
+        ...e,
+        scheduled_hours: Number(e.scheduled_hours),
+        actual_hours: Number(e.actual_hours),
+      }));
+
+      const config: WorkExportConfig = {
+        workers: workers.map(w => ({
+          id: w.id,
+          first_name: w.first_name,
+          last_name: w.last_name,
+          position: w.position,
+          hourly_rate: w.hourly_rate,
+          work_start_time: w.work_start_time,
+          work_end_time: w.work_end_time,
+          actualHoursTotal: w.actualHoursTotal,
+          actualCostTotal: w.actualCostTotal,
+        })),
+        entries,
+        milestones: milestones.map(m => ({ id: m.id, name: m.name })),
+        projectName,
+        currency: currency ? { code: currency.code, symbol: currency.symbol, locale: currency.locale } : undefined,
+      };
+
+      if (format === 'pdf') generateWorkRecordsPDF(config);
+      else if (format === 'csv') generateWorkRecordsCSV(config);
+      else generateWorkRecordsJSON(config);
+
+      toast.success(t('common.exported', 'Izvoz uspješan'));
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(t('common.error'));
+    }
+  };
 
   const handleAdd = () => {
     setEditingWorker(null);
@@ -111,10 +166,36 @@ export const ProjectWorkersTab = ({
           <h3 className="font-semibold">{t('workers.title', 'Evidencija radnika')}</h3>
           <Badge variant="secondary">{workers.length}</Badge>
         </div>
-        <Button onClick={handleAdd} size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          {t('workers.add', 'Dodaj')}
-        </Button>
+        <div className="flex items-center gap-1">
+          {workers.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-1" />
+                  {t('common.export', 'Izvoz')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  <FileJson className="w-4 h-4 mr-2" />
+                  JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button onClick={handleAdd} size="sm">
+            <Plus className="w-4 h-4 mr-1" />
+            {t('workers.add', 'Dodaj')}
+          </Button>
+        </div>
       </div>
 
       <Tabs value={viewMode} onValueChange={setViewMode}>
