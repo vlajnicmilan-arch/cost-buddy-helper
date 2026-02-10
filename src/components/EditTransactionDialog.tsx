@@ -227,50 +227,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('common.category')}>
-                  {(() => {
-                    if (type === 'income') {
-                      const customCat = customIncomeCategories.find(c => c.id === category);
-                      if (customCat) {
-                        return (
-                          <span className="flex items-center gap-2">
-                            <span>{customCat.icon}</span>
-                            <span>{customCat.name}</span>
-                          </span>
-                        );
-                      }
-                      const stdCat = INCOME_CATEGORIES.find(c => c.id === category);
-                      if (stdCat) {
-                        return (
-                          <span className="flex items-center gap-2">
-                            <span>{stdCat.icon}</span>
-                            <span>{t(`incomeCategories.${stdCat.id}`)}</span>
-                          </span>
-                        );
-                      }
-                    } else {
-                      const customCat = customCategories.find(c => c.id === category);
-                      if (customCat) {
-                        return (
-                          <span className="flex items-center gap-2">
-                            <span>{customCat.icon}</span>
-                            <span>{customCat.name}</span>
-                          </span>
-                        );
-                      }
-                      const stdCat = CATEGORIES.find(c => c.id === category);
-                      if (stdCat) {
-                        return (
-                          <span className="flex items-center gap-2">
-                            <span>{stdCat.icon}</span>
-                            <span>{t(`categories.${stdCat.id}`)}</span>
-                          </span>
-                        );
-                      }
-                    }
-                    return <span>{category || t('common.category')}</span>;
-                  })()}
-                </SelectValue>
+                <SelectValue placeholder={t('common.category')} />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 {type === 'income' ? (
@@ -370,33 +327,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
               }}
             >
               <SelectTrigger>
-                <SelectValue>
-                  {paymentSource && (() => {
-                    // Check if it's a custom payment source
-                    const customSource = customPaymentSources.find(s => s.id === paymentSource);
-                    if (customSource) {
-                      return (
-                        <span className="flex items-center gap-2">
-                          <span 
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
-                            style={{ backgroundColor: customSource.color }}
-                          >
-                            {customSource.icon}
-                          </span>
-                          <span>{customSource.name}</span>
-                        </span>
-                      );
-                    }
-                    // Otherwise use standard payment source info
-                    const info = getPaymentSourceInfo(paymentSource);
-                    return (
-                      <span className="flex items-center gap-2">
-                        <span>{info.icon}</span>
-                        <span>{t(`paymentSources.${paymentSource}`) !== `paymentSources.${paymentSource}` ? t(`paymentSources.${paymentSource}`) : info.name}</span>
-                      </span>
-                    );
-                  })()}
-                </SelectValue>
+                <SelectValue placeholder={t('transactions.paymentSource')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px]">
                 {PAYMENT_SOURCE_GROUPS.map((group) => (
