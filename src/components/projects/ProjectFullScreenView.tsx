@@ -1,19 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { ProjectWithOwnership, PROJECT_STATUS_LABELS } from '@/types/project';
 import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
@@ -55,8 +45,6 @@ export const ProjectFullScreenView = ({
   const [activeTab, setActiveTab] = useState('overview');
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const { stats, expenses, loading: statsLoading, refetch: refetchStats } = useProjectStats(
     project?.id || null, 
@@ -68,15 +56,9 @@ export const ProjectFullScreenView = ({
   
   const currentUserRole = project?.role || 'viewer';
 
-  // Track changes - whenever data is refetched after user action, mark as changed
-  const markAsChanged = useCallback(() => {
-    setHasUnsavedChanges(true);
-  }, []);
-
-  // Reset unsaved changes when project changes or closes
+  // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      setHasUnsavedChanges(false);
       setActiveTab('overview');
     }
   }, [open, project?.id]);
@@ -87,41 +69,16 @@ export const ProjectFullScreenView = ({
 
     const handlePopState = (e: PopStateEvent) => {
       e.preventDefault();
-      handleCloseAttempt();
+      onClose();
     };
 
-    // Push a state so we can intercept back
     window.history.pushState({ projectView: true }, '');
     window.addEventListener('popstate', handlePopState);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [open, hasUnsavedChanges]);
-
-  const handleCloseAttempt = () => {
-    if (hasUnsavedChanges) {
-      setShowExitConfirm(true);
-    } else {
-      handleClose();
-    }
-  };
-
-  const handleClose = () => {
-    setHasUnsavedChanges(false);
-    onClose();
-  };
-
-  const handleConfirmExit = () => {
-    setShowExitConfirm(false);
-    handleClose();
-  };
-
-  const handleStay = () => {
-    setShowExitConfirm(false);
-    // Re-push state since popstate consumed it
-    window.history.pushState({ projectView: true }, '');
-  };
+  }, [open, onClose]);
 
   if (!project) return null;
 
@@ -158,7 +115,7 @@ export const ProjectFullScreenView = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={handleCloseAttempt}
+                  onClick={onClose}
                   className="shrink-0"
                 >
                   <X className="w-5 h-5" />
@@ -177,11 +134,6 @@ export const ProjectFullScreenView = ({
                     <Badge variant="secondary" className="shrink-0">
                       {t(`projectStatus.${project.status}`, PROJECT_STATUS_LABELS[project.status])}
                     </Badge>
-                    {hasUnsavedChanges && (
-                      <Badge variant="outline" className="shrink-0 text-warning border-warning">
-                        {t('common.unsavedChanges', 'Nespremljene promjene')}
-                      </Badge>
-                    )}
                   </div>
                   {project.description && (
                     <p className="text-sm text-muted-foreground truncate">{project.description}</p>
@@ -384,10 +336,7 @@ export const ProjectFullScreenView = ({
                     milestones={milestones}
                     isManager={isManager}
                     loading={milestonesLoading}
-                    onRefetch={() => {
-                      refetchMilestones();
-                      markAsChanged();
-                    }}
+                    onRefetch={refetchMilestones}
                   />
                 </TabsContent>
 
@@ -395,7 +344,7 @@ export const ProjectFullScreenView = ({
                   <ProjectWorkersTab
                     projectId={project.id}
                     isManager={isManager}
-                    onRefetch={markAsChanged}
+                    onRefetch={() => {}}
                   />
                 </TabsContent>
 
@@ -409,10 +358,7 @@ export const ProjectFullScreenView = ({
                     projectBudget={budget}
                     isManager={isManager}
                     loading={fundingLoading}
-                    onRefetch={() => {
-                      refetchFunding();
-                      markAsChanged();
-                    }}
+                    onRefetch={refetchFunding}
                   />
                 </TabsContent>
 
@@ -423,10 +369,7 @@ export const ProjectFullScreenView = ({
                     invitations={invitations}
                     isManager={isManager}
                     loading={membersLoading}
-                    onRefetch={() => {
-                      refetchMembers();
-                      markAsChanged();
-                    }}
+                    onRefetch={refetchMembers}
                   />
                 </TabsContent>
 
@@ -441,7 +384,6 @@ export const ProjectFullScreenView = ({
                     onRefetch={() => {
                       refetchStats();
                       refetchMilestones();
-                      markAsChanged();
                     }}
                   />
                 </TabsContent>
@@ -449,25 +391,6 @@ export const ProjectFullScreenView = ({
             </div>
           </motion.div>
 
-          {/* Exit confirmation dialog */}
-          <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('common.unsavedChangesTitle', 'Imate nespremljenih promjena')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('common.unsavedChangesDescription', 'Napravili ste promjene na ovom projektu. Jeste li sigurni da želite izaći bez spremanja?')}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={handleStay}>
-                  {t('common.stay', 'Ostani')}
-                </AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmExit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  {t('common.exitWithoutSaving', 'Izađi bez spremanja')}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </>
       )}
     </AnimatePresence>
