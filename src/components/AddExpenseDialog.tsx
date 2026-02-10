@@ -356,7 +356,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
     const parsedAmount = parseFloat(amount);
 
-    // Handle installment creation
+    // Handle installment creation - also save the main expense so it appears in transactions
     if (isInstallment && type !== 'transfer') {
       await createInstallmentPlan({
         description,
@@ -369,6 +369,32 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         type: type as 'expense' | 'income'
       });
       
+      // ALSO save the main expense record so it shows in recent transactions
+      const validItems = items.filter(item => item.name && item.total_price > 0);
+      
+      let receiptUrl: string | undefined;
+      if (saveReceipt && receiptImage) {
+        const uploadedUrl = await uploadReceiptImage(receiptImage);
+        if (uploadedUrl) receiptUrl = uploadedUrl;
+      }
+
+      const installmentExpense = {
+        amount: parsedAmount,
+        description,
+        category,
+        date: new Date(expenseDate),
+        type,
+        payment_source: paymentSource,
+        payment_source_card_id: selectedCardId,
+        merchant_name: merchantName || undefined,
+        receipt_url: receiptUrl,
+        ai_extracted: scannedData !== null,
+        note: note.trim() || undefined,
+        project_id: selectedProjectId || undefined,
+        budget_id: selectedBudgetId || undefined
+      };
+
+      await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
       resetForm();
       setOpen(false);
       return;
