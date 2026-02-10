@@ -304,7 +304,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           return;
         }
 
-        const { error } = await supabase
+        console.log('Updating expense:', expense.id, 'payment_source:', expense.payment_source);
+        
+        const { error, count } = await supabase
           .from('expenses')
           .update({
             amount: expense.amount,
@@ -323,8 +325,12 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           })
           .eq('id', expense.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase update error:', error);
+          throw error;
+        }
 
+        console.log('Update successful for expense:', expense.id);
         setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
         
         // Update balances if payment source, amount, or type changed

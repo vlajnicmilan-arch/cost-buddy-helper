@@ -90,6 +90,16 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
       const isCustomSource = customPaymentSources.some(s => s.id === paymentSource);
       const finalPaymentSource = isCustomSource ? `custom:${paymentSource}` : paymentSource;
       
+      console.log('EditTransactionDialog saving:', {
+        id: expense.id,
+        paymentSource,
+        isCustomSource,
+        finalPaymentSource,
+        amount: parseFloat(amount),
+        category,
+        type,
+      });
+
       await onSave({
         ...expense,
         amount: parseFloat(amount),
@@ -105,6 +115,10 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
         updated_at: new Date().toISOString()
       });
       onOpenChange(false);
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      const { toast } = await import('sonner');
+      toast.error('Greška pri spremanju. Pokušaj ponovno.');
     } finally {
       setSaving(false);
     }
