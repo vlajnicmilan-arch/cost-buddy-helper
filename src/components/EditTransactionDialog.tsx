@@ -86,12 +86,16 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
     
     setSaving(true);
     try {
+      // Re-add "custom:" prefix if payment source is a custom source UUID
+      const isCustomSource = customPaymentSources.some(s => s.id === paymentSource);
+      const finalPaymentSource = isCustomSource ? `custom:${paymentSource}` : paymentSource;
+      
       await onSave({
         ...expense,
         amount: parseFloat(amount),
         description,
         category,
-        payment_source: paymentSource,
+        payment_source: finalPaymentSource as PaymentSource,
         payment_source_card_id: selectedCardId,
         date,
         type,
