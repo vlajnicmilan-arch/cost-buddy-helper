@@ -438,26 +438,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
                 onValueChange={(v) => setSelectedProjectId(v === 'none' ? null : v)}
               >
                 <SelectTrigger>
-                  <SelectValue>
-                    {selectedProjectId ? (
-                      (() => {
-                        const project = projects.find(p => p.id === selectedProjectId);
-                        return project ? (
-                          <span className="flex items-center gap-2">
-                            <span 
-                              className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                              style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
-                            >
-                              {project.icon || '📁'}
-                            </span>
-                            <span>{project.name}</span>
-                          </span>
-                        ) : t('transactions.noProject');
-                      })()
-                    ) : (
-                      <span className="text-muted-foreground">{t('transactions.noProject')}</span>
-                    )}
-                  </SelectValue>
+                  <SelectValue placeholder={t('transactions.noProject')} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
                   <SelectItem value="none">
@@ -493,26 +474,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
                 onValueChange={(v) => setSelectedBudgetId(v === 'none' ? null : v)}
               >
                 <SelectTrigger>
-                  <SelectValue>
-                    {selectedBudgetId ? (
-                      (() => {
-                        const budget = budgets.find(b => b.id === selectedBudgetId);
-                        return budget ? (
-                          <span className="flex items-center gap-2">
-                            <span 
-                              className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                              style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
-                            >
-                              {budget.icon || '💰'}
-                            </span>
-                            <span>{budget.name}</span>
-                          </span>
-                        ) : t('transactions.noBudget', 'Bez budžeta');
-                      })()
-                    ) : (
-                      <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
-                    )}
-                  </SelectValue>
+                  <SelectValue placeholder={t('transactions.noBudget', 'Bez budžeta')} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
                   <SelectItem value="none">
