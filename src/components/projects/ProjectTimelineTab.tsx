@@ -19,6 +19,17 @@ interface ProjectTimelineTabProps {
   loading: boolean;
 }
 
+// Determine effective status: if due_date passed and not completed, it's overdue
+const getEffectiveStatus = (milestone: ProjectMilestone): string => {
+  if (milestone.status === 'completed') return 'completed';
+  if (milestone.due_date) {
+    const today = startOfDay(new Date());
+    const due = startOfDay(new Date(milestone.due_date));
+    if (isAfter(today, due)) return 'overdue';
+  }
+  return milestone.status;
+};
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'completed':
@@ -93,7 +104,7 @@ export const ProjectTimelineTab = ({
   }, [milestones, projectStartDate, projectEndDate]);
 
   // Calculate position and width for a milestone bar
-  const getMilestoneBarStyle = (milestone: ProjectMilestone) => {
+  const getMilestoneBarStyle = (milestone: ProjectMilestone, effectiveStatus: string) => {
     const { start: timelineStart, totalDays } = timelineBounds;
     const today = startOfDay(new Date());
     
@@ -101,7 +112,7 @@ export const ProjectTimelineTab = ({
     const mDue = milestone.due_date ? new Date(milestone.due_date) : addDays(mStart, 7);
     
     // For overdue milestones, extend the bar to today
-    const mEnd = milestone.status === 'overdue' && isAfter(today, mDue) ? today : mDue;
+    const mEnd = effectiveStatus === 'overdue' && isAfter(today, mDue) ? today : mDue;
     
     const startOffset = differenceInDays(mStart, timelineStart);
     const duration = Math.max(differenceInDays(mEnd, mStart), 1);
@@ -112,7 +123,7 @@ export const ProjectTimelineTab = ({
     // For overdue, also calculate where the due date falls (for the striped overrun portion)
     const dueDuration = Math.max(differenceInDays(mDue, mStart), 1);
     const dueWidthPercent = (dueDuration / totalDays) * 100;
-    const onTimePercent = milestone.status === 'overdue' && isAfter(today, mDue) 
+    const onTimePercent = effectiveStatus === 'overdue' && isAfter(today, mDue) 
       ? Math.min((dueWidthPercent / Math.max(widthPercent, 0.01)) * 100, 100)
       : 100;
     
@@ -222,19 +233,20 @@ export const ProjectTimelineTab = ({
       {/* Gantt bars */}
       <div className="space-y-3">
         {milestones.map((milestone) => {
-          const barStyle = getMilestoneBarStyle(milestone);
+          const effectiveStatus = getEffectiveStatus(milestone);
+          const barStyle = getMilestoneBarStyle(milestone, effectiveStatus);
           
           return (
             <div key={milestone.id} className="space-y-1">
               {/* Milestone info row */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={cn("shrink-0", getStatusColor(milestone.status).replace('bg-', 'text-'))}>
-                    {getStatusIcon(milestone.status)}
+                  <span className={cn("shrink-0", getStatusColor(effectiveStatus).replace('bg-', 'text-'))}>
+                    {getStatusIcon(effectiveStatus)}
                   </span>
                   <span className="font-medium truncate">{milestone.name}</span>
                   <Badge variant="outline" className="shrink-0 text-xs">
-                    {MILESTONE_STATUS_LABELS[milestone.status]}
+                    {effectiveStatus === 'overdue' ? MILESTONE_STATUS_LABELS['overdue'] : MILESTONE_STATUS_LABELS[milestone.status]}
                   </Badge>
                 </div>
                 <div className="text-sm text-muted-foreground shrink-0">
@@ -252,7 +264,7 @@ export const ProjectTimelineTab = ({
                 <div
                   className={cn(
                     "absolute top-0 h-full rounded-l transition-all",
-                    getStatusColor(milestone.status),
+                    getStatusColor(effectiveStatus),
                     "opacity-80"
                   )}
                   style={{
@@ -280,7 +292,7 @@ export const ProjectTimelineTab = ({
                   {milestone.start_date && milestone.due_date && (
                     <span className="truncate">
                       {format(new Date(milestone.start_date), 'd. MMM', { locale })} - {format(new Date(milestone.due_date), 'd. MMM', { locale })}
-                      {milestone.status === 'overdue' && ' ⚠️'}
+                      {effectiveStatus === 'overdue' && ' ⚠️'}
                     </span>
                   )}
                 </div>
@@ -298,19 +310,19 @@ export const ProjectTimelineTab = ({
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-income">
-            {milestones.filter(m => m.status === 'completed').length}
+            {milestones.filter(m => getEffectiveStatus(m) === 'completed').length}
           </p>
           <p className="text-xs text-muted-foreground">{t('projects.completed')}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-primary">
-            {milestones.filter(m => m.status === 'in_progress').length}
+            {milestones.filter(m => getEffectiveStatus(m) === 'in_progress').length}
           </p>
           <p className="text-xs text-muted-foreground">{t('projects.inProgress')}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-destructive">
-            {milestones.filter(m => m.status === 'overdue').length}
+            {milestones.filter(m => getEffectiveStatus(m) === 'overdue').length}
           </p>
           <p className="text-xs text-muted-foreground">{t('projects.overdue')}</p>
         </div>
