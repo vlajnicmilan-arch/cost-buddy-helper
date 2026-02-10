@@ -227,7 +227,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
               }}
             >
               <SelectTrigger>
-                <SelectValue>
+                <SelectValue placeholder={t('common.category')}>
                   {(() => {
                     if (type === 'income') {
                       const customCat = customIncomeCategories.find(c => c.id === category);
@@ -236,6 +236,15 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
                           <span className="flex items-center gap-2">
                             <span>{customCat.icon}</span>
                             <span>{customCat.name}</span>
+                          </span>
+                        );
+                      }
+                      const stdCat = INCOME_CATEGORIES.find(c => c.id === category);
+                      if (stdCat) {
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span>{stdCat.icon}</span>
+                            <span>{t(`incomeCategories.${stdCat.id}`)}</span>
                           </span>
                         );
                       }
@@ -249,8 +258,17 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
                           </span>
                         );
                       }
+                      const stdCat = CATEGORIES.find(c => c.id === category);
+                      if (stdCat) {
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span>{stdCat.icon}</span>
+                            <span>{t(`categories.${stdCat.id}`)}</span>
+                          </span>
+                        );
+                      }
                     }
-                    return null;
+                    return <span>{category || t('common.category')}</span>;
                   })()}
                 </SelectValue>
               </SelectTrigger>
