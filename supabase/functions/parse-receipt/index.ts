@@ -189,6 +189,14 @@ KORAK 3: Ako nema podudaranja brojeva
    - quantity: količina (broj, obično ispred cijene, default 1)
    - unit_price: jedinična cijena ako je različita od ukupne (može biti null)
    - total_price: ukupna cijena tog artikla (OBAVEZNO)
+
+6. RATE / KUPNJA NA RATE (VAŽNO!)
+   - Traži oznake: "RATE", "RATA", "INSTALLMENT", "BR.RATA", "BROJ RATA", "RATA X/Y", "NA X RATA", "MJESEČNA RATA", "OBROČNO PLAĆANJE", "OBROK"
+   - Traži uzorke poput: "12 RATA", "RATA 1/12", "6 RATA PO 50.00", "OBROČNA OTPLATA"
+   - installment_count: ukupni broj rata (npr. 12, 6, 24)
+   - installment_current: trenutna rata ako je navedena (npr. 1 od 12)
+   - installment_amount: iznos jedne rate ako je naveden
+   - is_installment: true ako je plaćanje na rate
 ${paymentSourcesContext}${cardMatchingRules}
 
 === FORMAT ODGOVORA (SAMO JSON) ===
@@ -201,10 +209,27 @@ ${paymentSourcesContext}${cardMatchingRules}
   "payment_method": "card",
   "custom_payment_source_id": null,
   "payment_source_card_id": null,
+  "is_installment": false,
+  "installment_count": null,
+  "installment_amount": null,
   "items": [
     {"name": "MLIJEKO DUKAT 1L", "quantity": 2, "unit_price": 1.29, "total_price": 2.58},
     {"name": "KRUH BIJELI", "quantity": 1, "unit_price": null, "total_price": 1.50}
   ]
+}
+
+PRIMJER ZA RATE:
+{
+  "amount": 600.00,
+  "merchant": "Sancta Domenica",
+  "description": "Laptop na 12 rata",
+  "category": "shopping",
+  "date": "2025-01-20",
+  "payment_method": "card",
+  "is_installment": true,
+  "installment_count": 12,
+  "installment_amount": 50.00,
+  "items": [{"name": "Laptop HP 15", "quantity": 1, "unit_price": null, "total_price": 600.00}]
 }
 
 KATEGORIJE: food, transport, shopping, entertainment, bills, health, other
@@ -219,6 +244,7 @@ POSEBNO OBRATI PAŽNJU:
 2. Pronađi TOČAN DATUM na računu
 3. Pronađi BROJ KARTICE (zadnje 4 znamenke) i usporedi s popisom korisnikovih kartica
 4. Ako pronađeš podudaranje broja kartice → MORAŠ vratiti card_id i source_id
+5. Provjeri piše li na računu RATE, RATA, OBROČNO ili slično - ako da, vrati is_installment: true i broj rata
 
 Vrati SAMO JSON bez dodatnog teksta.`;
 
@@ -316,6 +342,9 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         payment_method: receiptData.payment_method || null,
         custom_payment_source_id: receiptData.custom_payment_source_id || null,
         payment_source_card_id: receiptData.payment_source_card_id || null,
+        is_installment: receiptData.is_installment || false,
+        installment_count: receiptData.installment_count || null,
+        installment_amount: receiptData.installment_amount || null,
         items: receiptData.items || []
       }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

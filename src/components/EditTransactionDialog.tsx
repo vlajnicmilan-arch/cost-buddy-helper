@@ -54,8 +54,13 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
   // Get date locale based on current language
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
+  // Normalize payment source - strip "custom:" prefix for select matching
+  const normalizedPaymentSource = paymentSource?.startsWith('custom:') 
+    ? paymentSource.replace('custom:', '') 
+    : paymentSource;
+
   // Get cards for currently selected custom payment source
-  const selectedSource = customPaymentSources.find(s => s.id === paymentSource);
+  const selectedSource = customPaymentSources.find(s => s.id === normalizedPaymentSource);
   const availableCards = selectedSource?.cards || [];
 
   // Initialize form when dialog opens or expense changes
@@ -64,7 +69,9 @@ export const EditTransactionDialog = forwardRef<HTMLDivElement, EditTransactionD
       setAmount(expense.amount.toString());
       setDescription(expense.description);
       setCategory(expense.category);
-      setPaymentSource(expense.payment_source || 'cash');
+      // Normalize "custom:UUID" to just "UUID" for select matching
+      const ps = expense.payment_source || 'cash';
+      setPaymentSource((ps.startsWith('custom:') ? ps.replace('custom:', '') : ps) as PaymentSource);
       setSelectedCardId(expense.payment_source_card_id || null);
       setDate(expense.date instanceof Date ? expense.date : new Date(expense.date));
       setType(expense.type);
