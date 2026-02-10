@@ -53,9 +53,8 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [month, setMonth] = useState<Date>(new Date());
 
-  // Add entry form state
+  // Inline add form state (inside detail dialog)
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addDate, setAddDate] = useState<Date | null>(null);
   const [selectedWorkerId, setSelectedWorkerId] = useState('');
   const [scheduledHours, setScheduledHours] = useState('8');
   const [actualHours, setActualHours] = useState('8');
@@ -116,14 +115,21 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   const uniqueWorkDates = new Set(entries.map(e => e.work_date)).size;
   const totalHours = entries.reduce((sum, e) => sum + e.actual_hours, 0);
 
+  // Now any date can be clicked — not just dates with entries
   const handleDayClick = (day: Date) => {
-    const hasEntries = entries.some(e => isSameDay(parseISO(e.work_date), day));
-    if (hasEntries) {
-      setSelectedDate(day);
-    }
+    setSelectedDate(day);
+    setShowAddForm(false);
+    resetAddForm();
   };
 
-  // Add entry helpers
+  const resetAddForm = () => {
+    setSelectedWorkerId('');
+    setScheduledHours('8');
+    setActualHours('8');
+    setSelectedMilestones([]);
+    setNote('');
+  };
+
   const getDefaultHours = (worker: Worker | undefined) => {
     if (worker?.work_start_time && worker?.work_end_time) {
       const start = worker.work_start_time.split(':').map(Number);
@@ -131,16 +137,6 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       return ((end[0] + end[1] / 60) - (start[0] + start[1] / 60)).toString();
     }
     return '8';
-  };
-
-  const openAddForm = (date?: Date) => {
-    setAddDate(date || new Date());
-    setSelectedWorkerId('');
-    setScheduledHours('8');
-    setActualHours('8');
-    setSelectedMilestones([]);
-    setNote('');
-    setShowAddForm(true);
   };
 
   const handleWorkerChange = (workerId: string) => {
@@ -160,14 +156,14 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   };
 
   const handleAddSubmit = async () => {
-    if (!selectedWorkerId || !addDate) return;
+    if (!selectedWorkerId || !selectedDate) return;
 
-    const dateStr = format(addDate, 'yyyy-MM-dd');
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const alreadyExists = entries.some(
       e => e.worker_id === selectedWorkerId && e.work_date === dateStr
     );
     if (alreadyExists) {
-      toast.error(t('workers.entryExists', 'Unos za ovaj datum već postoji'));
+      toast.error(t('workers.entryExists', 'Unos za ovog djelatnika na ovaj datum već postoji'));
       return;
     }
 
@@ -197,9 +193,10 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
 
       toast.success(t('workers.entryAdded', 'Radni dan dodan'));
       setShowAddForm(false);
+      resetAddForm();
     } catch (error: any) {
       if (error.code === '23505') {
-        toast.error(t('workers.entryExists', 'Unos za ovaj datum već postoji'));
+        toast.error(t('workers.entryExists', 'Unos za ovog djelatnika na ovaj datum već postoji'));
       } else {
         console.error('Error adding entry:', error);
         toast.error(t('common.error'));
@@ -233,14 +230,6 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
         </div>
       </Card>
 
-      {/* Add button */}
-      {workers.length > 0 && (
-        <Button onClick={() => openAddForm()} className="w-full" variant="outline">
-          <Plus className="w-4 h-4 mr-2" />
-          {t('workers.addWorkDay', 'Dodaj radni dan')}
-        </Button>
-      )}
-
       {/* Calendar */}
       <Card className="p-2 flex justify-center">
         <Calendar
@@ -262,142 +251,12 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       </Card>
 
       <p className="text-xs text-muted-foreground text-center">
-        {t('workers.calendarHint', 'Kliknite na označeni datum za detalje')}
+        {t('workers.calendarHint', 'Kliknite na datum za detalje ili dodavanje zapisa')}
       </p>
 
-      {/* Add Entry Dialog */}
-      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" showBackButton>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              {t('workers.addWorkDay', 'Dodaj radni dan')}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Date picker */}
-            <div className="space-y-2">
-              <Label>{t('workers.date', 'Datum')}</Label>
-              <Card className="p-1 flex justify-center">
-                <Calendar
-                  mode="single"
-                  selected={addDate || undefined}
-                  onSelect={(day) => day && setAddDate(day)}
-                  locale={hr}
-                  className="p-2 pointer-events-auto"
-                />
-              </Card>
-              {addDate && (
-                <p className="text-sm font-medium text-center">
-                  {format(addDate, 'EEEE, d. MMMM yyyy', { locale: hr })}
-                </p>
-              )}
-            </div>
-
-            {/* Worker select */}
-            <div className="space-y-2">
-              <Label>{t('workers.worker', 'Djelatnik')}</Label>
-              <Select value={selectedWorkerId} onValueChange={handleWorkerChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('workers.selectWorker', 'Odaberi djelatnika')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {workers.map(w => (
-                    <SelectItem key={w.id} value={w.id}>
-                      {w.first_name} {w.last_name} — {w.position}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Hours */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t('workers.scheduledHours', 'Planirano sati')}</Label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="24"
-                  value={scheduledHours}
-                  onChange={(e) => setScheduledHours(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t('workers.actualHours', 'Odrađeno sati')}</Label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="24"
-                  value={actualHours}
-                  onChange={(e) => setActualHours(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Milestones */}
-            {milestones.length > 0 && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Flag className="w-4 h-4" />
-                  {t('workers.milestones', 'Faze rada')} ({selectedMilestones.length}/3)
-                </Label>
-                <div className="space-y-2 max-h-28 overflow-y-auto">
-                  {milestones.map((milestone) => (
-                    <div key={milestone.id} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`cal-milestone-${milestone.id}`}
-                        checked={selectedMilestones.includes(milestone.id)}
-                        onCheckedChange={() => toggleMilestone(milestone.id)}
-                        disabled={!selectedMilestones.includes(milestone.id) && selectedMilestones.length >= 3}
-                      />
-                      <label
-                        htmlFor={`cal-milestone-${milestone.id}`}
-                        className={cn(
-                          "text-sm cursor-pointer",
-                          !selectedMilestones.includes(milestone.id) && selectedMilestones.length >= 3 && "opacity-50"
-                        )}
-                      >
-                        {milestone.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Note */}
-            <div className="space-y-2">
-              <Label>{t('workers.note', 'Napomena')}</Label>
-              <Textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')}
-                rows={2}
-              />
-            </div>
-
-            {/* Submit */}
-            <Button
-              onClick={handleAddSubmit}
-              className="w-full"
-              disabled={!selectedWorkerId || !addDate || isSubmitting}
-            >
-              {isSubmitting
-                ? t('common.saving', 'Spremanje...')
-                : t('workers.addWorkDay', 'Dodaj radni dan')
-              }
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Day Detail Dialog */}
-      <Dialog open={!!selectedDate} onOpenChange={(open) => !open && setSelectedDate(null)}>
-        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto" showBackButton>
+      <Dialog open={!!selectedDate} onOpenChange={(open) => { if (!open) { setSelectedDate(null); setShowAddForm(false); resetAddForm(); } }}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" showBackButton>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarDays className="w-5 h-5" />
@@ -405,94 +264,214 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
             </DialogTitle>
           </DialogHeader>
 
-          {selectedDateEntries.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              {t('workers.noEntriesForDate', 'Nema zapisa za ovaj datum')}
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {/* Day totals */}
-              <Card className="p-3 bg-muted/50">
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div>
-                    <p className="text-lg font-bold">
-                      {selectedDateEntries.reduce((sum, e) => sum + e.actual_hours, 0)}h
-                    </p>
-                    <p className="text-xs text-muted-foreground">{t('workers.totalHours', 'Ukupno sati')}</p>
+          <div className="space-y-3">
+            {/* Existing entries for this date */}
+            {selectedDateEntries.length > 0 && (
+              <>
+                <Card className="p-3 bg-muted/50">
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div>
+                      <p className="text-lg font-bold">
+                        {selectedDateEntries.reduce((sum, e) => sum + e.actual_hours, 0)}h
+                      </p>
+                      <p className="text-xs text-muted-foreground">{t('workers.totalHours', 'Ukupno sati')}</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-primary">
+                        {formatAmount(
+                          selectedDateEntries.reduce((sum, e) => {
+                            const w = getWorker(e.worker_id);
+                            return sum + (w ? e.actual_hours * w.hourly_rate : 0);
+                          }, 0)
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{t('workers.totalCost', 'Ukupni trošak rada')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-lg font-bold text-primary">
-                      {formatAmount(
-                        selectedDateEntries.reduce((sum, e) => {
-                          const w = getWorker(e.worker_id);
-                          return sum + (w ? e.actual_hours * w.hourly_rate : 0);
-                        }, 0)
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{t('workers.totalCost', 'Ukupni trošak rada')}</p>
-                  </div>
-                </div>
-              </Card>
+                </Card>
 
-              {/* Per-worker entries */}
-              {selectedDateEntries.map((entry) => {
-                const worker = getWorker(entry.worker_id);
-                if (!worker) return null;
-                const cost = entry.actual_hours * worker.hourly_rate;
-                const diff = entry.actual_hours - entry.scheduled_hours;
+                {selectedDateEntries.map((entry) => {
+                  const worker = getWorker(entry.worker_id);
+                  if (!worker) return null;
+                  const cost = entry.actual_hours * worker.hourly_rate;
+                  const diff = entry.actual_hours - entry.scheduled_hours;
 
-                return (
-                  <Card key={entry.id} className="p-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{worker.first_name} {worker.last_name}</span>
+                  return (
+                    <Card key={entry.id} className="p-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">{worker.first_name} {worker.last_name}</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">{worker.position}</Badge>
                         </div>
-                        <Badge variant="outline" className="text-xs">{worker.position}</Badge>
-                      </div>
 
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{t('workers.scheduled', 'Plan')}: {entry.scheduled_hours}h</span>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{t('workers.scheduled', 'Plan')}: {entry.scheduled_hours}h</span>
+                          </div>
+                          <span>→</span>
+                          <span>{t('workers.actual', 'Odrađeno')}: {entry.actual_hours}h</span>
+                          {diff !== 0 && (
+                            <Badge variant={diff > 0 ? "default" : "destructive"} className="text-xs">
+                              {diff > 0 ? '+' : ''}{diff}h
+                            </Badge>
+                          )}
                         </div>
-                        <span>→</span>
-                        <span>{t('workers.actual', 'Odrađeno')}: {entry.actual_hours}h</span>
-                        {diff !== 0 && (
-                          <Badge variant={diff > 0 ? "default" : "destructive"} className="text-xs">
-                            {diff > 0 ? '+' : ''}{diff}h
-                          </Badge>
+
+                        <div className="text-sm font-medium text-primary">
+                          = {formatAmount(cost)}
+                        </div>
+
+                        {getMilestoneNames(entry.milestone_ids) && (
+                          <div className="flex flex-wrap gap-1">
+                            {getMilestoneNames(entry.milestone_ids)?.map((name, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                <Flag className="w-2.5 h-2.5 mr-1" />
+                                {name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {entry.note && (
+                          <p className="text-xs text-muted-foreground flex items-start gap-1">
+                            <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+                            {entry.note}
+                          </p>
                         )}
                       </div>
+                    </Card>
+                  );
+                })}
+              </>
+            )}
 
-                      <div className="text-sm font-medium text-primary">
-                        = {formatAmount(cost)}
-                      </div>
+            {selectedDateEntries.length === 0 && !showAddForm && (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                {t('workers.noEntriesForDate', 'Nema zapisa za ovaj datum')}
+              </p>
+            )}
 
-                      {getMilestoneNames(entry.milestone_ids) && (
-                        <div className="flex flex-wrap gap-1">
-                          {getMilestoneNames(entry.milestone_ids)?.map((name, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              <Flag className="w-2.5 h-2.5 mr-1" />
-                              {name}
-                            </Badge>
-                          ))}
+            {/* Add entry section */}
+            {!showAddForm ? (
+              workers.length > 0 && (
+                <Button onClick={() => setShowAddForm(true)} variant="outline" className="w-full" size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('workers.addWorkDay', 'Dodaj radni dan')}
+                </Button>
+              )
+            ) : (
+              <Card className="p-3 border-primary/30 space-y-3">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  {t('workers.addWorkDay', 'Dodaj radni dan')}
+                </h4>
+
+                {/* Worker select */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('workers.worker', 'Djelatnik')}</Label>
+                  <Select value={selectedWorkerId} onValueChange={handleWorkerChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('workers.selectWorker', 'Odaberi djelatnika')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workers.map(w => (
+                        <SelectItem key={w.id} value={w.id}>
+                          {w.first_name} {w.last_name} — {w.position}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Hours */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('workers.scheduledHours', 'Planirano sati')}</Label>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="24"
+                      value={scheduledHours}
+                      onChange={(e) => setScheduledHours(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('workers.actualHours', 'Odrađeno sati')}</Label>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="24"
+                      value={actualHours}
+                      onChange={(e) => setActualHours(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Milestones */}
+                {milestones.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Flag className="w-3.5 h-3.5" />
+                      {t('workers.milestones', 'Faze rada')} ({selectedMilestones.length}/3)
+                    </Label>
+                    <div className="space-y-1.5 max-h-24 overflow-y-auto">
+                      {milestones.map((milestone) => (
+                        <div key={milestone.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`cal-add-ms-${milestone.id}`}
+                            checked={selectedMilestones.includes(milestone.id)}
+                            onCheckedChange={() => toggleMilestone(milestone.id)}
+                            disabled={!selectedMilestones.includes(milestone.id) && selectedMilestones.length >= 3}
+                          />
+                          <label
+                            htmlFor={`cal-add-ms-${milestone.id}`}
+                            className={cn(
+                              "text-xs cursor-pointer",
+                              !selectedMilestones.includes(milestone.id) && selectedMilestones.length >= 3 && "opacity-50"
+                            )}
+                          >
+                            {milestone.name}
+                          </label>
                         </div>
-                      )}
-
-                      {entry.note && (
-                        <p className="text-xs text-muted-foreground flex items-start gap-1">
-                          <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
-                          {entry.note}
-                        </p>
-                      )}
+                      ))}
                     </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+                  </div>
+                )}
+
+                {/* Note */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('workers.note', 'Napomena')}</Label>
+                  <Textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')}
+                    rows={2}
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { setShowAddForm(false); resetAddForm(); }}>
+                    {t('common.cancel', 'Odustani')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    onClick={handleAddSubmit}
+                    disabled={!selectedWorkerId || isSubmitting}
+                  >
+                    {isSubmitting ? t('common.saving', 'Spremanje...') : t('common.add', 'Dodaj')}
+                  </Button>
+                </div>
+              </Card>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
