@@ -410,6 +410,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           const { error } = await supabase
             .from('expenses')
             .update({
+              category: expense.category,
               payment_source: expense.payment_source || 'cash',
               updated_at: new Date().toISOString()
             })
