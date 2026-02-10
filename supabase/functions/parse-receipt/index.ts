@@ -190,13 +190,14 @@ KORAK 3: Ako nema podudaranja brojeva
    - unit_price: jedinična cijena ako je različita od ukupne (može biti null)
    - total_price: ukupna cijena tog artikla (OBAVEZNO)
 
-6. RATE / KUPNJA NA RATE (VAŽNO!)
-   - Traži oznake: "RATE", "RATA", "INSTALLMENT", "BR.RATA", "BROJ RATA", "RATA X/Y", "NA X RATA", "MJESEČNA RATA", "OBROČNO PLAĆANJE", "OBROK"
-   - Traži uzorke poput: "12 RATA", "RATA 1/12", "6 RATA PO 50.00", "OBROČNA OTPLATA"
+ 6. RATE / KUPNJA NA RATE (KRITIČNO - PAŽLJIVO PROVJERI!)
+   - Traži BILO KOJI od ovih pojmova BILO GDJE na računu: "RATE", "RATA", "INSTALLMENT", "BR.RATA", "BROJ RATA", "RATA X/Y", "NA X RATA", "MJESEČNA RATA", "OBROČNO PLAĆANJE", "OBROK", "OBROČNA OTPLATA", "RATE:", "BR RATA:", "RATA BR", "KUPNJA NA RATE", "INSTALMENTS"
+   - Traži uzorke poput: "12 RATA", "RATA 1/12", "6 RATA PO 50.00", "OBROČNA OTPLATA", "RATE: 12", "BR.RATA: 6", "NA 3 RATE", "RATA BR. 1 OD 12"
+   - Traži i manje očite oznake: "R:", "BR.R:", "RATE MJES.", "OBR.", "OBROCNO"
+   - AKO PRONAĐEŠ BILO ŠTO ŠTO UKAZUJE NA RATE → OBAVEZNO postavi is_installment: true
    - installment_count: ukupni broj rata (npr. 12, 6, 24)
    - installment_current: trenutna rata ako je navedena (npr. 1 od 12)
-   - installment_amount: iznos jedne rate ako je naveden
-   - is_installment: true ako je plaćanje na rate
+   - installment_amount: iznos jedne rate ako je naveden (ako nije, izračunaj: amount / installment_count)
 ${paymentSourcesContext}${cardMatchingRules}
 
 === FORMAT ODGOVORA (SAMO JSON) ===
@@ -256,7 +257,7 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           {
             role: 'system',
