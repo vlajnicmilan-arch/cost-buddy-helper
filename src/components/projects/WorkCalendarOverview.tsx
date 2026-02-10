@@ -15,7 +15,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -52,6 +52,10 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [month, setMonth] = useState<Date>(new Date());
+
+  // Filter state
+  const [filterWorkerId, setFilterWorkerId] = useState<string>('all');
+  const [filterMilestoneId, setFilterMilestoneId] = useState<string>('all');
 
   // Inline add form state (inside detail dialog)
   const [showAddForm, setShowAddForm] = useState(false);
@@ -99,10 +103,19 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
     fetchData();
   }, [fetchData]);
 
-  const workDates = entries.map(e => parseISO(e.work_date));
+  // Apply filters
+  const filteredEntries = entries.filter(e => {
+    if (filterWorkerId !== 'all' && e.worker_id !== filterWorkerId) return false;
+    if (filterMilestoneId !== 'all') {
+      if (!e.milestone_ids || !e.milestone_ids.includes(filterMilestoneId)) return false;
+    }
+    return true;
+  });
+
+  const workDates = filteredEntries.map(e => parseISO(e.work_date));
 
   const selectedDateEntries = selectedDate
-    ? entries.filter(e => isSameDay(parseISO(e.work_date), selectedDate))
+    ? filteredEntries.filter(e => isSameDay(parseISO(e.work_date), selectedDate))
     : [];
 
   const getWorker = (workerId: string) => workers.find(w => w.id === workerId);
@@ -112,8 +125,9 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
     return milestoneIds.map(id => milestones.find(m => m.id === id)?.name).filter(Boolean);
   };
 
-  const uniqueWorkDates = new Set(entries.map(e => e.work_date)).size;
-  const totalHours = entries.reduce((sum, e) => sum + e.actual_hours, 0);
+  const uniqueWorkDates = new Set(filteredEntries.map(e => e.work_date)).size;
+  const totalHours = filteredEntries.reduce((sum, e) => sum + e.actual_hours, 0);
+  const hasActiveFilter = filterWorkerId !== 'all' || filterMilestoneId !== 'all';
 
   // Now any date can be clicked — not just dates with entries
   const handleDayClick = (day: Date) => {
@@ -230,7 +244,58 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
         </div>
       </Card>
 
-      {/* Calendar */}
+      {/* Filters */}
+      {(workers.length > 1 || milestones.length > 0) && (
+        <Card className="p-3 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <Filter className="w-3.5 h-3.5" />
+            {t('workers.filters', 'Filteri')}
+            {hasActiveFilter && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 px-1.5 text-xs"
+                onClick={() => { setFilterWorkerId('all'); setFilterMilestoneId('all'); }}
+              >
+                {t('common.clearAll', 'Očisti')}
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {workers.length > 1 && (
+              <Select value={filterWorkerId} onValueChange={setFilterWorkerId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder={t('workers.allWorkers', 'Svi djelatnici')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('workers.allWorkers', 'Svi djelatnici')}</SelectItem>
+                  {workers.map(w => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.first_name} {w.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {milestones.length > 0 && (
+              <Select value={filterMilestoneId} onValueChange={setFilterMilestoneId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder={t('workers.allMilestones', 'Sve faze')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('workers.allMilestones', 'Sve faze')}</SelectItem>
+                  {milestones.map(m => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </Card>
+      )}
+
       <Card className="p-2 flex justify-center">
         <Calendar
           mode="single"
