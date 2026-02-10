@@ -62,7 +62,7 @@ export const ProjectTimelineTab = ({
     const today = startOfDay(new Date());
     
     // Get all dates from milestones
-    const dates: Date[] = [];
+    const dates: Date[] = [today]; // Always include today so overdue bars are visible
     
     milestones.forEach(m => {
       if (m.start_date) dates.push(new Date(m.start_date));
@@ -95,19 +95,31 @@ export const ProjectTimelineTab = ({
   // Calculate position and width for a milestone bar
   const getMilestoneBarStyle = (milestone: ProjectMilestone) => {
     const { start: timelineStart, totalDays } = timelineBounds;
+    const today = startOfDay(new Date());
     
     const mStart = milestone.start_date ? new Date(milestone.start_date) : new Date();
-    const mEnd = milestone.due_date ? new Date(milestone.due_date) : addDays(mStart, 7);
+    const mDue = milestone.due_date ? new Date(milestone.due_date) : addDays(mStart, 7);
+    
+    // For overdue milestones, extend the bar to today
+    const mEnd = milestone.status === 'overdue' && isAfter(today, mDue) ? today : mDue;
     
     const startOffset = differenceInDays(mStart, timelineStart);
     const duration = Math.max(differenceInDays(mEnd, mStart), 1);
     
     const leftPercent = Math.max(0, (startOffset / totalDays) * 100);
     const widthPercent = Math.min((duration / totalDays) * 100, 100 - leftPercent);
+
+    // For overdue, also calculate where the due date falls (for the striped overrun portion)
+    const dueDuration = Math.max(differenceInDays(mDue, mStart), 1);
+    const dueWidthPercent = (dueDuration / totalDays) * 100;
+    const onTimePercent = milestone.status === 'overdue' && isAfter(today, mDue) 
+      ? Math.min((dueWidthPercent / Math.max(widthPercent, 0.01)) * 100, 100)
+      : 100;
     
     return {
       left: `${leftPercent}%`,
-      width: `${Math.max(widthPercent, 3)}%` // Minimum 3% width for visibility
+      width: `${Math.max(widthPercent, 3)}%`,
+      onTimePercent,
     };
   };
 
@@ -236,24 +248,39 @@ export const ProjectTimelineTab = ({
 
               {/* Timeline bar */}
               <div className="relative h-8 bg-muted/30 rounded overflow-hidden">
-                {/* Milestone duration bar */}
+                {/* Milestone duration bar - on-time portion */}
                 <div
                   className={cn(
-                    "absolute top-0 h-full rounded transition-all",
+                    "absolute top-0 h-full rounded-l transition-all",
                     getStatusColor(milestone.status),
                     "opacity-80"
                   )}
-                  style={barStyle}
-                />
+                  style={{
+                    left: barStyle.left,
+                    width: barStyle.width,
+                  }}
+                >
+                  {/* Overrun overlay (striped pattern) */}
+                  {barStyle.onTimePercent < 100 && (
+                    <div
+                      className="absolute top-0 right-0 h-full bg-destructive opacity-90 rounded-r"
+                      style={{
+                        width: `${100 - barStyle.onTimePercent}%`,
+                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)',
+                      }}
+                    />
+                  )}
+                </div>
 
                 {/* Date labels inside the bar */}
                 <div
                   className="absolute top-0 h-full flex items-center px-2 text-xs text-white font-medium overflow-hidden"
-                  style={barStyle}
+                  style={{ left: barStyle.left, width: barStyle.width }}
                 >
                   {milestone.start_date && milestone.due_date && (
                     <span className="truncate">
                       {format(new Date(milestone.start_date), 'd. MMM', { locale })} - {format(new Date(milestone.due_date), 'd. MMM', { locale })}
+                      {milestone.status === 'overdue' && ' ⚠️'}
                     </span>
                   )}
                 </div>
