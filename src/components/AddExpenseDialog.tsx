@@ -46,6 +46,9 @@ interface ScannedData {
   custom_payment_source_id: string | null;
   payment_source_card_id: string | null;
   items: ReceiptItem[];
+  is_installment?: boolean;
+  installment_count?: number | null;
+  installment_amount?: number | null;
 }
 
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
@@ -131,8 +134,19 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
           payment_source: result.payment_source,
           custom_payment_source_id: result.custom_payment_source_id,
           payment_source_card_id: result.payment_source_card_id,
-          items: result.items
+          items: result.items,
+          is_installment: result.is_installment,
+          installment_count: result.installment_count,
+          installment_amount: result.installment_amount
         });
+        
+        // Auto-enable installment mode if detected on receipt
+        if (result.is_installment && result.installment_count) {
+          setIsInstallment(true);
+          setInstallmentCount(result.installment_count);
+          setFirstPaymentDate(result.date || new Date().toISOString().split('T')[0]);
+        }
+        
         setShowScannedPreview(true);
       }
     };
@@ -214,6 +228,23 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
           setIsSaving(false);
           return;
         }
+      }
+
+      // Handle installment creation if detected from receipt
+      if (isInstallment && scannedData.installment_count) {
+        await createInstallmentPlan({
+          description: scannedData.description,
+          total_amount: scannedData.amount,
+          installment_count: scannedData.installment_count,
+          first_payment_date: new Date(scannedData.date || expenseDate),
+          category: scannedData.category,
+          type: 'expense',
+          payment_source: finalPaymentSource,
+          payment_source_card_id: finalCardId || undefined
+        });
+        resetForm();
+        setIsSaving(false);
+        return;
       }
 
       await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
@@ -472,6 +503,16 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     </p>
                   </div>
                 </div>
+
+                {/* Installment indicator */}
+                {scannedData.is_installment && scannedData.installment_count && (
+                  <div className="p-3 bg-accent/10 border border-accent/30 rounded-lg">
+                    <p className="text-sm font-medium text-accent-foreground flex items-center gap-2">
+                      💳 Kupnja na rate: {scannedData.installment_count} rata
+                      {scannedData.installment_amount && ` × €${scannedData.installment_amount.toFixed(2)}`}
+                    </p>
+                  </div>
+                )}
 
                 {/* Editable payment source selector */}
                 <div className="space-y-2">

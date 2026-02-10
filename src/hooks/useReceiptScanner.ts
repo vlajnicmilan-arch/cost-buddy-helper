@@ -14,6 +14,9 @@ interface ParsedReceipt {
   custom_payment_source_id: string | null;
   payment_source_card_id: string | null;
   items: ReceiptItem[];
+  is_installment: boolean;
+  installment_count: number | null;
+  installment_amount: number | null;
 }
 
 // Kompresija slike za mobilne uređaje - smanjuje veličinu za stabilnije slanje
@@ -150,6 +153,9 @@ export const useReceiptScanner = () => {
         payment_source: paymentSource,
         custom_payment_source_id: data.custom_payment_source_id || null,
         payment_source_card_id: data.payment_source_card_id || null,
+        is_installment: data.is_installment || false,
+        installment_count: data.installment_count || null,
+        installment_amount: data.installment_amount || null,
         items: (data.items || []).map((item: any) => ({
           name: item.name || '',
           quantity: item.quantity || 1,
