@@ -122,7 +122,10 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         console.log('Scan result:', {
           custom_payment_source_id: result.custom_payment_source_id,
           payment_source_card_id: result.payment_source_card_id,
-          payment_source: result.payment_source
+          payment_source: result.payment_source,
+          is_installment: result.is_installment,
+          installment_count: result.installment_count,
+          installment_amount: result.installment_amount
         });
         
         setScannedData({
