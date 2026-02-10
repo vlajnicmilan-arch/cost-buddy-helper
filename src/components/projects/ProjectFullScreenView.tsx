@@ -343,6 +343,7 @@ export const ProjectFullScreenView = ({
                 <TabsContent value="workers" className="m-0">
                   <ProjectWorkersTab
                     projectId={project.id}
+                    projectName={project.name}
                     isManager={isManager}
                     onRefetch={() => {}}
                   />
