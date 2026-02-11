@@ -36,6 +36,7 @@ export const TransactionDetailDialog = ({
   const [submitterName, setSubmitterName] = useState<string | null>(null);
   const [showReceiptImage, setShowReceiptImage] = useState(false);
   const [imageZoom, setImageZoom] = useState(1);
+  const [freshReceiptUrl, setFreshReceiptUrl] = useState<string | null>(null);
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -70,6 +71,41 @@ export const TransactionDetailDialog = ({
 
     fetchSubmitterName();
   }, [expense, user, t]);
+
+  // Refresh receipt signed URL when dialog opens
+  useEffect(() => {
+    const refreshReceiptUrl = async () => {
+      if (!expense?.receipt_url || !open) {
+        setFreshReceiptUrl(null);
+        return;
+      }
+      
+      // Extract the file path from the stored URL
+      // Format: .../storage/v1/object/sign/receipts/USER_ID/FILENAME.jpg?token=...
+      try {
+        const url = new URL(expense.receipt_url);
+        const pathMatch = url.pathname.match(/\/storage\/v1\/object\/sign\/receipts\/(.+)/);
+        if (pathMatch) {
+          const filePath = pathMatch[1];
+          const { data, error } = await supabase.storage
+            .from('receipts')
+            .createSignedUrl(filePath, 3600); // 1 hour
+          
+          if (!error && data?.signedUrl) {
+            setFreshReceiptUrl(data.signedUrl);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error refreshing receipt URL:', e);
+      }
+      
+      // Fallback to original URL
+      setFreshReceiptUrl(expense.receipt_url);
+    };
+
+    refreshReceiptUrl();
+  }, [expense?.receipt_url, open]);
 
   useEffect(() => {
     if (expense && open) {
@@ -296,7 +332,7 @@ export const TransactionDetailDialog = ({
           </div>
 
           {/* Receipt Image */}
-          {expense.receipt_url && (
+          {freshReceiptUrl && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -307,7 +343,7 @@ export const TransactionDetailDialog = ({
                   variant="ghost"
                   size="sm"
                   className="h-7 gap-1.5 text-xs text-muted-foreground"
-                  onClick={() => window.open(expense.receipt_url!, '_blank', 'noopener,noreferrer')}
+                  onClick={() => window.open(freshReceiptUrl, '_blank', 'noopener,noreferrer')}
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   {t('common.openInNewWindow', 'Otvori u novom prozoru')}
@@ -319,7 +355,7 @@ export const TransactionDetailDialog = ({
               >
                 <AspectRatio ratio={4/3}>
                   <img 
-                    src={expense.receipt_url} 
+                    src={freshReceiptUrl} 
                     alt={t('transactions.receiptImage', 'Slika računa')}
                     className="object-cover w-full h-full transition-transform group-hover:scale-105"
                   />
@@ -417,7 +453,7 @@ export const TransactionDetailDialog = ({
       </DialogContent>
 
       {/* Receipt Image Fullscreen Modal */}
-      {showReceiptImage && expense.receipt_url && (
+      {showReceiptImage && freshReceiptUrl && (
         <Dialog open={showReceiptImage} onOpenChange={setShowReceiptImage}>
           <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 border-0 bg-black/95">
             <div className="relative w-full h-full flex items-center justify-center">
@@ -461,7 +497,7 @@ export const TransactionDetailDialog = ({
                   variant="ghost"
                   size="icon"
                   className="text-white hover:bg-white/20 h-8 w-8"
-                  onClick={() => window.open(expense.receipt_url!, '_blank', 'noopener,noreferrer')}
+                  onClick={() => window.open(freshReceiptUrl, '_blank', 'noopener,noreferrer')}
                   title={t('common.openInNewWindow', 'Otvori u novom prozoru')}
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -471,7 +507,7 @@ export const TransactionDetailDialog = ({
               {/* Image */}
               <div className="overflow-auto max-w-full max-h-[90vh] p-4">
                 <img 
-                  src={expense.receipt_url} 
+                  src={freshReceiptUrl} 
                   alt={t('transactions.receiptImage', 'Slika računa')}
                   className="max-w-none transition-transform duration-200"
                   style={{ transform: `scale(${imageZoom})`, transformOrigin: 'center' }}
