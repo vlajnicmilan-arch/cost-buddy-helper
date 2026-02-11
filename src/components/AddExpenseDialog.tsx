@@ -245,7 +245,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
           payment_source: finalPaymentSource,
           payment_source_card_id: finalCardId || undefined
         });
-        resetForm();
+        // Also save the base transaction so it appears in recent transactions
+        await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
         setIsSaving(false);
         return;
       }
