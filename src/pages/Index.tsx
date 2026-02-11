@@ -910,7 +910,6 @@ const Index = () => {
         onOpenChange={setDetailDialogOpen}
         onEdit={(expense) => {
           setSelectedTransaction(expense);
-          setDetailDialogOpen(false);
           setEditDialogOpen(true);
         }}
         onDelete={deleteExpense}
