@@ -80,21 +80,32 @@ export const TransactionDetailDialog = ({
         return;
       }
       
-      // Extract the file path from the stored URL
-      // Format: .../storage/v1/object/sign/receipts/USER_ID/FILENAME.jpg?token=...
       try {
-        const url = new URL(expense.receipt_url);
-        const pathMatch = url.pathname.match(/\/storage\/v1\/object\/sign\/receipts\/(.+)/);
-        if (pathMatch) {
-          const filePath = pathMatch[1];
-          const { data, error } = await supabase.storage
-            .from('receipts')
-            .createSignedUrl(filePath, 3600); // 1 hour
-          
-          if (!error && data?.signedUrl) {
-            setFreshReceiptUrl(data.signedUrl);
+        let filePath = expense.receipt_url;
+        
+        // If it's a full URL (old format), extract the file path
+        if (filePath.startsWith('http')) {
+          const url = new URL(filePath);
+          const pathMatch = url.pathname.match(/\/storage\/v1\/object\/sign\/receipts\/(.+)/);
+          if (pathMatch) {
+            filePath = pathMatch[1];
+          } else {
+            // Can't parse, use as-is
+            setFreshReceiptUrl(expense.receipt_url);
             return;
           }
+        }
+        
+        // Remove 'receipts/' prefix if present (storage API expects path without bucket name)
+        filePath = filePath.replace(/^receipts\//, '');
+        
+        const { data, error } = await supabase.storage
+          .from('receipts')
+          .createSignedUrl(filePath, 3600);
+        
+        if (!error && data?.signedUrl) {
+          setFreshReceiptUrl(data.signedUrl);
+          return;
         }
       } catch (e) {
         console.error('Error refreshing receipt URL:', e);
