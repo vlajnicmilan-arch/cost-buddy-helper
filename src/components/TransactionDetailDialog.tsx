@@ -163,9 +163,14 @@ export const TransactionDetailDialog = ({
   const categoryInfo = getCategoryInfo(expense.category);
 
 
-  const handleEdit = () => {
-    onEdit(expense);
+  const handleEdit = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    // Close detail dialog first, then open edit after a tick
+    // to prevent Radix Dialog close animation from interfering
     onOpenChange(false);
+    setTimeout(() => {
+      onEdit(expense);
+    }, 100);
   };
 
   const handleDelete = () => {
@@ -395,7 +400,7 @@ export const TransactionDetailDialog = ({
           <Button 
             variant="outline" 
             className="flex-1"
-            onClick={handleEdit}
+            onClick={(e) => handleEdit(e)}
           >
             <Pencil className="w-4 h-4 mr-2" />
             {t('common.edit')}
