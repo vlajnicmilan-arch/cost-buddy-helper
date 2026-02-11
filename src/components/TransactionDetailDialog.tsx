@@ -83,22 +83,22 @@ export const TransactionDetailDialog = ({
       try {
         let filePath = expense.receipt_url;
         
-        // If it's a full URL (old format), extract the file path
+        // If it's a full URL (old format with signed token), extract the file path
         if (filePath.startsWith('http')) {
           const url = new URL(filePath);
           const pathMatch = url.pathname.match(/\/storage\/v1\/object\/sign\/receipts\/(.+)/);
           if (pathMatch) {
             filePath = pathMatch[1];
           } else {
-            // Can't parse, use as-is
             setFreshReceiptUrl(expense.receipt_url);
             return;
           }
         }
         
-        // Remove 'receipts/' prefix if present (storage API expects path without bucket name)
+        // Remove 'receipts/' prefix if present
         filePath = filePath.replace(/^receipts\//, '');
         
+        // Try createSignedUrl first
         const { data, error } = await supabase.storage
           .from('receipts')
           .createSignedUrl(filePath, 3600);
@@ -107,15 +107,36 @@ export const TransactionDetailDialog = ({
           setFreshReceiptUrl(data.signedUrl);
           return;
         }
+        
+        console.warn('createSignedUrl failed, trying download:', error?.message);
+        
+        // Fallback: download the file and create a blob URL
+        const { data: blobData, error: dlError } = await supabase.storage
+          .from('receipts')
+          .download(filePath);
+        
+        if (!dlError && blobData) {
+          const blobUrl = URL.createObjectURL(blobData);
+          setFreshReceiptUrl(blobUrl);
+          return;
+        }
+        
+        console.error('Both signed URL and download failed:', dlError?.message);
       } catch (e) {
         console.error('Error refreshing receipt URL:', e);
       }
       
-      // Fallback to original URL
-      setFreshReceiptUrl(expense.receipt_url);
+      setFreshReceiptUrl(null);
     };
 
     refreshReceiptUrl();
+    
+    // Cleanup blob URLs
+    return () => {
+      if (freshReceiptUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(freshReceiptUrl);
+      }
+    };
   }, [expense?.receipt_url, open]);
 
   useEffect(() => {
@@ -343,38 +364,47 @@ export const TransactionDetailDialog = ({
           </div>
 
           {/* Receipt Image */}
-          {freshReceiptUrl && (
+          {expense.receipt_url && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Receipt className="w-4 h-4" />
                   <span className="text-sm font-medium">{t('transactions.receiptImage', 'Slika računa')}</span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1.5 text-xs text-muted-foreground"
-                  onClick={() => window.open(freshReceiptUrl, '_blank', 'noopener,noreferrer')}
+                {freshReceiptUrl && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 text-xs text-muted-foreground"
+                    onClick={() => window.open(freshReceiptUrl, '_blank', 'noopener,noreferrer')}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    {t('common.openInNewWindow', 'Otvori u novom prozoru')}
+                  </Button>
+                )}
+              </div>
+              {freshReceiptUrl ? (
+                <div 
+                  className="relative cursor-pointer group rounded-lg overflow-hidden border"
+                  onClick={() => setShowReceiptImage(true)}
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  {t('common.openInNewWindow', 'Otvori u novom prozoru')}
-                </Button>
-              </div>
-              <div 
-                className="relative cursor-pointer group rounded-lg overflow-hidden border"
-                onClick={() => setShowReceiptImage(true)}
-              >
-                <AspectRatio ratio={4/3}>
-                  <img 
-                    src={freshReceiptUrl} 
-                    alt={t('transactions.receiptImage', 'Slika računa')}
-                    className="object-cover w-full h-full transition-transform group-hover:scale-105"
-                  />
-                </AspectRatio>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                  <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <AspectRatio ratio={4/3}>
+                    <img 
+                      src={freshReceiptUrl} 
+                      alt={t('transactions.receiptImage', 'Slika računa')}
+                      className="object-cover w-full h-full transition-transform group-hover:scale-105"
+                    />
+                  </AspectRatio>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center justify-center p-6 rounded-lg border bg-muted/30">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mr-2" />
+                  <span className="text-sm text-muted-foreground">{t('common.loading', 'Učitavanje...')}</span>
+                </div>
+              )}
             </div>
           )}
 
