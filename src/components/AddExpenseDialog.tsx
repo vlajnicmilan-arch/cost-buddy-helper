@@ -480,7 +480,12 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
           {t('common.add')}
         </Button>
       </DialogTrigger>
-      <DialogContent showBackButton={false} className="sm:max-w-md glass-card border-border/50 h-[85vh] flex flex-col">
+      <DialogContent 
+        showBackButton={false} 
+        className="sm:max-w-md glass-card border-border/50 h-[85vh] flex flex-col"
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="text-xl font-semibold">{t('transactions.newTransaction')}</DialogTitle>
         </DialogHeader>
