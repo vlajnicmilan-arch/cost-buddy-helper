@@ -111,11 +111,13 @@ serve(async (req) => {
       }
 
       // Get total expenses for this budget period
+      // Only count expenses explicitly assigned to this budget
       const { data: expenses, error: expensesError } = await supabase
         .from("expenses")
         .select("amount, category")
-        .eq("user_id", userId)
+        .eq("budget_id", budget.id)
         .eq("type", "expense")
+        .eq("status", "approved")
         .gte("date", startDate.toISOString())
         .lte("date", endDate.toISOString());
 
