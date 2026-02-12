@@ -173,7 +173,8 @@ export const useInstallments = () => {
           installment_number: i + 1,
           amount,
           due_date: dueDate,
-          status: 'planned',
+          status: i === 0 ? 'paid' : 'planned',
+          paid_at: i === 0 ? new Date().toISOString() : null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -225,7 +226,8 @@ export const useInstallments = () => {
           installment_number: i + 1,
           amount,
           due_date: dueDate.toISOString().split('T')[0],
-          status: 'planned'
+          status: i === 0 ? 'paid' : 'planned',
+          paid_at: i === 0 ? new Date().toISOString() : null
         });
       }
 
