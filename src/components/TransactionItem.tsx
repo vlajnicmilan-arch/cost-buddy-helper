@@ -100,7 +100,7 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
           <p className="font-medium text-foreground truncate text-sm leading-tight">
             {displayTitle}
           </p>
-          {expense.expense_nature && (
+          {expense.expense_nature && (expense.project_id || expense.budget_id) && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className={cn(

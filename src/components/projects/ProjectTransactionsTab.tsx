@@ -38,6 +38,7 @@ interface ProjectExpense {
   milestone_id?: string | null;
   status?: string | null;
   submitted_by?: string | null;
+  expense_nature?: string | null;
 }
 
 interface ProjectTransactionsTabProps {
@@ -445,7 +446,15 @@ export const ProjectTransactionsTab = ({
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{expense.description}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-medium truncate">{expense.description}</p>
+                      {expense.expense_nature && (
+                        <span className={cn(
+                          "w-2.5 h-2.5 rounded-full shrink-0",
+                          expense.expense_nature === 'regular' ? "bg-income" : "bg-destructive"
+                        )} title={expense.expense_nature === 'regular' ? t('transactions.regular', 'Redovan') : t('transactions.extraordinary', 'Vanredan')} />
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
                         <User className="w-3 h-3" />
