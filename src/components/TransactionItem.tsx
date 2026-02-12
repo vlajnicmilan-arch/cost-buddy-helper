@@ -100,6 +100,23 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
           <p className="font-medium text-foreground truncate text-sm leading-tight">
             {displayTitle}
           </p>
+          {expense.expense_nature && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={cn(
+                  "w-2 h-2 rounded-full shrink-0",
+                  expense.expense_nature === 'regular' ? "bg-income" : "bg-destructive"
+                )} />
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-xs">
+                  {expense.expense_nature === 'regular' 
+                    ? t('transactions.regular', 'Redovan') 
+                    : t('transactions.extraordinary', 'Vanredan')}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           {expense.ai_extracted && (
             <Tooltip>
               <TooltipTrigger asChild>
