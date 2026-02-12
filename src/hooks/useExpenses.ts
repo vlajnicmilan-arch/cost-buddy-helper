@@ -85,7 +85,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           type: e.type as TransactionType,
           payment_source: (e.payment_source || 'cash') as PaymentSource,
           income_source_id: e.income_source_id,
-          payment_source_card_id: e.payment_source_card_id
+          payment_source_card_id: e.payment_source_card_id,
+          expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined
         })) || []);
       }
     } catch (error) {
@@ -244,7 +245,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           type: data.type as TransactionType,
           payment_source: (data.payment_source || 'cash') as PaymentSource,
           income_source_id: data.income_source_id,
-          payment_source_card_id: data.payment_source_card_id
+          payment_source_card_id: data.payment_source_card_id,
+          expense_nature: (data.expense_nature as 'regular' | 'extraordinary') || undefined
         };
 
         setExpenses(prev => [newExpense, ...prev]);
@@ -604,7 +606,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           date: new Date(e.date),
           category: e.category as Category,
           type: e.type as TransactionType,
-          payment_source: (e.payment_source || 'cash') as PaymentSource
+          payment_source: (e.payment_source || 'cash') as PaymentSource,
+          expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined
         }));
 
         setExpenses(prev => [...newExpenses, ...prev].sort(

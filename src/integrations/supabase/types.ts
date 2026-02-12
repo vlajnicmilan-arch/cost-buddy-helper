@@ -310,6 +310,7 @@ export type Database = {
           created_at: string
           date: string
           description: string
+          expense_nature: string | null
           id: string
           income_source_id: string | null
           merchant_name: string | null
@@ -333,6 +334,7 @@ export type Database = {
           created_at?: string
           date?: string
           description: string
+          expense_nature?: string | null
           id?: string
           income_source_id?: string | null
           merchant_name?: string | null
@@ -356,6 +358,7 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string
+          expense_nature?: string | null
           id?: string
           income_source_id?: string | null
           merchant_name?: string | null

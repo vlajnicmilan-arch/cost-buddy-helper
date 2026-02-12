@@ -1,0 +1,1 @@
+ALTER TABLE public.expenses ADD COLUMN expense_nature text DEFAULT 'regular';

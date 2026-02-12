@@ -198,6 +198,7 @@ export interface Expense {
   status?: TransactionStatus | null;
   submitted_by?: string | null;
   note?: string | null;
+  expense_nature?: 'regular' | 'extraordinary' | null;
   created_at?: string;
   updated_at?: string;
   items?: ReceiptItem[];

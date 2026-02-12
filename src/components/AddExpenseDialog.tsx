@@ -72,6 +72,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [note, setNote] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
+  const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
   
   // Installment state
   const [isInstallment, setIsInstallment] = useState(false);
@@ -319,6 +320,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setNote('');
     setSelectedProjectId(null);
     setSelectedBudgetId(null);
+    setExpenseNature('regular');
     // Reset installment state
     setIsInstallment(false);
     setInstallmentCount(12);
@@ -353,7 +355,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !description) return;
+    if (!amount) return;
 
     const parsedAmount = parseFloat(amount);
 
@@ -392,7 +394,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         ai_extracted: scannedData !== null,
         note: note.trim() || undefined,
         project_id: selectedProjectId || undefined,
-        budget_id: selectedBudgetId || undefined
+        budget_id: selectedBudgetId || undefined,
+        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined
       };
 
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
@@ -426,7 +429,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       ai_extracted: scannedData !== null,
       note: note.trim() || undefined,
       project_id: selectedProjectId || undefined,
-      budget_id: selectedBudgetId || undefined
+      budget_id: selectedBudgetId || undefined,
+      expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined
     };
 
     // Check for duplicates (skip for transfers)
@@ -1063,262 +1067,38 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 </div>
               )}
 
-
-              <div className="space-y-2">
-                <Label htmlFor="merchant" className="text-sm font-medium">
-                  {type === 'income' ? t('transactions.merchantSource') : t('transactions.merchantStore')}
-                </Label>
-                <Input
-                  id="merchant"
-                  placeholder={type === 'income' ? t('transactions.merchantSourcePlaceholder') : t('transactions.merchantStorePlaceholder')}
-                  value={merchantName}
-                  onChange={(e) => setMerchantName(e.target.value)}
-                  className="h-12 rounded-xl"
-                />
-              </div>
-
-              {/* Income Category - Dropdown for income type */}
-              {type === 'income' && (
+              {/* Expense Nature - Regular/Extraordinary - only when project or budget selected */}
+              {(selectedProjectId || selectedBudgetId) && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('transactions.incomeCategory')}</Label>
-                  <Select 
-                    value={category} 
-                    onValueChange={(v) => {
-                      if (v === '__add_new__') {
-                        setIncomeCategoryDialogOpen(true);
-                      } else {
-                        setCategory(v as IncomeCategory);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue placeholder={t('common.category')} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      {/* Custom income categories first */}
-                      {customIncomeCategories.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            {t('transactions.customSources')}
-                          </div>
-                          {customIncomeCategories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              <span className="flex items-center gap-2">
-                                <span 
-                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                                  style={{ backgroundColor: cat.color + '20', color: cat.color }}
-                                >
-                                  {cat.icon}
-                                </span>
-                                <span>{cat.name}</span>
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </>
+                  <Label className="text-sm font-medium">{t('transactions.expenseNature', 'Vrsta troška')}</Label>
+                  <div className="flex gap-2 p-1 bg-muted rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setExpenseNature('regular')}
+                      className={cn(
+                        "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
+                        expenseNature === 'regular'
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
-                      {/* Default income categories */}
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        {t('paymentSources.standardSources')}
-                      </div>
-                      {INCOME_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          <span className="flex items-center gap-2">
-                            <span>{cat.icon}</span>
-                            <span>{t(`incomeCategories.${cat.id}`)}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                      {/* Add new category option */}
-                      <div className="border-t border-border mt-1 pt-1">
-                        <SelectItem value="__add_new__" className="text-primary">
-                          <span className="flex items-center gap-2">
-                            <Plus className="w-4 h-4" />
-                            <span>{t('incomeCategories.addNew')}</span>
-                          </span>
-                        </SelectItem>
-                      </div>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Items Section - Only for expenses */}
-              {type === 'expense' && (
-                <Collapsible open={showItems} onOpenChange={setShowItems}>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">
-                      {t('transactions.expenseItems')}
-                      {items.length > 0 && (
-                        <span className="ml-2 text-xs text-primary font-bold">
-                          ({items.length})
-                        </span>
+                    >
+                      {t('transactions.regular', 'Redovan')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpenseNature('extraordinary')}
+                      className={cn(
+                        "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
+                        expenseNature === 'extraordinary'
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
-                    </Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={addItem}
-                        className="h-8 text-xs gap-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        {t('transactions.addItem')}
-                      </Button>
-                      {items.length > 0 && (
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            {showItems ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </Button>
-                        </CollapsibleTrigger>
-                      )}
-                    </div>
+                    >
+                      {t('transactions.extraordinary', 'Vanredan')}
+                    </button>
                   </div>
-                  
-                  <CollapsibleContent className="mt-2 space-y-2">
-                    {items.map((item, index) => (
-                      <div key={index} className="flex gap-2 items-start p-3 bg-muted/50 rounded-xl">
-                        <div className="flex-1 space-y-2">
-                          <Input
-                            placeholder={t('transactions.itemName')}
-                            value={item.name}
-                            onChange={(e) => updateItem(index, 'name', e.target.value)}
-                            className="h-9 text-sm rounded-lg"
-                          />
-                          <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              placeholder={t('transactions.qty')}
-                              value={item.quantity || ''}
-                              onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 1)}
-                              className="h-9 w-16 text-sm rounded-lg"
-                              min="1"
-                            />
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder={t('transactions.price')}
-                              value={item.unit_price || ''}
-                              onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                              className="h-9 flex-1 text-sm rounded-lg"
-                            />
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder={t('common.total')}
-                              value={item.total_price || ''}
-                              onChange={(e) => updateItem(index, 'total_price', parseFloat(e.target.value) || 0)}
-                              className="h-9 w-24 text-sm rounded-lg font-medium"
-                            />
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeItem(index)}
-                          className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
-                          title={t('transactions.removeItem')}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    {items.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-3">
-                        {t('scanner.scanReceipt')} {t('common.or').toLowerCase()} {t('transactions.addItem').toLowerCase()}
-                      </p>
-                    )}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* Amount */}
-              <div className="space-y-2">
-                <Label htmlFor="amount" className="text-sm font-medium">
-                  {t('transactions.amountEur')}
-                  {items.length > 0 && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      ({t('common.total').toLowerCase()})
-                    </span>
-                  )}
-                </Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="h-12 text-lg font-mono rounded-xl"
-                  required
-                />
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium">{t('common.description')}</Label>
-                <Input
-                  id="description"
-                  placeholder={t('transactions.descriptionPlaceholder')}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="h-12 rounded-xl"
-                  required
-                />
-              </div>
-
-              {/* Category - Only show for expenses - Dropdown select */}
-              {type === 'expense' && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('common.category')}</Label>
-                  <Select 
-                    value={category} 
-                    onValueChange={(v) => setCategory(v as Category)}
-                  >
-                    <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue placeholder={t('common.category')} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50 max-h-[300px]">
-                      {/* Custom expense categories first */}
-                      {customCategories.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            {t('transactions.customSources', 'Prilagođene')}
-                          </div>
-                          {customCategories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              <span className="flex items-center gap-2">
-                                <span 
-                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                                  style={{ backgroundColor: cat.color + '20', color: cat.color }}
-                                >
-                                  {cat.icon}
-                                </span>
-                                <span>{cat.name}</span>
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </>
-                      )}
-                      {/* Default categories */}
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        {t('paymentSources.standardSources', 'Standardne')}
-                      </div>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          <span className="flex items-center gap-2">
-                            <span>{cat.icon}</span>
-                            <span>{t(`categories.${cat.id}`)}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               )}
-
 
 
               {/* Save Receipt Option */}
@@ -1349,7 +1129,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
               type="button"
               onClick={handleSubmit}
               className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              disabled={scanning || !amount || !description}
+              disabled={scanning || !amount}
             >
               {t('common.save')}
             </Button>
