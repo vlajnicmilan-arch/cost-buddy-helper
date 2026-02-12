@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { InstallmentPlan, Installment, InstallmentPlanWithProgress } from '@/types/installment';
 import { toast } from 'sonner';
-import { addMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { addMonths, startOfMonth, endOfMonth, isWithinInterval, isBefore, startOfToday } from 'date-fns';
 
 interface CreateInstallmentPlanInput {
   description: string;
@@ -137,9 +137,64 @@ export const useInstallments = () => {
     }
   }, [user, isLocalMode]);
 
+  // Auto-mark due installments as paid
+  const autoMarkDueInstallments = useCallback(async () => {
+    const today = startOfToday();
+
+    if (isLocalMode) {
+      const stored = localStorage.getItem('installments');
+      if (!stored) return false;
+      const installments = JSON.parse(stored);
+      let changed = false;
+      const updated = installments.map((i: any) => {
+        if (i.status === 'planned' && isBefore(new Date(i.due_date), new Date(today.getTime() + 86400000))) {
+          changed = true;
+          return { ...i, status: 'paid', paid_at: new Date(i.due_date).toISOString() };
+        }
+        return i;
+      });
+      if (changed) {
+        localStorage.setItem('installments', JSON.stringify(updated));
+      }
+      return changed;
+    }
+
+    if (!user) return false;
+
+    try {
+      const { data: dueInstallments } = await supabase
+        .from('installments')
+        .select('id, due_date')
+        .eq('user_id', user.id)
+        .eq('status', 'planned')
+        .lte('due_date', today.toISOString().split('T')[0]);
+
+      if (dueInstallments && dueInstallments.length > 0) {
+        for (const inst of dueInstallments) {
+          await supabase
+            .from('installments')
+            .update({ status: 'paid', paid_at: inst.due_date })
+            .eq('id', inst.id)
+            .eq('user_id', user.id);
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error auto-marking installments:', error);
+      return false;
+    }
+  }, [user, isLocalMode]);
+
   useEffect(() => {
-    fetchPlans();
-  }, [fetchPlans]);
+    const run = async () => {
+      const changed = await autoMarkDueInstallments();
+      await fetchPlans();
+      // If auto-marked, refetch to get updated data
+      if (changed) await fetchPlans();
+    };
+    run();
+  }, [autoMarkDueInstallments, fetchPlans]);
 
   const createPlan = async (input: CreateInstallmentPlanInput): Promise<InstallmentPlan | null> => {
     const { total_amount, installment_count, first_payment_date } = input;
