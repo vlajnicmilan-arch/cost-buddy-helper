@@ -134,6 +134,7 @@ export const ProjectTransactionsTab = ({
   const [category, setCategory] = useState<Category>('other');
   const [date, setDate] = useState<Date>(new Date());
   const [milestoneId, setMilestoneId] = useState<string>('none');
+  const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
 
   // Check if viewer can add transactions (needs approval)
   const canAddTransaction = isManager || userRole === 'member' || userRole === 'viewer';
@@ -146,6 +147,7 @@ export const ProjectTransactionsTab = ({
     setCategory('other');
     setDate(new Date());
     setMilestoneId('none');
+    setExpenseNature('regular');
   };
 
   // Quick milestone change handler
@@ -191,7 +193,8 @@ export const ProjectTransactionsTab = ({
           type: expenseType,
           date: date.toISOString(),
           status,
-          submitted_by: needsApproval ? user.id : null
+          submitted_by: needsApproval ? user.id : null,
+          expense_nature: expenseNature
         } as any);
 
       if (error) throw error;
@@ -706,6 +709,31 @@ export const ProjectTransactionsTab = ({
                   />
                 </PopoverContent>
               </Popover>
+            </div>
+
+            {/* Expense Nature Toggle */}
+            <div className="space-y-2">
+              <Label>{t('transactions.expenseNature', 'Vrsta troška')}</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={expenseNature === 'regular' ? 'default' : 'outline'}
+                  className="flex-1"
+                  onClick={() => setExpenseNature('regular')}
+                >
+                  <span className="w-2 h-2 rounded-full bg-income mr-2" />
+                  {t('transactions.regular', 'Redovan')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={expenseNature === 'extraordinary' ? 'destructive' : 'outline'}
+                  className="flex-1"
+                  onClick={() => setExpenseNature('extraordinary')}
+                >
+                  <span className="w-2 h-2 rounded-full bg-destructive mr-2" />
+                  {t('transactions.extraordinary', 'Vanredan')}
+                </Button>
+              </div>
             </div>
 
             {/* Actions */}

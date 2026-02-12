@@ -351,6 +351,24 @@ export const TransactionDetailDialog = ({
               </p>
             </div>
 
+            {/* Expense Nature - for project/budget transactions */}
+            {expense.expense_nature && (expense.project_id || expense.budget_id) && (
+              <div className="p-3 rounded-lg bg-muted/50 col-span-2">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <span className={cn(
+                    "w-3 h-3 rounded-full",
+                    expense.expense_nature === 'regular' ? "bg-income" : "bg-destructive"
+                  )} />
+                  <span className="text-xs">{t('transactions.expenseNature', 'Vrsta troška')}</span>
+                </div>
+                <p className="font-medium">
+                  {expense.expense_nature === 'regular' 
+                    ? t('transactions.regular', 'Redovan') 
+                    : t('transactions.extraordinary', 'Vanredan')}
+                </p>
+              </div>
+            )}
+
             {/* Merchant */}
             {expense.merchant_name && (
               <div className="p-3 rounded-lg bg-muted/50 col-span-2">
