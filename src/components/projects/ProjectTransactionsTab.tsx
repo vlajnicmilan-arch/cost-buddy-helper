@@ -32,7 +32,6 @@ interface ProjectExpense {
   user_id: string;
   amount: number;
   description: string;
-  merchant_name?: string | null;
   category: string;
   date: string;
   type: string;
@@ -480,7 +479,7 @@ export const ProjectTransactionsTab = ({
                   {/* Title Row */}
                   <div className="flex items-center gap-1.5">
                     <p className="font-medium text-foreground truncate text-sm leading-tight">
-                      {expense.merchant_name || expense.description}
+                      {expense.description}
                     </p>
                     {expense.expense_nature && (
                       <Badge variant="outline" className={cn(
@@ -502,34 +501,14 @@ export const ProjectTransactionsTab = ({
                     </span>
                     <span className="text-muted-foreground/40">•</span>
                     <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
-                    <span className="text-muted-foreground/40">•</span>
-                    {/* Milestone selector */}
-                    {(isManager || isOwnExpense) ? (
-                      <Select
-                        value={expense.milestone_id || 'none'}
-                        onValueChange={(val) => handleMilestoneChange(expense.id, val)}
-                        disabled={updatingMilestone === expense.id}
-                      >
-                        <SelectTrigger className="h-4 text-[11px] border-0 bg-transparent p-0 gap-0.5 w-auto max-w-[100px] shadow-none focus:ring-0">
-                          <span className="flex items-center gap-0.5 truncate">
-                            <Target className="w-3 h-3 shrink-0" />
-                            <SelectValue placeholder={t('projects.noMilestone', 'Bez faze')} />
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">{t('projects.noMilestone', 'Bez faze')}</SelectItem>
-                          {milestones.map(m => (
-                            <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      milestoneName && (
+                    {milestoneName && (
+                      <>
+                        <span className="text-muted-foreground/40">•</span>
                         <span className="flex items-center gap-0.5 truncate max-w-[80px]">
                           <Target className="w-3 h-3 shrink-0" />
                           {milestoneName}
                         </span>
-                      )
+                      </>
                     )}
                   </div>
                 </div>
