@@ -37,6 +37,17 @@ function detectMimeType(base64String: string): string {
   return "image/jpeg"; // Default
 }
 
+// Prepare image content part for AI message
+function prepareImagePart(imageBase64: string) {
+  const mimeType = detectMimeType(imageBase64);
+  const cleanedBase64 = cleanBase64(imageBase64);
+  const imageDataUrl = `data:${mimeType};base64,${cleanedBase64}`;
+  return {
+    type: 'image_url' as const,
+    image_url: { url: imageDataUrl }
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -83,9 +94,14 @@ serve(async (req) => {
       );
     }
     
-    const { imageBase64, customPaymentSources } = body;
+    const { imageBase64, imagesBase64, customPaymentSources } = body;
 
-    if (!imageBase64) {
+    // Support both single image (backward compat) and multiple images
+    const images: string[] = imagesBase64 && imagesBase64.length > 0 
+      ? imagesBase64 
+      : (imageBase64 ? [imageBase64] : []);
+
+    if (images.length === 0) {
       console.error('No image provided in request');
       return new Response(
         JSON.stringify({ error: 'No image provided' }), 
@@ -93,13 +109,7 @@ serve(async (req) => {
       );
     }
 
-    // Detektiraj MIME tip i očisti base64
-    const mimeType = detectMimeType(imageBase64);
-    const cleanedBase64 = cleanBase64(imageBase64);
-    
-    console.log('Processing receipt image for user:', userId);
-    console.log('MIME type detected:', mimeType);
-    console.log('Base64 length:', cleanedBase64.length);
+    console.log('Processing receipt with', images.length, 'image(s) for user:', userId);
     console.log('Custom payment sources:', customPaymentSources?.length || 0);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -107,10 +117,10 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Kreiraj ispravni data URL za Gemini AI
-    const imageDataUrl = `data:${mimeType};base64,${cleanedBase64}`;
+    // Prepare image parts for AI
+    const imageParts = images.map(img => prepareImagePart(img));
     
-    console.log('Sending to AI gateway...');
+    console.log('Sending', imageParts.length, 'image(s) to AI gateway...');
     
     // Build custom payment sources context for AI prompt
     let paymentSourcesContext = '';
@@ -160,9 +170,14 @@ KORAK 3: Ako nema podudaranja brojeva
 - Ako ne možeš utvrditi → payment_method: "card", ostalo null
 === KRAJ PRAVILA ===`;
     }
+
+    // Multi-page instruction
+    const multiPageNote = images.length > 1 
+      ? `\n\nVAŽNO: Dobio si ${images.length} slika/stranica ISTOG računa. Spoji podatke sa svih stranica u JEDAN rezultat. Artikli s različitih stranica trebaju biti u jednom popisu. Ukupni iznos je onaj na posljednjoj stranici (UKUPNO/TOTAL).`
+      : '';
     
     // Enhanced prompt for better OCR and item extraction
-    const systemPrompt = `Ti si precizni OCR asistent za analizu hrvatskih računa. TVOJ CILJ: izvući SVE podatke s računa.
+    const systemPrompt = `Ti si precizni OCR asistent za analizu hrvatskih računa. TVOJ CILJ: izvući SVE podatke s računa.${multiPageNote}
 
 === ŠTO MORAŠ PRONAĆI ===
 
@@ -269,7 +284,19 @@ KATEGORIJE: food, transport, shopping, entertainment, bills, health, other
 AKO NE MOŽEŠ PROČITATI:
 {"error": "Nije moguće pročitati račun"}`;
 
-    const userPrompt = `Analiziraj ovaj račun. 
+    const userPrompt = images.length > 1
+      ? `Analiziraj ovaj račun koji se sastoji od ${images.length} stranica/slika. Spoji sve podatke u jedan rezultat.
+
+POSEBNO OBRATI PAŽNJU:
+1. Pronađi SVE artikle SA SVIH STRANICA - svaki redak s proizvodom i cijenom
+2. Pronađi TOČAN DATUM na računu
+3. Pronađi BROJ KARTICE (zadnje 4 znamenke) i usporedi s popisom korisnikovih kartica
+4. Ako pronađeš podudaranje broja kartice → MORAŠ vratiti card_id i source_id
+5. Provjeri piše li na računu RATE, RATA, OBROČNO ili slično - ako da, vrati is_installment: true i broj rata
+6. UKUPNI IZNOS uzmi s posljednje stranice (UKUPNO/TOTAL)
+
+Vrati SAMO JSON bez dodatnog teksta.`
+      : `Analiziraj ovaj račun. 
 
 POSEBNO OBRATI PAŽNJU:
 1. Pronađi SVE artikle - svaki redak s proizvodom i cijenom
@@ -279,6 +306,12 @@ POSEBNO OBRATI PAŽNJU:
 5. Provjeri piše li na računu RATE, RATA, OBROČNO ili slično - ako da, vrati is_installment: true i broj rata
 
 Vrati SAMO JSON bez dodatnog teksta.`;
+
+    // Build user message content with text + all images
+    const userContent: any[] = [
+      { type: 'text', text: userPrompt },
+      ...imageParts
+    ];
 
     // Use Gemini for OCR and categorization with enhanced prompt
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -296,18 +329,7 @@ Vrati SAMO JSON bez dodatnog teksta.`;
           },
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: userPrompt
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageDataUrl
-                }
-              }
-            ]
+            content: userContent
           }
         ],
         temperature: 0.1  // Lower temperature for more consistent extraction
