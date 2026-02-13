@@ -49,6 +49,8 @@ interface ScannedData {
   is_installment?: boolean;
   installment_count?: number | null;
   installment_amount?: number | null;
+  transaction_type?: 'expense' | 'transfer';
+  transfer_destination_name?: string | null;
 }
 
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
@@ -141,7 +143,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
           items: result.items,
           is_installment: result.is_installment,
           installment_count: result.installment_count,
-          installment_amount: result.installment_amount
+          installment_amount: result.installment_amount,
+          transaction_type: result.transaction_type,
+          transfer_destination_name: result.transfer_destination_name
         });
         
         // Auto-enable installment mode if detected on receipt
@@ -198,12 +202,28 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         finalPaymentSource = scannedData.payment_source;
       }
 
+      // Determine transaction type - AI may have detected a transfer (e.g. Aircash top-up)
+      const isTransfer = scannedData.transaction_type === 'transfer';
+      
+      // For transfers, try to find destination account by name
+      let transferDestinationId: string | undefined;
+      if (isTransfer && scannedData.transfer_destination_name) {
+        const destName = scannedData.transfer_destination_name.toLowerCase();
+        const matchedDest = customPaymentSources.find(
+          s => s.name.toLowerCase().includes(destName) || destName.includes(s.name.toLowerCase())
+        );
+        if (matchedDest) {
+          transferDestinationId = matchedDest.id;
+          console.log(`Transfer detected: destination matched to "${matchedDest.name}" (${matchedDest.id})`);
+        }
+      }
+
       const newExpense = {
         amount: scannedData.amount,
         description: scannedData.description,
         category: scannedData.category,
         date: new Date(scannedData.date || expenseDate),
-        type: 'expense' as TransactionType,
+        type: (isTransfer ? 'transfer' : 'expense') as TransactionType,
         payment_source: finalPaymentSource,
         payment_source_card_id: finalCardId,
         merchant_name: scannedData.merchant || undefined,
@@ -211,7 +231,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         ai_extracted: true,
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
-        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined
+        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+        // For transfers, store destination in income_source_id field
+        income_source_id: transferDestinationId || undefined
       };
 
       // Check for duplicates
@@ -517,6 +539,31 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                       alt="Račun" 
                       className="w-full h-full object-cover"
                     />
+                  </div>
+                )}
+
+                {/* Transfer detection banner */}
+                {scannedData.transaction_type === 'transfer' && (
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                      <span>🔄</span>
+                      <span>Prepoznat kao transfer{scannedData.transfer_destination_name ? ` → ${scannedData.transfer_destination_name}` : ''}</span>
+                    </div>
+                    {scannedData.transfer_destination_name && (() => {
+                      const destName = scannedData.transfer_destination_name!.toLowerCase();
+                      const matched = customPaymentSources.find(
+                        s => s.name.toLowerCase().includes(destName) || destName.includes(s.name.toLowerCase())
+                      );
+                      return matched ? (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Saldo računa "{matched.name}" će se automatski uvećati za €{scannedData.amount.toFixed(2)}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-destructive mt-1">
+                          Račun "{scannedData.transfer_destination_name}" nije pronađen. Saldo se neće ažurirati.
+                        </p>
+                      );
+                    })()}
                   </div>
                 )}
                 

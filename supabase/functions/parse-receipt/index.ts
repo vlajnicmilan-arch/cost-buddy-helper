@@ -198,6 +198,15 @@ KORAK 3: Ako nema podudaranja brojeva
    - installment_count: ukupni broj rata (npr. 12, 6, 24)
    - installment_current: trenutna rata ako je navedena (npr. 1 od 12)
    - installment_amount: iznos jedne rate ako je naveden (ako nije, izračunaj: amount / installment_count)
+
+ 7. DOPUNA / TOP-UP / TRANSFER (KRITIČNO!)
+   - Traži: "DOPUNA", "TOP-UP", "TOP UP", "NADOPLATA", "UPLATA NA", "NADOPUNA", "PREPAID", "VOUCHER", "BON", "E-BON"
+   - Traži usluge: "AIRCASH", "REVOLUT", "PAYPAL", "KEKS PAY", "GOOGLE PAY", "APPLE PAY"
+   - Ako račun opisuje DOPUNU DIGITALNOG NOVČANIKA ili PREPAID USLUGE → transaction_type: "transfer"
+   - transfer_destination_name: naziv odredišnog računa (npr. "Aircash", "Revolut") - koristi TOČAN naziv usluge
+   - Ovo NIJE obični trošak! To je prijenos novca s jednog izvora na drugi.
+   - Primjeri: "AIRCASH DOPUNA 50 EUR" na INA → transaction_type: "transfer", transfer_destination_name: "Aircash"
+   - Ako NIJE dopuna/transfer → transaction_type: "expense"
 ${paymentSourcesContext}${cardMatchingRules}
 
 === FORMAT ODGOVORA (SAMO JSON) ===
@@ -208,6 +217,8 @@ ${paymentSourcesContext}${cardMatchingRules}
   "category": "food",
   "date": "2025-01-20",
   "payment_method": "card",
+  "transaction_type": "expense",
+  "transfer_destination_name": null,
   "custom_payment_source_id": null,
   "payment_source_card_id": null,
   "is_installment": false,
@@ -219,6 +230,24 @@ ${paymentSourcesContext}${cardMatchingRules}
   ]
 }
 
+PRIMJER ZA DOPUNU/TRANSFER:
+{
+  "amount": 300.00,
+  "merchant": "INA",
+  "description": "Aircash dopuna",
+  "category": "other",
+  "date": "2025-02-13",
+  "payment_method": "cash",
+  "transaction_type": "transfer",
+  "transfer_destination_name": "Aircash",
+  "custom_payment_source_id": null,
+  "payment_source_card_id": null,
+  "is_installment": false,
+  "installment_count": null,
+  "installment_amount": null,
+  "items": [{"name": "AIRCASH DOPUNA", "quantity": 1, "unit_price": null, "total_price": 300.00}]
+}
+
 PRIMJER ZA RATE:
 {
   "amount": 600.00,
@@ -227,6 +256,8 @@ PRIMJER ZA RATE:
   "category": "shopping",
   "date": "2025-01-20",
   "payment_method": "card",
+  "transaction_type": "expense",
+  "transfer_destination_name": null,
   "is_installment": true,
   "installment_count": 12,
   "installment_amount": 50.00,
@@ -341,6 +372,8 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         category: receiptData.category,
         date: receiptData.date || null,
         payment_method: receiptData.payment_method || null,
+        transaction_type: receiptData.transaction_type || 'expense',
+        transfer_destination_name: receiptData.transfer_destination_name || null,
         custom_payment_source_id: receiptData.custom_payment_source_id || null,
         payment_source_card_id: receiptData.payment_source_card_id || null,
         is_installment: receiptData.is_installment || false,

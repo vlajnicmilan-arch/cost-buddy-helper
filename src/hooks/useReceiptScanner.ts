@@ -17,6 +17,8 @@ interface ParsedReceipt {
   is_installment: boolean;
   installment_count: number | null;
   installment_amount: number | null;
+  transaction_type: 'expense' | 'transfer';
+  transfer_destination_name: string | null;
 }
 
 // Kompresija slike za mobilne uređaje - smanjuje veličinu za stabilnije slanje
@@ -156,6 +158,8 @@ export const useReceiptScanner = () => {
         is_installment: data.is_installment || false,
         installment_count: data.installment_count || null,
         installment_amount: data.installment_amount || null,
+        transaction_type: data.transaction_type || 'expense',
+        transfer_destination_name: data.transfer_destination_name || null,
         items: (data.items || []).map((item: any) => ({
           name: item.name || '',
           quantity: item.quantity || 1,
