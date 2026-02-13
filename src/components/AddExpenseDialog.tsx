@@ -74,6 +74,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [showMultiImageCollector, setShowMultiImageCollector] = useState(false);
   
   const [note, setNote] = useState('');
+  const [transferDestination, setTransferDestination] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
@@ -378,6 +379,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setIsInstallment(false);
     setInstallmentCount(12);
     setFirstPaymentDate(new Date().toISOString().split('T')[0]);
+    setTransferDestination(null);
   };
 
   // Helper to actually add the transaction (after duplicate check passes)
@@ -483,7 +485,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       note: note.trim() || undefined,
       project_id: selectedProjectId || undefined,
       budget_id: selectedBudgetId || undefined,
-      expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined
+      expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+      income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
     };
 
     // Check for duplicates (skip for transfers)
@@ -1112,7 +1115,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
               {/* Payment Source */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
-                  {type === 'income' ? t('transactions.incomeSourceLabel') : t('transactions.paymentMethod')}
+                  {type === 'transfer' ? '📤 Sa računa (odakle)' : type === 'income' ? t('transactions.incomeSourceLabel') : t('transactions.paymentMethod')}
                 </Label>
                 
                 <Select
@@ -1246,6 +1249,125 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   );
                 })()}
               </div>
+
+              {/* Transfer Destination */}
+              {type === 'transfer' && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">📥 Na račun (kamo)</Label>
+                  <Select
+                    value={transferDestination || 'none'}
+                    onValueChange={(value) => setTransferDestination(value === 'none' ? null : value)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl bg-background">
+                      <SelectValue placeholder="Odaberi odredišni račun">
+                        {(() => {
+                          if (!transferDestination) return 'Odaberi odredišni račun';
+                          const customSource = customPaymentSources.find(s => s.id === transferDestination);
+                          if (customSource) {
+                            return (
+                              <span className="flex items-center gap-2">
+                                <span 
+                                  className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                                  style={{ backgroundColor: customSource.color + '20', color: customSource.color }}
+                                >
+                                  {customSource.icon}
+                                </span>
+                                <span>{customSource.name}</span>
+                              </span>
+                            );
+                          }
+                          const standardSource = PAYMENT_SOURCES.find(s => s.id === transferDestination);
+                          if (standardSource) {
+                            return (
+                              <span className="flex items-center gap-2">
+                                <span>{standardSource.icon}</span>
+                                <span>{standardSource.name}</span>
+                              </span>
+                            );
+                          }
+                          return 'Odaberi odredišni račun';
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50 max-h-[300px]">
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">Bez odredišta</span>
+                      </SelectItem>
+                      {customPaymentSources.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {t('transactions.myMethods')}
+                          </div>
+                          {customPaymentSources
+                            .filter(s => s.id !== paymentSource)
+                            .map((source) => (
+                              <SelectItem key={source.id} value={source.id}>
+                                <div className="flex items-center gap-2">
+                                  <span 
+                                    className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                                    style={{ backgroundColor: source.color + '20', color: source.color }}
+                                  >
+                                    {source.icon}
+                                  </span>
+                                  <span>{source.name}</span>
+                                  <span className="text-xs text-muted-foreground ml-auto">
+                                    €{source.balance.toFixed(2)}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                        </>
+                      )}
+                      {PAYMENT_SOURCE_GROUPS.map((group) => (
+                        <div key={group.label}>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {group.label}
+                          </div>
+                          {group.sources
+                            .filter(s => s.id !== paymentSource)
+                            .map((source) => (
+                              <SelectItem key={source.id} value={source.id}>
+                                <span className="flex items-center gap-2">
+                                  <span>{source.icon}</span>
+                                  <span>{source.name}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Visual Transfer Flow */}
+              {type === 'transfer' && paymentSource && transferDestination && (
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-center gap-3">
+                  {(() => {
+                    const fromCustom = customPaymentSources.find(s => s.id === paymentSource);
+                    const fromStandard = PAYMENT_SOURCES.find(s => s.id === paymentSource);
+                    const toCustom = customPaymentSources.find(s => s.id === transferDestination);
+                    const toStandard = PAYMENT_SOURCES.find(s => s.id === transferDestination);
+                    return (
+                      <>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-2xl">{fromCustom?.icon || fromStandard?.icon || '💳'}</span>
+                          <span className="text-xs text-muted-foreground font-medium">{fromCustom?.name || fromStandard?.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-primary">
+                          <div className="h-px w-6 bg-primary/40" />
+                          <span className="text-lg">→</span>
+                          <div className="h-px w-6 bg-primary/40" />
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-2xl">{toCustom?.icon || toStandard?.icon || '💳'}</span>
+                          <span className="text-xs text-muted-foreground font-medium">{toCustom?.name || toStandard?.name}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
 
               {/* Date */}
               <div className="space-y-2">
