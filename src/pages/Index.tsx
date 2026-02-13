@@ -26,6 +26,7 @@ import { ProjectsPanel } from '@/components/projects/ProjectsPanel';
 import { BudgetSection } from '@/components/budget';
 import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
+import { PaymentSourcesFullScreenView } from '@/components/custom-payment-sources/PaymentSourcesFullScreenView';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
@@ -128,6 +129,8 @@ const Index = () => {
   useBackButton(editDialogOpen, () => setEditDialogOpen(false));
   useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
   useBackButton(assistantDialogOpen, () => setAssistantDialogOpen(false));
+
+  const [paymentSourcesFullScreen, setPaymentSourcesFullScreen] = useState(false);
 
   useEffect(() => {
     const loadDisplayName = async () => {
@@ -844,15 +847,13 @@ const Index = () => {
                 </AccordionItem>
                 
                 <AccordionItem value="payment-sources" className="border-none">
-                  <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5 text-primary" />
-                      <span className="text-lg font-semibold">Prilagođeni izvori plaćanja</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="glass-card rounded-b-2xl px-6 pb-6 pt-0 border-t-0">
-                    <CustomPaymentSourcesPanel hideHeader />
-                  </AccordionContent>
+                  <button
+                    onClick={() => setPaymentSourcesFullScreen(true)}
+                    className="glass-card rounded-2xl px-6 py-4 w-full text-left flex items-center gap-2 hover:bg-muted/50 transition-colors"
+                  >
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    <span className="text-lg font-semibold">Prilagođeni izvori plaćanja</span>
+                  </button>
                 </AccordionItem>
               </Accordion>
             )}
@@ -955,6 +956,10 @@ const Index = () => {
           />
         </div>
       )}
+      <PaymentSourcesFullScreenView
+        open={paymentSourcesFullScreen}
+        onClose={() => setPaymentSourcesFullScreen(false)}
+      />
 
     </div>
   );
