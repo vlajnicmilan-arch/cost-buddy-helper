@@ -139,7 +139,14 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         setExpenses(prev => [newExpense, ...prev]);
         
         // Update payment source balance for local mode
-        await updateBalance(expense.payment_source, expense.amount, expense.type);
+        if (expense.type === 'transfer') {
+          await updateBalance(expense.payment_source, expense.amount, 'expense');
+          if (expense.income_source_id) {
+            await updateBalance(expense.income_source_id, expense.amount, 'income');
+          }
+        } else {
+          await updateBalance(expense.payment_source, expense.amount, expense.type);
+        }
         
         // Dispatch event for AI avatar reaction
         window.dispatchEvent(new CustomEvent(expense.type === 'income' ? 'incomeAdded' : 'expenseAdded', {
@@ -252,7 +259,16 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         setExpenses(prev => [newExpense, ...prev]);
 
         // Update payment source balance
-        await updateBalance(expense.payment_source, expense.amount, expense.type);
+        if (expense.type === 'transfer') {
+          // For transfers: decrease source, increase destination
+          await updateBalance(expense.payment_source, expense.amount, 'expense');
+          // income_source_id stores the destination payment source ID for scanned transfers
+          if (expense.income_source_id) {
+            await updateBalance(expense.income_source_id, expense.amount, 'income');
+          }
+        } else {
+          await updateBalance(expense.payment_source, expense.amount, expense.type);
+        }
         
         // Check budget alerts for expense transactions
         if (expense.type === 'expense') {
