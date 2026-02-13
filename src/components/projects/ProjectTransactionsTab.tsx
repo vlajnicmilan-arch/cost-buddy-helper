@@ -452,10 +452,14 @@ export const ProjectTransactionsTab = ({
                     <div className="flex items-center gap-1.5">
                       <p className="font-medium truncate">{expense.description}</p>
                       {expense.expense_nature && (
-                        <span className={cn(
-                          "w-2.5 h-2.5 rounded-full shrink-0",
-                          expense.expense_nature === 'regular' ? "bg-income" : "bg-destructive"
-                        )} title={expense.expense_nature === 'regular' ? t('transactions.regular', 'Redovan') : t('transactions.extraordinary', 'Vanredan')} />
+                        <Badge variant="outline" className={cn(
+                          "text-[10px] px-1.5 py-0 h-4 shrink-0 border",
+                          expense.expense_nature === 'regular' 
+                            ? "border-income/50 text-income bg-income/10" 
+                            : "border-destructive/50 text-destructive bg-destructive/10"
+                        )}>
+                          {expense.expense_nature === 'regular' ? t('transactions.regular', 'Redovan') : t('transactions.extraordinary', 'Vanredan')}
+                        </Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
