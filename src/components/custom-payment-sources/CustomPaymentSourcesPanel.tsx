@@ -382,6 +382,11 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <PaymentSourceMembersDialog
+          open={!!membersDialogSource}
+          onOpenChange={(open) => !open && setMembersDialogSource(null)}
+          paymentSource={membersDialogSource}
+        />
       </>
     );
   }
