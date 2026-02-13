@@ -8,9 +8,10 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectDialog } from './ProjectDialog';
 import { ProjectFullScreenView } from './ProjectFullScreenView';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTranslation } from 'react-i18next';
-import { Plus, FolderKanban, Loader2 } from 'lucide-react';
+import { Plus, FolderKanban, Loader2, Search, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +31,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch stats for all projects - unified logic: spent = sum of completed milestones budgets
   const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
@@ -164,6 +166,27 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
         </Button>
       </div>
 
+      {/* Search */}
+      {projects.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Pretraži projekte..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 pr-9 h-9 text-sm"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+
       {projects.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <FolderKanban className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -173,7 +196,9 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
       ) : (
         <AnimatePresence mode="popLayout">
           <div className="space-y-3">
-            {projects.map((project) => (
+            {projects
+              .filter(p => !searchTerm.trim() || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+              .map((project) => (
               <motion.div
                 key={project.id}
                 initial={{ opacity: 0, y: 20 }}

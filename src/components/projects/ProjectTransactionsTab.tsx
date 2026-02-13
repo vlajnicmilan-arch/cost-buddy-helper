@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
   Target, Trash2, Clock, Check, X, AlertCircle, User, MessageCircle,
-  Eye, Pencil
+  Eye, Pencil, Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -104,6 +104,7 @@ export const ProjectTransactionsTab = ({
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [updatingMilestone, setUpdatingMilestone] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Transaction detail/notes dialog state
   const [selectedExpense, setSelectedExpense] = useState<ProjectExpense | null>(null);
@@ -421,6 +422,27 @@ export const ProjectTransactionsTab = ({
         </div>
       )}
 
+      {/* Search */}
+      {expenses.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Pretraži transakcije..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 pr-9 h-9 text-sm"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+
       {expenses.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -429,7 +451,9 @@ export const ProjectTransactionsTab = ({
         </div>
       ) : (
         <div className="space-y-2">
-          {expenses.map((expense) => {
+          {expenses
+            .filter(e => !searchTerm.trim() || e.description.toLowerCase().includes(searchTerm.toLowerCase()))
+            .map((expense) => {
             const categoryInfo = getCategoryInfo(expense.category as any);
             const isIncome = expense.type === 'income';
             const milestoneName = getMilestoneName(expense.milestone_id);
