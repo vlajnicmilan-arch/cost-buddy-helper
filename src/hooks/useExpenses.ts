@@ -178,6 +178,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             project_id: expense.project_id || null,
             budget_id: expense.budget_id || null,
             note: expense.note || null,
+            expense_nature: expense.expense_nature || null,
             status: isPendingMemberTransaction ? 'pending' : 'approved',
             submitted_by: isPendingMemberTransaction ? user.id : null
           })
