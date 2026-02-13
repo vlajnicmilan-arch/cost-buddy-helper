@@ -208,7 +208,10 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         payment_source_card_id: finalCardId,
         merchant_name: scannedData.merchant || undefined,
         receipt_url: receiptUrl,
-        ai_extracted: true
+        ai_extracted: true,
+        project_id: selectedProjectId || undefined,
+        budget_id: selectedBudgetId || undefined,
+        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined
       };
 
       // Check for duplicates
@@ -675,6 +678,82 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                           <span className="font-mono ml-2">€{item.total_price.toFixed(2)}</span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Project / Budget selectors */}
+                <div className="space-y-2">
+                  <span className="text-muted-foreground text-sm flex items-center gap-1">
+                    <FolderKanban className="w-3 h-3" />
+                    {t('transactions.project', 'Projekt')}:
+                  </span>
+                  <Select
+                    value={selectedProjectId || 'none'}
+                    onValueChange={(value) => {
+                      setSelectedProjectId(value === 'none' ? null : value);
+                      if (value !== 'none') setSelectedBudgetId(null);
+                    }}
+                  >
+                    <SelectTrigger className="w-full rounded-lg">
+                      <SelectValue placeholder={t('transactions.noProject', 'Bez projekta')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t('transactions.noProject', 'Bez projekta')}</SelectItem>
+                      {projects?.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-muted-foreground text-sm flex items-center gap-1">
+                    <PiggyBank className="w-3 h-3" />
+                    {t('transactions.budget', 'Budžet')}:
+                  </span>
+                  <Select
+                    value={selectedBudgetId || 'none'}
+                    onValueChange={(value) => {
+                      setSelectedBudgetId(value === 'none' ? null : value);
+                      if (value !== 'none') setSelectedProjectId(null);
+                    }}
+                  >
+                    <SelectTrigger className="w-full rounded-lg">
+                      <SelectValue placeholder={t('transactions.noBudget', 'Bez budžeta')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t('transactions.noBudget', 'Bez budžeta')}</SelectItem>
+                      {budgets?.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Expense Nature - only when linked to project or budget */}
+                {(selectedProjectId || selectedBudgetId) && (
+                  <div className="space-y-2">
+                    <span className="text-muted-foreground text-sm">{t('transactions.expenseNature', 'Vrsta troška')}:</span>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={expenseNature === 'regular' ? 'default' : 'outline'}
+                        className="flex-1 text-sm"
+                        onClick={() => setExpenseNature('regular')}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-income mr-2" />
+                        {t('transactions.regular', 'Redovan')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={expenseNature === 'extraordinary' ? 'destructive' : 'outline'}
+                        className="flex-1 text-sm"
+                        onClick={() => setExpenseNature('extraordinary')}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-destructive mr-2" />
+                        {t('transactions.extraordinary', 'Vanredan')}
+                      </Button>
                     </div>
                   </div>
                 )}
