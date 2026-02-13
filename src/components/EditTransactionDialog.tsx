@@ -123,7 +123,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         type,
         project_id: selectedProjectId,
         budget_id: selectedBudgetId,
-        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : null,
         note: note.trim() || null,
         updated_at: new Date().toISOString()
       });
