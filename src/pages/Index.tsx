@@ -232,7 +232,8 @@ const Index = () => {
 
   // Apply filters to dashboard expenses
   const filteredDashboardExpenses = useMemo(() => {
-    return applyFilters(expenses, dashboardFilters, user?.id);
+    return applyFilters(expenses, dashboardFilters, user?.id)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [expenses, dashboardFilters, user?.id]);
 
   // Prepare budgets data for AI assistant
