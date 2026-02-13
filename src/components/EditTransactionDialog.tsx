@@ -39,6 +39,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
   const [type, setType] = useState<TransactionType>('expense');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
+  const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
   
   const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -80,6 +81,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         setType(expense.type || 'expense');
         setSelectedProjectId(expense.project_id || null);
         setSelectedBudgetId(expense.budget_id || null);
+        setExpenseNature((expense.expense_nature as 'regular' | 'extraordinary') || 'regular');
         setNote(expense.note || '');
       } catch (err) {
         console.error('Error initializing edit form:', err);
@@ -121,6 +123,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         type,
         project_id: selectedProjectId,
         budget_id: selectedBudgetId,
+        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         note: note.trim() || null,
         updated_at: new Date().toISOString()
       });
@@ -495,6 +498,33 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {/* Expense Nature - only when linked to project or budget */}
+          {(selectedProjectId || selectedBudgetId) && (
+            <div className="space-y-2">
+              <Label>{t('transactions.expenseNature', 'Vrsta troška')}</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={expenseNature === 'regular' ? 'default' : 'outline'}
+                  className="flex-1 text-sm"
+                  onClick={() => setExpenseNature('regular')}
+                >
+                  <span className="w-2 h-2 rounded-full bg-income mr-2" />
+                  {t('transactions.regular', 'Redovan')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={expenseNature === 'extraordinary' ? 'destructive' : 'outline'}
+                  className="flex-1 text-sm"
+                  onClick={() => setExpenseNature('extraordinary')}
+                >
+                  <span className="w-2 h-2 rounded-full bg-destructive mr-2" />
+                  {t('transactions.extraordinary', 'Vanredan')}
+                </Button>
+              </div>
             </div>
           )}
 
