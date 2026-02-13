@@ -156,7 +156,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     }
   };
 
-  const applyScannedResult = (result: ParsedReceipt) => {
+  const applyScannedResult = (result: NonNullable<Awaited<ReturnType<typeof scanReceipt>>>) => {
     console.log('Scan result:', {
       custom_payment_source_id: result.custom_payment_source_id,
       payment_source_card_id: result.payment_source_card_id,
@@ -193,7 +193,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setShowScannedPreview(true);
   };
 
-  type ParsedReceipt = NonNullable<Awaited<ReturnType<typeof scanReceipt>>>;
+  
 
   const [isSaving, setIsSaving] = useState(false);
 
