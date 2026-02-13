@@ -26,6 +26,10 @@ const getNotificationIcon = (type: string) => {
       return <FolderOpen className="w-4 h-4 text-primary" />;
     case 'budget_invitation':
       return <Wallet className="w-4 h-4 text-primary" />;
+    case 'payment_source_invitation':
+      return <Wallet className="w-4 h-4 text-primary" />;
+    case 'payment_source_transaction':
+      return <Wallet className="w-4 h-4 text-primary" />;
     default:
       return <Bell className="w-4 h-4 text-muted-foreground" />;
   }
@@ -54,7 +58,7 @@ export const NotificationsDropdown = () => {
   const handleRespondToInvitation = async (
     notificationId: string, 
     invitationId: string, 
-    type: 'project' | 'budget', 
+    type: 'project' | 'budget' | 'payment_source', 
     action: 'accept' | 'decline'
   ) => {
     setRespondingTo(notificationId);
@@ -92,7 +96,7 @@ export const NotificationsDropdown = () => {
   };
 
   const isInvitationNotification = (type: string) => {
-    return type === 'project_invitation' || type === 'budget_invitation';
+    return type === 'project_invitation' || type === 'budget_invitation' || type === 'payment_source_invitation';
   };
 
   return (
@@ -139,7 +143,8 @@ export const NotificationsDropdown = () => {
             <div className="py-1">
               {notifications.map((notification) => {
                 const isInvitation = isInvitationNotification(notification.type);
-                const invitationType = notification.type === 'project_invitation' ? 'project' : 'budget';
+                const invitationType = notification.type === 'project_invitation' ? 'project' : 
+                  notification.type === 'budget_invitation' ? 'budget' : 'payment_source';
                 const invitationId = (notification.data as any)?.invitation_id;
 
                 return (

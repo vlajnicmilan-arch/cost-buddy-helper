@@ -24,7 +24,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify the user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -48,16 +47,7 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find user by email (check profiles table)
-    const { data: invitedProfile, error: profileError } = await adminClient
-      .from("profiles")
-      .select("user_id, display_name")
-      .eq("user_id", (
-        await adminClient.auth.admin.listUsers()
-      ).data.users.find(u => u.email === invitedEmail.toLowerCase())?.id || "")
-      .single();
-
-    // Alternative: search users directly
+    // Find user by email
     const { data: usersData } = await adminClient.auth.admin.listUsers();
     const invitedUser = usersData?.users.find(u => u.email?.toLowerCase() === invitedEmail.toLowerCase());
 
@@ -68,10 +58,39 @@ serve(async (req) => {
       );
     }
 
+    // Determine tables based on type
+    let memberTable: string;
+    let idColumn: string;
+    let invitationTable: string;
+    let targetTable: string;
+    let targetLabel: string;
+
+    if (type === "project") {
+      memberTable = "project_members";
+      idColumn = "project_id";
+      invitationTable = "project_invitations";
+      targetTable = "projects";
+      targetLabel = "projektu";
+    } else if (type === "budget") {
+      memberTable = "budget_members";
+      idColumn = "budget_id";
+      invitationTable = "budget_invitations";
+      targetTable = "budget_plans";
+      targetLabel = "budžetu";
+    } else if (type === "payment_source") {
+      memberTable = "payment_source_members";
+      idColumn = "payment_source_id";
+      invitationTable = "payment_source_invitations";
+      targetTable = "custom_payment_sources";
+      targetLabel = "računu";
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Invalid type" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Check if user is already a member
-    const memberTable = type === "project" ? "project_members" : "budget_members";
-    const idColumn = type === "project" ? "project_id" : "budget_id";
-    
     const { data: existingMember } = await adminClient
       .from(memberTable)
       .select("id")
@@ -87,8 +106,6 @@ serve(async (req) => {
     }
 
     // Check for existing pending invitation
-    const invitationTable = type === "project" ? "project_invitations" : "budget_invitations";
-    
     const { data: existingInvitation } = await adminClient
       .from(invitationTable)
       .select("id")
@@ -104,15 +121,14 @@ serve(async (req) => {
       );
     }
 
-    // Get target name (project or budget name)
-    const targetTable = type === "project" ? "projects" : "budget_plans";
+    // Get target name
     const { data: targetData } = await adminClient
       .from(targetTable)
       .select("name")
       .eq("id", targetId)
       .single();
 
-    const targetName = targetData?.name || (type === "project" ? "Projekt" : "Budžet");
+    const targetName = targetData?.name || "Resurs";
 
     // Get inviter's name
     const { data: inviterProfile } = await adminClient
@@ -124,16 +140,18 @@ serve(async (req) => {
     const inviterName = inviterProfile?.display_name || "Netko";
 
     // Create the invitation
+    const insertData: Record<string, unknown> = {
+      [idColumn]: targetId,
+      email: invitedEmail.toLowerCase(),
+      invited_user_id: invitedUser.id,
+      role: role,
+      invited_by: user.id,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+
     const { data: invitation, error: invitationError } = await adminClient
       .from(invitationTable)
-      .insert({
-        [idColumn]: targetId,
-        email: invitedEmail.toLowerCase(),
-        invited_user_id: invitedUser.id,
-        role: role,
-        invited_by: user.id,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -143,14 +161,25 @@ serve(async (req) => {
     }
 
     // Create notification for the invited user
-    const notificationType = type === "project" ? "project_invitation" : "budget_invitation";
+    const notificationTypeMap: Record<string, string> = {
+      project: "project_invitation",
+      budget: "budget_invitation",
+      payment_source: "payment_source_invitation",
+    };
+
+    const titleMap: Record<string, string> = {
+      project: "Pozivnica za projekt",
+      budget: "Pozivnica za budžet",
+      payment_source: "Pozivnica za dijeljeni račun",
+    };
+
     const { error: notificationError } = await adminClient
       .from("notifications")
       .insert({
         user_id: invitedUser.id,
-        type: notificationType,
-        title: type === "project" ? "Pozivnica za projekt" : "Pozivnica za budžet",
-        message: `${inviterName} vas poziva da se pridružite ${type === "project" ? "projektu" : "budžetu"} "${targetName}"`,
+        type: notificationTypeMap[type],
+        title: titleMap[type],
+        message: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
         data: {
           invitation_id: invitation.id,
           target_id: targetId,
