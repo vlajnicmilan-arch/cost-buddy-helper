@@ -68,8 +68,10 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [showItems, setShowItems] = useState(false);
   const [saveReceipt, setSaveReceipt] = useState(false);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [receiptImages, setReceiptImages] = useState<string[]>([]);
   const [scannedData, setScannedData] = useState<ScannedData | null>(null);
   const [showScannedPreview, setShowScannedPreview] = useState(false);
+  const [showMultiImageCollector, setShowMultiImageCollector] = useState(false);
   
   const [note, setNote] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -91,8 +93,10 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const multiCameraInputRef = useRef<HTMLInputElement>(null);
+  const multiGalleryInputRef = useRef<HTMLInputElement>(null);
   
-  const { scanning, scanReceipt, uploadReceiptImage } = useReceiptScanner();
+  const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { customCategories, refetch: refetchCustomCategories } = useCustomCategories();
@@ -109,65 +113,87 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     }
   }, [open, customPaymentSources]);
 
-  const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
-      setReceiptImage(base64);
       
-      // Pass custom payment sources to scanner for matching
-      const result = await scanReceipt(base64, customPaymentSources);
-      
-      if (result) {
-        console.log('Scan result:', {
-          custom_payment_source_id: result.custom_payment_source_id,
-          payment_source_card_id: result.payment_source_card_id,
-          payment_source: result.payment_source,
-          is_installment: result.is_installment,
-          installment_count: result.installment_count,
-          installment_amount: result.installment_amount
-        });
+      if (multiMode || showMultiImageCollector) {
+        // Multi-image mode: collect images
+        setReceiptImages(prev => [...prev, base64]);
+        setReceiptImage(base64); // Show last image as thumbnail
+        if (!showMultiImageCollector) setShowMultiImageCollector(true);
+      } else {
+        // Single image mode: scan immediately
+        setReceiptImage(base64);
         
-        setScannedData({
-          amount: result.amount,
-          merchant: result.merchant,
-          description: result.description,
-          category: result.category,
-          date: result.date,
-          payment_source: result.payment_source,
-          custom_payment_source_id: result.custom_payment_source_id,
-          payment_source_card_id: result.payment_source_card_id,
-          items: result.items,
-          is_installment: result.is_installment,
-          installment_count: result.installment_count,
-          installment_amount: result.installment_amount,
-          transaction_type: result.transaction_type,
-          transfer_destination_name: result.transfer_destination_name
-        });
+        const result = await scanReceipt(base64, customPaymentSources);
         
-        // Auto-enable installment mode if detected on receipt
-        if (result.is_installment && result.installment_count) {
-          setIsInstallment(true);
-          setInstallmentCount(result.installment_count);
-          setFirstPaymentDate(result.date || new Date().toISOString().split('T')[0]);
+        if (result) {
+          applyScannedResult(result);
         }
-        
-        setShowScannedPreview(true);
       }
     };
     reader.readAsDataURL(file);
     
     // Reset file inputs
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = '';
-    }
-    if (galleryInputRef.current) {
-      galleryInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
+    if (multiCameraInputRef.current) multiCameraInputRef.current.value = '';
+    if (multiGalleryInputRef.current) multiGalleryInputRef.current.value = '';
+  };
+
+  const handleScanMultipleImages = async () => {
+    if (receiptImages.length === 0) return;
+    
+    const result = await scanMultipleReceipts(receiptImages, customPaymentSources);
+    if (result) {
+      applyScannedResult(result);
+      setShowMultiImageCollector(false);
     }
   };
+
+  const applyScannedResult = (result: ParsedReceipt) => {
+    console.log('Scan result:', {
+      custom_payment_source_id: result.custom_payment_source_id,
+      payment_source_card_id: result.payment_source_card_id,
+      payment_source: result.payment_source,
+      is_installment: result.is_installment,
+      installment_count: result.installment_count,
+      installment_amount: result.installment_amount
+    });
+    
+    setScannedData({
+      amount: result.amount,
+      merchant: result.merchant,
+      description: result.description,
+      category: result.category,
+      date: result.date,
+      payment_source: result.payment_source,
+      custom_payment_source_id: result.custom_payment_source_id,
+      payment_source_card_id: result.payment_source_card_id,
+      items: result.items,
+      is_installment: result.is_installment,
+      installment_count: result.installment_count,
+      installment_amount: result.installment_amount,
+      transaction_type: result.transaction_type,
+      transfer_destination_name: result.transfer_destination_name
+    });
+    
+    // Auto-enable installment mode if detected on receipt
+    if (result.is_installment && result.installment_count) {
+      setIsInstallment(true);
+      setInstallmentCount(result.installment_count);
+      setFirstPaymentDate(result.date || new Date().toISOString().split('T')[0]);
+    }
+    
+    setShowScannedPreview(true);
+  };
+
+  type ParsedReceipt = NonNullable<Awaited<ReturnType<typeof scanReceipt>>>;
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -290,6 +316,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setScannedData(null);
     setShowScannedPreview(false);
     setReceiptImage(null);
+    setReceiptImages([]);
+    setShowMultiImageCollector(false);
   };
 
   const addItem = () => {
@@ -532,7 +560,13 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   </h3>
                 </div>
                 
-                {receiptImage && (
+                {receiptImages.length > 1 ? (
+                  <div className="flex gap-1 overflow-x-auto rounded-lg h-20">
+                    {receiptImages.map((img, idx) => (
+                      <img key={idx} src={img} alt={`Stranica ${idx + 1}`} className="h-full w-auto object-cover rounded-lg flex-shrink-0" />
+                    ))}
+                  </div>
+                ) : receiptImage ? (
                   <div className="relative rounded-lg overflow-hidden h-20">
                     <img 
                       src={receiptImage} 
@@ -540,7 +574,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                       className="w-full h-full object-cover"
                     />
                   </div>
-                )}
+                ) : null}
 
                 {/* Transfer detection banner */}
                 {scannedData.transaction_type === 'transfer' && (
@@ -847,46 +881,163 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
           {!showScannedPreview && (
             <form onSubmit={handleSubmit} className="space-y-5 pb-4">
               {/* Receipt Scan Buttons */}
-              <div className="flex gap-2">
-                {/* Camera input - has capture attribute */}
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleImageCapture}
-                  className="hidden"
-                  id="camera-input"
-                />
-                {/* Gallery input - NO capture attribute */}
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageCapture}
-                  className="hidden"
-                  id="gallery-input"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 gap-2 rounded-xl"
-                  onClick={() => cameraInputRef.current?.click()}
-                  disabled={scanning}
-                >
-                  {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-                  {t('scanner.takePhoto')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 gap-2 rounded-xl"
-                  onClick={() => galleryInputRef.current?.click()}
-                  disabled={scanning}
-                >
-                  {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
-                  {t('scanner.fromGallery')}
-                </Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  {/* Camera input - single image mode */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => handleImageCapture(e, false)}
+                    className="hidden"
+                    id="camera-input"
+                  />
+                  {/* Gallery input - single image mode */}
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageCapture(e, false)}
+                    className="hidden"
+                    id="gallery-input"
+                  />
+                  {/* Multi-image inputs */}
+                  <input
+                    ref={multiCameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => handleImageCapture(e, true)}
+                    className="hidden"
+                    id="multi-camera-input"
+                  />
+                  <input
+                    ref={multiGalleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageCapture(e, true)}
+                    className="hidden"
+                    id="multi-gallery-input"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 gap-2 rounded-xl"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={scanning || showMultiImageCollector}
+                  >
+                    {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                    {t('scanner.takePhoto')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 gap-2 rounded-xl"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={scanning || showMultiImageCollector}
+                  >
+                    {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
+                    {t('scanner.fromGallery')}
+                  </Button>
+                </div>
+
+                {/* Multi-page toggle */}
+                {!showMultiImageCollector && !scanning && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-muted-foreground"
+                    onClick={() => setShowMultiImageCollector(true)}
+                  >
+                    📄 Račun ima više stranica? Dodaj više slika
+                  </Button>
+                )}
+
+                {/* Multi-image collector */}
+                {showMultiImageCollector && (
+                  <div className="p-3 bg-muted/50 border border-border rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">📄 Višestranični račun ({receiptImages.length} {receiptImages.length === 1 ? 'slika' : 'slika'})</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          setShowMultiImageCollector(false);
+                          setReceiptImages([]);
+                          setReceiptImage(null);
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+
+                    {/* Thumbnails of collected images */}
+                    {receiptImages.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {receiptImages.map((img, idx) => (
+                          <div key={idx} className="relative flex-shrink-0 w-16 h-20 rounded-lg overflow-hidden border border-border">
+                            <img src={img} alt={`Stranica ${idx + 1}`} className="w-full h-full object-cover" />
+                            <span className="absolute bottom-0 left-0 right-0 text-center text-[10px] bg-background/80 text-foreground">{idx + 1}</span>
+                            <button
+                              type="button"
+                              className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-[10px]"
+                              onClick={() => {
+                                setReceiptImages(prev => prev.filter((_, i) => i !== idx));
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1 text-xs"
+                        onClick={() => multiCameraInputRef.current?.click()}
+                        disabled={scanning || receiptImages.length >= 5}
+                      >
+                        <Camera className="w-3 h-3" />
+                        Dodaj stranicu
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1 text-xs"
+                        onClick={() => multiGalleryInputRef.current?.click()}
+                        disabled={scanning || receiptImages.length >= 5}
+                      >
+                        <Image className="w-3 h-3" />
+                        Iz galerije
+                      </Button>
+                    </div>
+
+                    {receiptImages.length > 0 && (
+                      <Button
+                        type="button"
+                        className="w-full gap-2 rounded-xl"
+                        onClick={handleScanMultipleImages}
+                        disabled={scanning}
+                      >
+                        {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        {scanning ? 'Analiziram...' : `Skeniraj ${receiptImages.length} ${receiptImages.length === 1 ? 'stranicu' : 'stranice'}`}
+                      </Button>
+                    )}
+
+                    {receiptImages.length >= 5 && (
+                      <p className="text-xs text-muted-foreground text-center">Maksimalno 5 stranica</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {scanning && (

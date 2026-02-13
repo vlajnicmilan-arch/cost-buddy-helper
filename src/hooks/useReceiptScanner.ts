@@ -30,7 +30,6 @@ const compressImage = async (base64: string, maxWidth = 1200, quality = 0.8): Pr
       let width = img.width;
       let height = img.height;
       
-      // Smanjuj ako je preveliko
       if (width > maxWidth) {
         height = (height * maxWidth) / width;
         width = maxWidth;
@@ -52,7 +51,7 @@ const compressImage = async (base64: string, maxWidth = 1200, quality = 0.8): Pr
     };
     img.onerror = () => {
       console.error('Failed to load image for compression');
-      resolve(base64); // Vrati original ako kompresija ne uspije
+      resolve(base64);
     };
     img.src = base64;
   });
@@ -66,6 +65,13 @@ export const useReceiptScanner = () => {
     imageBase64: string, 
     customPaymentSources?: CustomPaymentSource[]
   ): Promise<ParsedReceipt | null> => {
+    return scanMultipleReceipts([imageBase64], customPaymentSources);
+  };
+
+  const scanMultipleReceipts = async (
+    imagesBase64: string[],
+    customPaymentSources?: CustomPaymentSource[]
+  ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
 
@@ -77,10 +83,12 @@ export const useReceiptScanner = () => {
         return null;
       }
 
-      // Komprimiraj sliku za stabilniji prijenos s mobitela
-      console.log('Compressing image...');
-      const compressedImage = await compressImage(imageBase64);
-      console.log('Image ready, sending to API...');
+      // Compress all images
+      console.log(`Compressing ${imagesBase64.length} image(s)...`);
+      const compressedImages = await Promise.all(
+        imagesBase64.map(img => compressImage(img))
+      );
+      console.log('Images ready, sending to API...');
 
       // Prepare custom payment sources for the API
       const sourcesForApi = customPaymentSources?.map(src => ({
@@ -103,7 +111,7 @@ export const useReceiptScanner = () => {
             'Authorization': `Bearer ${sessionData.session.access_token}`
           },
           body: JSON.stringify({ 
-            imageBase64: compressedImage,
+            imagesBase64: compressedImages,
             customPaymentSources: sourcesForApi
           })
         }
@@ -138,7 +146,6 @@ export const useReceiptScanner = () => {
       // Map payment_method from AI to PaymentSource
       let paymentSource: PaymentSource | null = null;
       if (data.custom_payment_source_id) {
-        // Use 'custom' as payment source when custom source is matched
         paymentSource = `custom:${data.custom_payment_source_id}` as PaymentSource;
       } else if (data.payment_method === 'card') {
         paymentSource = 'bank';
@@ -175,7 +182,8 @@ export const useReceiptScanner = () => {
         const matchedSource = customPaymentSources?.find(s => s.id === data.custom_payment_source_id);
         toast.success(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
       } else {
-        toast.success(`Račun skeniran! Pronađeno ${result.items.length} artikala.`);
+        const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';
+        toast.success(`Račun skeniran${pagesNote}! Pronađeno ${result.items.length} artikala.`);
       }
       return result;
     } catch (error) {
@@ -220,7 +228,6 @@ export const useReceiptScanner = () => {
         return null;
       }
 
-      // Store the file path instead of signed URL (signed URLs expire)
       return fileName;
     } catch (error) {
       console.error('Error uploading receipt image:', error);
@@ -236,6 +243,7 @@ export const useReceiptScanner = () => {
     scanning,
     parsedData,
     scanReceipt,
+    scanMultipleReceipts,
     uploadReceiptImage,
     clearParsedData
   };
