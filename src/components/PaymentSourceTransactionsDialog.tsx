@@ -317,7 +317,7 @@ export const PaymentSourceTransactionsDialog = ({
           )}
 
           {/* Transaction List */}
-          <div className="flex-1 overflow-y-auto space-y-2 pr-2 -mx-6 px-6">
+          <div className="flex-1 overflow-y-auto -mx-6 px-6">
             {filteredSourceExpenses.length === 0 ? (
               <div className="py-12 text-center">
                 <p className="text-muted-foreground">
@@ -336,14 +336,14 @@ export const PaymentSourceTransactionsDialog = ({
                   return (
                     <motion.div
                       key={expense.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl transition-colors group",
+                        "group flex items-center gap-2 py-2.5 px-2 rounded-lg transition-colors",
                         isSelected 
-                          ? "bg-primary/10 border border-primary/30" 
-                          : "bg-muted/50 hover:bg-muted/80"
+                          ? "bg-primary/10" 
+                          : "hover:bg-muted/50"
                       )}
                     >
                       {/* Checkbox */}
@@ -353,58 +353,75 @@ export const PaymentSourceTransactionsDialog = ({
                         className="shrink-0"
                       />
 
-                      {/* Icon */}
-                      <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg">
+                      {/* Category Icon */}
+                      <div 
+                        className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
+                        style={{ backgroundColor: expense.type === 'transfer' 
+                          ? 'hsl(var(--muted))' 
+                          : `hsl(var(--${categoryInfo.color}) / 0.15)` 
+                        }}
+                      >
                         {expense.type === 'transfer' ? (
-                          <ArrowLeftRight className="w-5 h-5 text-muted-foreground" />
+                          <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
                         ) : (
                           categoryInfo.icon
                         )}
                       </div>
 
-                      {/* Details */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{expense.description}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{format(expense.date, 'dd.MM.yyyy', { locale: hr })}</span>
+                      {/* Main Content */}
+                      <div className="flex-1 min-w-0 mr-2">
+                        <p className="font-medium text-foreground truncate text-sm leading-tight">
+                          {expense.merchant_name || expense.description}
+                        </p>
+                        <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
+                          {expense.type === 'expense' && (
+                            <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
+                          )}
+                          {expense.type === 'transfer' && (
+                            <span className="text-primary">{t('transactions.transfer', 'Prijenos')}</span>
+                          )}
+                          {expense.type === 'income' && (
+                            <span className="text-income">{t('transactions.income', 'Prihod')}</span>
+                          )}
                           {cardInfo && (
                             <>
-                              <span>•</span>
-                              <span>****{cardInfo.last_four_digits}</span>
+                              <span className="text-muted-foreground/40">•</span>
+                              <span className="text-[10px] font-mono">••{cardInfo.last_four_digits}</span>
                             </>
                           )}
                         </div>
                       </div>
 
-                      {/* Amount */}
-                      <p className={cn(
-                        "font-mono font-semibold whitespace-nowrap",
-                        expense.type === 'income' ? "text-primary" : 
-                        expense.type === 'expense' ? "text-destructive" : 
-                        "text-muted-foreground"
-                      )}>
-                        {expense.type === 'expense' ? '-' : expense.type === 'income' ? '+' : ''}
-                        {formatAmount(expense.amount)}
-                      </p>
+                      {/* Amount & Date */}
+                      <div className="flex flex-col items-end shrink-0 gap-0.5">
+                        <p className={cn(
+                          "font-mono font-bold text-sm leading-tight",
+                          expense.type === 'income' ? 'text-income' : 
+                          expense.type === 'expense' ? 'text-destructive' : 
+                          'text-muted-foreground'
+                        )}>
+                          {expense.type === 'expense' ? '-' : expense.type === 'income' ? '+' : '↔'}
+                          {formatAmount(expense.amount)}
+                        </p>
+                        <span className="text-[10px] text-muted-foreground/70">
+                          {format(expense.date, 'd. MMM', { locale: hr })}
+                        </span>
+                      </div>
 
                       {/* Actions */}
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
+                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <button
                           onClick={() => handleEdit(expense)}
+                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
                         >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => handleDelete(expense.id)}
+                          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </motion.div>
                   );

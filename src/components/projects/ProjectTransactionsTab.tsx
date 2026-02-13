@@ -450,7 +450,7 @@ export const ProjectTransactionsTab = ({
           <p className="text-sm">{t('projects.noTransactionsHint')}</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {expenses
             .filter(e => !searchTerm.trim() || e.description.toLowerCase().includes(searchTerm.toLowerCase()))
             .map((expense) => {
@@ -464,145 +464,104 @@ export const ProjectTransactionsTab = ({
             return (
               <div 
                 key={expense.id}
-                className="p-3 rounded-lg border bg-card group overflow-hidden"
+                className="group flex items-center gap-2 py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors"
               >
-                {/* Main row - icon, description, amount */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">
-                    {categoryInfo.icon}
+                {/* Category Icon */}
+                <div 
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
+                  style={{ backgroundColor: `hsl(var(--${categoryInfo.color}) / 0.15)` }}
+                >
+                  {categoryInfo.icon}
+                </div>
+                
+                {/* Main Content */}
+                <div className="flex-1 min-w-0 mr-2">
+                  {/* Title Row */}
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-foreground truncate text-sm leading-tight">
+                      {expense.description}
+                    </p>
+                    {expense.expense_nature && (
+                      <Badge variant="outline" className={cn(
+                        "text-[10px] px-1.5 py-0 h-4 shrink-0 border",
+                        expense.expense_nature === 'regular' 
+                          ? "border-income/50 text-income bg-income/10" 
+                          : "border-destructive/50 text-destructive bg-destructive/10"
+                      )}>
+                        {expense.expense_nature === 'regular' ? t('transactions.regular', 'Redovan') : t('transactions.extraordinary', 'Vanredan')}
+                      </Badge>
+                    )}
                   </div>
                   
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-medium truncate">{expense.description}</p>
-                      {expense.expense_nature && (
-                        <Badge variant="outline" className={cn(
-                          "text-[10px] px-1.5 py-0 h-4 shrink-0 border",
-                          expense.expense_nature === 'regular' 
-                            ? "border-income/50 text-income bg-income/10" 
-                            : "border-destructive/50 text-destructive bg-destructive/10"
-                        )}>
-                          {expense.expense_nature === 'regular' ? t('transactions.regular', 'Redovan') : t('transactions.extraordinary', 'Vanredan')}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {isOwnExpense ? t('common.you', 'Ti') : authorName}
-                      </span>
-                      <span>•</span>
-                      <span>{categoryInfo.name}</span>
-                      <span>•</span>
-                      <span>{format(new Date(expense.date), 'd. MMM', { locale: hr })}</span>
-                    </div>
-                  </div>
-
-                  {/* Amount - always visible */}
-                  <div className={cn(
-                    "font-mono font-medium flex items-center gap-1 shrink-0 text-sm",
-                    isIncome ? "text-income" : "text-expense"
-                  )}>
-                    {isIncome ? (
-                      <TrendingUp className="w-4 h-4" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4" />
+                  {/* Info Row */}
+                  <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
+                    <span className="flex items-center gap-0.5 shrink-0">
+                      <User className="w-3 h-3" />
+                      {isOwnExpense ? t('common.you', 'Ti') : authorName}
+                    </span>
+                    <span className="text-muted-foreground/40">•</span>
+                    <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
+                    {milestoneName && (
+                      <>
+                        <span className="text-muted-foreground/40">•</span>
+                        <span className="flex items-center gap-0.5 truncate max-w-[80px]">
+                          <Target className="w-3 h-3 shrink-0" />
+                          {milestoneName}
+                        </span>
+                      </>
                     )}
-                    {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
                   </div>
                 </div>
 
-                {/* Second row - milestone and action buttons */}
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-                  {/* Left side - milestone */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    {isManager && milestones.length > 0 ? (
-                      <Select
-                        value={expense.milestone_id || 'none'}
-                        onValueChange={(value) => handleMilestoneChange(expense.id, value)}
-                        disabled={updatingMilestone === expense.id}
-                      >
-                        <SelectTrigger className="w-[120px] h-7 text-xs">
-                          {updatingMilestone === expense.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <SelectValue placeholder={t('projects.noMilestone', 'Bez faze')} />
-                          )}
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">{t('projects.noMilestone', 'Bez faze')}</SelectItem>
-                          {milestones.map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
-                              <span className="flex items-center gap-1">
-                                <Target className="w-3 h-3" />
-                                {m.name}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : milestoneName ? (
-                      <Badge variant="outline" className="h-6 gap-1 text-xs">
-                        <Target className="w-3 h-3" />
-                        {milestoneName}
-                      </Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{t('projects.noMilestone', 'Bez faze')}</span>
-                    )}
-                  </div>
+                {/* Amount & Date Column */}
+                <div className="flex flex-col items-end shrink-0 gap-0.5">
+                  <p className={cn(
+                    "font-mono font-bold text-sm leading-tight",
+                    isIncome ? "text-income" : "text-expense"
+                  )}>
+                    {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground/70">
+                    {format(new Date(expense.date), 'd. MMM', { locale: hr })}
+                  </span>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                    onClick={() => {
+                      setSelectedExpense(expense);
+                      setDetailDialogOpen(true);
+                    }}
+                    title={t('common.view', 'Pregledaj')}
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </Button>
 
-                  {/* Right side - action buttons */}
-                  <div className="flex items-center gap-0.5 shrink-0">
+                  {(isManager || isOwnExpense) && (
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-primary"
-                      onClick={() => {
-                        setSelectedExpense(expense);
-                        setDetailDialogOpen(true);
-                      }}
-                      title={t('common.view', 'Pregledaj')}
+                      onClick={() => handleOpenEdit(expense)}
+                      title={t('common.edit', 'Uredi')}
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Pencil className="w-3.5 h-3.5" />
                     </Button>
+                  )}
 
-                    {(isManager || isOwnExpense) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-primary"
-                        onClick={() => handleOpenEdit(expense)}
-                        title={t('common.edit', 'Uredi')}
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-
-                    {(isManager || isOwnExpense) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteExpense(expense.id)}
-                        title={t('common.delete', 'Obriši')}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-primary"
-                      onClick={() => {
-                        setSelectedExpense(expense);
-                        setDetailDialogOpen(true);
-                      }}
-                      title={t('common.notes', 'Bilješke')}
+                  {(isManager || isOwnExpense) && (
+                    <button
+                      onClick={() => handleDeleteExpense(expense.id)}
+                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                      title={t('common.delete', 'Obriši')}
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             );
