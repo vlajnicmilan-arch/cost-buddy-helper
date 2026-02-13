@@ -28,6 +28,11 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
   ) => {
     if (!paymentSource) return;
     
+    // Strip 'custom:' prefix if present (used in payment_source field)
+    const cleanSourceId = paymentSource.startsWith('custom:') 
+      ? paymentSource.replace('custom:', '') 
+      : paymentSource;
+    
     // Don't update for transfers
     if (type === 'transfer') return;
 
@@ -46,7 +51,7 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
       if (stored) {
         const sources = JSON.parse(stored);
         const updatedSources = sources.map((source: any) => {
-          if (source.id === paymentSource) {
+          if (source.id === cleanSourceId) {
             return {
               ...source,
               balance: (source.balance || 0) + balanceChange,
@@ -65,7 +70,7 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
         let { data: sourceData, error: fetchError } = await supabase
           .from('custom_payment_sources')
           .select('balance, id')
-          .eq('id', paymentSource)
+          .eq('id', cleanSourceId)
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -89,7 +94,7 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
             'crypto': ['kripto', 'crypto'],
           };
           
-          const searchNames = standardNameMap[paymentSource.toLowerCase()];
+          const searchNames = standardNameMap[cleanSourceId.toLowerCase()];
           if (searchNames) {
             const { data: matchedSource } = await supabase
               .from('custom_payment_sources')
@@ -105,7 +110,7 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
         }
 
         if (!sourceData) {
-          console.log('Payment source not found or not custom:', paymentSource);
+          console.log('Payment source not found or not custom:', cleanSourceId);
           return;
         }
 
