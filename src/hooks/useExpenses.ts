@@ -339,6 +339,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             income_source_id: expense.income_source_id,
             project_id: expense.project_id || null,
             budget_id: expense.budget_id || null,
+            expense_nature: expense.expense_nature || null,
             note: expense.note || null,
             updated_at: new Date().toISOString()
           })
