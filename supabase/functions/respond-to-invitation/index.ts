@@ -24,7 +24,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify the user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -55,9 +54,37 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const invitationTable = type === "project" ? "project_invitations" : "budget_invitations";
-    const idColumn = type === "project" ? "project_id" : "budget_id";
-    const memberTable = type === "project" ? "project_members" : "budget_members";
+    // Determine tables based on type
+    let invitationTable: string;
+    let idColumn: string;
+    let memberTable: string;
+    let targetTable: string;
+    let targetLabel: string;
+
+    if (type === "project") {
+      invitationTable = "project_invitations";
+      idColumn = "project_id";
+      memberTable = "project_members";
+      targetTable = "projects";
+      targetLabel = "projekt";
+    } else if (type === "budget") {
+      invitationTable = "budget_invitations";
+      idColumn = "budget_id";
+      memberTable = "budget_members";
+      targetTable = "budget_plans";
+      targetLabel = "budžet";
+    } else if (type === "payment_source") {
+      invitationTable = "payment_source_invitations";
+      idColumn = "payment_source_id";
+      memberTable = "payment_source_members";
+      targetTable = "custom_payment_sources";
+      targetLabel = "račun";
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Invalid type" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get the invitation
     const { data: invitation, error: invitationError } = await adminClient
@@ -126,14 +153,13 @@ serve(async (req) => {
         .eq("id", invitationId);
 
       // Notify the inviter
-      const targetTable = type === "project" ? "projects" : "budget_plans";
       const { data: targetData } = await adminClient
         .from(targetTable)
         .select("name")
         .eq("id", targetId)
         .single();
 
-      const targetName = targetData?.name || (type === "project" ? "Projekt" : "Budžet");
+      const targetName = targetData?.name || targetLabel;
       const userName = profile?.display_name || "Korisnik";
 
       await adminClient
@@ -142,7 +168,7 @@ serve(async (req) => {
           user_id: invitation.invited_by,
           type: "invitation_accepted",
           title: "Pozivnica prihvaćena",
-          message: `${userName} je prihvatio/la pozivnicu za ${type === "project" ? "projekt" : "budžet"} "${targetName}"`,
+          message: `${userName} je prihvatio/la pozivnicu za ${targetLabel} "${targetName}"`,
           data: {
             target_id: targetId,
             target_name: targetName,

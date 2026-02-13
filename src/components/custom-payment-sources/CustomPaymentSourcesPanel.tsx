@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
+import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
 import { CustomPaymentSource, SUGGESTED_PAYMENT_SOURCES } from '@/types/customPaymentSource';
 import {
   AlertDialog,
@@ -36,6 +37,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
   const [initialData, setInitialData] = useState<{ name: string; icon: string; color: string; balance?: number } | undefined>();
   const [reorderMode, setReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [membersDialogSource, setMembersDialogSource] = useState<CustomPaymentSource | null>(null);
   const { t } = useTranslation();
 
   const handleSave = async (data: { name: string; icon: string; color: string; balance: number; description?: string }) => {
@@ -261,6 +263,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
+                        onClick={() => setMembersDialogSource(source)}
+                        title="Članovi"
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={() => handleEdit(source)}
                       >
                         <Pencil className="h-4 w-4" />
@@ -421,6 +432,12 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PaymentSourceMembersDialog
+        open={!!membersDialogSource}
+        onOpenChange={(open) => !open && setMembersDialogSource(null)}
+        paymentSource={membersDialogSource}
+      />
     </>
   );
 };

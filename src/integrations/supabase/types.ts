@@ -695,6 +695,91 @@ export type Database = {
           },
         ]
       }
+      payment_source_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          invited_user_id: string | null
+          payment_source_id: string
+          role: string
+          status: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          invited_user_id?: string | null
+          payment_source_id: string
+          role?: string
+          status?: string
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          invited_user_id?: string | null
+          payment_source_id?: string
+          role?: string
+          status?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_source_invitations_payment_source_id_fkey"
+            columns: ["payment_source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_source_members: {
+        Row: {
+          created_at: string
+          id: string
+          joined_at: string
+          payment_source_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          payment_source_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          payment_source_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_source_members_payment_source_id_fkey"
+            columns: ["payment_source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -1185,16 +1270,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      consume_invitation_token: {
-        Args: { _invitation_type: string; _token: string }
-        Returns: {
-          invitation_id: string
-          invited_by: string
-          role: string
-          target_id: string
-          target_name: string
-        }[]
-      }
+      consume_invitation_token:
+        | {
+            Args: { _invitation_type: string; _token: string }
+            Returns: {
+              invitation_id: string
+              invited_by: string
+              role: string
+              target_id: string
+              target_name: string
+            }[]
+          }
+        | {
+            Args: { _invitation_type: string; _token: string }
+            Returns: {
+              invitation_id: string
+              invited_by: string
+              role: string
+              target_id: string
+              target_name: string
+            }[]
+          }
       is_budget_member: {
         Args: { _budget_id: string; _user_id: string }
         Returns: boolean
@@ -1208,6 +1304,14 @@ export type Database = {
         Returns: boolean
       }
       is_income_source_owner: {
+        Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_payment_source_member: {
+        Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_payment_source_owner: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
       }
