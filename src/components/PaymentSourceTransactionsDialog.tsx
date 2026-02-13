@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Expense, getCategoryInfo, Category } from '@/types/expense';
@@ -9,7 +10,7 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +37,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
   const { formatAmount } = useCurrency();
 
   // Filter expenses for this payment source
@@ -58,6 +60,16 @@ export const PaymentSourceTransactionsDialog = ({
       return false;
     }).sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [expenses, paymentSource]);
+
+  // Apply search filter
+  const filteredSourceExpenses = useMemo(() => {
+    if (!searchTerm.trim()) return sourceExpenses;
+    const term = searchTerm.toLowerCase();
+    return sourceExpenses.filter(e => 
+      e.description.toLowerCase().includes(term) ||
+      e.merchant_name?.toLowerCase().includes(term)
+    );
+  }, [sourceExpenses, searchTerm]);
 
   // Calculate totals
   const { totalIncome, totalExpenses, totalTransfers } = useMemo(() => {
@@ -102,7 +114,7 @@ export const PaymentSourceTransactionsDialog = ({
   };
 
   const selectAll = () => {
-    setSelectedIds(new Set(sourceExpenses.map(e => e.id)));
+    setSelectedIds(new Set(filteredSourceExpenses.map(e => e.id)));
   };
 
   const clearSelection = () => {
@@ -111,7 +123,7 @@ export const PaymentSourceTransactionsDialog = ({
 
   // Bulk operations
   const handleBulkCategoryChange = async (category: Category) => {
-    const selectedExpenses = sourceExpenses.filter(e => selectedIds.has(e.id));
+    const selectedExpenses = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
     let successCount = 0;
     
     for (const expense of selectedExpenses) {
@@ -128,7 +140,7 @@ export const PaymentSourceTransactionsDialog = ({
   };
 
   const handleBulkPaymentSourceChange = async (newPaymentSource: string) => {
-    const selectedExpenses = sourceExpenses.filter(e => selectedIds.has(e.id));
+    const selectedExpenses = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
     let successCount = 0;
     
     for (const expense of selectedExpenses) {
@@ -149,7 +161,7 @@ export const PaymentSourceTransactionsDialog = ({
   };
 
   const handleBulkDelete = async () => {
-    const selectedExpenses = sourceExpenses.filter(e => selectedIds.has(e.id));
+    const selectedExpenses = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
     let successCount = 0;
     
     for (const expense of selectedExpenses) {
@@ -169,6 +181,7 @@ export const PaymentSourceTransactionsDialog = ({
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       clearSelection();
+      setSearchTerm('');
     }
     onOpenChange(open);
   };
@@ -202,24 +215,43 @@ export const PaymentSourceTransactionsDialog = ({
                   </span>
                 )}
               </div>
-              {sourceExpenses.length > 0 && (
+              {filteredSourceExpenses.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={selectedIds.size === sourceExpenses.length ? clearSelection : selectAll}
+                  onClick={selectedIds.size === filteredSourceExpenses.length ? clearSelection : selectAll}
                   className="h-7 text-xs gap-1.5 shrink-0"
                 >
                   <CheckSquare className="w-3.5 h-3.5" />
-                  {selectedIds.size === sourceExpenses.length ? 'Poništi' : 'Odaberi sve'}
+                  {selectedIds.size === filteredSourceExpenses.length ? 'Poništi' : 'Odaberi sve'}
                 </Button>
               )}
             </div>
           </DialogHeader>
 
+          {/* Search */}
+          <div className="relative shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Pretraži po nazivu..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-9 h-9 text-sm"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
           {/* Bulk Actions Toolbar */}
           <BulkActionsToolbar
             selectedCount={selectedIds.size}
-            totalCount={sourceExpenses.length}
+            totalCount={filteredSourceExpenses.length}
             onSelectAll={selectAll}
             onClearSelection={clearSelection}
             onBulkCategoryChange={handleBulkCategoryChange}
@@ -286,13 +318,17 @@ export const PaymentSourceTransactionsDialog = ({
 
           {/* Transaction List */}
           <div className="flex-1 overflow-y-auto space-y-2 pr-2 -mx-6 px-6">
-            {sourceExpenses.length === 0 ? (
+            {filteredSourceExpenses.length === 0 ? (
               <div className="py-12 text-center">
-                <p className="text-muted-foreground">{t('transactions.noTransactions')}</p>
+                <p className="text-muted-foreground">
+                  {sourceExpenses.length === 0 
+                    ? t('transactions.noTransactions')
+                    : 'Nema rezultata za pretragu'}
+                </p>
               </div>
             ) : (
               <AnimatePresence>
-                {sourceExpenses.map((expense) => {
+                {filteredSourceExpenses.map((expense) => {
                   const categoryInfo = getCategoryInfo(expense.category);
                   const cardInfo = getCardInfo(expense);
                   const isSelected = selectedIds.has(expense.id);

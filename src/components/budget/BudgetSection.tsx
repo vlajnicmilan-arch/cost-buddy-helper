@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { BudgetCard } from './BudgetCard';
 import { BudgetFullScreenView } from './BudgetFullScreenView';
 import { BudgetDialog } from './BudgetDialog';
 import { BudgetWithStats } from '@/types/budget';
-import { Plus, Target, Loader2 } from 'lucide-react';
+import { Plus, Target, Loader2, Search, X } from 'lucide-react';
 
 interface BudgetSectionProps {
   budgets: BudgetWithStats[];
@@ -31,6 +32,7 @@ export const BudgetSection = ({
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<BudgetWithStats | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleCardClick = (budget: BudgetWithStats) => {
     setSelectedBudget(budget);
@@ -93,18 +95,40 @@ export const BudgetSection = ({
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {budgets.map((budget) => (
-            <BudgetCard
-              key={budget.id}
-              budget={budget}
-              onClick={() => handleCardClick(budget)}
-              onEdit={() => handleEdit(budget)}
-              onDelete={() => onDeleteBudget(budget.id)}
-              onReset={() => onResetBudget(budget.id)}
+        <>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Pretraži budžete..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-9 h-9 text-sm"
             />
-          ))}
-        </div>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            {budgets
+              .filter(b => !searchTerm.trim() || b.name.toLowerCase().includes(searchTerm.toLowerCase()) || b.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+              .map((budget) => (
+              <BudgetCard
+                key={budget.id}
+                budget={budget}
+                onClick={() => handleCardClick(budget)}
+                onEdit={() => handleEdit(budget)}
+                onDelete={() => onDeleteBudget(budget.id)}
+                onReset={() => onResetBudget(budget.id)}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Full-Screen Budget View */}
