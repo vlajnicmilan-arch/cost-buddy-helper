@@ -25,6 +25,7 @@ interface TransactionNotesThreadProps {
   expenseId: string;
   incomeSourceId?: string | null;
   projectId?: string | null;
+  paymentSourceId?: string | null;
   initialNote?: string | null;
   onNoteAdded?: () => void;
 }
@@ -33,6 +34,7 @@ export const TransactionNotesThread = ({
   expenseId,
   incomeSourceId,
   projectId,
+  paymentSourceId,
   initialNote,
   onNoteAdded
 }: TransactionNotesThreadProps) => {
@@ -48,7 +50,7 @@ export const TransactionNotesThread = ({
 
   // Fetch notes and profiles - works for both income sources and projects
   useEffect(() => {
-    if (!expenseId || (!incomeSourceId && !projectId)) return;
+    if (!expenseId || (!incomeSourceId && !projectId && !paymentSourceId)) return;
     
     const fetchNotes = async () => {
       setLoading(true);
@@ -86,10 +88,10 @@ export const TransactionNotesThread = ({
     };
 
     fetchNotes();
-  }, [expenseId, incomeSourceId, projectId]);
+  }, [expenseId, incomeSourceId, projectId, paymentSourceId]);
 
   const handleSendNote = async () => {
-    if (!newNote.trim() || !user || (!incomeSourceId && !projectId)) return;
+    if (!newNote.trim() || !user || (!incomeSourceId && !projectId && !paymentSourceId)) return;
 
     setSending(true);
     try {
@@ -151,6 +153,21 @@ export const TransactionNotesThread = ({
           });
         } catch (notifyError) {
           console.error('Error sending project notification:', notifyError);
+        }
+      }
+
+      // Notify about new comment - for payment sources
+      if (paymentSourceId) {
+        try {
+          await supabase.functions.invoke('notify-note-added', {
+            body: {
+              expense_id: expenseId,
+              payment_source_id: paymentSourceId,
+              note: newNote.trim()
+            }
+          });
+        } catch (notifyError) {
+          console.error('Error sending payment source notification:', notifyError);
         }
       }
 

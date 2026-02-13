@@ -9,6 +9,7 @@ interface NotifyNoteAddedRequest {
   expense_id: string;
   income_source_id?: string;
   project_id?: string;
+  payment_source_id?: string;
   note: string;
 }
 
@@ -51,10 +52,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.log('Authenticated user:', user.id);
 
     // Parse request body
-    const { expense_id, income_source_id, project_id, note }: NotifyNoteAddedRequest = await req.json();
-    console.log('Received request:', { expense_id, income_source_id, project_id, note: note?.substring(0, 50) });
+    const { expense_id, income_source_id, project_id, payment_source_id, note }: NotifyNoteAddedRequest = await req.json();
+    console.log('Received request:', { expense_id, income_source_id, project_id, payment_source_id, note: note?.substring(0, 50) });
 
-    if (!expense_id || (!income_source_id && !project_id) || !note) {
+    if (!expense_id || (!income_source_id && !project_id && !payment_source_id) || !note) {
       return new Response(
         JSON.stringify({ error: 'Nedostaju potrebni podaci' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -234,8 +235,84 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Handle PAYMENT SOURCE notes
+    if (payment_source_id) {
+      const { data: source, error: sourceError } = await supabaseAdmin
+        .from('custom_payment_sources')
+        .select('id, name, icon, color, user_id')
+        .eq('id', payment_source_id)
+        .single();
+
+      if (sourceError || !source) {
+        console.error('Error fetching payment source:', sourceError);
+        return new Response(
+          JSON.stringify({ error: 'Račun nije pronađen' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get all payment source members to notify (except the current user)
+      const { data: members } = await supabaseAdmin
+        .from('payment_source_members')
+        .select('user_id')
+        .eq('payment_source_id', payment_source_id)
+        .neq('user_id', user.id);
+
+      const usersToNotify = new Set<string>();
+      
+      // Notify owner if not current user
+      if (source.user_id !== user.id) {
+        usersToNotify.add(source.user_id);
+      }
+      
+      members?.forEach(m => usersToNotify.add(m.user_id));
+
+      if (usersToNotify.size === 0) {
+        return new Response(
+          JSON.stringify({ success: true, message: 'Nema korisnika za obavijestiti' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const notifications = Array.from(usersToNotify).map(userId => ({
+        user_id: userId,
+        type: 'payment_source_note_added',
+        title: `Novi komentar na računu "${source.name}"`,
+        message: `${memberName} je komentirao transakciju "${expense.description}": "${truncatedNote}"`,
+        data: {
+          expense_id: expense.id,
+          payment_source_id: source.id,
+          payment_source_name: source.name,
+          payment_source_icon: source.icon,
+          payment_source_color: source.color,
+          member_name: memberName,
+          note: note,
+          description: expense.description
+        }
+      }));
+
+      const { error: notificationError } = await supabaseAdmin
+        .from('notifications')
+        .insert(notifications);
+
+      if (notificationError) {
+        console.error('Error creating notifications:', notificationError);
+        return new Response(
+          JSON.stringify({ error: 'Greška pri slanju obavijesti' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Payment source note notifications sent to ${usersToNotify.size} user(s)`);
+
+      return new Response(
+        JSON.stringify({ success: true, message: `Obavijesti poslane (${usersToNotify.size})` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: 'Nedostaje project_id ili income_source_id' }),
+      JSON.stringify({ error: 'Nedostaje project_id, income_source_id ili payment_source_id' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
