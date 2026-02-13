@@ -6,11 +6,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Expense, getCategoryInfo, Category } from '@/types/expense';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
+import { TransactionNotesThread } from './TransactionNotesThread';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -38,6 +39,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
 
   // Filter expenses for this payment source
@@ -182,6 +184,7 @@ export const PaymentSourceTransactionsDialog = ({
     if (!open) {
       clearSelection();
       setSearchTerm('');
+      setExpandedNoteId(null);
     }
     onOpenChange(open);
   };
@@ -334,6 +337,7 @@ export const PaymentSourceTransactionsDialog = ({
                   const isSelected = selectedIds.has(expense.id);
                   
                   return (
+                    <>
                     <motion.div
                       key={expense.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -411,6 +415,18 @@ export const PaymentSourceTransactionsDialog = ({
                       {/* Actions */}
                       <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                         <button
+                          onClick={() => setExpandedNoteId(expandedNoteId === expense.id ? null : expense.id)}
+                          className={cn(
+                            "p-1 rounded hover:bg-muted transition-all",
+                            expandedNoteId === expense.id 
+                              ? "text-primary opacity-100" 
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                          title="Komentari"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => handleEdit(expense)}
                           className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
                         >
@@ -424,6 +440,18 @@ export const PaymentSourceTransactionsDialog = ({
                         </button>
                       </div>
                     </motion.div>
+                    
+                    {/* Notes Thread */}
+                    {expandedNoteId === expense.id && (
+                      <div className="ml-10 mr-2 mb-2">
+                        <TransactionNotesThread
+                          expenseId={expense.id}
+                          paymentSourceId={paymentSource?.id}
+                          initialNote={expense.note}
+                        />
+                      </div>
+                    )}
+                    </>
                   );
                 })}
               </AnimatePresence>
