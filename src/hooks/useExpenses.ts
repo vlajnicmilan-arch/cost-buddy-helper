@@ -550,24 +550,38 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       const existingDesc = existing.description.toLowerCase().trim();
       const newDesc = transaction.description.toLowerCase().trim();
       
-      // Exact match
-      if (existingDesc === newDesc) return true;
+      // Exact description match is a duplicate
+      if (existingDesc === newDesc) {
+        // But if merchant names differ, it's not a duplicate
+        if (existing.merchant_name && transaction.merchant_name) {
+          const existingMerchant = existing.merchant_name.toLowerCase().trim();
+          const newMerchant = transaction.merchant_name.toLowerCase().trim();
+          if (existingMerchant !== newMerchant) return false;
+        }
+        return true;
+      }
+      
+      // If descriptions are clearly different (less than 50% word overlap), not a duplicate
+      const existingWords = existingDesc.split(/\s+/).filter(w => w.length >= 3);
+      const newWords = newDesc.split(/\s+/).filter(w => w.length >= 3);
+      const totalUniqueWords = new Set([...existingWords, ...newWords]).size;
+      const commonWords = existingWords.filter(w => newWords.includes(w));
+      
+      // If both have meaningful words but overlap is low, they're different transactions
+      if (totalUniqueWords > 0 && commonWords.length / totalUniqueWords < 0.5) return false;
       
       // One contains the other
       if (existingDesc.includes(newDesc) || newDesc.includes(existingDesc)) return true;
       
-      // Merchant name match
+      // Merchant name exact match with high word overlap
       if (existing.merchant_name && transaction.merchant_name) {
         const existingMerchant = existing.merchant_name.toLowerCase().trim();
         const newMerchant = transaction.merchant_name.toLowerCase().trim();
-        if (existingMerchant === newMerchant) return true;
+        if (existingMerchant === newMerchant && commonWords.length >= 2) return true;
       }
       
-      // Check for word overlap (at least 2 common words of 3+ chars)
-      const existingWords = existingDesc.split(/\s+/).filter(w => w.length >= 3);
-      const newWords = newDesc.split(/\s+/).filter(w => w.length >= 3);
-      const commonWords = existingWords.filter(w => newWords.includes(w));
-      if (commonWords.length >= 2) return true;
+      // High word overlap (at least 60% of unique words are common)
+      if (totalUniqueWords > 0 && commonWords.length / totalUniqueWords >= 0.6) return true;
       
       return false;
     });
