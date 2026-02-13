@@ -255,17 +255,17 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                   return (
                     <motion.div
                       key={expense.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
                       className={cn(
-                        "p-3 rounded-xl transition-colors",
+                        "rounded-lg transition-colors",
                         isSelected 
-                          ? "bg-primary/10 border border-primary/30" 
-                          : "bg-muted/50 hover:bg-muted/80"
+                          ? "bg-primary/10" 
+                          : "hover:bg-muted/50"
                       )}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="group flex items-center gap-2 py-2.5 px-2">
                         {/* Checkbox */}
                         <Checkbox
                           checked={isSelected}
@@ -273,53 +273,55 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                           className="shrink-0"
                         />
 
-                        {/* Icon */}
-                        <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg">
+                        {/* Category Icon */}
+                        <div 
+                          className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
+                          style={{ backgroundColor: `hsl(var(--${category.color}) / 0.15)` }}
+                        >
                           {category.icon}
                         </div>
 
-                        {/* Details */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{expense.description}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{format(expense.date, 'dd.MM.yyyy', { locale: hr })}</span>
-                            <span>•</span>
+                        {/* Main Content */}
+                        <div className="flex-1 min-w-0 mr-2">
+                          <p className="font-medium text-foreground truncate text-sm leading-tight">
+                            {expense.merchant_name || expense.description}
+                          </p>
+                          <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
                             <span>{paymentInfo.icon} {paymentInfo.name}</span>
                           </div>
                         </div>
 
-                        {/* Amount */}
-                        <p className="font-mono font-semibold whitespace-nowrap text-expense">
-                          -{formatAmount(expense.amount)}
-                        </p>
+                        {/* Amount & Date */}
+                        <div className="flex flex-col items-end shrink-0 gap-0.5">
+                          <p className="font-mono font-bold text-sm leading-tight text-expense">
+                            -{formatAmount(expense.amount)}
+                          </p>
+                          <span className="text-[10px] text-muted-foreground/70">
+                            {format(expense.date, 'd. MMM', { locale: hr })}
+                          </span>
+                        </div>
 
                         {/* Actions */}
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          <button
                             onClick={() => setChangingCategoryId(isChangingCategory ? null : expense.id)}
+                            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
                             title="Promijeni kategoriju"
                           >
-                            <Tag className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
+                            <Tag className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={() => onEditTransaction(expense)}
+                            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
                           >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={() => onDeleteExpense(expense.id)}
+                            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
 
@@ -329,7 +331,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="mt-3 pt-3 border-t border-border/50"
+                          className="mx-2 mb-2 pt-2 border-t border-border/50"
                         >
                           <p className="text-xs text-muted-foreground mb-2">Promijeni kategoriju:</p>
                           <div className="flex flex-wrap gap-1.5">
