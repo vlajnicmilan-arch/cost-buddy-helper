@@ -238,7 +238,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
         </div>
 
         {/* Transaction List */}
-        <ScrollArea className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="space-y-2 px-6 pb-6 pt-2">
             {filteredExpenses.length === 0 ? (
               <div className="py-12 text-center">
@@ -375,7 +375,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
               </AnimatePresence>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
