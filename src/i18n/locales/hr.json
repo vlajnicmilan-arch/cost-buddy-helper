@@ -272,7 +272,21 @@
     "savingReceipt": "Spremam sliku računa...",
     "receiptSaved": "Slika računa spremljena!",
     "saveError": "Greška pri spremanju troška",
-    "receiptImage": "Slika računa"
+    "receiptImage": "Slika računa",
+    "details": "Detalji transakcije",
+    "deleteTitle": "Obriši transakciju",
+    "confirmDelete": "Jeste li sigurni da želite obrisati ovu transakciju?",
+    "noItems": "Nema artikala za ovu transakciju",
+    "regular": "Redovan",
+    "extraordinary": "Vanredan",
+    "incomes": "Prihodi",
+    "expenses": "Troškovi",
+    "shown": "Prikazano",
+    "of": "od",
+    "noResults": "Nema rezultata za odabrane filtere",
+    "noExpenses": "Nema troškova",
+    "noIncome": "Nema prihoda",
+    "comments": "Komentari"
   },
   "categories": {
     "food": "Hrana",
