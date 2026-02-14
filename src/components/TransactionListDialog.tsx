@@ -10,7 +10,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, CheckSquare } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, CheckSquare, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -39,7 +39,8 @@ export const TransactionListDialog = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [expandedItemsId, setExpandedItemsId] = useState<string | null>(null);
+  const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   const { customPaymentSources } = useCustomPaymentSources();
   const { formatAmount } = useCurrency();
@@ -262,17 +263,21 @@ export const TransactionListDialog = ({
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       className={cn(
-                        "rounded-lg transition-colors",
+                        "flex items-center gap-2 py-2.5 px-2 rounded-lg transition-colors cursor-pointer",
                         isSelected 
                           ? "bg-primary/10" 
                           : "hover:bg-muted/50"
                       )}
+                      onClick={() => {
+                        setDetailExpense(expense);
+                        setDetailDialogOpen(true);
+                      }}
                     >
-                      <div className="group flex items-center gap-2 py-2.5 px-2">
                       {/* Checkbox */}
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleSelection(expense.id)}
+                        onClick={(e) => e.stopPropagation()}
                         className="shrink-0"
                       />
 
@@ -308,36 +313,82 @@ export const TransactionListDialog = ({
                           {format(expense.date, 'd. MMM', { locale: hr })}
                         </span>
                       </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button
-                          onClick={() => handleEdit(expense)}
-                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(expense.id)}
-                          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      </div>
-
-                      {/* Items Expander */}
-                      <TransactionItemsExpander
-                        expenseId={expense.id}
-                        isExpanded={expandedItemsId === expense.id}
-                        onToggle={() => setExpandedItemsId(expandedItemsId === expense.id ? null : expense.id)}
-                      />
                     </motion.div>
                   );
                 })}
               </AnimatePresence>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transaction Detail Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5" />
+              Detalji transakcije
+            </DialogTitle>
+          </DialogHeader>
+
+          {detailExpense && (
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-4">
+              {/* Transaction summary */}
+              <div className="p-3 rounded-lg bg-muted/50 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg shrink-0">
+                  {getCategoryInfo(detailExpense.category).icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{detailExpense.merchant_name || detailExpense.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(detailExpense.date, 'd. MMM yyyy', { locale: hr })}
+                    {' • '}
+                    {getPaymentSourceInfo(detailExpense.payment_source || 'cash').name}
+                  </p>
+                </div>
+                <div className={cn(
+                  "font-mono font-medium shrink-0",
+                  type === 'income' ? "text-income" : "text-expense"
+                )}>
+                  {type === 'income' ? '+' : '-'}{formatAmount(detailExpense.amount)}
+                </div>
+              </div>
+
+              {/* Items */}
+              <TransactionItemsExpander
+                expenseId={detailExpense.id}
+                isExpanded={true}
+                onToggle={() => {}}
+              />
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setDetailDialogOpen(false);
+                    handleEdit(detailExpense);
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Uredi
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => {
+                    setDetailDialogOpen(false);
+                    handleDelete(detailExpense.id);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Obriši
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
