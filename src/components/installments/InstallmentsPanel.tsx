@@ -134,7 +134,7 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
                           {t('installments.installment', 'Rata')} {installment.installment_number}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {format(installment.due_date, 'd. MMMM yyyy.', { locale: hr })}
+                          {format(installment.due_date, 'd. MMMM yyyy.', { locale: dateLocale })}
                         </p>
                       </div>
                     </div>
