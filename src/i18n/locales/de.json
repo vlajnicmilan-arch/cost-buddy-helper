@@ -58,6 +58,13 @@
     "submittedBy": "Eingereicht von",
     "addedBy": "Hinzugefügt von"
   },
+  "nav": {
+    "dashboard": "Übersicht",
+    "projects": "Projekte",
+    "budgets": "Budgets",
+    "wallet": "Geldbörse",
+    "viewAll": "Alle anzeigen"
+  },
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",

@@ -90,6 +90,13 @@
     "submittedBy": "Unio/la",
     "addedBy": "Dodao/la"
   },
+  "nav": {
+    "dashboard": "Pregled",
+    "projects": "Projekti",
+    "budgets": "Budžeti",
+    "wallet": "Novčanik",
+    "viewAll": "Pogledaj sve"
+  },
   "common": {
     "save": "Spremi",
     "cancel": "Odustani",
