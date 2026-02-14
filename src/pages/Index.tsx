@@ -726,10 +726,10 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Transactions */}
-          <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen} className="lg:col-span-2" data-tutorial="transactions">
+          <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen} className="lg:col-span-2">
             <div className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 ${transactionsOpen ? 'p-6' : 'p-4'}`}>
               <CollapsibleTrigger asChild>
-                <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
+                <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity" data-tutorial="transactions">
                   <h2 className="text-lg font-semibold">{t('transactions.recentTransactions')}</h2>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
