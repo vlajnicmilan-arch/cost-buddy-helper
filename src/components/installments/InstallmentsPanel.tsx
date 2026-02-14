@@ -84,7 +84,7 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{t('installments.progress', 'Napredak')}</span>
-              <span className="font-medium">{plan.paidCount}/{plan.totalCount} rata</span>
+              <span className="font-medium">{plan.paidCount}/{plan.totalCount} {t('installments.installment', 'rata')}</span>
             </div>
             <Progress value={(plan.paidCount / plan.totalCount) * 100} className="h-2" />
           </div>
@@ -130,7 +130,7 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
                           "font-medium text-sm",
                           isPaid && "line-through text-muted-foreground"
                         )}>
-                          Rata {installment.installment_number}
+                          {t('installments.installment', 'Rata')} {installment.installment_number}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {format(installment.due_date, 'd. MMMM yyyy.', { locale: hr })}

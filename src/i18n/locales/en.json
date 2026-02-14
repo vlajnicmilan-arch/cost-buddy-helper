@@ -169,7 +169,9 @@
     "daysLeft": "days",
     "finances": "Finances",
     "account": "account",
-    "accounts": "accounts"
+    "accounts": "accounts",
+    "reorderMode": "Reorder",
+    "members": "Members"
   },
   "nav": {
     "home": "Home",

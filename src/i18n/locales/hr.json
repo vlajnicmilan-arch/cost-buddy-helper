@@ -169,7 +169,9 @@
     "daysLeft": "dana",
     "finances": "Novčanik",
     "account": "račun",
-    "accounts": "računa"
+    "accounts": "računa",
+    "reorderMode": "Preslagivanje",
+    "members": "Članovi"
   },
   "nav": {
     "home": "Početna",

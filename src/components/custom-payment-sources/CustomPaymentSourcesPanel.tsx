@@ -264,7 +264,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => setMembersDialogSource(source)}
-                        title="Članovi"
+                        title={t('common.members', 'Članovi')}
                       >
                         <Users className="h-4 w-4" />
                       </Button>

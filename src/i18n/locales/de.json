@@ -137,7 +137,9 @@
     "daysLeft": "Tage",
     "finances": "Finanzen",
     "account": "Konto",
-    "accounts": "Konten"
+    "accounts": "Konten",
+    "reorderMode": "Neuordnung",
+    "members": "Mitglieder"
   },
   "nav": {
     "home": "Startseite",
@@ -744,6 +746,42 @@
     "decline": "Ablehnen",
     "invitationAccepted": "Einladung angenommen",
     "invitationDeclined": "Einladung abgelehnt"
+  },
+  "installments": {
+    "title": "Ratenzahlungen",
+    "payInInstallments": "In Raten zahlen",
+    "numberOfInstallments": "Anzahl der Raten",
+    "firstPaymentDate": "Erste Zahlung",
+    "monthlyPayment": "Monatliche Rate",
+    "total": "Gesamt",
+    "remaining": "Verbleibend",
+    "remainingShort": "verbleibend",
+    "progress": "Fortschritt",
+    "allInstallments": "Alle Raten",
+    "rataProgress": "Rate {{current}}/{{total}}",
+    "nextPayment": "Nächste Rate",
+    "overdue": "Überfällig",
+    "next": "Nächste",
+    "deletePlan": "Plan löschen",
+    "deleteConfirmTitle": "Zahlungsplan löschen?",
+    "deleteConfirmMessage": "Diese Aktion löscht den Plan und alle zugehörigen Raten dauerhaft. Dies kann nicht rückgängig gemacht werden.",
+    "noPlans": "Keine aktiven Ratenzahlungspläne",
+    "addHint": "Fügen Sie eine neue Ausgabe oder Einnahme hinzu und wählen Sie die Option \"Ratenzahlung\"",
+    "installment": "Rate"
+  },
+  "insights": {
+    "positiveBalance": "Super! Ihr Saldo ist {{amount}} im Plus.",
+    "negativeBalance": "Achtung! Ihr Saldo ist {{amount}} im Minus.",
+    "spendingUp": "Sie geben diesen Monat {{percent}}% mehr aus als letzten Monat.",
+    "spendingDown": "Toll! Sie geben {{percent}}% weniger aus als letzten Monat.",
+    "lowSavings": "Sie sparen nur {{percent}}% Ihres Einkommens. Erwägen Sie, Ausgaben zu reduzieren.",
+    "highCategorySpending": "{{percent}}% der Ausgaben gehen an {{category}}. Vielleicht zu viel?",
+    "motivation1": "Jede Ersparnis heute ist Freiheit morgen! 💪",
+    "motivation2": "Kleine Schritte führen zu großen Zielen! 🎯",
+    "motivation3": "Sie kontrollieren Ihre Finanzen - das ist super! ⭐",
+    "motivation4": "Verfolgen Sie weiter Ihre Ausgaben, Sie machen das großartig! 🌟",
+    "default": "Tippen für KI-Tipps zu Ihren Finanzen!",
+    "tapForMore": "Tippen für mehr Tipps"
   },
   "duplicates": {
     "possibleDuplicate": "Mögliche doppelte Transaktion",
