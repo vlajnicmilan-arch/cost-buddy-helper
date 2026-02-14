@@ -831,7 +831,7 @@ const Index = () => {
                   <AccordionTrigger className="glass-card rounded-2xl px-6 py-4 hover:no-underline [&[data-state=open]]:rounded-b-none">
                     <div className="flex items-center gap-2">
                       <Grid3X3 className="h-5 w-5 text-primary" />
-                      <span className="text-lg font-semibold">Po kategorijama</span>
+                      <span className="text-lg font-semibold">{t('common.byCategories', 'Po kategorijama')}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="glass-card rounded-b-2xl px-6 pb-6 pt-0 border-t-0">
@@ -852,7 +852,7 @@ const Index = () => {
                     className="glass-card rounded-2xl px-6 py-4 w-full text-left flex items-center gap-2 hover:bg-muted/50 transition-colors"
                   >
                     <CreditCard className="h-5 w-5 text-primary" />
-                    <span className="text-lg font-semibold">Prilagođeni izvori plaćanja</span>
+                    <span className="text-lg font-semibold">{t('paymentSources.myAccounts', 'Prilagođeni izvori plaćanja')}</span>
                   </button>
                 </AccordionItem>
               </Accordion>
