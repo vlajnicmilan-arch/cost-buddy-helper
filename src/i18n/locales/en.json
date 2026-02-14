@@ -272,7 +272,21 @@
     "savingReceipt": "Saving receipt image...",
     "receiptSaved": "Receipt image saved!",
     "saveError": "Error saving expense",
-    "receiptImage": "Receipt image"
+    "receiptImage": "Receipt image",
+    "details": "Transaction details",
+    "deleteTitle": "Delete transaction",
+    "confirmDelete": "Are you sure you want to delete this transaction?",
+    "noItems": "No items for this transaction",
+    "regular": "Regular",
+    "extraordinary": "Extraordinary",
+    "incomes": "Income",
+    "expenses": "Expenses",
+    "shown": "Shown",
+    "of": "of",
+    "noResults": "No results for selected filters",
+    "noExpenses": "No expenses",
+    "noIncome": "No income",
+    "comments": "Comments"
   },
   "categories": {
     "food": "Food",

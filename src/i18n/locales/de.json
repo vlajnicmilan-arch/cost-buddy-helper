@@ -240,7 +240,21 @@
     "savingReceipt": "Belegbild wird gespeichert...",
     "receiptSaved": "Belegbild gespeichert!",
     "saveError": "Fehler beim Speichern der Ausgabe",
-    "receiptImage": "Belegbild"
+    "receiptImage": "Belegbild",
+    "details": "Transaktionsdetails",
+    "deleteTitle": "Transaktion löschen",
+    "confirmDelete": "Sind Sie sicher, dass Sie diese Transaktion löschen möchten?",
+    "noItems": "Keine Artikel für diese Transaktion",
+    "regular": "Regelmäßig",
+    "extraordinary": "Außerordentlich",
+    "incomes": "Einnahmen",
+    "expenses": "Ausgaben",
+    "shown": "Angezeigt",
+    "of": "von",
+    "noResults": "Keine Ergebnisse für ausgewählte Filter",
+    "noExpenses": "Keine Ausgaben",
+    "noIncome": "Keine Einnahmen",
+    "comments": "Kommentare"
   },
   "categories": {
     "food": "Essen",

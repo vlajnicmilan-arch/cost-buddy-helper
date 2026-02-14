@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -35,6 +36,7 @@ export const TransactionListDialog = ({
   onDelete,
   total
 }: TransactionListDialogProps) => {
+  const { t } = useTranslation();
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
@@ -111,7 +113,7 @@ export const TransactionListDialog = ({
       }
     }
     
-    toast.success(`Kategorija promijenjena za ${successCount} transakcija`);
+    toast.success(t('transactions.categoryChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -132,7 +134,7 @@ export const TransactionListDialog = ({
       }
     }
     
-    toast.success(`Izvor plaćanja promijenjen za ${successCount} transakcija`);
+    toast.success(t('transactions.paymentSourceChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -149,7 +151,7 @@ export const TransactionListDialog = ({
       }
     }
     
-    toast.success(`Obrisano ${successCount} transakcija`);
+    toast.success(t('transactions.deleted', { count: successCount }));
     clearSelection();
   };
 
@@ -173,18 +175,18 @@ export const TransactionListDialog = ({
                   {type === 'income' ? (
                     <>
                       <TrendingUp className="w-5 h-5 text-income" />
-                      <span>Prihodi</span>
+                      <span>{t('transactions.incomes', 'Prihodi')}</span>
                     </>
                   ) : (
                     <>
                       <TrendingDown className="w-5 h-5 text-expense" />
-                      <span>Troškovi</span>
+                      <span>{t('transactions.expenses', 'Troškovi')}</span>
                     </>
                   )}
                 </DialogTitle>
                 {selectedIds.size > 0 && (
                   <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
-                    {selectedIds.size} odabrano
+                    {selectedIds.size} {t('common.selected', 'odabrano')}
                   </span>
                 )}
               </div>
@@ -196,7 +198,7 @@ export const TransactionListDialog = ({
                   className="h-7 text-xs gap-1.5"
                 >
                   <CheckSquare className="w-3.5 h-3.5" />
-                  {selectedIds.size === filteredExpenses.length ? 'Poništi odabir' : 'Odaberi sve'}
+                  {selectedIds.size === filteredExpenses.length ? t('common.cancelSelection', 'Poništi odabir') : t('common.selectAll', 'Odaberi sve')}
                 </Button>
               )}
             </div>
@@ -229,7 +231,7 @@ export const TransactionListDialog = ({
             type === 'income' ? "bg-income/10" : "bg-expense/10"
           )}>
             <p className="text-sm text-muted-foreground mb-1">
-              Prikazano ({filteredExpenses.length} od {typeFilteredExpenses.length})
+              {t('transactions.shown', 'Prikazano')} ({filteredExpenses.length} {t('transactions.of', 'od')} {typeFilteredExpenses.length})
             </p>
             <p className={cn(
               "text-2xl font-bold font-mono",
@@ -245,8 +247,8 @@ export const TransactionListDialog = ({
               <div className="py-12 text-center">
                 <p className="text-muted-foreground">
                   {typeFilteredExpenses.length === 0 
-                    ? (type === 'income' ? 'Nema prihoda' : 'Nema troškova')
-                    : 'Nema rezultata za odabrane filtere'}
+                    ? (type === 'income' ? t('transactions.noIncome', 'Nema prihoda') : t('transactions.noExpenses', 'Nema troškova'))
+                    : t('transactions.noResults', 'Nema rezultata za odabrane filtere')}
                 </p>
               </div>
             ) : (
@@ -328,7 +330,7 @@ export const TransactionListDialog = ({
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Eye className="w-5 h-5" />
-              Detalji transakcije
+              {t('transactions.details', 'Detalji transakcije')}
             </DialogTitle>
           </DialogHeader>
 
@@ -373,7 +375,7 @@ export const TransactionListDialog = ({
                   }}
                 >
                   <Pencil className="w-4 h-4 mr-2" />
-                  Uredi
+                  {t('common.edit', 'Uredi')}
                 </Button>
                 <Button
                   variant="outline"
@@ -384,7 +386,7 @@ export const TransactionListDialog = ({
                   }}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Obriši
+                  {t('common.delete', 'Obriši')}
                 </Button>
               </div>
             </div>
