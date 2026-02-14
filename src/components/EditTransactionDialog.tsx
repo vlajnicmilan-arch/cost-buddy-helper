@@ -131,7 +131,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
     } catch (error) {
       console.error('Error saving transaction:', error);
       const { toast } = await import('sonner');
-      toast.error('Greška pri spremanju. Pokušaj ponovno.');
+      toast.error(t('transactions.saveError2'));
     } finally {
       setSaving(false);
     }

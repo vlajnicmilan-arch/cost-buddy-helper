@@ -5,6 +5,7 @@ import { CATEGORIES, Category, PAYMENT_SOURCE_GROUPS } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +49,7 @@ export const BulkActionsToolbar = ({
   showCategoryChange = true,
   showPaymentSourceChange = true,
 }: BulkActionsToolbarProps) => {
+  const { t } = useTranslation();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { customPaymentSources } = useCustomPaymentSources();
@@ -95,7 +97,7 @@ export const BulkActionsToolbar = ({
               <div className="flex items-center gap-2">
                 <CheckSquare className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium">
-                  {selectedCount} od {totalCount} odabrano
+                  {t('bulk.selected', { count: selectedCount, total: totalCount })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -105,7 +107,7 @@ export const BulkActionsToolbar = ({
                   onClick={onSelectAll}
                   className="h-7 text-xs"
                 >
-                  Odaberi sve
+                  {t('bulk.selectAll')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -114,14 +116,13 @@ export const BulkActionsToolbar = ({
                   className="h-7 text-xs"
                 >
                   <X className="w-3 h-3 mr-1" />
-                  Poništi
+                  {t('bulk.deselect')}
                 </Button>
               </div>
             </div>
 
             {/* Bulk actions */}
             <div className="flex flex-wrap gap-2">
-              {/* Combined dropdown for category and payment source */}
               {(showCategoryChange || showPaymentSourceChange) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -132,16 +133,15 @@ export const BulkActionsToolbar = ({
                       disabled={isProcessing}
                     >
                       <Settings2 className="w-3 h-3" />
-                      Grupna promjena
+                      {t('bulk.bulkChange')}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56">
-                    {/* Category submenu */}
                     {showCategoryChange && (
                       <DropdownMenuSub>
                         <DropdownMenuSubTrigger>
                           <Tag className="w-4 h-4 mr-2" />
-                          Kategorija
+                          {t('bulk.category_label')}
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
                           {CATEGORIES.map((cat) => (
@@ -157,15 +157,13 @@ export const BulkActionsToolbar = ({
                       </DropdownMenuSub>
                     )}
 
-                    {/* Payment source submenu */}
                     {showPaymentSourceChange && (
                       <DropdownMenuSub>
                         <DropdownMenuSubTrigger>
                           <CreditCard className="w-4 h-4 mr-2" />
-                          Plaćanje
+                          {t('bulk.payment')}
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                          {/* Custom payment sources */}
                           {customPaymentSources.length > 0 && (
                             <>
                               {customPaymentSources.map((source) => (
@@ -184,7 +182,6 @@ export const BulkActionsToolbar = ({
                               ))}
                             </>
                           )}
-                          {/* Standard payment sources */}
                           {PAYMENT_SOURCE_GROUPS.map((group) => (
                             group.sources.map((source) => (
                               <DropdownMenuItem 
@@ -203,7 +200,6 @@ export const BulkActionsToolbar = ({
                 </DropdownMenu>
               )}
 
-              {/* Delete button */}
               <Button
                 variant="destructive"
                 size="sm"
@@ -212,30 +208,29 @@ export const BulkActionsToolbar = ({
                 disabled={isProcessing}
               >
                 <Trash2 className="w-3 h-3 mr-1" />
-                Obriši ({selectedCount})
+                {t('bulk.deleteCount', { count: selectedCount })}
               </Button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Delete confirmation dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Obrisati {selectedCount} transakcija?</AlertDialogTitle>
+            <AlertDialogTitle>{t('bulk.deleteConfirmTitle', { count: selectedCount })}</AlertDialogTitle>
             <AlertDialogDescription>
-              Ova radnja je nepovratna. Svi odabrani zapisi bit će trajno obrisani.
+              {t('bulk.deleteConfirmDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isProcessing}>Odustani</AlertDialogCancel>
+            <AlertDialogCancel disabled={isProcessing}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete} 
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isProcessing}
             >
-              {isProcessing ? 'Brisanje...' : 'Obriši'}
+              {isProcessing ? t('bulk.deleting') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

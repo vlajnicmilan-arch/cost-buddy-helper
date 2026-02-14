@@ -139,7 +139,7 @@ export const PaymentSourceTransactionsDialog = ({
       }
     }
     
-    toast.success(`Kategorija promijenjena za ${successCount} transakcija`);
+    toast.success(t('transactions.categoryChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -160,7 +160,7 @@ export const PaymentSourceTransactionsDialog = ({
       }
     }
     
-    toast.success(`Izvor plaćanja promijenjen za ${successCount} transakcija`);
+    toast.success(t('transactions.paymentSourceChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -177,7 +177,7 @@ export const PaymentSourceTransactionsDialog = ({
       }
     }
     
-    toast.success(`Obrisano ${successCount} transakcija`);
+    toast.success(t('transactions.deleted', { count: successCount }));
     clearSelection();
   };
 
@@ -216,7 +216,7 @@ export const PaymentSourceTransactionsDialog = ({
                 </DialogTitle>
                 {selectedIds.size > 0 && (
                   <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
-                    {selectedIds.size} odabrano
+                    {selectedIds.size} {t('common.selected')}
                   </span>
                 )}
               </div>
@@ -228,7 +228,7 @@ export const PaymentSourceTransactionsDialog = ({
                   className="h-7 text-xs gap-1.5 shrink-0"
                 >
                   <CheckSquare className="w-3.5 h-3.5" />
-                  {selectedIds.size === filteredSourceExpenses.length ? 'Poništi' : 'Odaberi sve'}
+                  {selectedIds.size === filteredSourceExpenses.length ? t('common.cancelSelection') : t('common.selectAll')}
                 </Button>
               )}
             </div>
@@ -238,7 +238,7 @@ export const PaymentSourceTransactionsDialog = ({
           <div className="relative shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Pretraži po nazivu..."
+              placeholder={t('transactions.searchByName')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 pr-9 h-9 text-sm"
@@ -328,7 +328,7 @@ export const PaymentSourceTransactionsDialog = ({
                 <p className="text-muted-foreground">
                   {sourceExpenses.length === 0 
                     ? t('transactions.noTransactions')
-                    : 'Nema rezultata za pretragu'}
+                    : t('transactions.noSearchResults')}
                 </p>
               </div>
             ) : (
@@ -424,7 +424,7 @@ export const PaymentSourceTransactionsDialog = ({
                               ? "text-primary opacity-100" 
                               : "text-muted-foreground hover:text-foreground"
                           )}
-                          title="Komentari"
+                          title={t('transactions.comments')}
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
                         </button>

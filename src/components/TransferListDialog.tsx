@@ -4,9 +4,10 @@ import { Expense, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense'
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
 import { ArrowRight, ArrowLeftRight, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 interface TransferListDialogProps {
   open: boolean;
@@ -59,11 +60,7 @@ function parseTransferDetails(description: string, paymentSource?: string): {
   // Cash deposits
   if (desc.includes('polog gotovine') || desc.includes('cash deposit') || desc.includes('uplata gotovine')) {
     fromSource = 'cash';
-    if (desc.includes('aircash')) {
-      toSource = 'aircash';
-    } else {
-      toSource = 'bank';
-    }
+    toSource = desc.includes('aircash') ? 'aircash' : 'bank';
   }
   
   // Crypto transfers
@@ -79,7 +76,6 @@ function parseTransferDetails(description: string, paymentSource?: string): {
   
   // Exchange operations
   if (desc.includes('exchange') || desc.includes('mjenjačnica') || desc.includes('konverzija')) {
-    // Keep the payment source as from, to is the same but different currency
     toSource = fromSource;
   }
   
@@ -103,8 +99,11 @@ export const TransferListDialog = ({
   transfers,
   totalAmount
 }: TransferListDialogProps) => {
+  const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const { formatAmount } = useCurrency();
+
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   // Apply filters
   const filteredTransfers = useMemo(() => {
@@ -120,7 +119,7 @@ export const TransferListDialog = ({
   // Group transfers by month
   const groupedTransfers = filteredTransfers.reduce((acc, transfer) => {
     const monthKey = format(transfer.date, 'yyyy-MM');
-    const monthLabel = format(transfer.date, 'LLLL yyyy', { locale: hr });
+    const monthLabel = format(transfer.date, 'LLLL yyyy', { locale: dateLocale });
     
     if (!acc[monthKey]) {
       acc[monthKey] = { label: monthLabel, items: [], total: 0 };
@@ -147,7 +146,7 @@ export const TransferListDialog = ({
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-primary" />
-            Prijenosi između računa
+            {t('transactions.transfersBetweenAccounts')}
           </DialogTitle>
         </DialogHeader>
 
@@ -161,7 +160,7 @@ export const TransferListDialog = ({
         {/* Summary */}
         <div className="p-4 rounded-xl bg-primary/10 text-center shrink-0">
           <p className="text-sm text-muted-foreground mb-1">
-            Prikazano ({filteredTransfers.length} od {transfers.length})
+            {t('transactions.shown')} ({filteredTransfers.length} {t('transactions.of')} {transfers.length})
           </p>
           <p className="text-2xl font-bold font-mono text-primary">
             ↔ {formatAmount(filteredTotal)}
@@ -175,11 +174,11 @@ export const TransferListDialog = ({
               <ArrowLeftRight className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
               <p className="text-muted-foreground">
                 {transfers.length === 0 
-                  ? 'Nema prijenosa'
-                  : 'Nema rezultata za odabrane filtere'}
+                  ? t('transactions.noTransfers')
+                  : t('transactions.noResults')}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Prijenosi između vlastitih računa će se prikazati ovdje
+                {t('transactions.noTransfersHint')}
               </p>
             </div>
           ) : (
@@ -246,7 +245,7 @@ export const TransferListDialog = ({
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
                                 <span>
-                                  {format(transfer.date, 'dd.MM.yyyy.', { locale: hr })}
+                                  {format(transfer.date, 'dd.MM.yyyy.', { locale: dateLocale })}
                                 </span>
                               </div>
                             </div>

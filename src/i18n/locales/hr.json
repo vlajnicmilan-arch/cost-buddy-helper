@@ -286,7 +286,22 @@
     "noResults": "Nema rezultata za odabrane filtere",
     "noExpenses": "Nema troškova",
     "noIncome": "Nema prihoda",
-    "comments": "Komentari"
+    "comments": "Komentari",
+    "expensesInCategory": "Troškovi u ovoj kategoriji",
+    "changeCategory": "Promijeni kategoriju",
+    "allCategories": "Sve kategorije...",
+    "categoryChangedTo": "Kategorija promijenjena u \"{{name}}\"",
+    "categoryChangeError": "Greška pri promjeni kategorije",
+    "noExpensesInCategory": "Nema troškova u ovoj kategoriji",
+    "searchByName": "Pretraži po nazivu...",
+    "noSearchResults": "Nema rezultata za pretragu",
+    "transfersBetweenAccounts": "Prijenosi između računa",
+    "noTransfersHint": "Prijenosi između vlastitih računa će se prikazati ovdje",
+    "saveError2": "Greška pri spremanju. Pokušaj ponovno.",
+    "transactions": "transakcija",
+    "expenseNature": "Vrsta troška",
+    "assignToBudget": "Pridruži budžetu",
+    "noBudget": "Bez budžeta"
   },
   "categories": {
     "food": "Hrana",
@@ -470,7 +485,30 @@
   "bulk": {
     "paymentSource": "Grupno plaćanje",
     "category": "Grupno kategorije",
-    "reports": "Izvješća"
+    "reports": "Izvješća",
+    "selected": "{{count}} od {{total}} odabrano",
+    "selectAll": "Odaberi sve",
+    "deselect": "Poništi",
+    "bulkChange": "Grupna promjena",
+    "category_label": "Kategorija",
+    "payment": "Plaćanje",
+    "deleteCount": "Obriši ({{count}})",
+    "deleteConfirmTitle": "Obrisati {{count}} transakcija?",
+    "deleteConfirmDesc": "Ova radnja je nepovratna. Svi odabrani zapisi bit će trajno obrisani.",
+    "deleting": "Brisanje..."
+  },
+  "filters": {
+    "filters": "Filteri",
+    "thisMonth": "Ovaj mjesec",
+    "lastMonth": "Prošli mjesec",
+    "last3Months": "Zadnja 3 mjeseca",
+    "clear": "Očisti",
+    "selectPeriod": "Odaberi period",
+    "allMembers": "Svi članovi",
+    "allCards": "Sve kartice",
+    "all": "Sve",
+    "personal": "Osobno",
+    "projects": "Projekti"
   },
   "reports": {
     "period": "Razdoblje",
