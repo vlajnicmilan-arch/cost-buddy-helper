@@ -254,7 +254,22 @@
     "noResults": "Keine Ergebnisse für ausgewählte Filter",
     "noExpenses": "Keine Ausgaben",
     "noIncome": "Keine Einnahmen",
-    "comments": "Kommentare"
+    "comments": "Kommentare",
+    "expensesInCategory": "Ausgaben in dieser Kategorie",
+    "changeCategory": "Kategorie ändern",
+    "allCategories": "Alle Kategorien...",
+    "categoryChangedTo": "Kategorie geändert zu \"{{name}}\"",
+    "categoryChangeError": "Fehler beim Ändern der Kategorie",
+    "noExpensesInCategory": "Keine Ausgaben in dieser Kategorie",
+    "searchByName": "Nach Name suchen...",
+    "noSearchResults": "Keine Ergebnisse für die Suche",
+    "transfersBetweenAccounts": "Überweisungen zwischen Konten",
+    "noTransfersHint": "Überweisungen zwischen eigenen Konten werden hier angezeigt",
+    "saveError2": "Fehler beim Speichern. Bitte erneut versuchen.",
+    "transactions": "Transaktionen",
+    "expenseNature": "Ausgabenart",
+    "assignToBudget": "Budget zuordnen",
+    "noBudget": "Kein Budget"
   },
   "categories": {
     "food": "Essen",
@@ -438,7 +453,30 @@
   "bulk": {
     "paymentSource": "Massen-Zahlung",
     "category": "Massen-Kategorie",
-    "reports": "Berichte"
+    "reports": "Berichte",
+    "selected": "{{count}} von {{total}} ausgewählt",
+    "selectAll": "Alle auswählen",
+    "deselect": "Abwählen",
+    "bulkChange": "Massenänderung",
+    "category_label": "Kategorie",
+    "payment": "Zahlung",
+    "deleteCount": "Löschen ({{count}})",
+    "deleteConfirmTitle": "{{count}} Transaktionen löschen?",
+    "deleteConfirmDesc": "Diese Aktion ist unwiderruflich. Alle ausgewählten Einträge werden dauerhaft gelöscht.",
+    "deleting": "Löschen..."
+  },
+  "filters": {
+    "filters": "Filter",
+    "thisMonth": "Dieser Monat",
+    "lastMonth": "Letzter Monat",
+    "last3Months": "Letzte 3 Monate",
+    "clear": "Zurücksetzen",
+    "selectPeriod": "Zeitraum wählen",
+    "allMembers": "Alle Mitglieder",
+    "allCards": "Alle Karten",
+    "all": "Alle",
+    "personal": "Persönlich",
+    "projects": "Projekte"
   },
   "reports": {
     "period": "Zeitraum",

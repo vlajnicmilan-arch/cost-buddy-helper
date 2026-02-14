@@ -9,12 +9,13 @@ import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
 import { Pencil, Trash2, Tag, CheckSquare, ShoppingCart } from 'lucide-react';
 import { TransactionItemsExpander } from './TransactionItemsExpander';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface CategoryTransactionsDialogProps {
   open: boolean;
@@ -35,11 +36,14 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
   onDeleteExpense,
   onEditTransaction
 }, ref) => {
+  const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [changingCategoryId, setChangingCategoryId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedItemsId, setExpandedItemsId] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
+
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   // All expenses in this category
   const categoryExpenses = useMemo(() => {
@@ -93,8 +97,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
       }
     }
     
-    const catInfo = getCategoryInfo(newCategory);
-    toast.success(`Kategorija "${catInfo.name}" postavljena za ${successCount} transakcija`);
+    toast.success(t('transactions.categoryChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -115,7 +118,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
       }
     }
     
-    toast.success(`Izvor plaćanja promijenjen za ${successCount} transakcija`);
+    toast.success(t('transactions.paymentSourceChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -132,7 +135,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
       }
     }
     
-    toast.success(`Obrisano ${successCount} transakcija`);
+    toast.success(t('transactions.deleted', { count: successCount }));
     clearSelection();
   };
 
@@ -143,10 +146,10 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
         category: newCategory
       });
       const newCatInfo = getCategoryInfo(newCategory);
-      toast.success(`Kategorija promijenjena u "${newCatInfo.name}"`);
+      toast.success(t('transactions.categoryChangedTo', { name: newCatInfo.name }));
       setChangingCategoryId(null);
     } catch (error) {
-      toast.error('Greška pri promjeni kategorije');
+      toast.error(t('transactions.categoryChangeError'));
     }
   };
 
@@ -178,13 +181,13 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                 <div>
                   <span>{category.name}</span>
                   <p className="text-sm text-muted-foreground font-normal">
-                    Troškovi u ovoj kategoriji
+                    {t('transactions.expensesInCategory')}
                   </p>
                 </div>
               </DialogTitle>
               {selectedIds.size > 0 && (
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
-                  {selectedIds.size} odabrano
+                  {selectedIds.size} {t('common.selected')}
                 </span>
               )}
             </div>
@@ -196,7 +199,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                 className="h-7 text-xs gap-1.5 shrink-0"
               >
                 <CheckSquare className="w-3.5 h-3.5" />
-                {selectedIds.size === filteredExpenses.length ? 'Poništi' : 'Odaberi sve'}
+                {selectedIds.size === filteredExpenses.length ? t('common.cancelSelection') : t('common.selectAll')}
               </Button>
             )}
           </div>
@@ -231,7 +234,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
         >
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">
-              Prikazano {filteredExpenses.length} od {categoryExpenses.length}
+              {t('transactions.shown')} {filteredExpenses.length} {t('transactions.of')} {categoryExpenses.length}
             </span>
             <span className="font-mono font-semibold text-expense">
               -{formatAmount(totalAmount)}
@@ -247,8 +250,8 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                 <Tag className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
                 <p className="text-muted-foreground">
                   {categoryExpenses.length === 0 
-                    ? 'Nema troškova u ovoj kategoriji'
-                    : 'Nema rezultata za odabrane filtere'}
+                    ? t('transactions.noExpensesInCategory')
+                    : t('transactions.noResults')}
                 </p>
               </div>
             ) : (
@@ -303,7 +306,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                             -{formatAmount(expense.amount)}
                           </p>
                           <span className="text-[10px] text-muted-foreground/70">
-                            {format(expense.date, 'd. MMM', { locale: hr })}
+                            {format(expense.date, 'd. MMM', { locale: dateLocale })}
                           </span>
                         </div>
 
@@ -312,7 +315,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                           <button
                             onClick={() => setChangingCategoryId(isChangingCategory ? null : expense.id)}
                             className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
-                            title="Promijeni kategoriju"
+                            title={t('transactions.changeCategory')}
                           >
                             <Tag className="w-3.5 h-3.5" />
                           </button>
@@ -339,7 +342,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                           exit={{ opacity: 0, height: 0 }}
                           className="mx-2 mb-2 pt-2 border-t border-border/50"
                         >
-                          <p className="text-xs text-muted-foreground mb-2">Promijeni kategoriju:</p>
+                          <p className="text-xs text-muted-foreground mb-2">{t('transactions.changeCategory')}:</p>
                           <div className="flex flex-wrap gap-1.5">
                             {CATEGORIES.filter(c => c.id !== category.id).slice(0, 12).map((cat) => (
                               <Button
@@ -356,7 +359,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                           </div>
                           <Select onValueChange={(value) => handleCategoryChange(expense, value as Category)}>
                             <SelectTrigger className="mt-2 h-8 text-xs">
-                              <SelectValue placeholder="Sve kategorije..." />
+                              <SelectValue placeholder={t('transactions.allCategories')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-[200px]">
                               {CATEGORIES.filter(c => c.id !== category.id).map((cat) => (

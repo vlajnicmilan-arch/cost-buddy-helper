@@ -6,10 +6,11 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { PaymentSourceCard } from '@/types/customPaymentSource';
+import { useTranslation } from 'react-i18next';
 
 export interface MemberOption {
   userId: string;
@@ -40,30 +41,6 @@ interface TransactionFiltersProps {
   className?: string;
 }
 
-const presetRanges = [
-  {
-    label: 'Ovaj mjesec',
-    getValue: () => ({
-      from: startOfMonth(new Date()),
-      to: endOfMonth(new Date()),
-    }),
-  },
-  {
-    label: 'Prošli mjesec',
-    getValue: () => ({
-      from: startOfMonth(subMonths(new Date(), 1)),
-      to: endOfMonth(subMonths(new Date(), 1)),
-    }),
-  },
-  {
-    label: 'Zadnja 3 mjeseca',
-    getValue: () => ({
-      from: startOfMonth(subMonths(new Date(), 2)),
-      to: endOfMonth(new Date()),
-    }),
-  },
-];
-
 export const TransactionFilters = ({
   filters,
   onFiltersChange,
@@ -75,7 +52,34 @@ export const TransactionFilters = ({
   cards = [],
   className,
 }: TransactionFiltersProps) => {
+  const { t, i18n } = useTranslation();
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+
+  const presetRanges = [
+    {
+      label: t('filters.thisMonth'),
+      getValue: () => ({
+        from: startOfMonth(new Date()),
+        to: endOfMonth(new Date()),
+      }),
+    },
+    {
+      label: t('filters.lastMonth'),
+      getValue: () => ({
+        from: startOfMonth(subMonths(new Date(), 1)),
+        to: endOfMonth(subMonths(new Date(), 1)),
+      }),
+    },
+    {
+      label: t('filters.last3Months'),
+      getValue: () => ({
+        from: startOfMonth(subMonths(new Date(), 2)),
+        to: endOfMonth(new Date()),
+      }),
+    },
+  ];
 
   const hasActiveFilters =
     filters.searchTerm ||
@@ -108,7 +112,7 @@ export const TransactionFilters = ({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Pretraži po nazivu..."
+          placeholder={t('transactions.searchByName')}
           value={filters.searchTerm}
           onChange={(e) => updateFilter('searchTerm', e.target.value)}
           className="pl-9 pr-9 h-9 text-sm"
@@ -135,7 +139,7 @@ export const TransactionFilters = ({
           onClick={() => setShowAdvanced(!showAdvanced)}
         >
           <Filter className="w-3.5 h-3.5" />
-          Filteri
+          {t('filters.filters')}
           {hasActiveFilters && (
             <span className="w-2 h-2 rounded-full bg-primary" />
           )}
@@ -153,7 +157,7 @@ export const TransactionFilters = ({
               )}
               onClick={() => updateFilter('scope', 'all')}
             >
-              Sve
+              {t('filters.all')}
             </Button>
             <Button
               variant="ghost"
@@ -165,7 +169,7 @@ export const TransactionFilters = ({
               onClick={() => updateFilter('scope', 'personal')}
             >
               <User className="w-3 h-3" />
-              Osobno
+              {t('filters.personal')}
             </Button>
             <Button
               variant="ghost"
@@ -177,7 +181,7 @@ export const TransactionFilters = ({
               onClick={() => updateFilter('scope', 'project')}
             >
               <FolderKanban className="w-3 h-3" />
-              Projekti
+              {t('filters.projects')}
             </Button>
           </div>
         )}
@@ -207,7 +211,7 @@ export const TransactionFilters = ({
             onClick={clearFilters}
           >
             <X className="w-3 h-3 mr-1" />
-            Očisti
+            {t('filters.clear')}
           </Button>
         )}
       </div>
@@ -230,14 +234,14 @@ export const TransactionFilters = ({
                 {filters.dateRange?.from ? (
                   filters.dateRange?.to ? (
                     <>
-                      {format(filters.dateRange.from, 'dd.MM.yy', { locale: hr })} -{' '}
-                      {format(filters.dateRange.to, 'dd.MM.yy', { locale: hr })}
+                      {format(filters.dateRange.from, 'dd.MM.yy', { locale: dateLocale })} -{' '}
+                      {format(filters.dateRange.to, 'dd.MM.yy', { locale: dateLocale })}
                     </>
                   ) : (
-                    format(filters.dateRange.from, 'dd.MM.yyyy', { locale: hr })
+                    format(filters.dateRange.from, 'dd.MM.yyyy', { locale: dateLocale })
                   )
                 ) : (
-                  'Odaberi period'
+                  t('filters.selectPeriod')
                 )}
               </Button>
             </PopoverTrigger>
@@ -247,7 +251,7 @@ export const TransactionFilters = ({
                 selected={filters.dateRange}
                 onSelect={(range) => updateFilter('dateRange', range)}
                 numberOfMonths={1}
-                locale={hr}
+                locale={dateLocale}
                 initialFocus
               />
             </PopoverContent>
@@ -292,10 +296,10 @@ export const TransactionFilters = ({
             >
               <SelectTrigger className="w-[160px] h-8 text-xs">
                 <Users className="w-3.5 h-3.5 mr-1.5" />
-                <SelectValue placeholder="Svi članovi" />
+                <SelectValue placeholder={t('filters.allMembers')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Svi članovi</SelectItem>
+                <SelectItem value="all">{t('filters.allMembers')}</SelectItem>
                 {members.map((member) => (
                   <SelectItem key={member.userId} value={member.userId}>
                     {member.displayName}
@@ -313,10 +317,10 @@ export const TransactionFilters = ({
             >
               <SelectTrigger className="w-[180px] h-8 text-xs">
                 <CreditCard className="w-3.5 h-3.5 mr-1.5" />
-                <SelectValue placeholder="Sve kartice" />
+                <SelectValue placeholder={t('filters.allCards')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Sve kartice</SelectItem>
+                <SelectItem value="all">{t('filters.allCards')}</SelectItem>
                 {cards.map((card) => (
                   <SelectItem key={card.id} value={card.id}>
                     {card.card_name} (•••• {card.last_four_digits})
@@ -338,20 +342,15 @@ export const applyFilters = <T extends { description: string; date: Date; amount
   currentUserId?: string
 ): T[] => {
   return items.filter((item) => {
-    // Scope filter
     if (filters.scope !== 'all') {
       if (filters.scope === 'personal') {
-        // Personal = no project_id AND (user owns it or no project association)
         if (item.project_id) return false;
       } else if (filters.scope === 'project') {
-        // Project = has project_id AND user is owner
         if (!item.project_id) return false;
-        // Only show project transactions that belong to the current user
         if (currentUserId && item.user_id !== currentUserId) return false;
       }
     }
 
-    // Search filter
     if (filters.searchTerm) {
       const search = filters.searchTerm.toLowerCase();
       const matchesDescription = item.description.toLowerCase().includes(search);
@@ -359,7 +358,6 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       if (!matchesDescription && !matchesMerchant) return false;
     }
 
-    // Date range filter
     if (filters.dateRange?.from) {
       const itemDate = new Date(item.date);
       itemDate.setHours(0, 0, 0, 0);
@@ -376,23 +374,14 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       }
     }
 
-    // Min amount filter
-    if (filters.minAmount !== undefined && item.amount < filters.minAmount) {
-      return false;
-    }
+    if (filters.minAmount !== undefined && item.amount < filters.minAmount) return false;
+    if (filters.maxAmount !== undefined && item.amount > filters.maxAmount) return false;
 
-    // Max amount filter
-    if (filters.maxAmount !== undefined && item.amount > filters.maxAmount) {
-      return false;
-    }
-
-    // Member filter
     if (filters.memberId !== undefined) {
       const transactionMemberId = item.submitted_by || item.user_id;
       if (transactionMemberId !== filters.memberId) return false;
     }
 
-    // Card filter
     if (filters.cardId !== undefined) {
       if (item.payment_source_card_id !== filters.cardId) return false;
     }

@@ -286,7 +286,22 @@
     "noResults": "No results for selected filters",
     "noExpenses": "No expenses",
     "noIncome": "No income",
-    "comments": "Comments"
+    "comments": "Comments",
+    "expensesInCategory": "Expenses in this category",
+    "changeCategory": "Change category",
+    "allCategories": "All categories...",
+    "categoryChangedTo": "Category changed to \"{{name}}\"",
+    "categoryChangeError": "Error changing category",
+    "noExpensesInCategory": "No expenses in this category",
+    "searchByName": "Search by name...",
+    "noSearchResults": "No results for search",
+    "transfersBetweenAccounts": "Transfers between accounts",
+    "noTransfersHint": "Transfers between your own accounts will appear here",
+    "saveError2": "Error saving. Please try again.",
+    "transactions": "transactions",
+    "expenseNature": "Expense type",
+    "assignToBudget": "Assign to budget",
+    "noBudget": "No budget"
   },
   "categories": {
     "food": "Food",
@@ -470,7 +485,30 @@
   "bulk": {
     "paymentSource": "Bulk Payment",
     "category": "Bulk Category",
-    "reports": "Reports"
+    "reports": "Reports",
+    "selected": "{{count}} of {{total}} selected",
+    "selectAll": "Select all",
+    "deselect": "Deselect",
+    "bulkChange": "Bulk change",
+    "category_label": "Category",
+    "payment": "Payment",
+    "deleteCount": "Delete ({{count}})",
+    "deleteConfirmTitle": "Delete {{count}} transactions?",
+    "deleteConfirmDesc": "This action is irreversible. All selected records will be permanently deleted.",
+    "deleting": "Deleting..."
+  },
+  "filters": {
+    "filters": "Filters",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "last3Months": "Last 3 months",
+    "clear": "Clear",
+    "selectPeriod": "Select period",
+    "allMembers": "All members",
+    "allCards": "All cards",
+    "all": "All",
+    "personal": "Personal",
+    "projects": "Projects"
   },
   "reports": {
     "period": "Period",
