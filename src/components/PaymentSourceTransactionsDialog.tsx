@@ -11,7 +11,8 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, MessageCircle } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, MessageCircle, ShoppingCart } from 'lucide-react';
+import { TransactionItemsExpander } from './TransactionItemsExpander';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +41,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
+  const [expandedItemsId, setExpandedItemsId] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
 
   // Filter expenses for this payment source
@@ -451,6 +453,13 @@ export const PaymentSourceTransactionsDialog = ({
                         />
                       </div>
                     )}
+
+                    {/* Items Expander */}
+                    <TransactionItemsExpander
+                      expenseId={expense.id}
+                      isExpanded={expandedItemsId === expense.id}
+                      onToggle={() => setExpandedItemsId(expandedItemsId === expense.id ? null : expense.id)}
+                    />
                     </>
                   );
                 })}
