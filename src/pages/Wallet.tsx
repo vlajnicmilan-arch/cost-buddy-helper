@@ -6,11 +6,13 @@ import { BankConnection } from '@/components/BankConnection';
 import { BackupRestore } from '@/components/BackupRestore';
 import { InstallmentsPanel } from '@/components/installments';
 import { BottomNav } from '@/components/BottomNav';
+import { PageHeader } from '@/components/PageHeader';
 import { useExpenses } from '@/hooks/useExpenses';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 
 const Wallet = () => {
   const { t } = useTranslation();
@@ -35,13 +37,22 @@ const Wallet = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-6"
+      >
+        <PageHeader
+          title={t('nav.wallet', 'Novčanik')}
+          onDataImported={refetch}
+        />
         <CustomPaymentSourcesPanel />
         <InstallmentsPanel />
         <CustomCategoriesPanel />
         <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
         <BackupRestore onDataImported={refetch} />
-      </div>
+      </motion.div>
       <BottomNav />
     </div>
   );
