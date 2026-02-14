@@ -23,10 +23,12 @@ import { toast } from 'sonner';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
   Target, Trash2, Clock, Check, X, AlertCircle, User, MessageCircle,
-  Eye, Pencil, Search
+  Eye, Pencil, Search, Filter, Milestone, CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TransactionItemsExpander } from '@/components/TransactionItemsExpander';
+import { DateRange } from 'react-day-picker';
+import { enUS, de } from 'date-fns/locale';
 
 interface ProjectExpense {
   id: string;
@@ -40,6 +42,7 @@ interface ProjectExpense {
   status?: string | null;
   submitted_by?: string | null;
   expense_nature?: string | null;
+  payment_source?: string | null;
 }
 
 interface ProjectTransactionsTabProps {
@@ -61,7 +64,7 @@ export const ProjectTransactionsTab = ({
   loading,
   onRefetch
 }: ProjectTransactionsTabProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { user } = useAuth();
 
@@ -107,6 +110,12 @@ export const ProjectTransactionsTab = ({
   const [updatingMilestone, setUpdatingMilestone] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedItemsId, setExpandedItemsId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterMilestoneId, setFilterMilestoneId] = useState<string>('all');
+  const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>(undefined);
+  const [filterPaymentSource, setFilterPaymentSource] = useState<string>('all');
+
+  const dateLocale = i18n?.language === 'de' ? de : i18n?.language === 'en' ? enUS : hr;
   
   // Transaction detail/notes dialog state
   const [selectedExpense, setSelectedExpense] = useState<ProjectExpense | null>(null);
@@ -426,21 +435,150 @@ export const ProjectTransactionsTab = ({
 
       {/* Search */}
       {expenses.length > 0 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Pretraži transakcije..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-9 h-9 text-sm"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        <div className="space-y-2">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder={t('transactions.searchByName', 'Pretraži transakcije...')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-9 h-9 text-sm"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Toggle */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                'h-8 text-xs gap-1.5',
+                showFilters && 'bg-primary/10 border-primary'
+              )}
+              onClick={() => setShowFilters(!showFilters)}
             >
-              <X className="w-4 h-4" />
-            </button>
+              <Filter className="w-3.5 h-3.5" />
+              {t('filters.filters', 'Filteri')}
+              {(filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all') && (
+                <span className="w-2 h-2 rounded-full bg-primary" />
+              )}
+            </Button>
+
+            {(filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || searchTerm) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs px-2 text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterMilestoneId('all');
+                  setFilterDateRange(undefined);
+                  setFilterPaymentSource('all');
+                }}
+              >
+                <X className="w-3 h-3 mr-1" />
+                {t('filters.clear', 'Očisti')}
+              </Button>
+            )}
+          </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-muted/50 border">
+              {/* Milestone Filter */}
+              {milestones.length > 0 && (
+                <Select
+                  value={filterMilestoneId}
+                  onValueChange={setFilterMilestoneId}
+                >
+                  <SelectTrigger className="w-[180px] h-8 text-xs">
+                    <Milestone className="w-3.5 h-3.5 mr-1.5" />
+                    <SelectValue placeholder={t('projects.allMilestones', 'Sve faze')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('projects.allMilestones', 'Sve faze')}</SelectItem>
+                    <SelectItem value="none">{t('transactions.noMilestone', 'Bez faze')}</SelectItem>
+                    {milestones.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Date Range */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      'h-8 text-xs gap-1.5 justify-start',
+                      filterDateRange?.from && 'bg-primary/10 border-primary'
+                    )}
+                  >
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    {filterDateRange?.from ? (
+                      filterDateRange?.to ? (
+                        <>
+                          {format(filterDateRange.from, 'dd.MM.yy', { locale: dateLocale })} -{' '}
+                          {format(filterDateRange.to, 'dd.MM.yy', { locale: dateLocale })}
+                        </>
+                      ) : (
+                        format(filterDateRange.from, 'dd.MM.yyyy', { locale: dateLocale })
+                      )
+                    ) : (
+                      t('filters.selectPeriod', 'Odaberi period')
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={filterDateRange}
+                    onSelect={setFilterDateRange}
+                    numberOfMonths={1}
+                    locale={dateLocale}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {/* Payment Source Filter */}
+              {(() => {
+                const sources = [...new Set(expenses.map(e => e.payment_source).filter(Boolean))] as string[];
+                if (sources.length === 0) return null;
+                return (
+                  <Select
+                    value={filterPaymentSource}
+                    onValueChange={setFilterPaymentSource}
+                  >
+                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                      <CreditCard className="w-3.5 h-3.5 mr-1.5" />
+                      <SelectValue placeholder={t('filters.allSources', 'Svi izvori')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('filters.allSources', 'Svi izvori')}</SelectItem>
+                      {sources.map((source) => (
+                        <SelectItem key={source} value={source}>
+                          {source}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
+            </div>
           )}
         </div>
       )}
@@ -454,7 +592,29 @@ export const ProjectTransactionsTab = ({
       ) : (
         <div className="space-y-1">
           {expenses
-            .filter(e => !searchTerm.trim() || e.description.toLowerCase().includes(searchTerm.toLowerCase()))
+            .filter(e => {
+              // Keyword
+              if (searchTerm.trim() && !e.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+              // Milestone
+              if (filterMilestoneId === 'none' && e.milestone_id) return false;
+              if (filterMilestoneId !== 'all' && filterMilestoneId !== 'none' && e.milestone_id !== filterMilestoneId) return false;
+              // Date range
+              if (filterDateRange?.from) {
+                const itemDate = new Date(e.date);
+                itemDate.setHours(0, 0, 0, 0);
+                const from = new Date(filterDateRange.from);
+                from.setHours(0, 0, 0, 0);
+                if (itemDate < from) return false;
+                if (filterDateRange.to) {
+                  const to = new Date(filterDateRange.to);
+                  to.setHours(23, 59, 59, 999);
+                  if (itemDate > to) return false;
+                }
+              }
+              // Payment source
+              if (filterPaymentSource !== 'all' && e.payment_source !== filterPaymentSource) return false;
+              return true;
+            })
             .map((expense) => {
             const categoryInfo = getCategoryInfo(expense.category as any);
             const isIncome = expense.type === 'income';
