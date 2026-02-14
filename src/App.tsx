@@ -11,6 +11,9 @@ import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import Projects from "./pages/Projects";
+import Budgets from "./pages/Budgets";
+import Wallet from "./pages/Wallet";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import StorageSetup from "./pages/StorageSetup";
@@ -78,6 +81,9 @@ const AppRoutes = () => {
       <Route path="/" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/projects" element={onboardingCompleted ? <Projects /> : <Navigate to="/onboarding" replace />} />
+      <Route path="/budgets" element={onboardingCompleted ? <Budgets /> : <Navigate to="/onboarding" replace />} />
+      <Route path="/wallet" element={onboardingCompleted ? <Wallet /> : <Navigate to="/onboarding" replace />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/setup" element={<StorageSetup />} />

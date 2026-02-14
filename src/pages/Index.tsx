@@ -12,8 +12,6 @@ import { SummaryCard } from '@/components/SummaryCard';
 import { TransactionItem } from '@/components/TransactionItem';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { CategoryBreakdown } from '@/components/CategoryBreakdown';
-import { BankConnection } from '@/components/BankConnection';
-import { BackupRestore } from '@/components/BackupRestore';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
@@ -22,21 +20,16 @@ import { TransferListDialog } from '@/components/TransferListDialog';
 import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
 
-import { ProjectsPanel } from '@/components/projects/ProjectsPanel';
-import { BudgetSection } from '@/components/budget';
-import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
-import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
-import { PaymentSourcesFullScreenView } from '@/components/custom-payment-sources/PaymentSourcesFullScreenView';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
-import { InstallmentsPanel } from '@/components/installments';
+import { BottomNav } from '@/components/BottomNav';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3, PiggyBank } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3, PiggyBank, FolderKanban, Target } from 'lucide-react';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -52,34 +45,6 @@ import { toast } from 'sonner';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { APP_VERSION } from '@/lib/version';
 import { TutorialButton } from '@/components/tutorial';
-
-// Budget Section Wrapper to use hook inside component
-const BudgetSectionWrapper = ({ expenses }: { expenses: Expense[] }) => {
-  const { 
-    budgets, 
-    loading, 
-    createBudget, 
-    updateBudget, 
-    deleteBudget, 
-    resetBudget, 
-    trendData,
-    isLocalMode 
-  } = useBudgets({ externalExpenses: expenses });
-
-  if (isLocalMode) return null;
-
-  return (
-    <BudgetSection
-      budgets={budgets}
-      loading={loading}
-      onCreateBudget={createBudget}
-      onUpdateBudget={updateBudget}
-      onDeleteBudget={deleteBudget}
-      onResetBudget={resetBudget}
-      trendData={trendData}
-    />
-  );
-};
 
 const Index = () => {
   const { t } = useTranslation();
@@ -130,7 +95,7 @@ const Index = () => {
   useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
   useBackButton(assistantDialogOpen, () => setAssistantDialogOpen(false));
 
-  const [paymentSourcesFullScreen, setPaymentSourcesFullScreen] = useState(false);
+  
 
   useEffect(() => {
     const loadDisplayName = async () => {
@@ -378,7 +343,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden pb-20">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
         <header className="flex flex-col gap-4 mb-6 sm:mb-8" data-tutorial="header">
@@ -812,19 +777,54 @@ const Index = () => {
             </div>
           </Collapsible>
 
-          {/* Sidebar */}
+          {/* Sidebar - Quick access to projects and budgets */}
           <div className="lg:col-span-1 space-y-6">
-            
-            {/* Installments Panel - hidden in simple mode */}
-            {!simpleModeEnabled && <InstallmentsPanel />}
-            
-            {/* Projects Panel - hidden in simple mode */}
-            {!simpleModeEnabled && <ProjectsPanel onRefreshExpenses={refetch} />}
-            
-            {/* Budget Section - hidden in simple mode */}
-            {!simpleModeEnabled && <BudgetSectionWrapper expenses={allExpenses} />}
-            
-            {/* Category breakdown and payment sources - hidden in simple mode */}
+            {/* Quick links to Projects */}
+            {!simpleModeEnabled && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={() => navigate('/projects')}
+                className="p-4 rounded-xl border bg-card cursor-pointer transition-colors hover:bg-muted/50"
+                style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--primary))' }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <FolderKanban className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">{t('nav.projects', 'Projekti')}</p>
+                    <p className="text-xs text-muted-foreground">{t('nav.viewAll', 'Pogledaj sve')} →</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Quick links to Budgets */}
+            {!simpleModeEnabled && !isLocalMode && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={() => navigate('/budgets')}
+                className="p-4 rounded-xl border bg-card cursor-pointer transition-colors hover:bg-muted/50"
+                style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(168 80% 50%)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'hsl(168 80% 50% / 0.1)' }}>
+                    <Target className="w-5 h-5" style={{ color: 'hsl(168 80% 50%)' }} />
+                  </div>
+                  <div>
+                    <p className="font-semibold">{t('nav.budgets', 'Budžeti')}</p>
+                    <p className="text-xs text-muted-foreground">{t('nav.viewAll', 'Pogledaj sve')} →</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Category breakdown */}
             {!simpleModeEnabled && (
               <Accordion type="multiple" className="space-y-4">
                 <AccordionItem value="categories" className="border-none">
@@ -845,27 +845,8 @@ const Index = () => {
                     />
                   </AccordionContent>
                 </AccordionItem>
-                
-                <AccordionItem value="payment-sources" className="border-none">
-                  <button
-                    onClick={() => setPaymentSourcesFullScreen(true)}
-                    className="glass-card rounded-2xl px-6 py-4 w-full text-left flex items-center gap-2 hover:bg-muted/50 transition-colors"
-                  >
-                    <CreditCard className="h-5 w-5 text-primary" />
-                    <span className="text-lg font-semibold">{t('paymentSources.myAccounts', 'Prilagođeni izvori plaćanja')}</span>
-                  </button>
-                </AccordionItem>
               </Accordion>
             )}
-            
-            {/* Custom categories - hidden in simple mode */}
-            {!simpleModeEnabled && <CustomCategoriesPanel />}
-            
-            {/* Bank connection - hidden in simple mode */}
-            {!simpleModeEnabled && <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />}
-            
-            {/* Backup restore - hidden in simple mode */}
-            {!simpleModeEnabled && <BackupRestore onDataImported={refetch} />}
           </div>
           </div>
         </div>
@@ -956,10 +937,7 @@ const Index = () => {
           />
         </div>
       )}
-      <PaymentSourcesFullScreenView
-        open={paymentSourcesFullScreen}
-        onClose={() => setPaymentSourcesFullScreen(false)}
-      />
+      <BottomNav />
 
     </div>
   );

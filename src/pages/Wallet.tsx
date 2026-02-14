@@ -1,0 +1,50 @@
+import { useAuth } from '@/hooks/useAuth';
+import { useStorage } from '@/contexts/StorageContext';
+import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
+import { CustomCategoriesPanel } from '@/components/custom-categories/CustomCategoriesPanel';
+import { BankConnection } from '@/components/BankConnection';
+import { BackupRestore } from '@/components/BackupRestore';
+import { InstallmentsPanel } from '@/components/installments';
+import { BottomNav } from '@/components/BottomNav';
+import { useExpenses } from '@/hooks/useExpenses';
+import { Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
+const Wallet = () => {
+  const { t } = useTranslation();
+  const { user, loading: authLoading } = useAuth();
+  const { storageMode } = useStorage();
+  const navigate = useNavigate();
+  const { importFromCSV, findDuplicates, refetch, isLocalMode } = useExpenses();
+
+  useEffect(() => {
+    if (!authLoading && !user && storageMode === 'cloud') {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, authLoading, navigate, storageMode]);
+
+  if (authLoading && storageMode === 'cloud') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-6">
+        <CustomPaymentSourcesPanel />
+        <InstallmentsPanel />
+        <CustomCategoriesPanel />
+        <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
+        <BackupRestore onDataImported={refetch} />
+      </div>
+      <BottomNav />
+    </div>
+  );
+};
+
+export default Wallet;

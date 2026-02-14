@@ -90,6 +90,13 @@
     "submittedBy": "Submitted by",
     "addedBy": "Added by"
   },
+  "nav": {
+    "dashboard": "Overview",
+    "projects": "Projects",
+    "budgets": "Budgets",
+    "wallet": "Wallet",
+    "viewAll": "View all"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
