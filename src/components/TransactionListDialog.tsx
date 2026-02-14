@@ -14,6 +14,7 @@ import { Pencil, Trash2, TrendingUp, TrendingDown, CheckSquare } from 'lucide-re
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { TransactionItemsExpander } from './TransactionItemsExpander';
 
 interface TransactionListDialogProps {
   open: boolean;
@@ -38,6 +39,7 @@ export const TransactionListDialog = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedItemsId, setExpandedItemsId] = useState<string | null>(null);
 
   const { customPaymentSources } = useCustomPaymentSources();
   const { formatAmount } = useCurrency();
@@ -260,12 +262,13 @@ export const TransactionListDialog = ({
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       className={cn(
-                        "group flex items-center gap-2 py-2.5 px-2 rounded-lg transition-colors",
+                        "rounded-lg transition-colors",
                         isSelected 
                           ? "bg-primary/10" 
                           : "hover:bg-muted/50"
                       )}
                     >
+                      <div className="group flex items-center gap-2 py-2.5 px-2">
                       {/* Checkbox */}
                       <Checkbox
                         checked={isSelected}
@@ -321,6 +324,14 @@ export const TransactionListDialog = ({
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                      </div>
+
+                      {/* Items Expander */}
+                      <TransactionItemsExpander
+                        expenseId={expense.id}
+                        isExpanded={expandedItemsId === expense.id}
+                        onToggle={() => setExpandedItemsId(expandedItemsId === expense.id ? null : expense.id)}
+                      />
                     </motion.div>
                   );
                 })}
