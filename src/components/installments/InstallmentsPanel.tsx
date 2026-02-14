@@ -52,6 +52,7 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const today = startOfToday();
   const categoryInfo = getCategoryInfo(plan.category as any);
   
