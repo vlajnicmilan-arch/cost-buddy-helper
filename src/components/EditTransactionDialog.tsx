@@ -13,10 +13,11 @@ import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, Plus, FolderKanban, PiggyBank } from 'lucide-react';
+import { CalendarIcon, Loader2, Plus, FolderKanban, PiggyBank, Milestone } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
@@ -38,6 +39,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
   const [date, setDate] = useState<Date>(new Date());
   const [type, setType] = useState<TransactionType>('expense');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
   
@@ -50,6 +52,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
   const { customCategories } = useCustomCategories();
   const { projects } = useProjects();
   const { budgets } = useBudgets();
+  const { milestones } = useProjectMilestones(selectedProjectId);
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
 
   // Get date locale based on current language
@@ -80,6 +83,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         setDate(isNaN(parsedDate.getTime()) ? new Date() : parsedDate);
         setType(expense.type || 'expense');
         setSelectedProjectId(expense.project_id || null);
+        setSelectedMilestoneId(expense.milestone_id || null);
         setSelectedBudgetId(expense.budget_id || null);
         setExpenseNature((expense.expense_nature as 'regular' | 'extraordinary') || 'regular');
         setNote(expense.note || '');
@@ -122,6 +126,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         date,
         type,
         project_id: selectedProjectId,
+        milestone_id: selectedMilestoneId,
         budget_id: selectedBudgetId,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : null,
         note: note.trim() || null,
@@ -438,7 +443,10 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
               </Label>
               <Select 
                 value={selectedProjectId || 'none'} 
-                onValueChange={(v) => setSelectedProjectId(v === 'none' ? null : v)}
+                onValueChange={(v) => {
+                  setSelectedProjectId(v === 'none' ? null : v);
+                  setSelectedMilestoneId(null);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('transactions.noProject')} />
@@ -457,6 +465,39 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
                           {project.icon || '📁'}
                         </span>
                         <span>{project.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Milestone Assignment - only when project is selected */}
+          {selectedProjectId && milestones.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Milestone className="w-4 h-4" />
+                {t('transactions.assignToMilestone', 'Pridruži fazi')}
+              </Label>
+              <Select 
+                value={selectedMilestoneId || 'none'} 
+                onValueChange={(v) => setSelectedMilestoneId(v === 'none' ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('transactions.noMilestone', 'Bez faze')} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">{t('transactions.noMilestone', 'Bez faze')}</span>
+                  </SelectItem>
+                  {milestones.map((milestone) => (
+                    <SelectItem key={milestone.id} value={milestone.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{milestone.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({milestone.status})
+                        </span>
                       </span>
                     </SelectItem>
                   ))}
