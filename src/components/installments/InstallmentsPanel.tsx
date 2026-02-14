@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isAfter, isBefore, startOfToday } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -50,8 +50,8 @@ interface InstallmentDetailContentProps {
 
 const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: InstallmentDetailContentProps) => {
   const { formatAmount } = useCurrency();
-  const { t } = useTranslation();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
   const today = startOfToday();
   const categoryInfo = getCategoryInfo(plan.category as any);
   
