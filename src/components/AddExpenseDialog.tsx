@@ -1111,6 +1111,20 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 </p>
               )}
 
+              {/* Merchant - First input field */}
+              <div className="space-y-2">
+                <Label htmlFor="merchant" className="text-sm font-medium">
+                  {type === 'income' ? t('transactions.merchantSource') : t('transactions.merchantStore')}
+                </Label>
+                <Input
+                  id="merchant"
+                  placeholder={type === 'income' ? t('transactions.merchantSourcePlaceholder') : t('transactions.merchantPlaceholder')}
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  className="h-12 rounded-xl"
+                  autoFocus
+                />
+              </div>
 
               {/* Payment Source */}
               <div className="space-y-3">
@@ -1499,19 +1513,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 </div>
               )}
 
-              {/* Merchant */}
-              <div className="space-y-2">
-                <Label htmlFor="merchant" className="text-sm font-medium">
-                  {type === 'income' ? t('transactions.merchantSource') : t('transactions.merchantStore')}
-                </Label>
-                <Input
-                  id="merchant"
-                  placeholder={type === 'income' ? t('transactions.merchantSourcePlaceholder') : t('transactions.merchantPlaceholder')}
-                  value={merchantName}
-                  onChange={(e) => setMerchantName(e.target.value)}
-                  className="h-12 rounded-xl"
-                />
-              </div>
 
               {/* Items Section - Only for expenses */}
               {type === 'expense' && (
