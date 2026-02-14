@@ -43,74 +43,87 @@ export const TutorialOverlay = () => {
       const element = document.querySelector(currentStepData.targetSelector);
       
       if (element) {
-        const rect = element.getBoundingClientRect();
-        const padding = 8;
-        
-        setHighlightPosition({
-          top: rect.top - padding + window.scrollY,
-          left: rect.left - padding,
-          width: rect.width + padding * 2,
-          height: rect.height + padding * 2,
-        });
-
-        // Calculate tooltip position based on step configuration
-        const tooltipHeight = 200; // Approximate tooltip height
-        const tooltipWidth = 320;
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-        
-        let newPosition: TooltipPosition = {};
-        
-        switch (currentStepData.position) {
-          case 'top':
-            newPosition = {
-              bottom: windowHeight - rect.top + 16,
-              left: Math.max(16, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, windowWidth - tooltipWidth - 16)),
-            };
-            break;
-          case 'bottom':
-            newPosition = {
-              top: rect.bottom + window.scrollY + 16,
-              left: Math.max(16, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, windowWidth - tooltipWidth - 16)),
-            };
-            break;
-          case 'left':
-            newPosition = {
-              top: rect.top + window.scrollY + rect.height / 2 - tooltipHeight / 2,
-              right: windowWidth - rect.left + 16,
-            };
-            break;
-          case 'right':
-            newPosition = {
-              top: rect.top + window.scrollY + rect.height / 2 - tooltipHeight / 2,
-              left: rect.right + 16,
-            };
-            break;
-          default:
-            newPosition = {
-              top: rect.bottom + window.scrollY + 16,
-              left: Math.max(16, Math.min(rect.left, windowWidth - tooltipWidth - 16)),
-            };
-        }
-        
-        setTooltipPosition(newPosition);
-
-        // Scroll element into view if needed
+        // Scroll element into view first
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Delay position calculation to allow scroll to complete
+        setTimeout(() => {
+          const rect = element.getBoundingClientRect();
+          const padding = 8;
+          
+          // Use viewport-relative coordinates (no scrollY since overlay is fixed)
+          setHighlightPosition({
+            top: rect.top - padding,
+            left: rect.left - padding,
+            width: rect.width + padding * 2,
+            height: rect.height + padding * 2,
+          });
+
+          // Calculate tooltip position
+          const tooltipWidth = 320;
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.innerHeight;
+          
+          let newPosition: TooltipPosition = {};
+          
+          const centerX = Math.max(16, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, windowWidth - tooltipWidth - 16));
+          
+          switch (currentStepData.position) {
+            case 'top':
+              newPosition = {
+                bottom: windowHeight - rect.top + 16,
+                left: centerX,
+              };
+              break;
+            case 'bottom':
+              newPosition = {
+                top: rect.bottom + 16,
+                left: centerX,
+              };
+              break;
+            case 'left':
+              newPosition = {
+                top: rect.top + rect.height / 2 - 100,
+                right: windowWidth - rect.left + 16,
+              };
+              break;
+            case 'right':
+              newPosition = {
+                top: rect.top + rect.height / 2 - 100,
+                left: rect.right + 16,
+              };
+              break;
+            default:
+              newPosition = {
+                top: rect.bottom + 16,
+                left: centerX,
+              };
+          }
+          
+          // Ensure tooltip stays within viewport
+          if (newPosition.top !== undefined && newPosition.top + 220 > windowHeight) {
+            // Move tooltip above the element
+            newPosition = { bottom: windowHeight - rect.top + 16, left: centerX };
+          }
+          if (newPosition.bottom !== undefined && newPosition.bottom + 220 > windowHeight) {
+            newPosition = { top: rect.bottom + 16, left: centerX };
+          }
+          
+          setTooltipPosition(newPosition);
+        }, 350);
       }
     };
 
     // Initial position update
     const timer = setTimeout(updatePosition, 100);
     
-    // Update on resize
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition);
+    // Update on resize and scroll
+    const handleResize = () => updatePosition();
+    window.addEventListener('resize', handleResize);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isActive, currentStep, currentStepData]);
 
