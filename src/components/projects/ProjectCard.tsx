@@ -7,7 +7,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 
 interface ProjectCardProps {
@@ -32,7 +32,8 @@ export const ProjectCard = ({
   onClick
 }: ProjectCardProps) => {
   const { formatAmount } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const projectColor = project.color || '#3b82f6';
   const projectIcon = project.icon || '📁';
@@ -145,7 +146,7 @@ export const ProjectCard = ({
             {project.start_date && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                {format(new Date(project.start_date), 'd. MMM yyyy', { locale: hr })}
+                {format(new Date(project.start_date), 'd. MMM yyyy', { locale: dateLocale })}
               </div>
             )}
             <div className="flex items-center gap-1">

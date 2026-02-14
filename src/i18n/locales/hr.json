@@ -169,7 +169,9 @@
     "daysLeft": "dana",
     "finances": "Novčanik",
     "account": "račun",
-    "accounts": "računa"
+    "accounts": "računa",
+    "reorderMode": "Preslagivanje",
+    "members": "Članovi"
   },
   "nav": {
     "home": "Početna",
@@ -638,6 +640,7 @@
     "overdueMilestones": "zakašnjelih faza",
     "noProjects": "Nemate aktivnih projekata",
     "noProjectsHint": "Kreirajte prvi projekt za praćenje budžeta i troškova",
+    "searchPlaceholder": "Pretraži projekte...",
     "noMilestones": "Nema faza za ovaj projekt",
     "noTransactions": "Nema transakcija",
     "noTransactionsHint": "Dodajte troškove ili prihode vezane uz projekt",
@@ -695,6 +698,7 @@
     "activeBudgets": "aktivnih budžeta",
     "noBudgets": "Nema budžeta",
     "noBudgetsHint": "Koristi gumb iznad za kreiranje prvog budžeta",
+    "searchPlaceholder": "Pretraži budžete...",
     "spent": "Potrošeno",
     "remaining": "preostalo",
     "used": "iskorišteno",
@@ -773,7 +777,8 @@
     "deleteConfirmTitle": "Obrisati plan plaćanja?",
     "deleteConfirmMessage": "Ova radnja će trajno obrisati plan i sve povezane rate. Ovo se ne može poništiti.",
     "noPlans": "Nema aktivnih planova plaćanja na rate",
-    "addHint": "Dodaj novi trošak ili prihod i odaberi opciju \"Na rate\""
+    "addHint": "Dodaj novi trošak ili prihod i odaberi opciju \"Na rate\"",
+    "installment": "Rata"
   },
   "insights": {
     "positiveBalance": "Odlično! Tvoje stanje je {{amount}} u plusu.",

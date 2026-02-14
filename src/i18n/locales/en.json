@@ -169,7 +169,9 @@
     "daysLeft": "days",
     "finances": "Finances",
     "account": "account",
-    "accounts": "accounts"
+    "accounts": "accounts",
+    "reorderMode": "Reorder",
+    "members": "Members"
   },
   "nav": {
     "home": "Home",
@@ -638,6 +640,7 @@
     "overdueMilestones": "overdue milestones",
     "noProjects": "No active projects",
     "noProjectsHint": "Create your first project to track budget and expenses",
+    "searchPlaceholder": "Search projects...",
     "noMilestones": "No milestones for this project",
     "noTransactions": "No transactions",
     "noTransactionsHint": "Add expenses or income related to the project",
@@ -695,6 +698,7 @@
     "activeBudgets": "active budgets",
     "noBudgets": "No budgets",
     "noBudgetsHint": "Use the button above to create your first budget",
+    "searchPlaceholder": "Search budgets...",
     "spent": "Spent",
     "remaining": "remaining",
     "used": "used",
@@ -773,7 +777,8 @@
     "deleteConfirmTitle": "Delete payment plan?",
     "deleteConfirmMessage": "This action will permanently delete the plan and all related installments. This cannot be undone.",
     "noPlans": "No active installment payment plans",
-    "addHint": "Add a new expense or income and select the \"Installments\" option"
+    "addHint": "Add a new expense or income and select the \"Installments\" option",
+    "installment": "Installment"
   },
   "insights": {
     "positiveBalance": "Great! Your balance is {{amount}} in the positive.",

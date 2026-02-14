@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isAfter, isBefore, startOfToday } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -50,7 +50,8 @@ interface InstallmentDetailContentProps {
 
 const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: InstallmentDetailContentProps) => {
   const { formatAmount } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const today = startOfToday();
   const categoryInfo = getCategoryInfo(plan.category as any);
@@ -84,7 +85,7 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{t('installments.progress', 'Napredak')}</span>
-              <span className="font-medium">{plan.paidCount}/{plan.totalCount} rata</span>
+              <span className="font-medium">{plan.paidCount}/{plan.totalCount} {t('installments.installment', 'rata')}</span>
             </div>
             <Progress value={(plan.paidCount / plan.totalCount) * 100} className="h-2" />
           </div>
@@ -130,10 +131,10 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
                           "font-medium text-sm",
                           isPaid && "line-through text-muted-foreground"
                         )}>
-                          Rata {installment.installment_number}
+                          {t('installments.installment', 'Rata')} {installment.installment_number}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {format(installment.due_date, 'd. MMMM yyyy.', { locale: hr })}
+                          {format(installment.due_date, 'd. MMMM yyyy.', { locale: dateLocale })}
                         </p>
                       </div>
                     </div>
@@ -204,7 +205,8 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
 export const InstallmentsPanel = () => {
   const { plans, loading, markInstallmentPaid, markInstallmentUnpaid, deletePlan } = useInstallments();
   const { formatAmount } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
   const [selectedPlan, setSelectedPlan] = useState<InstallmentPlanWithProgress | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -351,7 +353,7 @@ export const InstallmentsPanel = () => {
                               <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
                                 <Calendar className="w-3 h-3" />
                                 <span>
-                                  {t('installments.nextPayment', 'Sljedeća rata')}: {format(plan.nextInstallment.due_date, 'd. MMM', { locale: hr })} • {formatAmount(plan.nextInstallment.amount)}
+                                  {t('installments.nextPayment', 'Sljedeća rata')}: {format(plan.nextInstallment.due_date, 'd. MMM', { locale: dateLocale })} • {formatAmount(plan.nextInstallment.amount)}
                                 </span>
                               </div>
                             )}
