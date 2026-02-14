@@ -162,8 +162,8 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="shrink-0">
+      <DialogContent className="sm:max-w-lg max-h-[100dvh] sm:max-h-[85vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <DialogTitle className="flex items-center gap-3">
@@ -201,26 +201,30 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
         </DialogHeader>
 
         {/* Filters */}
-        <TransactionFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          className="shrink-0"
-        />
+        <div className="px-6">
+          <TransactionFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            className="shrink-0"
+          />
+        </div>
 
         {/* Bulk Actions Toolbar */}
-        <BulkActionsToolbar
-          selectedCount={selectedIds.size}
-          totalCount={filteredExpenses.length}
-          onSelectAll={selectAll}
-          onClearSelection={clearSelection}
-          onBulkCategoryChange={handleBulkCategoryChange}
-          onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
-          onBulkDelete={handleBulkDelete}
-        />
+        <div className="px-6">
+          <BulkActionsToolbar
+            selectedCount={selectedIds.size}
+            totalCount={filteredExpenses.length}
+            onSelectAll={selectAll}
+            onClearSelection={clearSelection}
+            onBulkCategoryChange={handleBulkCategoryChange}
+            onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
+            onBulkDelete={handleBulkDelete}
+          />
+        </div>
 
         {/* Summary */}
         <div 
-          className="p-4 rounded-xl shrink-0"
+          className="p-4 mx-6 rounded-xl shrink-0"
           style={{ backgroundColor: `hsl(var(--${category.color}) / 0.1)` }}
         >
           <div className="flex justify-between items-center">
@@ -234,8 +238,8 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
         </div>
 
         {/* Transaction List */}
-        <ScrollArea className="flex-1 -mx-6">
-          <div className="space-y-2 px-6 pb-2">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-2 px-6 pb-6 pt-2">
             {filteredExpenses.length === 0 ? (
               <div className="py-12 text-center">
                 <Tag className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
