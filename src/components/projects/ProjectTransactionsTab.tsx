@@ -26,6 +26,7 @@ import {
   Eye, Pencil, Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TransactionItemsExpander } from '@/components/TransactionItemsExpander';
 
 interface ProjectExpense {
   id: string;
@@ -105,6 +106,7 @@ export const ProjectTransactionsTab = ({
   const [saving, setSaving] = useState(false);
   const [updatingMilestone, setUpdatingMilestone] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedItemsId, setExpandedItemsId] = useState<string | null>(null);
   
   // Transaction detail/notes dialog state
   const [selectedExpense, setSelectedExpense] = useState<ProjectExpense | null>(null);
@@ -462,10 +464,10 @@ export const ProjectTransactionsTab = ({
             const isOwnExpense = authorId === user?.id;
 
             return (
-              <div 
-                key={expense.id}
-                className="group flex items-center gap-2 py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors"
-              >
+              <div key={expense.id} className="rounded-lg hover:bg-muted/50 transition-colors">
+                <div 
+                  className="group flex items-center gap-2 py-2.5 px-2"
+                >
                 {/* Category Icon */}
                 <div 
                   className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
@@ -563,6 +565,14 @@ export const ProjectTransactionsTab = ({
                     </button>
                   )}
                 </div>
+                </div>
+
+                {/* Items Expander */}
+                <TransactionItemsExpander
+                  expenseId={expense.id}
+                  isExpanded={expandedItemsId === expense.id}
+                  onToggle={() => setExpandedItemsId(expandedItemsId === expense.id ? null : expense.id)}
+                />
               </div>
             );
           })}
