@@ -539,7 +539,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <FileText className="w-5 h-5" />
-            Financijsko izvješće
+            {t('reports.financialReport', 'Financijsko izvješće')}
           </DialogTitle>
         </DialogHeader>
 
@@ -547,15 +547,15 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="report" className="gap-2">
               <PieChartIcon className="w-4 h-4" />
-              Troškovi
+              {t('reports.expensesTab', 'Troškovi')}
             </TabsTrigger>
             <TabsTrigger value="income" className="gap-2">
               <TrendingUp className="w-4 h-4" />
-              Prihodi
+              {t('reports.incomeTab', 'Prihodi')}
             </TabsTrigger>
             <TabsTrigger value="compare" className="gap-2">
               <ArrowUpDown className="w-4 h-4" />
-              Usporedba
+              {t('reports.compareTab', 'Usporedba')}
             </TabsTrigger>
           </TabsList>
 
@@ -567,26 +567,26 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Odaberi razdoblje
+                  {t('reports.selectPeriod', 'Odaberi razdoblje')}
                 </Label>
                 <Select value={periodPreset} onValueChange={(v) => setPeriodPreset(v as PeriodPreset)}>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="this-month">Ovaj mjesec</SelectItem>
-                    <SelectItem value="last-month">Prošli mjesec</SelectItem>
-                    <SelectItem value="this-year">Ova godina</SelectItem>
-                    <SelectItem value="last-year">Prošla godina</SelectItem>
-                    <SelectItem value="all">Sve vrijeme</SelectItem>
-                    <SelectItem value="custom">Prilagođeno</SelectItem>
+                    <SelectItem value="this-month">{t('reports.thisMonth', 'Ovaj mjesec')}</SelectItem>
+                    <SelectItem value="last-month">{t('reports.lastMonth', 'Prošli mjesec')}</SelectItem>
+                    <SelectItem value="this-year">{t('reports.thisYear', 'Ova godina')}</SelectItem>
+                    <SelectItem value="last-year">{t('reports.lastYear', 'Prošla godina')}</SelectItem>
+                    <SelectItem value="all">{t('reports.allTime', 'Sve vrijeme')}</SelectItem>
+                    <SelectItem value="custom">{t('reports.custom', 'Prilagođeno')}</SelectItem>
                   </SelectContent>
                 </Select>
 
                 {periodPreset === 'custom' && (
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <Label className="text-xs text-muted-foreground">Od</Label>
+                      <Label className="text-xs text-muted-foreground">{t('reports.from', 'Od')}</Label>
                       <Input
                         type="date"
                         value={customStart}
@@ -595,7 +595,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                       />
                     </div>
                     <div className="flex-1">
-                      <Label className="text-xs text-muted-foreground">Do</Label>
+                      <Label className="text-xs text-muted-foreground">{t('reports.to', 'Do')}</Label>
                       <Input
                         type="date"
                         value={customEnd}
@@ -611,7 +611,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
 
             <p className="text-sm text-muted-foreground">
               {dateRange.start.toLocaleDateString('hr-HR')} - {dateRange.end.toLocaleDateString('hr-HR')}
-              <span className="ml-2">({stats.transactionCount} transakcija)</span>
+              <span className="ml-2">({stats.transactionCount} {t('reports.transactions', 'transakcija')})</span>
             </p>
 
             {/* Summary Cards */}
@@ -619,21 +619,21 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               <div className="p-4 rounded-xl bg-muted/50 border">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <TrendingUp className="w-4 h-4 text-income" />
-                  <span className="text-xs">Prihodi</span>
+                  <span className="text-xs">{t('reports.income', 'Prihodi')}</span>
                 </div>
                 <p className="font-mono font-bold text-income">{formatCurrency(stats.income)}</p>
               </div>
               <div className="p-4 rounded-xl bg-muted/50 border">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <TrendingDown className="w-4 h-4 text-expense" />
-                  <span className="text-xs">Troškovi</span>
+                  <span className="text-xs">{t('reports.expenses', 'Troškovi')}</span>
                 </div>
                 <p className="font-mono font-bold text-expense">{formatCurrency(stats.expenses)}</p>
               </div>
               <div className="p-4 rounded-xl bg-muted/50 border">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Wallet className="w-4 h-4" />
-                  <span className="text-xs">Stanje</span>
+                  <span className="text-xs">{t('reports.balance', 'Stanje')}</span>
                 </div>
                 <p className={cn("font-mono font-bold", stats.balance >= 0 ? 'text-income' : 'text-expense')}>
                   {formatCurrency(stats.balance)}
@@ -642,7 +642,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               <div className="p-4 rounded-xl bg-muted/50 border">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <PieChart className="w-4 h-4" />
-                  <span className="text-xs">Kategorija</span>
+                  <span className="text-xs">{t('reports.categories', 'Kategorija')}</span>
                 </div>
                 <p className="font-mono font-bold text-sm">
                   {Object.keys(stats.byCategory).length}
@@ -656,7 +656,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium flex items-center gap-2">
                     <PieChartIcon className="w-4 h-4" />
-                    Troškovi po kategorijama
+                    {t('reports.expensesByCategory', 'Troškovi po kategorijama')}
                   </Label>
                   <div className="flex gap-1 p-1 bg-muted rounded-lg">
                     <Button
@@ -754,7 +754,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
             <div className="space-y-3 pt-4 border-t">
               <Label className="flex items-center gap-2">
                 <Download className="w-4 h-4" />
-                Izvezi izvješće
+                {t('reports.exportReport', 'Izvezi izvješće')}
               </Label>
               <div className="grid grid-cols-3 gap-3">
                 <Button
@@ -765,7 +765,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 >
                   <FileText className="w-6 h-6 text-destructive" />
                   <span>PDF</span>
-                  <span className="text-xs text-muted-foreground">Izvješće</span>
+                  <span className="text-xs text-muted-foreground">{t('reports.report', 'Izvješće')}</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -790,7 +790,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               </div>
               {filteredExpenses.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center">
-                  Nema transakcija u odabranom razdoblju
+                  {t('reports.noTransactionsInPeriod', 'Nema transakcija u odabranom razdoblju')}
                 </p>
               )}
             </div>
@@ -1056,23 +1056,23 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <ArrowUpDown className="w-4 h-4" />
-                Vrsta usporedbe
+                {t('reports.compareType', 'Vrsta usporedbe')}
               </Label>
               <Select value={comparePreset} onValueChange={(v) => setComparePreset(v as ComparePreset)}>
                 <SelectTrigger className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="month-vs-month">Ovaj vs prošli mjesec</SelectItem>
-                  <SelectItem value="year-vs-year">Ova vs prošla godina</SelectItem>
-                  <SelectItem value="custom">Prilagođena usporedba</SelectItem>
+                  <SelectItem value="month-vs-month">{t('reports.monthVsMonth', 'Ovaj vs prošli mjesec')}</SelectItem>
+                  <SelectItem value="year-vs-year">{t('reports.yearVsYear', 'Ova vs prošla godina')}</SelectItem>
+                  <SelectItem value="custom">{t('reports.customCompare', 'Prilagođena usporedba')}</SelectItem>
                 </SelectContent>
               </Select>
 
               {comparePreset === 'custom' && (
                 <div className="space-y-4">
                   <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
-                    <Label className="text-xs font-medium text-primary mb-2 block">Razdoblje 1</Label>
+                    <Label className="text-xs font-medium text-primary mb-2 block">{t('reports.period1', 'Razdoblje 1')}</Label>
                     <div className="flex gap-2">
                       <Input
                         type="date"
@@ -1089,7 +1089,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                     </div>
                   </div>
                   <div className="p-3 rounded-xl bg-muted/50 border">
-                    <Label className="text-xs font-medium text-muted-foreground mb-2 block">Razdoblje 2</Label>
+                    <Label className="text-xs font-medium text-muted-foreground mb-2 block">{t('reports.period2', 'Razdoblje 2')}</Label>
                     <div className="flex gap-2">
                       <Input
                         type="date"
@@ -1118,21 +1118,21 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Prihodi</span>
+                    <span className="text-muted-foreground">{t('reports.income', 'Prihodi')}</span>
                     <span className="font-mono text-income">{formatCurrency(compareStats1.income)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Troškovi</span>
+                    <span className="text-muted-foreground">{t('reports.expenses', 'Troškovi')}</span>
                     <span className="font-mono text-expense">{formatCurrency(compareStats1.expenses)}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t">
-                    <span className="font-medium">Stanje</span>
+                    <span className="font-medium">{t('reports.balance', 'Stanje')}</span>
                     <span className={cn("font-mono font-bold", compareStats1.balance >= 0 ? 'text-income' : 'text-expense')}>
                       {formatCurrency(compareStats1.balance)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground pt-1">
-                    {compareStats1.transactionCount} transakcija
+                    {compareStats1.transactionCount} {t('reports.transactions', 'transakcija')}
                   </p>
                 </div>
               </div>
@@ -1144,21 +1144,21 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Prihodi</span>
+                    <span className="text-muted-foreground">{t('reports.income', 'Prihodi')}</span>
                     <span className="font-mono text-income">{formatCurrency(compareStats2.income)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Troškovi</span>
+                    <span className="text-muted-foreground">{t('reports.expenses', 'Troškovi')}</span>
                     <span className="font-mono text-expense">{formatCurrency(compareStats2.expenses)}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t">
-                    <span className="font-medium">Stanje</span>
+                    <span className="font-medium">{t('reports.balance', 'Stanje')}</span>
                     <span className={cn("font-mono font-bold", compareStats2.balance >= 0 ? 'text-income' : 'text-expense')}>
                       {formatCurrency(compareStats2.balance)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground pt-1">
-                    {compareStats2.transactionCount} transakcija
+                    {compareStats2.transactionCount} {t('reports.transactions', 'transakcija')}
                   </p>
                 </div>
               </div>
@@ -1168,11 +1168,11 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
             <div className="p-4 rounded-xl border bg-card">
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
                 <ArrowUpDown className="w-4 h-4" />
-                Razlika
+                {t('reports.difference', 'Razlika')}
               </h3>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Prihodi</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('reports.income', 'Prihodi')}</p>
                   <div className={cn("flex items-center gap-1 font-mono font-bold", getDiffColor(compareStats1.income - compareStats2.income))}>
                     {getDiffIcon(compareStats1.income - compareStats2.income)}
                     <span>{formatCurrency(Math.abs(compareStats1.income - compareStats2.income))}</span>
@@ -1182,7 +1182,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Troškovi</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('reports.expenses', 'Troškovi')}</p>
                   <div className={cn("flex items-center gap-1 font-mono font-bold", getDiffColor(compareStats1.expenses - compareStats2.expenses, true))}>
                     {getDiffIcon(compareStats1.expenses - compareStats2.expenses)}
                     <span>{formatCurrency(Math.abs(compareStats1.expenses - compareStats2.expenses))}</span>
@@ -1192,7 +1192,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Stanje</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('reports.balance', 'Stanje')}</p>
                   <div className={cn("flex items-center gap-1 font-mono font-bold", getDiffColor(compareStats1.balance - compareStats2.balance))}>
                     {getDiffIcon(compareStats1.balance - compareStats2.balance)}
                     <span>{formatCurrency(Math.abs(compareStats1.balance - compareStats2.balance))}</span>
@@ -1206,7 +1206,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" />
-                  Grafikon usporedbe
+                  {t('reports.comparisonChart', 'Grafikon usporedbe')}
                 </Label>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1247,7 +1247,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
             {/* Category Comparison List */}
             {categoryComparison.length > 0 && (
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Detalji po kategorijama</Label>
+                <Label className="text-sm font-medium">{t('reports.categoryDetails', 'Detalji po kategorijama')}</Label>
                 <div className="space-y-2">
                   {categoryComparison.map(({ category, amount1, amount2, diff, diffPercent }) => {
                     const info = getCategoryInfo(category as any);
@@ -1277,7 +1277,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
 
             {(compareStats1.transactionCount === 0 && compareStats2.transactionCount === 0) && (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Nema transakcija za usporedbu u odabranim razdobljima
+                {t('reports.noTransactionsToCompare', 'Nema transakcija za usporedbu u odabranim razdobljima')}
               </p>
             )}
           </TabsContent>

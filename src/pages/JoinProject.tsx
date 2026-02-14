@@ -28,7 +28,7 @@ const JoinProject = () => {
 
   useEffect(() => {
     if (!token) {
-      setError('Link nije valjan');
+      setError(t('join.invalidLink', 'Link nije valjan'));
       setLoading(false);
       return;
     }
@@ -66,7 +66,7 @@ const JoinProject = () => {
       }
     } catch (err: any) {
       console.error('Error accepting invitation:', err);
-      setError(err.message || 'Greška pri pridruživanju projektu');
+      setError(err.message || t('join.errorJoiningProject', 'Greška pri pridruživanju projektu'));
     } finally {
       setAccepting(false);
     }

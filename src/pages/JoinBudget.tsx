@@ -28,7 +28,7 @@ export default function JoinBudget() {
 
   useEffect(() => {
     if (!token) {
-      setError('Link nije valjan');
+      setError(t('join.invalidLink', 'Link nije valjan'));
       setLoading(false);
       return;
     }
@@ -66,7 +66,7 @@ export default function JoinBudget() {
       }
     } catch (err: any) {
       console.error('Error accepting invitation:', err);
-      setError(err.message || 'Greška pri pridruživanju budžetu');
+      setError(err.message || t('join.errorJoiningBudget', 'Greška pri pridruživanju budžetu'));
     } finally {
       setAccepting(false);
     }

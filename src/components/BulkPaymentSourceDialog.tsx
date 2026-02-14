@@ -125,7 +125,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5" />
-              Grupno ažuriranje izvora plaćanja
+              {t('bulk.bulkUpdatePaymentSource', 'Grupno ažuriranje izvora plaćanja')}
             </DialogTitle>
           </DialogHeader>
 
@@ -157,7 +157,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
                 className="h-7 text-xs"
                 onClick={() => setFilterSource('all')}
               >
-                Očisti filter
+                {t('bulk.clearFilter', 'Očisti filter')}
               </Button>
             )}
           </div>
@@ -167,7 +167,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Pretraži transakcije..."
+                placeholder={t('bulk.searchTransactions', 'Pretraži transakcije...')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 h-9"
@@ -184,7 +184,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
               ) : (
                 <Square className="w-4 h-4" />
               )}
-              {selectedIds.size > 0 ? `${selectedIds.size} odabrano` : 'Odaberi sve'}
+              {selectedIds.size > 0 ? t('bulk.selectedCount', '{{count}} odabrano').replace('{{count}}', String(selectedIds.size)) : t('bulk.selectAll', 'Odaberi sve')}
             </Button>
           </div>
 
@@ -192,7 +192,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
           <div className="space-y-1 min-h-[150px] max-h-[35vh] overflow-y-auto border rounded-lg p-2 bg-muted/20">
             {filteredExpenses.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
-                Nema transakcija za prikaz
+                {t('bulk.noTransactionsToShow', 'Nema transakcija za prikaz')}
               </div>
             ) : (
               filteredExpenses.map((expense) => {
@@ -241,7 +241,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
           <div className="flex-1">
             <Select value={newPaymentSource} onValueChange={(v) => setNewPaymentSource(v as PaymentSource)}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Odaberi novi izvor plaćanja..." />
+                <SelectValue placeholder={t('bulk.selectNewPaymentSource', 'Odaberi novi izvor plaćanja...')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] z-[100]">
                 {PAYMENT_SOURCE_GROUPS.map((group) => (
@@ -270,7 +270,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
             ) : null}
-            Primijeni ({selectedIds.size})
+            {t('bulk.apply', 'Primijeni')} ({selectedIds.size})
           </Button>
         </div>
       </DialogContent>
