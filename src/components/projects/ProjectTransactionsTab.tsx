@@ -464,10 +464,14 @@ export const ProjectTransactionsTab = ({
             const isOwnExpense = authorId === user?.id;
 
             return (
-              <div key={expense.id} className="rounded-lg hover:bg-muted/50 transition-colors">
-                <div 
-                  className="group flex items-center gap-2 py-2.5 px-2"
-                >
+              <div 
+                key={expense.id} 
+                className="flex items-center gap-2 py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer active:bg-muted/70"
+                onClick={() => {
+                  setSelectedExpense(expense);
+                  setDetailDialogOpen(true);
+                }}
+              >
                 {/* Category Icon */}
                 <div 
                   className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
@@ -527,52 +531,6 @@ export const ProjectTransactionsTab = ({
                     {format(new Date(expense.date), 'd. MMM', { locale: hr })}
                   </span>
                 </div>
-                
-                {/* Action Buttons */}
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-primary"
-                    onClick={() => {
-                      setSelectedExpense(expense);
-                      setDetailDialogOpen(true);
-                    }}
-                    title={t('common.view', 'Pregledaj')}
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                  </Button>
-
-                  {(isManager || isOwnExpense) && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-primary"
-                      onClick={() => handleOpenEdit(expense)}
-                      title={t('common.edit', 'Uredi')}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                  )}
-
-                  {(isManager || isOwnExpense) && (
-                    <button
-                      onClick={() => handleDeleteExpense(expense.id)}
-                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
-                      title={t('common.delete', 'Obriši')}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-                </div>
-
-                {/* Items Expander */}
-                <TransactionItemsExpander
-                  expenseId={expense.id}
-                  isExpanded={expandedItemsId === expense.id}
-                  onToggle={() => setExpandedItemsId(expandedItemsId === expense.id ? null : expense.id)}
-                />
               </div>
             );
           })}
@@ -758,18 +716,18 @@ export const ProjectTransactionsTab = ({
         </DialogContent>
       </Dialog>
 
-      {/* Transaction Notes/Comments Dialog */}
+      {/* Transaction Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
-              {t('transactions.comments', 'Komentari')}
+              <Eye className="w-5 h-5" />
+              {t('transactions.details', 'Detalji transakcije')}
             </DialogTitle>
           </DialogHeader>
 
           {selectedExpense && (
-            <div className="space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-4">
               {/* Transaction summary */}
               <div className="p-3 rounded-lg bg-muted/50 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg shrink-0">
@@ -779,6 +737,9 @@ export const ProjectTransactionsTab = ({
                   <p className="font-medium truncate">{selectedExpense.description}</p>
                   <p className="text-xs text-muted-foreground">
                     {format(new Date(selectedExpense.date), 'd. MMM yyyy', { locale: hr })}
+                    {getMilestoneName(selectedExpense.milestone_id) && (
+                      <> • <Target className="w-3 h-3 inline" /> {getMilestoneName(selectedExpense.milestone_id)}</>
+                    )}
                   </p>
                 </div>
                 <div className={cn(
@@ -788,6 +749,45 @@ export const ProjectTransactionsTab = ({
                   {selectedExpense.type === 'income' ? '+' : '-'}{formatAmount(selectedExpense.amount)}
                 </div>
               </div>
+
+              {/* Items */}
+              <TransactionItemsExpander
+                expenseId={selectedExpense.id}
+                isExpanded={true}
+                onToggle={() => {}}
+              />
+
+              {/* Action buttons */}
+              {(() => {
+                const authorId = selectedExpense.submitted_by || selectedExpense.user_id;
+                const isOwnExpense = authorId === user?.id;
+                return (isManager || isOwnExpense) ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setDetailDialogOpen(false);
+                        handleOpenEdit(selectedExpense);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      {t('common.edit', 'Uredi')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => {
+                        setDetailDialogOpen(false);
+                        handleDeleteExpense(selectedExpense.id);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {t('common.delete', 'Obriši')}
+                    </Button>
+                  </div>
+                ) : null;
+              })()}
 
               {/* Notes thread */}
               <TransactionNotesThread
