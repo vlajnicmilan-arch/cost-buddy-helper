@@ -10,7 +10,8 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '.
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, Tag, CheckSquare } from 'lucide-react';
+import { Pencil, Trash2, Tag, CheckSquare, ShoppingCart } from 'lucide-react';
+import { TransactionItemsExpander } from './TransactionItemsExpander';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [changingCategoryId, setChangingCategoryId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedItemsId, setExpandedItemsId] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
 
   // All expenses in this category
@@ -369,6 +371,13 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                           </Select>
                         </motion.div>
                       )}
+
+                      {/* Items Expander */}
+                      <TransactionItemsExpander
+                        expenseId={expense.id}
+                        isExpanded={expandedItemsId === expense.id}
+                        onToggle={() => setExpandedItemsId(expandedItemsId === expense.id ? null : expense.id)}
+                      />
                     </motion.div>
                   );
                 })}
