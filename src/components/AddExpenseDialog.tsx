@@ -949,9 +949,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 {!showMultiImageCollector && !scanning && (
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="w-full text-xs text-muted-foreground"
+                    className="w-full text-xs"
                     onClick={() => setShowMultiImageCollector(true)}
                   >
                     📄 Račun ima više stranica? Dodaj više slika
