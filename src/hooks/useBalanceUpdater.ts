@@ -18,7 +18,7 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
    * Updates the balance of a custom payment source based on transaction type
    * - expense: decreases balance
    * - income: increases balance
-   * - transfer: no change (transfers between accounts)
+   * - transfer: decreases balance (source account)
    */
   const updateBalance = useCallback(async (
     paymentSource: string | undefined,
@@ -33,14 +33,11 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
       ? paymentSource.replace('custom:', '') 
       : paymentSource;
     
-    // Don't update for transfers
-    if (type === 'transfer') return;
-
     // Calculate the balance change
-    // For expense: subtract from balance (negative)
+    // For expense/transfer: subtract from balance (negative)
     // For income: add to balance (positive)
     // If reversal (delete/undo): invert the operation
-    let balanceChange = type === 'expense' ? -amount : amount;
+    let balanceChange = (type === 'expense' || type === 'transfer') ? -amount : amount;
     if (isReversal) {
       balanceChange = -balanceChange;
     }

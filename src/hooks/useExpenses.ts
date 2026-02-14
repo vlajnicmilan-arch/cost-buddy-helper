@@ -139,13 +139,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         setExpenses(prev => [newExpense, ...prev]);
         
         // Update payment source balance for local mode
-        if (expense.type === 'transfer') {
-          await updateBalance(expense.payment_source, expense.amount, 'expense');
-          if (expense.income_source_id) {
-            await updateBalance(expense.income_source_id, expense.amount, 'income');
-          }
-        } else {
-          await updateBalance(expense.payment_source, expense.amount, expense.type);
+        await updateBalance(expense.payment_source, expense.amount, expense.type);
+        if (expense.type === 'transfer' && expense.income_source_id) {
+          await updateBalance(expense.income_source_id, expense.amount, 'income');
         }
         
         // Dispatch event for AI avatar reaction
@@ -260,15 +256,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         setExpenses(prev => [newExpense, ...prev]);
 
         // Update payment source balance
-        if (expense.type === 'transfer') {
-          // For transfers: decrease source, increase destination
-          await updateBalance(expense.payment_source, expense.amount, 'expense');
-          // income_source_id stores the destination payment source ID for scanned transfers
-          if (expense.income_source_id) {
-            await updateBalance(expense.income_source_id, expense.amount, 'income');
-          }
-        } else {
-          await updateBalance(expense.payment_source, expense.amount, expense.type);
+        await updateBalance(expense.payment_source, expense.amount, expense.type);
+        if (expense.type === 'transfer' && expense.income_source_id) {
+          await updateBalance(expense.income_source_id, expense.amount, 'income');
         }
         
         // Check budget alerts for expense transactions
@@ -477,12 +467,20 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       
       // Reverse the balance effect of the deleted transaction
       if (expenseToDelete) {
-        await updateBalance(
-          expenseToDelete.payment_source,
-          expenseToDelete.amount,
-          expenseToDelete.type,
-          true // isReversal = true
-        );
+        if (expenseToDelete.type === 'transfer') {
+          // For transfers: reverse source (add back) and destination (subtract back)
+          await updateBalance(expenseToDelete.payment_source, expenseToDelete.amount, 'transfer', true);
+          if (expenseToDelete.income_source_id) {
+            await updateBalance(expenseToDelete.income_source_id, expenseToDelete.amount, 'income', true);
+          }
+        } else {
+          await updateBalance(
+            expenseToDelete.payment_source,
+            expenseToDelete.amount,
+            expenseToDelete.type,
+            true // isReversal = true
+          );
+        }
       }
       
       toast.success('Obrisano');
