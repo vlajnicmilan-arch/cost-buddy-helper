@@ -9,11 +9,13 @@ import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
 import { cn } from '@/lib/utils';
 import { initLocalDB } from '@/lib/storage/indexedDB';
 import logo from '@/assets/logo.png';
+import { useTranslation } from 'react-i18next';
 
 const StorageSetup = () => {
   const navigate = useNavigate();
   const { storageMode: currentMode, setStorageMode } = useStorage();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const [selectedMode, setSelectedMode] = useState<StorageMode | null>(currentMode);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -81,7 +83,7 @@ const StorageSetup = () => {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Natrag</span>
+            <span className="text-sm">{t('storage.back', 'Natrag')}</span>
           </button>
         )}
 
@@ -93,8 +95,8 @@ const StorageSetup = () => {
           <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
             {isChangingMode 
-              ? 'Promijeni način pohrane podataka'
-              : 'Gdje želiš spremati svoje podatke?'}
+              ? t('storage.changeMode', 'Promijeni način pohrane podataka')
+              : t('storage.whereToStore', 'Gdje želiš spremati svoje podatke?')}
           </p>
         </div>
 
@@ -127,7 +129,7 @@ const StorageSetup = () => {
                       </span>
                       {option.comingSoon && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                          Uskoro
+                          {t('storage.comingSoon', 'Uskoro')}
                         </span>
                       )}
                     </div>
@@ -154,8 +156,7 @@ const StorageSetup = () => {
         <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl mb-6">
           <Lock className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground">
-            Tvoji financijski podaci su privatni. Lokalna pohrana nikad ne napušta tvoj uređaj. 
-            Cloud opcije koriste enkripciju za zaštitu podataka.
+            {t('storage.privacyNotice', 'Tvoji financijski podaci su privatni. Lokalna pohrana nikad ne napušta tvoj uređaj. Cloud opcije koriste enkripciju za zaštitu podataka.')}
           </p>
         </div>
 
@@ -165,7 +166,7 @@ const StorageSetup = () => {
           disabled={!selectedMode || isLoading || (isChangingMode && selectedMode === currentMode)}
           className="w-full h-14 rounded-xl text-lg font-medium gap-2"
         >
-          {isLoading ? 'Postavljam...' : isChangingMode ? 'Spremi promjene' : 'Nastavi'}
+          {isLoading ? t('storage.setting', 'Postavljam...') : isChangingMode ? t('storage.saveChanges', 'Spremi promjene') : t('storage.continue', 'Nastavi')}
           <ArrowRight className="w-5 h-5" />
         </Button>
 

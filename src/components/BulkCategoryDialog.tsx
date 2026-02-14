@@ -19,35 +19,15 @@ interface BulkCategoryDialogProps {
 }
 
 // Group categories for better organization
-const CATEGORY_GROUPS = [
-  {
-    label: 'Hrana i namirnice',
-    categories: ['food', 'groceries'] as Category[]
-  },
-  {
-    label: 'Transport',
-    categories: ['transport', 'car'] as Category[]
-  },
-  {
-    label: 'Kupovina',
-    categories: ['shopping', 'clothing', 'gifts'] as Category[]
-  },
-  {
-    label: 'Zabava',
-    categories: ['entertainment', 'subscriptions', 'travel'] as Category[]
-  },
-  {
-    label: 'Režije i računi',
-    categories: ['bills', 'utilities', 'rent', 'home', 'insurance', 'taxes'] as Category[]
-  },
-  {
-    label: 'Zdravlje i ljepota',
-    categories: ['health', 'beauty', 'sports'] as Category[]
-  },
-  {
-    label: 'Ostalo',
-    categories: ['education', 'pets', 'kids', 'savings', 'investments', 'charity', 'other'] as Category[]
-  }
+// Category group keys for i18n
+const CATEGORY_GROUPS_KEYS = [
+  { labelKey: 'categoryGroups.foodAndGroceries', label: 'Hrana i namirnice', categories: ['food', 'groceries'] as Category[] },
+  { labelKey: 'categoryGroups.transport', label: 'Transport', categories: ['transport', 'car'] as Category[] },
+  { labelKey: 'categoryGroups.shopping', label: 'Kupovina', categories: ['shopping', 'clothing', 'gifts'] as Category[] },
+  { labelKey: 'categoryGroups.entertainment', label: 'Zabava', categories: ['entertainment', 'subscriptions', 'travel'] as Category[] },
+  { labelKey: 'categoryGroups.billsAndUtilities', label: 'Režije i računi', categories: ['bills', 'utilities', 'rent', 'home', 'insurance', 'taxes'] as Category[] },
+  { labelKey: 'categoryGroups.healthAndBeauty', label: 'Zdravlje i ljepota', categories: ['health', 'beauty', 'sports'] as Category[] },
+  { labelKey: 'categoryGroups.other', label: 'Ostalo', categories: ['education', 'pets', 'kids', 'savings', 'investments', 'charity', 'other'] as Category[] }
 ];
 
 export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryDialogProps) => {
@@ -127,7 +107,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newCategory) {
-      toast.error('Odaberi transakcije i novu kategoriju');
+      toast.error(t('bulk.selectTransactionsAndCategory', 'Odaberi transakcije i novu kategoriju'));
       return;
     }
 
@@ -143,13 +123,13 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
       await onUpdateExpenses(updatedExpenses);
       
       const categoryInfo = getCategoryInfoExtended(newCategory);
-      toast.success(`Ažurirano ${selectedIds.size} transakcija na "${categoryInfo.name}"`);
+      toast.success(t('bulk.updatedTransactions', 'Ažurirano {{count}} transakcija na "{{name}}"').replace('{{count}}', String(selectedIds.size)).replace('{{name}}', categoryInfo.name));
       
       setSelectedIds(new Set());
       setNewCategory('');
       setOpen(false);
     } catch (error) {
-      toast.error('Greška pri ažuriranju transakcija');
+      toast.error(t('bulk.updateError', 'Greška pri ažuriranju transakcija'));
     } finally {
       setSaving(false);
     }
@@ -178,7 +158,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Tags className="w-5 h-5" />
-              Grupno ažuriranje kategorija
+              {t('bulk.bulkUpdateCategory', 'Grupno ažuriranje kategorija')}
             </DialogTitle>
           </DialogHeader>
 
@@ -210,7 +190,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
                 className="h-7 text-xs"
                 onClick={() => setFilterCategory('all')}
               >
-                Očisti filter
+                {t('bulk.clearFilter', 'Očisti filter')}
               </Button>
             )}
           </div>
@@ -220,7 +200,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Pretraži transakcije..."
+                placeholder={t('bulk.searchTransactions', 'Pretraži transakcije...')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 h-9"
@@ -237,7 +217,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
               ) : (
                 <Square className="w-4 h-4" />
               )}
-              {selectedIds.size > 0 ? `${selectedIds.size} odabrano` : 'Odaberi sve'}
+              {selectedIds.size > 0 ? t('bulk.selectedCount', '{{count}} odabrano').replace('{{count}}', String(selectedIds.size)) : t('bulk.selectAll', 'Odaberi sve')}
             </Button>
           </div>
 
@@ -245,7 +225,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
           <div className="space-y-1 min-h-[150px] max-h-[35vh] overflow-y-auto border rounded-lg p-2 bg-muted/20">
             {filteredExpenses.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
-                Nema transakcija za prikaz
+                {t('bulk.noTransactionsToShow', 'Nema transakcija za prikaz')}
               </div>
             ) : (
               filteredExpenses.map((expense) => {
@@ -294,14 +274,14 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
           <div className="flex-1">
             <Select value={newCategory} onValueChange={(v) => setNewCategory(v as Category)}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Odaberi novu kategoriju..." />
+                <SelectValue placeholder={t('bulk.selectNewCategory', 'Odaberi novu kategoriju...')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] z-[100]">
                 {/* System categories grouped */}
-                {CATEGORY_GROUPS.map((group) => (
-                  <div key={group.label}>
+                {CATEGORY_GROUPS_KEYS.map((group) => (
+                  <div key={group.labelKey}>
                     <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      {group.label}
+                      {t(group.labelKey, group.label)}
                     </div>
                     {group.categories.map((catId) => {
                       const info = getCategoryInfo(catId);
@@ -321,7 +301,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
                 {customCategories.length > 0 && (
                   <div>
                     <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      Prilagođene kategorije
+                      {t('bulk.customCategories', 'Prilagođene kategorije')}
                     </div>
                     {customCategories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
@@ -344,7 +324,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
             ) : null}
-            Primijeni ({selectedIds.size})
+            {t('bulk.apply', 'Primijeni')} ({selectedIds.size})
           </Button>
         </div>
       </DialogContent>

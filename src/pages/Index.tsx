@@ -771,7 +771,7 @@ const Index = () => {
                     <p className="text-muted-foreground">
                       {expenses.length === 0 
                         ? t('transactions.noTransactions')
-                        : 'Nema rezultata za odabrane filtere'}
+                        : t('transactions.noResults', 'Nema rezultata za odabrane filtere')}
                     </p>
                     {expenses.length === 0 && (
                       <p className="text-sm text-muted-foreground mt-1">
