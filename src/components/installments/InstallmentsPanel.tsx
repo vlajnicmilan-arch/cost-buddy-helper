@@ -205,7 +205,8 @@ const InstallmentDetailContent = ({ plan, onMarkPaid, onMarkUnpaid, onDelete }: 
 export const InstallmentsPanel = () => {
   const { plans, loading, markInstallmentPaid, markInstallmentUnpaid, deletePlan } = useInstallments();
   const { formatAmount } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
   const [selectedPlan, setSelectedPlan] = useState<InstallmentPlanWithProgress | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -352,7 +353,7 @@ export const InstallmentsPanel = () => {
                               <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
                                 <Calendar className="w-3 h-3" />
                                 <span>
-                                  {t('installments.nextPayment', 'Sljedeća rata')}: {format(plan.nextInstallment.due_date, 'd. MMM', { locale: hr })} • {formatAmount(plan.nextInstallment.amount)}
+                                  {t('installments.nextPayment', 'Sljedeća rata')}: {format(plan.nextInstallment.due_date, 'd. MMM', { locale: dateLocale })} • {formatAmount(plan.nextInstallment.amount)}
                                 </span>
                               </div>
                             )}
