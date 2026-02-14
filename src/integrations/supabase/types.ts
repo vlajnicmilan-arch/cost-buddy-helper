@@ -1177,6 +1177,90 @@ export type Database = {
           },
         ]
       }
+      recurring_transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          day_of_month: number | null
+          day_of_week: number | null
+          description: string
+          frequency: string
+          id: string
+          income_source_id: string | null
+          is_active: boolean
+          last_generated_date: string | null
+          merchant_name: string | null
+          next_due_date: string
+          note: string | null
+          payment_source: string | null
+          payment_source_card_id: string | null
+          transfer_to_source: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          description: string
+          frequency?: string
+          id?: string
+          income_source_id?: string | null
+          is_active?: boolean
+          last_generated_date?: string | null
+          merchant_name?: string | null
+          next_due_date: string
+          note?: string | null
+          payment_source?: string | null
+          payment_source_card_id?: string | null
+          transfer_to_source?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          description?: string
+          frequency?: string
+          id?: string
+          income_source_id?: string | null
+          is_active?: boolean
+          last_generated_date?: string | null
+          merchant_name?: string | null
+          next_due_date?: string
+          note?: string | null
+          payment_source?: string | null
+          payment_source_card_id?: string | null
+          transfer_to_source?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_transactions_income_source_id_fkey"
+            columns: ["income_source_id"]
+            isOneToOne: false
+            referencedRelation: "income_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_transactions_payment_source_card_id_fkey"
+            columns: ["payment_source_card_id"]
+            isOneToOne: false
+            referencedRelation: "payment_source_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       savings_goals: {
         Row: {
           budget_id: string

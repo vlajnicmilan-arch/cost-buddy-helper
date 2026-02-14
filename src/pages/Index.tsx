@@ -1,4 +1,6 @@
 import { useExpenses } from '@/hooks/useExpenses';
+import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
+import { RecurringTransactionsPanel } from '@/components/recurring/RecurringTransactionsPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -29,7 +31,7 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@
 import { BottomNav } from '@/components/BottomNav';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3, PiggyBank, FolderKanban, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, Loader2, Smartphone, Cloud, ArrowLeftRight, LayoutDashboard, Wallet, RefreshCw, ChevronDown, CreditCard, Grid3X3, PiggyBank, FolderKanban, Target, Repeat } from 'lucide-react';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -83,6 +85,9 @@ const Index = () => {
     localStorage.getItem('simple_mode_enabled') === 'true'
   );
   
+  // Recurring transactions panel state
+  const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
+  
   // Get user display name
   const [displayName, setDisplayName] = useState<string>('');
   
@@ -94,8 +99,14 @@ const Index = () => {
   useBackButton(editDialogOpen, () => setEditDialogOpen(false));
   useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
   useBackButton(assistantDialogOpen, () => setAssistantDialogOpen(false));
+  useBackButton(recurringPanelOpen, () => setRecurringPanelOpen(false));
+
+
+  // Recurring transactions
+  const { recurringTransactions, processDueTransactions } = useRecurringTransactions();
 
   
+
 
   useEffect(() => {
     const loadDisplayName = async () => {
@@ -186,6 +197,13 @@ const Index = () => {
   } = useExpenses({
     onBalanceUpdated: refetchPaymentSources
   });
+
+  // Auto-process due recurring transactions on load
+  useEffect(() => {
+    if (recurringTransactions.length > 0) {
+      processDueTransactions(addExpense);
+    }
+  }, [recurringTransactions.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get all transfers for the dialog
   const allTransfers = useMemo(() => 
@@ -687,6 +705,43 @@ const Index = () => {
           )}
         </motion.div>
 
+        {/* Recurring Transactions Card */}
+        {!isLocalMode && !simpleModeEnabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ 
+              scale: 1.01,
+              boxShadow: '0 8px 25px -5px hsl(var(--primary) / 0.15)'
+            }}
+            className="mb-8 p-4 rounded-xl border bg-card cursor-pointer"
+            style={{ 
+              borderLeftWidth: 4,
+              borderLeftColor: 'hsl(var(--accent))'
+            }}
+            onClick={() => setRecurringPanelOpen(true)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                  <Repeat className="w-5 h-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Ponavljajuće transakcije</p>
+                  <p className="text-xs text-muted-foreground">
+                    {recurringTransactions.length === 0 
+                      ? 'Nema aktivnih'
+                      : `${recurringTransactions.filter(r => r.is_active).length} aktivnih`}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Upravljaj →</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -939,6 +994,10 @@ const Index = () => {
       )}
       <BottomNav />
 
+      {/* Recurring Transactions Full Screen Panel */}
+      {recurringPanelOpen && (
+        <RecurringTransactionsPanel onClose={() => setRecurringPanelOpen(false)} />
+      )}
     </div>
   );
 };
