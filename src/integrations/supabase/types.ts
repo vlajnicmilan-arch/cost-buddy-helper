@@ -1354,27 +1354,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      consume_invitation_token:
-        | {
-            Args: { _invitation_type: string; _token: string }
-            Returns: {
-              invitation_id: string
-              invited_by: string
-              role: string
-              target_id: string
-              target_name: string
-            }[]
-          }
-        | {
-            Args: { _invitation_type: string; _token: string }
-            Returns: {
-              invitation_id: string
-              invited_by: string
-              role: string
-              target_id: string
-              target_name: string
-            }[]
-          }
+      consume_invitation_token: {
+        Args: { _invitation_type: string; _token: string }
+        Returns: {
+          invitation_id: string
+          invited_by: string
+          role: string
+          target_id: string
+          target_name: string
+        }[]
+      }
       is_budget_member: {
         Args: { _budget_id: string; _user_id: string }
         Returns: boolean
