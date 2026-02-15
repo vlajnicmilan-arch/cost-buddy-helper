@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,9 +9,14 @@ import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { useBudgetPendingTransactions } from '@/hooks/useBudgetPendingTransactions';
 import { BudgetMembersTab } from './BudgetMembersTab';
 import { cn } from '@/lib/utils';
-import { getCategoryInfo } from '@/types/expense';
+import { Expense, getCategoryInfo } from '@/types/expense';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
+import { EditTransactionDialog } from '@/components/EditTransactionDialog';
+import { TransactionItem } from '@/components/TransactionItem';
+import { useExpenses } from '@/hooks/useExpenses';
 import { 
   X,
   Edit,
@@ -23,7 +28,9 @@ import {
   Users,
   Calendar,
   Clock,
-  Check
+  Check,
+  Receipt,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -51,6 +58,72 @@ export const BudgetFullScreenView = ({
     rejectTransaction, 
     pendingCount 
   } = useBudgetPendingTransactions(budget?.id || null);
+  const { deleteExpense, updateExpense } = useExpenses();
+
+  // Budget transactions
+  const [budgetExpenses, setBudgetExpenses] = useState<Expense[]>([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const fetchBudgetExpenses = useCallback(async () => {
+    if (!budget?.id) return;
+    setLoadingExpenses(true);
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('budget_id', budget.id)
+        .order('date', { ascending: false });
+      if (error) throw error;
+      setBudgetExpenses((data || []).map(e => ({
+        ...e,
+        date: new Date(e.date),
+        amount: Number(e.amount),
+        type: e.type as any,
+        category: e.category as any,
+        payment_source: e.payment_source as any,
+        expense_nature: e.expense_nature as 'regular' | 'extraordinary' | undefined,
+      })));
+    } catch (err) {
+      console.error('Error fetching budget expenses:', err);
+    } finally {
+      setLoadingExpenses(false);
+    }
+  }, [budget?.id]);
+
+  useEffect(() => {
+    if (open && budget?.id) {
+      fetchBudgetExpenses();
+    }
+  }, [open, budget?.id, fetchBudgetExpenses]);
+
+  const handleExpenseClick = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setDetailOpen(true);
+  };
+
+  const handleEditFromDetail = (expense: Expense) => {
+    setDetailOpen(false);
+    setTimeout(() => {
+      setEditExpense(expense);
+      setEditOpen(true);
+    }, 100);
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    await deleteExpense(id);
+    fetchBudgetExpenses();
+    setDetailOpen(false);
+  };
+
+  const handleSaveExpense = async (expense: Expense) => {
+    await updateExpense(expense);
+    fetchBudgetExpenses();
+    setEditOpen(false);
+  };
 
   // Reset tab when budget changes
   useEffect(() => {
@@ -91,6 +164,7 @@ export const BudgetFullScreenView = ({
   };
 
   return (
+    <>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -138,10 +212,14 @@ export const BudgetFullScreenView = ({
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-4xl mx-auto p-4 sm:p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsList className="grid w-full grid-cols-3 mb-6">
                     <TabsTrigger value="overview" className="gap-2">
                       <BarChart3 className="w-4 h-4" />
                       {t('budget.overview', 'Pregled')}
+                    </TabsTrigger>
+                    <TabsTrigger value="transactions" className="gap-2">
+                      <Receipt className="w-4 h-4" />
+                      {t('budget.transactions', 'Transakcije')} ({budgetExpenses.length})
                     </TabsTrigger>
                     <TabsTrigger value="members" className="gap-2">
                       <Users className="w-4 h-4" />
@@ -358,6 +436,34 @@ export const BudgetFullScreenView = ({
                     )}
                   </TabsContent>
 
+                  <TabsContent value="transactions" className="space-y-4">
+                    {loadingExpenses ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : budgetExpenses.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-muted/50 flex items-center justify-center">
+                          <Receipt className="w-7 h-7 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {t('budget.noTransactions', 'Nema transakcija povezanih s ovim budžetom')}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {budgetExpenses.map((expense) => (
+                          <TransactionItem
+                            key={expense.id}
+                            expense={expense}
+                            onDelete={handleDeleteExpense}
+                            onClick={handleExpenseClick}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
                   <TabsContent value="members">
                     <BudgetMembersTab
                       budgetId={budget.id}
@@ -375,5 +481,21 @@ export const BudgetFullScreenView = ({
         </motion.div>
       )}
     </AnimatePresence>
+
+    <TransactionDetailDialog
+      expense={selectedExpense}
+      open={detailOpen}
+      onOpenChange={setDetailOpen}
+      onEdit={handleEditFromDetail}
+      onDelete={handleDeleteExpense}
+    />
+
+    <EditTransactionDialog
+      expense={editExpense}
+      open={editOpen}
+      onOpenChange={setEditOpen}
+      onSave={handleSaveExpense}
+    />
+    </>
   );
 };
