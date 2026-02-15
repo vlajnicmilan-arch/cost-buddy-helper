@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
   Target, Trash2, Clock, Check, X, AlertCircle, User, MessageCircle,
-  Eye, Pencil, Search, Filter, Milestone, CreditCard
+  Eye, Pencil, Search, Filter, Milestone, CreditCard, Printer, Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TransactionItemsExpander } from '@/components/TransactionItemsExpander';
@@ -327,6 +327,75 @@ export const ProjectTransactionsTab = ({
     return milestone?.name || null;
   };
 
+  // Filtered expenses memo
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(e => {
+      if (searchTerm.trim() && !e.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      if (filterMilestoneId === 'none' && e.milestone_id) return false;
+      if (filterMilestoneId !== 'all' && filterMilestoneId !== 'none' && e.milestone_id !== filterMilestoneId) return false;
+      if (filterDateRange?.from) {
+        const itemDate = new Date(e.date);
+        itemDate.setHours(0, 0, 0, 0);
+        const from = new Date(filterDateRange.from);
+        from.setHours(0, 0, 0, 0);
+        if (itemDate < from) return false;
+        if (filterDateRange.to) {
+          const to = new Date(filterDateRange.to);
+          to.setHours(23, 59, 59, 999);
+          if (itemDate > to) return false;
+        }
+      }
+      if (filterPaymentSource !== 'all' && e.payment_source !== filterPaymentSource) return false;
+      if (filterExpenseNature !== 'all' && e.expense_nature !== filterExpenseNature) return false;
+      return true;
+    });
+  }, [expenses, searchTerm, filterMilestoneId, filterDateRange, filterPaymentSource, filterExpenseNature]);
+
+  const hasActiveFilters = searchTerm.trim() || filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || filterExpenseNature !== 'all';
+
+  const filteredTotals = useMemo(() => {
+    const totalExpenses = filteredExpenses.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+    const totalIncome = filteredExpenses.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+    return { totalExpenses, totalIncome, net: totalIncome - totalExpenses };
+  }, [filteredExpenses]);
+
+  const handlePrintFiltered = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const rows = filteredExpenses.map(e => {
+      const cat = getCategoryInfo(e.category as any);
+      const milestone = getMilestoneName(e.milestone_id);
+      return `<tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${format(new Date(e.date), 'dd.MM.yyyy')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.description}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${cat.name}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${milestone || '-'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.expense_nature === 'extraordinary' ? t('projects.extraordinary', 'Vanredni') : t('projects.regular', 'Redovni')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;color:${e.type === 'income' ? '#16a34a' : '#dc2626'}">${e.type === 'income' ? '+' : '-'}${formatAmount(e.amount)}</td>
+      </tr>`;
+    }).join('');
+
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>${t('projects.filteredTransactions', 'Filtrirane transakcije')}</title>
+      <style>body{font-family:system-ui,sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px}td{font-size:13px}.summary{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px}</style></head><body>
+      <h2>${t('projects.filteredTransactions', 'Filtrirane transakcije')} (${filteredExpenses.length})</h2>
+      <table><thead><tr>
+        <th>${t('common.date', 'Datum')}</th>
+        <th>${t('common.description', 'Opis')}</th>
+        <th>${t('common.category', 'Kategorija')}</th>
+        <th>${t('projects.milestone', 'Faza')}</th>
+        <th>${t('projects.expenseNature', 'Vrsta')}</th>
+        <th style="text-align:right">${t('common.amount', 'Iznos')}</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+      <div class="summary">
+        <strong>${t('transactions.expense', 'Troškovi')}:</strong> ${formatAmount(filteredTotals.totalExpenses)} &nbsp;|&nbsp;
+        <strong>${t('transactions.income', 'Prihodi')}:</strong> ${formatAmount(filteredTotals.totalIncome)} &nbsp;|&nbsp;
+        <strong>${t('common.balance', 'Razlika')}:</strong> ${formatAmount(filteredTotals.net)}
+      </div></body></html>`);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -609,114 +678,132 @@ export const ProjectTransactionsTab = ({
         </div>
       ) : (
         <div className="space-y-1">
-          {expenses
-            .filter(e => {
-              // Keyword
-              if (searchTerm.trim() && !e.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-              // Milestone
-              if (filterMilestoneId === 'none' && e.milestone_id) return false;
-              if (filterMilestoneId !== 'all' && filterMilestoneId !== 'none' && e.milestone_id !== filterMilestoneId) return false;
-              // Date range
-              if (filterDateRange?.from) {
-                const itemDate = new Date(e.date);
-                itemDate.setHours(0, 0, 0, 0);
-                const from = new Date(filterDateRange.from);
-                from.setHours(0, 0, 0, 0);
-                if (itemDate < from) return false;
-                if (filterDateRange.to) {
-                  const to = new Date(filterDateRange.to);
-                  to.setHours(23, 59, 59, 999);
-                  if (itemDate > to) return false;
-                }
-              }
-              // Payment source
-              if (filterPaymentSource !== 'all' && e.payment_source !== filterPaymentSource) return false;
-              // Expense nature
-              if (filterExpenseNature !== 'all' && e.expense_nature !== filterExpenseNature) return false;
-              return true;
-            })
-            .map((expense) => {
-            const categoryInfo = getCategoryInfo(expense.category as any);
-            const isIncome = expense.type === 'income';
-            const milestoneName = getMilestoneName(expense.milestone_id);
-            const authorId = expense.submitted_by || expense.user_id;
-            const authorName = profiles[authorId] || 'Član';
-            const isOwnExpense = authorId === user?.id;
-
-            return (
-              <div 
-                key={expense.id} 
-                className="flex items-center gap-2 py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer active:bg-muted/70"
-                onClick={() => {
-                  setSelectedExpense(expense);
-                  setDetailDialogOpen(true);
-                }}
+          {/* Print button when filters active */}
+          {hasActiveFilters && filteredExpenses.length > 0 && (
+            <div className="flex items-center justify-between pb-1">
+              <span className="text-xs text-muted-foreground">
+                {t('filters.resultsCount', '{{count}} rezultata', { count: filteredExpenses.length })}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={handlePrintFiltered}
               >
-                {/* Category Icon */}
-                <div 
-                  className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
-                  style={{ backgroundColor: `hsl(var(--${categoryInfo.color}) / 0.15)` }}
-                >
-                  {categoryInfo.icon}
-                </div>
-                
-                {/* Main Content */}
-                <div className="flex-1 min-w-0 mr-2">
-                  {/* Title Row */}
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-medium text-foreground truncate text-sm leading-tight">
-                      {expense.description}
-                    </p>
-                    {expense.expense_nature && (
-                      <Badge variant="outline" className={cn(
-                        "text-[10px] px-1.5 py-0 h-4 shrink-0 border",
-                        expense.expense_nature === 'regular' 
-                          ? "border-income/50 text-income bg-income/10" 
-                          : "border-destructive/50 text-destructive bg-destructive/10"
-                      )}>
-                        {expense.expense_nature === 'regular' ? t('transactions.regular', 'Redovan') : t('transactions.extraordinary', 'Vanredan')}
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  {/* Info Row */}
-                  <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
-                    <span className="flex items-center gap-0.5 shrink-0">
-                      <User className="w-3 h-3" />
-                      {isOwnExpense ? t('common.you', 'Ti') : authorName}
-                    </span>
-                    <span className="text-muted-foreground/40">•</span>
-                    <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
-                    {milestoneName && (
-                      <>
-                        <span className="text-muted-foreground/40">•</span>
-                        <span className="flex items-center gap-0.5 truncate max-w-[80px]">
-                          <Target className="w-3 h-3 shrink-0" />
-                          {milestoneName}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <Printer className="w-3.5 h-3.5" />
+                {t('common.print', 'Ispis')}
+              </Button>
+            </div>
+          )}
 
-                {/* Amount & Date Column */}
-                <div className="flex flex-col items-end shrink-0 gap-0.5">
-                  <p className={cn(
-                    "font-mono font-bold text-sm leading-tight",
-                    isIncome ? "text-income" : "text-expense"
-                  )}>
-                    {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
-                  </p>
-                  <span className="text-[10px] text-muted-foreground/70">
-                    {format(new Date(expense.date), 'd. MMM', { locale: hr })}
+          {filteredExpenses.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">{t('filters.noResults', 'Nema rezultata za odabrane filtere')}</p>
+            </div>
+          ) : (
+            <>
+              {filteredExpenses.map((expense) => {
+                const categoryInfo = getCategoryInfo(expense.category as any);
+                const isIncome = expense.type === 'income';
+                const milestoneName = getMilestoneName(expense.milestone_id);
+                const authorId = expense.submitted_by || expense.user_id;
+                const authorName = profiles[authorId] || 'Član';
+                const isOwnExpense = authorId === user?.id;
+
+                return (
+                  <div 
+                    key={expense.id} 
+                    className="flex items-center gap-2 py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer active:bg-muted/70"
+                    onClick={() => {
+                      setSelectedExpense(expense);
+                      setDetailDialogOpen(true);
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
+                      style={{ backgroundColor: `hsl(var(--${categoryInfo.color}) / 0.15)` }}
+                    >
+                      {categoryInfo.icon}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0 mr-2">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-medium text-foreground truncate text-sm leading-tight">
+                          {expense.description}
+                        </p>
+                        {expense.expense_nature && (
+                          <Badge variant="outline" className={cn(
+                            "text-[10px] px-1.5 py-0 h-4 shrink-0 border",
+                            expense.expense_nature === 'regular' 
+                              ? "border-income/50 text-income bg-income/10" 
+                              : "border-destructive/50 text-destructive bg-destructive/10"
+                          )}>
+                            {expense.expense_nature === 'regular' ? t('transactions.regular', 'Redovan') : t('transactions.extraordinary', 'Vanredan')}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
+                        <span className="flex items-center gap-0.5 shrink-0">
+                          <User className="w-3 h-3" />
+                          {isOwnExpense ? t('common.you', 'Ti') : authorName}
+                        </span>
+                        <span className="text-muted-foreground/40">•</span>
+                        <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
+                        {milestoneName && (
+                          <>
+                            <span className="text-muted-foreground/40">•</span>
+                            <span className="flex items-center gap-0.5 truncate max-w-[80px]">
+                              <Target className="w-3 h-3 shrink-0" />
+                              {milestoneName}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end shrink-0 gap-0.5">
+                      <p className={cn(
+                        "font-mono font-bold text-sm leading-tight",
+                        isIncome ? "text-income" : "text-expense"
+                      )}>
+                        {isIncome ? '+' : '-'}{formatAmount(expense.amount)}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground/70">
+                        {format(new Date(expense.date), 'd. MMM', { locale: hr })}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Summary totals */}
+              <div className="mt-3 p-3 rounded-lg bg-muted/50 border flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                <span className="text-muted-foreground text-xs font-medium">{t('common.total', 'Ukupno')}:</span>
+                {filteredTotals.totalExpenses > 0 && (
+                  <span className="flex items-center gap-1 text-expense font-medium">
+                    <TrendingDown className="w-3.5 h-3.5" />
+                    -{formatAmount(filteredTotals.totalExpenses)}
                   </span>
-                </div>
+                )}
+                {filteredTotals.totalIncome > 0 && (
+                  <span className="flex items-center gap-1 text-income font-medium">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    +{formatAmount(filteredTotals.totalIncome)}
+                  </span>
+                )}
+                <span className={cn(
+                  "font-bold ml-auto",
+                  filteredTotals.net >= 0 ? "text-income" : "text-expense"
+                )}>
+                  {filteredTotals.net >= 0 ? '+' : ''}{formatAmount(filteredTotals.net)}
+                </span>
               </div>
-            );
-          })}
+            </>
+          )}
         </div>
       )}
-
       {/* Add Expense Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
