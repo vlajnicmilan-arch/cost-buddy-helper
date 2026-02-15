@@ -14,6 +14,7 @@ interface ProjectExpense {
   status?: string | null;
   submitted_by?: string | null;
   expense_nature?: string | null;
+  payment_source?: string | null;
 }
 
 interface ProjectStats {
@@ -45,7 +46,7 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
     try {
       const { data, error } = await (supabase
         .from('expenses')
-        .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature') as any)
+        .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature, payment_source') as any)
         .eq('project_id', projectId)
         .eq('status', 'approved')
         .order('date', { ascending: false });
