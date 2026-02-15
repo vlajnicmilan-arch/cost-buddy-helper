@@ -64,11 +64,11 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
 
       try {
         // First try to find by ID (custom payment source UUID)
+        // Don't filter by user_id - RLS handles access control (owner OR member)
         let { data: sourceData, error: fetchError } = await supabase
           .from('custom_payment_sources')
           .select('balance, id')
           .eq('id', cleanSourceId)
-          .eq('user_id', user.id)
           .maybeSingle();
 
         // If not found by ID, try matching by name (for standard sources like 'diners' -> 'Diners Club')
@@ -96,7 +96,6 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
             const { data: matchedSource } = await supabase
               .from('custom_payment_sources')
               .select('balance, id')
-              .eq('user_id', user.id)
               .ilike('name', `%${searchNames[searchNames.length > 1 ? 1 : 0]}%`)
               .maybeSingle();
             
@@ -115,14 +114,14 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
         const newBalance = currentBalance + balanceChange;
 
         // Update the balance
+        // Don't filter by user_id - RLS handles access (owner OR member can update)
         const { error: updateError } = await supabase
           .from('custom_payment_sources')
           .update({ 
             balance: newBalance,
             updated_at: new Date().toISOString()
           })
-          .eq('id', sourceData.id)
-          .eq('user_id', user.id);
+          .eq('id', sourceData.id);
 
         if (updateError) {
           console.error('Error updating payment source balance:', updateError);
