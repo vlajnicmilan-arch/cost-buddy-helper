@@ -286,7 +286,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   const updateExpense = async (expense: Expense) => {
     try {
       // Find the old expense to compare for balance updates
-      const oldExpense = expenses.find(e => e.id === expense.id);
+      // First try local state, then fall back to DB fetch for reliability
+      let oldExpense = expenses.find(e => e.id === expense.id);
       
       if (isLocalMode) {
         const updated = await updateLocalExpense(expense);
@@ -313,7 +314,23 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           return;
         }
 
-        console.log('Updating expense:', expense.id, 'payment_source:', expense.payment_source);
+        // CRITICAL: Always fetch old expense from DB to ensure accurate balance updates
+        if (!oldExpense) {
+          const { data: dbOldExpense } = await supabase
+            .from('expenses')
+            .select('*')
+            .eq('id', expense.id)
+            .maybeSingle();
+          if (dbOldExpense) {
+            oldExpense = dbOldExpense as unknown as Expense;
+          }
+        }
+
+        console.log('Updating expense:', expense.id, 
+          'old_payment_source:', oldExpense?.payment_source, 
+          'new_payment_source:', expense.payment_source,
+          'old_amount:', oldExpense?.amount,
+          'new_amount:', expense.amount);
         
         const { error, count } = await supabase
           .from('expenses')
@@ -343,8 +360,17 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         console.log('Update successful for expense:', expense.id);
         setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
         
-        // Update balances if payment source, amount, or type changed
+        // Update balances - always run even if payment source seems the same
+        // to handle amount/type changes
         if (oldExpense) {
+          console.log('Running handleTransactionUpdate:', {
+            oldSource: oldExpense.payment_source,
+            oldAmount: oldExpense.amount,
+            oldType: oldExpense.type,
+            newSource: expense.payment_source,
+            newAmount: expense.amount,
+            newType: expense.type
+          });
           await handleTransactionUpdate(
             oldExpense.payment_source,
             oldExpense.amount,
@@ -355,6 +381,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           );
           // CRITICAL: Trigger balance updated callback immediately after DB update
           options?.onBalanceUpdated?.();
+        } else {
+          console.warn('Could not find old expense for balance update:', expense.id);
         }
 
         // Notify project members if project changed or transaction was updated
