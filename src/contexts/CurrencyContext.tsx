@@ -109,7 +109,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const currency = CURRENCIES.find(c => c.code === currencyCode) || CURRENCIES[0];
 
   const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat(currency.locale, {
+    return new Intl.NumberFormat('de-DE', {
       style: 'currency',
       currency: currency.code,
     }).format(amount);
