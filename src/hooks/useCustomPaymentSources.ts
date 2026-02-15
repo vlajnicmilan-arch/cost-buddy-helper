@@ -32,22 +32,53 @@ export const useCustomPaymentSources = () => {
     }
 
     try {
-      // Fetch payment sources ordered by sort_order
-      const { data: sources, error: sourcesError } = await supabase
+      // Fetch own payment sources
+      const { data: ownSources, error: ownError } = await supabase
         .from('custom_payment_sources' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('sort_order', { ascending: true });
 
-      if (sourcesError) throw sourcesError;
+      if (ownError) throw ownError;
 
-      // Fetch cards for all sources
-      const { data: cards, error: cardsError } = await supabase
-        .from('payment_source_cards' as any)
-        .select('*')
+      // Fetch shared payment sources via membership
+      const { data: memberships, error: memberError } = await supabase
+        .from('payment_source_members' as any)
+        .select('payment_source_id')
         .eq('user_id', user.id);
 
-      if (cardsError) throw cardsError;
+      if (memberError) throw memberError;
+
+      const memberSourceIds = (memberships || [])
+        .map((m: any) => m.payment_source_id)
+        .filter((id: string) => !(ownSources || []).some((s: any) => s.id === id));
+
+      let sharedSources: any[] = [];
+      if (memberSourceIds.length > 0) {
+        const { data: shared, error: sharedError } = await supabase
+          .from('custom_payment_sources' as any)
+          .select('*')
+          .in('id', memberSourceIds)
+          .order('sort_order', { ascending: true });
+
+        if (sharedError) throw sharedError;
+        sharedSources = shared || [];
+      }
+
+      const sources = [...(ownSources || []), ...sharedSources];
+
+      // Fetch cards for all sources
+      const sourceIds = sources.map((s: any) => s.id);
+      let cards: any[] = [];
+      if (sourceIds.length > 0) {
+        const { data: cardsData, error: cardsError } = await supabase
+          .from('payment_source_cards' as any)
+          .select('*')
+          .in('payment_source_id', sourceIds);
+
+        if (cardsError) throw cardsError;
+        cards = cardsData || [];
+      }
 
       // Map cards to their sources
       const sourcesWithCards = (sources || []).map((source: any) => ({
