@@ -114,6 +114,7 @@ export const ProjectTransactionsTab = ({
   const [filterMilestoneId, setFilterMilestoneId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>(undefined);
   const [filterPaymentSource, setFilterPaymentSource] = useState<string>('all');
+  const [filterExpenseNature, setFilterExpenseNature] = useState<string>('all');
 
   const dateLocale = i18n?.language === 'de' ? de : i18n?.language === 'en' ? enUS : hr;
   
@@ -468,12 +469,12 @@ export const ProjectTransactionsTab = ({
             >
               <Filter className="w-3.5 h-3.5" />
               {t('filters.filters', 'Filteri')}
-              {(filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all') && (
+              {(filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || filterExpenseNature !== 'all') && (
                 <span className="w-2 h-2 rounded-full bg-primary" />
               )}
             </Button>
 
-            {(filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || searchTerm) && (
+            {(filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || filterExpenseNature !== 'all' || searchTerm) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -483,6 +484,7 @@ export const ProjectTransactionsTab = ({
                   setFilterMilestoneId('all');
                   setFilterDateRange(undefined);
                   setFilterPaymentSource('all');
+                  setFilterExpenseNature('all');
                 }}
               >
                 <X className="w-3 h-3 mr-1" />
@@ -578,6 +580,22 @@ export const ProjectTransactionsTab = ({
                   </Select>
                 );
               })()}
+
+              {/* Expense Nature Filter */}
+              <Select
+                value={filterExpenseNature}
+                onValueChange={setFilterExpenseNature}
+              >
+                <SelectTrigger className="w-[160px] h-8 text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 mr-1.5" />
+                  <SelectValue placeholder={t('filters.allNatures', 'Sve vrste')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('filters.allNatures', 'Sve vrste')}</SelectItem>
+                  <SelectItem value="regular">{t('projects.regular', 'Redovni')}</SelectItem>
+                  <SelectItem value="extraordinary">{t('projects.extraordinary', 'Vanredni')}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
         </div>
@@ -613,6 +631,8 @@ export const ProjectTransactionsTab = ({
               }
               // Payment source
               if (filterPaymentSource !== 'all' && e.payment_source !== filterPaymentSource) return false;
+              // Expense nature
+              if (filterExpenseNature !== 'all' && e.expense_nature !== filterExpenseNature) return false;
               return true;
             })
             .map((expense) => {
