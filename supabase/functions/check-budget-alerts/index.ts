@@ -147,7 +147,7 @@ serve(async (req) => {
             .eq("user_id", userId)
             .eq("type", "budget_alert")
             .gte("created_at", startDate.toISOString())
-            .like("data->>alert_key", alertKey);
+            .filter("data->>alert_key", "eq", alertKey);
 
           if (existingNotifications && existingNotifications.length > 0) {
             continue; // Already sent this alert for this period
