@@ -32,19 +32,25 @@ interface ProjectFullScreenViewProps {
   onClose: () => void;
   project: ProjectWithOwnership | null;
   onRefreshExpenses?: () => void;
+  initialTab?: string;
 }
 
 export const ProjectFullScreenView = ({
   open,
   onClose,
   project,
-  onRefreshExpenses
+  onRefreshExpenses,
+  initialTab
 }: ProjectFullScreenViewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab || 'overview');
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
 
   const { stats, expenses, loading: statsLoading, refetch: refetchStats } = useProjectStats(
     project?.id || null, 

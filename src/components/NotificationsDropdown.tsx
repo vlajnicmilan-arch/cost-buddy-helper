@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,11 +24,13 @@ const getNotificationIcon = (type: string) => {
     case 'invitation_accepted':
       return <UserPlus className="w-4 h-4 text-primary" />;
     case 'project_invitation':
+    case 'project_transaction':
+    case 'note_added':
       return <FolderOpen className="w-4 h-4 text-primary" />;
     case 'budget_invitation':
-      return <Wallet className="w-4 h-4 text-primary" />;
+    case 'budget_alert':
+      return <AlertTriangle className="w-4 h-4 text-warning" />;
     case 'payment_source_invitation':
-      return <Wallet className="w-4 h-4 text-primary" />;
     case 'payment_source_transaction':
       return <Wallet className="w-4 h-4 text-primary" />;
     default:
@@ -37,6 +40,7 @@ const getNotificationIcon = (type: string) => {
 
 export const NotificationsDropdown = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const {
     notifications,
     unreadCount,
@@ -49,9 +53,29 @@ export const NotificationsDropdown = () => {
   const [open, setOpen] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
 
-  const handleNotificationClick = async (notificationId: string, isRead: boolean) => {
+  const getNavigationTarget = (type: string, data: Record<string, unknown>) => {
+    switch (type) {
+      case 'project_transaction':
+      case 'note_added':
+        return { path: '/projects', state: { openProjectId: data.project_id, openExpenseId: data.expense_id } };
+      case 'budget_alert':
+        return { path: '/budgets', state: { openBudgetId: data.budget_id } };
+      case 'payment_source_transaction':
+        return { path: '/', state: { openExpenseId: data.expense_id } };
+      default:
+        return null;
+    }
+  };
+
+  const handleNotificationClick = async (notificationId: string, isRead: boolean, type: string, data: Record<string, unknown>) => {
     if (!isRead) {
       await markAsRead(notificationId);
+    }
+    
+    const target = getNavigationTarget(type, data);
+    if (target) {
+      setOpen(false);
+      navigate(target.path, { state: target.state });
     }
   };
 
@@ -154,7 +178,7 @@ export const NotificationsDropdown = () => {
                       'px-3 py-2 hover:bg-muted/50 cursor-pointer flex flex-col gap-2 group relative',
                       !notification.read && 'bg-primary/5'
                     )}
-                    onClick={() => !isInvitation && handleNotificationClick(notification.id, notification.read)}
+                    onClick={() => !isInvitation && handleNotificationClick(notification.id, notification.read, notification.type, (notification.data || {}) as Record<string, unknown>)}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-0.5">

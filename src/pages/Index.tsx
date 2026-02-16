@@ -36,7 +36,7 @@ import { SettingsDialog } from '@/components/SettingsDialog';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -54,6 +54,7 @@ const Index = () => {
   const { storageMode } = useStorage();
   const { formatAmount } = useCurrency();
   const navigate = useNavigate();
+  const location = useLocation();
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
@@ -104,9 +105,6 @@ const Index = () => {
 
   // Recurring transactions
   const { recurringTransactions, processDueTransactions } = useRecurringTransactions();
-
-  
-
 
   useEffect(() => {
     const loadDisplayName = async () => {
@@ -197,6 +195,19 @@ const Index = () => {
   } = useExpenses({
     onBalanceUpdated: refetchPaymentSources
   });
+
+  // Handle navigation from notification click - open transaction detail
+  useEffect(() => {
+    const state = location.state as { openExpenseId?: string } | null;
+    if (state?.openExpenseId && allExpenses.length > 0) {
+      const expense = allExpenses.find(e => e.id === state.openExpenseId);
+      if (expense) {
+        setSelectedTransaction(expense);
+        setDetailDialogOpen(true);
+        window.history.replaceState({}, '');
+      }
+    }
+  }, [location.state, allExpenses]);
 
   // Auto-process due recurring transactions on load
   useEffect(() => {
