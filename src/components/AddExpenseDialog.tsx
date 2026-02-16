@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 import { InstallmentToggle } from '@/components/installments';
 import { DuplicateWarningDialog } from '@/components/DuplicateWarningDialog';
+import { CardLookup } from '@/components/CardLookup';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
@@ -1262,6 +1263,15 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     </div>
                   );
                 })()}
+
+                {/* Card Lookup by last 4 digits */}
+                <CardLookup
+                  customPaymentSources={customPaymentSources}
+                  onSelect={(sourceId, cardId) => {
+                    setPaymentSource(sourceId as PaymentSource);
+                    setSelectedCardId(cardId);
+                  }}
+                />
               </div>
 
               {/* Transfer Destination */}
