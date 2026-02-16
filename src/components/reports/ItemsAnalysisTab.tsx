@@ -433,16 +433,16 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
                     {group.items
                       .sort((a, b) => b.total_price - a.total_price)
                       .map((item, idx) => (
-                        <div key={item.id || idx} className="flex items-center justify-between px-3 py-2 text-sm gap-2 min-w-0">
-                          <div className="min-w-0 flex-1">
-                            <span className="font-medium truncate block text-xs sm:text-sm">{item.name}</span>
-                            <span className="text-[10px] sm:text-xs text-muted-foreground truncate block">
+                        <div key={item.id || idx} className="flex items-start justify-between px-3 py-2 text-sm gap-2 overflow-hidden">
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <span className="font-medium text-xs sm:text-sm break-all line-clamp-2">{item.name}</span>
+                            <span className="text-[10px] sm:text-xs text-muted-foreground block">
                               {item.expenseDate.toLocaleDateString('hr-HR')}
                               {item.quantity && item.quantity > 1 && ` · ${item.quantity}x`}
                               {item.unit_price ? ` · ${formatAmount(item.unit_price)}/kom` : ''}
                             </span>
                           </div>
-                          <span className="font-mono text-xs sm:text-sm font-medium shrink-0">
+                          <span className="font-mono text-xs sm:text-sm font-medium shrink-0 pt-0.5">
                             {formatAmount(item.total_price)}
                           </span>
                         </div>
