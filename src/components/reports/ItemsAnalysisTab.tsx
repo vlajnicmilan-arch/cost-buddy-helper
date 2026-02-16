@@ -168,15 +168,26 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       doc.text(`Razdoblje: ${dateRange.start.toLocaleDateString('hr-HR')} - ${dateRange.end.toLocaleDateString('hr-HR')}`, 14, 28);
       doc.text(`Ukupno artikala: ${allItems.length} | Ukupni iznos: ${formatAmount(totalItemsAmount)}`, 14, 34);
 
-      const tableData = categoryGroups.flatMap(group =>
-        group.items.map(item => [
-          group.categoryName,
-          item.name,
-          item.quantity?.toString() || '1',
-          item.unit_price ? formatAmount(item.unit_price) : '-',
-          formatAmount(item.total_price),
-        ])
-      );
+      const tableData: (string | { content: string; styles?: Record<string, unknown> })[][] = [];
+      categoryGroups.forEach(group => {
+        group.items.forEach(item => {
+          tableData.push([
+            group.categoryName,
+            item.name,
+            item.quantity?.toString() || '1',
+            item.unit_price ? formatAmount(item.unit_price) : '-',
+            formatAmount(item.total_price),
+          ]);
+        });
+        // Category subtotal row
+        tableData.push([
+          { content: `Ukupno ${group.categoryName}`, styles: { fontStyle: 'bold' as const, fillColor: [230, 236, 245] } },
+          { content: '', styles: { fillColor: [230, 236, 245] } },
+          { content: `${group.itemCount}`, styles: { fontStyle: 'bold' as const, fillColor: [230, 236, 245] } },
+          { content: '', styles: { fillColor: [230, 236, 245] } },
+          { content: formatAmount(group.totalAmount), styles: { fontStyle: 'bold' as const, fillColor: [230, 236, 245] } },
+        ]);
+      });
 
       autoTable(doc, {
         startY: 40,
@@ -185,6 +196,12 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
         styles: { fontSize: 8, cellPadding: 2 },
         headStyles: { fillColor: [59, 130, 246] },
       });
+
+      // Grand total
+      const finalY = (doc as any).lastAutoTable?.finalY || 200;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`UKUPNO: ${formatAmount(totalItemsAmount)}`, 14, finalY + 10);
 
       doc.save(`artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`);
       toast.success('PDF izvjesce generirano!');
@@ -196,11 +213,20 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
   const handleExportCSV = () => {
     try {
       const header = 'Kategorija,Artikl,Kolicina,Jedinicna cijena,Ukupno,Datum,Opis transakcije\n';
-      const rows = allItems.map(item =>
-        `"${item.categoryName}","${item.name}",${item.quantity || 1},${item.unit_price || ''},${item.total_price},"${item.expenseDate.toLocaleDateString('hr-HR')}","${item.expenseDescription}"`
-      ).join('\n');
+      const rows: string[] = [];
+      categoryGroups.forEach(group => {
+        group.items.forEach(item => {
+          rows.push(
+            `"${item.categoryName}","${item.name}",${item.quantity || 1},${item.unit_price || ''},${item.total_price},"${item.expenseDate.toLocaleDateString('hr-HR')}","${item.expenseDescription}"`
+          );
+        });
+        // Category subtotal row
+        rows.push(`"UKUPNO ${group.categoryName}","",${group.itemCount},,${group.totalAmount},"",""`);
+      });
+      // Grand total
+      rows.push(`"SVEUKUPNO","",${allItems.length},,${totalItemsAmount},"",""`);
       const bom = '\uFEFF';
-      const blob = new Blob([bom + header + rows], { type: 'text/csv;charset=utf-8' });
+      const blob = new Blob([bom + header + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -271,7 +297,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <div className="p-4 rounded-xl bg-muted/50 border">
@@ -316,7 +342,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
             </div>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-64 w-full overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               {chartType === 'pie' ? (
                 <PieChart>
@@ -324,12 +350,13 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
                     data={chartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    innerRadius={40}
+                    outerRadius={70}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name.length > 8 ? name.slice(0, 8) + '…' : name} ${(percent * 100).toFixed(0)}%`}
                     labelLine={false}
+                    style={{ fontSize: 11 }}
                   >
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
