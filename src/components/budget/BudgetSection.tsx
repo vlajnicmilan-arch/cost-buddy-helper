@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -28,11 +29,25 @@ export const BudgetSection = ({
   onResetBudget,
 }: BudgetSectionProps) => {
   const { t } = useTranslation();
+  const location = useLocation();
   const [selectedBudget, setSelectedBudget] = useState<BudgetWithStats | null>(null);
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<BudgetWithStats | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Handle navigation from notification click
+  useEffect(() => {
+    const state = location.state as { openBudgetId?: string } | null;
+    if (state?.openBudgetId && budgets.length > 0) {
+      const budget = budgets.find(b => b.id === state.openBudgetId);
+      if (budget) {
+        setSelectedBudget(budget);
+        setFullScreenOpen(true);
+        window.history.replaceState({}, '');
+      }
+    }
+  }, [location.state, budgets]);
 
   const handleCardClick = (budget: BudgetWithStats) => {
     setSelectedBudget(budget);

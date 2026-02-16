@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
@@ -22,6 +23,7 @@ interface ProjectsPanelProps {
 
 export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const { t } = useTranslation();
+  const location = useLocation();
   const { projects, loading, addProject, updateProject, deleteProject, refetch } = useProjects();
   const { formatAmount } = useCurrency();
 
@@ -32,6 +34,24 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null);
+
+  // Handle navigation from notification click
+  useEffect(() => {
+    const state = location.state as { openProjectId?: string; openExpenseId?: string } | null;
+    if (state?.openProjectId && projects.length > 0) {
+      const project = projects.find(p => p.id === state.openProjectId);
+      if (project) {
+        setSelectedProject(project as ProjectWithOwnership);
+        setDetailDialogOpen(true);
+        if (state.openExpenseId) {
+          setPendingExpenseId(state.openExpenseId);
+        }
+        // Clear the state so it doesn't re-trigger
+        window.history.replaceState({}, '');
+      }
+    }
+  }, [location.state, projects]);
 
   // Fetch stats for all projects - unified logic: spent = sum of completed milestones budgets
   const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
@@ -133,6 +153,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const handleCloseFullScreen = () => {
     setDetailDialogOpen(false);
     setSelectedProject(null);
+    setPendingExpenseId(null);
     refetch();
     fetchAllStats();
   };
@@ -236,6 +257,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
         open={detailDialogOpen}
         onClose={handleCloseFullScreen}
         project={selectedProject}
+        initialTab={pendingExpenseId ? 'transactions' : undefined}
         onRefreshExpenses={() => {
           refetch();
           fetchAllStats();
