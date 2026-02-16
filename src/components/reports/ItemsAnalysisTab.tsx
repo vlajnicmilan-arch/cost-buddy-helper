@@ -404,26 +404,26 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
           const percentage = totalItemsAmount > 0 ? (group.totalAmount / totalItemsAmount) * 100 : 0;
 
           return (
-            <div key={group.categoryId} className="rounded-xl border overflow-hidden">
+            <div key={group.categoryId} className="rounded-xl border overflow-hidden min-w-0">
               <button
-                className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+                className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors gap-2 min-w-0"
                 onClick={() => setExpandedCategory(isExpanded ? null : group.categoryId)}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{group.categoryIcon}</span>
-                  <div className="text-left">
-                    <span className="font-medium text-sm">{group.categoryName}</span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      ({group.itemCount} {group.itemCount === 1 ? 'artikl' : 'artikala'})
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="text-lg shrink-0">{group.categoryIcon}</span>
+                  <div className="text-left min-w-0">
+                    <span className="font-medium text-sm truncate block">{group.categoryName}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {group.itemCount} {group.itemCount === 1 ? 'artikl' : 'art.'}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
                   <div className="text-right">
-                    <span className="font-mono text-sm font-semibold">{formatAmount(group.totalAmount)}</span>
-                    <span className="text-xs text-muted-foreground ml-1">({percentage.toFixed(1)}%)</span>
+                    <span className="font-mono text-xs sm:text-sm font-semibold">{formatAmount(group.totalAmount)}</span>
+                    <span className="text-[10px] text-muted-foreground block">({percentage.toFixed(1)}%)</span>
                   </div>
-                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  {isExpanded ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
                 </div>
               </button>
 
@@ -433,23 +433,23 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
                     {group.items
                       .sort((a, b) => b.total_price - a.total_price)
                       .map((item, idx) => (
-                        <div key={item.id || idx} className="flex items-center justify-between px-4 py-2 text-sm">
+                        <div key={item.id || idx} className="flex items-center justify-between px-3 py-2 text-sm gap-2 min-w-0">
                           <div className="min-w-0 flex-1">
-                            <span className="font-medium truncate block">{item.name}</span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="font-medium truncate block text-xs sm:text-sm">{item.name}</span>
+                            <span className="text-[10px] sm:text-xs text-muted-foreground truncate block">
                               {item.expenseDate.toLocaleDateString('hr-HR')}
                               {item.quantity && item.quantity > 1 && ` · ${item.quantity}x`}
                               {item.unit_price ? ` · ${formatAmount(item.unit_price)}/kom` : ''}
                             </span>
                           </div>
-                          <span className="font-mono text-sm font-medium shrink-0 ml-2">
+                          <span className="font-mono text-xs sm:text-sm font-medium shrink-0">
                             {formatAmount(item.total_price)}
                           </span>
                         </div>
                       ))}
                   </div>
                   {/* Category sum */}
-                  <div className="flex items-center justify-between px-4 py-2.5 border-t bg-muted/60 font-semibold text-sm">
+                  <div className="flex items-center justify-between px-3 py-2.5 border-t bg-muted/60 font-semibold text-xs sm:text-sm min-w-0 gap-2">
                     <span>Ukupno {group.categoryName}</span>
                     <span className="font-mono">{formatAmount(group.totalAmount)}</span>
                   </div>
