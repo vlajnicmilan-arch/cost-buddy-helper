@@ -7,8 +7,9 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Download, FileText, FileSpreadsheet, FileJson, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Download, FileText, FileSpreadsheet, FileJson, ShoppingBag, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -61,6 +62,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
   const [loading, setLoading] = useState(false);
   const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch receipt items for all filtered expense-type transactions
   useEffect(() => {
@@ -123,11 +125,18 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
     fetchItems();
   }, [filteredExpenses, isLocalMode]);
 
+  // Filter items by search query
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return allItems;
+    const q = searchQuery.toLowerCase().trim();
+    return allItems.filter(item => item.name.toLowerCase().includes(q));
+  }, [allItems, searchQuery]);
+
   // Group items by category
   const categoryGroups = useMemo((): CategoryItemGroup[] => {
     const groups: Record<string, CategoryItemGroup> = {};
 
-    allItems.forEach(item => {
+    filteredItems.forEach(item => {
       if (!groups[item.category]) {
         groups[item.category] = {
           categoryId: item.category,
@@ -145,7 +154,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
     });
 
     return Object.values(groups).sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [allItems]);
+  }, [filteredItems]);
 
   const totalItemsAmount = useMemo(() => categoryGroups.reduce((s, g) => s + g.totalAmount, 0), [categoryGroups]);
 
@@ -396,9 +405,28 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
         </div>
       )}
 
-      {/* Category groups with expandable item lists */}
+      {/* Search + Category groups */}
       <div className="space-y-2 overflow-hidden max-w-full">
         <Label className="text-sm font-medium">Detalji po kategorijama</Label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Pretraži artikle..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9 h-9 text-sm"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+              <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <p className="text-xs text-muted-foreground">
+            {filteredItems.length} {filteredItems.length === 1 ? 'rezultat' : 'rezultata'} za "{searchQuery}"
+          </p>
+        )}
         {categoryGroups.map(group => {
           const isExpanded = expandedCategory === group.categoryId;
           const percentage = totalItemsAmount > 0 ? (group.totalAmount / totalItemsAmount) * 100 : 0;
