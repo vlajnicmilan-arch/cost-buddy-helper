@@ -401,24 +401,31 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
               </button>
 
               {isExpanded && (
-                <div className="border-t bg-muted/30 divide-y">
-                  {group.items
-                    .sort((a, b) => b.total_price - a.total_price)
-                    .map((item, idx) => (
-                      <div key={item.id || idx} className="flex items-center justify-between px-4 py-2 text-sm">
-                        <div className="min-w-0 flex-1">
-                          <span className="font-medium truncate block">{item.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {item.expenseDate.toLocaleDateString('hr-HR')}
-                            {item.quantity && item.quantity > 1 && ` · ${item.quantity}x`}
-                            {item.unit_price ? ` · ${formatAmount(item.unit_price)}/kom` : ''}
+                <div className="border-t bg-muted/30">
+                  <div className="divide-y">
+                    {group.items
+                      .sort((a, b) => b.total_price - a.total_price)
+                      .map((item, idx) => (
+                        <div key={item.id || idx} className="flex items-center justify-between px-4 py-2 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <span className="font-medium truncate block">{item.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {item.expenseDate.toLocaleDateString('hr-HR')}
+                              {item.quantity && item.quantity > 1 && ` · ${item.quantity}x`}
+                              {item.unit_price ? ` · ${formatAmount(item.unit_price)}/kom` : ''}
+                            </span>
+                          </div>
+                          <span className="font-mono text-sm font-medium shrink-0 ml-2">
+                            {formatAmount(item.total_price)}
                           </span>
                         </div>
-                        <span className="font-mono text-sm font-medium shrink-0 ml-2">
-                          {formatAmount(item.total_price)}
-                        </span>
-                      </div>
-                    ))}
+                      ))}
+                  </div>
+                  {/* Category sum */}
+                  <div className="flex items-center justify-between px-4 py-2.5 border-t bg-muted/60 font-semibold text-sm">
+                    <span>Ukupno {group.categoryName}</span>
+                    <span className="font-mono">{formatAmount(group.totalAmount)}</span>
+                  </div>
                 </div>
               )}
             </div>
