@@ -53,6 +53,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import { ItemsAnalysisTab } from './ItemsAnalysisTab';
 
 interface ReportsDialogProps {
   expenses: Expense[];
@@ -544,18 +545,26 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="report" className="gap-2">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsTrigger value="report" className="gap-1 text-xs sm:text-sm">
               <PieChartIcon className="w-4 h-4" />
-              {t('reports.expensesTab', 'Troškovi')}
+              <span className="hidden sm:inline">{t('reports.expensesTab', 'Troškovi')}</span>
+              <span className="sm:hidden">Troš.</span>
             </TabsTrigger>
-            <TabsTrigger value="income" className="gap-2">
+            <TabsTrigger value="income" className="gap-1 text-xs sm:text-sm">
               <TrendingUp className="w-4 h-4" />
-              {t('reports.incomeTab', 'Prihodi')}
+              <span className="hidden sm:inline">{t('reports.incomeTab', 'Prihodi')}</span>
+              <span className="sm:hidden">Prih.</span>
             </TabsTrigger>
-            <TabsTrigger value="compare" className="gap-2">
+            <TabsTrigger value="items" className="gap-1 text-xs sm:text-sm">
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Artikli</span>
+              <span className="sm:hidden">Art.</span>
+            </TabsTrigger>
+            <TabsTrigger value="compare" className="gap-1 text-xs sm:text-sm">
               <ArrowUpDown className="w-4 h-4" />
-              {t('reports.compareTab', 'Usporedba')}
+              <span className="hidden sm:inline">{t('reports.compareTab', 'Usporedba')}</span>
+              <span className="sm:hidden">Usp.</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1048,6 +1057,11 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 </p>
               )}
             </div>
+          </TabsContent>
+
+          {/* Items Analysis Tab */}
+          <TabsContent value="items" className="space-y-6">
+            <ItemsAnalysisTab filteredExpenses={filteredExpenses} dateRange={dateRange} />
           </TabsContent>
 
           {/* Compare Tab */}
