@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePaymentSourceMembers, PaymentSourceRole, PAYMENT_SOURCE_ROLE_LABELS } from '@/hooks/usePaymentSourceMembers';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Users, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus } from 'lucide-react';
+import { Users, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Eye, Edit3 } from 'lucide-react';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 
 interface PaymentSourceMembersDialogProps {
@@ -16,15 +16,21 @@ interface PaymentSourceMembersDialogProps {
   paymentSource: CustomPaymentSource | null;
 }
 
+const INVITE_ROLE_OPTIONS: { value: 'limited' | 'full'; label: string; description: string; icon: React.ReactNode }[] = [
+  { value: 'limited', label: 'Ograničeni', description: 'Može samo knjižiti transakcije, vidi samo svoje', icon: <Edit3 className="w-4 h-4" /> },
+  { value: 'full', label: 'Potpuni pristup', description: 'Može knjižiti i vidi sve transakcije na računu', icon: <Eye className="w-4 h-4" /> },
+];
+
 export const PaymentSourceMembersDialog = ({
   open,
   onOpenChange,
   paymentSource,
 }: PaymentSourceMembersDialogProps) => {
-  const { members, invitations, loading, isOwner, removeMember, cancelInvitation, refetch } = 
+  const { members, invitations, loading, isOwner, removeMember, updateMemberRole, cancelInvitation, refetch } = 
     usePaymentSourceMembers(paymentSource?.id || null);
   
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'limited' | 'full'>('limited');
   const [sendingInvite, setSendingInvite] = useState(false);
 
   const handleSendInvite = async () => {
@@ -40,7 +46,7 @@ export const PaymentSourceMembersDialog = ({
           type: 'payment_source',
           targetId: paymentSource.id,
           invitedEmail: inviteEmail.trim(),
-          role: 'member',
+          role: inviteRole,
         },
       });
 
@@ -82,6 +88,12 @@ export const PaymentSourceMembersDialog = ({
     refetch();
   };
 
+  const getEffectiveRoleLabel = (role: PaymentSourceRole) => {
+    if (role === 'owner') return 'Vlasnik';
+    if (role === 'full') return 'Potpuni pristup';
+    return 'Ograničeni'; // 'limited' or legacy 'member'
+  };
+
   if (!paymentSource) return null;
 
   return (
@@ -103,10 +115,32 @@ export const PaymentSourceMembersDialog = ({
                 <span className="font-medium">Pozovi člana</span>
               </div>
               
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Član će moći vidjeti transakcije i stanje ovog računa
-                </p>
+              <div className="space-y-3">
+                {/* Role selector */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Razina pristupa</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {INVITE_ROLE_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setInviteRole(option.value)}
+                        className={`p-3 rounded-lg border text-left transition-all ${
+                          inviteRole === option.value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-card hover:bg-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {option.icon}
+                          <span className="text-sm font-medium">{option.label}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{option.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   <Input 
                     type="email"
@@ -149,7 +183,7 @@ export const PaymentSourceMembersDialog = ({
                   className="p-3 rounded-lg border bg-card flex items-center gap-3"
                 >
                   <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                     style={{ backgroundColor: paymentSource.color + '20' }}
                   >
                     <span className="text-sm font-medium" style={{ color: paymentSource.color }}>
@@ -161,19 +195,44 @@ export const PaymentSourceMembersDialog = ({
                     <div className="flex items-center gap-2">
                       <p className="font-medium truncate">{member.display_name}</p>
                       {member.role === 'owner' && (
-                        <Crown className="w-4 h-4 text-amber-500" />
+                        <Crown className="w-4 h-4 text-amber-500 shrink-0" />
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {PAYMENT_SOURCE_ROLE_LABELS[member.role]}
-                    </p>
+                    {member.role === 'owner' ? (
+                      <p className="text-xs text-muted-foreground">Vlasnik</p>
+                    ) : isOwner ? (
+                      <Select
+                        value={member.role === 'member' ? 'limited' : member.role}
+                        onValueChange={(value) => updateMemberRole(member.id, value as PaymentSourceRole)}
+                      >
+                        <SelectTrigger className="h-7 text-xs w-auto min-w-[140px] border-dashed">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="limited">
+                            <span className="flex items-center gap-1.5">
+                              <Edit3 className="w-3 h-3" /> Ograničeni
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="full">
+                            <span className="flex items-center gap-1.5">
+                              <Eye className="w-3 h-3" /> Potpuni pristup
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {getEffectiveRoleLabel(member.role)}
+                      </p>
+                    )}
                   </div>
 
                   {isOwner && member.role !== 'owner' && (
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-8 w-8 text-destructive"
+                      className="h-8 w-8 text-destructive shrink-0"
                       onClick={() => handleRemoveMember(member.id)}
                     >
                       <UserMinus className="w-4 h-4" />
@@ -199,7 +258,7 @@ export const PaymentSourceMembersDialog = ({
                   <div className="flex-1">
                     <p className="text-sm">{invitation.email}</p>
                     <p className="text-xs text-muted-foreground">
-                      {PAYMENT_SOURCE_ROLE_LABELS[invitation.role]}
+                      {getEffectiveRoleLabel(invitation.role)}
                     </p>
                   </div>
                   
@@ -217,6 +276,21 @@ export const PaymentSourceMembersDialog = ({
               ))}
             </div>
           )}
+
+          {/* Legend */}
+          <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Razine pristupa</p>
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2 text-xs">
+                <Edit3 className="w-3.5 h-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                <span><strong>Ograničeni</strong> — može knjižiti transakcije, vidi samo svoje</span>
+              </div>
+              <div className="flex items-start gap-2 text-xs">
+                <Eye className="w-3.5 h-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                <span><strong>Potpuni pristup</strong> — može knjižiti i vidi sve transakcije na računu</span>
+              </div>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
