@@ -29,27 +29,36 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   const { checkBudgetAlerts } = useBudgetAlerts();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
+  const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   // If user is logged in, always use cloud mode regardless of storageMode setting
   // Only use local mode if explicitly set AND user is not logged in
   const isLocalMode = storageMode === 'local' && !user;
 
-  // Fetch owned income source IDs
+  // Fetch owned income source IDs and shared payment source IDs
   const fetchOwnedSources = useCallback(async () => {
     if (isLocalMode || !user) {
       setOwnedSourceIds(new Set());
+      setSharedPaymentSourceIds(new Set());
       return;
     }
 
     try {
-      const { data, error } = await supabase
-        .from('income_sources')
-        .select('id')
-        .eq('user_id', user.id);
+      const [incomeRes, memberRes, ownedPsRes] = await Promise.all([
+        supabase.from('income_sources').select('id').eq('user_id', user.id),
+        supabase.from('payment_source_members').select('payment_source_id').eq('user_id', user.id),
+        supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
+      ]);
 
-      if (error) throw error;
-      setOwnedSourceIds(new Set((data || []).map(s => s.id)));
+      if (incomeRes.error) throw incomeRes.error;
+      setOwnedSourceIds(new Set((incomeRes.data || []).map(s => s.id)));
+
+      // Combine member + owned payment sources
+      const psIds = new Set<string>();
+      (memberRes.data || []).forEach(m => psIds.add(m.payment_source_id));
+      (ownedPsRes.data || []).forEach(s => psIds.add(s.id));
+      setSharedPaymentSourceIds(psIds);
     } catch (error) {
       console.error('Error fetching owned sources:', error);
     }
@@ -103,10 +112,18 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   }, [fetchOwnedSources, fetchExpenses]);
 
   // Filter expenses for dashboard display (exclude shared source/project transactions where user is not owner)
+  // BUT always show transactions on shared payment sources
   const dashboardExpenses = useMemo(() => {
     if (isLocalMode || !user) return expenses;
     
     return expenses.filter(expense => {
+      // Check if this transaction is on a shared payment source
+      const cleanPs = expense.payment_source?.replace('custom:', '');
+      const isOnSharedPaymentSource = cleanPs && sharedPaymentSourceIds.has(cleanPs);
+
+      // If it's on a shared payment source, always show it
+      if (isOnSharedPaymentSource) return true;
+
       // Project transaction - only show if user is the owner (user_id matches)
       if (expense.project_id) {
         return expense.user_id === user.id;
@@ -121,7 +138,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       // Transaction from shared source where user is member but not owner - hide from dashboard
       return false;
     });
-  }, [expenses, ownedSourceIds, isLocalMode, user]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, isLocalMode, user]);
 
   const addExpense = async (
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,

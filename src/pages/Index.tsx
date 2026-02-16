@@ -966,7 +966,7 @@ const Index = () => {
         open={paymentSourceDialogOpen}
         onOpenChange={setPaymentSourceDialogOpen}
         paymentSource={selectedPaymentSource}
-        expenses={expenses}
+        expenses={allExpenses}
         onUpdate={updateExpense}
         onDelete={deleteExpense}
       />
