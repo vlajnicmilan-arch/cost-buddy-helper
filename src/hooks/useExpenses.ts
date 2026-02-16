@@ -140,6 +140,15 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         return expense.user_id === user.id;
       }
 
+      // Inbound transfers: show if destination is user's payment source
+      if (expense.type === 'transfer' && expense.income_source_id) {
+        const destId = expense.income_source_id;
+        if (sharedPaymentSourceIds.has(destId)) {
+          if (fullAccessSourceIds.has(destId)) return true;
+          return expense.user_id === user.id;
+        }
+      }
+
       // Project transaction - only show if user is the owner (user_id matches)
       if (expense.project_id) {
         return expense.user_id === user.id;
