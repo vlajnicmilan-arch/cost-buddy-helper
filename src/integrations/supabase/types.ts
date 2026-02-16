@@ -1364,6 +1364,10 @@ export type Database = {
           target_name: string
         }[]
       }
+      has_full_payment_source_access: {
+        Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_budget_member: {
         Args: { _budget_id: string; _user_id: string }
         Returns: boolean

@@ -30,6 +30,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
+  const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   // If user is logged in, always use cloud mode regardless of storageMode setting
@@ -41,13 +42,14 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     if (isLocalMode || !user) {
       setOwnedSourceIds(new Set());
       setSharedPaymentSourceIds(new Set());
+      setFullAccessSourceIds(new Set());
       return;
     }
 
     try {
       const [incomeRes, memberRes, ownedPsRes] = await Promise.all([
         supabase.from('income_sources').select('id').eq('user_id', user.id),
-        supabase.from('payment_source_members').select('payment_source_id').eq('user_id', user.id),
+        supabase.from('payment_source_members').select('payment_source_id, role').eq('user_id', user.id),
         supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
       ]);
 
@@ -56,9 +58,18 @@ export const useExpenses = (options?: UseExpensesOptions) => {
 
       // Combine member + owned payment sources
       const psIds = new Set<string>();
-      (memberRes.data || []).forEach(m => psIds.add(m.payment_source_id));
-      (ownedPsRes.data || []).forEach(s => psIds.add(s.id));
+      const fullIds = new Set<string>();
+      (memberRes.data || []).forEach(m => {
+        psIds.add(m.payment_source_id);
+        if (m.role === 'full') fullIds.add(m.payment_source_id);
+      });
+      // Owners always have full access
+      (ownedPsRes.data || []).forEach(s => {
+        psIds.add(s.id);
+        fullIds.add(s.id);
+      });
       setSharedPaymentSourceIds(psIds);
+      setFullAccessSourceIds(fullIds);
     } catch (error) {
       console.error('Error fetching owned sources:', error);
     }
@@ -111,8 +122,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     fetchExpenses();
   }, [fetchOwnedSources, fetchExpenses]);
 
-  // Filter expenses for dashboard display (exclude shared source/project transactions where user is not owner)
-  // BUT always show transactions on shared payment sources
+  // Filter expenses for dashboard display
+  // Owners and 'full' members see all transactions on shared accounts
+  // 'limited' members only see their own transactions on shared accounts
   const dashboardExpenses = useMemo(() => {
     if (isLocalMode || !user) return expenses;
     
@@ -121,8 +133,12 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       const cleanPs = expense.payment_source?.replace('custom:', '');
       const isOnSharedPaymentSource = cleanPs && sharedPaymentSourceIds.has(cleanPs);
 
-      // If it's on a shared payment source, always show it
-      if (isOnSharedPaymentSource) return true;
+      if (isOnSharedPaymentSource) {
+        // Full access (owner or 'full' role) → show all transactions
+        if (fullAccessSourceIds.has(cleanPs!)) return true;
+        // Limited access → show only user's own transactions
+        return expense.user_id === user.id;
+      }
 
       // Project transaction - only show if user is the owner (user_id matches)
       if (expense.project_id) {
@@ -138,7 +154,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       // Transaction from shared source where user is member but not owner - hide from dashboard
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, isLocalMode, user]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, isLocalMode, user]);
 
   const addExpense = async (
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,

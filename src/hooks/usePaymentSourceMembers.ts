@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
-export type PaymentSourceRole = 'owner' | 'member';
+export type PaymentSourceRole = 'owner' | 'member' | 'limited' | 'full';
 
 export interface PaymentSourceMember {
   id: string;
@@ -29,7 +29,9 @@ export interface PaymentSourceInvitation {
 
 export const PAYMENT_SOURCE_ROLE_LABELS: Record<PaymentSourceRole, string> = {
   owner: 'Vlasnik',
-  member: 'Član',
+  member: 'Ograničeni', // legacy, treated same as limited
+  limited: 'Ograničeni',
+  full: 'Potpuni pristup',
 };
 
 export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
@@ -169,12 +171,30 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
     }
   };
 
+  const updateMemberRole = async (memberId: string, newRole: PaymentSourceRole): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('payment_source_members')
+        .update({ role: newRole })
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
+      toast.success('Uloga ažurirana');
+    } catch (error) {
+      console.error('Error updating member role:', error);
+      toast.error('Greška pri ažuriranju uloge');
+    }
+  };
+
   return {
     members,
     invitations,
     loading,
     isOwner,
     removeMember,
+    updateMemberRole,
     cancelInvitation,
     refetch: fetchMembers,
   };
