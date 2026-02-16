@@ -397,22 +397,22 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       )}
 
       {/* Category groups with expandable item lists */}
-      <div className="space-y-2">
+      <div className="space-y-2 overflow-hidden max-w-full">
         <Label className="text-sm font-medium">Detalji po kategorijama</Label>
         {categoryGroups.map(group => {
           const isExpanded = expandedCategory === group.categoryId;
           const percentage = totalItemsAmount > 0 ? (group.totalAmount / totalItemsAmount) * 100 : 0;
 
           return (
-            <div key={group.categoryId} className="rounded-xl border overflow-hidden min-w-0">
+            <div key={group.categoryId} className="rounded-xl border overflow-hidden max-w-full">
               <button
                 className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors gap-2 min-w-0"
                 onClick={() => setExpandedCategory(isExpanded ? null : group.categoryId)}
               >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                   <span className="text-lg shrink-0">{group.categoryIcon}</span>
-                  <div className="text-left min-w-0">
-                    <span className="font-medium text-sm truncate block">{group.categoryName}</span>
+                  <div className="text-left min-w-0 overflow-hidden">
+                    <span className="font-medium text-xs sm:text-sm truncate block">{group.categoryName}</span>
                     <span className="text-xs text-muted-foreground">
                       {group.itemCount} {group.itemCount === 1 ? 'artikl' : 'art.'}
                     </span>
@@ -449,9 +449,9 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
                       ))}
                   </div>
                   {/* Category sum */}
-                  <div className="flex items-center justify-between px-3 py-2.5 border-t bg-muted/60 font-semibold text-xs sm:text-sm min-w-0 gap-2">
-                    <span>Ukupno {group.categoryName}</span>
-                    <span className="font-mono">{formatAmount(group.totalAmount)}</span>
+                  <div className="flex items-center justify-between px-3 py-2.5 border-t bg-muted/60 font-semibold text-xs sm:text-sm gap-2 overflow-hidden">
+                    <span className="truncate min-w-0 flex-1">Ukupno {group.categoryName}</span>
+                    <span className="font-mono shrink-0">{formatAmount(group.totalAmount)}</span>
                   </div>
                 </div>
               )}
