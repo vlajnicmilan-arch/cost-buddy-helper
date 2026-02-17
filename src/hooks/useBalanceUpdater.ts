@@ -26,7 +26,10 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
     type: TransactionType,
     isReversal: boolean = false
   ) => {
-    if (!paymentSource) return;
+    if (!paymentSource) {
+      console.log('[BalanceUpdater] Skipping - no paymentSource provided');
+      return;
+    }
     
     // Strip 'custom:' prefix if present (used in payment_source field)
     const cleanSourceId = paymentSource.startsWith('custom:') 
@@ -41,6 +44,8 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
     if (isReversal) {
       balanceChange = -balanceChange;
     }
+
+    console.log(`[BalanceUpdater] Processing: source=${cleanSourceId}, amount=${amount}, type=${type}, reversal=${isReversal}, balanceChange=${balanceChange}`);
 
     if (isLocalMode) {
       // Handle local storage
@@ -67,9 +72,13 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
         // Don't filter by user_id - RLS handles access control (owner OR member)
         let { data: sourceData, error: fetchError } = await supabase
           .from('custom_payment_sources')
-          .select('balance, id')
+          .select('balance, id, name')
           .eq('id', cleanSourceId)
           .maybeSingle();
+
+        if (fetchError) {
+          console.error('[BalanceUpdater] Error fetching by ID:', fetchError);
+        }
 
         // If not found by ID, try matching by name (for standard sources like 'diners' -> 'Diners Club')
         if (!sourceData) {
@@ -95,7 +104,7 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
           if (searchNames) {
             const { data: matchedSource } = await supabase
               .from('custom_payment_sources')
-              .select('balance, id')
+              .select('balance, id, name')
               .ilike('name', `%${searchNames[searchNames.length > 1 ? 1 : 0]}%`)
               .maybeSingle();
             
@@ -106,12 +115,14 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
         }
 
         if (!sourceData) {
-          console.log('Payment source not found or not custom:', cleanSourceId);
+          console.log('[BalanceUpdater] Payment source not found or not custom:', cleanSourceId);
           return;
         }
 
         const currentBalance = sourceData?.balance || 0;
         const newBalance = currentBalance + balanceChange;
+
+        console.log(`[BalanceUpdater] Updating "${sourceData.name}" (${sourceData.id}): ${currentBalance} → ${newBalance} (change: ${balanceChange > 0 ? '+' : ''}${balanceChange})`);
 
         // Update the balance
         // Don't filter by user_id - RLS handles access (owner OR member can update)
@@ -124,13 +135,14 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
           .eq('id', sourceData.id);
 
         if (updateError) {
-          console.error('Error updating payment source balance:', updateError);
+          console.error('[BalanceUpdater] Error updating payment source balance:', updateError);
         } else {
+          console.log(`[BalanceUpdater] ✓ Balance updated successfully for "${sourceData.name}"`);
           // Notify that balance was updated
           onBalanceUpdated?.();
         }
       } catch (error) {
-        console.error('Error in updateBalance:', error);
+        console.error('[BalanceUpdater] Error in updateBalance:', error);
       }
     }
   }, [user, isLocalMode, onBalanceUpdated]);
@@ -138,6 +150,7 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
   /**
    * Handles balance update when a transaction is modified
    * Reverses the old transaction effect and applies the new one
+   * For transfers: also handles destination account (income_source_id)
    */
   const handleTransactionUpdate = useCallback(async (
     oldPaymentSource: string | undefined,
@@ -145,13 +158,32 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
     oldType: TransactionType,
     newPaymentSource: string | undefined,
     newAmount: number,
-    newType: TransactionType
+    newType: TransactionType,
+    oldIncomeSourceId?: string | undefined,
+    newIncomeSourceId?: string | undefined
   ) => {
-    // Reverse the old transaction effect
+    console.log('[BalanceUpdater] handleTransactionUpdate:', {
+      oldSource: oldPaymentSource, oldAmount, oldType, oldDest: oldIncomeSourceId,
+      newSource: newPaymentSource, newAmount, newType, newDest: newIncomeSourceId
+    });
+
+    // Reverse the old transaction effect on source
     await updateBalance(oldPaymentSource, oldAmount, oldType, true);
     
-    // Apply the new transaction effect
+    // For old transfers: also reverse the destination credit
+    if (oldType === 'transfer' && oldIncomeSourceId) {
+      console.log('[BalanceUpdater] Reversing old transfer destination:', oldIncomeSourceId);
+      await updateBalance(oldIncomeSourceId, oldAmount, 'income', true);
+    }
+    
+    // Apply the new transaction effect on source
     await updateBalance(newPaymentSource, newAmount, newType, false);
+    
+    // For new transfers: also apply the destination credit
+    if (newType === 'transfer' && newIncomeSourceId) {
+      console.log('[BalanceUpdater] Applying new transfer destination:', newIncomeSourceId);
+      await updateBalance(newIncomeSourceId, newAmount, 'income', false);
+    }
   }, [updateBalance]);
 
   return {
