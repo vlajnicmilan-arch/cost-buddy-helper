@@ -111,7 +111,6 @@ serve(async (req) => {
       }
 
       // Get total expenses for this budget period
-      // Only count expenses explicitly assigned to this budget
       const { data: expenses, error: expensesError } = await supabase
         .from("expenses")
         .select("amount, category")
@@ -133,75 +132,82 @@ serve(async (req) => {
 
       const percentage = (totalSpent / totalLimit) * 100;
 
-      // Check which thresholds are crossed
-      const thresholds = [80, 90, 100];
-      
+      // Check if ANY budget alert was already sent for this budget in this period
+      const { data: existingAlerts } = await supabase
+        .from("notifications")
+        .select("id, data")
+        .eq("user_id", userId)
+        .eq("type", "budget_alert")
+        .gte("created_at", startDate.toISOString())
+        .filter("data->>budget_id", "eq", budget.id);
+
+      // Find the highest threshold already alerted
+      const existingThresholds = (existingAlerts || []).map(
+        (n: any) => Number(n.data?.threshold) || 0
+      );
+      const maxExistingThreshold = existingThresholds.length > 0
+        ? Math.max(...existingThresholds)
+        : 0;
+
+      // Determine which threshold to alert (only the highest crossed, and only if new)
+      const thresholds = [100, 90, 80]; // Check highest first
+      let targetThreshold: number | null = null;
+
       for (const threshold of thresholds) {
         if (percentage >= threshold) {
-          // Check if we already sent this alert recently (within the period)
-          const alertKey = `budget_alert_${budget.id}_${threshold}`;
-          
-          const { data: existingNotifications } = await supabase
-            .from("notifications")
-            .select("id")
-            .eq("user_id", userId)
-            .eq("type", "budget_alert")
-            .gte("created_at", startDate.toISOString())
-            .filter("data->>alert_key", "eq", alertKey);
-
-          if (existingNotifications && existingNotifications.length > 0) {
-            continue; // Already sent this alert for this period
-          }
-
-          // Determine message based on threshold
-          let title: string;
-          let message: string;
-
-          if (threshold === 100) {
-            title = `⚠️ Budžet "${budget.name}" prekoračen!`;
-            message = `Potrošili ste ${percentage.toFixed(0)}% budžeta (${totalSpent.toFixed(2)} / ${totalLimit.toFixed(2)}).`;
-          } else if (threshold === 90) {
-            title = `🔴 Budžet "${budget.name}" na 90%`;
-            message = `Približavate se limitu! Potrošeno: ${totalSpent.toFixed(2)} od ${totalLimit.toFixed(2)}.`;
-          } else {
-            title = `🟡 Budžet "${budget.name}" na 80%`;
-            message = `Pažljivo s potrošnjom. Preostalo vam je ${(totalLimit - totalSpent).toFixed(2)}.`;
-          }
-
-          // Create notification
-          const { error: notifError } = await supabase
-            .from("notifications")
-            .insert({
-              user_id: userId,
-              type: "budget_alert",
-              title,
-              message,
-              data: {
-                alert_key: alertKey,
-                budget_id: budget.id,
-                threshold,
-                percentage,
-                spent: totalSpent,
-                limit: totalLimit,
-              },
-            });
-
-          if (notifError) {
-            console.error("Error creating notification:", notifError);
-          } else {
-            alerts.push({
-              budget_id: budget.id,
-              budget_name: budget.name,
-              threshold,
-              percentage,
-              spent: totalSpent,
-              limit: totalLimit,
-            });
-          }
-
-          // Only send the highest threshold alert
-          break;
+          targetThreshold = threshold;
+          break; // Found the highest crossed threshold
         }
+      }
+
+      if (!targetThreshold || targetThreshold <= maxExistingThreshold) {
+        continue; // Already alerted at this or higher level
+      }
+
+      const alertKey = `budget_alert_${budget.id}_${targetThreshold}`;
+
+      let title: string;
+      let message: string;
+
+      if (targetThreshold === 100) {
+        title = `⚠️ Budžet "${budget.name}" prekoračen!`;
+        message = `Potrošili ste ${percentage.toFixed(0)}% budžeta (${totalSpent.toFixed(2)} / ${totalLimit.toFixed(2)}).`;
+      } else if (targetThreshold === 90) {
+        title = `🔴 Budžet "${budget.name}" na 90%`;
+        message = `Približavate se limitu! Potrošeno: ${totalSpent.toFixed(2)} od ${totalLimit.toFixed(2)}.`;
+      } else {
+        title = `🟡 Budžet "${budget.name}" na 80%`;
+        message = `Pažljivo s potrošnjom. Preostalo vam je ${(totalLimit - totalSpent).toFixed(2)}.`;
+      }
+
+      const { error: notifError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          type: "budget_alert",
+          title,
+          message,
+          data: {
+            alert_key: alertKey,
+            budget_id: budget.id,
+            threshold: targetThreshold,
+            percentage,
+            spent: totalSpent,
+            limit: totalLimit,
+          },
+        });
+
+      if (notifError) {
+        console.error("Error creating notification:", notifError);
+      } else {
+        alerts.push({
+          budget_id: budget.id,
+          budget_name: budget.name,
+          threshold: targetThreshold,
+          percentage,
+          spent: totalSpent,
+          limit: totalLimit,
+        });
       }
     }
 
