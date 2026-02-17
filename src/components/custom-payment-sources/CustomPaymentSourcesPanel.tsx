@@ -266,7 +266,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() => setMembersDialogSource(source)}
+                      onClick={(e) => { e.stopPropagation(); setMembersDialogSource(source); }}
                       title={t('common.members', 'Članovi')}
                     >
                       <Users className="h-3.5 w-3.5" />
@@ -275,7 +275,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() => handleEdit(source)}
+                      onClick={(e) => { e.stopPropagation(); handleEdit(source); }}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -283,7 +283,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(source)}
+                      onClick={(e) => { e.stopPropagation(); handleDelete(source); }}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>

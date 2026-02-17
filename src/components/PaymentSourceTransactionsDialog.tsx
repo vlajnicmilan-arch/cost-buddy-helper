@@ -405,27 +405,31 @@ export const PaymentSourceTransactionsDialog = ({
 
                               {/* Amount, Running Balance & Date */}
                               <div className="flex flex-col items-end shrink-0 gap-0.5">
-                                {(() => {
-                                  const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
-                                  const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
-                                    expense.type === 'expense' ? 'text-destructive' : 'text-muted-foreground';
-                                  const prefix = expense.type === 'expense' ? '-' : 
-                                    (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
-                                  return (
-                                    <p className={cn("font-mono font-bold text-sm leading-tight", colorClass)}>
-                                      {prefix}{formatAmount(expense.amount)}
-                                    </p>
-                                  );
-                                })()}
-                                {/* Running balance after this transaction */}
-                                {balanceAfter !== undefined && (
-                                  <span className={cn(
-                                    "text-[10px] font-mono leading-tight",
-                                    balanceAfter >= 0 ? "text-muted-foreground" : "text-destructive/70"
-                                  )}>
-                                    {t('summary.balance', 'Saldo')}: {formatAmount(balanceAfter)}
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  {(() => {
+                                    const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
+                                    const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
+                                      expense.type === 'expense' ? 'text-destructive' : 'text-muted-foreground';
+                                    const prefix = expense.type === 'expense' ? '-' : 
+                                      (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
+                                    return (
+                                      <p className={cn("font-mono font-bold text-sm leading-tight", colorClass)}>
+                                        {prefix}{formatAmount(expense.amount)}
+                                      </p>
+                                    );
+                                  })()}
+                                  {/* Running balance after this transaction */}
+                                  {balanceAfter !== undefined && (
+                                    <span className={cn(
+                                      "text-xs font-mono leading-tight px-1.5 py-0.5 rounded",
+                                      balanceAfter >= 0 
+                                        ? "bg-primary/10 text-primary" 
+                                        : "bg-destructive/10 text-destructive"
+                                    )}>
+                                      {formatAmount(balanceAfter)}
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="text-[10px] text-muted-foreground/70">
                                   {format(expense.date, 'd. MMM', { locale: hr })}
                                 </span>
