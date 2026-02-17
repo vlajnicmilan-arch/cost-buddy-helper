@@ -343,7 +343,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             oldExpense.type,
             expense.payment_source,
             expense.amount,
-            expense.type
+            expense.type,
+            oldExpense.income_source_id,
+            expense.income_source_id
           );
           // CRITICAL: Trigger balance updated callback immediately
           options?.onBalanceUpdated?.();
@@ -419,7 +421,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             oldExpense.type,
             expense.payment_source,
             expense.amount,
-            expense.type
+            expense.type,
+            oldExpense.income_source_id,
+            expense.income_source_id
           );
           // CRITICAL: Trigger balance updated callback immediately after DB update
           options?.onBalanceUpdated?.();
