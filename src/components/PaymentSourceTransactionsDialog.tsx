@@ -61,6 +61,10 @@ export const PaymentSourceTransactionsDialog = ({
       if (e.payment_source_card_id && paymentSource.cards) {
         return paymentSource.cards.some(card => card.id === e.payment_source_card_id);
       }
+      // Match inbound transfers where this account is the destination (income_source_id)
+      if (e.type === 'transfer' && e.income_source_id === paymentSource.id) {
+        return true;
+      }
       return false;
     }).sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [expenses, paymentSource]);
@@ -80,10 +84,17 @@ export const PaymentSourceTransactionsDialog = ({
     return sourceExpenses.reduce((acc, e) => {
       if (e.type === 'income') acc.totalIncome += e.amount;
       else if (e.type === 'expense') acc.totalExpenses += e.amount;
-      else if (e.type === 'transfer') acc.totalTransfers += e.amount;
+      else if (e.type === 'transfer') {
+        // Inbound transfer (this account is destination) counts as income
+        if (e.income_source_id === paymentSource?.id) {
+          acc.totalIncome += e.amount;
+        } else {
+          acc.totalTransfers += e.amount;
+        }
+      }
       return acc;
     }, { totalIncome: 0, totalExpenses: 0, totalTransfers: 0 });
-  }, [sourceExpenses]);
+  }, [sourceExpenses, paymentSource]);
 
 
   const handleEdit = (expense: Expense) => {
@@ -383,8 +394,11 @@ export const PaymentSourceTransactionsDialog = ({
                           {expense.type === 'expense' && (
                             <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
                           )}
-                          {expense.type === 'transfer' && (
-                            <span className="text-primary">{t('transactions.transfer', 'Prijenos')}</span>
+                          {expense.type === 'transfer' && expense.income_source_id === paymentSource?.id && (
+                            <span className="text-income">{t('transactions.transfer', 'Prijenos')} ↓</span>
+                          )}
+                          {expense.type === 'transfer' && expense.income_source_id !== paymentSource?.id && (
+                            <span className="text-primary">{t('transactions.transfer', 'Prijenos')} ↑</span>
                           )}
                           {expense.type === 'income' && (
                             <span className="text-income">{t('transactions.income', 'Prihod')}</span>
@@ -400,15 +414,18 @@ export const PaymentSourceTransactionsDialog = ({
 
                       {/* Amount & Date */}
                       <div className="flex flex-col items-end shrink-0 gap-0.5">
-                        <p className={cn(
-                          "font-mono font-bold text-sm leading-tight",
-                          expense.type === 'income' ? 'text-income' : 
-                          expense.type === 'expense' ? 'text-destructive' : 
-                          'text-muted-foreground'
-                        )}>
-                          {expense.type === 'expense' ? '-' : expense.type === 'income' ? '+' : '↔'}
-                          {formatAmount(expense.amount)}
-                        </p>
+                        {(() => {
+                          const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
+                          const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
+                            expense.type === 'expense' ? 'text-destructive' : 'text-muted-foreground';
+                          const prefix = expense.type === 'expense' ? '-' : 
+                            (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
+                          return (
+                            <p className={cn("font-mono font-bold text-sm leading-tight", colorClass)}>
+                              {prefix}{formatAmount(expense.amount)}
+                            </p>
+                          );
+                        })()}
                         <span className="text-[10px] text-muted-foreground/70">
                           {format(expense.date, 'd. MMM', { locale: hr })}
                         </span>
