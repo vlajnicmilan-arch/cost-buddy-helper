@@ -297,10 +297,22 @@ export const useExpenses = (options?: UseExpensesOptions) => {
 
         setExpenses(prev => [newExpense, ...prev]);
 
-        // Update payment source balance
+        // Update payment source balance (source side)
+        const savedIncomeSourceId = data.income_source_id || expense.income_source_id;
+        console.log('[useExpenses] Transfer add - source:', expense.payment_source, 'dest:', savedIncomeSourceId, 'type:', expense.type);
         await updateBalance(expense.payment_source, expense.amount, expense.type);
-        if (expense.type === 'transfer' && expense.income_source_id) {
-          await updateBalance(expense.income_source_id, expense.amount, 'income');
+        
+        // For transfers: also credit the destination account
+        if (expense.type === 'transfer' && savedIncomeSourceId) {
+          console.log('[useExpenses] Updating DESTINATION balance:', savedIncomeSourceId, expense.amount, 'income');
+          try {
+            await updateBalance(savedIncomeSourceId, expense.amount, 'income');
+            console.log('[useExpenses] ✓ Destination balance update completed');
+          } catch (destError) {
+            console.error('[useExpenses] ✗ Destination balance update FAILED:', destError);
+          }
+        } else if (expense.type === 'transfer') {
+          console.warn('[useExpenses] ⚠ Transfer without destination! income_source_id is missing');
         }
         
         // Check budget alerts for expense transactions
