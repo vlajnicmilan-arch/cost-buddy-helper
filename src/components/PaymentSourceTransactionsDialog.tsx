@@ -4,14 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Expense, getCategoryInfo, Category } from '@/types/expense';
 import { EditTransactionDialog } from './EditTransactionDialog';
+import { TransactionDetailDialog } from './TransactionDetailDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
-import { TransactionNotesThread } from './TransactionNotesThread';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, MessageCircle } from 'lucide-react';
-import { TransactionItemsExpander } from './TransactionItemsExpander';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -39,16 +38,15 @@ export const PaymentSourceTransactionsDialog = ({
   const { t } = useTranslation();
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
-  const [expandedItemsId, setExpandedItemsId] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
 
   const handleClose = () => {
     clearSelection();
     setSearchTerm('');
-    setExpandedNoteId(null);
     onOpenChange(false);
   };
 
@@ -349,18 +347,26 @@ export const PaymentSourceTransactionsDialog = ({
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: 20 }}
+                              onClick={() => {
+                                if (selectedIds.size === 0) {
+                                  setDetailExpense(expense);
+                                  setDetailDialogOpen(true);
+                                }
+                              }}
                               className={cn(
-                                "group py-2.5 px-2 rounded-lg transition-colors",
+                                "group py-2.5 px-2 rounded-lg transition-colors cursor-pointer active:bg-muted/70",
                                 isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                               )}
                             >
                               {/* Row 1: Checkbox + Icon + Description + Amount */}
                               <div className="flex items-center gap-2">
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={() => toggleSelection(expense.id)}
-                                  className="shrink-0"
-                                />
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleSelection(expense.id)}
+                                    className="shrink-0"
+                                  />
+                                </div>
                                 <div 
                                   className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
                                   style={{ backgroundColor: expense.type === 'transfer' 
@@ -428,53 +434,8 @@ export const PaymentSourceTransactionsDialog = ({
                                     {formatAmount(balanceAfter)}
                                   </span>
                                 )}
-                                {/* Actions - visible on hover/touch */}
-                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                  <button
-                                    onClick={() => setExpandedNoteId(expandedNoteId === expense.id ? null : expense.id)}
-                                    className={cn(
-                                      "p-1 rounded hover:bg-muted transition-all",
-                                      expandedNoteId === expense.id 
-                                        ? "text-primary opacity-100" 
-                                        : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                    title={t('transactions.comments')}
-                                  >
-                                    <MessageCircle className="w-3 h-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleEdit(expense)}
-                                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
-                                  >
-                                    <Pencil className="w-3 h-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(expense.id)}
-                                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </div>
                               </div>
                             </motion.div>
-                            
-                            {/* Notes Thread */}
-                            {expandedNoteId === expense.id && (
-                              <div className="ml-10 mr-2 mb-2">
-                                <TransactionNotesThread
-                                  expenseId={expense.id}
-                                  paymentSourceId={paymentSource?.id}
-                                  initialNote={expense.note}
-                                />
-                              </div>
-                            )}
-
-                            {/* Items Expander */}
-                            <TransactionItemsExpander
-                              expenseId={expense.id}
-                              isExpanded={expandedItemsId === expense.id}
-                              onToggle={() => setExpandedItemsId(expandedItemsId === expense.id ? null : expense.id)}
-                            />
                           </div>
                         );
                       })}
@@ -486,6 +447,20 @@ export const PaymentSourceTransactionsDialog = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <TransactionDetailDialog
+        expense={detailExpense}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        onEdit={(expense) => {
+          setDetailDialogOpen(false);
+          handleEdit(expense);
+        }}
+        onDelete={(id) => {
+          setDetailDialogOpen(false);
+          handleDelete(id);
+        }}
+      />
 
       <EditTransactionDialog
         expense={editingExpense}
