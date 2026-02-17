@@ -151,7 +151,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const handleScanMultipleImages = async () => {
     if (receiptImages.length === 0) return;
     
-    const result = await scanMultipleReceipts(receiptImages, customPaymentSources);
+    const result = await scanMultipleReceipts(receiptImages, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
     if (result) {
       applyScannedResult(result);
       setShowMultiImageCollector(false);

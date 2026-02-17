@@ -94,7 +94,7 @@ serve(async (req) => {
       );
     }
     
-    const { imageBase64, imagesBase64, customPaymentSources } = body;
+    const { imageBase64, imagesBase64, customPaymentSources, customCategories } = body;
 
     // Support both single image (backward compat) and multiple images
     const images: string[] = imagesBase64 && imagesBase64.length > 0 
@@ -122,6 +122,13 @@ serve(async (req) => {
     
     console.log('Sending', imageParts.length, 'image(s) to AI gateway...');
     
+    // Build custom categories context
+    let customCategoriesContext = '';
+    if (customCategories && customCategories.length > 0) {
+      const catList = customCategories.map((cat: any) => `- ${cat.id} → ${cat.icon} ${cat.name}`).join('\n');
+      customCategoriesContext = `\n\nKORISNIKOVE PRILAGOĐENE KATEGORIJE (koristi ih ako odgovaraju sadržaju računa):\n${catList}\nAko nijedna prilagođena kategorija ne odgovara, koristi standardne kategorije.`;
+    }
+
     // Build custom payment sources context for AI prompt
     let paymentSourcesContext = '';
     let cardMatchingRules = '';
@@ -222,7 +229,7 @@ KORAK 3: Ako nema podudaranja brojeva
    - Ovo NIJE obični trošak! To je prijenos novca s jednog izvora na drugi.
    - Primjeri: "AIRCASH DOPUNA 50 EUR" na INA → transaction_type: "transfer", transfer_destination_name: "Aircash"
    - Ako NIJE dopuna/transfer → transaction_type: "expense"
-${paymentSourcesContext}${cardMatchingRules}
+${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
 
 === FORMAT ODGOVORA (SAMO JSON) ===
 {
@@ -279,7 +286,40 @@ PRIMJER ZA RATE:
   "items": [{"name": "Laptop HP 15", "quantity": 1, "unit_price": null, "total_price": 600.00}]
 }
 
-KATEGORIJE: food, transport, shopping, entertainment, bills, health, other
+KATEGORIJE (odaberi NAJSPECIFIČNIJU koja odgovara):
+- food → Restorani, fast food, kafići, pekare, gotova jela (NE supermarket kupovina!)
+- groceries → Supermarketi, dućani, namirnice (Konzum, Lidl, Kaufland, Spar, Plodine, Tommy, Studenac, Interspar, Eurospin)
+- transport → Javni prijevoz, taxi, Uber, Bolt, TRAJEKT, ferry, autobus, vlak, parking, cestarina, vinjeta, ENC
+- car → Gorivo, benzin, servis auta, registracija, automehaničar, autopraonica, INA, Petrol, Tifon, Crodux (OSIM ako je DOPUNA → transfer)
+- shopping → Općenita kupovina, elektronika, tehnika, namještaj, alati
+- clothing → Odjeća, obuća, modni dodaci
+- entertainment → Kino, koncerti, izlasci, noćni klubovi, bowling
+- subscriptions → Netflix, Spotify, HBO, streaming usluge, mjesečne pretplate
+- bills → Računi za telefon, internet, TV, komunalne usluge
+- utilities → Struja, voda, plin, grijanje, komunalije
+- rent → Najam stana, zakupnina
+- health → Ljekarna, liječnik, bolnica, laboratorij, vitamini
+- beauty → Frizerski salon, kozmetika, DM, Müller (kozmetički proizvodi)
+- sports → Teretana, sport, oprema za sport, članarine za sport
+- education → Knjige, tečajevi, školarine, edukacije
+- travel → Putovanja, hoteli, smještaj, avionske karte, turističke aktivnosti
+- home → Kućne potrepštine, popravci, vrtni centar, Bauhaus, Pevex
+- pets → Hrana za životinje, veterinar
+- gifts → Pokloni, cvjećarnica
+- kids → Dječje potrepštine, igračke, škola, vrtić
+- insurance → Osiguranje (životno, auto, zdravstveno)
+- taxes → Porezi, pristojbe, javni nameti
+- savings → Štednja
+- investments → Investicije
+- charity → Donacije, humanitarne uplate
+- other → Sve ostalo što ne pripada nijednoj kategoriji
+
+VAŽNO ZA KATEGORIZACIJU:
+- "Trajekt", "ferry", "karta za brod" → UVIJEK "transport", NIKAD "food"!
+- Supermarketi (Konzum, Lidl, Spar...) → "groceries", NE "food"
+- Benzinske postaje (INA, Petrol) s gorivom → "car"
+- Benzinske postaje s dopunom (Aircash) → "transfer"
+- DM, Müller → "beauty" ako je kozmetika, "groceries" ako su namirnice
 
 AKO NE MOŽEŠ PROČITATI:
 {"error": "Nije moguće pročitati račun"}`;
