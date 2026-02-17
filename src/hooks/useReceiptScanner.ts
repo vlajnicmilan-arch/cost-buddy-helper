@@ -63,14 +63,16 @@ export const useReceiptScanner = () => {
 
   const scanReceipt = async (
     imageBase64: string, 
-    customPaymentSources?: CustomPaymentSource[]
+    customPaymentSources?: CustomPaymentSource[],
+    customCategories?: { id: string; name: string; icon: string }[]
   ): Promise<ParsedReceipt | null> => {
-    return scanMultipleReceipts([imageBase64], customPaymentSources);
+    return scanMultipleReceipts([imageBase64], customPaymentSources, customCategories);
   };
 
   const scanMultipleReceipts = async (
     imagesBase64: string[],
-    customPaymentSources?: CustomPaymentSource[]
+    customPaymentSources?: CustomPaymentSource[],
+    customCategories?: { id: string; name: string; icon: string }[]
   ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
@@ -112,7 +114,8 @@ export const useReceiptScanner = () => {
           },
           body: JSON.stringify({ 
             imagesBase64: compressedImages,
-            customPaymentSources: sourcesForApi
+            customPaymentSources: sourcesForApi,
+            customCategories: customCategories || []
           })
         }
       );
