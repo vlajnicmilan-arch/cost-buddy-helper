@@ -362,19 +362,19 @@ export const PaymentSourceTransactionsDialog = ({
                                   className="shrink-0"
                                 />
                                 <div 
-                                  className="w-7 h-7 rounded-md flex items-center justify-center text-sm shrink-0"
+                                  className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
                                   style={{ backgroundColor: expense.type === 'transfer' 
                                     ? 'hsl(var(--muted))' 
                                     : `hsl(var(--${categoryInfo.color}) / 0.15)` 
                                   }}
                                 >
                                   {expense.type === 'transfer' ? (
-                                    <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground" />
+                                    <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
                                   ) : (
                                     categoryInfo.icon
                                   )}
                                 </div>
-                                <p className="flex-1 min-w-0 font-medium text-foreground truncate text-[13px] leading-tight">
+                                <p className="flex-1 min-w-0 font-medium text-foreground truncate text-sm leading-tight">
                                   {expense.merchant_name || expense.description}
                                 </p>
                                 {(() => {
@@ -384,7 +384,7 @@ export const PaymentSourceTransactionsDialog = ({
                                   const prefix = expense.type === 'expense' ? '-' : 
                                     (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
                                   return (
-                                    <p className={cn("font-mono font-bold text-[13px] leading-tight shrink-0", colorClass)}>
+                                    <p className={cn("font-mono font-bold text-sm leading-tight shrink-0", colorClass)}>
                                       {prefix}{formatAmount(expense.amount)}
                                     </p>
                                   );
@@ -392,10 +392,10 @@ export const PaymentSourceTransactionsDialog = ({
                               </div>
 
                               {/* Row 2: Category/Type + Running Balance + Date + Actions */}
-                              <div className="flex items-center gap-1.5 mt-1 ml-[calc(1rem+1.75rem+0.5rem)]">
-                                <div className="flex items-center gap-1 text-[11px] text-muted-foreground leading-tight min-w-0">
+                              <div className="flex items-center gap-1.5 mt-1.5 ml-[calc(1rem+2rem+0.5rem)]">
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground leading-tight min-w-0">
                                   {expense.type === 'expense' && (
-                                    <span className="truncate max-w-[70px]">{categoryInfo.name}</span>
+                                    <span className="truncate max-w-[80px]">{categoryInfo.name}</span>
                                   )}
                                   {expense.type === 'transfer' && expense.income_source_id === paymentSource?.id && (
                                     <span className="text-income">{t('transactions.transfer', 'Prijenos')} ↓</span>
@@ -409,18 +409,18 @@ export const PaymentSourceTransactionsDialog = ({
                                   {cardInfo && (
                                     <>
                                       <span className="text-muted-foreground/40">•</span>
-                                      <span className="text-[10px] font-mono">••{cardInfo.last_four_digits}</span>
+                                      <span className="text-[11px] font-mono">••{cardInfo.last_four_digits}</span>
                                     </>
                                   )}
                                   <span className="text-muted-foreground/40">•</span>
-                                  <span className="text-[10px] text-muted-foreground/70">
+                                  <span className="text-[11px] text-muted-foreground/70">
                                     {format(expense.date, 'd. MMM', { locale: hr })}
                                   </span>
                                 </div>
                                 <div className="flex-1" />
                                 {balanceAfter !== undefined && (
                                   <span className={cn(
-                                    "text-[10px] font-mono leading-tight px-1 py-px rounded shrink-0",
+                                    "text-[11px] font-mono font-semibold leading-tight px-1.5 py-0.5 rounded shrink-0",
                                     balanceAfter >= 0 
                                       ? "bg-primary/10 text-primary" 
                                       : "bg-destructive/10 text-destructive"
