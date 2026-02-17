@@ -350,40 +350,52 @@ export const PaymentSourceTransactionsDialog = ({
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: 20 }}
                               className={cn(
-                                "group flex items-center gap-2 py-2.5 px-2 rounded-lg transition-colors",
+                                "group py-2.5 px-2 rounded-lg transition-colors",
                                 isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                               )}
                             >
-                              {/* Checkbox */}
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={() => toggleSelection(expense.id)}
-                                className="shrink-0"
-                              />
-
-                              {/* Category Icon */}
-                              <div 
-                                className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
-                                style={{ backgroundColor: expense.type === 'transfer' 
-                                  ? 'hsl(var(--muted))' 
-                                  : `hsl(var(--${categoryInfo.color}) / 0.15)` 
-                                }}
-                              >
-                                {expense.type === 'transfer' ? (
-                                  <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                  categoryInfo.icon
-                                )}
-                              </div>
-
-                              {/* Main Content */}
-                              <div className="flex-1 min-w-0 mr-1">
-                                <p className="font-medium text-foreground truncate text-sm leading-tight">
+                              {/* Row 1: Checkbox + Icon + Description + Amount */}
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleSelection(expense.id)}
+                                  className="shrink-0"
+                                />
+                                <div 
+                                  className="w-7 h-7 rounded-md flex items-center justify-center text-sm shrink-0"
+                                  style={{ backgroundColor: expense.type === 'transfer' 
+                                    ? 'hsl(var(--muted))' 
+                                    : `hsl(var(--${categoryInfo.color}) / 0.15)` 
+                                  }}
+                                >
+                                  {expense.type === 'transfer' ? (
+                                    <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground" />
+                                  ) : (
+                                    categoryInfo.icon
+                                  )}
+                                </div>
+                                <p className="flex-1 min-w-0 font-medium text-foreground truncate text-[13px] leading-tight">
                                   {expense.merchant_name || expense.description}
                                 </p>
-                                <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
+                                {(() => {
+                                  const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
+                                  const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
+                                    expense.type === 'expense' ? 'text-destructive' : 'text-muted-foreground';
+                                  const prefix = expense.type === 'expense' ? '-' : 
+                                    (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
+                                  return (
+                                    <p className={cn("font-mono font-bold text-[13px] leading-tight shrink-0", colorClass)}>
+                                      {prefix}{formatAmount(expense.amount)}
+                                    </p>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* Row 2: Category/Type + Running Balance + Date + Actions */}
+                              <div className="flex items-center gap-1.5 mt-1 ml-[calc(1rem+1.75rem+0.5rem)]">
+                                <div className="flex items-center gap-1 text-[11px] text-muted-foreground leading-tight min-w-0">
                                   {expense.type === 'expense' && (
-                                    <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
+                                    <span className="truncate max-w-[70px]">{categoryInfo.name}</span>
                                   )}
                                   {expense.type === 'transfer' && expense.income_source_id === paymentSource?.id && (
                                     <span className="text-income">{t('transactions.transfer', 'Prijenos')} ↓</span>
@@ -400,26 +412,15 @@ export const PaymentSourceTransactionsDialog = ({
                                       <span className="text-[10px] font-mono">••{cardInfo.last_four_digits}</span>
                                     </>
                                   )}
+                                  <span className="text-muted-foreground/40">•</span>
+                                  <span className="text-[10px] text-muted-foreground/70">
+                                    {format(expense.date, 'd. MMM', { locale: hr })}
+                                  </span>
                                 </div>
-                              </div>
-
-                              {/* Amount, Running Balance & Date */}
-                              <div className="flex flex-col items-end shrink-0 gap-0.5">
-                                {(() => {
-                                  const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
-                                  const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
-                                    expense.type === 'expense' ? 'text-destructive' : 'text-muted-foreground';
-                                  const prefix = expense.type === 'expense' ? '-' : 
-                                    (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
-                                  return (
-                                    <p className={cn("font-mono font-bold text-[13px] leading-tight", colorClass)}>
-                                      {prefix}{formatAmount(expense.amount)}
-                                    </p>
-                                  );
-                                })()}
+                                <div className="flex-1" />
                                 {balanceAfter !== undefined && (
                                   <span className={cn(
-                                    "text-[10px] font-mono leading-tight px-1 py-px rounded",
+                                    "text-[10px] font-mono leading-tight px-1 py-px rounded shrink-0",
                                     balanceAfter >= 0 
                                       ? "bg-primary/10 text-primary" 
                                       : "bg-destructive/10 text-destructive"
@@ -427,37 +428,33 @@ export const PaymentSourceTransactionsDialog = ({
                                     {formatAmount(balanceAfter)}
                                   </span>
                                 )}
-                                <span className="text-[10px] text-muted-foreground/70">
-                                  {format(expense.date, 'd. MMM', { locale: hr })}
-                                </span>
-                              </div>
-
-                              {/* Actions */}
-                              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                <button
-                                  onClick={() => setExpandedNoteId(expandedNoteId === expense.id ? null : expense.id)}
-                                  className={cn(
-                                    "p-1 rounded hover:bg-muted transition-all",
-                                    expandedNoteId === expense.id 
-                                      ? "text-primary opacity-100" 
-                                      : "text-muted-foreground hover:text-foreground"
-                                  )}
-                                  title={t('transactions.comments')}
-                                >
-                                  <MessageCircle className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleEdit(expense)}
-                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(expense.id)}
-                                  className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {/* Actions - visible on hover/touch */}
+                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                  <button
+                                    onClick={() => setExpandedNoteId(expandedNoteId === expense.id ? null : expense.id)}
+                                    className={cn(
+                                      "p-1 rounded hover:bg-muted transition-all",
+                                      expandedNoteId === expense.id 
+                                        ? "text-primary opacity-100" 
+                                        : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    title={t('transactions.comments')}
+                                  >
+                                    <MessageCircle className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleEdit(expense)}
+                                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(expense.id)}
+                                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
                               </div>
                             </motion.div>
                             
