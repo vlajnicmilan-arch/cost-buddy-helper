@@ -535,12 +535,33 @@ export const useExpenses = (options?: UseExpensesOptions) => {
 
   const deleteExpense = async (id: string) => {
     try {
-      // Find the expense before deleting to reverse its balance effect
-      const expenseToDelete = expenses.find(e => e.id === id);
+      // CRITICAL: Always fetch fresh expense data from DB before deleting
+      // to ensure accurate balance reversal (local state might be stale)
+      let expenseToDelete: Expense | undefined;
       
       if (isLocalMode) {
+        expenseToDelete = expenses.find(e => e.id === id);
         await deleteLocalExpense(id);
       } else {
+        // Fetch from DB for accurate data
+        const { data: dbExpense } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        
+        if (dbExpense) {
+          expenseToDelete = {
+            ...dbExpense,
+            date: new Date(dbExpense.date),
+            category: dbExpense.category as Category,
+            type: dbExpense.type as TransactionType,
+            payment_source: (dbExpense.payment_source || 'cash') as PaymentSource,
+            income_source_id: dbExpense.income_source_id,
+            payment_source_card_id: dbExpense.payment_source_card_id,
+          } as Expense;
+        }
+        
         const { error } = await supabase
           .from('expenses')
           .delete()
@@ -553,6 +574,13 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       
       // Reverse the balance effect of the deleted transaction
       if (expenseToDelete) {
+        console.log('[useExpenses] Deleting transaction:', {
+          id, type: expenseToDelete.type, 
+          source: expenseToDelete.payment_source, 
+          dest: expenseToDelete.income_source_id,
+          amount: expenseToDelete.amount
+        });
+        
         if (expenseToDelete.type === 'transfer') {
           // For transfers: reverse source (add back) and destination (subtract back)
           await updateBalance(expenseToDelete.payment_source, expenseToDelete.amount, 'transfer', true);
@@ -567,6 +595,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             true // isReversal = true
           );
         }
+        
+        // Trigger balance updated callback
+        options?.onBalanceUpdated?.();
       }
       
       toast.success('Obrisano');
