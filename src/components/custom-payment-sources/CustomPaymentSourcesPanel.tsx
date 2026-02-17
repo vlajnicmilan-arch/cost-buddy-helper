@@ -25,9 +25,10 @@ import { Label } from '@/components/ui/label';
 
 interface CustomPaymentSourcesPanelProps {
   hideHeader?: boolean;
+  onSourceClick?: (source: CustomPaymentSource) => void;
 }
 
-export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentSourcesPanelProps) => {
+export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }: CustomPaymentSourcesPanelProps) => {
   const { customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<CustomPaymentSource | null>(null);
@@ -222,11 +223,12 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false }: CustomPaymentS
               onTouchStart={(e) => handleTouchStart(e, index)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              onClick={() => !reorderMode && onSourceClick?.(source)}
               className={`p-3 rounded-lg border bg-card transition-all duration-200 touch-none ${
                 reorderMode 
                   ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' 
-                  : 'hover:bg-muted/50'
-              } ${draggedIndex === index 
+                  : onSourceClick ? 'hover:bg-muted/50 cursor-pointer' : 'hover:bg-muted/50'
+              } ${draggedIndex === index
                 ? 'scale-105 shadow-xl shadow-primary/20 border-primary z-10 relative bg-card/95 backdrop-blur-sm' 
                 : ''
               }`}
