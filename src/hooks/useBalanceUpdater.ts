@@ -36,6 +36,14 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
       ? paymentSource.replace('custom:', '') 
       : paymentSource;
     
+    // CRITICAL: Only update balance for UUID-based custom payment sources
+    // Standard sources like "cash", "diners", "visa" etc. don't have tracked balances
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(cleanSourceId)) {
+      console.log('[BalanceUpdater] Skipping non-UUID source (standard source):', cleanSourceId);
+      return;
+    }
+    
     // Calculate the balance change
     // For expense/transfer: subtract from balance (negative)
     // For income: add to balance (positive)
@@ -68,9 +76,9 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
       if (!user) return;
 
       try {
-        // First try to find by ID (custom payment source UUID)
+        // Find by ID (custom payment source UUID)
         // Don't filter by user_id - RLS handles access control (owner OR member)
-        let { data: sourceData, error: fetchError } = await supabase
+        const { data: sourceData, error: fetchError } = await supabase
           .from('custom_payment_sources')
           .select('balance, id, name')
           .eq('id', cleanSourceId)
@@ -78,44 +86,11 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
 
         if (fetchError) {
           console.error('[BalanceUpdater] Error fetching by ID:', fetchError);
-        }
-
-        // If not found by ID, try matching by name (for standard sources like 'diners' -> 'Diners Club')
-        if (!sourceData) {
-          // Map standard payment source IDs to common names for matching
-          const standardNameMap: Record<string, string[]> = {
-            'diners': ['diners', 'diners club'],
-            'visa': ['visa'],
-            'visa_gold': ['visa gold'],
-            'visa_platinum': ['visa platinum'],
-            'mastercard': ['mastercard'],
-            'mastercard_gold': ['mastercard gold'],
-            'mastercard_platinum': ['mastercard platinum'],
-            'maestro': ['maestro'],
-            'amex': ['american express', 'amex'],
-            'revolut': ['revolut'],
-            'aircash': ['aircash'],
-            'cash': ['gotovina', 'cash'],
-            'bank': ['banka', 'bank'],
-            'crypto': ['kripto', 'crypto'],
-          };
-          
-          const searchNames = standardNameMap[cleanSourceId.toLowerCase()];
-          if (searchNames) {
-            const { data: matchedSource } = await supabase
-              .from('custom_payment_sources')
-              .select('balance, id, name')
-              .ilike('name', `%${searchNames[searchNames.length > 1 ? 1 : 0]}%`)
-              .maybeSingle();
-            
-            if (matchedSource) {
-              sourceData = matchedSource;
-            }
-          }
+          return;
         }
 
         if (!sourceData) {
-          console.log('[BalanceUpdater] Payment source not found or not custom:', cleanSourceId);
+          console.log('[BalanceUpdater] Payment source not found:', cleanSourceId);
           return;
         }
 
