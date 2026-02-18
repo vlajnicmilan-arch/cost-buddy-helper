@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
 const navItems = [
-  { path: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled' },
-  { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti' },
-  { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti' },
-  { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik' },
+  { path: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/', '/dashboard'] },
+  { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'] },
+  { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'] },
+  { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'] },
 ];
 
 export const BottomNav = () => {
@@ -19,7 +19,7 @@ export const BottomNav = () => {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/50 safe-area-bottom">
       <div className="max-w-4xl mx-auto flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.activePaths.includes(location.pathname);
           const Icon = item.icon;
           return (
             <button
