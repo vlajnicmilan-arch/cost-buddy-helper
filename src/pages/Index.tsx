@@ -25,6 +25,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { Loader2, Smartphone, ChevronDown } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -400,16 +401,20 @@ const Index = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : filteredDashboardExpenses.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <p className="text-muted-foreground">
-                      {expenses.length === 0
+                  <EmptyState
+                    variant="transactions"
+                    title={
+                      expenses.length === 0
                         ? t('transactions.noTransactions')
-                        : t('transactions.noResults', 'Nema rezultata za odabrane filtere')}
-                    </p>
-                    {expenses.length === 0 && (
-                      <p className="text-sm text-muted-foreground mt-1">{t('transactions.addFirstTransaction')}</p>
-                    )}
-                  </div>
+                        : t('transactions.noResults', 'Nema rezultata za odabrane filtere')
+                    }
+                    description={
+                      expenses.length === 0
+                        ? t('transactions.addFirstTransaction')
+                        : undefined
+                    }
+                    compact
+                  />
                 ) : (
                   <div className="max-h-[400px] overflow-y-auto space-y-1 pr-1">
                     <AnimatePresence>

@@ -9,6 +9,7 @@ import { BudgetFullScreenView } from './BudgetFullScreenView';
 import { BudgetDialog } from './BudgetDialog';
 import { BudgetWithStats } from '@/types/budget';
 import { Plus, Target, Loader2, Search, X } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 
 interface BudgetSectionProps {
   budgets: BudgetWithStats[];
@@ -100,15 +101,12 @@ export const BudgetSection = ({
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : budgets.length === 0 ? (
-        <div className="text-center py-8 px-4">
-          <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-muted/50 flex items-center justify-center">
-            <Target className="w-7 h-7 text-muted-foreground" />
-          </div>
-          <h3 className="text-base font-medium mb-1">{t('budget.noBudgets', 'Nema budžeta')}</h3>
-          <p className="text-sm text-muted-foreground">
-            {t('budget.noBudgetsHint', 'Koristi gumb iznad za kreiranje prvog budžeta')}
-          </p>
-        </div>
+        <EmptyState
+          variant="budgets"
+          title={t('budget.noBudgets', 'Nema budžeta')}
+          description={t('budget.noBudgetsHint', 'Koristi gumb iznad za kreiranje prvog budžeta')}
+          action={{ label: t('budget.create', 'Novi budžet'), onClick: () => setCreateDialogOpen(true) }}
+        />
       ) : (
         <>
           <div className="relative">

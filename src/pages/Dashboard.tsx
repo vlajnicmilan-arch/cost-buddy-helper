@@ -3,6 +3,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { EmptyState } from '@/components/EmptyState';
 
 import { SummaryCard } from '@/components/SummaryCard';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
@@ -452,9 +453,7 @@ const Dashboard = () => {
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                      Nema podataka o troškovima
-                    </div>
+                    <EmptyState variant="chart" title="Nema podataka o troškovima" compact />
                   )}
                 </div>
               </motion.div>
@@ -546,9 +545,7 @@ const Dashboard = () => {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                      Nema podataka o prihodima
-                    </div>
+                    <EmptyState variant="chart" title="Nema podataka o prihodima" compact />
                   )}
                 </div>
               </motion.div>
