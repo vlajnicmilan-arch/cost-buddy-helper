@@ -333,7 +333,12 @@
     "transactions": "transactions",
     "expenseNature": "Expense type",
     "assignToBudget": "Assign to budget",
-    "noBudget": "No budget"
+    "noBudget": "No budget",
+    "transactionsCount": "{{count}} transactions",
+    "transactionsCountFiltered": "{{filtered}} / {{total}}",
+    "bulkCategoryChanged": "Category changed for {{count}} transactions",
+    "bulkSourceChanged": "Payment source changed for {{count}} transactions",
+    "bulkDeleted": "Deleted {{count}} transactions"
   },
   "categories": {
     "food": "Food",
@@ -434,7 +439,11 @@
     "totalIncome": "Total Income",
     "totalExpenses": "Total Expenses",
     "transfers": "Transfers",
-    "monthlyOverview": "Monthly Overview"
+    "monthlyOverview": "Monthly Overview",
+    "recurring": "Recurring Transactions",
+    "recurringNone": "No active",
+    "recurringActive": "{{count}} active",
+    "recurringManage": "Manage →"
   },
   "backup": {
     "title": "Backup",

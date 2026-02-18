@@ -301,7 +301,12 @@
     "transactions": "Transaktionen",
     "expenseNature": "Ausgabenart",
     "assignToBudget": "Budget zuordnen",
-    "noBudget": "Kein Budget"
+    "noBudget": "Kein Budget",
+    "transactionsCount": "{{count}} Transaktionen",
+    "transactionsCountFiltered": "{{filtered}} / {{total}}",
+    "bulkCategoryChanged": "Kategorie für {{count}} Transaktionen geändert",
+    "bulkSourceChanged": "Zahlungsquelle für {{count}} Transaktionen geändert",
+    "bulkDeleted": "{{count}} Transaktionen gelöscht"
   },
   "categories": {
     "food": "Essen",
@@ -402,7 +407,11 @@
     "totalIncome": "Gesamteinnahmen",
     "totalExpenses": "Gesamtausgaben",
     "transfers": "Überweisungen",
-    "monthlyOverview": "Monatsübersicht"
+    "monthlyOverview": "Monatsübersicht",
+    "recurring": "Wiederkehrende Transaktionen",
+    "recurringNone": "Keine aktiven",
+    "recurringActive": "{{count}} aktive",
+    "recurringManage": "Verwalten →"
   },
   "backup": {
     "title": "Backup",

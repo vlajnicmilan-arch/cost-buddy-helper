@@ -331,6 +331,11 @@
     "noTransfersHint": "Prijenosi između vlastitih računa će se prikazati ovdje",
     "saveError2": "Greška pri spremanju. Pokušaj ponovno.",
     "transactions": "transakcija",
+    "transactionsCount": "{{count}} transakcija",
+    "transactionsCountFiltered": "{{filtered}} / {{total}}",
+    "bulkCategoryChanged": "Kategorija promijenjena za {{count}} transakcija",
+    "bulkSourceChanged": "Izvor plaćanja promijenjen za {{count}} transakcija",
+    "bulkDeleted": "Obrisano {{count}} transakcija",
     "expenseNature": "Vrsta troška",
     "assignToBudget": "Pridruži budžetu",
     "noBudget": "Bez budžeta"
@@ -434,7 +439,11 @@
     "totalIncome": "Ukupni prihodi",
     "totalExpenses": "Ukupni troškovi",
     "transfers": "Prijenosi",
-    "monthlyOverview": "Mjesečni pregled"
+    "monthlyOverview": "Mjesečni pregled",
+    "recurring": "Ponavljajuće transakcije",
+    "recurringNone": "Nema aktivnih",
+    "recurringActive": "{{count}} aktivnih",
+    "recurringManage": "Upravljaj →"
   },
   "backup": {
     "title": "Backup",
