@@ -266,7 +266,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <TrendingDown className="w-3 h-3 text-destructive" />
                       <p className="text-xs text-muted-foreground">{t('summary.totalExpenses')}</p>
                     </div>
-                    <p className="text-sm font-semibold text-destructive font-mono">-{formatAmount(totalExp)}</p>
+                    <p className="text-sm font-semibold text-expense font-mono">-{formatAmount(totalExp)}</p>
                   </div>
                 </div>
 
@@ -386,11 +386,11 @@ export const PaymentSourceTransactionsDialog = ({
                                 {(() => {
                                   const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
                                   const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
-                                    expense.type === 'expense' ? 'text-destructive' : 'text-muted-foreground';
+                                    expense.type === 'expense' ? 'text-expense' : 'text-muted-foreground';
                                   const prefix = expense.type === 'expense' ? '-' : 
                                     (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
                                   return (
-                                    <p className={cn("font-mono font-bold text-sm leading-tight shrink-0", colorClass)}>
+                                    <p className={cn("font-mono font-bold text-base leading-tight shrink-0", colorClass)}>
                                       {prefix}{formatAmount(expense.amount)}
                                     </p>
                                   );
