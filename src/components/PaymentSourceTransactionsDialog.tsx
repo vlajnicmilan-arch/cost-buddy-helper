@@ -67,7 +67,12 @@ export const PaymentSourceTransactionsDialog = ({
     }).sort((a, b) => {
       const dateDiff = b.date.getTime() - a.date.getTime();
       if (dateDiff !== 0) return dateDiff;
-      // Isti datum → sortiraj po created_at silazno (novije transakcije gore)
+      // Isti datum: korekcije salda idu na dno liste
+      const aIsCorrection = a.description?.toLowerCase().includes('korekcija');
+      const bIsCorrection = b.description?.toLowerCase().includes('korekcija');
+      if (aIsCorrection && !bIsCorrection) return 1;
+      if (!aIsCorrection && bIsCorrection) return -1;
+      // Inače novije kreirane transakcije gore
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
   }, [expenses, paymentSource]);
