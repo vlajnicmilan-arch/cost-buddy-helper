@@ -166,14 +166,16 @@ export const SummarySection = ({
                 <Repeat className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <p className="text-sm font-medium">Ponavljajuće transakcije</p>
+                <p className="text-sm font-medium">{t('summary.recurring')}</p>
                 <p className="text-xs text-muted-foreground">
-                  {recurringCount === 0 ? 'Nema aktivnih' : `${recurringCount} aktivnih`}
+                  {recurringCount === 0
+                    ? t('summary.recurringNone')
+                    : t('summary.recurringActive', { count: recurringCount })}
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">Upravljaj →</p>
+              <p className="text-xs text-muted-foreground">{t('summary.recurringManage')}</p>
             </div>
           </div>
         </motion.div>

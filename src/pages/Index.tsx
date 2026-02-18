@@ -232,22 +232,22 @@ const Index = () => {
     const selectedExpenses = filteredDashboardExpenses.filter(e => selectedTransactionIds.has(e.id));
     await bulkUpdateExpenses(selectedExpenses.map(e => ({ ...e, category })));
     setSelectedTransactionIds(new Set());
-    toast.success(`Kategorija promijenjena za ${selectedExpenses.length} transakcija`);
-  }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses]);
+    toast.success(t('transactions.bulkCategoryChanged', { count: selectedExpenses.length }));
+  }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
 
   const handleBulkPaymentSourceChange = useCallback(async (paymentSource: string) => {
     const selectedExpenses = filteredDashboardExpenses.filter(e => selectedTransactionIds.has(e.id));
     await bulkUpdateExpenses(selectedExpenses.map(e => ({ ...e, paymentSource })));
     setSelectedTransactionIds(new Set());
-    toast.success(`Izvor plaćanja promijenjen za ${selectedExpenses.length} transakcija`);
-  }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses]);
+    toast.success(t('transactions.bulkSourceChanged', { count: selectedExpenses.length }));
+  }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
 
   const handleBulkDelete = useCallback(async () => {
     const idsToDelete = Array.from(selectedTransactionIds);
     await Promise.all(idsToDelete.map(id => deleteExpense(id)));
     setSelectedTransactionIds(new Set());
-    toast.success(`Obrisano ${idsToDelete.length} transakcija`);
-  }, [selectedTransactionIds, deleteExpense]);
+    toast.success(t('transactions.bulkDeleted', { count: idsToDelete.length }));
+  }, [selectedTransactionIds, deleteExpense, t]);
 
   const handleSignOut = async () => {
     if (isLocalMode) {
@@ -373,8 +373,8 @@ const Index = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
                       {filteredDashboardExpenses.length !== expenses.length
-                        ? `${filteredDashboardExpenses.length} / ${expenses.length}`
-                        : expenses.length} transakcija
+                        ? t('transactions.transactionsCountFiltered', { filtered: filteredDashboardExpenses.length, total: expenses.length })
+                        : t('transactions.transactionsCount', { count: expenses.length })}
                     </span>
                     <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${transactionsOpen ? 'rotate-180' : ''}`} />
                   </div>
