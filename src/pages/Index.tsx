@@ -9,6 +9,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useInstallments } from '@/hooks/useInstallments';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
+import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { TransactionItem } from '@/components/TransactionItem';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
@@ -42,11 +43,13 @@ import { SummarySection } from '@/components/home/SummarySection';
 import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 
+
 const Index = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading, signOut } = useAuth();
   const { storageMode } = useStorage();
   const { formatAmount } = useCurrency();
+  const { displayName, aiAssistantEnabled, simpleModeEnabled } = useAppState();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -64,14 +67,7 @@ const Index = () => {
   const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
   const [showWelcome, setShowWelcome] = useState(false);
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
-  const [aiAssistantEnabled, setAiAssistantEnabled] = useState(() =>
-    localStorage.getItem('ai_assistant_enabled') !== 'false'
-  );
-  const [simpleModeEnabled, setSimpleModeEnabled] = useState(() =>
-    localStorage.getItem('simple_mode_enabled') === 'true'
-  );
   const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
-  const [displayName, setDisplayName] = useState<string>('');
 
   // Back button support for all dialogs
   useBackButton(incomeDialogOpen, () => setIncomeDialogOpen(false));
@@ -85,44 +81,30 @@ const Index = () => {
 
   const { recurringTransactions, processDueTransactions } = useRecurringTransactions();
 
+  // Load welcome animation flag; displayName now comes from AppStateContext
   useEffect(() => {
-    const loadDisplayName = async () => {
-      const localName = localStorage.getItem('user_display_name');
-      if (localName) {
-        setDisplayName(localName);
-      } else if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('user_id', user.id)
-          .single();
-        if (data?.display_name) {
-          setDisplayName(data.display_name);
-          localStorage.setItem('user_display_name', data.display_name);
-        }
-      }
-      const shouldShowWelcome = localStorage.getItem('show_welcome_animation');
-      if (shouldShowWelcome === 'true') {
-        setShowWelcome(true);
-        localStorage.removeItem('show_welcome_animation');
-      }
-    };
-    loadDisplayName();
+    const shouldShowWelcome = localStorage.getItem('show_welcome_animation');
+    if (shouldShowWelcome === 'true') {
+      setShowWelcome(true);
+      localStorage.removeItem('show_welcome_animation');
+    }
 
-    const handleNameChange = (event: CustomEvent<string>) => setDisplayName(event.detail);
-    const handleAiToggle = (event: CustomEvent<boolean>) => setAiAssistantEnabled(event.detail);
-    const handleSimpleModeToggle = (event: CustomEvent<boolean>) => setSimpleModeEnabled(event.detail);
-
-    window.addEventListener('displayNameChanged', handleNameChange as EventListener);
-    window.addEventListener('aiAssistantToggled', handleAiToggle as EventListener);
-    window.addEventListener('simpleModeToggled', handleSimpleModeToggle as EventListener);
-
-    return () => {
-      window.removeEventListener('displayNameChanged', handleNameChange as EventListener);
-      window.removeEventListener('aiAssistantToggled', handleAiToggle as EventListener);
-      window.removeEventListener('simpleModeToggled', handleSimpleModeToggle as EventListener);
-    };
+    // If no local name yet but user is loaded, load from DB and sync to context
+    const localName = localStorage.getItem('user_display_name');
+    if (!localName && user) {
+      supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.display_name) {
+            localStorage.setItem('user_display_name', data.display_name);
+          }
+        });
+    }
   }, [user]);
+
 
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { plans: installmentPlans } = useInstallments();

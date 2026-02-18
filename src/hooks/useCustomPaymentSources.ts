@@ -2,16 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSource';
 import { toast } from 'sonner';
+
 
 export const useCustomPaymentSources = () => {
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { storageMode } = useStorage();
+  const { onPaymentSourcesReordered, emitPaymentSourcesReordered } = useAppState();
 
   const isLocalMode = storageMode === 'local' && !user;
+
 
   const fetchCustomPaymentSources = useCallback(async () => {
     if (isLocalMode) {
@@ -99,21 +103,14 @@ export const useCustomPaymentSources = () => {
     fetchCustomPaymentSources();
   }, [fetchCustomPaymentSources]);
 
-  // Listen for reorder events from other hook instances to sync state
+  // Subscribe to reorder events via Context to sync state across hook instances
   useEffect(() => {
-    const handleReorder = (e: Event) => {
-      const customEvent = e as CustomEvent<CustomPaymentSource[]>;
-      if (customEvent.detail) {
-        // Use functional update to avoid stale closure issues
-        setCustomPaymentSources(customEvent.detail);
-      }
-    };
+    const unsubscribe = onPaymentSourcesReordered((sources) => {
+      setCustomPaymentSources(sources);
+    });
+    return unsubscribe;
+  }, [onPaymentSourcesReordered]);
 
-    window.addEventListener('paymentSourcesReordered', handleReorder);
-    return () => {
-      window.removeEventListener('paymentSourcesReordered', handleReorder);
-    };
-  }, []);
 
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (isLocalMode) {
@@ -339,8 +336,9 @@ export const useCustomPaymentSources = () => {
     const updatedWithOrder = reorderedSources.map((src, index) => ({ ...src, sort_order: index }));
     setCustomPaymentSources(updatedWithOrder);
 
-    // Dispatch event for other components to sync
-    window.dispatchEvent(new CustomEvent('paymentSourcesReordered', { detail: updatedWithOrder }));
+    // Emit reorder event via Context for other hook instances to sync
+    emitPaymentSourcesReordered(updatedWithOrder);
+
 
     if (isLocalMode) {
       localStorage.setItem('customPaymentSources', JSON.stringify(updatedWithOrder));

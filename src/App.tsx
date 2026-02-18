@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { StorageProvider, useStorage } from "@/contexts/StorageContext";
 import { BackButtonProvider } from "@/contexts/BackButtonContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
+import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import Index from "./pages/Index";
@@ -19,7 +19,6 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import StorageSetup from "./pages/StorageSetup";
 import Install from "./pages/Install";
-
 import JoinProject from "./pages/JoinProject";
 import JoinBudget from "./pages/JoinBudget";
 import Onboarding from "./pages/Onboarding";
@@ -30,31 +29,7 @@ const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
-  const location = useLocation();
-  const [onboardingCompleted, setOnboardingCompleted] = useState(() => 
-    localStorage.getItem('onboarding_completed') === 'true'
-  );
-
-  // Re-check onboarding status when location changes or custom event fires
-  useEffect(() => {
-    const checkCompleted = () => {
-      const completed = localStorage.getItem('onboarding_completed') === 'true';
-      setOnboardingCompleted(completed);
-    };
-    
-    checkCompleted();
-    
-    // Listen for custom event from onboarding
-    const handleOnboardingComplete = () => {
-      setOnboardingCompleted(true);
-    };
-    
-    window.addEventListener('onboardingComplete', handleOnboardingComplete);
-    
-    return () => {
-      window.removeEventListener('onboardingComplete', handleOnboardingComplete);
-    };
-  }, [location]);
+  const { onboardingCompleted } = useAppState();
 
   if (!isInitialized) {
     return (
@@ -64,7 +39,6 @@ const AppRoutes = () => {
     );
   }
 
-  // If no storage mode selected, show setup (but allow join route for invitations)
   if (!storageMode) {
     return (
       <Routes>
@@ -89,10 +63,8 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/setup" element={<StorageSetup />} />
       <Route path="/install" element={<Install />} />
-      
       <Route path="/join-project/:token" element={<JoinProject />} />
       <Route path="/join-budget/:token" element={<JoinBudget />} />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -102,19 +74,21 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <StorageProvider>
-        <CurrencyProvider>
-          <TutorialProvider>
-            <Toaster />
-            <Sonner />
-            <PWAUpdatePrompt />
-            <TutorialOverlay />
-            <BrowserRouter>
-              <BackButtonProvider>
-                <AppRoutes />
-              </BackButtonProvider>
-            </BrowserRouter>
-          </TutorialProvider>
-        </CurrencyProvider>
+        <AppStateProvider>
+          <CurrencyProvider>
+            <TutorialProvider>
+              <Toaster />
+              <Sonner />
+              <PWAUpdatePrompt />
+              <TutorialOverlay />
+              <BrowserRouter>
+                <BackButtonProvider>
+                  <AppRoutes />
+                </BackButtonProvider>
+              </BrowserRouter>
+            </TutorialProvider>
+          </CurrencyProvider>
+        </AppStateProvider>
       </StorageProvider>
     </TooltipProvider>
   </QueryClientProvider>
