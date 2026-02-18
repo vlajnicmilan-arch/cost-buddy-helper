@@ -76,6 +76,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   
   const [note, setNote] = useState('');
   const [transferDestination, setTransferDestination] = useState<string | null>(null);
+  const [totalWithTip, setTotalWithTip] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
@@ -246,8 +247,13 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         }
       }
 
+      // Calculate final amount - if tip was entered, use total with tip
+      const tipAmount = totalWithTip ? parseFloat(totalWithTip) - scannedData.amount : 0;
+      const finalAmount = totalWithTip ? parseFloat(totalWithTip) : scannedData.amount;
+      const tipNote = tipAmount > 0 ? `Napojnica: €${tipAmount.toFixed(2)}` : '';
+
       const newExpense = {
-        amount: scannedData.amount,
+        amount: finalAmount,
         description: scannedData.description,
         category: scannedData.category,
         date: new Date(scannedData.date || expenseDate),
@@ -261,7 +267,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         // For transfers, store destination in income_source_id field
-        income_source_id: transferDestinationId || undefined
+        income_source_id: transferDestinationId || undefined,
+        note: tipNote || undefined
       };
 
       // Check for duplicates
@@ -381,6 +388,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setInstallmentCount(12);
     setFirstPaymentDate(new Date().toISOString().split('T')[0]);
     setTransferDestination(null);
+    setTotalWithTip('');
   };
 
   // Helper to actually add the transaction (after duplicate check passes)
@@ -630,6 +638,38 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     </p>
                   </div>
                 </div>
+
+                {/* Tip field */}
+                {scannedData.transaction_type !== 'transfer' && (
+                  <div className="space-y-1.5 p-3 bg-background/60 rounded-lg border border-border/50">
+                    <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
+                      🫰 Sa napojnicom (ukupno):
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        placeholder={`npr. ${(scannedData.amount + 2).toFixed(2)}`}
+                        value={totalWithTip}
+                        onChange={(e) => setTotalWithTip(e.target.value)}
+                        className="flex-1 rounded-lg text-sm"
+                        min={scannedData.amount}
+                        step="0.01"
+                      />
+                      {totalWithTip && parseFloat(totalWithTip) > scannedData.amount && (
+                        <div className="text-right shrink-0">
+                          <p className="text-xs text-muted-foreground">Napojnica</p>
+                          <p className="text-sm font-bold text-income">
+                            +€{(parseFloat(totalWithTip) - scannedData.amount).toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {totalWithTip && parseFloat(totalWithTip) < scannedData.amount && (
+                      <p className="text-xs text-destructive">Iznos ne može biti manji od iznosa s računa</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Installment indicator */}
                 {scannedData.is_installment && scannedData.installment_count && (
