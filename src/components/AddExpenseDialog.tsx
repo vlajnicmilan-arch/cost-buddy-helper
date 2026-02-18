@@ -641,30 +641,31 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
                 {/* Tip field */}
                 {scannedData.transaction_type !== 'transfer' && (
-                  <div className="space-y-1.5 p-3 bg-background/60 rounded-lg border border-border/50">
+                  <div className="space-y-2 p-3 bg-background/60 rounded-lg border border-border/50">
                     <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
                       🫰 Sa napojnicom (ukupno):
                     </Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder={`npr. ${(scannedData.amount + 2).toFixed(2)}`}
-                        value={totalWithTip}
-                        onChange={(e) => setTotalWithTip(e.target.value)}
-                        className="flex-1 rounded-lg text-sm"
-                        min={scannedData.amount}
-                        step="0.01"
-                      />
-                      {totalWithTip && parseFloat(totalWithTip) > scannedData.amount && (
-                        <div className="text-right shrink-0">
-                          <p className="text-xs text-muted-foreground">Napojnica</p>
-                          <p className="text-sm font-bold text-income">
-                            +€{(parseFloat(totalWithTip) - scannedData.amount).toFixed(2)}
-                          </p>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      placeholder={`npr. ${(scannedData.amount + 2).toFixed(2)}`}
+                      value={totalWithTip}
+                      onChange={(e) => setTotalWithTip(e.target.value)}
+                      className="rounded-lg text-sm"
+                      min={scannedData.amount}
+                      step="0.01"
+                    />
+                    {totalWithTip && parseFloat(totalWithTip) > scannedData.amount && (
+                      <div className="flex items-center justify-between p-2 rounded-md bg-income/10 border border-income/20">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm">🫰</span>
+                          <span className="text-sm font-medium text-income">Napojnica</span>
                         </div>
-                      )}
-                    </div>
+                        <span className="text-sm font-bold text-income">
+                          +{formatAmount(parseFloat(totalWithTip) - scannedData.amount)}
+                        </span>
+                      </div>
+                    )}
                     {totalWithTip && parseFloat(totalWithTip) < scannedData.amount && (
                       <p className="text-xs text-destructive">Iznos ne može biti manji od iznosa s računa</p>
                     )}
