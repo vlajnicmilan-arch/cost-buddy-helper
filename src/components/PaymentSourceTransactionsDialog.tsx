@@ -65,15 +65,16 @@ export const PaymentSourceTransactionsDialog = ({
       if (e.type === 'transfer' && e.income_source_id === paymentSource.id) return true;
       return false;
     }).sort((a, b) => {
-      const dateDiff = b.date.getTime() - a.date.getTime();
-      if (dateDiff !== 0) return dateDiff;
-      // Isti datum: korekcije salda idu na dno liste
-      const aIsCorrection = a.description?.toLowerCase().includes('korekcija');
-      const bIsCorrection = b.description?.toLowerCase().includes('korekcija');
-      if (aIsCorrection && !bIsCorrection) return 1;
-      if (!aIsCorrection && bIsCorrection) return -1;
-      // Inače novije kreirane transakcije gore
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      // Primarni sort: po datumu silazno
+      const dateA = a.date.getTime();
+      const dateB = b.date.getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      // Sekundarni sort: po created_at silazno (isti datum → novije kreirane gore)
+      const createdA = a.created_at ?? '';
+      const createdB = b.created_at ?? '';
+      if (createdB > createdA) return 1;
+      if (createdB < createdA) return -1;
+      return 0;
     });
   }, [expenses, paymentSource]);
 
