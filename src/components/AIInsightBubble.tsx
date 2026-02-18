@@ -220,14 +220,14 @@ export const AIInsightBubble = ({
   const avatarMood = getAvatarMood(currentInsight.type);
 
   return (
-    <div className="fixed top-36 right-3 sm:right-4 z-40 flex items-start gap-2">
-      {/* Speech bubble */}
+    <div className="fixed bottom-[84px] right-3 sm:right-4 z-40 flex flex-col items-end gap-2">
+      {/* Speech bubble — above the avatar */}
       <AnimatePresence>
         {isVisible && (
           <motion.div
-            initial={{ opacity: 0, x: 20, scale: 0.9 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 20, scale: 0.9 }}
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.9 }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
             className="max-w-[220px] sm:max-w-[260px]"
           >
@@ -240,9 +240,9 @@ export const AIInsightBubble = ({
                 getBackgroundClass(currentInsight.type)
               )}
             >
-              {/* Speech bubble pointer pointing to avatar */}
+              {/* Speech bubble pointer pointing down toward avatar */}
               <div 
-                className="absolute top-4 -right-2 w-3 h-3 rotate-45 bg-card border-r border-t border-border"
+                className="absolute -bottom-2 right-6 w-3 h-3 rotate-45 bg-card border-r border-b border-border"
               />
 
               {/* Close button */}
