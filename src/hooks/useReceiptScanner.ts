@@ -46,7 +46,6 @@ const compressImage = async (base64: string, maxWidth = 1200, quality = 0.8): Pr
       
       ctx.drawImage(img, 0, 0, width, height);
       const compressed = canvas.toDataURL('image/jpeg', quality);
-      console.log('Image compressed from', base64.length, 'to', compressed.length);
       resolve(compressed);
     };
     img.onerror = () => {
@@ -86,11 +85,9 @@ export const useReceiptScanner = () => {
       }
 
       // Compress all images
-      console.log(`Compressing ${imagesBase64.length} image(s)...`);
       const compressedImages = await Promise.all(
         imagesBase64.map(img => compressImage(img))
       );
-      console.log('Images ready, sending to API...');
 
       // Prepare custom payment sources for the API
       const sourcesForApi = customPaymentSources?.map(src => ({
@@ -120,7 +117,7 @@ export const useReceiptScanner = () => {
         }
       );
 
-      console.log('Response status:', response.status);
+      
 
       if (response.status === 429) {
         toast.error('Previše zahtjeva. Pokušaj ponovno za minutu.');
@@ -144,7 +141,6 @@ export const useReceiptScanner = () => {
       }
 
       const data = await response.json();
-      console.log('Parsed data:', data);
       
       // Map payment_method from AI to PaymentSource
       let paymentSource: PaymentSource | null = null;

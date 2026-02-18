@@ -106,15 +106,6 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
       const isCustomSource = customPaymentSources.some(s => s.id === paymentSource);
       const finalPaymentSource = isCustomSource ? `custom:${paymentSource}` : paymentSource;
       
-      console.log('EditTransactionDialog saving:', {
-        id: expense.id,
-        paymentSource,
-        isCustomSource,
-        finalPaymentSource,
-        amount: parseFloat(amount),
-        category,
-        type,
-      });
 
       await onSave({
         ...expense,

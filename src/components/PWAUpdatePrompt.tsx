@@ -54,7 +54,6 @@ export const PWAUpdatePrompt = () => {
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(swUrl, r) {
-      console.log('SW Registered:', swUrl);
       // Store reference for manual check
       checkForUpdatesRef = async () => {
         setIsChecking(true);

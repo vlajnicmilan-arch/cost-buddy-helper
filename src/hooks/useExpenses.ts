@@ -303,20 +303,15 @@ export const useExpenses = (options?: UseExpensesOptions) => {
 
         // Update payment source balance (source side)
         const savedIncomeSourceId = data.income_source_id || expense.income_source_id;
-        console.log('[useExpenses] Transfer add - source:', expense.payment_source, 'dest:', savedIncomeSourceId, 'type:', expense.type);
         await updateBalance(expense.payment_source, expense.amount, expense.type);
         
         // For transfers: also credit the destination account
         if (expense.type === 'transfer' && savedIncomeSourceId) {
-          console.log('[useExpenses] Updating DESTINATION balance:', savedIncomeSourceId, expense.amount, 'income');
           try {
             await updateBalance(savedIncomeSourceId, expense.amount, 'income');
-            console.log('[useExpenses] ✓ Destination balance update completed');
           } catch (destError) {
-            console.error('[useExpenses] ✗ Destination balance update FAILED:', destError);
+            console.error('Destination balance update failed:', destError);
           }
-        } else if (expense.type === 'transfer') {
-          console.warn('[useExpenses] ⚠ Transfer without destination! income_source_id is missing');
         }
         
         // Check budget alerts for expense transactions
@@ -387,12 +382,6 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           }
         }
 
-        console.log('Updating expense:', expense.id, 
-          'old_payment_source:', oldExpense?.payment_source, 
-          'new_payment_source:', expense.payment_source,
-          'old_amount:', oldExpense?.amount,
-          'new_amount:', expense.amount);
-        
         const { error, count } = await supabase
           .from('expenses')
           .update({
@@ -418,20 +407,12 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           throw error;
         }
 
-        console.log('Update successful for expense:', expense.id);
+        
         setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
         
         // Update balances - always run even if payment source seems the same
         // to handle amount/type changes
         if (oldExpense) {
-          console.log('Running handleTransactionUpdate:', {
-            oldSource: oldExpense.payment_source,
-            oldAmount: oldExpense.amount,
-            oldType: oldExpense.type,
-            newSource: expense.payment_source,
-            newAmount: expense.amount,
-            newType: expense.type
-          });
           await handleTransactionUpdate(
             oldExpense.payment_source,
             oldExpense.amount,
@@ -579,12 +560,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       
       // Reverse the balance effect of the deleted transaction
       if (expenseToDelete) {
-        console.log('[useExpenses] Deleting transaction:', {
-          id, type: expenseToDelete.type, 
-          source: expenseToDelete.payment_source, 
-          dest: expenseToDelete.income_source_id,
-          amount: expenseToDelete.amount
-        });
+        
         
         if (expenseToDelete.type === 'transfer') {
           // For transfers: reverse source (add back) and destination (subtract back)
