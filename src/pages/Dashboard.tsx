@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -73,6 +74,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const { storageMode } = useStorage();
   const { formatAmount, currency } = useCurrency();
@@ -253,19 +255,19 @@ const Dashboard = () => {
             {/* Summary Cards Row */}
             <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-8">
               <SummaryCard
-                title="Stanje"
+                title={t('dashboard.balance')}
                 amount={balance}
                 variant="balance"
                 icon={<Wallet className="w-4 h-4 sm:w-5 sm:h-5" />}
               />
               <SummaryCard
-                title="Prihodi"
+                title={t('dashboard.income')}
                 amount={totalIncome}
                 variant="income"
                 icon={<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />}
               />
               <SummaryCard
-                title="Troškovi"
+                title={t('dashboard.expenses')}
                 amount={totalExpenses}
                 variant="expense"
                 icon={<TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -276,7 +278,7 @@ const Dashboard = () => {
                 className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-6"
               >
                 <div className="flex items-center justify-between mb-2 sm:mb-3">
-                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">Prijenosi</span>
+                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">{t('dashboard.transfers')}</span>
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center bg-primary/10 text-primary">
                     <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
@@ -297,7 +299,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1 sm:mb-2">
                   <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="text-[10px] sm:text-xs">Transakcije</span>
+                  <span className="text-[10px] sm:text-xs">{t('dashboard.transactions')}</span>
                 </div>
                 <p className="text-xl sm:text-2xl font-bold">{stats.transactionCount}</p>
               </motion.div>
@@ -310,7 +312,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1 sm:mb-2">
                   <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="text-[10px] sm:text-xs">Prosj. dnevno</span>
+                  <span className="text-[10px] sm:text-xs">{t('dashboard.avgDaily')}</span>
                 </div>
                 <p className="text-base sm:text-2xl font-bold font-mono">{formatCurrency(stats.avgDailySpend)}</p>
               </motion.div>
@@ -323,7 +325,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1 sm:mb-2">
                   <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="text-[10px] sm:text-xs">Top kategorija</span>
+                  <span className="text-[10px] sm:text-xs">{t('dashboard.topCategory')}</span>
                 </div>
                 <p className="text-sm sm:text-lg font-semibold truncate">{stats.topCategory}</p>
               </motion.div>
@@ -336,7 +338,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground mb-1 sm:mb-2">
                   <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="text-[10px] sm:text-xs">Vs. prošli mj.</span>
+                  <span className="text-[10px] sm:text-xs">{t('dashboard.vsLastMonth')}</span>
                 </div>
                 <p className={cn(
                   "text-xl sm:text-2xl font-bold",
@@ -358,7 +360,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
                   <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  <h3 className="text-base sm:text-lg font-semibold">Trend (6 mjeseci)</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.trend6m')}</h3>
                 </div>
                 <div className="h-48 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -391,7 +393,7 @@ const Dashboard = () => {
                         stroke="hsl(var(--income))" 
                         fill="url(#incomeGradient)"
                         strokeWidth={2}
-                        name="Prihodi"
+                        name={t('dashboard.incomeLabel')}
                       />
                       <Area 
                         type="monotone" 
@@ -399,7 +401,7 @@ const Dashboard = () => {
                         stroke="hsl(var(--expense))" 
                         fill="url(#expenseGradient)"
                         strokeWidth={2}
-                        name="Troškovi"
+                        name={t('dashboard.expensesLabel')}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -418,7 +420,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
                   <PieChartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  <h3 className="text-base sm:text-lg font-semibold">Raspodjela troškova</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.expenseDistribution')}</h3>
                 </div>
                 <div className="h-48 sm:h-64">
                   {categoryChartData.length > 0 ? (
@@ -453,7 +455,7 @@ const Dashboard = () => {
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <EmptyState variant="chart" title="Nema podataka o troškovima" compact />
+                    <EmptyState variant="chart" title={t('dashboard.noExpenseData')} compact />
                   )}
                 </div>
               </motion.div>
@@ -467,7 +469,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
                   <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  <h3 className="text-base sm:text-lg font-semibold">Dnevna potrošnja</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.dailySpending')}</h3>
                 </div>
                 <div className="h-48 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -485,7 +487,7 @@ const Dashboard = () => {
                       />
                       <Tooltip 
                         formatter={(value: number) => formatCurrency(value)}
-                        labelFormatter={(label) => `Dan ${label}`}
+                        labelFormatter={(label) => `${t('dashboard.day')} ${label}`}
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--popover))', 
                           borderColor: 'hsl(var(--border))',
@@ -497,7 +499,7 @@ const Dashboard = () => {
                         dataKey="amount" 
                         fill="hsl(var(--expense))" 
                         radius={[2, 2, 0, 0]}
-                        name="Potrošnja"
+                        name={t('dashboard.spendingLabel')}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -513,7 +515,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-income" />
-                  <h3 className="text-base sm:text-lg font-semibold">Izvori prihoda</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.incomeSources')}</h3>
                 </div>
                 <div className="h-48 sm:h-64">
                   {incomeSourceData.length > 0 ? (
@@ -540,12 +542,12 @@ const Dashboard = () => {
                           dataKey="value" 
                           fill="hsl(var(--income))" 
                           radius={[0, 4, 4, 0]}
-                          name="Prihod"
+                          name={t('dashboard.incomeChartLabel')}
                         />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <EmptyState variant="chart" title="Nema podataka o prihodima" compact />
+                    <EmptyState variant="chart" title={t('dashboard.noIncomeData')} compact />
                   )}
                 </div>
               </motion.div>
@@ -561,16 +563,16 @@ const Dashboard = () => {
             >
               <div className="flex items-center gap-2 mb-3 sm:mb-4">
                 <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                <h3 className="text-base sm:text-lg font-semibold">Mjesečni pregled</h3>
+                <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.monthlyOverview')}</h3>
               </div>
               <div className="overflow-x-auto -mx-2 sm:mx-0">
                 <table className="w-full text-xs sm:text-sm min-w-[300px]">
                   <thead>
                     <tr className="border-b border-border/50">
-                      <th className="text-left py-2 sm:py-3 px-2 font-medium text-muted-foreground">Mjesec</th>
-                      <th className="text-right py-2 sm:py-3 px-1 sm:px-2 font-medium text-muted-foreground">Prihodi</th>
-                      <th className="text-right py-2 sm:py-3 px-1 sm:px-2 font-medium text-muted-foreground">Troškovi</th>
-                      <th className="text-right py-2 sm:py-3 px-2 font-medium text-muted-foreground">Stanje</th>
+                      <th className="text-left py-2 sm:py-3 px-2 font-medium text-muted-foreground">{t('dashboard.month')}</th>
+                      <th className="text-right py-2 sm:py-3 px-1 sm:px-2 font-medium text-muted-foreground">{t('dashboard.income')}</th>
+                      <th className="text-right py-2 sm:py-3 px-1 sm:px-2 font-medium text-muted-foreground">{t('dashboard.expenses')}</th>
+                      <th className="text-right py-2 sm:py-3 px-2 font-medium text-muted-foreground">{t('dashboard.balance')}</th>
                     </tr>
                   </thead>
                   <tbody>
