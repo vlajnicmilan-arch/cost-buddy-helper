@@ -263,25 +263,12 @@ export const useExpenseCRUD = ({
 
   const deleteExpense = useCallback(async (id: string) => {
     try {
-      let expenseToDelete: Expense | undefined;
+      // Always look up from local state first — avoids unnecessary DB query
+      const expenseToDelete = expenses.find(e => e.id === id);
 
       if (isLocalMode) {
-        expenseToDelete = expenses.find(e => e.id === id);
         await deleteLocalExpense(id);
       } else {
-        const { data: dbExpense } = await supabase
-          .from('expenses').select('*').eq('id', id).maybeSingle();
-        if (dbExpense) {
-          expenseToDelete = {
-            ...dbExpense,
-            date: new Date(dbExpense.date),
-            category: dbExpense.category as Category,
-            type: dbExpense.type as TransactionType,
-            payment_source: (dbExpense.payment_source || 'cash') as PaymentSource,
-            income_source_id: dbExpense.income_source_id,
-            payment_source_card_id: dbExpense.payment_source_card_id,
-          } as Expense;
-        }
         const { error } = await supabase.from('expenses').delete().eq('id', id);
         if (error) throw error;
       }
@@ -305,7 +292,7 @@ export const useExpenseCRUD = ({
       console.error('Error deleting expense:', error);
       toast.error('Greška pri brisanju');
     }
-  }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated]);
+  }, [isLocalMode, expenses, setExpenses, updateBalance, onBalanceUpdated]);
 
   const importFromCSV = useCallback(async (transactions: ParsedTransaction[]) => {
     try {
