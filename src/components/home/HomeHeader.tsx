@@ -9,25 +9,14 @@ import { TutorialButton } from '@/components/tutorial';
 import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
-import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import logo from '@/assets/logo.png';
 import { Expense, ReceiptItem } from '@/types/expense';
-import { CustomPaymentSource } from '@/types/customPaymentSource';
 
 interface HomeHeaderProps {
   displayName: string;
   isLocalMode: boolean;
   simpleModeEnabled: boolean;
-  aiAssistantEnabled: boolean;
   expenses: Expense[];
-  customPaymentSources: CustomPaymentSource[];
-  totalIncome: number;
-  totalExpenses: number;
-  balance: number;
-  budgetsForAssistant: any[];
-  projectsForAssistant: any[];
-  assistantDialogOpen: boolean;
-  onAssistantOpenChange: (open: boolean) => void;
   onAddExpense: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   onCheckDuplicate?: (transaction: { amount: number; description: string; date: Date; type: string; category?: string; merchant_name?: string }) => Expense | null;
   onBulkUpdateExpenses: (expenses: Expense[]) => Promise<any>;
@@ -39,16 +28,7 @@ export const HomeHeader = ({
   displayName,
   isLocalMode,
   simpleModeEnabled,
-  aiAssistantEnabled,
   expenses,
-  customPaymentSources,
-  totalIncome,
-  totalExpenses,
-  balance,
-  budgetsForAssistant,
-  projectsForAssistant,
-  assistantDialogOpen,
-  onAssistantOpenChange,
   onAddExpense,
   onCheckDuplicate,
   onBulkUpdateExpenses,
@@ -148,20 +128,6 @@ export const HomeHeader = ({
       <div className="flex flex-wrap items-center gap-2" data-tutorial="add-buttons">
         {!simpleModeEnabled && <BulkEditDropdown expenses={expenses} onUpdateExpenses={onBulkUpdateExpenses} />}
         {!simpleModeEnabled && <ReportsDialog expenses={expenses} />}
-        {!isLocalMode && aiAssistantEnabled && !simpleModeEnabled && (
-          <FinancialAssistantDialog
-            expenses={expenses}
-            totalIncome={totalIncome}
-            totalExpenses={totalExpenses}
-            balance={balance}
-            paymentSources={customPaymentSources}
-            budgets={budgetsForAssistant}
-            projects={projectsForAssistant}
-            open={assistantDialogOpen}
-            onOpenChange={onAssistantOpenChange}
-            hideTrigger
-          />
-        )}
         <AddExpenseDialog onAdd={onAddExpense} checkDuplicate={onCheckDuplicate} />
       </div>
     </header>

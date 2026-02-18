@@ -38,7 +38,7 @@ export const AIInsightBubble = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const isMobile = useIsMobile();
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   // Generate insights based on financial data
@@ -220,7 +220,7 @@ export const AIInsightBubble = ({
   const avatarMood = getAvatarMood(currentInsight.type);
 
   return (
-    <div className="fixed top-20 right-3 sm:right-4 z-40 flex items-start gap-2">
+    <div className="fixed top-36 right-3 sm:right-4 z-40 flex items-start gap-2">
       {/* Speech bubble */}
       <AnimatePresence>
         {isVisible && (

@@ -40,6 +40,7 @@ import { HomeHeader } from '@/components/home/HomeHeader';
 import { PaymentSourcesSection } from '@/components/home/PaymentSourcesSection';
 import { SummarySection } from '@/components/home/SummarySection';
 import { QuickLinksSection } from '@/components/home/QuickLinksSection';
+import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -304,21 +305,28 @@ const Index = () => {
     <div className="min-h-screen bg-background overflow-x-hidden pb-20">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
 
+        {/* ── Financial Assistant Dialog (portal-rendered, outside header to avoid click conflicts) ── */}
+        {!isLocalMode && aiAssistantEnabled && !simpleModeEnabled && (
+          <FinancialAssistantDialog
+            expenses={expenses}
+            totalIncome={totalIncome}
+            totalExpenses={totalExpenses}
+            balance={balance}
+            paymentSources={customPaymentSources}
+            budgets={budgetsForAssistant}
+            projects={projectsForAssistant}
+            open={assistantDialogOpen}
+            onOpenChange={setAssistantDialogOpen}
+            hideTrigger
+          />
+        )}
+
         {/* ── Header ── */}
         <HomeHeader
           displayName={displayName}
           isLocalMode={isLocalMode}
           simpleModeEnabled={simpleModeEnabled}
-          aiAssistantEnabled={aiAssistantEnabled}
           expenses={expenses}
-          customPaymentSources={customPaymentSources}
-          totalIncome={totalIncome}
-          totalExpenses={totalExpenses}
-          balance={balance}
-          budgetsForAssistant={budgetsForAssistant}
-          projectsForAssistant={projectsForAssistant}
-          assistantDialogOpen={assistantDialogOpen}
-          onAssistantOpenChange={setAssistantDialogOpen}
           onAddExpense={addExpense}
           onCheckDuplicate={checkDuplicate}
           onBulkUpdateExpenses={bulkUpdateExpenses}
