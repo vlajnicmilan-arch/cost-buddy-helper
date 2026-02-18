@@ -6,12 +6,13 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 
 import { SummaryCard } from '@/components/SummaryCard';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
+import { PageHeader } from '@/components/PageHeader';
+import { BottomNav } from '@/components/BottomNav';
 import { 
   Wallet, 
   TrendingUp, 
   TrendingDown, 
   ArrowLeftRight,
-  ArrowLeft,
   Loader2,
   Calendar,
   BarChart3,
@@ -19,7 +20,6 @@ import {
   Activity,
   Target
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -234,25 +234,14 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        {/* Header */}
-        <header className="flex items-center justify-between mb-4 sm:mb-8">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="rounded-xl h-9 w-9 sm:h-10 sm:w-10"
-            >
-              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
-              <p className="text-xs sm:text-base text-muted-foreground hidden sm:block">Pregled svih financijskih metrika</p>
-            </div>
-          </div>
-        </header>
+    <div className="min-h-screen bg-background pb-20">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8"
+      >
+        <PageHeader title="Dashboard" />
 
         {expensesLoading ? (
           <div className="py-20 flex items-center justify-center">
@@ -607,7 +596,8 @@ const Dashboard = () => {
             </motion.div>
           </>
         )}
-      </div>
+      </motion.div>
+      <BottomNav />
     </div>
   );
 };
