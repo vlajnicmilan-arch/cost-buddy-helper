@@ -56,11 +56,30 @@
 
     /* Category colors */
     --category-food: 24 95% 53%;
+    --category-groceries: 20 95% 57%;
     --category-transport: 199 89% 48%;
-    --category-shopping: 280 68% 60%;
-    --category-entertainment: 340 82% 52%;
-    --category-bills: 43 96% 56%;
-    --category-health: 160 84% 39%;
+    --category-car: 210 90% 62%;
+    --category-shopping: 330 82% 60%;
+    --category-clothing: 340 90% 70%;
+    --category-entertainment: 280 68% 60%;
+    --category-subscriptions: 280 60% 70%;
+    --category-bills: 243 75% 60%;
+    --category-utilities: 240 70% 68%;
+    --category-rent: 243 80% 53%;
+    --category-health: 142 71% 45%;
+    --category-beauty: 142 70% 58%;
+    --category-sports: 142 65% 74%;
+    --category-education: 174 72% 40%;
+    --category-travel: 38 92% 50%;
+    --category-home: 262 70% 60%;
+    --category-pets: 48 96% 47%;
+    --category-gifts: 0 85% 60%;
+    --category-kids: 188 85% 42%;
+    --category-insurance: 200 90% 48%;
+    --category-taxes: 215 25% 55%;
+    --category-savings: 160 72% 40%;
+    --category-investments: 158 80% 35%;
+    --category-charity: 0 72% 51%;
     --category-other: 170 15% 45%;
   }
 
