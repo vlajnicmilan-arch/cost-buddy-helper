@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { VirtualTransactionList } from '@/components/VirtualTransactionList';
 import { useBackButton } from '@/hooks/useBackButton';
 import { AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -416,33 +417,16 @@ const Index = () => {
                     compact
                   />
                 ) : (
-                  <div className="max-h-[400px] overflow-y-auto space-y-1 pr-1">
-                    <AnimatePresence>
-                      {filteredDashboardExpenses.map((expense) => (
-                        <div key={expense.id} className="flex items-center gap-2">
-                          <Checkbox
-                            checked={selectedTransactionIds.has(expense.id)}
-                            onCheckedChange={() => handleToggleSelect(expense.id)}
-                            className="shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <TransactionItem
-                              expense={expense}
-                              onDelete={deleteExpense}
-                              onClick={(e) => {
-                                if (selectedTransactionIds.size === 0) {
-                                  setSelectedTransaction(e);
-                                  setDetailDialogOpen(true);
-                                } else {
-                                  handleToggleSelect(e.id);
-                                }
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
+                  <VirtualTransactionList
+                    expenses={filteredDashboardExpenses}
+                    selectedIds={selectedTransactionIds}
+                    onToggleSelect={handleToggleSelect}
+                    onDelete={deleteExpense}
+                    onClickDetail={(e) => {
+                      setSelectedTransaction(e);
+                      setDetailDialogOpen(true);
+                    }}
+                  />
                 )}
               </CollapsibleContent>
             </div>
