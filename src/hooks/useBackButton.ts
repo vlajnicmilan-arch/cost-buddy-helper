@@ -1,42 +1,32 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useBackButtonContext } from '@/contexts/BackButtonContext';
 
 /**
- * Hook that intercepts the mobile back button (popstate event).
- * When a dialog/overlay is open, pressing back closes it instead of navigating away.
+ * Hook that registers a dialog/overlay with the global back button manager.
  * 
- * Usage: useBackButton(isOpen, onClose)
+ * When the back button is pressed on mobile:
+ * - If this dialog is the topmost open one, it gets closed
+ * - If no dialogs are open, the app navigates to the previous page or stays on root
+ * 
+ * Usage: useBackButton(isOpen, onClose, priority?)
+ * - priority: higher number = closed first when multiple dialogs open (default: 0)
  */
-export function useBackButton(isOpen: boolean, onClose: () => void) {
-  const isOpenRef = useRef(isOpen);
-  isOpenRef.current = isOpen;
-  const pushedRef = useRef(false);
 
-  const handlePopState = useCallback((e: PopStateEvent) => {
-    if (isOpenRef.current) {
-      e.preventDefault();
-      onClose();
-      pushedRef.current = false;
-    }
-  }, [onClose]);
+let idCounter = 0;
 
+export function useBackButton(isOpen: boolean, onClose: () => void, priority = 0) {
+  const { register, unregister } = useBackButtonContext();
+  // Stable ID per hook instance
+  const idRef = useRef<string>(`back-${++idCounter}`);
+
+  // Register/update whenever isOpen, onClose or priority changes
   useEffect(() => {
-    if (isOpen && !pushedRef.current) {
-      // Push a dummy state so back button triggers popstate
-      window.history.pushState({ backButton: true }, '');
-      pushedRef.current = true;
-    }
+    register(idRef.current, isOpen, onClose, priority);
+  }, [isOpen, onClose, priority, register]);
 
-    if (!isOpen && pushedRef.current) {
-      // Dialog closed programmatically (not via back button), clean up the history entry
-      window.history.back();
-      pushedRef.current = false;
-    }
-  }, [isOpen]);
-
+  // Cleanup on unmount
   useEffect(() => {
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [handlePopState]);
+    const id = idRef.current;
+    return () => unregister(id);
+  }, [unregister]);
 }
