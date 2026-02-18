@@ -65,11 +65,11 @@ export const PaymentSourceTransactionsDialog = ({
       if (e.type === 'transfer' && e.income_source_id === paymentSource.id) return true;
       return false;
     }).sort((a, b) => {
-      // Primarni sort: po datumu silazno
-      const dateA = a.date.getTime();
-      const dateB = b.date.getTime();
-      if (dateA !== dateB) return dateB - dateA;
-      // Sekundarni sort: po created_at silazno (isti datum → novije kreirane gore)
+      // Normaliziraj datum na početek dana (bez vremena) za primarni sort
+      const dayA = new Date(a.date.getFullYear(), a.date.getMonth(), a.date.getDate()).getTime();
+      const dayB = new Date(b.date.getFullYear(), b.date.getMonth(), b.date.getDate()).getTime();
+      if (dayA !== dayB) return dayB - dayA;
+      // Isti dan → sortiraj po created_at silazno (novije kreirane gore)
       const createdA = a.created_at ?? '';
       const createdB = b.created_at ?? '';
       if (createdB > createdA) return 1;
