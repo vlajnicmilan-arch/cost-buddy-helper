@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppState } from '@/contexts/AppStateContext';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { OnboardingPaymentSourceCard } from '@/components/onboarding/OnboardingPaymentSourceCard';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
@@ -15,6 +16,7 @@ import { ChevronRight, ChevronLeft, User, Wallet, CreditCard, Briefcase, Gift, S
 import logo from '@/assets/logo.png';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+
 
 interface PaymentSourceSetup {
   name: string;
@@ -45,6 +47,7 @@ const Onboarding = () => {
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { addCustomPaymentSource, addCard } = useCustomPaymentSources();
+  const { setOnboardingCompleted, setDisplayName: setContextDisplayName } = useAppState();
   
   const [step, setStep] = useState(1);
   const [displayName, setDisplayName] = useState('');
@@ -55,6 +58,7 @@ const Onboarding = () => {
   const [saving, setSaving] = useState(false);
 
   const isLocalMode = storageMode === 'local' && !user;
+
 
   // Check if onboarding is already completed
   useEffect(() => {
@@ -195,8 +199,8 @@ const Onboarding = () => {
 
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('show_welcome_animation', 'true');
-      // Dispatch event before navigation so App.tsx updates state
-      window.dispatchEvent(new Event('onboardingComplete'));
+      if (displayName.trim()) setContextDisplayName(displayName.trim());
+      setOnboardingCompleted(true);
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Onboarding error:', error);
@@ -426,15 +430,14 @@ const Onboarding = () => {
                   }
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
-                  // Dispatch event before navigation so App.tsx updates state
-                  window.dispatchEvent(new Event('onboardingComplete'));
+                  setOnboardingCompleted(true);
                   navigate('/', { replace: true });
                 } catch (error) {
                   console.error('Skip error:', error);
                   // Still complete onboarding even if save fails
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
-                  window.dispatchEvent(new Event('onboardingComplete'));
+                  setOnboardingCompleted(true);
                   navigate('/', { replace: true });
                 } finally {
                   setSaving(false);

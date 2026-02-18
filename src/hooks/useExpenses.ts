@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useBalanceUpdater } from './useBalanceUpdater';
 import { useBudgetAlerts } from './useBudgetAlerts';
+import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import {
@@ -15,6 +16,7 @@ import {
   saveLocalReceiptItems,
   initLocalDB
 } from '@/lib/storage/indexedDB';
+
 
 interface UseExpensesOptions {
   onBalanceUpdated?: () => void;
@@ -27,6 +29,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     onBalanceUpdated: options?.onBalanceUpdated
   });
   const { checkBudgetAlerts } = useBudgetAlerts();
+  const { emitAvatarEvent } = useAppState();
+
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
@@ -186,10 +190,10 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           await updateBalance(expense.income_source_id, expense.amount, 'income');
         }
         
-        // Dispatch event for AI avatar reaction
-        window.dispatchEvent(new CustomEvent(expense.type === 'income' ? 'incomeAdded' : 'expenseAdded', {
-          detail: { amount: expense.amount }
-        }));
+        // Emit avatar event via Context (local mode)
+        if (expense.type === 'income') {
+          emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
+        }
         
         toast.success(expense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
       } else {
@@ -320,10 +324,11 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           checkBudgetAlerts(expense.category, expense.amount, expense.date);
         }
         
-        // Dispatch event for AI avatar reaction
-        window.dispatchEvent(new CustomEvent(expense.type === 'income' ? 'incomeAdded' : 'expenseAdded', {
-          detail: { amount: expense.amount }
-        }));
+        // Emit avatar event via Context
+        if (expense.type === 'income') {
+          emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
+        }
+
         
         if (isPendingMemberTransaction) {
           toast.success('Transakcija poslana vlasniku na odobrenje');

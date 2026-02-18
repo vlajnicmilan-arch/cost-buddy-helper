@@ -1,11 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useAppState, AvatarMood } from '@/contexts/AppStateContext';
 
-export type AvatarMood = 'happy' | 'thinking' | 'worried' | 'proud' | 'neutral';
+export type { AvatarMood };
 
 export const useAvatarMood = () => {
   const [mood, setMood] = useState<AvatarMood>('neutral');
   const [tooltipMessage, setTooltipMessage] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
+  const { onAvatarEvent } = useAppState();
 
   const showMood = useCallback((newMood: AvatarMood, message?: string, duration = 3000) => {
     setMood(newMood);
@@ -21,47 +23,13 @@ export const useAvatarMood = () => {
     }
   }, []);
 
-  // Listen for app events
+  // Subscribe to avatar events via Context
   useEffect(() => {
-    const handleIncomeAdded = () => {
-      showMood('happy', 'Super! Novi prihod zabilježen! 💰');
-    };
-
-    const handleExpenseAdded = (e: CustomEvent) => {
-      const { budgetExceeded } = e.detail || {};
-      if (budgetExceeded) {
-        showMood('worried', 'Pazi, približavaš se limitu budžeta.');
-      } else {
-        showMood('neutral');
-      }
-    };
-
-    const handleBudgetExceeded = () => {
-      showMood('worried', 'Budžet je prekoračen. Razmisli o prioritetima.');
-    };
-
-    const handleSavingsGoalReached = () => {
-      showMood('proud', 'Čestitam! Cilj štednje je postignut! 🎉');
-    };
-
-    const handleAnalyzing = () => {
-      showMood('thinking', 'Analiziram tvoje podatke...');
-    };
-
-    window.addEventListener('incomeAdded', handleIncomeAdded);
-    window.addEventListener('expenseAdded', handleExpenseAdded as EventListener);
-    window.addEventListener('budgetExceeded', handleBudgetExceeded);
-    window.addEventListener('savingsGoalReached', handleSavingsGoalReached);
-    window.addEventListener('aiAnalyzing', handleAnalyzing);
-
-    return () => {
-      window.removeEventListener('incomeAdded', handleIncomeAdded);
-      window.removeEventListener('expenseAdded', handleExpenseAdded as EventListener);
-      window.removeEventListener('budgetExceeded', handleBudgetExceeded);
-      window.removeEventListener('savingsGoalReached', handleSavingsGoalReached);
-      window.removeEventListener('aiAnalyzing', handleAnalyzing);
-    };
-  }, [showMood]);
+    const unsubscribe = onAvatarEvent((newMood, message) => {
+      showMood(newMood, message);
+    });
+    return unsubscribe;
+  }, [onAvatarEvent, showMood]);
 
   return { mood, showTooltip, tooltipMessage, showMood };
 };

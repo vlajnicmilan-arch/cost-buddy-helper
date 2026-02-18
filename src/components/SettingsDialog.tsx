@@ -21,6 +21,7 @@ import {
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { exportLocalData, importLocalData } from '@/lib/storage/indexedDB';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -31,6 +32,7 @@ import {
   requestNotificationPermission
 } from '@/hooks/useNotificationSound';
 import { languages } from '@/i18n';
+
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
@@ -44,13 +46,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [autoUpdate, setAutoUpdate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
-  const [aiAssistantEnabled, setAiAssistantEnabled] = useState(true);
-  const [simpleModeEnabled, setSimpleModeEnabled] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isDark, setIsDark] = useState(false);
   
   // User profile state
-  const [displayName, setDisplayName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -75,40 +74,44 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { currency, setCurrency } = useCurrency();
+  const { 
+    displayName, setDisplayName,
+    aiAssistantEnabled, setAiAssistantEnabled,
+    simpleModeEnabled, setSimpleModeEnabled,
+    emitFinancialReset,
+  } = useAppState();
   const isLocalMode = storageMode === 'local';
   
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+
 
   useEffect(() => {
     if (open) {
       setAutoUpdate(getAutoUpdatePreference());
       setSoundEnabled(getNotificationSoundEnabled());
       setPushEnabled(getPushNotificationsEnabled());
-      setAiAssistantEnabled(localStorage.getItem('ai_assistant_enabled') !== 'false');
-      setSimpleModeEnabled(localStorage.getItem('simple_mode_enabled') === 'true');
       setIsDark(document.documentElement.classList.contains('dark'));
       
-      // Load display name
-      const loadName = async () => {
-        const localName = localStorage.getItem('user_display_name');
-        if (localName) {
-          setDisplayName(localName);
-          setTempName(localName);
-        } else if (user) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('user_id', user.id)
-            .single();
-          if (data?.display_name) {
-            setDisplayName(data.display_name);
-            setTempName(data.display_name);
-          }
-        }
-      };
-      loadName();
+      // Sync tempName from context displayName
+      setTempName(displayName);
+
+      // If cloud mode and no local name, load from DB
+      if (!displayName && user) {
+        supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single()
+          .then(({ data }) => {
+            if (data?.display_name) {
+              setDisplayName(data.display_name);
+              setTempName(data.display_name);
+            }
+          });
+      }
     }
-  }, [open, user]);
+  }, [open, user, displayName, setDisplayName]);
+
 
   const toggleTheme = () => {
     const newIsDark = !isDark;
@@ -137,9 +140,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     
     setSavingName(true);
     try {
-      // Always save to localStorage for quick access
-      localStorage.setItem('user_display_name', tempName.trim());
-      
       // If cloud mode, also save to Supabase
       if (!isLocalMode && user) {
         const { error } = await supabase
@@ -153,18 +153,17 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         if (error) throw error;
       }
       
+      // Update via Context (also persists to localStorage)
       setDisplayName(tempName.trim());
       setEditingName(false);
       toast.success(t('settings.nameSaved', 'Ime uspješno spremljeno'));
-      
-      // Trigger a page refresh to update the greeting
-      window.dispatchEvent(new CustomEvent('displayNameChanged', { detail: tempName.trim() }));
     } catch (error) {
       console.error('Save name error:', error);
       toast.error(t('errors.generic', 'Došlo je do greške'));
     } finally {
       setSavingName(false);
     }
+
   };
 
   const handleCancelEditName = () => {
@@ -424,8 +423,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         onDataImported?.();
       }
       
-      // Dispatch event to reset AI assistant conversation
-      window.dispatchEvent(new CustomEvent('financialDataReset'));
+      // Notify AI assistant to reset conversation via Context
+      emitFinancialReset();
       
       setShowResetConfirm(false);
     } catch (error) {
@@ -876,8 +875,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   checked={aiAssistantEnabled}
                   onCheckedChange={(checked) => {
                     setAiAssistantEnabled(checked);
-                    localStorage.setItem('ai_assistant_enabled', checked.toString());
-                    window.dispatchEvent(new CustomEvent('aiAssistantToggled', { detail: checked }));
                     toast.success(checked 
                       ? t('settings.aiEnabled', 'AI asistent uključen') 
                       : t('settings.aiDisabled', 'AI asistent isključen')
@@ -907,8 +904,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 checked={simpleModeEnabled}
                 onCheckedChange={(checked) => {
                   setSimpleModeEnabled(checked);
-                  localStorage.setItem('simple_mode_enabled', checked.toString());
-                  window.dispatchEvent(new CustomEvent('simpleModeToggled', { detail: checked }));
                   toast.success(checked 
                     ? t('settings.simpleModeEnabled', 'Jednostavni način uključen') 
                     : t('settings.simpleModeDisabled', 'Puni način vraćen')
