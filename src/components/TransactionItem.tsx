@@ -229,8 +229,8 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
         {/* Amount & Date Column */}
         <div className="flex flex-col items-end shrink-0 gap-0.5">
           <p className={cn(
-            "font-mono font-bold text-sm leading-tight",
-            expense.type === 'expense' ? 'text-destructive' :
+            "font-mono font-bold text-base leading-tight",
+            expense.type === 'expense' ? 'text-expense' :
             expense.type === 'transfer' ? 'text-muted-foreground' : 'text-income'
           )}>
             {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount))}
