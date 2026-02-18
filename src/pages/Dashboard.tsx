@@ -135,7 +135,7 @@ const Dashboard = () => {
           name: info.name,
           value: amount,
           icon: info.icon,
-          color: CATEGORY_COLORS[categoryId] || '#6b7280',
+          color: CATEGORY_COLORS[categoryId] || 'hsl(var(--muted-foreground))',
         };
       });
   }, [expensesByCategory]);
