@@ -243,7 +243,7 @@ const Index = () => {
 
   const handleBulkDelete = useCallback(async () => {
     const idsToDelete = Array.from(selectedTransactionIds);
-    for (const id of idsToDelete) await deleteExpense(id);
+    await Promise.all(idsToDelete.map(id => deleteExpense(id)));
     setSelectedTransactionIds(new Set());
     toast.success(`Obrisano ${idsToDelete.length} transakcija`);
   }, [selectedTransactionIds, deleteExpense]);

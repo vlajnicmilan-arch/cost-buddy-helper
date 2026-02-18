@@ -479,9 +479,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   const bulkUpdateExpenses = async (expensesToUpdate: Expense[]) => {
     try {
       if (isLocalMode) {
-        for (const expense of expensesToUpdate) {
-          await updateLocalExpense(expense);
-        }
+        await Promise.all(expensesToUpdate.map(expense => updateLocalExpense(expense)));
         setExpenses(prev => {
           const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
           return prev.map(e => updatedMap.get(e.id) || e);
@@ -493,8 +491,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           return;
         }
 
-        // Update in batches to avoid overwhelming the DB
-        for (const expense of expensesToUpdate) {
+        await Promise.all(expensesToUpdate.map(async (expense) => {
           const { error } = await supabase
             .from('expenses')
             .update({
@@ -505,7 +502,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
             .eq('id', expense.id);
 
           if (error) throw error;
-        }
+        }));
 
         setExpenses(prev => {
           const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
