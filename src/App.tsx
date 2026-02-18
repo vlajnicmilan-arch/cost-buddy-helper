@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { StorageProvider, useStorage } from "@/contexts/StorageContext";
+import { BackButtonProvider } from "@/contexts/BackButtonContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { TutorialOverlay } from "@/components/tutorial";
@@ -108,7 +109,9 @@ const App = () => (
             <PWAUpdatePrompt />
             <TutorialOverlay />
             <BrowserRouter>
-              <AppRoutes />
+              <BackButtonProvider>
+                <AppRoutes />
+              </BackButtonProvider>
             </BrowserRouter>
           </TutorialProvider>
         </CurrencyProvider>
