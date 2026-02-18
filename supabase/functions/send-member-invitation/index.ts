@@ -149,6 +149,9 @@ serve(async (req) => {
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
+    // All invitation types now store invited_user_id for proper RLS scoping
+    // (project, budget, payment_source all support invited_user_id column)
+
     const { data: invitation, error: invitationError } = await adminClient
       .from(invitationTable)
       .insert(insertData)

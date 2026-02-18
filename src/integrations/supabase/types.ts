@@ -99,6 +99,7 @@ export type Database = {
           expires_at: string
           id: string
           invited_by: string
+          invited_user_id: string | null
           role: string
           status: string
           token: string
@@ -111,6 +112,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by: string
+          invited_user_id?: string | null
           role?: string
           status?: string
           token?: string
@@ -123,6 +125,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by?: string
+          invited_user_id?: string | null
           role?: string
           status?: string
           token?: string
@@ -859,6 +862,7 @@ export type Database = {
           expires_at: string
           id: string
           invited_by: string
+          invited_user_id: string | null
           project_id: string
           role: string
           status: string
@@ -871,6 +875,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by: string
+          invited_user_id?: string | null
           project_id: string
           role?: string
           status?: string
@@ -883,6 +888,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by?: string
+          invited_user_id?: string | null
           project_id?: string
           role?: string
           status?: string
