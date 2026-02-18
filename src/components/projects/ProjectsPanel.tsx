@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTranslation } from 'react-i18next';
 import { Plus, FolderKanban, Loader2, Search, X } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -209,11 +210,12 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
       )}
 
       {projects.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <FolderKanban className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>{t('projects.noProjects')}</p>
-          <p className="text-sm">{t('projects.noProjectsHint')}</p>
-        </div>
+        <EmptyState
+          variant="projects"
+          title={t('projects.noProjects')}
+          description={t('projects.noProjectsHint')}
+          action={{ label: t('projects.add'), onClick: () => { setEditingProject(null); setDialogOpen(true); } }}
+        />
       ) : (
         <AnimatePresence mode="popLayout">
           <div className="space-y-3">
