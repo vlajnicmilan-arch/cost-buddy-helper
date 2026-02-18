@@ -64,7 +64,12 @@ export const PaymentSourceTransactionsDialog = ({
       }
       if (e.type === 'transfer' && e.income_source_id === paymentSource.id) return true;
       return false;
-    }).sort((a, b) => b.date.getTime() - a.date.getTime());
+    }).sort((a, b) => {
+      const dateDiff = b.date.getTime() - a.date.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      // Isti datum → sortiraj po created_at silazno (novije transakcije gore)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   }, [expenses, paymentSource]);
 
   // Calculate running balance for each transaction (chronological order, newest first)
