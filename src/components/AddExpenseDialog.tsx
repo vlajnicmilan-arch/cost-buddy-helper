@@ -9,6 +9,7 @@ import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useInstallments } from '@/hooks/useInstallments';
@@ -100,6 +101,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const multiGalleryInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
+  const { formatAmount } = useCurrency();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { customCategories, refetch: refetchCustomCategories } = useCustomCategories();

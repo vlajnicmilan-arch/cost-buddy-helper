@@ -38,6 +38,7 @@ import {
   BarChart3,
   Banknote,
   List,
+  HandCoins,
 } from 'lucide-react';
 import { 
   generatePDFReport, 
@@ -545,7 +546,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="report" className="gap-1 text-xs sm:text-sm">
               <PieChartIcon className="w-4 h-4" />
               <span className="hidden sm:inline">{t('reports.expensesTab', 'Troškovi')}</span>
@@ -560,6 +561,11 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
               <List className="w-4 h-4" />
               <span className="hidden sm:inline">Artikli</span>
               <span className="sm:hidden">Art.</span>
+            </TabsTrigger>
+            <TabsTrigger value="tips" className="gap-1 text-xs sm:text-sm">
+              <HandCoins className="w-4 h-4" />
+              <span className="hidden sm:inline">Napojnice</span>
+              <span className="sm:hidden">Nap.</span>
             </TabsTrigger>
             <TabsTrigger value="compare" className="gap-1 text-xs sm:text-sm">
               <ArrowUpDown className="w-4 h-4" />
@@ -1062,6 +1068,89 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
           {/* Items Analysis Tab */}
           <TabsContent value="items" className="space-y-6">
             <ItemsAnalysisTab filteredExpenses={filteredExpenses} dateRange={dateRange} />
+          </TabsContent>
+
+          {/* Tips Tab */}
+          <TabsContent value="tips" className="space-y-4">
+            {(() => {
+              // Extract tip transactions - those with note starting with "Napojnica:"
+              const tipTransactions = filteredExpenses.filter(e => 
+                e.note && e.note.startsWith('Napojnica:')
+              );
+
+              // Parse tip amount from note
+              const parseTipAmount = (note: string): number => {
+                // Matches "Napojnica: €2.50" or "Napojnica: 2.50"
+                const match = note.match(/Napojnica:\s*[€$£]?\s*([\d.,]+)/);
+                if (!match) return 0;
+                return parseFloat(match[1].replace(',', '.'));
+              };
+
+              const totalTips = tipTransactions.reduce((sum, e) => 
+                sum + parseTipAmount(e.note!), 0
+              );
+
+              if (tipTransactions.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                    <HandCoins className="w-12 h-12 opacity-30" />
+                    <p className="text-sm">Nema transakcija s napojnicama u odabranom razdoblju.</p>
+                    <p className="text-xs opacity-70">Napojnice se bilježe pri skeniranju računa putem polja "Sa napojnicom".</p>
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {/* Summary card */}
+                  <div className="p-5 rounded-xl bg-income/10 border border-income/20 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-income/20 flex items-center justify-center">
+                        <HandCoins className="w-6 h-6 text-income" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Ukupno napojnica</p>
+                        <p className="text-2xl font-bold font-mono text-income">{formatCurrency(totalTips)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Broj transakcija</p>
+                      <p className="text-2xl font-bold">{tipTransactions.length}</p>
+                    </div>
+                  </div>
+
+                  {/* Transaction list */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Transakcije s napojnicama</p>
+                    {tipTransactions.map(tx => {
+                      const tipAmt = parseTipAmount(tx.note!);
+                      const baseAmt = tx.amount - tipAmt;
+                      const catInfo = getCategoryInfo(tx.category as any);
+                      return (
+                        <div key={tx.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                          <div 
+                            className="w-9 h-9 rounded-md flex items-center justify-center text-base shrink-0"
+                            style={{ backgroundColor: `hsl(var(--${catInfo.color}) / 0.15)` }}
+                          >
+                            {catInfo.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{tx.merchant_name || tx.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {tx.date.toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-mono font-bold text-expense">-{formatCurrency(tx.amount)}</p>
+                            <p className="text-xs text-income font-medium">🫰 +{formatCurrency(tipAmt)}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
           </TabsContent>
 
           {/* Compare Tab */}
