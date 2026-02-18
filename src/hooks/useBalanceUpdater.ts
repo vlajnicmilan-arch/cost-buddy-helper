@@ -26,37 +26,22 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
     type: TransactionType,
     isReversal: boolean = false
   ) => {
-    if (!paymentSource) {
-      console.log('[BalanceUpdater] Skipping - no paymentSource provided');
-      return;
-    }
-    
-    // Strip 'custom:' prefix if present (used in payment_source field)
-    const cleanSourceId = paymentSource.startsWith('custom:') 
-      ? paymentSource.replace('custom:', '') 
-      : paymentSource;
-    
-    // CRITICAL: Only update balance for UUID-based custom payment sources
-    // Standard sources like "cash", "diners", "visa" etc. don't have tracked balances
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(cleanSourceId)) {
-      console.log('[BalanceUpdater] Skipping non-UUID source (standard source):', cleanSourceId);
-      return;
-    }
-    
-    // Calculate the balance change
-    // For expense/transfer: subtract from balance (negative)
-    // For income: add to balance (positive)
-    // If reversal (delete/undo): invert the operation
-    let balanceChange = (type === 'expense' || type === 'transfer') ? -amount : amount;
-    if (isReversal) {
-      balanceChange = -balanceChange;
-    }
+    if (!paymentSource) return;
 
-    console.log(`[BalanceUpdater] Processing: source=${cleanSourceId}, amount=${amount}, type=${type}, reversal=${isReversal}, balanceChange=${balanceChange}`);
+    // Strip 'custom:' prefix if present
+    const cleanSourceId = paymentSource.startsWith('custom:')
+      ? paymentSource.replace('custom:', '')
+      : paymentSource;
+
+    // Only update balance for UUID-based custom payment sources
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(cleanSourceId)) return;
+
+    // Calculate the balance change
+    let balanceChange = (type === 'expense' || type === 'transfer') ? -amount : amount;
+    if (isReversal) balanceChange = -balanceChange;
 
     if (isLocalMode) {
-      // Handle local storage
       const stored = localStorage.getItem('customPaymentSources');
       if (stored) {
         const sources = JSON.parse(stored);
@@ -76,8 +61,6 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
       if (!user) return;
 
       try {
-        // Find by ID (custom payment source UUID)
-        // Don't filter by user_id - RLS handles access control (owner OR member)
         const { data: sourceData, error: fetchError } = await supabase
           .from('custom_payment_sources')
           .select('balance, id, name')
@@ -85,35 +68,26 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
           .maybeSingle();
 
         if (fetchError) {
-          console.error('[BalanceUpdater] Error fetching by ID:', fetchError);
+          console.error('[BalanceUpdater] Error fetching payment source:', fetchError);
           return;
         }
 
-        if (!sourceData) {
-          console.log('[BalanceUpdater] Payment source not found:', cleanSourceId);
-          return;
-        }
+        if (!sourceData) return;
 
         const currentBalance = sourceData?.balance || 0;
         const newBalance = currentBalance + balanceChange;
 
-        console.log(`[BalanceUpdater] Updating "${sourceData.name}" (${sourceData.id}): ${currentBalance} → ${newBalance} (change: ${balanceChange > 0 ? '+' : ''}${balanceChange})`);
-
-        // Update the balance
-        // Don't filter by user_id - RLS handles access (owner OR member can update)
         const { error: updateError } = await supabase
           .from('custom_payment_sources')
-          .update({ 
+          .update({
             balance: newBalance,
             updated_at: new Date().toISOString()
           })
           .eq('id', sourceData.id);
 
         if (updateError) {
-          console.error('[BalanceUpdater] Error updating payment source balance:', updateError);
+          console.error('[BalanceUpdater] Error updating balance:', updateError);
         } else {
-          console.log(`[BalanceUpdater] ✓ Balance updated successfully for "${sourceData.name}"`);
-          // Notify that balance was updated
           onBalanceUpdated?.();
         }
       } catch (error) {
@@ -123,9 +97,8 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
   }, [user, isLocalMode, onBalanceUpdated]);
 
   /**
-   * Handles balance update when a transaction is modified
-   * Reverses the old transaction effect and applies the new one
-   * For transfers: also handles destination account (income_source_id)
+   * Handles balance update when a transaction is modified.
+   * Reverses the old effect and applies the new one.
    */
   const handleTransactionUpdate = useCallback(async (
     oldPaymentSource: string | undefined,
@@ -137,26 +110,19 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
     oldIncomeSourceId?: string | undefined,
     newIncomeSourceId?: string | undefined
   ) => {
-    console.log('[BalanceUpdater] handleTransactionUpdate:', {
-      oldSource: oldPaymentSource, oldAmount, oldType, oldDest: oldIncomeSourceId,
-      newSource: newPaymentSource, newAmount, newType, newDest: newIncomeSourceId
-    });
-
     // Reverse the old transaction effect on source
     await updateBalance(oldPaymentSource, oldAmount, oldType, true);
-    
+
     // For old transfers: also reverse the destination credit
     if (oldType === 'transfer' && oldIncomeSourceId) {
-      console.log('[BalanceUpdater] Reversing old transfer destination:', oldIncomeSourceId);
       await updateBalance(oldIncomeSourceId, oldAmount, 'income', true);
     }
-    
+
     // Apply the new transaction effect on source
     await updateBalance(newPaymentSource, newAmount, newType, false);
-    
+
     // For new transfers: also apply the destination credit
     if (newType === 'transfer' && newIncomeSourceId) {
-      console.log('[BalanceUpdater] Applying new transfer destination:', newIncomeSourceId);
       await updateBalance(newIncomeSourceId, newAmount, 'income', false);
     }
   }, [updateBalance]);

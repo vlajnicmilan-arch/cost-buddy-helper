@@ -24,7 +24,6 @@ export const setPushNotificationsEnabled = (enabled: boolean): void => {
 
 export const requestNotificationPermission = async (): Promise<boolean> => {
   if (!('Notification' in window)) {
-    console.log('This browser does not support notifications');
     return false;
   }
 

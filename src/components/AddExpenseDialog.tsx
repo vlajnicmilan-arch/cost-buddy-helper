@@ -162,14 +162,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   };
 
   const applyScannedResult = (result: NonNullable<Awaited<ReturnType<typeof scanReceipt>>>) => {
-    console.log('Scan result:', {
-      custom_payment_source_id: result.custom_payment_source_id,
-      payment_source_card_id: result.payment_source_card_id,
-      payment_source: result.payment_source,
-      is_installment: result.is_installment,
-      installment_count: result.installment_count,
-      installment_amount: result.installment_amount
-    });
+    
     
     setScannedData({
       amount: result.amount,
@@ -227,7 +220,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         // Custom source was matched by AI
         finalPaymentSource = `custom:${scannedData.custom_payment_source_id}` as PaymentSource;
         finalCardId = scannedData.payment_source_card_id;
-        console.log(`Using AI-matched custom source: ${scannedData.custom_payment_source_id}, card: ${finalCardId}`);
       } else if (scannedData.payment_source) {
         // Standard payment source detected
         finalPaymentSource = scannedData.payment_source;
@@ -245,7 +237,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         );
         if (matchedDest) {
           transferDestinationId = matchedDest.id;
-          console.log(`Transfer detected: destination matched to "${matchedDest.name}" (${matchedDest.id})`);
         }
       }
 
