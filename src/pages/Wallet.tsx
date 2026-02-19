@@ -55,6 +55,8 @@ const Wallet = () => {
         <CustomPaymentSourcesPanel onSourceClick={(source) => {
           setSelectedPaymentSource(source);
           setPaymentSourceDialogOpen(true);
+          // Refresh expenses when opening dialog to ensure latest data is shown
+          refetch();
         }} />
         <InstallmentsPanel />
         <CustomCategoriesPanel />
