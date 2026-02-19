@@ -85,33 +85,28 @@ export const PaymentSourceTransactionsDialog = ({
     // We need chronological order (oldest first) to compute running balance
     const chronological = [...sourceExpenses].reverse();
     const balanceMap = new Map<string, number>();
+
+    // Helper: determine how a transaction affects THIS payment source's balance
+    const getEffect = (e: Expense): number => {
+      const isInboundTransfer = e.type === 'transfer' && e.income_source_id === paymentSource.id;
+      const isOutboundTransfer = e.type === 'transfer' && !isInboundTransfer;
+
+      if (e.type === 'income') return e.amount;          // income increases balance
+      if (e.type === 'expense') return -e.amount;         // expense decreases balance
+      if (isInboundTransfer) return e.amount;             // incoming transfer increases balance
+      if (isOutboundTransfer) return -e.amount;           // outgoing transfer decreases balance
+      return 0;
+    };
     
-    // Start from balance minus all transaction effects to get the "before all" balance
+    // Start from current balance and reverse all visible transactions to get "before" balance
     let runningBalance = paymentSource.balance;
-    
-    // First, compute what the balance was before all these transactions
-    // by reversing all of them from current balance
     for (const e of sourceExpenses) {
-      const isInbound = e.type === 'transfer' && e.income_source_id === paymentSource.id;
-      if (e.type === 'income' || isInbound) {
-        runningBalance -= e.amount; // reverse income
-      } else if (e.type === 'expense') {
-        runningBalance += e.amount; // reverse expense
-      } else if (e.type === 'transfer' && !isInbound) {
-        runningBalance += e.amount; // reverse outbound transfer
-      }
+      runningBalance -= getEffect(e);
     }
     
     // Now walk forward chronologically, applying each transaction
     for (const e of chronological) {
-      const isInbound = e.type === 'transfer' && e.income_source_id === paymentSource.id;
-      if (e.type === 'income' || isInbound) {
-        runningBalance += e.amount;
-      } else if (e.type === 'expense') {
-        runningBalance -= e.amount;
-      } else if (e.type === 'transfer' && !isInbound) {
-        runningBalance -= e.amount;
-      }
+      runningBalance += getEffect(e);
       balanceMap.set(e.id, runningBalance);
     }
     

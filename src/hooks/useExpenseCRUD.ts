@@ -263,8 +263,13 @@ export const useExpenseCRUD = ({
 
   const deleteExpense = useCallback(async (id: string) => {
     try {
-      // Always look up from local state first — avoids unnecessary DB query
-      const expenseToDelete = expenses.find(e => e.id === id);
+      // Look up from local state first; if not found (e.g. shared/member transaction), fetch from DB
+      let expenseToDelete = expenses.find(e => e.id === id);
+
+      if (!expenseToDelete && !isLocalMode && user) {
+        const { data } = await supabase.from('expenses').select('*').eq('id', id).maybeSingle();
+        if (data) expenseToDelete = data as unknown as Expense;
+      }
 
       if (isLocalMode) {
         await deleteLocalExpense(id);
@@ -285,6 +290,8 @@ export const useExpenseCRUD = ({
           await updateBalance(expenseToDelete.payment_source, expenseToDelete.amount, expenseToDelete.type, true);
         }
         onBalanceUpdated?.();
+      } else {
+        console.warn('[deleteExpense] Could not find expense to reverse balance for id:', id);
       }
 
       toast.success('Obrisano');
@@ -292,7 +299,7 @@ export const useExpenseCRUD = ({
       console.error('Error deleting expense:', error);
       toast.error('Greška pri brisanju');
     }
-  }, [isLocalMode, expenses, setExpenses, updateBalance, onBalanceUpdated]);
+  }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated]);
 
   const importFromCSV = useCallback(async (transactions: ParsedTransaction[]) => {
     try {
