@@ -114,7 +114,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   // Set default payment source when dialog opens and sources are loaded
   useEffect(() => {
     if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
-      setPaymentSource(customPaymentSources[0].id as PaymentSource);
+      setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
     }
   }, [open, customPaymentSources]);
 
@@ -363,7 +363,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setCategory('food');
     setMerchantName('');
     // Reset to first custom payment source or cash
-    setPaymentSource(customPaymentSources.length > 0 ? customPaymentSources[0].id as PaymentSource : 'cash');
+    setPaymentSource(customPaymentSources.length > 0 ? `custom:${customPaymentSources[0].id}` as PaymentSource : 'cash');
     setSelectedCardId(null);
     setExpenseDate(new Date().toISOString().split('T')[0]);
     setItems([]);
@@ -527,7 +527,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         refetchPaymentSources().then(() => {
           // Set default payment source after fetching
           if (customPaymentSources.length > 0) {
-            setPaymentSource(customPaymentSources[0].id as PaymentSource);
+            setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
           } else {
             setPaymentSource('cash');
           }
