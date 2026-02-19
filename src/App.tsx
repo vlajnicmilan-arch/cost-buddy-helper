@@ -22,6 +22,7 @@ import Install from "./pages/Install";
 import JoinProject from "./pages/JoinProject";
 import JoinBudget from "./pages/JoinBudget";
 import Onboarding from "./pages/Onboarding";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -46,6 +47,7 @@ const AppRoutes = () => {
         <Route path="/install" element={<Install />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="*" element={<Navigate to="/setup" replace />} />
       </Routes>
     );
@@ -65,6 +67,7 @@ const AppRoutes = () => {
       <Route path="/install" element={<Install />} />
       <Route path="/join-project/:token" element={<JoinProject />} />
       <Route path="/join-budget/:token" element={<JoinBudget />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
