@@ -10,6 +10,7 @@ import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
@@ -80,6 +81,7 @@ const App = () => (
         <AppStateProvider>
           <CurrencyProvider>
             <TutorialProvider>
+              <OfflineBanner />
               <Toaster />
               <Sonner />
               <PWAUpdatePrompt />
