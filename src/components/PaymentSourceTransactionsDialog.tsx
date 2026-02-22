@@ -8,9 +8,12 @@ import { TransactionDetailDialog } from './TransactionDetailDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useInstallments } from '@/hooks/useInstallments';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -42,7 +45,19 @@ export const PaymentSourceTransactionsDialog = ({
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
+  const [installmentsExpanded, setInstallmentsExpanded] = useState(false);
   const { formatAmount } = useCurrency();
+  const { plans } = useInstallments();
+
+  // Filter installment plans for this payment source
+  const sourceInstallments = useMemo(() => {
+    if (!paymentSource) return [];
+    return plans.filter(plan => {
+      if (!plan.payment_source) return false;
+      const ps = plan.payment_source;
+      return ps === `custom:${paymentSource.id}` || ps === paymentSource.id;
+    });
+  }, [plans, paymentSource]);
 
   const handleClose = () => {
     clearSelection();
@@ -296,6 +311,71 @@ export const PaymentSourceTransactionsDialog = ({
                         <span className="text-muted-foreground">****{card.last_four_digits}</span>
                       </motion.div>
                     ))}
+                  </div>
+                )}
+
+                {/* Installments for this wallet */}
+                {sourceInstallments.length > 0 && (
+                  <div className="rounded-xl border border-border/50 overflow-hidden">
+                    <button
+                      onClick={() => setInstallmentsExpanded(!installmentsExpanded)}
+                      className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium">
+                          Rate ({sourceInstallments.length})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {formatAmount(sourceInstallments.reduce((s, p) => s + p.remainingAmount, 0))} preostalo
+                        </span>
+                        <motion.div animate={{ rotate: installmentsExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                        </motion.div>
+                      </div>
+                    </button>
+                    <AnimatePresence>
+                      {installmentsExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <div className="px-3 pb-3 space-y-2">
+                            {sourceInstallments.map(plan => {
+                              const catInfo = getCategoryInfo(plan.category as any);
+                              const progress = (plan.paidCount / plan.totalCount) * 100;
+                              return (
+                                <div key={plan.id} className="p-3 rounded-lg bg-muted/30 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-base">{catInfo.icon}</span>
+                                      <span className="text-sm font-medium">{plan.description}</span>
+                                    </div>
+                                    <span className="text-xs font-mono font-semibold">{formatAmount(plan.total_amount)}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>Rata {plan.paidCount}/{plan.totalCount}</span>
+                                    <span className="font-medium text-primary">{formatAmount(plan.remainingAmount)} preostalo</span>
+                                  </div>
+                                  <Progress value={progress} className="h-1.5" />
+                                  {plan.nextInstallment && (
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                      <Calendar className="w-3 h-3" />
+                                      <span>Sljedeća: {format(plan.nextInstallment.due_date, 'd. MMM', { locale: hr })} • {formatAmount(plan.nextInstallment.amount)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
 

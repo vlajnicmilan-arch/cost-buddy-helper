@@ -1,23 +1,25 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Upload, FileText, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileText, Check, AlertCircle, Loader2, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseCSV, ParsedTransaction } from '@/lib/csvParsers';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getCategoryInfo, TransactionType } from '@/types/expense';
+import { getCategoryInfo, TransactionType, Expense } from '@/types/expense';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { Badge } from '@/components/ui/badge';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
+  existingExpenses?: Expense[];
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
-export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
+export const CSVImportDialog = ({ onImport, existingExpenses = [] }: CSVImportDialogProps) => {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ImportStep>('upload');
@@ -29,6 +31,23 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+
+  // Duplicate detection: same amount and same date (day-level)
+  const isDuplicate = (tx: ParsedTransaction): boolean => {
+    return existingExpenses.some(existing => {
+      const existingDate = existing.date instanceof Date ? existing.date : new Date(existing.date);
+      const txDate = tx.date instanceof Date ? tx.date : new Date(tx.date);
+      return Math.abs(existing.amount - tx.amount) < 0.01 &&
+        existingDate.getFullYear() === txDate.getFullYear() &&
+        existingDate.getMonth() === txDate.getMonth() &&
+        existingDate.getDate() === txDate.getDate();
+    });
+  };
+
+  const duplicateCount = useMemo(() => 
+    transactions.filter(tx => isDuplicate(tx)).length, 
+    [transactions, existingExpenses]
+  );
 
   const resetState = () => {
     setStep('upload');
@@ -56,7 +75,11 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
 
       setTransactions(result.transactions);
       setSource(result.source);
-      setSelectedIndices(new Set(result.transactions.map((_, i) => i)));
+      // Auto-deselect duplicates
+      const nonDupIndices = new Set(
+        result.transactions.map((_, i) => i).filter(i => !isDuplicate(result.transactions[i]))
+      );
+      setSelectedIndices(nonDupIndices);
       setStep('preview');
     } catch (err) {
       setError(t('import.fileReadError'));
@@ -195,6 +218,15 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col min-h-0"
             >
+              {duplicateCount > 0 && (
+                <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                  <Copy className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-xs">
+                    {duplicateCount} mogućih duplikata pronađeno (automatski isključeni)
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between py-3 border-b border-border/30">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Checkbox
@@ -214,6 +246,7 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
                 <div className="space-y-1 py-2">
                   {transactions.map((tx, index) => {
                     const categoryInfo = getCategoryInfo(tx.category);
+                    const dup = isDuplicate(tx);
                     return (
                       <motion.div
                         key={index}
@@ -222,9 +255,11 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
                         transition={{ delay: index * 0.02 }}
                         onClick={() => toggleTransaction(index)}
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-                          selectedIndices.has(index) 
-                            ? 'bg-muted/50 border border-primary/20' 
-                            : 'bg-muted/20 border border-transparent opacity-50'
+                          dup && !selectedIndices.has(index)
+                            ? 'bg-amber-500/5 border border-amber-500/20 opacity-50'
+                            : selectedIndices.has(index) 
+                              ? 'bg-muted/50 border border-primary/20' 
+                              : 'bg-muted/20 border border-transparent opacity-50'
                         }`}
                       >
                         <Checkbox
@@ -233,9 +268,16 @@ export const CSVImportDialog = ({ onImport }: CSVImportDialogProps) => {
                         />
                         <span className="text-lg">{categoryInfo.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {tx.description}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">
+                              {tx.description}
+                            </p>
+                            {dup && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
+                                Duplikat?
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {format(tx.date, 'd. MMM yyyy', { locale: dateLocale })}
                           </p>

@@ -60,7 +60,7 @@ const Wallet = () => {
         }} />
         <InstallmentsPanel />
         <CustomCategoriesPanel />
-        <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} />
+        <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} existingExpenses={allExpenses} />
         <BackupRestore onDataImported={refetch} />
       </motion.div>
 

@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
+  existingExpenses?: import('@/types/expense').Expense[];
 }
 
 const SUPPORTED_SOURCES = [
@@ -24,7 +25,7 @@ const SUPPORTED_SOURCES = [
   { id: 'zaba', name: 'Zagrebačka banka', logo: '🏦' },
 ];
 
-export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionProps) => {
+export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }: BankConnectionProps) => {
   const { t } = useTranslation();
   const [infoOpen, setInfoOpen] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
@@ -151,7 +152,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates }: BankConnectionPr
       </p>
 
       <div className="flex flex-col gap-2">
-        {onImportCSV && <CSVImportDialog onImport={onImportCSV} />}
+        {onImportCSV && <CSVImportDialog onImport={onImportCSV} existingExpenses={existingExpenses} />}
         
         {/* PDF Import */}
         <input
