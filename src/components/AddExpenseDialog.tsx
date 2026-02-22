@@ -27,6 +27,7 @@ import { DuplicateWarningDialog } from '@/components/DuplicateWarningDialog';
 import { CardLookup } from '@/components/CardLookup';
 import { ScanningOverlay } from '@/components/ScanningOverlay';
 import { useCategoryHabits } from '@/hooks/useCategoryHabits';
+import { useAICategorization } from '@/hooks/useAICategorization';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
@@ -111,8 +112,11 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const { budgets } = useBudgets();
   const { createPlan: createInstallmentPlan } = useInstallments();
   const { recordHabit, getSuggestedCategory } = useCategoryHabits();
+  const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const userManuallySetCategory = useRef(false);
 
   // Auto-suggest category when merchant name changes
   const handleMerchantChange = useCallback((value: string) => {
@@ -121,9 +125,36 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       const suggested = getSuggestedCategory(value);
       if (suggested) {
         setCategory(suggested as Category);
+        userManuallySetCategory.current = false;
+      } else if (!userManuallySetCategory.current) {
+        // No local habit — try AI
+        setAiSuggesting(true);
+        aiCategorize(description, value, (cat) => {
+          if (!userManuallySetCategory.current) {
+            setCategory(cat as Category);
+          }
+          setAiSuggesting(false);
+        });
       }
     }
-  }, [type, getSuggestedCategory]);
+  }, [type, getSuggestedCategory, aiCategorize, description]);
+
+  // Also trigger AI when description changes (with enough length)
+  const handleDescriptionChange = useCallback((value: string) => {
+    setDescription(value);
+    if (value.trim().length >= 3 && type !== 'income' && !userManuallySetCategory.current) {
+      const suggested = getSuggestedCategory(merchantName);
+      if (!suggested) {
+        setAiSuggesting(true);
+        aiCategorize(value, merchantName, (cat) => {
+          if (!userManuallySetCategory.current) {
+            setCategory(cat as Category);
+          }
+          setAiSuggesting(false);
+        });
+      }
+    }
+  }, [type, getSuggestedCategory, aiCategorize, merchantName]);
 
   // Set default payment source when dialog opens and sources are loaded
   useEffect(() => {
@@ -375,6 +406,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setAmount('');
     setDescription('');
     setCategory('food');
+    userManuallySetCategory.current = false;
+    setAiSuggesting(false);
+    cancelAICategorize();
     setMerchantName('');
     // Reset to first custom payment source or cash
     setPaymentSource(customPaymentSources.length > 0 ? `custom:${customPaymentSources[0].id}` as PaymentSource : 'cash');
@@ -1704,7 +1738,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   id="description"
                   placeholder={t('transactions.descriptionPlaceholder')}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
                   className="h-12 rounded-xl"
                 />
               </div>
@@ -1712,10 +1746,15 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
               {/* Category - Only show for expenses - Dropdown select */}
               {type === 'expense' && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('common.category')}</Label>
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    {t('common.category')}
+                    {aiSuggesting && (
+                      <span className="text-[10px] text-primary animate-pulse">✨ AI...</span>
+                    )}
+                  </Label>
                   <Select 
                     value={category} 
-                    onValueChange={(v) => setCategory(v as Category)}
+                    onValueChange={(v) => { userManuallySetCategory.current = true; setCategory(v as Category); }}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
                       <SelectValue placeholder={t('common.category')} />
