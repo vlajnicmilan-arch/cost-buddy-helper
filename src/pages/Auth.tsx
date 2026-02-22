@@ -90,7 +90,8 @@ const Auth = () => {
           return;
         }
         toast.success('Dobrodošli natrag!');
-        navigate('/');
+        const returnTo = (location.state as any)?.returnTo;
+        navigate(returnTo || '/');
       } else {
         const { error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
         if (error) {

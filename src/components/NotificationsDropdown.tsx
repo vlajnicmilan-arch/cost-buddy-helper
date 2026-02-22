@@ -33,6 +33,8 @@ const getNotificationIcon = (type: string) => {
     case 'payment_source_invitation':
     case 'payment_source_transaction':
       return <Wallet className="w-4 h-4 text-primary" />;
+    case 'family_invitation':
+      return <UserPlus className="w-4 h-4 text-primary" />;
     default:
       return <Bell className="w-4 h-4 text-muted-foreground" />;
   }
@@ -82,7 +84,7 @@ export const NotificationsDropdown = () => {
   const handleRespondToInvitation = async (
     notificationId: string, 
     invitationId: string, 
-    type: 'project' | 'budget' | 'payment_source', 
+    type: 'project' | 'budget' | 'payment_source' | 'family', 
     action: 'accept' | 'decline'
   ) => {
     setRespondingTo(notificationId);
@@ -120,7 +122,7 @@ export const NotificationsDropdown = () => {
   };
 
   const isInvitationNotification = (type: string) => {
-    return type === 'project_invitation' || type === 'budget_invitation' || type === 'payment_source_invitation';
+    return type === 'project_invitation' || type === 'budget_invitation' || type === 'payment_source_invitation' || type === 'family_invitation';
   };
 
   return (
@@ -168,7 +170,8 @@ export const NotificationsDropdown = () => {
               {notifications.map((notification) => {
                 const isInvitation = isInvitationNotification(notification.type);
                 const invitationType = notification.type === 'project_invitation' ? 'project' : 
-                  notification.type === 'budget_invitation' ? 'budget' : 'payment_source';
+                  notification.type === 'budget_invitation' ? 'budget' : 
+                  notification.type === 'family_invitation' ? 'family' : 'payment_source';
                 const invitationId = (notification.data as any)?.invitation_id;
 
                 return (
