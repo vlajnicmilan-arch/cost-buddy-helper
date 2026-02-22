@@ -29,7 +29,7 @@ interface CustomPaymentSourcesPanelProps {
 }
 
 export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }: CustomPaymentSourcesPanelProps) => {
-  const { customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
+  const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<CustomPaymentSource | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
