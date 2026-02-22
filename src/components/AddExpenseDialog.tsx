@@ -25,6 +25,7 @@ import { CustomIncomeCategoryDialog } from '@/components/custom-categories/Custo
 import { InstallmentToggle } from '@/components/installments';
 import { DuplicateWarningDialog } from '@/components/DuplicateWarningDialog';
 import { CardLookup } from '@/components/CardLookup';
+import { ScanningOverlay } from '@/components/ScanningOverlay';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
@@ -553,7 +554,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
           <DialogTitle className="text-xl font-semibold">{t('transactions.newTransaction')}</DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto -mx-6 px-6">
+        <div className="flex-1 overflow-y-auto -mx-6 px-6 relative">
+          <ScanningOverlay visible={scanning} imageCount={receiptImages.length || 1} />
           {/* Scanned Data Preview */}
           {showScannedPreview && scannedData && (
             <div className="space-y-4 pb-4">
