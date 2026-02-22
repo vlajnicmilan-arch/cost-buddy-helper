@@ -79,7 +79,11 @@
     "incomeLabel": "Einnahmen",
     "expensesLabel": "Ausgaben",
     "spendingLabel": "Ausgaben",
-    "incomeChartLabel": "Einkommen"
+    "incomeChartLabel": "Einkommen",
+    "searchTransactions": "Transaktionen nach Beschreibung, Händler oder Betrag suchen...",
+    "searchResults": "Suchergebnisse",
+    "noSearchResults": "Keine Ergebnisse für",
+    "showingResults": "{{count}} Ergebnisse angezeigt"
   },
   "nav": {
     "dashboard": "Übersicht",

@@ -111,7 +111,11 @@
     "incomeLabel": "Prihodi",
     "expensesLabel": "Troškovi",
     "spendingLabel": "Potrošnja",
-    "incomeChartLabel": "Prihod"
+    "incomeChartLabel": "Prihod",
+    "searchTransactions": "Pretraži transakcije po opisu, trgovini ili iznosu...",
+    "searchResults": "Rezultati pretrage",
+    "noSearchResults": "Nema rezultata za",
+    "showingResults": "Prikazano {{count}} rezultata"
   },
   "nav": {
     "dashboard": "Pregled",
