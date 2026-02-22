@@ -363,8 +363,20 @@ export const useCustomPaymentSources = () => {
     }
   };
 
+  // Owned sources only (exclude shared where user is just a member)
+  const ownedPaymentSources = customPaymentSources.filter(src => 
+    isLocalMode || !user ? true : src.user_id === user.id
+  );
+
+  // Shared sources only (where user is member but not owner)
+  const sharedPaymentSources = customPaymentSources.filter(src =>
+    !isLocalMode && user ? src.user_id !== user.id : false
+  );
+
   return {
     customPaymentSources,
+    ownedPaymentSources,
+    sharedPaymentSources,
     loading,
     addCustomPaymentSource,
     updateCustomPaymentSource,
