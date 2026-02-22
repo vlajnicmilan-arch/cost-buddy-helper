@@ -1047,5 +1047,32 @@
     "billsAndUtilities": "Bills & utilities",
     "healthAndBeauty": "Health & beauty",
     "other": "Other"
+  },
+  "savingsGoals": {
+    "title": "Savings Goals",
+    "addGoal": "Add goal",
+    "editGoal": "Edit goal",
+    "name": "Name",
+    "namePlaceholder": "e.g. Vacation",
+    "targetAmount": "Target amount",
+    "currentAmount": "Current amount",
+    "targetDate": "Target date",
+    "icon": "Icon",
+    "amount": "Amount",
+    "add": "Add",
+    "addTo": "Add to: {name}",
+    "addAmount": "Add amount",
+    "remaining": "Remaining",
+    "daysLeft": "{{count}} days left",
+    "overdue": "Overdue",
+    "completed": "Completed!",
+    "noGoals": "No savings goals yet",
+    "goalAdded": "Savings goal added",
+    "goalUpdated": "Savings goal updated",
+    "goalDeleted": "Savings goal deleted",
+    "goalCompleted": "Congratulations! Goal '{name}' completed! 🎉",
+    "errorAdding": "Error adding goal",
+    "errorUpdating": "Error updating goal",
+    "errorDeleting": "Error deleting goal"
   }
 }

@@ -879,5 +879,32 @@
         "description": "Ihr persönlicher Finanzberater! Stellen Sie Fragen zu Ausgaben, erhalten Sie Spartipps und analysieren Sie Ihre Finanzen."
       }
     }
+  },
+  "savingsGoals": {
+    "title": "Sparziele",
+    "addGoal": "Ziel hinzufügen",
+    "editGoal": "Ziel bearbeiten",
+    "name": "Name",
+    "namePlaceholder": "z.B. Urlaub",
+    "targetAmount": "Zielbetrag",
+    "currentAmount": "Aktueller Betrag",
+    "targetDate": "Zieldatum",
+    "icon": "Symbol",
+    "amount": "Betrag",
+    "add": "Hinzufügen",
+    "addTo": "Hinzufügen zu: {name}",
+    "addAmount": "Betrag hinzufügen",
+    "remaining": "Verbleibend",
+    "daysLeft": "{{count}} Tage übrig",
+    "overdue": "Überfällig",
+    "completed": "Erreicht!",
+    "noGoals": "Keine Sparziele vorhanden",
+    "goalAdded": "Sparziel hinzugefügt",
+    "goalUpdated": "Sparziel aktualisiert",
+    "goalDeleted": "Sparziel gelöscht",
+    "goalCompleted": "Herzlichen Glückwunsch! Ziel '{name}' erreicht! 🎉",
+    "errorAdding": "Fehler beim Hinzufügen",
+    "errorUpdating": "Fehler beim Aktualisieren",
+    "errorDeleting": "Fehler beim Löschen"
   }
 }
