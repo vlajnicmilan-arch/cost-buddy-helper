@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,6 +10,7 @@ import { SummaryCard } from '@/components/SummaryCard';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
 import { PageHeader } from '@/components/PageHeader';
 import { BottomNav } from '@/components/BottomNav';
+import { Input } from '@/components/ui/input';
 import { 
   Wallet, 
   TrendingUp, 
@@ -20,11 +21,13 @@ import {
   BarChart3,
   PieChart as PieChartIcon,
   Activity,
-  Target
+  Target,
+  Search,
+  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   PieChart,
   Pie,
@@ -43,6 +46,7 @@ import {
   Area,
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 const CATEGORY_COLORS: Record<string, string> = {
   food: 'hsl(var(--category-food))',
@@ -91,6 +95,20 @@ const Dashboard = () => {
     expensesByCategory,
     isLocalMode,
   } = useExpenses();
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const searchResults = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const term = searchTerm.toLowerCase().trim();
+    const searchNum = parseFloat(term);
+    return expenses.filter(e => {
+      const matchDesc = e.description.toLowerCase().includes(term);
+      const matchMerchant = e.merchant_name?.toLowerCase().includes(term);
+      const matchAmount = !isNaN(searchNum) && e.amount.toString().includes(term);
+      return matchDesc || matchMerchant || matchAmount;
+    }).slice(0, 20);
+  }, [expenses, searchTerm]);
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
@@ -245,6 +263,79 @@ const Dashboard = () => {
         className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8"
       >
         <PageHeader title="Dashboard" />
+
+        {/* Global Search */}
+        <div className="mb-4 sm:mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder={t('dashboard.searchTransactions')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-9 h-10 text-sm rounded-xl bg-muted/30 border-border/50 focus:bg-background transition-colors"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Search Results */}
+          <AnimatePresence>
+            {searchTerm.trim() && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="mt-2 glass-card rounded-xl overflow-hidden"
+              >
+                <div className="p-3 sm:p-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                    {searchResults.length > 0
+                      ? t('dashboard.showingResults', { count: searchResults.length })
+                      : `${t('dashboard.noSearchResults')} "${searchTerm}"`}
+                  </h3>
+                  {searchResults.length > 0 && (
+                    <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                      {searchResults.map((expense) => {
+                        const catInfo = getCategoryInfo(expense.category as any);
+                        return (
+                          <div
+                            key={expense.id}
+                            className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-default"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-lg flex-shrink-0">{catInfo.icon}</span>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{expense.description}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {format(expense.date, 'dd.MM.yyyy')}
+                                  {expense.merchant_name && ` · ${expense.merchant_name}`}
+                                </p>
+                              </div>
+                            </div>
+                            <span className={cn(
+                              'text-sm font-mono font-semibold flex-shrink-0 ml-2',
+                              expense.type === 'income' ? 'text-income' : expense.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
+                            )}>
+                              {expense.type === 'income' ? '+' : expense.type === 'expense' ? '-' : ''}
+                              {formatAmount(expense.amount)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {expensesLoading ? (
           <div className="py-20 flex items-center justify-center">

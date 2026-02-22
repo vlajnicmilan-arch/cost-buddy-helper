@@ -352,10 +352,12 @@ export const applyFilters = <T extends { description: string; date: Date; amount
     }
 
     if (filters.searchTerm) {
-      const search = filters.searchTerm.toLowerCase();
+      const search = filters.searchTerm.toLowerCase().trim();
       const matchesDescription = item.description.toLowerCase().includes(search);
       const matchesMerchant = item.merchant_name?.toLowerCase().includes(search);
-      if (!matchesDescription && !matchesMerchant) return false;
+      const searchNum = parseFloat(search);
+      const matchesAmount = !isNaN(searchNum) && item.amount.toString().includes(search);
+      if (!matchesDescription && !matchesMerchant && !matchesAmount) return false;
     }
 
     if (filters.dateRange?.from) {
