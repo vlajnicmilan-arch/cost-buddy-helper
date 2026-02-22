@@ -115,7 +115,16 @@
     "searchTransactions": "Search transactions by description, merchant or amount...",
     "searchResults": "Search results",
     "noSearchResults": "No results for",
-    "showingResults": "Showing {{count}} results"
+    "showingResults": "Showing {{count}} results",
+    "cashflow": {
+      "title": "Cashflow Forecast (8 weeks)",
+      "thisWeek": "This wk",
+      "projectedIncome": "Projected income",
+      "projectedExpenses": "Projected expenses",
+      "netFlow": "Net flow",
+      "cumulative": "Cumulative",
+      "basedOn": "Based on recurring transactions and installments"
+    }
   },
   "nav": {
     "dashboard": "Overview",

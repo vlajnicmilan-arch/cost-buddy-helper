@@ -47,6 +47,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { CashflowForecast } from '@/components/CashflowForecast';
 
 const CATEGORY_COLORS: Record<string, string> = {
   food: 'hsl(var(--category-food))',
@@ -439,6 +440,9 @@ const Dashboard = () => {
                 </p>
               </motion.div>
             </div>
+
+            {/* Cashflow Forecast */}
+            <CashflowForecast />
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-8">
