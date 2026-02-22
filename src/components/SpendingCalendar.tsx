@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CalendarDays, X, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, X, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getCategoryInfo } from '@/types/expense';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface Expense {
   id: string;
@@ -80,36 +82,74 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
 
   const selectedDayData = selectedDay ? dailyData[selectedDay] : null;
 
-  const printDayTransactions = () => {
+  const toAscii = (text: string): string => {
+    return text
+      .replace(/č/g, 'c').replace(/Č/g, 'C')
+      .replace(/ć/g, 'c').replace(/Ć/g, 'C')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+      .replace(/š/g, 's').replace(/Š/g, 'S')
+      .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
+  };
+
+  const exportDayPDF = () => {
     if (!selectedDay || !selectedDayData || selectedDayData.transactions.length === 0) return;
 
     const dateStr = `${selectedDay}. ${monthName}`;
-    const rows = selectedDayData.transactions.map(tx => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(toAscii(t('dashboard.calendar.title', 'Kalendar potrosnje')), 14, 20);
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(toAscii(dateStr), 14, 28);
+
+    const tableData = selectedDayData.transactions.map(tx => {
       const catInfo = getCategoryInfo(tx.category as any);
       const sign = tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : '';
-      return `<tr>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${catInfo.icon} ${tx.description}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${tx.merchant_name || '-'}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${catInfo.name}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right;color:${tx.type === 'income' ? '#16a34a' : tx.type === 'expense' ? '#dc2626' : '#666'}">${sign}${formatAmount(tx.amount)}</td>
-      </tr>`;
-    }).join('');
+      return [
+        toAscii(tx.description),
+        toAscii(tx.merchant_name || '-'),
+        toAscii(catInfo.name),
+        `${sign}${formatAmount(tx.amount)}`,
+      ];
+    });
 
-    const summaryRows: string[] = [];
-    if (selectedDayData.expense > 0) summaryRows.push(`<div style="color:#dc2626;font-weight:600">${t('dashboard.expenses', 'Troškovi')}: -${formatAmount(selectedDayData.expense)}</div>`);
-    if (selectedDayData.income > 0) summaryRows.push(`<div style="color:#16a34a;font-weight:600">${t('dashboard.income', 'Prihodi')}: +${formatAmount(selectedDayData.income)}</div>`);
+    autoTable(doc, {
+      startY: 34,
+      head: [[
+        toAscii(t('common.description', 'Opis')),
+        toAscii(t('common.merchant', 'Trgovac')),
+        toAscii(t('common.category', 'Kategorija')),
+        toAscii(t('common.amount', 'Iznos')),
+      ]],
+      body: tableData,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [55, 65, 81] },
+      columnStyles: { 3: { halign: 'right' } },
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 80;
+    let y = finalY + 10;
+
+    doc.setFontSize(11);
+    if (selectedDayData.expense > 0) {
+      doc.setTextColor(220, 38, 38);
+      doc.text(`${toAscii(t('dashboard.expenses', 'Troskovi'))}: -${formatAmount(selectedDayData.expense)}`, 196, y, { align: 'right' });
+      y += 6;
+    }
+    if (selectedDayData.income > 0) {
+      doc.setTextColor(22, 163, 74);
+      doc.text(`${toAscii(t('dashboard.income', 'Prihodi'))}: +${formatAmount(selectedDayData.income)}`, 196, y, { align: 'right' });
+      y += 6;
+    }
     const net = selectedDayData.income - selectedDayData.expense;
-    summaryRows.push(`<div style="font-weight:700;font-size:16px;margin-top:4px">${t('dashboard.calendar.net', 'Neto')}: ${net >= 0 ? '+' : ''}${formatAmount(net)}</div>`);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${toAscii(t('dashboard.calendar.net', 'Neto'))}: ${net >= 0 ? '+' : ''}${formatAmount(net)}`, 196, y, { align: 'right' });
 
-    const html = `<!DOCTYPE html><html><head><title>${dateStr}</title><style>body{font-family:system-ui,sans-serif;padding:24px;max-width:700px;margin:auto}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px 10px;border-bottom:2px solid #333;font-size:13px}@media print{body{padding:0}}</style></head><body>
-      <h2 style="margin-bottom:4px">${t('dashboard.calendar.title', 'Kalendar potrošnje')}</h2>
-      <h3 style="color:#666;margin-top:0">${dateStr}</h3>
-      <table><thead><tr><th>${t('common.description', 'Opis')}</th><th>${t('common.merchant', 'Trgovac')}</th><th>${t('common.category', 'Kategorija')}</th><th style="text-align:right">${t('common.amount', 'Iznos')}</th></tr></thead><tbody>${rows}</tbody></table>
-      <div style="margin-top:16px;padding-top:12px;border-top:2px solid #333;text-align:right">${summaryRows.join('')}</div>
-    </body></html>`;
-
-    const w = window.open('', '_blank');
-    if (w) { w.document.write(html); w.document.close(); w.print(); }
+    doc.save(`${toAscii(t('dashboard.calendar.title', 'Kalendar'))}_${selectedDay}_${month + 1}_${year}.pdf`);
   };
 
   return (
@@ -249,8 +289,8 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
                     +{formatAmount(selectedDayData.income)}
                   </span>
                 )}
-                <button onClick={printDayTransactions} className="text-muted-foreground hover:text-foreground" title={t('dashboard.calendar.print', 'Ispis')}>
-                  <Printer className="w-3.5 h-3.5" />
+                <button onClick={exportDayPDF} className="text-muted-foreground hover:text-foreground" title={t('dashboard.calendar.print', 'PDF')}>
+                  <FileDown className="w-3.5 h-3.5" />
                 </button>
                 <button onClick={() => setSelectedDay(null)} className="text-muted-foreground hover:text-foreground">
                   <X className="w-3.5 h-3.5" />
