@@ -590,6 +590,13 @@ export const PaymentSourceTransactionsDialog = ({
           onOpenChange={setImportBatchDialogOpen}
           batchId={selectedBatchId}
           allExpenses={expenses}
+          onDeleteBatch={async (ids) => {
+            for (const id of ids) {
+              await onDelete(id);
+            }
+            setImportBatchDialogOpen(false);
+            setSelectedBatchId(null);
+          }}
         />
       )}
     </>
