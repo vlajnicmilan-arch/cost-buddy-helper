@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Expense, getCategoryInfo } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { FileText, TrendingUp, TrendingDown, X as XIcon } from 'lucide-react';
+import { FileText, TrendingUp, TrendingDown, X as XIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBackButton } from '@/hooks/useBackButton';
@@ -15,10 +16,13 @@ interface ImportBatchDialogProps {
   onOpenChange: (open: boolean) => void;
   batchId: string;
   allExpenses: Expense[];
+  onDeleteBatch?: (expenseIds: string[]) => Promise<void>;
 }
 
-export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses }: ImportBatchDialogProps) => {
+export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, onDeleteBatch }: ImportBatchDialogProps) => {
   const { formatAmount } = useCurrency();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const batchExpenses = useMemo(() => {
     return allExpenses
@@ -40,7 +44,20 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses }: 
 
   useBackButton(open, () => onOpenChange(false));
 
+  const handleDeleteBatch = async () => {
+    if (!onDeleteBatch) return;
+    setDeleting(true);
+    try {
+      await onDeleteBatch(batchExpenses.map(e => e.id));
+      onOpenChange(false);
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
+
   return (
+    <>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -63,9 +80,21 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses }: 
                 </p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-8 w-8">
-              <XIcon className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {onDeleteBatch && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setConfirmOpen(true)} 
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-8 w-8">
+                <XIcon className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           <ScrollArea className="flex-1">
@@ -131,5 +160,27 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses }: 
         </motion.div>
       )}
     </AnimatePresence>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Obriši cijeli uvoz?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Ovo će trajno obrisati svih {batchExpenses.length} transakcija iz ovog uvoza. Ova radnja se ne može poništiti.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Odustani</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDeleteBatch}
+            disabled={deleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleting ? 'Brisanje...' : `Obriši ${batchExpenses.length} transakcija`}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
