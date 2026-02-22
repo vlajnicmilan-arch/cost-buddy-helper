@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FamilyGroup, FAMILY_ROLE_LABELS, FamilyRole } from '@/types/family';
 import { useFamilyMembers, useFamilySharedResources, useFamilyActivity } from '@/hooks/useFamilyGroups';
+import { useTranslation } from 'react-i18next';
 import { useProjects } from '@/hooks/useProjects';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Props) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { members, invitations, loading: membersLoading, isOwner, updateMemberRole, removeMember, generateInviteLink, cancelInvitation } = useFamilyMembers(group.id);
@@ -92,23 +94,23 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
 
       if (data?.error) {
         if (data.error === 'user_not_found') {
-          toast.error('Korisnik s tim emailom nije pronađen u sustavu');
+          toast.error(t('family.userNotFound'));
         } else if (data.error === 'already_member') {
-          toast.error('Korisnik je već član grupe');
+          toast.error(t('family.alreadyMember'));
         } else if (data.error === 'already_invited') {
-          toast.error('Korisnik već ima aktivnu pozivnicu');
+          toast.error(t('family.alreadyInvited'));
         } else {
-          toast.error(data.message || 'Greška pri slanju pozivnice');
+          toast.error(data.message || t('family.inviteError'));
         }
         return;
       }
 
-      toast.success(`Pozivnica poslana na ${inviteEmail.trim()}`);
+      toast.success(`${t('family.inviteSent')} ${inviteEmail.trim()}`);
       setInviteEmail('');
       members && fetchMembers();
     } catch (error) {
       console.error('Error sending invitation:', error);
-      toast.error('Greška pri slanju pozivnice');
+      toast.error(t('family.inviteError'));
     } finally {
       setInviteLoading(false);
     }
@@ -140,7 +142,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="font-bold text-lg truncate">{group.name}</h1>
-              <p className="text-xs text-muted-foreground">{members.length} članova</p>
+              <p className="text-xs text-muted-foreground">{members.length} {t('family.members')}</p>
             </div>
             {isOwner && (
               <Button variant="ghost" size="icon" onClick={() => setEditDialogOpen(true)} className="h-9 w-9">
@@ -153,7 +155,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
         <div className="px-3 py-4 space-y-6">
           {/* Summary Card */}
           <div className="rounded-xl p-4 bg-card border border-border/50">
-            <p className="text-xs text-muted-foreground mb-1">Ukupno stanje dijeljenih računa</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('family.totalSharedBalance')}</p>
             <p className="text-2xl font-bold">{formatAmount(totalBalance)}</p>
           </div>
 
@@ -162,19 +164,19 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-muted-foreground" />
-                Dijeljeni računi
+                {t('family.sharedAccounts')}
               </h2>
               {isOwner && (
                 <Button variant="ghost" size="sm" onClick={() => setShowAddSource(!showAddSource)} className="h-8 gap-1">
                   <Plus className="h-3.5 w-3.5" />
-                  Dodaj
+                  {t('family.add')}
                 </Button>
               )}
             </div>
 
             {showAddSource && availableSources.length > 0 && (
               <div className="mb-3 space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
-                <p className="text-xs text-muted-foreground mb-2">Odaberi račun za dodavanje:</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('family.selectAccountToAdd')}</p>
                 {availableSources.map(ps => (
                   <button
                     key={ps.id}
@@ -190,11 +192,11 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             )}
 
             {showAddSource && availableSources.length === 0 && (
-              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">Svi računi su već dodani u grupu.</p>
+              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">{t('family.allAccountsAdded')}</p>
             )}
 
             {sharedSources.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">Nema dodanih računa</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t('family.noAccounts')}</p>
             ) : (
               <div className="space-y-2">
                 {sharedSources.map(source => (
@@ -238,19 +240,19 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold flex items-center gap-2">
                 <Target className="h-4 w-4 text-muted-foreground" />
-                Dijeljeni budžeti
+                {t('family.sharedBudgets')}
               </h2>
               {isOwner && (
                 <Button variant="ghost" size="sm" onClick={() => setShowAddBudget(!showAddBudget)} className="h-8 gap-1">
                   <Plus className="h-3.5 w-3.5" />
-                  Dodaj
+                  {t('family.add')}
                 </Button>
               )}
             </div>
 
             {showAddBudget && availableBudgets.length > 0 && (
               <div className="mb-3 space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
-                <p className="text-xs text-muted-foreground mb-2">Odaberi budžet za dodavanje:</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('family.selectBudgetToAdd')}</p>
                 {availableBudgets.map(b => (
                   <button
                     key={b.id}
@@ -266,11 +268,11 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             )}
 
             {showAddBudget && availableBudgets.length === 0 && (
-              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">Svi budžeti su već dodani u grupu.</p>
+              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">{t('family.allBudgetsAdded')}</p>
             )}
 
             {sharedBudgets.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">Nema dodanih budžeta</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t('family.noBudgets')}</p>
             ) : (
               <div className="space-y-2">
                 {sharedBudgets.map(budget => {
@@ -285,7 +287,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                         setSelectedBudget(fullBudget);
                         setBudgetDialogOpen(true);
                       } else {
-                        toast.info('Budžet nije dostupan za pregled');
+                        toast.info(t('family.budgetNotAvailable'));
                       }
                     }}
                   >
@@ -311,19 +313,19 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold flex items-center gap-2">
                 <FolderKanban className="h-4 w-4 text-muted-foreground" />
-                Dijeljeni projekti
+                {t('family.sharedProjects')}
               </h2>
               {isOwner && (
                 <Button variant="ghost" size="sm" onClick={() => setShowAddProject(!showAddProject)} className="h-8 gap-1">
                   <Plus className="h-3.5 w-3.5" />
-                  Dodaj
+                  {t('family.add')}
                 </Button>
               )}
             </div>
 
             {showAddProject && availableProjects.length > 0 && (
               <div className="mb-3 space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
-                <p className="text-xs text-muted-foreground mb-2">Odaberi projekt za dodavanje:</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('family.selectProjectToAdd')}</p>
                 {availableProjects.map(p => (
                   <button
                     key={p.id}
@@ -339,11 +341,11 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             )}
 
             {showAddProject && availableProjects.length === 0 && (
-              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">Svi projekti su već dodani u grupu.</p>
+              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">{t('family.allProjectsAdded')}</p>
             )}
 
             {sharedProjects.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">Nema dodanih projekata</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t('family.noProjects')}</p>
             ) : (
               <div className="space-y-2">
                 {sharedProjects.map(project => {
@@ -357,7 +359,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                         setSelectedProject(fullProject);
                         setProjectDialogOpen(true);
                       } else {
-                        toast.info('Projekt nije dostupan za pregled');
+                        toast.info(t('family.projectNotAvailable'));
                       }
                     }}
                   >
@@ -384,7 +386,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                Članovi ({members.length})
+                {t('family.membersCount')} ({members.length})
               </h2>
             </div>
 
@@ -399,7 +401,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">
                       {member.display_name}
-                      {member.user_id === user?.id && <span className="text-muted-foreground"> (ti)</span>}
+                      {member.user_id === user?.id && <span className="text-muted-foreground"> ({t('family.you')})</span>}
                     </p>
                     <p className="text-xs text-muted-foreground">{FAMILY_ROLE_LABELS[member.role]}</p>
                   </div>
@@ -413,8 +415,8 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="member">Član</SelectItem>
-                          <SelectItem value="viewer">Preglednik</SelectItem>
+                          <SelectItem value="member">{t('family.member')}</SelectItem>
+                          <SelectItem value="viewer">{t('family.viewer')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button variant="ghost" size="icon" onClick={() => removeMember(member.id)} className="h-7 w-7 text-destructive hover:text-destructive">
@@ -431,7 +433,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
               <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border/50 space-y-3">
                 <h3 className="font-medium text-sm flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  Pozovi člana putem emaila
+                  {t('family.inviteMember')}
                 </h3>
 
                 <div className="flex items-center gap-2">
@@ -448,8 +450,8 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="member">Član</SelectItem>
-                      <SelectItem value="viewer">Preglednik</SelectItem>
+                      <SelectItem value="member">{t('family.member')}</SelectItem>
+                      <SelectItem value="viewer">{t('family.viewer')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -465,7 +467,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                   ) : (
                     <Send className="h-3.5 w-3.5" />
                   )}
-                  Pošalji pozivnicu
+                  {t('family.sendInvitation')}
                 </Button>
               </div>
             )}
@@ -476,7 +478,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold flex items-center gap-2">
                 <Activity className="h-4 w-4 text-muted-foreground" />
-                Aktivnost
+                {t('family.activity')}
               </h2>
             </div>
 
@@ -485,7 +487,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : activities.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">Nema zabilježenih aktivnosti</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t('family.noActivity')}</p>
             ) : (
               <div className="space-y-1">
                 {activities.map(activity => {
@@ -524,7 +526,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold flex items-center gap-2">
                 <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                Chat
+                {t('family.chat')}
               </h2>
             </div>
             <div className="rounded-xl p-3 bg-card border border-border/50">
@@ -542,7 +544,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 className="gap-1.5"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Obriši grupu
+                {t('family.deleteGroup')}
               </Button>
             </section>
           )}
@@ -562,15 +564,15 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Obriši grupu "{group.name}"?</AlertDialogTitle>
+            <AlertDialogTitle>{t('family.deleteGroupConfirm')} "{group.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              Ovo će trajno obrisati grupu i sve njene veze s računima i budžetima. Sami računi i budžeti neće biti obrisani.
+              {t('family.deleteGroupDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Odustani</AlertDialogCancel>
+            <AlertDialogCancel>{t('family.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Obriši
+              {t('family.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

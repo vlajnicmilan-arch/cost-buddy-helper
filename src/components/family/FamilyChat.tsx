@@ -4,11 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Loader2, MessageCircle } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   id: string;
@@ -25,6 +25,7 @@ interface FamilyChatProps {
 }
 
 export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -136,7 +137,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
 
     if (error) {
       console.error('Error sending message:', error);
-      toast.error('Greška pri slanju poruke');
+      toast.error(t('family.sendError'));
     }
     
     setNewMessage('');
@@ -146,7 +147,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
   const handleDelete = async (messageId: string) => {
     const { error } = await supabase.from('family_messages').delete().eq('id', messageId);
     if (error) {
-      toast.error('Greška pri brisanju poruke');
+      toast.error(t('family.deleteError'));
     }
   };
 
@@ -164,7 +165,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
       <div className="max-h-80 overflow-y-auto space-y-1 mb-3" ref={scrollRef}>
         {messages.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            Još nema poruka. Započni razgovor! 💬
+            {t('family.noMessages')}
           </p>
         ) : (
           messages.map(msg => {
@@ -192,7 +193,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
                         : 'bg-muted rounded-bl-md'
                     }`}
                     onDoubleClick={() => isOwn && handleDelete(msg.id)}
-                    title={isOwn ? 'Dvaput klikni za brisanje' : undefined}
+                    title={isOwn ? t('family.doubleClickDelete') : undefined}
                   >
                     {msg.content}
                   </div>
@@ -210,7 +211,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
       {/* Input */}
       <div className="flex items-center gap-2">
         <Input
-          placeholder="Napiši poruku..."
+          placeholder={t('family.writeMessage')}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}

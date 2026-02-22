@@ -12,8 +12,10 @@ import { FamilyGroupCard } from '@/components/family/FamilyGroupCard';
 import { FamilyGroupDialog } from '@/components/family/FamilyGroupDialog';
 import { FamilyGroupDetailView } from '@/components/family/FamilyGroupDetailView';
 import { FamilyGroup } from '@/types/family';
+import { useTranslation } from 'react-i18next';
 
 const Family = () => {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const { storageMode } = useStorage();
   const navigate = useNavigate();
@@ -46,9 +48,9 @@ const Family = () => {
           transition={{ duration: 0.3 }}
           className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8"
         >
-          <PageHeader title="Obitelj" />
+          <PageHeader title={t('family.title')} />
           <div className="text-center text-muted-foreground mt-12">
-            <p>Obiteljski dashboard je dostupan samo u cloud načinu rada.</p>
+            <p>{t('family.cloudOnly')}</p>
           </div>
         </motion.div>
         <BottomNav />
@@ -81,12 +83,12 @@ const Family = () => {
         transition={{ duration: 0.3 }}
         className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8"
       >
-        <PageHeader title="Obitelj" />
+        <PageHeader title={t('family.title')} />
 
         <div className="flex justify-end mb-4">
           <Button onClick={() => { setEditingGroup(null); setDialogOpen(true); }} size="sm" className="gap-1.5">
             <Plus className="h-4 w-4" />
-            Nova grupa
+            {t('family.newGroup')}
           </Button>
         </div>
 
@@ -99,13 +101,13 @@ const Family = () => {
             <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
               <Users className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="font-semibold text-lg">Nemate obiteljskih grupa</h3>
+            <h3 className="font-semibold text-lg">{t('family.noGroups')}</h3>
             <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-              Kreirajte grupu kako biste pratili zajedničke financije s obitelji, partnerom ili cimerima.
+              {t('family.noGroupsDesc')}
             </p>
             <Button onClick={() => setDialogOpen(true)} className="mt-2 gap-1.5">
               <Plus className="h-4 w-4" />
-              Kreiraj prvu grupu
+              {t('family.createFirst')}
             </Button>
           </div>
         ) : (
