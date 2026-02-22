@@ -144,19 +144,18 @@ export const CashflowForecast = () => {
   const formatAxisCurrency = (amount: number) =>
     new Intl.NumberFormat(currency.locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ` ${currency.symbol}`;
 
-  if (!hasData) return null;
+  if (!hasData) return (
+    <p className="text-sm text-muted-foreground text-center py-4">
+      {t('dashboard.cashflow.noData', 'Nema podataka za prognozu. Dodajte ponavljajuće transakcije ili rate.')}
+    </p>
+  );
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.28 }}
-      className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6"
     >
-      <div className="flex items-center gap-2 mb-3 sm:mb-4">
-        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-        <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.cashflow.title')}</h3>
-      </div>
 
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-2 mb-3 sm:mb-4">
