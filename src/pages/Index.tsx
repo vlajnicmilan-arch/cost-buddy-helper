@@ -42,6 +42,7 @@ import { PaymentSourcesSection } from '@/components/home/PaymentSourcesSection';
 import { SummarySection } from '@/components/home/SummarySection';
 import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
+import { CashflowForecast } from '@/components/CashflowForecast';
 
 
 const Index = () => {
@@ -359,6 +360,9 @@ const Index = () => {
           onTransferClick={() => setTransferDialogOpen(true)}
           onRecurringClick={() => setRecurringPanelOpen(true)}
         />
+
+        {/* ── Cashflow Forecast ── */}
+        {!simpleModeEnabled && <CashflowForecast />}
 
         {/* ── Main Content Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
