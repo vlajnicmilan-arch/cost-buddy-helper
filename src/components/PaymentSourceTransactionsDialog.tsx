@@ -6,6 +6,7 @@ import { Expense, getCategoryInfo, Category } from '@/types/expense';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { TransactionDetailDialog } from './TransactionDetailDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
+import { ImportBatchDialog } from './ImportBatchDialog';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useInstallments } from '@/hooks/useInstallments';
@@ -13,7 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +47,8 @@ export const PaymentSourceTransactionsDialog = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [installmentsExpanded, setInstallmentsExpanded] = useState(false);
+  const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
   const { plans } = useInstallments();
 
@@ -421,14 +424,40 @@ export const PaymentSourceTransactionsDialog = ({
                 ) : (
                   <div className="space-y-0">
                     <AnimatePresence>
-                      {filteredSourceExpenses.map((expense) => {
+                      {filteredSourceExpenses.map((expense, index) => {
                         const categoryInfo = getCategoryInfo(expense.category);
                         const cardInfo = getCardInfo(expense);
                         const isSelected = selectedIds.has(expense.id);
                         const balanceAfter = runningBalances.get(expense.id);
+
+                        // Show import batch separator when batch changes
+                        const prevExpense = index > 0 ? filteredSourceExpenses[index - 1] : null;
+                        const showBatchStart = expense.import_batch_id && 
+                          (!prevExpense || prevExpense.import_batch_id !== expense.import_batch_id);
+                        const batchExpenseCount = showBatchStart 
+                          ? filteredSourceExpenses.filter(e => e.import_batch_id === expense.import_batch_id).length 
+                          : 0;
                         
                         return (
                           <div key={expense.id}>
+                            {showBatchStart && (
+                              <div 
+                                className="flex items-center gap-2 my-2 px-2 cursor-pointer group"
+                                onClick={() => {
+                                  setSelectedBatchId(expense.import_batch_id!);
+                                  setImportBatchDialogOpen(true);
+                                }}
+                              >
+                                <div className="flex-1 h-px bg-destructive/40" />
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/10 border border-destructive/20 group-hover:bg-destructive/20 transition-colors">
+                                  <FileText className="w-3 h-3 text-destructive" />
+                                  <span className="text-[11px] font-medium text-destructive">
+                                    Uvoz • {batchExpenseCount} tr.
+                                  </span>
+                                </div>
+                                <div className="flex-1 h-px bg-destructive/40" />
+                              </div>
+                            )}
                             <motion.div
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
@@ -554,6 +583,15 @@ export const PaymentSourceTransactionsDialog = ({
         onOpenChange={setEditDialogOpen}
         onSave={handleSave}
       />
+
+      {selectedBatchId && (
+        <ImportBatchDialog
+          open={importBatchDialogOpen}
+          onOpenChange={setImportBatchDialogOpen}
+          batchId={selectedBatchId}
+          allExpenses={expenses}
+        />
+      )}
     </>
   );
 };

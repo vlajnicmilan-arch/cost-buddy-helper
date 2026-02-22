@@ -318,6 +318,7 @@ export type Database = {
           description: string
           expense_nature: string | null
           id: string
+          import_batch_id: string | null
           income_source_id: string | null
           merchant_name: string | null
           milestone_id: string | null
@@ -342,6 +343,7 @@ export type Database = {
           description: string
           expense_nature?: string | null
           id?: string
+          import_batch_id?: string | null
           income_source_id?: string | null
           merchant_name?: string | null
           milestone_id?: string | null
@@ -366,6 +368,7 @@ export type Database = {
           description?: string
           expense_nature?: string | null
           id?: string
+          import_batch_id?: string | null
           income_source_id?: string | null
           merchant_name?: string | null
           milestone_id?: string | null
