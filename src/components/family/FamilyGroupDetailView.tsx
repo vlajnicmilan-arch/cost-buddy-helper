@@ -10,7 +10,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useExpenses } from '@/hooks/useExpenses';
 import { BottomNav } from '@/components/BottomNav';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
+import { BudgetDetailDialog } from '@/components/budget/BudgetDetailDialog';
+import { ProjectDetailDialog } from '@/components/projects/ProjectDetailDialog';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
+import { BudgetWithStats } from '@/types/budget';
+import { ProjectWithOwnership } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -52,6 +56,10 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const [showAddProject, setShowAddProject] = useState(false);
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<BudgetWithStats | null>(null);
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
 
   const totalBalance = sharedSources.reduce((sum, s) => sum + (s.source_balance || 0), 0);
   const existingSourceIds = new Set(sharedSources.map(s => s.payment_source_id));
@@ -261,20 +269,35 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
               <p className="text-sm text-muted-foreground text-center py-6">Nema dodanih budžeta</p>
             ) : (
               <div className="space-y-2">
-                {sharedBudgets.map(budget => (
-                  <div key={budget.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50">
+                {sharedBudgets.map(budget => {
+                  // Find the full budget from the budgets list, or construct a minimal one
+                  const fullBudget = budgets.find(b => b.id === budget.budget_id);
+                  return (
+                  <div
+                    key={budget.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      if (fullBudget) {
+                        setSelectedBudget(fullBudget);
+                        setBudgetDialogOpen(true);
+                      } else {
+                        toast.info('Budžet nije dostupan za pregled');
+                      }
+                    }}
+                  >
                     <span className="text-lg">{budget.budget_icon || '💰'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{budget.budget_name || 'Budžet'}</p>
                     </div>
                     <span className="text-sm font-semibold">{formatAmount(budget.budget_total || 0)}</span>
                     {isOwner && (
-                      <Button variant="ghost" size="icon" onClick={() => removeSharedBudget(budget.id)} className="h-7 w-7 text-destructive hover:text-destructive">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedBudget(budget.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -319,8 +342,21 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
               <p className="text-sm text-muted-foreground text-center py-6">Nema dodanih projekata</p>
             ) : (
               <div className="space-y-2">
-                {sharedProjects.map(project => (
-                  <div key={project.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50">
+                {sharedProjects.map(project => {
+                  const fullProject = projects.find(p => p.id === project.project_id);
+                  return (
+                  <div
+                    key={project.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      if (fullProject) {
+                        setSelectedProject(fullProject);
+                        setProjectDialogOpen(true);
+                      } else {
+                        toast.info('Projekt nije dostupan za pregled');
+                      }
+                    }}
+                  >
                     <span className="text-lg">{project.project_icon || '📁'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{project.project_name || 'Projekt'}</p>
@@ -328,12 +364,13 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                     </div>
                     <span className="text-sm font-semibold">{formatAmount(project.project_total_budget || 0)}</span>
                     {isOwner && (
-                      <Button variant="ghost" size="icon" onClick={() => removeSharedProject(project.id)} className="h-7 w-7 text-destructive hover:text-destructive">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedProject(project.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -481,7 +518,18 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
         onUpdate={updateExpense}
         onDelete={deleteExpense}
       />
-
+      <BudgetDetailDialog
+        open={budgetDialogOpen}
+        onOpenChange={setBudgetDialogOpen}
+        budget={selectedBudget}
+        onEdit={() => {}}
+      />
+      <ProjectDetailDialog
+        open={projectDialogOpen}
+        onOpenChange={setProjectDialogOpen}
+        project={selectedProject}
+        onRefreshExpenses={refetchExpenses}
+      />
       <BottomNav />
     </div>
   );
