@@ -18,21 +18,24 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { BudgetWithStats } from '@/types/budget';
 import { ProjectWithOwnership } from '@/types/project';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  ArrowLeft, Users, Mail, Plus, Trash2, Loader2,
+  X, Users, Mail, Plus, Trash2, Loader2,
   Wallet, Target, Settings, UserMinus, Send, FolderKanban, Activity, MessageCircle, PiggyBank
 } from 'lucide-react';
 import { FamilyChat } from './FamilyChat';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { FamilyGroupDialog } from './FamilyGroupDialog';
+import { cn } from '@/lib/utils';
 
 interface Props {
   group: FamilyGroup;
@@ -69,8 +72,16 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('accounts');
 
   const totalBalance = sharedSources.reduce((sum, s) => sum + (s.source_balance || 0), 0);
+  const totalBudgets = sharedBudgets.reduce((sum, b) => sum + (b.budget_total || 0), 0);
+  const totalSavingsProgress = sharedSavings.length > 0
+    ? sharedSavings.reduce((sum, s) => sum + (s.goal_current || 0), 0)
+    : 0;
+  const totalSavingsTarget = sharedSavings.reduce((sum, s) => sum + (s.goal_target || 0), 0);
+  const savingsPercentage = totalSavingsTarget > 0 ? Math.min((totalSavingsProgress / totalSavingsTarget) * 100, 100) : 0;
+
   const existingSourceIds = new Set(sharedSources.map(s => s.payment_source_id));
   const existingBudgetIds = new Set(sharedBudgets.map(b => b.budget_id));
   const existingProjectIds = new Set(sharedProjects.map(p => p.project_id));
@@ -112,7 +123,6 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
 
       toast.success(`${t('family.inviteSent')} ${inviteEmail.trim()}`);
       setInviteEmail('');
-      members && fetchMembers();
     } catch (error) {
       console.error('Error sending invitation:', error);
       toast.error(t('family.inviteError'));
@@ -121,52 +131,116 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
     }
   };
 
-  const fetchMembers = () => {
-    // Trigger refetch by calling the hook's refetch
-  };
-
   return (
     <div className="min-h-screen bg-background pb-20">
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.25 }}
-        className="max-w-4xl mx-auto"
-      >
-        {/* Header */}
-        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 px-3 py-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={onBack} className="h-9 w-9">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-              style={{ backgroundColor: `${group.color}20` }}
-            >
-              {group.icon}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="font-bold text-lg truncate">{group.name}</h1>
-              <p className="text-xs text-muted-foreground">{members.length} {t('family.members')}</p>
-            </div>
-            {isOwner && (
-              <Button variant="ghost" size="icon" onClick={() => setEditDialogOpen(true)} className="h-9 w-9">
-                <Settings className="h-4 w-4" />
-              </Button>
-            )}
+      {/* Header - identical to ProjectFullScreenView */}
+      <div className="sticky top-0 z-40 bg-background border-b">
+        <div className="flex items-center gap-3 p-4 max-w-6xl mx-auto">
+          <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
+            <X className="w-5 h-5" />
+          </Button>
+
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+            style={{ backgroundColor: `${group.color}20` }}
+          >
+            {group.icon}
           </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold truncate">{group.name}</h1>
+              <Badge variant="secondary" className="shrink-0">
+                {members.length} {t('family.members')}
+              </Badge>
+            </div>
+          </div>
+
+          {isOwner && (
+            <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)} className="shrink-0">
+              <Settings className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">{t('family.settings', 'Postavke')}</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="max-w-6xl mx-auto p-4 pb-24">
+        {/* Budget Overview Card - identical to ProjectFullScreenView */}
+        <div className="p-4 rounded-lg bg-muted/50 space-y-3 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-muted-foreground" />
+              <span className="font-medium">{t('family.overview', 'Pregled obitelji')}</span>
+            </div>
+          </div>
+          
+          {totalBalance > 0 || sharedBudgets.length > 0 || sharedSavings.length > 0 ? (
+            <>
+              {totalSavingsTarget > 0 && (
+                <Progress 
+                  value={savingsPercentage} 
+                  className="h-3"
+                />
+              )}
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="p-2 sm:p-3 rounded-lg bg-income/10 text-center">
+                  <p className="text-base sm:text-2xl font-bold text-income truncate">{formatAmount(totalBalance)}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">{t('family.sharedBalance', 'Stanje računa')}</p>
+                </div>
+                <div className="p-2 sm:p-3 rounded-lg bg-expense/10 text-center">
+                  <p className="text-base sm:text-2xl font-bold text-expense truncate">{formatAmount(totalBudgets)}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">{t('family.sharedBudgetsTotal', 'Budžeti')}</p>
+                </div>
+                <div className="p-2 sm:p-3 rounded-lg bg-primary/10 text-center">
+                  <p className="text-base sm:text-2xl font-bold text-primary truncate">{formatAmount(totalSavingsProgress)}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">{t('family.savingsProgress', 'Štednja')}</p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-center text-muted-foreground py-2">{t('family.noSharedResources', 'Nema dijeljenih resursa')}</p>
+          )}
         </div>
 
-        <div className="px-3 py-4 space-y-6">
-          {/* Summary Card */}
-          <div className="rounded-xl p-4 bg-card border border-border/50">
-            <p className="text-xs text-muted-foreground mb-1">{t('family.totalSharedBalance')}</p>
-            <p className="text-2xl font-bold">{formatAmount(totalBalance)}</p>
-          </div>
+        {/* Tabs - identical style to ProjectFullScreenView */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-7 w-full mb-6">
+            <TabsTrigger value="accounts" className="gap-1">
+              <Wallet className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('family.accounts', 'Računi')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="budgets" className="gap-1">
+              <Target className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('family.budgets', 'Budžeti')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="gap-1">
+              <FolderKanban className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('family.projects', 'Projekti')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="savings" className="gap-1">
+              <PiggyBank className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('family.savings', 'Štednja')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="members" className="gap-1">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('family.membersTab', 'Članovi')}</span>
+              <Badge variant="secondary" className="ml-1 h-5 px-1 hidden sm:inline-flex">{members.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="gap-1">
+              <MessageCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('family.chat')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="gap-1">
+              <Activity className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('family.activityTab', 'Aktivnost')}</span>
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Shared Sources */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
+          {/* Accounts Tab */}
+          <TabsContent value="accounts" className="m-0 space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="font-semibold flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedAccounts')}
@@ -180,7 +254,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             </div>
 
             {showAddSource && availableSources.length > 0 && (
-              <div className="mb-3 space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
                 <p className="text-xs text-muted-foreground mb-2">{t('family.selectAccountToAdd')}</p>
                 {availableSources.map(ps => (
                   <button
@@ -195,9 +269,8 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 ))}
               </div>
             )}
-
             {showAddSource && availableSources.length === 0 && (
-              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">{t('family.allAccountsAdded')}</p>
+              <p className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">{t('family.allAccountsAdded')}</p>
             )}
 
             {sharedSources.length === 0 ? (
@@ -238,11 +311,11 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 ))}
               </div>
             )}
-          </section>
+          </TabsContent>
 
-          {/* Shared Budgets */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
+          {/* Budgets Tab */}
+          <TabsContent value="budgets" className="m-0 space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="font-semibold flex items-center gap-2">
                 <Target className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedBudgets')}
@@ -256,7 +329,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             </div>
 
             {showAddBudget && availableBudgets.length > 0 && (
-              <div className="mb-3 space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
                 <p className="text-xs text-muted-foreground mb-2">{t('family.selectBudgetToAdd')}</p>
                 {availableBudgets.map(b => (
                   <button
@@ -271,9 +344,8 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 ))}
               </div>
             )}
-
             {showAddBudget && availableBudgets.length === 0 && (
-              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">{t('family.allBudgetsAdded')}</p>
+              <p className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">{t('family.allBudgetsAdded')}</p>
             )}
 
             {sharedBudgets.length === 0 ? (
@@ -281,41 +353,40 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             ) : (
               <div className="space-y-2">
                 {sharedBudgets.map(budget => {
-                  // Find the full budget from the budgets list, or construct a minimal one
                   const fullBudget = budgets.find(b => b.id === budget.budget_id);
                   return (
-                  <div
-                    key={budget.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      if (fullBudget) {
-                        setSelectedBudget(fullBudget);
-                        setBudgetDialogOpen(true);
-                      } else {
-                        toast.info(t('family.budgetNotAvailable'));
-                      }
-                    }}
-                  >
-                    <span className="text-lg">{budget.budget_icon || '💰'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{budget.budget_name || 'Budžet'}</p>
+                    <div
+                      key={budget.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        if (fullBudget) {
+                          setSelectedBudget(fullBudget);
+                          setBudgetDialogOpen(true);
+                        } else {
+                          toast.info(t('family.budgetNotAvailable'));
+                        }
+                      }}
+                    >
+                      <span className="text-lg">{budget.budget_icon || '💰'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{budget.budget_name || 'Budžet'}</p>
+                      </div>
+                      <span className="text-sm font-semibold">{formatAmount(budget.budget_total || 0)}</span>
+                      {isOwner && (
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedBudget(budget.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
-                    <span className="text-sm font-semibold">{formatAmount(budget.budget_total || 0)}</span>
-                    {isOwner && (
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedBudget(budget.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
                   );
                 })}
               </div>
             )}
-          </section>
+          </TabsContent>
 
-          {/* Shared Projects */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
+          {/* Projects Tab */}
+          <TabsContent value="projects" className="m-0 space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="font-semibold flex items-center gap-2">
                 <FolderKanban className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedProjects')}
@@ -329,7 +400,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             </div>
 
             {showAddProject && availableProjects.length > 0 && (
-              <div className="mb-3 space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
                 <p className="text-xs text-muted-foreground mb-2">{t('family.selectProjectToAdd')}</p>
                 {availableProjects.map(p => (
                   <button
@@ -344,9 +415,8 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 ))}
               </div>
             )}
-
             {showAddProject && availableProjects.length === 0 && (
-              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">{t('family.allProjectsAdded')}</p>
+              <p className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">{t('family.allProjectsAdded')}</p>
             )}
 
             {sharedProjects.length === 0 ? (
@@ -356,39 +426,39 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 {sharedProjects.map(project => {
                   const fullProject = projects.find(p => p.id === project.project_id);
                   return (
-                  <div
-                    key={project.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      if (fullProject) {
-                        setSelectedProject(fullProject);
-                        setProjectDialogOpen(true);
-                      } else {
-                        toast.info(t('family.projectNotAvailable'));
-                      }
-                    }}
-                  >
-                    <span className="text-lg">{project.project_icon || '📁'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{project.project_name || 'Projekt'}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{project.project_status || ''}</p>
+                    <div
+                      key={project.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        if (fullProject) {
+                          setSelectedProject(fullProject);
+                          setProjectDialogOpen(true);
+                        } else {
+                          toast.info(t('family.projectNotAvailable'));
+                        }
+                      }}
+                    >
+                      <span className="text-lg">{project.project_icon || '📁'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{project.project_name || 'Projekt'}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{project.project_status || ''}</p>
+                      </div>
+                      <span className="text-sm font-semibold">{formatAmount(project.project_total_budget || 0)}</span>
+                      {isOwner && (
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedProject(project.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
-                    <span className="text-sm font-semibold">{formatAmount(project.project_total_budget || 0)}</span>
-                    {isOwner && (
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedProject(project.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
                   );
                 })}
               </div>
             )}
-          </section>
+          </TabsContent>
 
-          {/* Shared Savings Goals */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
+          {/* Savings Tab */}
+          <TabsContent value="savings" className="m-0 space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="font-semibold flex items-center gap-2">
                 <PiggyBank className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedSavings')}
@@ -402,25 +472,23 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             </div>
 
             {showAddSavings && availableSavings.length > 0 && (
-              <div className="mb-3">
+              <div className="space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
                 <p className="text-xs text-muted-foreground mb-2">{t('family.selectSavingsToAdd')}</p>
-                <div className="space-y-1">
-                  {availableSavings.map(goal => (
-                    <button
-                      key={goal.id}
-                      onClick={() => { addSharedSavings(goal.id); setShowAddSavings(false); }}
-                      className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 text-left text-sm"
-                    >
-                      <span>{goal.icon}</span>
-                      <span className="flex-1">{goal.name}</span>
-                      <span className="text-muted-foreground">{formatAmount(goal.current_amount)} / {formatAmount(goal.target_amount)}</span>
-                    </button>
-                  ))}
-                </div>
+                {availableSavings.map(goal => (
+                  <button
+                    key={goal.id}
+                    onClick={() => { addSharedSavings(goal.id); setShowAddSavings(false); }}
+                    className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 text-left text-sm"
+                  >
+                    <span>{goal.icon}</span>
+                    <span className="flex-1">{goal.name}</span>
+                    <span className="text-muted-foreground">{formatAmount(goal.current_amount)} / {formatAmount(goal.target_amount)}</span>
+                  </button>
+                ))}
               </div>
             )}
             {showAddSavings && availableSavings.length === 0 && (
-              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">{t('family.allSavingsAdded')}</p>
+              <p className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">{t('family.allSavingsAdded')}</p>
             )}
 
             {sharedSavings.length === 0 ? (
@@ -430,46 +498,39 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 {sharedSavings.map(saving => {
                   const progress = saving.goal_target ? Math.min(100, ((saving.goal_current || 0) / saving.goal_target) * 100) : 0;
                   return (
-                  <div
-                    key={saving.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50"
-                  >
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: `${saving.goal_color || '#22c55e'}20` }}>
-                      {saving.goal_icon || '🎯'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{saving.goal_name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: saving.goal_color || '#22c55e' }} />
-                        </div>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{Math.round(progress)}%</span>
+                    <div
+                      key={saving.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50"
+                    >
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: `${saving.goal_color || '#22c55e'}20` }}>
+                        {saving.goal_icon || '🎯'}
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {formatAmount(saving.goal_current || 0)} / {formatAmount(saving.goal_target || 0)}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{saving.goal_name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: saving.goal_color || '#22c55e' }} />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground shrink-0">{Math.round(progress)}%</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {formatAmount(saving.goal_current || 0)} / {formatAmount(saving.goal_target || 0)}
+                        </p>
+                      </div>
+                      {isOwner && (
+                        <Button variant="ghost" size="icon" onClick={() => removeSharedSavings(saving.id)} className="h-7 w-7 text-destructive hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
-                    {isOwner && (
-                      <Button variant="ghost" size="icon" onClick={() => removeSharedSavings(saving.id)} className="h-7 w-7 text-destructive hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
                   );
                 })}
               </div>
             )}
-          </section>
+          </TabsContent>
 
-          {/* Members */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                {t('family.membersCount')} ({members.length})
-              </h2>
-            </div>
-
+          {/* Members Tab */}
+          <TabsContent value="members" className="m-0 space-y-4">
             <div className="space-y-2">
               {members.map(member => (
                 <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50">
@@ -510,7 +571,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
 
             {/* Invite section */}
             {isOwner && (
-              <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+              <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-3">
                 <h3 className="font-medium text-sm flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   {t('family.inviteMember')}
@@ -551,17 +612,32 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 </Button>
               </div>
             )}
-          </section>
 
-          {/* Activity Feed */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold flex items-center gap-2">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                {t('family.activity')}
-              </h2>
+            {/* Danger zone */}
+            {isOwner && (
+              <div className="pt-4 border-t border-border/30">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t('family.deleteGroup')}
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Chat Tab */}
+          <TabsContent value="chat" className="m-0">
+            <div className="rounded-xl p-3 bg-card border border-border/50">
+              <FamilyChat groupId={group.id} groupColor={group.color || '#3b82f6'} />
             </div>
+          </TabsContent>
 
+          {/* Activity Tab */}
+          <TabsContent value="activity" className="m-0 space-y-4">
             {activitiesLoading ? (
               <div className="flex justify-center py-6">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -600,36 +676,9 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                 })}
               </div>
             )}
-          </section>
-          {/* Chat */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                {t('family.chat')}
-              </h2>
-            </div>
-            <div className="rounded-xl p-3 bg-card border border-border/50">
-              <FamilyChat groupId={group.id} groupColor={group.color || '#3b82f6'} />
-            </div>
-          </section>
-
-          {/* Danger zone */}
-          {isOwner && (
-            <section className="pt-4 border-t border-border/30">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setDeleteConfirmOpen(true)}
-                className="gap-1.5"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                {t('family.deleteGroup')}
-              </Button>
-            </section>
-          )}
-        </div>
-      </motion.div>
+          </TabsContent>
+        </Tabs>
+      </div>
 
       <FamilyGroupDialog
         open={editDialogOpen}
