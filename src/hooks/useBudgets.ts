@@ -58,6 +58,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         ...b,
         total_amount: Number(b.total_amount) || 0,
         period_type: b.period_type as BudgetPeriod,
+        is_recurring: b.is_recurring ?? true,
       })));
       setCategories((categoriesData || []).map(c => ({
         ...c,
@@ -87,13 +88,16 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       let startDate: Date;
       let endDate: Date;
 
-      if ((budget.period_type === 'custom' || budget.period_type === 'one_time') && budget.start_date && budget.end_date) {
+      // Non-recurring budgets with dates use fixed date range
+      if (!budget.is_recurring && budget.start_date && budget.end_date) {
+        startDate = new Date(budget.start_date);
+        endDate = new Date(budget.end_date);
+      } else if ((budget.period_type === 'custom' || budget.period_type === 'one_time') && budget.start_date && budget.end_date) {
         startDate = new Date(budget.start_date);
         endDate = new Date(budget.end_date);
       } else if (budget.period_type === 'one_time') {
-        // One-time without dates: use creation date to now
         startDate = new Date(budget.created_at || now);
-        endDate = new Date(now.getFullYear() + 10, 11, 31); // far future
+        endDate = new Date(now.getFullYear() + 10, 11, 31);
       } else if (budget.period_type === 'weekly') {
         const dayOfWeek = now.getDay();
         startDate = new Date(now);
@@ -103,7 +107,6 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         endDate.setDate(startDate.getDate() + 6);
         endDate.setHours(23, 59, 59, 999);
       } else if (budget.period_type === 'biweekly') {
-        // Two-week period starting from Monday of current week
         const dayOfWeek = now.getDay();
         const weekNum = Math.floor((now.getTime() / (7 * 24 * 60 * 60 * 1000)));
         const isEvenWeek = weekNum % 2 === 0;
@@ -125,7 +128,6 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         startDate = new Date(now.getFullYear(), 0, 1);
         endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
       } else {
-        // Monthly (default)
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
       }
@@ -316,6 +318,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
           start_date: budgetData.start_date,
           end_date: budgetData.end_date,
           is_active: true,
+          is_recurring: budgetData.is_recurring ?? true,
           project_id: budgetData.project_id,
         })
         .select()
@@ -365,6 +368,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
           start_date: budgetData.start_date,
           end_date: budgetData.end_date,
           is_active: budgetData.is_active,
+          is_recurring: budgetData.is_recurring ?? true,
           project_id: budgetData.project_id,
           updated_at: new Date().toISOString(),
         })

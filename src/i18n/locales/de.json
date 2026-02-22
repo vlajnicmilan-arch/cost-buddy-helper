@@ -750,6 +750,10 @@
     "reset": "Zurücksetzen",
     "deleteConfirmTitle": "Budget löschen?",
     "deleteConfirmDesc": "Diese Aktion löscht das Budget \"{{name}}\" und alle Kategorielimits dauerhaft. Dies kann nicht rückgängig gemacht werden.",
+    "recurring": "Wiederkehrend",
+    "recurringDesc": "Budget wird automatisch jede Periode zurückgesetzt",
+    "nonRecurringDesc": "Budget gilt nur für eine Periode",
+    "oneTime": "Einmalig",
     "status": {
       "active": "Aktiv",
       "warning": "Warnung",

@@ -12,7 +12,8 @@ import {
   Minus,
   Calendar,
   Pencil,
-  Trash2
+  Trash2,
+  Repeat
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -160,6 +161,11 @@ export const BudgetCard = ({
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="capitalize">{t(`budget.period.${budget.period_type}`)}</span>
+                {!budget.is_recurring && (
+                  <Badge variant="outline" className="text-[10px] py-0 px-1">
+                    {t('budget.oneTime', 'Jednokratno')}
+                  </Badge>
+                )}
                 {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
                   <>
                     <span>•</span>

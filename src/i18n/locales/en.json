@@ -803,6 +803,10 @@
     "reset": "Reset",
     "deleteConfirmTitle": "Delete budget?",
     "deleteConfirmDesc": "This action will permanently delete the budget \"{{name}}\" and all its category limits. This cannot be undone.",
+    "recurring": "Recurring",
+    "recurringDesc": "Budget automatically resets each period",
+    "nonRecurringDesc": "Budget covers only one period",
+    "oneTime": "One-time",
     "status": {
       "active": "Active",
       "warning": "Warning",
