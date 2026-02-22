@@ -765,8 +765,12 @@
       "overBudget": "Prekoračen"
     },
     "period": {
+      "one_time": "Jednokratni",
       "weekly": "Tjedni",
+      "biweekly": "Dvotjedni",
       "monthly": "Mjesečni",
+      "quarterly": "Tromjesečni",
+      "semi_annual": "Šestomjesečni",
       "yearly": "Godišnji",
       "custom": "Prilagođeni"
     },

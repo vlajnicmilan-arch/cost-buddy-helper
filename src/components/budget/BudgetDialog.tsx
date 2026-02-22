@@ -217,8 +217,8 @@ export const BudgetDialog = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(BUDGET_PERIOD_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  {Object.keys(BUDGET_PERIOD_LABELS).map((key) => (
+                    <SelectItem key={key} value={key}>{t(`budget.period.${key}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -238,7 +238,7 @@ export const BudgetDialog = ({
           </div>
 
           {/* Dates */}
-          {periodType === 'custom' && (
+          {(periodType === 'custom' || periodType === 'one_time') && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="startDate">{t('common.startDate', 'Početak')}</Label>

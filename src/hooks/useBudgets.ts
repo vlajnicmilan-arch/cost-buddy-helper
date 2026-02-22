@@ -87,9 +87,13 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       let startDate: Date;
       let endDate: Date;
 
-      if (budget.period_type === 'custom' && budget.start_date && budget.end_date) {
+      if ((budget.period_type === 'custom' || budget.period_type === 'one_time') && budget.start_date && budget.end_date) {
         startDate = new Date(budget.start_date);
         endDate = new Date(budget.end_date);
+      } else if (budget.period_type === 'one_time') {
+        // One-time without dates: use creation date to now
+        startDate = new Date(budget.created_at || now);
+        endDate = new Date(now.getFullYear() + 10, 11, 31); // far future
       } else if (budget.period_type === 'weekly') {
         const dayOfWeek = now.getDay();
         startDate = new Date(now);
@@ -98,6 +102,25 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6);
         endDate.setHours(23, 59, 59, 999);
+      } else if (budget.period_type === 'biweekly') {
+        // Two-week period starting from Monday of current week
+        const dayOfWeek = now.getDay();
+        const weekNum = Math.floor((now.getTime() / (7 * 24 * 60 * 60 * 1000)));
+        const isEvenWeek = weekNum % 2 === 0;
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - dayOfWeek - (isEvenWeek ? 0 : 7));
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 13);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (budget.period_type === 'quarterly') {
+        const quarter = Math.floor(now.getMonth() / 3);
+        startDate = new Date(now.getFullYear(), quarter * 3, 1);
+        endDate = new Date(now.getFullYear(), quarter * 3 + 3, 0, 23, 59, 59, 999);
+      } else if (budget.period_type === 'semi_annual') {
+        const half = now.getMonth() < 6 ? 0 : 1;
+        startDate = new Date(now.getFullYear(), half * 6, 1);
+        endDate = new Date(now.getFullYear(), half * 6 + 6, 0, 23, 59, 59, 999);
       } else if (budget.period_type === 'yearly') {
         startDate = new Date(now.getFullYear(), 0, 1);
         endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);

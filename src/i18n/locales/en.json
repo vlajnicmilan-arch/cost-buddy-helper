@@ -809,8 +809,12 @@
       "overBudget": "Over Budget"
     },
     "period": {
+      "one_time": "One-time",
       "weekly": "Weekly",
+      "biweekly": "Biweekly",
       "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "semi_annual": "Semi-annual",
       "yearly": "Yearly",
       "custom": "Custom"
     },
