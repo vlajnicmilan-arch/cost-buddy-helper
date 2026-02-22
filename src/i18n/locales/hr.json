@@ -1002,6 +1002,10 @@
     "projectNotAvailable": "Projekt nije dostupan za pregled",
     "you": "ti",
     "member": "Član",
-    "viewer": "Preglednik"
+    "viewer": "Preglednik",
+    "sharedSavings": "Dijeljeni ciljevi štednje",
+    "selectSavingsToAdd": "Odaberi cilj štednje za dodavanje:",
+    "allSavingsAdded": "Svi ciljevi štednje su već dodani u grupu.",
+    "noSavings": "Nema dodanih ciljeva štednje"
   }
 }

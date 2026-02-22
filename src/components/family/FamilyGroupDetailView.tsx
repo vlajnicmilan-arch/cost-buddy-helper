@@ -9,6 +9,7 @@ import { useBudgets } from '@/hooks/useBudgets';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { BottomNav } from '@/components/BottomNav';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
 import { BudgetDetailDialog } from '@/components/budget/BudgetDetailDialog';
@@ -24,7 +25,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Users, Mail, Plus, Trash2, Loader2,
-  Wallet, Target, Settings, UserMinus, Send, FolderKanban, Activity, MessageCircle
+  Wallet, Target, Settings, UserMinus, Send, FolderKanban, Activity, MessageCircle, PiggyBank
 } from 'lucide-react';
 import { FamilyChat } from './FamilyChat';
 import { motion } from 'framer-motion';
@@ -45,12 +46,13 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { members, invitations, loading: membersLoading, isOwner, updateMemberRole, removeMember, generateInviteLink, cancelInvitation } = useFamilyMembers(group.id);
-  const { sharedSources, sharedBudgets, sharedProjects, loading: resourcesLoading, addSharedSource, removeSharedSource, addSharedBudget, removeSharedBudget, addSharedProject, removeSharedProject } = useFamilySharedResources(group.id);
+  const { sharedSources, sharedBudgets, sharedProjects, sharedSavings, loading: resourcesLoading, addSharedSource, removeSharedSource, addSharedBudget, removeSharedBudget, addSharedProject, removeSharedProject, addSharedSavings, removeSharedSavings } = useFamilySharedResources(group.id);
   const { customPaymentSources: paymentSources } = useCustomPaymentSources();
   const { budgets } = useBudgets({});
   const { projects } = useProjects();
   const { activities, loading: activitiesLoading } = useFamilyActivity(group.id);
   const { allExpenses, updateExpense, deleteExpense, refetch: refetchExpenses } = useExpenses();
+  const { goals: savingsGoals } = useSavingsGoals();
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<FamilyRole>('member');
@@ -60,6 +62,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const [showAddSource, setShowAddSource] = useState(false);
   const [showAddBudget, setShowAddBudget] = useState(false);
   const [showAddProject, setShowAddProject] = useState(false);
+  const [showAddSavings, setShowAddSavings] = useState(false);
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<BudgetWithStats | null>(null);
@@ -71,10 +74,12 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const existingSourceIds = new Set(sharedSources.map(s => s.payment_source_id));
   const existingBudgetIds = new Set(sharedBudgets.map(b => b.budget_id));
   const existingProjectIds = new Set(sharedProjects.map(p => p.project_id));
+  const existingSavingsIds = new Set(sharedSavings.map(s => s.savings_goal_id));
 
   const availableSources = paymentSources.filter(ps => !existingSourceIds.has(ps.id));
   const availableBudgets = budgets.filter(b => !existingBudgetIds.has(b.id));
   const availableProjects = projects.filter(p => !existingProjectIds.has(p.id));
+  const availableSavings = savingsGoals.filter(g => !existingSavingsIds.has(g.id));
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) return;
@@ -371,6 +376,81 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                     <span className="text-sm font-semibold">{formatAmount(project.project_total_budget || 0)}</span>
                     {isOwner && (
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedProject(project.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* Shared Savings Goals */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <PiggyBank className="h-4 w-4 text-muted-foreground" />
+                {t('family.sharedSavings')}
+              </h2>
+              {isOwner && (
+                <Button variant="ghost" size="sm" onClick={() => setShowAddSavings(!showAddSavings)} className="h-8 gap-1">
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('family.add')}
+                </Button>
+              )}
+            </div>
+
+            {showAddSavings && availableSavings.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-muted-foreground mb-2">{t('family.selectSavingsToAdd')}</p>
+                <div className="space-y-1">
+                  {availableSavings.map(goal => (
+                    <button
+                      key={goal.id}
+                      onClick={() => { addSharedSavings(goal.id); setShowAddSavings(false); }}
+                      className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 text-left text-sm"
+                    >
+                      <span>{goal.icon}</span>
+                      <span className="flex-1">{goal.name}</span>
+                      <span className="text-muted-foreground">{formatAmount(goal.current_amount)} / {formatAmount(goal.target_amount)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {showAddSavings && availableSavings.length === 0 && (
+              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">{t('family.allSavingsAdded')}</p>
+            )}
+
+            {sharedSavings.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">{t('family.noSavings')}</p>
+            ) : (
+              <div className="space-y-2">
+                {sharedSavings.map(saving => {
+                  const progress = saving.goal_target ? Math.min(100, ((saving.goal_current || 0) / saving.goal_target) * 100) : 0;
+                  return (
+                  <div
+                    key={saving.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50"
+                  >
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: `${saving.goal_color || '#22c55e'}20` }}>
+                      {saving.goal_icon || '🎯'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{saving.goal_name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: saving.goal_color || '#22c55e' }} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{Math.round(progress)}%</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {formatAmount(saving.goal_current || 0)} / {formatAmount(saving.goal_target || 0)}
+                      </p>
+                    </div>
+                    {isOwner && (
+                      <Button variant="ghost" size="icon" onClick={() => removeSharedSavings(saving.id)} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}

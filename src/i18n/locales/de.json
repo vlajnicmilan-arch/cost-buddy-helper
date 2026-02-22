@@ -993,6 +993,10 @@
     "projectNotAvailable": "Projekt nicht verfügbar",
     "you": "du",
     "member": "Mitglied",
-    "viewer": "Betrachter"
+    "viewer": "Betrachter",
+    "sharedSavings": "Geteilte Sparziele",
+    "selectSavingsToAdd": "Sparziel zum Hinzufügen auswählen:",
+    "allSavingsAdded": "Alle Sparziele wurden bereits zur Gruppe hinzugefügt.",
+    "noSavings": "Keine Sparziele hinzugefügt"
   }
 }

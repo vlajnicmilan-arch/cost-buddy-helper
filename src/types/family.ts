@@ -40,7 +40,6 @@ export interface FamilySharedSource {
   payment_source_id: string;
   added_by: string;
   created_at: string;
-  // Joined data
   source_name?: string;
   source_icon?: string;
   source_color?: string;
@@ -53,7 +52,6 @@ export interface FamilySharedBudget {
   budget_id: string;
   added_by: string;
   created_at: string;
-  // Joined data
   budget_name?: string;
   budget_icon?: string;
   budget_color?: string;
@@ -66,12 +64,25 @@ export interface FamilySharedProject {
   project_id: string;
   added_by: string;
   created_at: string;
-  // Joined data
   project_name?: string;
   project_icon?: string;
   project_color?: string;
   project_status?: string;
   project_total_budget?: number;
+}
+
+export interface FamilySharedSavings {
+  id: string;
+  group_id: string;
+  savings_goal_id: string;
+  added_by: string;
+  created_at: string;
+  goal_name?: string;
+  goal_icon?: string;
+  goal_color?: string;
+  goal_target?: number;
+  goal_current?: number;
+  goal_completed?: boolean;
 }
 
 export const FAMILY_ROLE_LABELS: Record<FamilyRole, string> = {

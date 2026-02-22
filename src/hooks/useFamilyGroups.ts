@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { FamilyGroup, FamilyMember, FamilyInvitation, FamilyRole, FamilySharedSource, FamilySharedBudget, FamilySharedProject } from '@/types/family';
+import { FamilyGroup, FamilyMember, FamilyInvitation, FamilyRole, FamilySharedSource, FamilySharedBudget, FamilySharedProject, FamilySharedSavings } from '@/types/family';
 import { toast } from 'sonner';
 
 export const useFamilyGroups = () => {
@@ -282,6 +282,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
   const [sharedSources, setSharedSources] = useState<FamilySharedSource[]>([]);
   const [sharedBudgets, setSharedBudgets] = useState<FamilySharedBudget[]>([]);
   const [sharedProjects, setSharedProjects] = useState<FamilySharedProject[]>([]);
+  const [sharedSavings, setSharedSavings] = useState<FamilySharedSavings[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchResources = useCallback(async () => {
@@ -289,6 +290,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       setSharedSources([]);
       setSharedBudgets([]);
       setSharedProjects([]);
+      setSharedSavings([]);
       setLoading(false);
       return;
     }
@@ -385,6 +387,38 @@ export const useFamilySharedResources = (groupId: string | null) => {
         }));
       } else {
         setSharedProjects([]);
+      }
+
+      // Fetch shared savings goals
+      const { data: savingsData, error: savingsError } = await supabase
+        .from('family_shared_savings' as any)
+        .select('*')
+        .eq('group_id', groupId);
+
+      if (savingsError) throw savingsError;
+
+      if (savingsData && savingsData.length > 0) {
+        const goalIds = (savingsData as any[]).map(s => s.savings_goal_id);
+        const { data: goalDetails } = await supabase
+          .from('savings_goals')
+          .select('id, name, icon, color, target_amount, current_amount, is_completed')
+          .in('id', goalIds);
+
+        const detailsMap = new Map(goalDetails?.map(d => [d.id, d]) || []);
+        setSharedSavings((savingsData as any[]).map(s => {
+          const detail = detailsMap.get(s.savings_goal_id);
+          return {
+            ...s,
+            goal_name: detail?.name,
+            goal_icon: detail?.icon,
+            goal_color: detail?.color,
+            goal_target: detail?.target_amount,
+            goal_current: detail?.current_amount,
+            goal_completed: detail?.is_completed
+          };
+        }));
+      } else {
+        setSharedSavings([]);
       }
     } catch (error) {
       console.error('Error fetching shared resources:', error);
@@ -543,10 +577,54 @@ export const useFamilySharedResources = (groupId: string | null) => {
     }
   };
 
+  const addSharedSavings = async (savingsGoalId: string) => {
+    if (!groupId || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('family_shared_savings' as any)
+        .insert({
+          group_id: groupId,
+          savings_goal_id: savingsGoalId,
+          added_by: user.id
+        });
+
+      if (error) throw error;
+      toast.success('Cilj štednje dodan u grupu');
+      await logActivity('added_savings', 'Dodao/la cilj štednje u grupu', { savings_goal_id: savingsGoalId });
+      fetchResources();
+    } catch (error: any) {
+      if (error.code === '23505') {
+        toast.error('Cilj štednje je već dodan u grupu');
+      } else {
+        console.error('Error adding shared savings:', error);
+        toast.error('Greška');
+      }
+    }
+  };
+
+  const removeSharedSavings = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('family_shared_savings' as any)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setSharedSavings(prev => prev.filter(s => s.id !== id));
+      toast.success('Cilj štednje uklonjen iz grupe');
+      await logActivity('removed_savings', 'Uklonio/la cilj štednje iz grupe');
+    } catch (error) {
+      console.error('Error removing shared savings:', error);
+      toast.error('Greška');
+    }
+  };
+
   return {
     sharedSources,
     sharedBudgets,
     sharedProjects,
+    sharedSavings,
     loading,
     addSharedSource,
     removeSharedSource,
@@ -554,6 +632,8 @@ export const useFamilySharedResources = (groupId: string | null) => {
     removeSharedBudget,
     addSharedProject,
     removeSharedProject,
+    addSharedSavings,
+    removeSharedSavings,
     logActivity,
     refetch: fetchResources
   };
