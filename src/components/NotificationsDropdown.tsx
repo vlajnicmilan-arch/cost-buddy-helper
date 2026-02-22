@@ -172,7 +172,11 @@ export const NotificationsDropdown = () => {
                 const invitationType = notification.type === 'project_invitation' ? 'project' : 
                   notification.type === 'budget_invitation' ? 'budget' : 
                   notification.type === 'family_invitation' ? 'family' : 'payment_source';
-                const invitationId = (notification.data as any)?.invitation_id;
+                // Safety: parse data if it comes as a string from the DB
+                const notificationData = typeof notification.data === 'string' 
+                  ? (() => { try { return JSON.parse(notification.data as unknown as string); } catch { return notification.data; } })()
+                  : (notification.data || {});
+                const invitationId = notificationData?.invitation_id;
 
                 return (
                   <div
@@ -181,7 +185,7 @@ export const NotificationsDropdown = () => {
                       'px-3 py-2 hover:bg-muted/50 cursor-pointer flex flex-col gap-2 group relative',
                       !notification.read && 'bg-primary/5'
                     )}
-                    onClick={() => !isInvitation && handleNotificationClick(notification.id, notification.read, notification.type, (notification.data || {}) as Record<string, unknown>)}
+                    onClick={() => !isInvitation && handleNotificationClick(notification.id, notification.read, notification.type, notificationData as Record<string, unknown>)}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-0.5">
