@@ -26,6 +26,32 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       onBalanceUpdated: options?.onBalanceUpdated,
     });
 
+  // Normalize merchant name: strip legal suffixes, punctuation, lowercase
+  const normalizeMerchant = useCallback((name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/\b(d\.o\.o\.?|d\.d\.?|j\.d\.o\.o\.?|obrt|trgovina|trgovački|poslovanje|hotel)\b/gi, '')
+      .replace(/[.,&\-_'"()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }, []);
+
+  // Check if two merchant names are similar (fuzzy match)
+  const areMerchantsSimilar = useCallback((a: string, b: string): boolean => {
+    const na = normalizeMerchant(a);
+    const nb = normalizeMerchant(b);
+    if (na === nb) return true;
+    if (na.length < 2 || nb.length < 2) return false;
+    if (na.includes(nb) || nb.includes(na)) return true;
+    const wa = na.split(/\s+/).filter(w => w.length >= 3);
+    const wb = nb.split(/\s+/).filter(w => w.length >= 3);
+    if (wa.length === 0 || wb.length === 0) return false;
+    const common = wa.filter(w => wb.some(w2 => w2.includes(w) || w.includes(w2)));
+    const minLen = Math.min(wa.length, wb.length);
+    return common.length / minLen >= 0.5;
+  }, [normalizeMerchant]);
+
   // Duplicate detection utilities
   const findDuplicates = useCallback((transactions: ParsedTransaction[]): {
     duplicates: ParsedTransaction[];
@@ -39,20 +65,24 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         const sameDate = existing.date.toDateString() === tx.date.toDateString();
         const sameAmount = Math.abs(Number(existing.amount) - tx.amount) < 0.01;
         const sameType = existing.type === tx.type;
+        if (!sameDate || !sameAmount || !sameType) return false;
+
+        // Fuzzy merchant match
+        if (existing.merchant_name && tx.merchant_name &&
+            areMerchantsSimilar(existing.merchant_name, tx.merchant_name)) return true;
+
         const existingDesc = existing.description.toLowerCase();
         const txDesc = tx.description.toLowerCase();
-        const similarDesc = existingDesc === txDesc ||
+        return existingDesc === txDesc ||
           existingDesc.includes(txDesc) ||
-          txDesc.includes(existingDesc) ||
-          (existing.merchant_name && tx.merchant_name &&
-            existing.merchant_name.toLowerCase() === tx.merchant_name.toLowerCase());
-        return sameDate && sameAmount && sameType && similarDesc;
+          txDesc.includes(existingDesc);
       });
       isDuplicate ? duplicates.push(tx) : unique.push(tx);
     }
 
     return { duplicates, unique };
-  }, [expenses]);
+  }, [expenses, areMerchantsSimilar]);
+
 
   const checkDuplicate = useCallback((transaction: {
     amount: number;
@@ -68,15 +98,15 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       const sameType = existing.type === transaction.type;
       if (!sameDate || !sameAmount || !sameType) return false;
 
+      // If both have merchant names, use fuzzy merchant matching as primary signal
+      if (existing.merchant_name && transaction.merchant_name) {
+        if (areMerchantsSimilar(existing.merchant_name, transaction.merchant_name)) return true;
+      }
+
       const existingDesc = existing.description.toLowerCase().trim();
       const newDesc = transaction.description.toLowerCase().trim();
 
-      if (existingDesc === newDesc) {
-        if (existing.merchant_name && transaction.merchant_name) {
-          if (existing.merchant_name.toLowerCase().trim() !== transaction.merchant_name.toLowerCase().trim()) return false;
-        }
-        return true;
-      }
+      if (existingDesc === newDesc) return true;
 
       const existingWords = existingDesc.split(/\s+/).filter(w => w.length >= 3);
       const newWords = newDesc.split(/\s+/).filter(w => w.length >= 3);
@@ -86,18 +116,12 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       if (totalUniqueWords > 0 && commonWords.length / totalUniqueWords < 0.5) return false;
       if (existingDesc.includes(newDesc) || newDesc.includes(existingDesc)) return true;
 
-      if (existing.merchant_name && transaction.merchant_name) {
-        const em = existing.merchant_name.toLowerCase().trim();
-        const nm = transaction.merchant_name.toLowerCase().trim();
-        if (em === nm && commonWords.length >= 2) return true;
-      }
-
       if (totalUniqueWords > 0 && commonWords.length / totalUniqueWords >= 0.6) return true;
       return false;
     });
 
     return match || null;
-  }, [expenses]);
+  }, [expenses, areMerchantsSimilar]);
 
   // Derived totals (computed from filtered dashboardExpenses)
   const now = new Date();
