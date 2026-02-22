@@ -224,7 +224,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               onClick={() => !reorderMode && onSourceClick?.(source)}
-              className={`p-3 rounded-lg border bg-card transition-all duration-200 touch-none ${
+              className={`p-3 rounded-lg border bg-card transition-all duration-200 ${reorderMode ? 'touch-none' : ''} ${
                 reorderMode 
                   ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' 
                   : onSourceClick ? 'hover:bg-muted/50 cursor-pointer' : 'hover:bg-muted/50'
