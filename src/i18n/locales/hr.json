@@ -115,7 +115,16 @@
     "searchTransactions": "Pretraži transakcije po opisu, trgovini ili iznosu...",
     "searchResults": "Rezultati pretrage",
     "noSearchResults": "Nema rezultata za",
-    "showingResults": "Prikazano {{count}} rezultata"
+    "showingResults": "Prikazano {{count}} rezultata",
+    "cashflow": {
+      "title": "Cashflow prognoza (8 tjedana)",
+      "thisWeek": "Ovaj tj.",
+      "projectedIncome": "Očekivani prihod",
+      "projectedExpenses": "Očekivani troškovi",
+      "netFlow": "Neto tok",
+      "cumulative": "Kumulativno",
+      "basedOn": "Bazirano na ponavljajućim transakcijama i ratama"
+    }
   },
   "nav": {
     "dashboard": "Pregled",

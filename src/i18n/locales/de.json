@@ -83,7 +83,16 @@
     "searchTransactions": "Transaktionen nach Beschreibung, Händler oder Betrag suchen...",
     "searchResults": "Suchergebnisse",
     "noSearchResults": "Keine Ergebnisse für",
-    "showingResults": "{{count}} Ergebnisse angezeigt"
+    "showingResults": "{{count}} Ergebnisse angezeigt",
+    "cashflow": {
+      "title": "Cashflow-Prognose (8 Wochen)",
+      "thisWeek": "Diese Wo.",
+      "projectedIncome": "Erwartete Einnahmen",
+      "projectedExpenses": "Erwartete Ausgaben",
+      "netFlow": "Netto-Fluss",
+      "cumulative": "Kumuliert",
+      "basedOn": "Basierend auf wiederkehrenden Transaktionen und Raten"
+    }
   },
   "nav": {
     "dashboard": "Übersicht",
