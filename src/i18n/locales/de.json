@@ -906,5 +906,14 @@
     "errorAdding": "Fehler beim Hinzufügen",
     "errorUpdating": "Fehler beim Aktualisieren",
     "errorDeleting": "Fehler beim Löschen"
+  },
+  "quickAdd": {
+    "title": "Schnelleingabe",
+    "expense": "Ausgabe",
+    "income": "Einnahme",
+    "descriptionPlaceholder": "Beschreibung (optional)",
+    "hint": "Enter zum Bestätigen • Kategorie wird automatisch erkannt",
+    "expenseAdded": "Ausgabe hinzugefügt",
+    "incomeAdded": "Einnahme hinzugefügt"
   }
 }

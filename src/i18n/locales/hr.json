@@ -915,5 +915,14 @@
     "errorAdding": "Greška pri dodavanju cilja",
     "errorUpdating": "Greška pri ažuriranju cilja",
     "errorDeleting": "Greška pri brisanju cilja"
+  },
+  "quickAdd": {
+    "title": "Brzi unos",
+    "expense": "Trošak",
+    "income": "Prihod",
+    "descriptionPlaceholder": "Opis (opcionalno)",
+    "hint": "Enter za potvrdu • kategorija se prepoznaje automatski",
+    "expenseAdded": "Trošak dodan",
+    "incomeAdded": "Prihod dodan"
   }
 }

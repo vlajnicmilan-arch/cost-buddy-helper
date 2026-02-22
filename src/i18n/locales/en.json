@@ -1074,5 +1074,14 @@
     "errorAdding": "Error adding goal",
     "errorUpdating": "Error updating goal",
     "errorDeleting": "Error deleting goal"
+  },
+  "quickAdd": {
+    "title": "Quick Add",
+    "expense": "Expense",
+    "income": "Income",
+    "descriptionPlaceholder": "Description (optional)",
+    "hint": "Enter to confirm • category is auto-detected",
+    "expenseAdded": "Expense added",
+    "incomeAdded": "Income added"
   }
 }
