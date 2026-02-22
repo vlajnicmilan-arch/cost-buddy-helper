@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { FolderKanban, Target, Grid3X3 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CategoryBreakdown } from '@/components/CategoryBreakdown';
+import { SavingsGoalsSection } from '@/components/savings';
 import { Expense, Category } from '@/types/expense';
 
 interface QuickLinksSectionProps {
@@ -74,6 +75,9 @@ export const QuickLinksSection = ({
           </div>
         </motion.div>
       )}
+
+      {/* Savings Goals */}
+      {!isLocalMode && <SavingsGoalsSection />}
 
       {/* Category breakdown */}
       <Accordion type="multiple" className="space-y-4">
