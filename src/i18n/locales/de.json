@@ -756,8 +756,12 @@
       "overBudget": "Überschritten"
     },
     "period": {
+      "one_time": "Einmalig",
       "weekly": "Wöchentlich",
+      "biweekly": "Zweiwöchentlich",
       "monthly": "Monatlich",
+      "quarterly": "Vierteljährlich",
+      "semi_annual": "Halbjährlich",
       "yearly": "Jährlich",
       "custom": "Benutzerdefiniert"
     },

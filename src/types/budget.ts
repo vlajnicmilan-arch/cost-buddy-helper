@@ -1,4 +1,4 @@
-export type BudgetPeriod = 'weekly' | 'monthly' | 'yearly' | 'custom';
+export type BudgetPeriod = 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'semi_annual' | 'yearly' | 'custom';
 export type BudgetStatus = 'active' | 'paused' | 'completed';
 
 export interface Budget {
@@ -55,8 +55,12 @@ export interface BudgetCategoryWithStats extends BudgetCategory {
 }
 
 export const BUDGET_PERIOD_LABELS: Record<BudgetPeriod, string> = {
+  one_time: 'Jednokratni',
   weekly: 'Tjedni',
+  biweekly: 'Dvotjedni',
   monthly: 'Mjesečni',
+  quarterly: 'Tromjesečni',
+  semi_annual: 'Šestomjesečni',
   yearly: 'Godišnji',
   custom: 'Prilagođeni'
 };
