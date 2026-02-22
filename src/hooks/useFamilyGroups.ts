@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { FamilyGroup, FamilyMember, FamilyInvitation, FamilyRole, FamilySharedSource, FamilySharedBudget } from '@/types/family';
+import { FamilyGroup, FamilyMember, FamilyInvitation, FamilyRole, FamilySharedSource, FamilySharedBudget, FamilySharedProject } from '@/types/family';
 import { toast } from 'sonner';
 
 export const useFamilyGroups = () => {
@@ -281,12 +281,14 @@ export const useFamilySharedResources = (groupId: string | null) => {
   const { user } = useAuth();
   const [sharedSources, setSharedSources] = useState<FamilySharedSource[]>([]);
   const [sharedBudgets, setSharedBudgets] = useState<FamilySharedBudget[]>([]);
+  const [sharedProjects, setSharedProjects] = useState<FamilySharedProject[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchResources = useCallback(async () => {
     if (!groupId || !user) {
       setSharedSources([]);
       setSharedBudgets([]);
+      setSharedProjects([]);
       setLoading(false);
       return;
     }
@@ -352,6 +354,37 @@ export const useFamilySharedResources = (groupId: string | null) => {
         }));
       } else {
         setSharedBudgets([]);
+      }
+
+      // Fetch shared projects
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('family_shared_projects' as any)
+        .select('*')
+        .eq('group_id', groupId);
+
+      if (projectsError) throw projectsError;
+
+      if (projectsData && projectsData.length > 0) {
+        const projectIds = (projectsData as any[]).map(p => p.project_id);
+        const { data: projectDetails } = await supabase
+          .from('projects')
+          .select('id, name, icon, color, status, total_budget')
+          .in('id', projectIds);
+
+        const detailsMap = new Map(projectDetails?.map(d => [d.id, d]) || []);
+        setSharedProjects((projectsData as any[]).map(p => {
+          const detail = detailsMap.get(p.project_id);
+          return {
+            ...p,
+            project_name: detail?.name,
+            project_icon: detail?.icon,
+            project_color: detail?.color,
+            project_status: detail?.status,
+            project_total_budget: detail?.total_budget
+          };
+        }));
+      } else {
+        setSharedProjects([]);
       }
     } catch (error) {
       console.error('Error fetching shared resources:', error);
@@ -446,14 +479,58 @@ export const useFamilySharedResources = (groupId: string | null) => {
     }
   };
 
+  const addSharedProject = async (projectId: string) => {
+    if (!groupId || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('family_shared_projects' as any)
+        .insert({
+          group_id: groupId,
+          project_id: projectId,
+          added_by: user.id
+        });
+
+      if (error) throw error;
+      toast.success('Projekt dodan u grupu');
+      fetchResources();
+    } catch (error: any) {
+      if (error.code === '23505') {
+        toast.error('Projekt je već dodan u grupu');
+      } else {
+        console.error('Error adding shared project:', error);
+        toast.error('Greška');
+      }
+    }
+  };
+
+  const removeSharedProject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('family_shared_projects' as any)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setSharedProjects(prev => prev.filter(p => p.id !== id));
+      toast.success('Projekt uklonjen iz grupe');
+    } catch (error) {
+      console.error('Error removing shared project:', error);
+      toast.error('Greška');
+    }
+  };
+
   return {
     sharedSources,
     sharedBudgets,
+    sharedProjects,
     loading,
     addSharedSource,
     removeSharedSource,
     addSharedBudget,
     removeSharedBudget,
+    addSharedProject,
+    removeSharedProject,
     refetch: fetchResources
   };
 };

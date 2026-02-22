@@ -60,6 +60,20 @@ export interface FamilySharedBudget {
   budget_total?: number;
 }
 
+export interface FamilySharedProject {
+  id: string;
+  group_id: string;
+  project_id: string;
+  added_by: string;
+  created_at: string;
+  // Joined data
+  project_name?: string;
+  project_icon?: string;
+  project_color?: string;
+  project_status?: string;
+  project_total_budget?: number;
+}
+
 export const FAMILY_ROLE_LABELS: Record<FamilyRole, string> = {
   owner: 'Vlasnik',
   member: 'Član',

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FamilyGroup, FAMILY_ROLE_LABELS, FamilyRole } from '@/types/family';
 import { useFamilyMembers, useFamilySharedResources } from '@/hooks/useFamilyGroups';
+import { useProjects } from '@/hooks/useProjects';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { Input } from '@/components/ui/input';
 import { useBudgets } from '@/hooks/useBudgets';
@@ -15,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Users, Mail, Plus, Trash2, Loader2,
-  Wallet, Target, Settings, UserMinus, Send
+  Wallet, Target, Settings, UserMinus, Send, FolderKanban
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -32,9 +33,10 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { members, invitations, loading: membersLoading, isOwner, updateMemberRole, removeMember, generateInviteLink, cancelInvitation } = useFamilyMembers(group.id);
-  const { sharedSources, sharedBudgets, loading: resourcesLoading, addSharedSource, removeSharedSource, addSharedBudget, removeSharedBudget } = useFamilySharedResources(group.id);
+  const { sharedSources, sharedBudgets, sharedProjects, loading: resourcesLoading, addSharedSource, removeSharedSource, addSharedBudget, removeSharedBudget, addSharedProject, removeSharedProject } = useFamilySharedResources(group.id);
   const { customPaymentSources: paymentSources } = useCustomPaymentSources();
   const { budgets } = useBudgets({});
+  const { projects } = useProjects();
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<FamilyRole>('member');
@@ -43,13 +45,16 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [showAddSource, setShowAddSource] = useState(false);
   const [showAddBudget, setShowAddBudget] = useState(false);
+  const [showAddProject, setShowAddProject] = useState(false);
 
   const totalBalance = sharedSources.reduce((sum, s) => sum + (s.source_balance || 0), 0);
   const existingSourceIds = new Set(sharedSources.map(s => s.payment_source_id));
   const existingBudgetIds = new Set(sharedBudgets.map(b => b.budget_id));
+  const existingProjectIds = new Set(sharedProjects.map(p => p.project_id));
 
   const availableSources = paymentSources.filter(ps => !existingSourceIds.has(ps.id));
   const availableBudgets = budgets.filter(b => !existingBudgetIds.has(b.id));
+  const availableProjects = projects.filter(p => !existingProjectIds.has(p.id));
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) return;
@@ -241,6 +246,65 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                     <span className="text-sm font-semibold">{formatAmount(budget.budget_total || 0)}</span>
                     {isOwner && (
                       <Button variant="ghost" size="icon" onClick={() => removeSharedBudget(budget.id)} className="h-7 w-7 text-destructive hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Shared Projects */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <FolderKanban className="h-4 w-4 text-muted-foreground" />
+                Dijeljeni projekti
+              </h2>
+              {isOwner && (
+                <Button variant="ghost" size="sm" onClick={() => setShowAddProject(!showAddProject)} className="h-8 gap-1">
+                  <Plus className="h-3.5 w-3.5" />
+                  Dodaj
+                </Button>
+              )}
+            </div>
+
+            {showAddProject && availableProjects.length > 0 && (
+              <div className="mb-3 space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/50">
+                <p className="text-xs text-muted-foreground mb-2">Odaberi projekt za dodavanje:</p>
+                {availableProjects.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => { addSharedProject(p.id); setShowAddProject(false); }}
+                    className="w-full flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-background transition-colors text-left"
+                  >
+                    <span className="text-lg">{p.icon || '📁'}</span>
+                    <span className="text-sm font-medium flex-1">{p.name}</span>
+                    <span className="text-xs text-muted-foreground">{formatAmount(p.total_budget)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {showAddProject && availableProjects.length === 0 && (
+              <p className="text-xs text-muted-foreground mb-3 p-3 bg-muted/30 rounded-lg">Svi projekti su već dodani u grupu.</p>
+            )}
+
+            {sharedProjects.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Nema dodanih projekata</p>
+            ) : (
+              <div className="space-y-2">
+                {sharedProjects.map(project => (
+                  <div key={project.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50">
+                    <span className="text-lg">{project.project_icon || '📁'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{project.project_name || 'Projekt'}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{project.project_status || ''}</p>
+                    </div>
+                    <span className="text-sm font-semibold">{formatAmount(project.project_total_budget || 0)}</span>
+                    {isOwner && (
+                      <Button variant="ghost" size="icon" onClick={() => removeSharedProject(project.id)} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
