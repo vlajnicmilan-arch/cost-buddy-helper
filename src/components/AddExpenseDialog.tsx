@@ -390,9 +390,15 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
     validItems?: ReceiptItem[]
   ) => {
-    await onAdd(expense, validItems);
-    resetForm();
-    setOpen(false);
+    try {
+      await onAdd(expense, validItems);
+      toast.success(t('transactions.savedSuccess') || 'Transakcija uspješno spremljena!');
+      resetForm();
+      setOpen(false);
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      toast.error(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
+    }
   };
 
   // Handle duplicate confirmation
