@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ import { InstallmentToggle } from '@/components/installments';
 import { DuplicateWarningDialog } from '@/components/DuplicateWarningDialog';
 import { CardLookup } from '@/components/CardLookup';
 import { ScanningOverlay } from '@/components/ScanningOverlay';
+import { useCategoryHabits } from '@/hooks/useCategoryHabits';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
@@ -109,8 +110,20 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const { projects } = useProjects();
   const { budgets } = useBudgets();
   const { createPlan: createInstallmentPlan } = useInstallments();
+  const { recordHabit, getSuggestedCategory } = useCategoryHabits();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
+
+  // Auto-suggest category when merchant name changes
+  const handleMerchantChange = useCallback((value: string) => {
+    setMerchantName(value);
+    if (value.trim().length >= 2 && type !== 'income') {
+      const suggested = getSuggestedCategory(value);
+      if (suggested) {
+        setCategory(suggested as Category);
+      }
+    }
+  }, [type, getSuggestedCategory]);
 
   // Set default payment source when dialog opens and sources are loaded
   useEffect(() => {
@@ -392,6 +405,10 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   ) => {
     try {
       await onAdd(expense, validItems);
+      // Record merchant→category habit for auto-categorization
+      if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
+        recordHabit(expense.merchant_name, expense.category);
+      }
       toast.success(t('transactions.savedSuccess') || 'Transakcija uspješno spremljena!');
       resetForm();
       setOpen(false);
@@ -1163,7 +1180,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   id="merchant"
                   placeholder={type === 'income' ? t('transactions.merchantSourcePlaceholder') : t('transactions.merchantPlaceholder')}
                   value={merchantName}
-                  onChange={(e) => setMerchantName(e.target.value)}
+                  onChange={(e) => handleMerchantChange(e.target.value)}
                   className="h-12 rounded-xl"
                   autoFocus
                 />
