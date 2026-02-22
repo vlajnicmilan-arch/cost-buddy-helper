@@ -397,6 +397,23 @@ export const useFamilySharedResources = (groupId: string | null) => {
     fetchResources();
   }, [fetchResources]);
 
+  const logActivity = async (actionType: string, description: string, metadata: Record<string, any> = {}) => {
+    if (!groupId || !user) return;
+    try {
+      await supabase
+        .from('family_activity_log' as any)
+        .insert({
+          group_id: groupId,
+          user_id: user.id,
+          action_type: actionType,
+          action_description: description,
+          metadata
+        });
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+  };
+
   const addSharedSource = async (paymentSourceId: string) => {
     if (!groupId || !user) return;
 
@@ -411,6 +428,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
 
       if (error) throw error;
       toast.success('Račun dodan u grupu');
+      await logActivity('added_source', 'Dodao/la račun u grupu', { payment_source_id: paymentSourceId });
       fetchResources();
     } catch (error: any) {
       if (error.code === '23505') {
@@ -432,6 +450,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       if (error) throw error;
       setSharedSources(prev => prev.filter(s => s.id !== id));
       toast.success('Račun uklonjen iz grupe');
+      await logActivity('removed_source', 'Uklonio/la račun iz grupe');
     } catch (error) {
       console.error('Error removing shared source:', error);
       toast.error('Greška');
@@ -452,6 +471,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
 
       if (error) throw error;
       toast.success('Budžet dodan u grupu');
+      await logActivity('added_budget', 'Dodao/la budžet u grupu', { budget_id: budgetId });
       fetchResources();
     } catch (error: any) {
       if (error.code === '23505') {
@@ -473,6 +493,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       if (error) throw error;
       setSharedBudgets(prev => prev.filter(b => b.id !== id));
       toast.success('Budžet uklonjen iz grupe');
+      await logActivity('removed_budget', 'Uklonio/la budžet iz grupe');
     } catch (error) {
       console.error('Error removing shared budget:', error);
       toast.error('Greška');
@@ -493,6 +514,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
 
       if (error) throw error;
       toast.success('Projekt dodan u grupu');
+      await logActivity('added_project', 'Dodao/la projekt u grupu', { project_id: projectId });
       fetchResources();
     } catch (error: any) {
       if (error.code === '23505') {
@@ -514,6 +536,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       if (error) throw error;
       setSharedProjects(prev => prev.filter(p => p.id !== id));
       toast.success('Projekt uklonjen iz grupe');
+      await logActivity('removed_project', 'Uklonio/la projekt iz grupe');
     } catch (error) {
       console.error('Error removing shared project:', error);
       toast.error('Greška');
@@ -531,6 +554,77 @@ export const useFamilySharedResources = (groupId: string | null) => {
     removeSharedBudget,
     addSharedProject,
     removeSharedProject,
+    logActivity,
     refetch: fetchResources
   };
+};
+
+// Activity feed hook
+export interface FamilyActivity {
+  id: string;
+  group_id: string;
+  user_id: string;
+  action_type: string;
+  action_description: string;
+  metadata: Record<string, any>;
+  created_at: string;
+  display_name?: string;
+}
+
+export const useFamilyActivity = (groupId: string | null) => {
+  const { user } = useAuth();
+  const [activities, setActivities] = useState<FamilyActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchActivities = useCallback(async () => {
+    if (!groupId || !user) {
+      setActivities([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('family_activity_log' as any)
+        .select('*')
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      const items = (data || []) as any[];
+      
+      // Fetch display names
+      const userIds = [...new Set(items.map(a => a.user_id))];
+      let profilesMap = new Map<string, string>();
+
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name')
+          .in('user_id', userIds);
+
+        profiles?.forEach(p => {
+          profilesMap.set(p.user_id, p.display_name || 'Nepoznato');
+        });
+      }
+
+      setActivities(items.map(a => ({
+        ...a,
+        display_name: profilesMap.get(a.user_id) || 'Nepoznato'
+      })));
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [groupId, user]);
+
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
+
+  return { activities, loading, refetch: fetchActivities };
 };

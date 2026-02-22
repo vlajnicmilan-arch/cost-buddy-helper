@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FamilyGroup, FAMILY_ROLE_LABELS, FamilyRole } from '@/types/family';
-import { useFamilyMembers, useFamilySharedResources } from '@/hooks/useFamilyGroups';
+import { useFamilyMembers, useFamilySharedResources, useFamilyActivity } from '@/hooks/useFamilyGroups';
 import { useProjects } from '@/hooks/useProjects';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { Input } from '@/components/ui/input';
@@ -23,9 +23,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Users, Mail, Plus, Trash2, Loader2,
-  Wallet, Target, Settings, UserMinus, Send, FolderKanban
+  Wallet, Target, Settings, UserMinus, Send, FolderKanban, Activity
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
+import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { FamilyGroupDialog } from './FamilyGroupDialog';
 
@@ -44,6 +46,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const { customPaymentSources: paymentSources } = useCustomPaymentSources();
   const { budgets } = useBudgets({});
   const { projects } = useProjects();
+  const { activities, loading: activitiesLoading } = useFamilyActivity(group.id);
   const { allExpenses, updateExpense, deleteExpense, refetch: refetchExpenses } = useExpenses();
 
   const [inviteEmail, setInviteEmail] = useState('');
@@ -467,6 +470,54 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             )}
           </section>
 
+          {/* Activity Feed */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                Aktivnost
+              </h2>
+            </div>
+
+            {activitiesLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : activities.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Nema zabilježenih aktivnosti</p>
+            ) : (
+              <div className="space-y-1">
+                {activities.map(activity => {
+                  const actionIcons: Record<string, string> = {
+                    added_source: '💳',
+                    removed_source: '🗑️',
+                    added_budget: '💰',
+                    removed_budget: '🗑️',
+                    added_project: '📁',
+                    removed_project: '🗑️',
+                    invited_member: '✉️',
+                    member_joined: '👋',
+                    member_left: '👤',
+                  };
+                  return (
+                    <div key={activity.id} className="flex items-start gap-2.5 p-2.5 rounded-lg hover:bg-muted/30 transition-colors">
+                      <span className="text-sm mt-0.5">{actionIcons[activity.action_type] || '📝'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">
+                          <span className="font-medium">{activity.display_name}</span>
+                          {' '}
+                          <span className="text-muted-foreground">{activity.action_description}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: hr })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
           {/* Danger zone */}
           {isOwner && (
             <section className="pt-4 border-t border-border/30">
