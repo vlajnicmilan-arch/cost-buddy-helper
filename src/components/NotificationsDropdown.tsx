@@ -44,6 +44,8 @@ const getNotificationIcon = (type: string) => {
       return <Wallet className="w-4 h-4 text-primary" />;
     case 'family_invitation':
       return <UserPlus className="w-4 h-4 text-primary" />;
+    case 'family_message':
+      return <Bell className="w-4 h-4 text-primary" />;
     default:
       return <Bell className="w-4 h-4 text-muted-foreground" />;
   }
@@ -97,6 +99,15 @@ export const NotificationsDropdown = () => {
         return { path: '/budgets', state: { openBudgetId: data.budget_id } };
       case 'payment_source_transaction':
         return { path: '/', state: { openExpenseId: data.expense_id } };
+      case 'family_message':
+        return { path: '/family', state: { openGroupId: data.group_id, openChat: true } };
+      case 'invitation_accepted': {
+        const targetType = data.type as string;
+        if (targetType === 'family') {
+          return { path: '/family', state: { openGroupId: data.target_id } };
+        }
+        return null;
+      }
       default:
         return null;
     }
