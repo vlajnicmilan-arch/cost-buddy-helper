@@ -1269,7 +1269,7 @@ export type Database = {
       }
       savings_goals: {
         Row: {
-          budget_id: string
+          budget_id: string | null
           color: string | null
           completed_at: string | null
           created_at: string
@@ -1282,9 +1282,10 @@ export type Database = {
           target_amount: number
           target_date: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
-          budget_id: string
+          budget_id?: string | null
           color?: string | null
           completed_at?: string | null
           created_at?: string
@@ -1297,9 +1298,10 @@ export type Database = {
           target_amount?: number
           target_date?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
-          budget_id?: string
+          budget_id?: string | null
           color?: string | null
           completed_at?: string | null
           created_at?: string
@@ -1312,6 +1314,7 @@ export type Database = {
           target_amount?: number
           target_date?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {

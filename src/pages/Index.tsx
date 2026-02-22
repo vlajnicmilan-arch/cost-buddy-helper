@@ -43,6 +43,7 @@ import { SummarySection } from '@/components/home/SummarySection';
 import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { CashflowForecast } from '@/components/CashflowForecast';
+import { SavingsGoalsSection } from '@/components/savings';
 
 
 const Index = () => {
@@ -363,6 +364,9 @@ const Index = () => {
 
         {/* ── Cashflow Forecast ── */}
         {!simpleModeEnabled && <CashflowForecast />}
+
+        {/* ── Savings Goals ── */}
+        {!simpleModeEnabled && !isLocalMode && <SavingsGoalsSection />}
 
         {/* ── Main Content Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

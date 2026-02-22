@@ -888,5 +888,32 @@
         "description": "Vaš osobni financijski savjetnik! Postavite pitanja o potrošnji, dobijte savjete za uštedu i analizirajte svoje financije."
       }
     }
+  },
+  "savingsGoals": {
+    "title": "Ciljevi štednje",
+    "addGoal": "Dodaj cilj",
+    "editGoal": "Uredi cilj",
+    "name": "Naziv",
+    "namePlaceholder": "npr. Godišnji odmor",
+    "targetAmount": "Ciljani iznos",
+    "currentAmount": "Trenutni iznos",
+    "targetDate": "Ciljani datum",
+    "icon": "Ikona",
+    "amount": "Iznos",
+    "add": "Dodaj",
+    "addTo": "Dodaj u: {name}",
+    "addAmount": "Dodaj iznos",
+    "remaining": "Preostalo",
+    "daysLeft": "{{count}} dana preostalo",
+    "overdue": "Prekoračen rok",
+    "completed": "Ostvareno!",
+    "noGoals": "Nemate ciljeva štednje",
+    "goalAdded": "Cilj štednje dodan",
+    "goalUpdated": "Cilj štednje ažuriran",
+    "goalDeleted": "Cilj štednje obrisan",
+    "goalCompleted": "Čestitamo! Cilj '{name}' je ostvaren! 🎉",
+    "errorAdding": "Greška pri dodavanju cilja",
+    "errorUpdating": "Greška pri ažuriranju cilja",
+    "errorDeleting": "Greška pri brisanju cilja"
   }
 }
