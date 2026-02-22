@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FamilyGroup, FAMILY_ROLE_LABELS, FamilyRole } from '@/types/family';
 import { useFamilyMembers, useFamilySharedResources, useFamilyActivity } from '@/hooks/useFamilyGroups';
 import { useTranslation } from 'react-i18next';
@@ -38,12 +38,13 @@ import { FamilyGroupDialog } from './FamilyGroupDialog';
 
 interface Props {
   group: FamilyGroup;
+  initialOpenChat?: boolean;
   onBack: () => void;
   onUpdate: (id: string, data: Partial<FamilyGroup>) => Promise<void>;
   onDelete: () => Promise<void>;
 }
 
-export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Props) => {
+export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate, onDelete }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -71,6 +72,16 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
   const [projectFullScreenOpen, setProjectFullScreenOpen] = useState(false);
+  const chatSectionRef = useRef<HTMLElement>(null);
+
+  // Auto-scroll to chat when opened from notification
+  useEffect(() => {
+    if (initialOpenChat && chatSectionRef.current) {
+      setTimeout(() => {
+        chatSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
+    }
+  }, [initialOpenChat]);
 
   // Project stats for shared projects (same logic as ProjectsPanel)
   const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
@@ -678,7 +689,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
           </section>
 
           {/* Chat */}
-          <section>
+          <section ref={chatSectionRef}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold flex items-center gap-2">
                 <MessageCircle className="h-4 w-4 text-muted-foreground" />

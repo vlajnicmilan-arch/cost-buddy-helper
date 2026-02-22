@@ -4,7 +4,7 @@ import { useFamilyGroups } from '@/hooks/useFamilyGroups';
 import { BottomNav } from '@/components/BottomNav';
 import { PageHeader } from '@/components/PageHeader';
 import { Loader2, Plus, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -19,17 +19,34 @@ const Family = () => {
   const { user, loading: authLoading } = useAuth();
   const { storageMode } = useStorage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { groups, loading, createGroup, updateGroup, deleteGroup, refetch } = useFamilyGroups();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<FamilyGroup | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<FamilyGroup | null>(null);
+  const [initialOpenChat, setInitialOpenChat] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
       navigate('/auth', { replace: true });
     }
   }, [user, authLoading, navigate, storageMode]);
+
+  // Handle deep-link from notifications
+  useEffect(() => {
+    const state = location.state as { openGroupId?: string; openChat?: boolean } | null;
+    if (state?.openGroupId && groups.length > 0 && !selectedGroup) {
+      const group = groups.find(g => g.id === state.openGroupId);
+      if (group) {
+        setSelectedGroup(group);
+        if (state.openChat) {
+          setInitialOpenChat(true);
+        }
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [groups, location.state, selectedGroup, navigate, location.pathname]);
 
   if (authLoading && storageMode === 'cloud') {
     return (
@@ -62,8 +79,10 @@ const Family = () => {
     return (
       <FamilyGroupDetailView
         group={selectedGroup}
+        initialOpenChat={initialOpenChat}
         onBack={() => {
           setSelectedGroup(null);
+          setInitialOpenChat(false);
           refetch();
         }}
         onUpdate={updateGroup}
