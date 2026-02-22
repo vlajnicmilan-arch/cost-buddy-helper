@@ -2,8 +2,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FolderKanban, Target, Wallet, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useAppState } from '@/contexts/AppStateContext';
 
-const navItems = [
+const allNavItems = [
   { path: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/', '/dashboard'] },
   { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'] },
   { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'] },
@@ -15,6 +16,11 @@ export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { familyModeEnabled } = useAppState();
+
+  const navItems = allNavItems.filter(item => 
+    item.path !== '/family' || familyModeEnabled
+  );
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/50 safe-area-bottom">
