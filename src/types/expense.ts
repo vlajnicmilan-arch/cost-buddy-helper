@@ -201,6 +201,7 @@ export interface Expense {
   expense_nature?: 'regular' | 'extraordinary' | null;
   created_at?: string;
   updated_at?: string;
+  import_batch_id?: string | null;
   items?: ReceiptItem[];
 }
 

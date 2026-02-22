@@ -303,6 +303,8 @@ export const useExpenseCRUD = ({
 
   const importFromCSV = useCallback(async (transactions: ParsedTransaction[]) => {
     try {
+      const batchId = crypto.randomUUID();
+      
       if (isLocalMode) {
         for (const tx of transactions) {
           await saveLocalExpense({
@@ -313,7 +315,8 @@ export const useExpenseCRUD = ({
             date: tx.date,
             payment_source: tx.payment_source || 'other',
             merchant_name: tx.merchant_name || null,
-            ai_extracted: false
+            ai_extracted: false,
+            import_batch_id: batchId
           });
         }
         const updatedExpenses = await getLocalExpenses();
@@ -333,7 +336,8 @@ export const useExpenseCRUD = ({
             date: tx.date.toISOString(),
             payment_source: tx.payment_source || 'other',
             merchant_name: tx.merchant_name || null,
-            ai_extracted: false
+            ai_extracted: false,
+            import_batch_id: batchId
           })))
           .select();
 
