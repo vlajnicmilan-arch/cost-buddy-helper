@@ -1,6 +1,7 @@
 import { FamilyGroup } from '@/types/family';
 import { ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 interface FamilyGroupCardProps {
   group: FamilyGroup;
@@ -8,6 +9,8 @@ interface FamilyGroupCardProps {
 }
 
 export const FamilyGroupCard = ({ group, onClick }: FamilyGroupCardProps) => {
+  const { t } = useTranslation();
+
   return (
     <motion.button
       whileTap={{ scale: 0.98 }}
@@ -23,7 +26,7 @@ export const FamilyGroupCard = ({ group, onClick }: FamilyGroupCardProps) => {
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-foreground truncate">{group.name}</h3>
         <p className="text-xs text-muted-foreground">
-          Klikni za detalje
+          {t('family.clickForDetails')}
         </p>
       </div>
       <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
