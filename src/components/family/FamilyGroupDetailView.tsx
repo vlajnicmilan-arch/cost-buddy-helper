@@ -7,7 +7,10 @@ import { Input } from '@/components/ui/input';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useExpenses } from '@/hooks/useExpenses';
 import { BottomNav } from '@/components/BottomNav';
+import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
+import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -37,6 +40,7 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const { customPaymentSources: paymentSources } = useCustomPaymentSources();
   const { budgets } = useBudgets({});
   const { projects } = useProjects();
+  const { allExpenses, updateExpense, deleteExpense, refetch: refetchExpenses } = useExpenses();
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<FamilyRole>('member');
@@ -46,6 +50,8 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const [showAddSource, setShowAddSource] = useState(false);
   const [showAddBudget, setShowAddBudget] = useState(false);
   const [showAddProject, setShowAddProject] = useState(false);
+  const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
+  const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
 
   const totalBalance = sharedSources.reduce((sum, s) => sum + (s.source_balance || 0), 0);
   const existingSourceIds = new Set(sharedSources.map(s => s.payment_source_id));
@@ -180,14 +186,32 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             ) : (
               <div className="space-y-2">
                 {sharedSources.map(source => (
-                  <div key={source.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50">
+                  <div
+                    key={source.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      const fullSource: CustomPaymentSource = {
+                        id: source.payment_source_id,
+                        user_id: source.added_by,
+                        name: source.source_name || 'Račun',
+                        icon: source.source_icon || '💳',
+                        color: source.source_color || '#6b7280',
+                        balance: source.source_balance || 0,
+                        created_at: source.created_at,
+                        updated_at: source.created_at,
+                      };
+                      setSelectedPaymentSource(fullSource);
+                      setPaymentSourceDialogOpen(true);
+                      refetchExpenses();
+                    }}
+                  >
                     <span className="text-lg">{source.source_icon || '💳'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{source.source_name || 'Račun'}</p>
                     </div>
                     <span className="text-sm font-semibold">{formatAmount(source.source_balance || 0)}</span>
                     {isOwner && (
-                      <Button variant="ghost" size="icon" onClick={() => removeSharedSource(source.id)} className="h-7 w-7 text-destructive hover:text-destructive">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedSource(source.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
@@ -449,6 +473,14 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <PaymentSourceTransactionsDialog
+        open={paymentSourceDialogOpen}
+        onOpenChange={setPaymentSourceDialogOpen}
+        paymentSource={selectedPaymentSource}
+        expenses={allExpenses}
+        onUpdate={updateExpense}
+        onDelete={deleteExpense}
+      />
 
       <BottomNav />
     </div>
