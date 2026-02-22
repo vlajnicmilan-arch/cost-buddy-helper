@@ -124,7 +124,9 @@
       "thu": "Če",
       "fri": "Pe",
       "sat": "Su",
-      "sun": "Ne"
+      "sun": "Ne",
+      "print": "Ispis",
+      "net": "Neto"
     },
     "cashflow": {
       "title": "Cashflow prognoza (8 tjedana)",

@@ -124,7 +124,9 @@
       "thu": "Th",
       "fri": "Fr",
       "sat": "Sa",
-      "sun": "Su"
+      "sun": "Su",
+      "print": "Print",
+      "net": "Net"
     },
     "cashflow": {
       "title": "Cashflow Forecast (8 weeks)",

@@ -92,7 +92,9 @@
       "thu": "Do",
       "fri": "Fr",
       "sat": "Sa",
-      "sun": "So"
+      "sun": "So",
+      "print": "Drucken",
+      "net": "Netto"
     },
     "cashflow": {
       "title": "Cashflow-Prognose (8 Wochen)",
