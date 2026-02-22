@@ -414,6 +414,199 @@ export type Database = {
           },
         ]
       }
+      family_groups: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      family_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          group_id: string
+          id: string
+          invited_by: string
+          invited_user_id: string | null
+          role: string
+          status: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          group_id: string
+          id?: string
+          invited_by: string
+          invited_user_id?: string | null
+          role?: string
+          status?: string
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          group_id?: string
+          id?: string
+          invited_by?: string
+          invited_user_id?: string | null
+          role?: string
+          status?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_shared_budgets: {
+        Row: {
+          added_by: string
+          budget_id: string
+          created_at: string
+          group_id: string
+          id: string
+        }
+        Insert: {
+          added_by: string
+          budget_id: string
+          created_at?: string
+          group_id: string
+          id?: string
+        }
+        Update: {
+          added_by?: string
+          budget_id?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_shared_budgets_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_shared_budgets_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_shared_sources: {
+        Row: {
+          added_by: string
+          created_at: string
+          group_id: string
+          id: string
+          payment_source_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          group_id: string
+          id?: string
+          payment_source_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          payment_source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_shared_sources_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_shared_sources_payment_source_id_fkey"
+            columns: ["payment_source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       income_source_invitations: {
         Row: {
           created_at: string
@@ -1389,6 +1582,14 @@ export type Database = {
       }
       is_budget_owner: {
         Args: { _budget_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_family_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_family_owner: {
+        Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
       is_income_source_member: {

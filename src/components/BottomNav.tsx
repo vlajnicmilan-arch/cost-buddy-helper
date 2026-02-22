@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Target, Wallet } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Target, Wallet, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
@@ -8,6 +8,7 @@ const navItems = [
   { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'] },
   { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'] },
   { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'] },
+  { path: '/family', icon: Users, labelKey: 'nav.family', fallback: 'Obitelj', activePaths: ['/family'] },
 ];
 
 export const BottomNav = () => {
