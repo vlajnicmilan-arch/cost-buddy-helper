@@ -22,6 +22,8 @@ import StorageSetup from "./pages/StorageSetup";
 import Install from "./pages/Install";
 import JoinProject from "./pages/JoinProject";
 import JoinBudget from "./pages/JoinBudget";
+import Family from "./pages/Family";
+import JoinFamily from "./pages/JoinFamily";
 import Onboarding from "./pages/Onboarding";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
@@ -62,6 +64,8 @@ const AppRoutes = () => {
       <Route path="/projects" element={onboardingCompleted ? <Projects /> : <Navigate to="/onboarding" replace />} />
       <Route path="/budgets" element={onboardingCompleted ? <Budgets /> : <Navigate to="/onboarding" replace />} />
       <Route path="/wallet" element={onboardingCompleted ? <Wallet /> : <Navigate to="/onboarding" replace />} />
+      <Route path="/family" element={onboardingCompleted ? <Family /> : <Navigate to="/onboarding" replace />} />
+      <Route path="/join-family/:token" element={<JoinFamily />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/setup" element={<StorageSetup />} />
