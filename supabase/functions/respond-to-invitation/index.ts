@@ -79,6 +79,12 @@ serve(async (req) => {
       memberTable = "payment_source_members";
       targetTable = "custom_payment_sources";
       targetLabel = "račun";
+    } else if (type === "family") {
+      invitationTable = "family_invitations";
+      idColumn = "group_id";
+      memberTable = "family_members";
+      targetTable = "family_groups";
+      targetLabel = "obiteljska grupa";
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid type" }),

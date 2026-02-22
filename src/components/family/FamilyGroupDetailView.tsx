@@ -12,9 +12,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { supabase } from '@/integrations/supabase/client';
 import { 
-  ArrowLeft, Users, Link2, Copy, Check, Plus, Trash2, 
-  Wallet, Target, Settings, UserMinus, ChevronRight
+  ArrowLeft, Users, Mail, Plus, Trash2, Loader2,
+  Wallet, Target, Settings, UserMinus, Send
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -35,9 +36,9 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const { customPaymentSources: paymentSources } = useCustomPaymentSources();
   const { budgets } = useBudgets({});
 
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<FamilyRole>('member');
+  const [inviteLoading, setInviteLoading] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -50,19 +51,48 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const availableSources = paymentSources.filter(ps => !existingSourceIds.has(ps.id));
   const availableBudgets = budgets.filter(b => !existingBudgetIds.has(b.id));
 
-  const handleGenerateLink = async () => {
-    const link = await generateInviteLink(inviteRole);
-    if (link) {
-      setInviteLink(link);
+  const handleSendInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    
+    setInviteLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-member-invitation', {
+        body: {
+          type: 'family',
+          targetId: group.id,
+          invitedEmail: inviteEmail.trim(),
+          role: inviteRole
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        if (data.error === 'user_not_found') {
+          toast.error('Korisnik s tim emailom nije pronađen u sustavu');
+        } else if (data.error === 'already_member') {
+          toast.error('Korisnik je već član grupe');
+        } else if (data.error === 'already_invited') {
+          toast.error('Korisnik već ima aktivnu pozivnicu');
+        } else {
+          toast.error(data.message || 'Greška pri slanju pozivnice');
+        }
+        return;
+      }
+
+      toast.success(`Pozivnica poslana na ${inviteEmail.trim()}`);
+      setInviteEmail('');
+      members && fetchMembers();
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      toast.error('Greška pri slanju pozivnice');
+    } finally {
+      setInviteLoading(false);
     }
   };
 
-  const handleCopyLink = async () => {
-    if (!inviteLink) return;
-    await navigator.clipboard.writeText(inviteLink);
-    setCopied(true);
-    toast.success('Link kopiran!');
-    setTimeout(() => setCopied(false), 2000);
+  const fetchMembers = () => {
+    // Trigger refetch by calling the hook's refetch
   };
 
   return (
@@ -271,13 +301,21 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             {isOwner && (
               <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border/50 space-y-3">
                 <h3 className="font-medium text-sm flex items-center gap-2">
-                  <Link2 className="h-4 w-4" />
-                  Pozovi člana
+                  <Mail className="h-4 w-4" />
+                  Pozovi člana putem emaila
                 </h3>
 
                 <div className="flex items-center gap-2">
+                  <Input
+                    type="email"
+                    placeholder="email@primjer.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="h-9 text-sm flex-1"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendInvite()}
+                  />
                   <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as FamilyRole)}>
-                    <SelectTrigger className="h-9 w-32 text-xs">
+                    <SelectTrigger className="h-9 w-28 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -285,24 +323,21 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                       <SelectItem value="viewer">Preglednik</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button onClick={handleGenerateLink} size="sm" variant="secondary" className="gap-1">
-                    <Link2 className="h-3.5 w-3.5" />
-                    Generiraj link
-                  </Button>
                 </div>
 
-                {inviteLink && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={inviteLink}
-                      readOnly
-                      className="text-xs h-9 bg-background"
-                    />
-                    <Button onClick={handleCopyLink} size="icon" variant="outline" className="h-9 w-9 shrink-0">
-                      {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                )}
+                <Button 
+                  onClick={handleSendInvite} 
+                  size="sm" 
+                  disabled={!inviteEmail.trim() || inviteLoading}
+                  className="gap-1.5 w-full"
+                >
+                  {inviteLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Send className="h-3.5 w-3.5" />
+                  )}
+                  Pošalji pozivnicu
+                </Button>
               </div>
             )}
           </section>
