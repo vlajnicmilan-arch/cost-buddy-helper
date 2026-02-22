@@ -23,8 +23,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Users, Mail, Plus, Trash2, Loader2,
-  Wallet, Target, Settings, UserMinus, Send, FolderKanban, Activity
+  Wallet, Target, Settings, UserMinus, Send, FolderKanban, Activity, MessageCircle
 } from 'lucide-react';
+import { FamilyChat } from './FamilyChat';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -518,6 +519,19 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
               </div>
             )}
           </section>
+          {/* Chat */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                Chat
+              </h2>
+            </div>
+            <div className="rounded-xl p-3 bg-card border border-border/50">
+              <FamilyChat groupId={group.id} groupColor={group.color || '#3b82f6'} />
+            </div>
+          </section>
+
           {/* Danger zone */}
           {isOwner && (
             <section className="pt-4 border-t border-border/30">
