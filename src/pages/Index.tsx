@@ -44,7 +44,7 @@ import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SavingsGoalsSection } from '@/components/savings';
-import { QuickAddWidget } from '@/components/QuickAddWidget';
+
 
 
 const Index = () => {
@@ -540,7 +540,7 @@ const Index = () => {
         </div>
       )}
 
-      <QuickAddWidget onAdd={addExpense} />
+      
       <BottomNav />
 
       {recurringPanelOpen && (
