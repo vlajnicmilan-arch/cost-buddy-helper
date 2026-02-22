@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useTranslation } from 'react-i18next';
 import { 
   Budget, 
@@ -15,7 +16,7 @@ import {
   DEFAULT_BUDGET_ICONS 
 } from '@/types/budget';
 import { CATEGORIES } from '@/types/expense';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, Repeat, CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BudgetDialogProps {
@@ -49,6 +50,7 @@ export const BudgetDialog = ({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [categoryLimits, setCategoryLimits] = useState<CategoryLimit[]>([]);
+  const [isRecurring, setIsRecurring] = useState(true);
 
   useEffect(() => {
     if (budget) {
@@ -60,6 +62,7 @@ export const BudgetDialog = ({
       setTotalAmount(budget.total_amount.toString());
       setStartDate(budget.start_date || '');
       setEndDate(budget.end_date || '');
+      setIsRecurring(budget.is_recurring ?? true);
       setCategoryLimits(budget.categories.map(c => ({
         category: c.category,
         limit_amount: c.limit_amount,
@@ -79,6 +82,7 @@ export const BudgetDialog = ({
     setTotalAmount('');
     setStartDate('');
     setEndDate('');
+    setIsRecurring(true);
     setCategoryLimits([]);
   };
 
@@ -117,6 +121,7 @@ export const BudgetDialog = ({
         start_date: startDate || null,
         end_date: endDate || null,
         is_active: true,
+        is_recurring: isRecurring,
         categories: categoryLimits.filter(c => c.category && c.limit_amount > 0).map(c => ({
           ...c,
           id: '',
@@ -237,8 +242,26 @@ export const BudgetDialog = ({
             </div>
           </div>
 
-          {/* Dates */}
-          {(periodType === 'custom' || periodType === 'one_time') && (
+          {/* Recurring toggle */}
+          {periodType !== 'one_time' && periodType !== 'custom' && (
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center gap-2">
+                <Repeat className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <Label className="text-sm font-medium">{t('budget.recurring', 'Ponavljajući')}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {isRecurring
+                      ? t('budget.recurringDesc', 'Budžet se automatski resetira svaki period')
+                      : t('budget.nonRecurringDesc', 'Budžet pokriva samo jedan period')}
+                  </p>
+                </div>
+              </div>
+              <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
+            </div>
+          )}
+
+          {/* Dates - show for non-recurring, custom, and one_time */}
+          {(periodType === 'custom' || periodType === 'one_time' || !isRecurring) && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="startDate">{t('common.startDate', 'Početak')}</Label>

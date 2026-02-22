@@ -759,6 +759,10 @@
     "reset": "Resetiraj",
     "deleteConfirmTitle": "Obriši budžet?",
     "deleteConfirmDesc": "Ova radnja će trajno obrisati budžet \"{{name}}\" i sve njegove limite po kategorijama. Ovo se ne može poništiti.",
+    "recurring": "Ponavljajući",
+    "recurringDesc": "Budžet se automatski resetira svaki period",
+    "nonRecurringDesc": "Budžet pokriva samo jedan period",
+    "oneTime": "Jednokratno",
     "status": {
       "active": "Aktivan",
       "warning": "Upozorenje",

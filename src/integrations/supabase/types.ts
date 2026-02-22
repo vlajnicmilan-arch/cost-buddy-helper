@@ -185,6 +185,7 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean | null
+          is_recurring: boolean
           name: string
           period_type: string
           project_id: string | null
@@ -201,6 +202,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_recurring?: boolean
           name: string
           period_type?: string
           project_id?: string | null
@@ -217,6 +219,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_recurring?: boolean
           name?: string
           period_type?: string
           project_id?: string | null
