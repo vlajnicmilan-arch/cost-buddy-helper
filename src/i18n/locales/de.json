@@ -84,6 +84,16 @@
     "searchResults": "Suchergebnisse",
     "noSearchResults": "Keine Ergebnisse für",
     "showingResults": "{{count}} Ergebnisse angezeigt",
+    "calendar": {
+      "title": "Ausgabenkalender",
+      "mon": "Mo",
+      "tue": "Di",
+      "wed": "Mi",
+      "thu": "Do",
+      "fri": "Fr",
+      "sat": "Sa",
+      "sun": "So"
+    },
     "cashflow": {
       "title": "Cashflow-Prognose (8 Wochen)",
       "thisWeek": "Diese Wo.",
