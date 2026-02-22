@@ -24,7 +24,7 @@ import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@
 import { BottomNav } from '@/components/BottomNav';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { Loader2, Smartphone, ChevronDown, ArrowRight } from 'lucide-react';
+import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -391,7 +391,10 @@ const Index = () => {
             <div className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 ${transactionsOpen ? 'p-6' : 'p-4'}`}>
               <CollapsibleTrigger asChild>
                 <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity" data-tutorial="transactions">
-                  <h2 className="text-lg font-semibold">{t('transactions.recentTransactions')}</h2>
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-primary" />
+                    {t('transactions.recent', 'Nedavno')}
+                  </h2>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
                       {filteredDashboardExpenses.length !== expenses.length
