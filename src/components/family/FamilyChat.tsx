@@ -128,19 +128,31 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
   const handleSend = async () => {
     if (!newMessage.trim() || !user) return;
 
+    const msgContent = newMessage.trim();
     setSending(true);
-    const { error } = await supabase.from('family_messages').insert({
+    setNewMessage('');
+
+    const { data, error } = await supabase.from('family_messages').insert({
       group_id: groupId,
       user_id: user.id,
-      content: newMessage.trim(),
-    });
+      content: msgContent,
+    }).select('id').single();
 
     if (error) {
       console.error('Error sending message:', error);
       toast.error(t('family.sendError'));
+    } else if (data) {
+      // Fire-and-forget notification
+      supabase.functions.invoke('notify-family-message', {
+        body: {
+          message_id: data.id,
+          group_id: groupId,
+          sender_id: user.id,
+          content: msgContent,
+        },
+      }).catch(console.error);
     }
-    
-    setNewMessage('');
+
     setSending(false);
   };
 
