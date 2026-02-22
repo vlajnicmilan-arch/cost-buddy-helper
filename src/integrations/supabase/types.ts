@@ -677,6 +677,45 @@ export type Database = {
           },
         ]
       }
+      family_shared_savings: {
+        Row: {
+          added_by: string
+          created_at: string
+          group_id: string
+          id: string
+          savings_goal_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          group_id: string
+          id?: string
+          savings_goal_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          savings_goal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_shared_savings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_shared_savings_savings_goal_id_fkey"
+            columns: ["savings_goal_id"]
+            isOneToOne: false
+            referencedRelation: "savings_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_shared_sources: {
         Row: {
           added_by: string

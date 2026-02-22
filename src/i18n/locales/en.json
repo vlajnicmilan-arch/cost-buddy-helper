@@ -1161,6 +1161,10 @@
     "projectNotAvailable": "Project not available for viewing",
     "you": "you",
     "member": "Member",
-    "viewer": "Viewer"
+    "viewer": "Viewer",
+    "sharedSavings": "Shared savings goals",
+    "selectSavingsToAdd": "Select savings goal to add:",
+    "allSavingsAdded": "All savings goals are already added to the group.",
+    "noSavings": "No savings goals added"
   }
 }
