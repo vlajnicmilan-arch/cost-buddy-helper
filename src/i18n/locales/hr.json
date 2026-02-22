@@ -116,6 +116,16 @@
     "searchResults": "Rezultati pretrage",
     "noSearchResults": "Nema rezultata za",
     "showingResults": "Prikazano {{count}} rezultata",
+    "calendar": {
+      "title": "Kalendar potrošnje",
+      "mon": "Po",
+      "tue": "Ut",
+      "wed": "Sr",
+      "thu": "Če",
+      "fri": "Pe",
+      "sat": "Su",
+      "sun": "Ne"
+    },
     "cashflow": {
       "title": "Cashflow prognoza (8 tjedana)",
       "thisWeek": "Ovaj tj.",

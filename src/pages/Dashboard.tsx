@@ -48,6 +48,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CashflowForecast } from '@/components/CashflowForecast';
+import { SpendingCalendar } from '@/components/SpendingCalendar';
 
 const CATEGORY_COLORS: Record<string, string> = {
   food: 'hsl(var(--category-food))',
@@ -440,6 +441,9 @@ const Dashboard = () => {
                 </p>
               </motion.div>
             </div>
+
+            {/* Spending Calendar */}
+            <SpendingCalendar expenses={expenses} />
 
             {/* Cashflow Forecast */}
             <CashflowForecast />

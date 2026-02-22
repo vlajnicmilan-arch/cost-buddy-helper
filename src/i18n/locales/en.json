@@ -116,6 +116,16 @@
     "searchResults": "Search results",
     "noSearchResults": "No results for",
     "showingResults": "Showing {{count}} results",
+    "calendar": {
+      "title": "Spending Calendar",
+      "mon": "Mo",
+      "tue": "Tu",
+      "wed": "We",
+      "thu": "Th",
+      "fri": "Fr",
+      "sat": "Sa",
+      "sun": "Su"
+    },
     "cashflow": {
       "title": "Cashflow Forecast (8 weeks)",
       "thisWeek": "This wk",
