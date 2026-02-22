@@ -21,6 +21,10 @@ interface AppStateContextValue {
   simpleModeEnabled: boolean;
   setSimpleModeEnabled: (enabled: boolean) => void;
 
+  // Family mode toggle
+  familyModeEnabled: boolean;
+  setFamilyModeEnabled: (enabled: boolean) => void;
+
   // Onboarding
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
@@ -50,6 +54,9 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [simpleModeEnabled, setSimpleModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('simple_mode_enabled') === 'true'
   );
+  const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
+    () => localStorage.getItem('family_mode_enabled') !== 'false'
+  );
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
@@ -72,6 +79,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const setSimpleModeEnabled = useCallback((enabled: boolean) => {
     setSimpleModeEnabledState(enabled);
     localStorage.setItem('simple_mode_enabled', enabled.toString());
+  }, []);
+
+  const setFamilyModeEnabled = useCallback((enabled: boolean) => {
+    setFamilyModeEnabledState(enabled);
+    localStorage.setItem('family_mode_enabled', enabled.toString());
   }, []);
 
   const setOnboardingCompleted = useCallback((completed: boolean) => {
@@ -117,6 +129,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       setAiAssistantEnabled,
       simpleModeEnabled,
       setSimpleModeEnabled,
+      familyModeEnabled,
+      setFamilyModeEnabled,
       onboardingCompleted,
       setOnboardingCompleted,
       onAvatarEvent,

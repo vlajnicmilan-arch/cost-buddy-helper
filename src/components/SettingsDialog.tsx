@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -71,6 +71,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   
+  // Family mode disable state
+  const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
+  
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { currency, setCurrency } = useCurrency();
@@ -78,6 +81,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     displayName, setDisplayName,
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
+    familyModeEnabled, setFamilyModeEnabled,
     emitFinancialReset,
   } = useAppState();
   const isLocalMode = storageMode === 'local';
@@ -911,6 +915,37 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 }}
               />
             </div>
+
+            {/* Family Mode toggle - Cloud only */}
+            {!isLocalMode && (
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <Label htmlFor="family-mode" className="text-sm font-medium cursor-pointer">
+                      {t('settings.familyMode', 'Obiteljski način')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('settings.familyModeDesc', 'Obiteljske grupe, dijeljeni računi i chat')}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="family-mode"
+                  checked={familyModeEnabled}
+                  onCheckedChange={(checked) => {
+                    if (!checked) {
+                      setShowFamilyDisableConfirm(true);
+                    } else {
+                      setFamilyModeEnabled(true);
+                      toast.success(t('settings.familyModeEnabled', 'Obiteljski način uključen'));
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <Separator />
@@ -1066,6 +1101,42 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         </ScrollArea>
       </DialogContent>
     </Dialog>
+
+      {/* Family Mode Disable Confirmation */}
+      <AlertDialog open={showFamilyDisableConfirm} onOpenChange={setShowFamilyDisableConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <Users className="w-5 h-5" />
+              {t('settings.familyDisableTitle', 'Isključiti obiteljski način?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>{t('settings.familyDisableDesc', 'Isključivanjem obiteljskog načina:')}</p>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                <li>{t('settings.familyDisableWarn1', 'Nećete više vidjeti obiteljske grupe u navigaciji')}</li>
+                <li>{t('settings.familyDisableWarn2', 'Dijeljeni računi, budžeti i ciljevi štednje neće biti vidljivi')}</li>
+                <li>{t('settings.familyDisableWarn3', 'Chat poruke i obavijesti neće stizati')}</li>
+              </ul>
+              <p className="font-medium text-foreground mt-3">
+                {t('settings.familyDisableKeep', 'Vaši podaci ostaju sačuvani i bit će dostupni ako ponovno uključite obiteljski način.')}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 text-white hover:bg-amber-700"
+              onClick={() => {
+                setFamilyModeEnabled(false);
+                setShowFamilyDisableConfirm(false);
+                toast.success(t('settings.familyModeDisabled', 'Obiteljski način isključen'));
+              }}
+            >
+              {t('settings.familyDisableConfirm', 'Isključi')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Reset Data Confirmation */}
       <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
