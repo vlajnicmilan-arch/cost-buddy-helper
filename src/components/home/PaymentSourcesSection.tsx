@@ -24,10 +24,7 @@ export const PaymentSourcesSection = ({ customPaymentSources, onSourceClick }: P
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{
-            scale: 1.01,
-            boxShadow: '0 8px 25px -5px hsl(var(--primary) / 0.2)'
-          }}
+          whileTap={{ scale: 0.98 }}
           className="p-3 sm:p-4 rounded-xl border bg-card cursor-pointer transition-colors w-full"
           style={{
             borderLeftWidth: 4,
@@ -67,10 +64,7 @@ export const PaymentSourcesSection = ({ customPaymentSources, onSourceClick }: P
               key={source.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              whileHover={{
-                scale: 1.02,
-                boxShadow: `0 8px 25px -5px ${source.color}30`
-              }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => onSourceClick(source)}
               className="p-3 sm:p-4 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer transition-colors"
               style={{
