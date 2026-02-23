@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck } from 'lucide-react';
+import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck, Bell, Send } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -75,6 +77,9 @@ const Admin = () => {
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('stats');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifMessage, setNotifMessage] = useState('');
+  const [sendingNotif, setSendingNotif] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -172,6 +177,26 @@ const Admin = () => {
       toast.error('Greška: ' + (err.message || 'Nepoznata greška'));
     }
     setActionLoading(null);
+  };
+
+  const sendBroadcastNotification = async () => {
+    if (!notifTitle.trim() || !notifMessage.trim()) {
+      toast.error('Unesite naslov i poruku');
+      return;
+    }
+    setSendingNotif(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('broadcast-notification', {
+        body: { title: notifTitle.trim(), message: notifMessage.trim() },
+      });
+      if (error) throw error;
+      toast.success(`Obavijest poslana ${data?.count || ''} korisnicima`);
+      setNotifTitle('');
+      setNotifMessage('');
+    } catch (err: any) {
+      toast.error('Greška: ' + (err.message || 'Nepoznata greška'));
+    }
+    setSendingNotif(false);
   };
 
   const parseUserAgent = (ua: string) => {
@@ -284,6 +309,10 @@ const Admin = () => {
             <TabsTrigger value="reports" className="flex-1 gap-1">
               <Bug className="w-3.5 h-3.5" />
               Prijave
+            </TabsTrigger>
+            <TabsTrigger value="notify" className="flex-1 gap-1">
+              <Bell className="w-3.5 h-3.5" />
+              Obavijesti
             </TabsTrigger>
           </TabsList>
 
@@ -509,6 +538,50 @@ const Admin = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* NOTIFY TAB */}
+          <TabsContent value="notify" className="space-y-4 mt-4">
+            <div className="bg-card border rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold text-sm">Pošalji obavijest svim korisnicima</h3>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Naslov</label>
+                  <Input
+                    placeholder="npr. Novo ažuriranje aplikacije"
+                    value={notifTitle}
+                    onChange={(e) => setNotifTitle(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Poruka</label>
+                  <Textarea
+                    placeholder="Unesite tekst obavijesti..."
+                    value={notifMessage}
+                    onChange={(e) => setNotifMessage(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+                <Button
+                  onClick={sendBroadcastNotification}
+                  disabled={sendingNotif || !notifTitle.trim() || !notifMessage.trim()}
+                  className="w-full"
+                >
+                  {sendingNotif ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Pošalji obavijest
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Obavijest će biti poslana svim registriranim korisnicima i pojavit će se u njihovim push obavijestima.
+            </p>
           </TabsContent>
         </Tabs>
       </div>

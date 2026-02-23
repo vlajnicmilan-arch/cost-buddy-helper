@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.categorize-transaction]
 verify_jwt = false
+
+[functions.broadcast-notification]
+verify_jwt = false
