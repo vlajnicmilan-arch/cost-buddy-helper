@@ -38,19 +38,20 @@ const statusLabels: Record<string, string> = {
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<BugReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
-      navigate('/auth');
+      navigate('/auth', { state: { returnTo: '/admin' } });
       return;
     }
     checkAdminAndLoad();
-  }, [user]);
+  }, [user, authLoading]);
 
   const checkAdminAndLoad = async () => {
     if (!user) return;
