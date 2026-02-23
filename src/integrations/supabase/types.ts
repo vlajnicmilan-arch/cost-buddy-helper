@@ -1800,6 +1800,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_login_logs: { Args: never; Returns: undefined }
       consume_invitation_token: {
         Args: { _invitation_type: string; _token: string }
         Returns: {

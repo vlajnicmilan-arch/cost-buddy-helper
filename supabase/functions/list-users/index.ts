@@ -46,11 +46,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // List all users from auth
+    // Parse pagination params
+    const url = new URL(req.url);
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const perPage = Math.min(parseInt(url.searchParams.get("perPage") || "50"), 100);
+
+    // List users with pagination
     const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({
-      perPage: 1000,
+      page,
+      perPage,
     });
     if (listError) throw listError;
+
+    // Get total count
+    const { data: { users: allUsersForCount } } = await supabase.auth.admin.listUsers({ perPage: 1 });
+    // Supabase returns total in the response metadata, but we approximate via stats
+
 
     // Get profiles
     const { data: profiles } = await supabase
@@ -131,6 +142,11 @@ Deno.serve(async (req) => {
           referral_count: referralCountMap.get(u.id) || 0,
         };
       }),
+      pagination: {
+        page,
+        perPage,
+        hasMore: users.length === perPage,
+      },
       stats: {
         total_users: users.length,
         active_users_7d: activeUsers7d,

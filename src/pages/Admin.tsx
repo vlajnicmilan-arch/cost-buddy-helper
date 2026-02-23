@@ -82,6 +82,8 @@ const Admin = () => {
   const [notifTitle, setNotifTitle] = useState('');
   const [notifMessage, setNotifMessage] = useState('');
   const [sendingNotif, setSendingNotif] = useState(false);
+  const [usersPage, setUsersPage] = useState(1);
+  const [hasMoreUsers, setHasMoreUsers] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -138,13 +140,31 @@ const Admin = () => {
     setLoading(false);
   };
 
-  const loadUsers = async () => {
+  const loadUsers = async (page = 1) => {
     setUsersLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('list-users');
-      if (error) throw error;
-      setUsers(data?.users || []);
-      setStats(data?.stats || null);
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users?page=${page}&perPage=50`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to load users');
+      const result = await response.json();
+      
+      if (page === 1) {
+        setUsers(result?.users || []);
+      } else {
+        setUsers(prev => [...prev, ...(result?.users || [])]);
+      }
+      setStats(result?.stats || null);
+      setHasMoreUsers(result?.pagination?.hasMore ?? false);
+      setUsersPage(page);
     } catch (err: any) {
       toast.error('Greška pri učitavanju korisnika');
       console.error(err);
@@ -338,7 +358,7 @@ const Admin = () => {
                   <StatCard label="Pozivnice" value={stats.total_referrals} />
                 </div>
                 <div className="flex justify-end">
-                  <Button variant="outline" size="sm" onClick={loadUsers} disabled={usersLoading}>
+                  <Button variant="outline" size="sm" onClick={() => loadUsers(1)} disabled={usersLoading}>
                     {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
                     Osvježi
                   </Button>
@@ -353,7 +373,7 @@ const Admin = () => {
           <TabsContent value="users" className="space-y-3 mt-4">
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">{users.length} korisnika</p>
-              <Button variant="outline" size="sm" onClick={loadUsers} disabled={usersLoading}>
+              <Button variant="outline" size="sm" onClick={() => loadUsers(1)} disabled={usersLoading}>
                 {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
                 Osvježi
               </Button>
@@ -471,6 +491,14 @@ const Admin = () => {
                     )}
                   </div>
                 ))}
+                {hasMoreUsers && (
+                  <div className="text-center pt-2">
+                    <Button variant="outline" size="sm" onClick={() => loadUsers(usersPage + 1)} disabled={usersLoading}>
+                      {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                      Učitaj više
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
