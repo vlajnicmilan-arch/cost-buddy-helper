@@ -184,6 +184,51 @@ const Admin = () => {
     return 'Ostalo';
   };
 
+  const parseDetailedUA = (ua: string) => {
+    if (!ua) return { os: 'Nepoznat', browser: 'Nepoznat', device: 'Nepoznat' };
+    
+    let os = 'Nepoznat';
+    if (ua.includes('Android')) {
+      const match = ua.match(/Android\s([\d.]+)/);
+      os = match ? `Android ${match[1]}` : 'Android';
+    } else if (ua.includes('iPhone')) {
+      const match = ua.match(/iPhone OS ([\d_]+)/);
+      os = match ? `iOS ${match[1].replace(/_/g, '.')}` : 'iOS';
+    } else if (ua.includes('iPad')) {
+      os = 'iPadOS';
+    } else if (ua.includes('Windows NT 10')) {
+      os = 'Windows 10/11';
+    } else if (ua.includes('Windows')) {
+      os = 'Windows';
+    } else if (ua.includes('Mac OS X')) {
+      const match = ua.match(/Mac OS X ([\d_]+)/);
+      os = match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS';
+    } else if (ua.includes('Linux')) {
+      os = 'Linux';
+    }
+
+    let browser = 'Nepoznat';
+    if (ua.includes('Edg/')) {
+      const match = ua.match(/Edg\/([\d.]+)/);
+      browser = match ? `Edge ${match[1].split('.')[0]}` : 'Edge';
+    } else if (ua.includes('Chrome/') && !ua.includes('Edg/')) {
+      const match = ua.match(/Chrome\/([\d.]+)/);
+      browser = match ? `Chrome ${match[1].split('.')[0]}` : 'Chrome';
+    } else if (ua.includes('Firefox/')) {
+      const match = ua.match(/Firefox\/([\d.]+)/);
+      browser = match ? `Firefox ${match[1].split('.')[0]}` : 'Firefox';
+    } else if (ua.includes('Safari/') && !ua.includes('Chrome')) {
+      const match = ua.match(/Version\/([\d.]+)/);
+      browser = match ? `Safari ${match[1].split('.')[0]}` : 'Safari';
+    }
+
+    let device = 'Desktop';
+    if (ua.includes('Mobile') || ua.includes('Android')) device = 'Mobitel';
+    if (ua.includes('iPad') || ua.includes('Tablet')) device = 'Tablet';
+
+    return { os, browser, device };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -339,18 +384,26 @@ const Admin = () => {
                           )}
                         </div>
 
-                        {u.last_device_info && (
-                          <div>
-                            <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1">
-                              <Smartphone className="w-3 h-3" /> Zadnji uređaj:
-                            </p>
-                            <div className="text-xs text-muted-foreground space-y-0.5 bg-muted/50 rounded-lg p-2">
-                              <p>Ekran: {u.last_device_info.screenWidth}×{u.last_device_info.screenHeight}</p>
-                              <p>Viewport: {u.last_device_info.viewportWidth}×{u.last_device_info.viewportHeight}</p>
-                              <p className="break-all">UA: {u.last_device_info.userAgent}</p>
+                        {u.last_device_info && (() => {
+                          const details = parseDetailedUA(u.last_device_info?.userAgent || '');
+                          return (
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                                <Smartphone className="w-3 h-3" /> Zadnji uređaj:
+                              </p>
+                              <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 space-y-1.5">
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                  <p><strong>Uređaj:</strong> {details.device}</p>
+                                  <p><strong>OS:</strong> {details.os}</p>
+                                  <p><strong>Browser:</strong> {details.browser}</p>
+                                  <p><strong>Jezik:</strong> {u.last_device_info.language || '—'}</p>
+                                  <p><strong>Ekran:</strong> {u.last_device_info.screenWidth}×{u.last_device_info.screenHeight}</p>
+                                  <p><strong>Viewport:</strong> {u.last_device_info.viewportWidth}×{u.last_device_info.viewportHeight}</p>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
 
                         {/* Admin actions */}
                         {u.id !== user?.id && (
