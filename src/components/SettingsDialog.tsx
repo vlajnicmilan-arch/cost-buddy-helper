@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug } from 'lucide-react';
+import { BugReportDialog } from '@/components/BugReportDialog';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -43,6 +44,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showBugReport, setShowBugReport] = useState(false);
   const [autoUpdate, setAutoUpdate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -758,6 +760,27 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
+
+              {!isLocalMode && (
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setShowBugReport(true);
+                  }}
+                  className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center">
+                      <Bug className="w-4 h-4 text-destructive" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium">Prijavi problem</p>
+                      <p className="text-xs text-muted-foreground">Prijavite grešku ili nejasnoću</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
             </div>
 
             <Separator />
@@ -1268,6 +1291,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
       {/* Help Dialog */}
       <HelpDialogContent open={showHelpDialog} onOpenChange={setShowHelpDialog} />
+      <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={(isOpen) => {
