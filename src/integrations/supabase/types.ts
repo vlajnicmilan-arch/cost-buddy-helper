@@ -1735,6 +1735,27 @@ export type Database = {
           },
         ]
       }
+      user_login_logs: {
+        Row: {
+          device_info: Json | null
+          id: string
+          logged_in_at: string
+          user_id: string
+        }
+        Insert: {
+          device_info?: Json | null
+          id?: string
+          logged_in_at?: string
+          user_id: string
+        }
+        Update: {
+          device_info?: Json | null
+          id?: string
+          logged_in_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
