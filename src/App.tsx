@@ -27,6 +27,7 @@ import JoinFamily from "./pages/JoinFamily";
 import Onboarding from "./pages/Onboarding";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -72,8 +73,9 @@ const AppRoutes = () => {
       <Route path="/install" element={<Install />} />
       <Route path="/join-project/:token" element={<JoinProject />} />
       <Route path="/join-budget/:token" element={<JoinBudget />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-      <Route path="*" element={<NotFound />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
