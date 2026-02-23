@@ -776,20 +776,29 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               {!isLocalMode && user && (
                 <button
                   onClick={async () => {
-                    const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
-                    if (navigator.share) {
-                      try {
-                        await navigator.share({
-                          title: 'CostBuddy - Praćenje troškova',
-                          text: 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!',
-                          url: referralUrl,
-                        });
-                      } catch (err) {
-                        // User cancelled share
+                    try {
+                      const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: 'CostBuddy - Praćenje troškova',
+                            text: 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!',
+                            url: referralUrl,
+                          });
+                          toast.success('Link podijeljen!');
+                        } catch (err: any) {
+                          if (err?.name !== 'AbortError') {
+                            await navigator.clipboard.writeText(referralUrl);
+                            toast.success('Link kopiran u međuspremnik!');
+                          }
+                        }
+                      } else {
+                        await navigator.clipboard.writeText(referralUrl);
+                        toast.success('Link kopiran u međuspremnik!');
                       }
-                    } else {
-                      await navigator.clipboard.writeText(referralUrl);
-                      toast.success('Link kopiran u međuspremnik!');
+                    } catch (e) {
+                      console.error('Share error:', e);
+                      toast.error('Greška pri dijeljenju linka');
                     }
                   }}
                   className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
