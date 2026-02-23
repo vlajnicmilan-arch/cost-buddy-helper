@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -20,6 +20,8 @@ interface BugReport {
   device_info: any;
   status: string;
   created_at: string;
+  user_email?: string;
+  user_display_name?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -82,9 +84,23 @@ const Admin = () => {
 
     if (error) {
       toast.error('Greška pri učitavanju prijava');
-    } else {
-      setReports(data || []);
+      setLoading(false);
+      return;
     }
+
+    // Fetch profile names for all unique user_ids
+    const userIds = [...new Set((data || []).map(r => r.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, display_name')
+      .in('user_id', userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name]) || []);
+
+    setReports((data || []).map(r => ({
+      ...r,
+      user_display_name: profileMap.get(r.user_id) || undefined,
+    })));
     setLoading(false);
   };
 
@@ -160,8 +176,9 @@ const Admin = () => {
                     onClick={() => setExpandedId(expandedId === report.id ? null : report.id)}
                   >
                     <h3 className="font-semibold text-sm">{report.title}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(report.created_at), 'dd. MMM yyyy. HH:mm', { locale: hr })}
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {report.user_display_name || 'Nepoznat korisnik'} · {format(new Date(report.created_at), 'dd. MMM yyyy. HH:mm', { locale: hr })}
                     </p>
                   </div>
                   <Badge className={statusColors[report.status] || statusColors.open} variant="secondary">
