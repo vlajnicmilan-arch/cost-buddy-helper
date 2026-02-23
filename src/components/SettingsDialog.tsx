@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2 } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle } from 'lucide-react';
 import { BugReportDialog } from '@/components/BugReportDialog';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -75,6 +75,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   
   // Family mode disable state
   const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
   
   const { storageMode } = useStorage();
@@ -774,46 +775,94 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               </button>
 
               {!isLocalMode && user && (
-                <button
-                  onClick={async () => {
-                    try {
-                      const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
-                      if (navigator.share) {
-                        try {
-                          await navigator.share({
-                            title: 'CostBuddy - Praćenje troškova',
-                            text: 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!',
-                            url: referralUrl,
-                          });
-                          toast.success('Link podijeljen!');
-                        } catch (err: any) {
-                          if (err?.name !== 'AbortError') {
-                            await navigator.clipboard.writeText(referralUrl);
-                            toast.success('Link kopiran u međuspremnik!');
-                          }
-                        }
-                      } else {
-                        await navigator.clipboard.writeText(referralUrl);
-                        toast.success('Link kopiran u međuspremnik!');
-                      }
-                    } catch (e) {
-                      console.error('Share error:', e);
-                      toast.error('Greška pri dijeljenju linka');
-                    }
-                  }}
-                  className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Share2 className="w-4 h-4 text-primary" />
+                <>
+                  <button
+                    onClick={() => setShowShareDialog(true)}
+                    className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Share2 className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-medium">Pozovi prijatelja</p>
+                        <p className="text-xs text-muted-foreground">Podijeli link za preuzimanje aplikacije</p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium">Pozovi prijatelja</p>
-                      <p className="text-xs text-muted-foreground">Podijeli link za preuzimanje aplikacije</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </button>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </button>
+
+                  <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+                    <DialogContent className="max-w-sm rounded-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-center">Podijeli s prijateljem</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid grid-cols-2 gap-3 py-4">
+                        {(() => {
+                          const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
+                          const shareText = 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!';
+                          return (
+                            <>
+                              <button
+                                onClick={() => {
+                                  window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`, '_blank');
+                                  setShowShareDialog(false);
+                                }}
+                                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                              >
+                                <div className="w-12 h-12 rounded-full bg-[#25D366]/10 flex items-center justify-center">
+                                  <MessageCircle className="w-6 h-6 text-[#25D366]" />
+                                </div>
+                                <span className="text-sm font-medium">WhatsApp</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  window.open(`viber://forward?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`, '_blank');
+                                  setShowShareDialog(false);
+                                }}
+                                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                              >
+                                <div className="w-12 h-12 rounded-full bg-[#7360F2]/10 flex items-center justify-center">
+                                  <MessageCircle className="w-6 h-6 text-[#7360F2]" />
+                                </div>
+                                <span className="text-sm font-medium">Viber</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  window.open(`mailto:?subject=${encodeURIComponent('Preuzmi CostBuddy')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank');
+                                  setShowShareDialog(false);
+                                }}
+                                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                              >
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <Mail className="w-6 h-6 text-primary" />
+                                </div>
+                                <span className="text-sm font-medium">Email</span>
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(referralUrl);
+                                    toast.success('Link kopiran!');
+                                  } catch {
+                                    toast.error('Greška pri kopiranju');
+                                  }
+                                  setShowShareDialog(false);
+                                }}
+                                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                              >
+                                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                                  <Copy className="w-6 h-6 text-muted-foreground" />
+                                </div>
+                                <span className="text-sm font-medium">Kopiraj link</span>
+                              </button>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </>
               )}
 
               {!isLocalMode && (
