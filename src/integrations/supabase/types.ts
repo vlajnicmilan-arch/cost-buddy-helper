@@ -1735,6 +1735,24 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1752,6 +1770,13 @@ export type Database = {
       }
       has_full_payment_source_access: {
         Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
         Returns: boolean
       }
       is_budget_member: {
@@ -1796,6 +1821,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "user"
       income_source_role: "owner" | "member"
       milestone_status: "pending" | "in_progress" | "completed" | "overdue"
       project_role: "manager" | "member" | "viewer"
@@ -1928,6 +1954,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       income_source_role: ["owner", "member"],
       milestone_status: ["pending", "in_progress", "completed", "overdue"],
       project_role: ["manager", "member", "viewer"],
