@@ -14,6 +14,23 @@ export const useAuth = () => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Track login device info
+        if (event === 'SIGNED_IN' && session?.user) {
+          const deviceInfo = {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            platform: navigator.platform,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+          };
+          supabase.from('user_login_logs').insert({
+            user_id: session.user.id,
+            device_info: deviceInfo,
+          } as any).then(() => {});
+        }
       }
     );
 
