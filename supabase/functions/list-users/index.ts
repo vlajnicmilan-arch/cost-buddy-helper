@@ -91,7 +91,14 @@ Deno.serve(async (req) => {
     const { count: totalBudgets } = await supabase.from("budget_plans").select("*", { count: "exact", head: true });
     const { count: totalSavings } = await supabase.from("savings_goals").select("*", { count: "exact", head: true });
     const { count: bugReports } = await supabase.from("bug_reports").select("*", { count: "exact", head: true }).eq("status", "open");
-    
+    const { count: totalReferrals } = await supabase.from("referrals").select("*", { count: "exact", head: true });
+
+    // Get referral data
+    const { data: referrals } = await supabase.from("referrals").select("referrer_id, referred_user_id");
+    const referralCountMap = new Map<string, number>();
+    referrals?.forEach((r: any) => {
+      referralCountMap.set(r.referrer_id, (referralCountMap.get(r.referrer_id) || 0) + 1);
+    });
     // Active users (logged in within 7 days)
     const { data: activeLogins } = await supabase
       .from("user_login_logs")
@@ -121,6 +128,7 @@ Deno.serve(async (req) => {
           roles: rolesMap.get(u.id) || [],
           last_device_info: lastLogin?.device_info || null,
           last_login_at: lastLogin?.logged_in_at || null,
+          referral_count: referralCountMap.get(u.id) || 0,
         };
       }),
       stats: {
@@ -133,6 +141,7 @@ Deno.serve(async (req) => {
         total_budgets: totalBudgets || 0,
         total_savings: totalSavings || 0,
         open_bug_reports: bugReports || 0,
+        total_referrals: totalReferrals || 0,
       },
     };
 

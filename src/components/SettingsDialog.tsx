@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2 } from 'lucide-react';
 import { BugReportDialog } from '@/components/BugReportDialog';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -772,6 +772,40 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
+
+              {!isLocalMode && user && (
+                <button
+                  onClick={async () => {
+                    const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({
+                          title: 'CostBuddy - Praćenje troškova',
+                          text: 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!',
+                          url: referralUrl,
+                        });
+                      } catch (err) {
+                        // User cancelled share
+                      }
+                    } else {
+                      await navigator.clipboard.writeText(referralUrl);
+                      toast.success('Link kopiran u međuspremnik!');
+                    }
+                  }}
+                  className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Share2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium">Pozovi prijatelja</p>
+                      <p className="text-xs text-muted-foreground">Podijeli link za preuzimanje aplikacije</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
 
               {!isLocalMode && (
                 <button
