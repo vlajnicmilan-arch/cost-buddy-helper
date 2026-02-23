@@ -36,6 +36,7 @@ interface AppUser {
   roles: string[];
   last_device_info: any;
   last_login_at: string | null;
+  referral_count: number;
 }
 
 interface Stats {
@@ -48,6 +49,7 @@ interface Stats {
   total_budgets: number;
   total_savings: number;
   open_bug_reports: number;
+  total_referrals: number;
 }
 
 const statusColors: Record<string, string> = {
@@ -333,6 +335,7 @@ const Admin = () => {
                   <StatCard label="Otvorene prijave" value={stats.open_bug_reports} />
                   <StatCard label="Projekti" value={stats.total_projects} />
                   <StatCard label="Budžeti" value={stats.total_budgets} />
+                  <StatCard label="Pozivnice" value={stats.total_referrals} />
                 </div>
                 <div className="flex justify-end">
                   <Button variant="outline" size="sm" onClick={loadUsers} disabled={usersLoading}>
@@ -379,6 +382,9 @@ const Admin = () => {
                               )}
                               {isBanned(u) && (
                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Blokiran</Badge>
+                              )}
+                              {u.referral_count > 0 && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-accent/50">{u.referral_count} pozvan{u.referral_count === 1 ? '' : 'ih'}</Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground flex items-center gap-1">

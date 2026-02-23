@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -67,6 +68,19 @@ const Auth = () => {
     }
   };
 
+  const trackReferral = async () => {
+    const referrerId = localStorage.getItem('referrer_id');
+    if (!referrerId) return;
+    try {
+      await supabase.functions.invoke('track-referral', {
+        body: { referrer_id: referrerId },
+      });
+      localStorage.removeItem('referrer_id');
+    } catch (err) {
+      console.error('Referral tracking failed:', err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -107,6 +121,7 @@ const Auth = () => {
           setAwaitingVerification(true);
           setRegisteredEmail(email.trim());
           toast.success('Registracija uspješna! Provjerite email.');
+          trackReferral();
         } else {
           // Use entered name or fallback to email-extracted name
           let welcomeName = displayName.trim();
@@ -120,6 +135,7 @@ const Auth = () => {
           }
           setNewUserName(welcomeName);
           setShowWelcome(true);
+          trackReferral();
         }
       }
     } finally {
