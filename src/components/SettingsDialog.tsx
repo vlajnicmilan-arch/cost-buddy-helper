@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield } from 'lucide-react';
 import { BugReportDialog } from '@/components/BugReportDialog';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -75,6 +75,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   
   // Family mode disable state
   const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
   
   const { storageMode } = useStorage();
   const { user } = useAuth();
@@ -113,6 +114,17 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               setDisplayName(data.display_name);
               setTempName(data.display_name);
             }
+          });
+      }
+
+      // Check admin role
+      if (user) {
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .then(({ data }) => {
+            setIsAdminUser(data?.some((r: any) => r.role === 'admin') ?? false);
           });
       }
     }
@@ -776,6 +788,27 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                     <div className="text-left">
                       <p className="text-sm font-medium">Prijavi problem</p>
                       <p className="text-xs text-muted-foreground">Prijavite grešku ili nejasnoću</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
+
+              {isAdminUser && (
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    navigate('/admin');
+                  }}
+                  className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium">Admin panel</p>
+                      <p className="text-xs text-muted-foreground">Pregledaj prijave problema</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
