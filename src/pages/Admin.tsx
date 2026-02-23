@@ -288,31 +288,33 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto p-4 pb-24 space-y-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-5 h-5" />
+      <div className="max-w-3xl mx-auto p-4 pb-24 space-y-3">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/')}>
+            <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="text-xl font-bold">Admin panel</h1>
+          <h1 className="text-lg font-bold">Admin</h1>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full">
-            <TabsTrigger value="stats" className="flex-1 gap-1">
-              <BarChart3 className="w-3.5 h-3.5" />
-              Statistika
+          <TabsList className="w-full grid grid-cols-4 h-9">
+            <TabsTrigger value="stats" className="text-xs gap-1 px-1">
+              <BarChart3 className="w-3 h-3 shrink-0" />
+              <span className="hidden sm:inline">Statistika</span>
+              <span className="sm:hidden">Stats</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex-1 gap-1">
-              <Users className="w-3.5 h-3.5" />
-              Korisnici
+            <TabsTrigger value="users" className="text-xs gap-1 px-1">
+              <Users className="w-3 h-3 shrink-0" />
+              <span>Korisnici</span>
             </TabsTrigger>
-            <TabsTrigger value="reports" className="flex-1 gap-1">
-              <Bug className="w-3.5 h-3.5" />
-              Prijave
+            <TabsTrigger value="reports" className="text-xs gap-1 px-1">
+              <Bug className="w-3 h-3 shrink-0" />
+              <span>Prijave</span>
             </TabsTrigger>
-            <TabsTrigger value="notify" className="flex-1 gap-1">
-              <Bell className="w-3.5 h-3.5" />
-              Obavijesti
+            <TabsTrigger value="notify" className="text-xs gap-1 px-1">
+              <Bell className="w-3 h-3 shrink-0" />
+              <span className="hidden sm:inline">Obavijesti</span>
+              <span className="sm:hidden">Slanje</span>
             </TabsTrigger>
           </TabsList>
 
