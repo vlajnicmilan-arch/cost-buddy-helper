@@ -805,7 +805,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                             <>
                               <button
                                 onClick={() => {
-                                  window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`, '_blank');
+                                  window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`;
                                   setShowShareDialog(false);
                                 }}
                                 className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
