@@ -383,6 +383,7 @@ export const ProjectFullScreenView = ({
                 <TabsContent value="transactions" className="m-0">
                   <ProjectTransactionsTab
                     projectId={project.id}
+                    projectName={project.name}
                     expenses={expenses}
                     milestones={milestones}
                     isManager={isManager}

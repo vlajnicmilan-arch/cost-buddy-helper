@@ -47,6 +47,7 @@ interface ProjectExpense {
 
 interface ProjectTransactionsTabProps {
   projectId: string;
+  projectName?: string;
   expenses: ProjectExpense[];
   milestones: ProjectMilestone[];
   isManager: boolean;
@@ -57,6 +58,7 @@ interface ProjectTransactionsTabProps {
 
 export const ProjectTransactionsTab = ({
   projectId,
+  projectName,
   expenses,
   milestones,
   isManager,
@@ -412,9 +414,10 @@ export const ProjectTransactionsTab = ({
       </tr>`;
     }).join('');
 
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>${t('projects.filteredTransactions', 'Filtrirane transakcije')}</title>
-      <style>body{font-family:system-ui,sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px}td{font-size:13px}.summary{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px}</style></head><body>
-      <h2>${t('projects.filteredTransactions', 'Filtrirane transakcije')} (${filteredExpenses.length})</h2>
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>${projectName || ''} - ${t('projects.filteredTransactions', 'Filtrirane transakcije')}</title>
+      <style>body{font-family:system-ui,sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px}td{font-size:13px}.summary{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px}h1{font-size:18px;margin-bottom:4px}h2{font-size:15px;color:#666;margin-top:0}</style></head><body>
+      ${projectName ? `<h1>${projectName}</h1>` : ''}
+      <h2>${hasActiveFilters ? t('projects.filteredTransactions', 'Filtrirane transakcije') : t('projects.allTransactions', 'Sve transakcije')} (${filteredExpenses.length})</h2>
       <table><thead><tr>
         <th>${t('common.date', 'Datum')}</th>
         <th>${t('common.description', 'Opis')}</th>
@@ -714,11 +717,14 @@ export const ProjectTransactionsTab = ({
         </div>
       ) : (
         <div className="space-y-1">
-          {/* Print button when filters active */}
-          {hasActiveFilters && filteredExpenses.length > 0 && (
+          {/* Print button - always visible */}
+          {filteredExpenses.length > 0 && (
             <div className="flex items-center justify-between pb-1">
               <span className="text-xs text-muted-foreground">
-                {t('filters.resultsCount', '{{count}} rezultata', { count: filteredExpenses.length })}
+                {hasActiveFilters
+                  ? t('filters.resultsCount', '{{count}} rezultata', { count: filteredExpenses.length })
+                  : `${filteredExpenses.length} ${t('projects.transactions', 'transakcija')}`
+                }
               </span>
               <Button
                 variant="ghost"
