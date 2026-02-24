@@ -153,6 +153,7 @@ export const ProjectTransactionsTab = ({
   const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>(undefined);
   const [filterPaymentSource, setFilterPaymentSource] = useState<string>('all');
   const [filterExpenseNature, setFilterExpenseNature] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const dateLocale = i18n?.language === 'de' ? de : i18n?.language === 'en' ? enUS : hr;
   
@@ -385,11 +386,12 @@ export const ProjectTransactionsTab = ({
       }
       if (filterPaymentSource !== 'all' && e.payment_source !== filterPaymentSource) return false;
       if (filterExpenseNature !== 'all' && e.expense_nature !== filterExpenseNature) return false;
+      if (filterCategory !== 'all' && e.category !== filterCategory) return false;
       return true;
     });
-  }, [expenses, searchTerm, filterMilestoneId, filterDateRange, filterPaymentSource, filterExpenseNature]);
+  }, [expenses, searchTerm, filterMilestoneId, filterDateRange, filterPaymentSource, filterExpenseNature, filterCategory]);
 
-  const hasActiveFilters = searchTerm.trim() || filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || filterExpenseNature !== 'all';
+  const hasActiveFilters = searchTerm.trim() || filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || filterExpenseNature !== 'all' || filterCategory !== 'all';
 
   const filteredTotals = useMemo(() => {
     const totalExpenses = filteredExpenses.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
@@ -704,6 +706,33 @@ export const ProjectTransactionsTab = ({
                   <SelectItem value="extraordinary">{t('projects.extraordinary', 'Vanredni')}</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Category Filter */}
+              {(() => {
+                const usedCategories = [...new Set(expenses.map(e => e.category))];
+                return (
+                  <Select
+                    value={filterCategory}
+                    onValueChange={setFilterCategory}
+                  >
+                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                      <Filter className="w-3.5 h-3.5 mr-1.5" />
+                      <SelectValue placeholder={t('filters.allCategories', 'Sve kategorije')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('filters.allCategories', 'Sve kategorije')}</SelectItem>
+                      {usedCategories.map((catId) => {
+                        const catInfo = getCategoryInfo(catId as any);
+                        return (
+                          <SelectItem key={catId} value={catId}>
+                            {catInfo.icon} {catInfo.name}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
             </div>
           )}
         </div>

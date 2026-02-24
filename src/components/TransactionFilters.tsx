@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User } from 'lucide-react';
+import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { PaymentSourceCard } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
+import { CATEGORIES, INCOME_CATEGORIES, getCategoryInfo } from '@/types/expense';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 export interface MemberOption {
   userId: string;
@@ -26,6 +28,7 @@ export interface FilterState {
   maxAmount: number | undefined;
   memberId: string | undefined;
   cardId: string | undefined;
+  categoryId: string | undefined;
   scope: TransactionScope;
 }
 
@@ -54,6 +57,14 @@ export const TransactionFilters = ({
 }: TransactionFiltersProps) => {
   const { t, i18n } = useTranslation();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { customCategories } = useCustomCategories();
+
+  // Build combined category list: default + custom
+  const allCategories = [
+    ...CATEGORIES.map(c => ({ id: c.id, name: c.name, icon: c.icon })),
+    ...INCOME_CATEGORIES.map(c => ({ id: c.id, name: c.name, icon: c.icon })),
+    ...customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })),
+  ];
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
@@ -88,6 +99,7 @@ export const TransactionFilters = ({
     filters.maxAmount !== undefined ||
     filters.memberId !== undefined ||
     filters.cardId !== undefined ||
+    filters.categoryId !== undefined ||
     filters.scope !== 'all';
 
   const clearFilters = () => {
@@ -98,6 +110,7 @@ export const TransactionFilters = ({
       maxAmount: undefined,
       memberId: undefined,
       cardId: undefined,
+      categoryId: undefined,
       scope: 'all',
     });
   };
@@ -329,6 +342,25 @@ export const TransactionFilters = ({
               </SelectContent>
             </Select>
           )}
+
+          {/* Category Filter */}
+          <Select
+            value={filters.categoryId || 'all'}
+            onValueChange={(value) => updateFilter('categoryId', value === 'all' ? undefined : value)}
+          >
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <Tag className="w-3.5 h-3.5 mr-1.5" />
+              <SelectValue placeholder={t('filters.allCategories', 'Sve kategorije')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('filters.allCategories', 'Sve kategorije')}</SelectItem>
+              {allCategories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
     </div>
@@ -336,7 +368,7 @@ export const TransactionFilters = ({
 };
 
 // Helper function to apply filters to expenses
-export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null }>(
+export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string }>(
   items: T[],
   filters: FilterState,
   currentUserId?: string
@@ -388,6 +420,10 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       if (item.payment_source_card_id !== filters.cardId) return false;
     }
 
+    if (filters.categoryId !== undefined) {
+      if (item.category !== filters.categoryId) return false;
+    }
+
     return true;
   });
 };
@@ -400,5 +436,6 @@ export const defaultFilters: FilterState = {
   maxAmount: undefined,
   memberId: undefined,
   cardId: undefined,
+  categoryId: undefined,
   scope: 'all',
 };
