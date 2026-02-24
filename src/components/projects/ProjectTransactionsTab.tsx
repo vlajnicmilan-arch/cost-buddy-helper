@@ -80,10 +80,12 @@ export const ProjectTransactionsTab = ({
   // User profiles for showing who added each transaction
   const [profiles, setProfiles] = useState<Record<string, string>>({});
 
+  // Payment source name lookup
+  const [paymentSourceNames, setPaymentSourceNames] = useState<Record<string, string>>({});
+
   // Fetch profiles for all transaction authors
   useEffect(() => {
     const fetchProfiles = async () => {
-      // Get unique user IDs from expenses (use submitted_by if available, otherwise user_id)
       const userIds = [...new Set(expenses.map(e => e.submitted_by || e.user_id))];
       if (userIds.length === 0) return;
 
@@ -103,6 +105,40 @@ export const ProjectTransactionsTab = ({
 
     fetchProfiles();
   }, [expenses]);
+
+  // Fetch payment source names
+  useEffect(() => {
+    const fetchSourceNames = async () => {
+      const sourceIds = [...new Set(
+        expenses
+          .map(e => e.payment_source)
+          .filter(Boolean)
+          .map(s => s!.replace('custom:', ''))
+          .filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id))
+      )];
+      if (sourceIds.length === 0) return;
+
+      const { data } = await supabase
+        .from('custom_payment_sources')
+        .select('id, name, icon')
+        .in('id', sourceIds);
+
+      if (data) {
+        const nameMap: Record<string, string> = {};
+        data.forEach(s => {
+          nameMap[s.id] = `${s.icon} ${s.name}`;
+          nameMap[`custom:${s.id}`] = `${s.icon} ${s.name}`;
+        });
+        setPaymentSourceNames(nameMap);
+      }
+    };
+
+    fetchSourceNames();
+  }, [expenses]);
+
+  const getPaymentSourceLabel = (source: string): string => {
+    return paymentSourceNames[source] || source;
+  };
 
   // Add expense dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -642,7 +678,7 @@ export const ProjectTransactionsTab = ({
                       <SelectItem value="all">{t('filters.allSources', 'Svi izvori')}</SelectItem>
                       {sources.map((source) => (
                         <SelectItem key={source} value={source}>
-                          {source}
+                          {getPaymentSourceLabel(source)}
                         </SelectItem>
                       ))}
                     </SelectContent>
