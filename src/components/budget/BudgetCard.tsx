@@ -48,6 +48,8 @@ export const BudgetCard = ({
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
 
+  const budgetColor = budget.color || '#3b82f6';
+
   const TrendIcon = budget.trend === 'up' 
     ? TrendingUp 
     : budget.trend === 'down' 
@@ -60,7 +62,6 @@ export const BudgetCard = ({
     return 'bg-primary';
   };
 
-  // Get budget status
   const getBudgetStatus = () => {
     if (budget.isOverBudget) return 'overBudget';
     if (budget.isWarning) return 'warning';
@@ -78,25 +79,21 @@ export const BudgetCard = ({
 
   const budgetStatus = getBudgetStatus();
 
-  // Determine border color based on status
   const getBorderColor = () => {
     if (budget.isOverBudget) return 'hsl(var(--destructive))';
     if (budget.isWarning) return 'hsl(var(--warning))';
-    return budget.color || 'hsl(var(--primary))';
+    return budgetColor;
   };
 
-  // Helper to get category display info
   const getCategoryDisplay = (categoryId: string) => {
     const catInfo = CATEGORIES.find(c => c.id === categoryId);
     return catInfo ? { name: catInfo.name, icon: catInfo.icon } : { name: categoryId, icon: '📂' };
   };
 
-  // Collect all original categories from all budget categories that have them
   const allOriginalCategories = budget.categories
     .filter(c => c.originalCategories && c.originalCategories.length > 0)
     .flatMap(c => c.originalCategories || []);
   
-  // Remove duplicates
   const uniqueOriginalCategories = [...new Set(allOriginalCategories)];
 
   return (
@@ -106,15 +103,23 @@ export const BudgetCard = ({
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ 
           scale: 1.01,
-          boxShadow: `0 8px 25px -5px ${budget.color}30`
+          boxShadow: `0 4px 20px ${budgetColor}18`
         }}
-        className="relative group p-4 rounded-xl border bg-card cursor-pointer transition-colors"
+        className="relative group p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 overflow-hidden"
         style={{ 
           borderLeftColor: getBorderColor(),
-          borderLeftWidth: 4
+          borderLeftWidth: 3,
+          background: `linear-gradient(135deg, ${budgetColor}0A 0%, ${budgetColor}04 50%, transparent 100%)`,
+          boxShadow: `0 2px 12px ${budgetColor}08`,
         }}
         onClick={onClick}
       >
+        {/* Subtle radial glow */}
+        <div
+          className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-300 pointer-events-none"
+          style={{ background: `radial-gradient(circle, ${budgetColor} 0%, transparent 70%)` }}
+        />
+
         {/* Hover Actions */}
         <div className={cn(
           "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
@@ -143,12 +148,12 @@ export const BudgetCard = ({
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
-        {/* Header row - Icon, Name, Actions */}
+        {/* Header row */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-              style={{ backgroundColor: `${budget.color}20` }}
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-sm"
+              style={{ background: `linear-gradient(135deg, ${budgetColor}25, ${budgetColor}15)` }}
             >
               {budget.icon || '💰'}
             </div>
@@ -233,7 +238,7 @@ export const BudgetCard = ({
             </span>
           </div>
 
-          {/* Show original categories from all budget categories */}
+          {/* Show original categories */}
           {uniqueOriginalCategories.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-border/50">
               <span className="text-xs text-muted-foreground mr-1">📌</span>

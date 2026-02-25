@@ -49,15 +49,20 @@ export const SummarySection = ({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(var(--primary) / 0.2)' }}
-          className="p-3 sm:p-4 rounded-xl border bg-card text-center"
-          style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--primary))' }}
+          whileHover={{ scale: 1.02, boxShadow: '0 4px 20px hsl(var(--primary) / 0.15)' }}
+          className="p-3 sm:p-4 rounded-2xl border border-border/50 backdrop-blur-md text-center relative overflow-hidden transition-all duration-300"
+          style={{ 
+            borderLeftWidth: 3, 
+            borderLeftColor: 'hsl(var(--primary))',
+            background: 'linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, hsl(var(--primary) / 0.02) 50%, transparent 100%)',
+          }}
         >
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.06] pointer-events-none" style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)' }} />
+          <div className="relative flex items-center justify-center gap-2 mb-1">
             <Wallet className="w-4 h-4 text-primary" />
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.balance')}</span>
           </div>
-          <p className={`text-base sm:text-xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+          <p className={`relative text-base sm:text-xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
             {formatAmount(balance)}
           </p>
         </motion.div>
@@ -66,15 +71,20 @@ export const SummarySection = ({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(168 80% 50% / 0.3)' }}
-          className="p-3 sm:p-4 rounded-xl border bg-card text-center"
-          style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(168 80% 50%)' }}
+          whileHover={{ scale: 1.02, boxShadow: '0 4px 20px hsl(168 80% 50% / 0.15)' }}
+          className="p-3 sm:p-4 rounded-2xl border border-border/50 backdrop-blur-md text-center relative overflow-hidden transition-all duration-300"
+          style={{ 
+            borderLeftWidth: 3, 
+            borderLeftColor: 'hsl(168 80% 50%)',
+            background: 'linear-gradient(135deg, hsl(168 80% 50% / 0.06) 0%, hsl(168 80% 50% / 0.02) 50%, transparent 100%)',
+          }}
         >
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.06] pointer-events-none" style={{ background: 'radial-gradient(circle, hsl(168 80% 50%) 0%, transparent 70%)' }} />
+          <div className="relative flex items-center justify-center gap-2 mb-1">
             <PiggyBank className="w-4 h-4" style={{ color: 'hsl(168 80% 50%)' }} />
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.netWorth')}</span>
           </div>
-          <p className="text-base sm:text-xl font-bold" style={{ color: netWorth >= 0 ? 'hsl(168 80% 50%)' : 'hsl(var(--destructive))' }}>
+          <p className="relative text-base sm:text-xl font-bold" style={{ color: netWorth >= 0 ? 'hsl(168 80% 50%)' : 'hsl(var(--destructive))' }}>
             {formatAmount(netWorth)}
           </p>
         </motion.div>
@@ -83,32 +93,42 @@ export const SummarySection = ({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(var(--income) / 0.3)' }}
-          className="p-3 sm:p-4 rounded-xl border bg-card text-center cursor-pointer"
-          style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--income))' }}
+          whileHover={{ scale: 1.02, boxShadow: '0 4px 20px hsl(var(--income) / 0.15)' }}
+          className="p-3 sm:p-4 rounded-2xl border border-border/50 backdrop-blur-md text-center cursor-pointer relative overflow-hidden transition-all duration-300"
+          style={{ 
+            borderLeftWidth: 3, 
+            borderLeftColor: 'hsl(var(--income))',
+            background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, hsl(var(--income) / 0.02) 50%, transparent 100%)',
+          }}
           onClick={onIncomeClick}
         >
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.06] pointer-events-none" style={{ background: 'radial-gradient(circle, hsl(var(--income)) 0%, transparent 70%)' }} />
+          <div className="relative flex items-center justify-center gap-2 mb-1">
             <TrendingUp className="w-4 h-4 text-income" />
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalIncome')}</span>
           </div>
-          <p className="text-base sm:text-xl font-bold text-income">{formatAmount(totalIncome)}</p>
+          <p className="relative text-base sm:text-xl font-bold text-income">{formatAmount(totalIncome)}</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          whileHover={{ scale: 1.02, boxShadow: '0 8px 25px -5px hsl(var(--destructive) / 0.3)' }}
-          className="p-3 sm:p-4 rounded-xl border bg-card text-center cursor-pointer"
-          style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--destructive))' }}
+          whileHover={{ scale: 1.02, boxShadow: '0 4px 20px hsl(var(--destructive) / 0.15)' }}
+          className="p-3 sm:p-4 rounded-2xl border border-border/50 backdrop-blur-md text-center cursor-pointer relative overflow-hidden transition-all duration-300"
+          style={{ 
+            borderLeftWidth: 3, 
+            borderLeftColor: 'hsl(var(--destructive))',
+            background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, hsl(var(--destructive) / 0.02) 50%, transparent 100%)',
+          }}
           onClick={onExpenseClick}
         >
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.06] pointer-events-none" style={{ background: 'radial-gradient(circle, hsl(var(--destructive)) 0%, transparent 70%)' }} />
+          <div className="relative flex items-center justify-center gap-2 mb-1">
             <TrendingDown className="w-4 h-4 text-destructive" />
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
           </div>
-          <p className="text-base sm:text-xl font-bold text-destructive">{formatAmount(totalExpenses)}</p>
+          <p className="relative text-base sm:text-xl font-bold text-destructive">{formatAmount(totalExpenses)}</p>
         </motion.div>
       </div>
 
@@ -116,9 +136,13 @@ export const SummarySection = ({
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.01, boxShadow: '0 8px 25px -5px hsl(var(--muted-foreground) / 0.2)' }}
-        className="mb-8 p-4 rounded-xl border bg-card cursor-pointer"
-        style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--muted-foreground))' }}
+        whileHover={{ scale: 1.01, boxShadow: '0 4px 20px hsl(var(--muted-foreground) / 0.1)' }}
+        className="mb-8 p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer relative overflow-hidden transition-all duration-300"
+        style={{ 
+          borderLeftWidth: 3, 
+          borderLeftColor: 'hsl(var(--muted-foreground))',
+          background: 'linear-gradient(135deg, hsl(var(--muted-foreground) / 0.04) 0%, transparent 100%)',
+        }}
         onClick={onTransferClick}
       >
         <div className="flex items-center justify-between">
@@ -155,9 +179,13 @@ export const SummarySection = ({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.01, boxShadow: '0 8px 25px -5px hsl(var(--primary) / 0.15)' }}
-          className="mb-8 p-4 rounded-xl border bg-card cursor-pointer"
-          style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--accent))' }}
+          whileHover={{ scale: 1.01, boxShadow: '0 4px 20px hsl(var(--primary) / 0.1)' }}
+          className="mb-8 p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer relative overflow-hidden transition-all duration-300"
+          style={{ 
+            borderLeftWidth: 3, 
+            borderLeftColor: 'hsl(var(--accent))',
+            background: 'linear-gradient(135deg, hsl(var(--accent) / 0.06) 0%, hsl(var(--accent) / 0.02) 50%, transparent 100%)',
+          }}
           onClick={onRecurringClick}
         >
           <div className="flex items-center justify-between">

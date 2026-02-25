@@ -58,17 +58,28 @@ export const ProjectCard = ({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ 
         scale: 1.01,
-        boxShadow: `0 8px 25px -5px ${projectColor}30`
+        boxShadow: `0 4px 20px ${projectColor}18`
       }}
-      className="relative group p-4 rounded-xl border bg-card cursor-pointer transition-colors"
-      style={{ borderLeftColor: projectColor, borderLeftWidth: 4 }}
+      className="relative group p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 overflow-hidden"
+      style={{ 
+        borderLeftColor: projectColor, 
+        borderLeftWidth: 3,
+        background: `linear-gradient(135deg, ${projectColor}0A 0%, ${projectColor}04 50%, transparent 100%)`,
+        boxShadow: `0 2px 12px ${projectColor}08`,
+      }}
       onClick={() => onClick(project)}
     >
+      {/* Subtle radial glow */}
+      <div
+        className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-300 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${projectColor} 0%, transparent 70%)` }}
+      />
+
       <div className="flex items-start gap-3">
         {/* Icon */}
         <div 
-          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-          style={{ backgroundColor: `${projectColor}20` }}
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-sm"
+          style={{ background: `linear-gradient(135deg, ${projectColor}25, ${projectColor}15)` }}
         >
           {projectIcon}
         </div>

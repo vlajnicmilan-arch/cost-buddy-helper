@@ -39,10 +39,11 @@ export const QuickLinksSection = ({
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.01 }}
         onClick={() => navigate('/projects')}
-        className="p-4 rounded-xl border bg-card cursor-pointer transition-colors hover:bg-muted/50"
-        style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(var(--primary))' }}
+        className="p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg relative overflow-hidden"
+        style={{ borderLeftWidth: 3, borderLeftColor: 'hsl(var(--primary))', background: 'linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, hsl(var(--primary) / 0.02) 50%, transparent 100%)' }}
       >
-        <div className="flex items-center gap-3">
+        <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.06] pointer-events-none" style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)' }} />
+        <div className="relative flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <FolderKanban className="w-5 h-5 text-primary" />
           </div>
@@ -61,10 +62,11 @@ export const QuickLinksSection = ({
           transition={{ delay: 0.05 }}
           whileHover={{ scale: 1.01 }}
           onClick={() => navigate('/budgets')}
-          className="p-4 rounded-xl border bg-card cursor-pointer transition-colors hover:bg-muted/50"
-          style={{ borderLeftWidth: 4, borderLeftColor: 'hsl(168 80% 50%)' }}
+          className="p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg relative overflow-hidden"
+          style={{ borderLeftWidth: 3, borderLeftColor: 'hsl(168 80% 50%)', background: 'linear-gradient(135deg, hsl(168 80% 50% / 0.06) 0%, hsl(168 80% 50% / 0.02) 50%, transparent 100%)' }}
         >
-          <div className="flex items-center gap-3">
+          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.06] pointer-events-none" style={{ background: 'radial-gradient(circle, hsl(168 80% 50%) 0%, transparent 70%)' }} />
+          <div className="relative flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'hsl(168 80% 50% / 0.1)' }}>
               <Target className="w-5 h-5" style={{ color: 'hsl(168 80% 50%)' }} />
             </div>
