@@ -3,20 +3,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 // Čišćenje base64 podataka - mobilni uređaji često dodaju prefiks
 function cleanBase64(base64String: string): string {
   if (!base64String) return "";
   let cleaned = base64String.trim();
-
-  // Uklanjanje "data:image/...;base64," prefiksa
   if (cleaned.includes(",") && cleaned.startsWith("data:")) {
     cleaned = cleaned.split(",")[1];
   }
-
-  // Uklanjanje razmaka i novih redova koji se mogu pojaviti na mobitelu
   return cleaned.replace(/\s/g, "");
 }
 
@@ -26,18 +22,14 @@ function detectMimeType(base64String: string): string {
     const match = base64String.match(/data:([^;]+);/);
     if (match) return match[1];
   }
-  
-  // Provjera magic bytes-a
   const cleaned = cleanBase64(base64String);
   if (cleaned.startsWith("/9j/")) return "image/jpeg";
   if (cleaned.startsWith("iVBORw")) return "image/png";
   if (cleaned.startsWith("R0lGOD")) return "image/gif";
   if (cleaned.startsWith("UklGR")) return "image/webp";
-  
-  return "image/jpeg"; // Default
+  return "image/jpeg";
 }
 
-// Prepare image content part for AI message
 function prepareImagePart(imageBase64: string) {
   const mimeType = detectMimeType(imageBase64);
   const cleanedBase64 = cleanBase64(imageBase64);
@@ -48,6 +40,23 @@ function prepareImagePart(imageBase64: string) {
   };
 }
 
+// Try to extract complete items from a partial JSON string
+function extractItemsFromPartial(text: string): { name: string; quantity: number; unit_price: number | null; total_price: number }[] {
+  const items: { name: string; quantity: number; unit_price: number | null; total_price: number }[] = [];
+  // Match complete item objects within the "items" array
+  const itemRegex = /\{\s*"name"\s*:\s*"([^"]+)"\s*,\s*"quantity"\s*:\s*(\d+(?:\.\d+)?)\s*,\s*"unit_price"\s*:\s*(?:(\d+(?:\.\d+)?)|null)\s*,\s*"total_price"\s*:\s*(\d+(?:\.\d+)?)\s*\}/g;
+  let match;
+  while ((match = itemRegex.exec(text)) !== null) {
+    items.push({
+      name: match[1],
+      quantity: parseFloat(match[2]),
+      unit_price: match[3] ? parseFloat(match[3]) : null,
+      total_price: parseFloat(match[4])
+    });
+  }
+  return items;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -56,7 +65,6 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      console.error('No authorization header');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -74,7 +82,6 @@ serve(async (req) => {
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     
     if (claimsError || !claimsData?.claims) {
-      console.error('Invalid token:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Invalid token' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -86,8 +93,7 @@ serve(async (req) => {
     let body;
     try {
       body = await req.json();
-    } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
+    } catch {
       return new Response(
         JSON.stringify({ error: 'Invalid request body' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -96,13 +102,11 @@ serve(async (req) => {
     
     const { imageBase64, imagesBase64, customPaymentSources, customCategories } = body;
 
-    // Support both single image (backward compat) and multiple images
     const images: string[] = imagesBase64 && imagesBase64.length > 0 
       ? imagesBase64 
       : (imageBase64 ? [imageBase64] : []);
 
     if (images.length === 0) {
-      console.error('No image provided in request');
       return new Response(
         JSON.stringify({ error: 'No image provided' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -110,17 +114,13 @@ serve(async (req) => {
     }
 
     console.log('Processing receipt with', images.length, 'image(s) for user:', userId);
-    console.log('Custom payment sources:', customPaymentSources?.length || 0);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Prepare image parts for AI
     const imageParts = images.map(img => prepareImagePart(img));
-    
-    console.log('Sending', imageParts.length, 'image(s) to AI gateway...');
     
     // Build custom categories context
     let customCategoriesContext = '';
@@ -129,7 +129,7 @@ serve(async (req) => {
       customCategoriesContext = `\n\nKORISNIKOVE PRILAGOĐENE KATEGORIJE (koristi ih ako odgovaraju sadržaju računa):\n${catList}\nAko nijedna prilagođena kategorija ne odgovara, koristi standardne kategorije.`;
     }
 
-    // Build custom payment sources context for AI prompt
+    // Build custom payment sources context
     let paymentSourcesContext = '';
     let cardMatchingRules = '';
     
@@ -139,7 +139,6 @@ serve(async (req) => {
       
       customPaymentSources.forEach((src: any) => {
         sourcesList.push(`- "${src.name}" (source_id: ${src.id})`);
-        
         if (src.cards?.length > 0) {
           src.cards.forEach((card: any) => {
             cardsList.push(`  - "${card.card_name}" → zadnje 4 znamenke: "${card.last_four_digits}" → card_id: "${card.id}" → source_id: "${src.id}"`);
@@ -178,12 +177,10 @@ KORAK 3: Ako nema podudaranja brojeva
 === KRAJ PRAVILA ===`;
     }
 
-    // Multi-page instruction
     const multiPageNote = images.length > 1 
       ? `\n\nVAŽNO: Dobio si ${images.length} slika/stranica ISTOG računa. Spoji podatke sa svih stranica u JEDAN rezultat. Artikli s različitih stranica trebaju biti u jednom popisu. Ukupni iznos je onaj na posljednjoj stranici (UKUPNO/TOTAL).`
       : '';
     
-    // Enhanced prompt for better OCR and item extraction
     const systemPrompt = `Ti si precizni OCR asistent za analizu hrvatskih računa. TVOJ CILJ: izvući SVE podatke s računa.${multiPageNote}
 
 === ŠTO MORAŠ PRONAĆI ===
@@ -347,13 +344,12 @@ POSEBNO OBRATI PAŽNJU:
 
 Vrati SAMO JSON bez dodatnog teksta.`;
 
-    // Build user message content with text + all images
     const userContent: any[] = [
       { type: 'text', text: userPrompt },
       ...imageParts
     ];
 
-    // Use Gemini for OCR and categorization with enhanced prompt
+    // === STREAMING: Call AI with stream: true ===
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -361,18 +357,13 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
+        model: 'google/gemini-2.5-flash',
         messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: userContent
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent }
         ],
-        temperature: 0.1  // Lower temperature for more consistent extraction
+        temperature: 0.1,
+        stream: true
       })
     });
 
@@ -394,57 +385,125 @@ Vrati SAMO JSON bez dodatnog teksta.`;
       throw new Error('AI gateway error');
     }
 
-    const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content || '';
-    
-    console.log('AI response:', content);
+    // Stream SSE to client - parse AI tokens and emit item events
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let accumulated = '';
+    let lastItemCount = 0;
 
-    // Parse JSON from AI response
-    let receiptData;
-    try {
-      // Extract JSON from response (might be wrapped in markdown)
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        receiptData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No JSON found in response');
+    const stream = new ReadableStream({
+      async start(controller) {
+        const sendEvent = (event: string, data: any) => {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        };
+
+        // Send initial status
+        sendEvent('status', { step: 'analyzing', message: 'AI analizira račun...' });
+
+        const reader = aiResponse.body!.getReader();
+        let buffer = '';
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            let newlineIdx: number;
+            while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+              let line = buffer.slice(0, newlineIdx);
+              buffer = buffer.slice(newlineIdx + 1);
+
+              if (line.endsWith('\r')) line = line.slice(0, -1);
+              if (!line.startsWith('data: ')) continue;
+
+              const jsonStr = line.slice(6).trim();
+              if (jsonStr === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  accumulated += content;
+
+                  // Try to detect new items progressively
+                  const currentItems = extractItemsFromPartial(accumulated);
+                  if (currentItems.length > lastItemCount) {
+                    // Send newly detected items
+                    for (let i = lastItemCount; i < currentItems.length; i++) {
+                      sendEvent('item', currentItems[i]);
+                    }
+                    lastItemCount = currentItems.length;
+                    sendEvent('status', { step: 'items', message: `Pronađeno ${currentItems.length} artikala...` });
+                  }
+                }
+              } catch {
+                // Partial JSON, continue
+              }
+            }
+          }
+
+          // Parse final complete JSON
+          console.log('AI stream complete. Accumulated length:', accumulated.length);
+          
+          let receiptData;
+          try {
+            const jsonMatch = accumulated.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              receiptData = JSON.parse(jsonMatch[0]);
+            } else {
+              throw new Error('No JSON found in response');
+            }
+          } catch (parseError) {
+            console.error('Failed to parse AI response:', parseError);
+            sendEvent('error', { error: 'Nije moguće analizirati račun' });
+            controller.close();
+            return;
+          }
+
+          if (receiptData.error) {
+            sendEvent('error', { error: receiptData.error });
+            controller.close();
+            return;
+          }
+
+          // Send complete result
+          sendEvent('complete', {
+            amount: receiptData.amount,
+            merchant: receiptData.merchant,
+            description: receiptData.description,
+            category: receiptData.category,
+            date: receiptData.date || null,
+            payment_method: receiptData.payment_method || null,
+            transaction_type: receiptData.transaction_type || 'expense',
+            transfer_destination_name: receiptData.transfer_destination_name || null,
+            custom_payment_source_id: receiptData.custom_payment_source_id || null,
+            payment_source_card_id: receiptData.payment_source_card_id || null,
+            is_installment: receiptData.is_installment || false,
+            installment_count: receiptData.installment_count || null,
+            installment_amount: receiptData.installment_amount || null,
+            items: receiptData.items || []
+          });
+
+          controller.close();
+        } catch (streamError) {
+          console.error('Stream error:', streamError);
+          sendEvent('error', { error: 'Greška pri obradi' });
+          controller.close();
+        }
       }
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      return new Response(
-        JSON.stringify({ error: 'Nije moguće analizirati račun' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    });
 
-    if (receiptData.error) {
-      return new Response(
-        JSON.stringify({ error: receiptData.error }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      }
+    });
 
-    console.log('Parsed receipt data:', receiptData);
-
-    return new Response(
-      JSON.stringify({
-        amount: receiptData.amount,
-        merchant: receiptData.merchant,
-        description: receiptData.description,
-        category: receiptData.category,
-        date: receiptData.date || null,
-        payment_method: receiptData.payment_method || null,
-        transaction_type: receiptData.transaction_type || 'expense',
-        transfer_destination_name: receiptData.transfer_destination_name || null,
-        custom_payment_source_id: receiptData.custom_payment_source_id || null,
-        payment_source_card_id: receiptData.payment_source_card_id || null,
-        is_installment: receiptData.is_installment || false,
-        installment_count: receiptData.installment_count || null,
-        installment_amount: receiptData.installment_amount || null,
-        items: receiptData.items || []
-      }), 
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     console.error('Error processing receipt:', error);
     return new Response(
