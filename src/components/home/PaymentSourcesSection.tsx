@@ -66,24 +66,35 @@ export const PaymentSourcesSection = ({ customPaymentSources, onSourceClick }: P
               animate={{ opacity: 1, scale: 1 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => onSourceClick(source)}
-              className="p-3 sm:p-4 rounded-xl border backdrop-blur-sm cursor-pointer transition-colors"
+              className="p-3 sm:p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group relative overflow-hidden"
               style={{
-                borderColor: source.color + '40',
-                borderLeftWidth: 4,
+                background: `linear-gradient(135deg, ${source.color}0A 0%, ${source.color}04 50%, transparent 100%)`,
+                borderLeftWidth: 3,
                 borderLeftColor: source.color,
-                backgroundColor: source.color + '08',
+                boxShadow: `0 2px 12px ${source.color}08`,
+              }}
+              whileHover={{
+                boxShadow: `0 4px 20px ${source.color}18`,
               }}
             >
-              <div className="flex items-center gap-2 mb-2">
+              {/* Subtle radial glow in corner */}
+              <div
+                className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-300"
+                style={{ background: `radial-gradient(circle, ${source.color} 0%, transparent 70%)` }}
+              />
+              <div className="relative flex items-center gap-2.5 mb-2.5">
                 <span
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-base"
-                  style={{ backgroundColor: source.color + '20', color: source.color }}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-sm"
+                  style={{
+                    background: `linear-gradient(135deg, ${source.color}25, ${source.color}15)`,
+                    color: source.color,
+                  }}
                 >
                   {source.icon}
                 </span>
-                <span className="text-xs sm:text-sm font-medium truncate flex-1">{source.name}</span>
+                <span className="text-xs sm:text-sm font-semibold truncate flex-1 text-foreground/90">{source.name}</span>
               </div>
-              <p className="text-base sm:text-lg font-bold">
+              <p className="relative text-base sm:text-lg font-bold font-mono tracking-tight">
                 <span className={source.balance < 0 ? 'text-destructive' : ''} style={{ color: source.balance >= 0 ? source.color : undefined }}>
                   {formatAmount(source.balance)}
                 </span>
