@@ -22,7 +22,7 @@ interface ParsedReceipt {
 }
 
 // Kompresija slike za mobilne uređaje - smanjuje veličinu za stabilnije slanje
-const compressImage = async (base64: string, maxWidth = 1200, quality = 0.8): Promise<string> => {
+const compressImage = async (base64: string, maxWidth = 800, quality = 0.75): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
