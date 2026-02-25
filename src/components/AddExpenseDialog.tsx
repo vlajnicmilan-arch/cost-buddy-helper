@@ -103,7 +103,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const multiCameraInputRef = useRef<HTMLInputElement>(null);
   const multiGalleryInputRef = useRef<HTMLInputElement>(null);
   
-  const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage, streamedItems, streamStatus } = useReceiptScanner();
+  const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
   const { formatAmount } = useCurrency();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
@@ -612,7 +612,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto -mx-6 px-6 relative">
-          <ScanningOverlay visible={scanning} imageCount={receiptImages.length || 1} streamedItems={streamedItems} streamStatus={streamStatus} />
+          <ScanningOverlay visible={scanning} imageCount={receiptImages.length || 1} />
           {/* Scanned Data Preview */}
           {showScannedPreview && scannedData && (
             <div className="space-y-4 pb-4">

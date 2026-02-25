@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, ReceiptItem } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
@@ -21,9 +21,9 @@ interface ParsedReceipt {
   transfer_destination_name: string | null;
 }
 
-// Kompresija slike za mobilne uređaje
+// Kompresija slike za mobilne uređaje - smanjuje veličinu za stabilnije slanje
 const compressImage = async (base64: string, maxWidth = 800, quality = 0.75): Promise<string> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -39,56 +39,26 @@ const compressImage = async (base64: string, maxWidth = 800, quality = 0.75): Pr
       canvas.height = height;
       
       const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(base64); return; }
+      if (!ctx) {
+        resolve(base64);
+        return;
+      }
       
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      const compressed = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressed);
     };
-    img.onerror = () => resolve(base64);
+    img.onerror = () => {
+      console.error('Failed to load image for compression');
+      resolve(base64);
+    };
     img.src = base64;
   });
 };
 
-function mapPaymentSource(data: any, customPaymentSources?: CustomPaymentSource[]): PaymentSource | null {
-  if (data.custom_payment_source_id) {
-    return `custom:${data.custom_payment_source_id}` as PaymentSource;
-  } else if (data.payment_method === 'card') {
-    return 'bank';
-  } else if (data.payment_method === 'cash') {
-    return 'cash';
-  }
-  return null;
-}
-
-function buildResult(data: any): ParsedReceipt {
-  return {
-    amount: data.amount,
-    merchant: data.merchant,
-    description: data.description,
-    category: data.category as Category,
-    date: data.date || null,
-    payment_source: mapPaymentSource(data),
-    custom_payment_source_id: data.custom_payment_source_id || null,
-    payment_source_card_id: data.payment_source_card_id || null,
-    is_installment: data.is_installment || false,
-    installment_count: data.installment_count || null,
-    installment_amount: data.installment_amount || null,
-    transaction_type: data.transaction_type || 'expense',
-    transfer_destination_name: data.transfer_destination_name || null,
-    items: (data.items || []).map((item: any) => ({
-      name: item.name || '',
-      quantity: item.quantity || 1,
-      unit_price: item.unit_price || undefined,
-      total_price: item.total_price || 0
-    }))
-  };
-}
-
 export const useReceiptScanner = () => {
   const [scanning, setScanning] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(null);
-  const [streamedItems, setStreamedItems] = useState<ReceiptItem[]>([]);
-  const [streamStatus, setStreamStatus] = useState<string>('');
 
   const scanReceipt = async (
     imageBase64: string, 
@@ -105,21 +75,21 @@ export const useReceiptScanner = () => {
   ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
-    setStreamedItems([]);
-    setStreamStatus('Komprimiram slike...');
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
-        toast.error('AI skeniranje računa zahtijeva cloud način rada i prijavu.');
+        toast.error('AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.');
         return null;
       }
 
+      // Compress all images
       const compressedImages = await Promise.all(
         imagesBase64.map(img => compressImage(img))
       );
 
+      // Prepare custom payment sources for the API
       const sourcesForApi = customPaymentSources?.map(src => ({
         id: src.id,
         name: src.name,
@@ -130,8 +100,6 @@ export const useReceiptScanner = () => {
           card_type: card.card_type
         })) || []
       })) || [];
-
-      setStreamStatus('Šaljem na analizu...');
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`,
@@ -149,117 +117,95 @@ export const useReceiptScanner = () => {
         }
       );
 
+      
+
       if (response.status === 429) {
         toast.error('Previše zahtjeva. Pokušaj ponovno za minutu.');
         return null;
       }
+
       if (response.status === 402) {
         toast.error('Nedostaje kredita za AI obradu.');
         return null;
       }
+
       if (!response.ok) {
         let errorMessage = 'Greška pri skeniranju';
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-        } catch { /* ignore */ }
+        } catch {
+          console.error('Failed to parse error response');
+        }
         throw new Error(errorMessage);
       }
 
-      // === STREAMING SSE PARSING ===
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let finalResult: ParsedReceipt | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIdx: number;
-        while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
-          let line = buffer.slice(0, newlineIdx);
-          buffer = buffer.slice(newlineIdx + 1);
-
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.trim() === '') continue;
-
-          // Parse SSE event type
-          if (line.startsWith('event: ')) {
-            const eventType = line.slice(7).trim();
-            // Read the next data line
-            const dataIdx = buffer.indexOf('\n');
-            if (dataIdx === -1) {
-              // Put back and wait for more data
-              buffer = line + '\n' + buffer;
-              break;
-            }
-            let dataLine = buffer.slice(0, dataIdx);
-            buffer = buffer.slice(dataIdx + 1);
-            if (dataLine.endsWith('\r')) dataLine = dataLine.slice(0, -1);
-
-            if (dataLine.startsWith('data: ')) {
-              const jsonStr = dataLine.slice(6);
-              try {
-                const data = JSON.parse(jsonStr);
-
-                if (eventType === 'status') {
-                  setStreamStatus(data.message || '');
-                } else if (eventType === 'item') {
-                  const newItem: ReceiptItem = {
-                    name: data.name || '',
-                    quantity: data.quantity || 1,
-                    unit_price: data.unit_price || undefined,
-                    total_price: data.total_price || 0
-                  };
-                  setStreamedItems(prev => [...prev, newItem]);
-                } else if (eventType === 'complete') {
-                  finalResult = buildResult(data);
-                  setParsedData(finalResult);
-                } else if (eventType === 'error') {
-                  throw new Error(data.error || 'Greška pri analizi');
-                }
-              } catch (e) {
-                if (eventType === 'error') throw e;
-                // Ignore parse errors for partial data
-              }
-            }
-            continue;
-          }
-        }
+      const data = await response.json();
+      
+      // Map payment_method from AI to PaymentSource
+      let paymentSource: PaymentSource | null = null;
+      if (data.custom_payment_source_id) {
+        paymentSource = `custom:${data.custom_payment_source_id}` as PaymentSource;
+      } else if (data.payment_method === 'card') {
+        paymentSource = 'bank';
+      } else if (data.payment_method === 'cash') {
+        paymentSource = 'cash';
       }
 
-      if (finalResult) {
-        if (finalResult.custom_payment_source_id) {
-          const matchedSource = customPaymentSources?.find(s => s.id === finalResult!.custom_payment_source_id);
-          toast.success(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
-        } else {
-          const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';
-          toast.success(`Račun skeniran${pagesNote}! Pronađeno ${finalResult.items.length} artikala.`);
-        }
-      }
+      const result: ParsedReceipt = {
+        amount: data.amount,
+        merchant: data.merchant,
+        description: data.description,
+        category: data.category as Category,
+        date: data.date || null,
+        payment_source: paymentSource,
+        custom_payment_source_id: data.custom_payment_source_id || null,
+        payment_source_card_id: data.payment_source_card_id || null,
+        is_installment: data.is_installment || false,
+        installment_count: data.installment_count || null,
+        installment_amount: data.installment_amount || null,
+        transaction_type: data.transaction_type || 'expense',
+        transfer_destination_name: data.transfer_destination_name || null,
+        items: (data.items || []).map((item: any) => ({
+          name: item.name || '',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || undefined,
+          total_price: item.total_price || 0
+        }))
+      };
 
-      return finalResult;
+      setParsedData(result);
+      
+      // Show different message if custom source was matched
+      if (data.custom_payment_source_id) {
+        const matchedSource = customPaymentSources?.find(s => s.id === data.custom_payment_source_id);
+        toast.success(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
+      } else {
+        const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';
+        toast.success(`Račun skeniran${pagesNote}! Pronađeno ${result.items.length} artikala.`);
+      }
+      return result;
     } catch (error) {
       console.error('Error scanning receipt:', error);
       toast.error(error instanceof Error ? error.message : 'Greška pri skeniranju računa');
       return null;
     } finally {
       setScanning(false);
-      setStreamStatus('');
     }
   };
 
   const uploadReceiptImage = async (imageBase64: string): Promise<string | null> => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) return null;
+      
+      if (!sessionData.session) {
+        return null;
+      }
 
       const userId = sessionData.session.user.id;
       const fileName = `${userId}/${Date.now()}.jpg`;
       
+      // Convert base64 to blob
       const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
       const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
@@ -271,9 +217,16 @@ export const useReceiptScanner = () => {
 
       const { error } = await supabase.storage
         .from('receipts')
-        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false });
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
 
-      if (error) { console.error('Error uploading receipt:', error); return null; }
+      if (error) {
+        console.error('Error uploading receipt:', error);
+        return null;
+      }
+
       return fileName;
     } catch (error) {
       console.error('Error uploading receipt image:', error);
@@ -281,17 +234,13 @@ export const useReceiptScanner = () => {
     }
   };
 
-  const clearParsedData = useCallback(() => {
+  const clearParsedData = () => {
     setParsedData(null);
-    setStreamedItems([]);
-    setStreamStatus('');
-  }, []);
+  };
 
   return {
     scanning,
     parsedData,
-    streamedItems,
-    streamStatus,
     scanReceipt,
     scanMultipleReceipts,
     uploadReceiptImage,
