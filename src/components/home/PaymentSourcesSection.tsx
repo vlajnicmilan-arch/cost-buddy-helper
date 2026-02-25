@@ -66,11 +66,12 @@ export const PaymentSourcesSection = ({ customPaymentSources, onSourceClick }: P
               animate={{ opacity: 1, scale: 1 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => onSourceClick(source)}
-              className="p-3 sm:p-4 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer transition-colors"
+              className="p-3 sm:p-4 rounded-xl border backdrop-blur-sm cursor-pointer transition-colors"
               style={{
                 borderColor: source.color + '40',
                 borderLeftWidth: 4,
-                borderLeftColor: source.color
+                borderLeftColor: source.color,
+                backgroundColor: source.color + '08',
               }}
             >
               <div className="flex items-center gap-2 mb-2">
