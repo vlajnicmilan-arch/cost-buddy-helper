@@ -79,17 +79,25 @@ Deno.serve(async (req) => {
     });
 
     // Get latest login log per user (last device)
-    const { data: loginLogs } = await supabase
-      .from("user_login_logs")
-      .select("user_id, device_info, logged_in_at")
-      .order("logged_in_at", { ascending: false });
-
+    // Fetch in batches to avoid the 1000 row default limit
     const lastLoginMap = new Map<string, any>();
-    loginLogs?.forEach((l: any) => {
-      if (!lastLoginMap.has(l.user_id)) {
-        lastLoginMap.set(l.user_id, l);
-      }
-    });
+    const userIds = users.map((u: any) => u.id);
+    
+    // Query login logs for current page's users only (much more efficient)
+    if (userIds.length > 0) {
+      const { data: loginLogs } = await supabase
+        .from("user_login_logs")
+        .select("user_id, device_info, logged_in_at")
+        .in("user_id", userIds)
+        .order("logged_in_at", { ascending: false })
+        .limit(userIds.length * 3); // Get a few per user to ensure coverage
+
+      loginLogs?.forEach((l: any) => {
+        if (!lastLoginMap.has(l.user_id)) {
+          lastLoginMap.set(l.user_id, l);
+        }
+      });
+    }
 
     // Get stats
     const now = new Date();
