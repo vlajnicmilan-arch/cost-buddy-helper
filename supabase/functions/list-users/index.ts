@@ -79,22 +79,33 @@ Deno.serve(async (req) => {
     });
 
     // Get latest login log per user (last device)
-    // Fetch in batches to avoid the 1000 row default limit
     const lastLoginMap = new Map<string, any>();
     const userIds = users.map((u: any) => u.id);
-    
-    // Query login logs for current page's users only (much more efficient)
-    if (userIds.length > 0) {
-      const { data: loginLogs } = await supabase
-        .from("user_login_logs")
-        .select("user_id, device_info, logged_in_at")
-        .in("user_id", userIds)
-        .order("logged_in_at", { ascending: false })
-        .limit(userIds.length * 3); // Get a few per user to ensure coverage
 
-      loginLogs?.forEach((l: any) => {
-        if (!lastLoginMap.has(l.user_id)) {
-          lastLoginMap.set(l.user_id, l);
+    // Fetch latest login per user directly to avoid skew from very active accounts
+    if (userIds.length > 0) {
+      const loginResults = await Promise.all(
+        userIds.map(async (userId: string) => {
+          const { data, error } = await supabase
+            .from("user_login_logs")
+            .select("user_id, device_info, logged_in_at")
+            .eq("user_id", userId)
+            .order("logged_in_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (error) {
+            console.error(`Failed to fetch login log for user ${userId}:`, error);
+            return null;
+          }
+
+          return data;
+        })
+      );
+
+      loginResults.forEach((login) => {
+        if (login?.user_id) {
+          lastLoginMap.set(login.user_id, login);
         }
       });
     }
