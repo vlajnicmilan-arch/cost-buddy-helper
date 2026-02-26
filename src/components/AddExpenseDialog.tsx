@@ -444,8 +444,12 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         recordHabit(expense.merchant_name, expense.category);
       }
       toast.success(t('transactions.savedSuccess') || 'Transakcija uspješno spremljena!');
-      resetForm();
+      // Close dialog FIRST to prevent flash of empty form, then reset
       setOpen(false);
+      // Use setTimeout to reset form after dialog animation completes
+      setTimeout(() => {
+        resetForm();
+      }, 150);
     } catch (error) {
       console.error('Error saving transaction:', error);
       toast.error(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
