@@ -424,9 +424,14 @@ const Admin = () => {
                           <Clock className="w-3 h-3" />
                           {format(new Date(u.created_at), 'dd.MM.yyyy.', { locale: hr })}
                         </span>
-                        {u.last_sign_in_at && (
-                          <span>Zadnja prijava: {format(new Date(u.last_sign_in_at), 'dd.MM. HH:mm', { locale: hr })}</span>
-                        )}
+                        {(() => {
+                          const latestLoginAt = u.last_login_at ?? u.last_sign_in_at;
+                          if (!latestLoginAt) return null;
+
+                          return (
+                            <span>Zadnja prijava: {format(new Date(latestLoginAt), 'dd.MM. HH:mm', { locale: hr })}</span>
+                          );
+                        })()}
                       </div>
                     </div>
 
