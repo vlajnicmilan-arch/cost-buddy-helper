@@ -16,6 +16,7 @@ import { useInstallments } from '@/hooks/useInstallments';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
+import { useBackButton } from '@/hooks/useBackButton';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -115,6 +116,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
+
+  // Prevent Android back button from closing dialog unexpectedly
+  useBackButton(open, () => setOpen(false));
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
 
@@ -610,6 +614,12 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         className="sm:max-w-md glass-card border-border/50 h-[85vh] flex flex-col"
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => {
+          // Prevent Escape/back button from closing while scanning or reviewing scanned data
+          if (scanning || showScannedPreview || isSaving) {
+            e.preventDefault();
+          }
+        }}
       >
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="text-xl font-semibold">{t('transactions.newTransaction')}</DialogTitle>
