@@ -538,6 +538,8 @@ const Index = () => {
         expenses={allExpenses}
         onUpdate={updateExpense}
         onDelete={deleteExpense}
+        onImportCSV={importFromCSV}
+        findDuplicates={findDuplicates}
       />
 
       {showWelcome && (

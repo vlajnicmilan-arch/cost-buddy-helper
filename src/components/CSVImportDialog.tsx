@@ -15,11 +15,14 @@ import { Badge } from '@/components/ui/badge';
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
   existingExpenses?: Expense[];
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
+  defaultPaymentSource?: string;
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
-export const CSVImportDialog = ({ onImport, existingExpenses = [] }: CSVImportDialogProps) => {
+export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource }: CSVImportDialogProps) => {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ImportStep>('upload');
@@ -110,8 +113,16 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [] }: CSVImportDi
   };
 
   const handleImport = async () => {
-    const selectedTransactions = transactions.filter((_, i) => selectedIndices.has(i));
+    let selectedTransactions = transactions.filter((_, i) => selectedIndices.has(i));
     if (selectedTransactions.length === 0) return;
+
+    // Auto-assign payment source if provided
+    if (defaultPaymentSource) {
+      selectedTransactions = selectedTransactions.map(tx => ({
+        ...tx,
+        payment_source: defaultPaymentSource as any
+      }));
+    }
 
     setStep('importing');
 
@@ -135,17 +146,27 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [] }: CSVImportDi
     return `${prefix}${amount.toFixed(2)} €`;
   };
 
-  return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
+  const isControlled = externalOpen !== undefined;
+  const dialogOpen = isControlled ? externalOpen : open;
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isControlled) {
+      onExternalOpenChange?.(isOpen);
+    } else {
       setOpen(isOpen);
-      if (!isOpen) setTimeout(resetState, 200);
-    }}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full gap-2 rounded-xl">
-          <Upload className="w-4 h-4" />
-          {t('import.importCSV')}
-        </Button>
-      </DialogTrigger>
+    }
+    if (!isOpen) setTimeout(resetState, 200);
+  };
+
+  return (
+    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full gap-2 rounded-xl">
+            <Upload className="w-4 h-4" />
+            {t('import.importCSV')}
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[85vh] flex flex-col">
         <DialogHeader>
