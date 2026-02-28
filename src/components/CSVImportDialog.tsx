@@ -18,11 +18,12 @@ interface CSVImportDialogProps {
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   defaultPaymentSource?: string;
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
-export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource }: CSVImportDialogProps) => {
+export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource, findDuplicates }: CSVImportDialogProps) => {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ImportStep>('upload');
@@ -35,8 +36,11 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
-  // Duplicate detection: same amount and same date (day-level)
-  const isDuplicate = (tx: ParsedTransaction): boolean => {
+  const [duplicateIndices, setDuplicateIndices] = useState<Set<number>>(new Set());
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
+
+  // Simple fallback duplicate detection: same amount and same date (day-level)
+  const isSimpleDuplicate = (tx: ParsedTransaction): boolean => {
     return existingExpenses.some(existing => {
       const existingDate = existing.date instanceof Date ? existing.date : new Date(existing.date);
       const txDate = tx.date instanceof Date ? tx.date : new Date(tx.date);
@@ -47,15 +51,33 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     });
   };
 
-  const duplicateCount = useMemo(() => 
-    transactions.filter(tx => isDuplicate(tx)).length, 
-    [transactions, existingExpenses]
-  );
+  // Detect duplicates using fuzzy findDuplicates if available, else simple check
+  const detectDuplicates = (txs: ParsedTransaction[]): Set<number> => {
+    if (findDuplicates) {
+      const { duplicates } = findDuplicates(txs);
+      const dupSet = new Set<number>();
+      duplicates.forEach(dup => {
+        const idx = txs.findIndex(tx => tx === dup);
+        if (idx >= 0) dupSet.add(idx);
+      });
+      return dupSet;
+    }
+    // Fallback: simple check
+    const dupSet = new Set<number>();
+    txs.forEach((tx, i) => {
+      if (isSimpleDuplicate(tx)) dupSet.add(i);
+    });
+    return dupSet;
+  };
+
+  const duplicateCount = duplicateIndices.size;
 
   const resetState = () => {
     setStep('upload');
     setTransactions([]);
     setSelectedIndices(new Set());
+    setDuplicateIndices(new Set());
+    setSkipDuplicates(true);
     setSource('');
     setError('');
     setImportedCount(0);
@@ -78,9 +100,12 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
 
       setTransactions(result.transactions);
       setSource(result.source);
+      // Detect duplicates
+      const dups = detectDuplicates(result.transactions);
+      setDuplicateIndices(dups);
       // Auto-deselect duplicates
       const nonDupIndices = new Set(
-        result.transactions.map((_, i) => i).filter(i => !isDuplicate(result.transactions[i]))
+        result.transactions.map((_, i) => i).filter(i => !dups.has(i))
       );
       setSelectedIndices(nonDupIndices);
       setStep('preview');
@@ -110,6 +135,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     } else {
       setSelectedIndices(new Set(transactions.map((_, i) => i)));
     }
+  };
+
+  const selectOnlyNew = () => {
+    const nonDupIndices = new Set(
+      transactions.map((_, i) => i).filter(i => !duplicateIndices.has(i))
+    );
+    setSelectedIndices(nonDupIndices);
+    setSkipDuplicates(true);
   };
 
   const handleImport = async () => {
@@ -240,11 +273,40 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
               className="flex flex-col min-h-0"
             >
               {duplicateCount > 0 && (
-                <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                  <Copy className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-xs">
-                    {duplicateCount} mogućih duplikata pronađeno (automatski isključeni)
-                  </span>
+                <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col gap-2 text-amber-700 dark:text-amber-400">
+                  <div className="flex items-center gap-2">
+                    <Copy className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-xs font-medium">
+                      {duplicateCount} potencijalnih duplikata pronađeno — automatski preskočeni
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 text-[10px] px-2 rounded-lg border-amber-500/30"
+                      onClick={(e) => { e.stopPropagation(); selectOnlyNew(); }}
+                    >
+                      Samo nove
+                    </Button>
+                    <Button
+                      variant={skipDuplicates ? "outline" : "default"}
+                      size="sm"
+                      className="h-6 text-[10px] px-2 rounded-lg border-amber-500/30"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSkipDuplicates(!skipDuplicates);
+                        if (skipDuplicates) {
+                          // Include all
+                          setSelectedIndices(new Set(transactions.map((_, i) => i)));
+                        } else {
+                          selectOnlyNew();
+                        }
+                      }}
+                    >
+                      {skipDuplicates ? 'Uključi duplikate' : 'Preskoči duplikate'}
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -267,7 +329,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                 <div className="space-y-1 py-2">
                   {transactions.map((tx, index) => {
                     const categoryInfo = getCategoryInfo(tx.category);
-                    const dup = isDuplicate(tx);
+                    const dup = duplicateIndices.has(index);
                     return (
                       <motion.div
                         key={index}

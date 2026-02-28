@@ -325,25 +325,50 @@ export const useExpenseCRUD = ({
       } else {
         if (!user) { toast.error('Moraš biti prijavljen'); return; }
 
+        const rows = transactions.map(tx => ({
+          user_id: user.id,
+          amount: tx.amount,
+          description: tx.description,
+          category: tx.category,
+          type: tx.type,
+          date: tx.date.toISOString(),
+          payment_source: tx.payment_source || 'other',
+          merchant_name: tx.merchant_name || null,
+          ai_extracted: false,
+          import_batch_id: batchId
+        }));
+
+        // Try bulk insert first; on failure, fall back to individual inserts
         const { data, error } = await supabase
           .from('expenses')
-          .insert(transactions.map(tx => ({
-            user_id: user.id,
-            amount: tx.amount,
-            description: tx.description,
-            category: tx.category,
-            type: tx.type,
-            date: tx.date.toISOString(),
-            payment_source: tx.payment_source || 'other',
-            merchant_name: tx.merchant_name || null,
-            ai_extracted: false,
-            import_batch_id: batchId
-          })))
+          .insert(rows)
           .select();
 
-        if (error) throw error;
+        let insertedData = data;
 
-        const newExpenses: Expense[] = (data || []).map(e => ({
+        if (error) {
+          console.warn('Bulk insert failed, falling back to individual inserts:', error.message);
+          insertedData = [];
+          let failCount = 0;
+          for (const row of rows) {
+            const { data: single, error: singleErr } = await supabase
+              .from('expenses')
+              .insert(row)
+              .select()
+              .single();
+            if (singleErr) {
+              console.error('Individual insert failed:', singleErr.message, row.description);
+              failCount++;
+            } else if (single) {
+              insertedData.push(single);
+            }
+          }
+          if (failCount > 0) {
+            toast.warning(`${failCount} transakcija nije uspjelo uvesti`);
+          }
+        }
+
+        const newExpenses: Expense[] = (insertedData || []).map(e => ({
           ...e,
           date: new Date(e.date),
           category: e.category as Category,
@@ -355,7 +380,7 @@ export const useExpenseCRUD = ({
         setExpenses(prev => [...newExpenses, ...prev].sort(
           (a, b) => b.date.getTime() - a.date.getTime()
         ));
-        toast.success(`Uvezeno ${transactions.length} transakcija`);
+        toast.success(`Uvezeno ${newExpenses.length} transakcija`);
       }
     } catch (error) {
       console.error('Error importing CSV:', error);
