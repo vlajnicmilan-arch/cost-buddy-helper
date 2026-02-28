@@ -1034,7 +1034,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   <Button
                     type="button"
                     variant="outline"
-                    className="flex-1 gap-2 rounded-xl"
+                    className="flex-1 gap-2 rounded-xl border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50"
                     onClick={() => cameraInputRef.current?.click()}
                     disabled={scanning || showMultiImageCollector}
                   >
@@ -1044,7 +1044,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   <Button
                     type="button"
                     variant="outline"
-                    className="flex-1 gap-2 rounded-xl"
+                    className="flex-1 gap-2 rounded-xl border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-400 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
                     onClick={() => galleryInputRef.current?.click()}
                     disabled={scanning || showMultiImageCollector}
                   >
@@ -1059,7 +1059,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="w-full text-xs"
+                    className="w-full text-xs border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/50"
                     onClick={() => setShowMultiImageCollector(true)}
                   >
                     📄 Račun ima više stranica? Dodaj više slika
