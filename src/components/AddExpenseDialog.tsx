@@ -1183,7 +1183,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
                     type === 'expense' 
                       ? "bg-expense text-expense-foreground shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-[hsl(var(--expense))] bg-[hsl(var(--expense)/0.1)] hover:bg-[hsl(var(--expense)/0.18)]"
                   )}
                 >
                   {t('transactions.expense')}
@@ -1195,7 +1195,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
                     type === 'income' 
                       ? "bg-income text-income-foreground shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-[hsl(var(--income))] bg-[hsl(var(--income)/0.1)] hover:bg-[hsl(var(--income)/0.18)]"
                   )}
                 >
                   {t('transactions.income')}
@@ -1207,7 +1207,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
                     type === 'transfer' 
                       ? "bg-primary text-primary-foreground shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)] hover:bg-[hsl(var(--primary)/0.18)]"
                   )}
                 >
                   🔄
