@@ -62,6 +62,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount } = useCurrency();
   const { plans } = useInstallments();
   const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
@@ -334,14 +335,8 @@ export const PaymentSourceTransactionsDialog = ({
                     <input
                       ref={pdfInputRef}
                       type="file"
-                      accept="application/pdf,.csv"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.type === 'application/pdf') {
-                          handlePDFSelect(e);
-                        }
-                      }}
+                      accept="application/pdf"
+                      onChange={handlePDFSelect}
                       className="hidden"
                     />
                     <Button
@@ -349,14 +344,23 @@ export const PaymentSourceTransactionsDialog = ({
                       size="sm"
                       onClick={() => pdfInputRef.current?.click()}
                       disabled={parsing}
-                      className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                      className="h-7 text-xs gap-1.5 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
                     >
                       {parsing ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
-                        <Upload className="w-3.5 h-3.5" />
+                        <FileText className="w-3.5 h-3.5" />
                       )}
-                      {parsing ? t('import.analyzingPDF') : t('import.importPDF', 'Uvezi PDF')}
+                      PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCsvImportOpen(true)}
+                      className="h-7 text-xs gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      CSV
                     </Button>
                   </>
                 )}
@@ -837,6 +841,17 @@ export const PaymentSourceTransactionsDialog = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CSV Import Dialog */}
+      {onImportCSV && paymentSource && (
+        <CSVImportDialog
+          onImport={onImportCSV}
+          existingExpenses={expenses}
+          externalOpen={csvImportOpen}
+          onExternalOpenChange={setCsvImportOpen}
+          defaultPaymentSource={`custom:${paymentSource.id}`}
+        />
+      )}
     </>
   );
 };
