@@ -850,6 +850,7 @@ export const PaymentSourceTransactionsDialog = ({
           externalOpen={csvImportOpen}
           onExternalOpenChange={setCsvImportOpen}
           defaultPaymentSource={`custom:${paymentSource.id}`}
+          findDuplicates={findDuplicates}
         />
       )}
     </>
