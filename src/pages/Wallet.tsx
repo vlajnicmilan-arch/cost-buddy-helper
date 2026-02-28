@@ -71,6 +71,8 @@ const Wallet = () => {
         expenses={allExpenses}
         onUpdate={updateExpense}
         onDelete={deleteExpense}
+        onImportCSV={importFromCSV}
+        findDuplicates={findDuplicates}
       />
 
       <BottomNav />

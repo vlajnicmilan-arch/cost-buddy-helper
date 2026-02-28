@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,13 +14,17 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText, Upload, Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useBackButton } from '@/hooks/useBackButton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { usePDFParser } from '@/hooks/usePDFParser';
+import { ParsedTransaction } from '@/lib/csvParsers';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { CSVImportDialog } from './CSVImportDialog';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -29,6 +33,8 @@ interface PaymentSourceTransactionsDialogProps {
   expenses: Expense[];
   onUpdate: (expense: Expense) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
 }
 
 export const PaymentSourceTransactionsDialog = ({
@@ -37,7 +43,9 @@ export const PaymentSourceTransactionsDialog = ({
   paymentSource,
   expenses,
   onUpdate,
-  onDelete
+  onDelete,
+  onImportCSV,
+  findDuplicates
 }: PaymentSourceTransactionsDialogProps) => {
   const { t } = useTranslation();
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -49,8 +57,14 @@ export const PaymentSourceTransactionsDialog = ({
   const [installmentsExpanded, setInstallmentsExpanded] = useState(false);
   const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
+  const [includeDuplicates, setIncludeDuplicates] = useState(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const { formatAmount } = useCurrency();
   const { plans } = useInstallments();
+  const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
 
   // Filter installment plans for this payment source
   const sourceInstallments = useMemo(() => {
@@ -217,6 +231,74 @@ export const PaymentSourceTransactionsDialog = ({
     clearSelection();
   };
 
+  // PDF import handlers
+  const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast.error(t('import.selectPDF'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string;
+      const result = await parsePDF(base64);
+      if (result && result.transactions.length > 0) {
+        setPdfPreviewOpen(true);
+      }
+    };
+    reader.readAsDataURL(file);
+    if (pdfInputRef.current) pdfInputRef.current.value = '';
+  };
+
+  const handleImportPDFTransactions = async () => {
+    if (!parsedData || !onImportCSV || !paymentSource) return;
+    const paymentSourceValue = `custom:${paymentSource.id}`;
+    const transactions: ParsedTransaction[] = parsedData.transactions.map(tx => ({
+      date: tx.date,
+      description: tx.description,
+      amount: tx.amount,
+      type: tx.type,
+      category: tx.category,
+      merchant_name: tx.merchant_name || undefined,
+      source: 'pdf' as const,
+      payment_source: paymentSourceValue as any
+    }));
+    if (findDuplicates) {
+      const { duplicates, unique } = findDuplicates(transactions);
+      if (duplicates.length > 0) {
+        setDuplicateInfo({ duplicates, unique });
+        setIncludeDuplicates(false);
+        setPdfPreviewOpen(false);
+        setDuplicateWarningOpen(true);
+        return;
+      }
+    }
+    await onImportCSV(transactions);
+    setPdfPreviewOpen(false);
+    clearParsedData();
+    toast.success(t('import.importedFromPDF', { count: transactions.length }));
+  };
+
+  const handleConfirmImportWithDuplicates = async () => {
+    if (!duplicateInfo || !onImportCSV) return;
+    const transactionsToImport = includeDuplicates 
+      ? [...duplicateInfo.unique, ...duplicateInfo.duplicates]
+      : duplicateInfo.unique;
+    if (transactionsToImport.length === 0) {
+      toast.info(t('import.noNewTransactions'));
+      setDuplicateWarningOpen(false);
+      clearParsedData();
+      setDuplicateInfo(null);
+      return;
+    }
+    await onImportCSV(transactionsToImport);
+    setDuplicateWarningOpen(false);
+    clearParsedData();
+    setDuplicateInfo(null);
+    toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
+  };
+
   if (!paymentSource) return null;
 
   return (
@@ -247,6 +329,37 @@ export const PaymentSourceTransactionsDialog = ({
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {onImportCSV && (
+                  <>
+                    <input
+                      ref={pdfInputRef}
+                      type="file"
+                      accept="application/pdf,.csv"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.type === 'application/pdf') {
+                          handlePDFSelect(e);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => pdfInputRef.current?.click()}
+                      disabled={parsing}
+                      className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      {parsing ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Upload className="w-3.5 h-3.5" />
+                      )}
+                      {parsing ? t('import.analyzingPDF') : t('import.importPDF', 'Uvezi PDF')}
+                    </Button>
+                  </>
+                )}
                 {filteredSourceExpenses.length > 0 && (
                   <Button
                     variant="outline"
@@ -599,6 +712,131 @@ export const PaymentSourceTransactionsDialog = ({
           }}
         />
       )}
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
+        <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5 text-primary" />
+              {t('import.foundTransactions')} → {paymentSource?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {parsedData && (
+            <div className="flex-1 overflow-y-auto space-y-4">
+              {(parsedData.detected_bank || parsedData.account_iban || parsedData.cards_detected.length > 0) && (
+                <div className="p-3 bg-primary/10 rounded-xl text-sm space-y-1">
+                  {parsedData.detected_bank && (
+                    <p className="font-medium">🏦 {t('import.bank')}: <span className="text-primary">{parsedData.detected_bank}</span></p>
+                  )}
+                  {parsedData.account_iban && (
+                    <p className="text-muted-foreground text-xs font-mono">{t('import.account')}: {parsedData.account_iban}</p>
+                  )}
+                  {parsedData.cards_detected.length > 0 && (
+                    <p className="text-muted-foreground text-xs">💳 {t('import.cards')}: {parsedData.cards_detected.map(c => `*${c}`).join(', ')}</p>
+                  )}
+                </div>
+              )}
+              {parsedData.summary && (
+                <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
+                  <div className="text-center">
+                    <p className="text-muted-foreground">{t('import.income')}</p>
+                    <p className="font-bold text-income">{formatAmount(parsedData.summary.total_income)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground">{t('import.expenses')}</p>
+                    <p className="font-bold text-expense">{formatAmount(parsedData.summary.total_expenses)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground">{t('import.total')}</p>
+                    <p className="font-bold">{parsedData.summary.transaction_count}</p>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {parsedData.transactions.map((tx, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-background/50 rounded-xl text-sm">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{tx.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {tx.date.toLocaleDateString()} • {tx.merchant_name || tx.category}
+                        {tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}
+                      </p>
+                    </div>
+                    <p className={cn("font-mono font-bold", 
+                      tx.type === 'income' ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
+                    )}>
+                      {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '↔' : '-'}{formatAmount(tx.amount)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="p-2 bg-primary/5 rounded-lg text-xs text-muted-foreground text-center">
+                ℹ️ Sve transakcije će biti dodijeljene izvoru: <strong className="text-foreground">{paymentSource?.name}</strong>
+              </div>
+              <Button onClick={handleImportPDFTransactions} className="w-full rounded-xl">
+                {t('import.importCount', { count: parsedData.transactions.length })}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Warning Dialog */}
+      <Dialog open={duplicateWarningOpen} onOpenChange={setDuplicateWarningOpen}>
+        <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              {t('import.duplicatesFound')}
+            </DialogTitle>
+          </DialogHeader>
+          {duplicateInfo && (
+            <div className="flex-1 overflow-y-auto space-y-4">
+              <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm">
+                <p className="font-medium text-orange-600 dark:text-orange-400">
+                  {t('import.duplicatesExist', { count: duplicateInfo.duplicates.length })}
+                </p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  {t('import.newTransactionsReady', { count: duplicateInfo.unique.length })}
+                </p>
+              </div>
+              {duplicateInfo.duplicates.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">{t('import.duplicates')}:</p>
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {duplicateInfo.duplicates.map((tx, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm border border-border/50">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate text-xs">{tx.description}</p>
+                          <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()}</p>
+                        </div>
+                        <p className={cn("font-mono text-xs", tx.type === 'income' ? 'text-income' : 'text-expense')}>
+                          {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-xl">
+                <Checkbox id="include-duplicates-source" checked={includeDuplicates} onCheckedChange={(checked) => setIncludeDuplicates(checked === true)} />
+                <label htmlFor="include-duplicates-source" className="text-sm cursor-pointer">
+                  {t('import.importDuplicatesAnyway', { count: duplicateInfo.duplicates.length })}
+                </label>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex gap-2 mt-4">
+            <Button variant="outline" onClick={() => { setDuplicateWarningOpen(false); clearParsedData(); setDuplicateInfo(null); }} className="rounded-xl">
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleConfirmImportWithDuplicates} className="rounded-xl">
+              {t('import.importCount', { count: includeDuplicates ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0) : duplicateInfo?.unique.length || 0 })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
