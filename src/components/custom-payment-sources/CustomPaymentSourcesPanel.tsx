@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
+import { BalanceCorrectionDialog } from './BalanceCorrectionDialog';
 import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
 import { CustomPaymentSource, SUGGESTED_PAYMENT_SOURCES } from '@/types/customPaymentSource';
 import {
@@ -39,7 +40,20 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
   const [reorderMode, setReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [membersDialogSource, setMembersDialogSource] = useState<CustomPaymentSource | null>(null);
+  const [balanceCorrectionSource, setBalanceCorrectionSource] = useState<CustomPaymentSource | null>(null);
   const { t } = useTranslation();
+
+  const handleBalanceCorrection = async (newBalance: number) => {
+    if (!balanceCorrectionSource) return;
+    await updateCustomPaymentSource(balanceCorrectionSource.id, {
+      name: balanceCorrectionSource.name,
+      icon: balanceCorrectionSource.icon,
+      color: balanceCorrectionSource.color,
+      balance: newBalance,
+      description: balanceCorrectionSource.description || undefined,
+    });
+    setBalanceCorrectionSource(null);
+  };
 
   const handleSave = async (data: { name: string; icon: string; color: string; balance: number; description?: string }) => {
     if (editingSource) {
@@ -257,7 +271,11 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
               </div>
               {/* Row 2: Balance + Action buttons */}
               <div className="flex items-center justify-between mt-2 pl-[52px]">
-                <span className={`font-mono text-sm font-semibold ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}>
+                <span 
+                  className={`font-mono text-sm font-semibold cursor-pointer hover:underline ${(source.balance || 0) >= 0 ? 'text-income' : 'text-expense'}`}
+                  onClick={(e) => { e.stopPropagation(); setBalanceCorrectionSource(source); }}
+                  title={t('paymentSources.correctBalance', 'Korigiraj saldo')}
+                >
                   €{(source.balance || 0).toFixed(2)}
                 </span>
                 {!reorderMode && (
@@ -389,6 +407,13 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
           onOpenChange={(open) => !open && setMembersDialogSource(null)}
           paymentSource={membersDialogSource}
         />
+        <BalanceCorrectionDialog
+          open={!!balanceCorrectionSource}
+          onOpenChange={(open) => !open && setBalanceCorrectionSource(null)}
+          currentBalance={balanceCorrectionSource?.balance || 0}
+          sourceName={balanceCorrectionSource?.name || ''}
+          onSave={handleBalanceCorrection}
+        />
       </>
     );
   }
@@ -444,6 +469,13 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
         open={!!membersDialogSource}
         onOpenChange={(open) => !open && setMembersDialogSource(null)}
         paymentSource={membersDialogSource}
+      />
+      <BalanceCorrectionDialog
+        open={!!balanceCorrectionSource}
+        onOpenChange={(open) => !open && setBalanceCorrectionSource(null)}
+        currentBalance={balanceCorrectionSource?.balance || 0}
+        sourceName={balanceCorrectionSource?.name || ''}
+        onSave={handleBalanceCorrection}
       />
     </>
   );
