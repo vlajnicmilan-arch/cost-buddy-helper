@@ -318,7 +318,15 @@ export const useExpenseCRUD = ({
             ai_extracted: false,
             import_batch_id: batchId
           });
+          // Update balance for each imported transaction
+          const txType = tx.type as TransactionType;
+          if (txType === 'transfer') {
+            await updateBalance(tx.payment_source || 'other', tx.amount, 'transfer');
+          } else {
+            await updateBalance(tx.payment_source || 'other', tx.amount, txType);
+          }
         }
+        onBalanceUpdated?.();
         const updatedExpenses = await getLocalExpenses();
         setExpenses(updatedExpenses);
         toast.success(`Uvezeno ${transactions.length} transakcija`);
@@ -377,6 +385,20 @@ export const useExpenseCRUD = ({
           expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined
         }));
 
+        // Update balances for all imported transactions
+        for (const tx of newExpenses) {
+          const txType = tx.type as TransactionType;
+          if (txType === 'transfer') {
+            await updateBalance(tx.payment_source, tx.amount, 'transfer');
+            if (tx.income_source_id) {
+              await updateBalance(tx.income_source_id, tx.amount, 'income');
+            }
+          } else {
+            await updateBalance(tx.payment_source, tx.amount, txType);
+          }
+        }
+        onBalanceUpdated?.();
+
         setExpenses(prev => [...newExpenses, ...prev].sort(
           (a, b) => b.date.getTime() - a.date.getTime()
         ));
@@ -387,7 +409,7 @@ export const useExpenseCRUD = ({
       toast.error('Greška pri uvozu transakcija');
       throw error;
     }
-  }, [isLocalMode, user, setExpenses]);
+  }, [isLocalMode, user, setExpenses, updateBalance, onBalanceUpdated]);
 
   return { addExpense, updateExpense, bulkUpdateExpenses, deleteExpense, importFromCSV };
 };
