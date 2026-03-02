@@ -48,6 +48,13 @@ export const ProjectMilestonesTab = ({
   const [status, setStatus] = useState<MilestoneStatus>('pending');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [color, setColor] = useState('#3b82f6');
+
+  const MILESTONE_COLORS = [
+    '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', 
+    '#ec4899', '#06b6d4', '#ef4444', '#84cc16',
+    '#f97316', '#6366f1', '#14b8a6', '#a855f7'
+  ];
 
   const openDialog = (milestone?: ProjectMilestone) => {
     if (milestone) {
@@ -56,6 +63,7 @@ export const ProjectMilestonesTab = ({
       setDescription(milestone.description || '');
       setBudget(milestone.budget.toString());
       setStatus(milestone.status);
+      setColor(milestone.color || '#3b82f6');
       setStartDate(milestone.start_date ? new Date(milestone.start_date) : undefined);
       setDueDate(milestone.due_date ? new Date(milestone.due_date) : undefined);
     } else {
@@ -64,6 +72,7 @@ export const ProjectMilestonesTab = ({
       setDescription('');
       setBudget('');
       setStatus('pending');
+      setColor('#3b82f6');
       setStartDate(undefined);
       setDueDate(undefined);
     }
@@ -81,6 +90,7 @@ export const ProjectMilestonesTab = ({
         description: description.trim() || null,
         budget: parseFloat(budget) || 0,
         status,
+        color,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
         sort_order: editingMilestone?.sort_order ?? milestones.length
@@ -152,7 +162,7 @@ export const ProjectMilestonesTab = ({
                 className="p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-start gap-3">
-                  <div className={cn("w-3 h-3 rounded-full mt-1.5 shrink-0", getStatusColor(milestone.status))} />
+                  <div className="w-3 h-3 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: milestone.color || '#3b82f6' }} />
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -286,6 +296,24 @@ export const ProjectMilestonesTab = ({
                     <Calendar mode="single" selected={dueDate} onSelect={setDueDate} />
                   </PopoverContent>
                 </Popover>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('projects.color', 'Boja')}</Label>
+              <div className="flex flex-wrap gap-2">
+                {MILESTONE_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={cn(
+                      "w-7 h-7 rounded-full border-2 transition-transform",
+                      color === c ? "border-foreground scale-110" : "border-transparent"
+                    )}
+                    style={{ backgroundColor: c }}
+                    onClick={() => setColor(c)}
+                  />
+                ))}
               </div>
             </div>
 
