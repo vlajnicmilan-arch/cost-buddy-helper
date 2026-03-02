@@ -15,7 +15,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2 } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2, CheckSquare, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -52,6 +52,19 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [month, setMonth] = useState<Date>(new Date());
+
+  // Multi-select mode
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [multiSelectedDates, setMultiSelectedDates] = useState<Date[]>([]);
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
+
+  // Bulk add form state
+  const [bulkWorkerId, setBulkWorkerId] = useState('');
+  const [bulkScheduledHours, setBulkScheduledHours] = useState('8');
+  const [bulkActualHours, setBulkActualHours] = useState('8');
+  const [bulkMilestones, setBulkMilestones] = useState<string[]>([]);
+  const [bulkNote, setBulkNote] = useState('');
+  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
 
   // Filter state
   const [filterWorkerId, setFilterWorkerId] = useState<string>('all');
@@ -166,10 +179,112 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
 
   // Now any date can be clicked — not just dates with entries
   const handleDayClick = (day: Date) => {
+    if (multiSelectMode) {
+      setMultiSelectedDates(prev => {
+        const exists = prev.some(d => isSameDay(d, day));
+        if (exists) return prev.filter(d => !isSameDay(d, day));
+        return [...prev, day];
+      });
+      return;
+    }
     setSelectedDate(day);
     setShowAddForm(false);
     setEditingEntryId(null);
     resetAddForm();
+  };
+
+  const toggleMultiSelectMode = () => {
+    setMultiSelectMode(prev => {
+      if (prev) {
+        setMultiSelectedDates([]);
+      }
+      return !prev;
+    });
+  };
+
+  const resetBulkForm = () => {
+    setBulkWorkerId('');
+    setBulkScheduledHours('8');
+    setBulkActualHours('8');
+    setBulkMilestones([]);
+    setBulkNote('');
+  };
+
+  const handleBulkWorkerChange = (workerId: string) => {
+    setBulkWorkerId(workerId);
+    const worker = workers.find(w => w.id === workerId);
+    const hours = getDefaultHours(worker);
+    setBulkScheduledHours(hours);
+    setBulkActualHours(hours);
+  };
+
+  const toggleBulkMilestone = (milestoneId: string) => {
+    setBulkMilestones(prev => {
+      if (prev.includes(milestoneId)) return prev.filter(id => id !== milestoneId);
+      if (prev.length >= 3) return prev;
+      return [...prev, milestoneId];
+    });
+  };
+
+  const handleBulkSubmit = async () => {
+    if (!bulkWorkerId || multiSelectedDates.length === 0) return;
+    setIsBulkSubmitting(true);
+    try {
+      const dateStrings = multiSelectedDates.map(d => format(d, 'yyyy-MM-dd'));
+      
+      // Filter out dates that already have entries for this worker
+      const existingDates = entries
+        .filter(e => e.worker_id === bulkWorkerId)
+        .map(e => e.work_date);
+      const newDates = dateStrings.filter(d => !existingDates.includes(d));
+      const skippedCount = dateStrings.length - newDates.length;
+
+      if (newDates.length === 0) {
+        toast.error('Svi odabrani datumi već imaju zapise za ovog djelatnika');
+        setIsBulkSubmitting(false);
+        return;
+      }
+
+      const insertData = newDates.map(dateStr => ({
+        worker_id: bulkWorkerId,
+        project_id: projectId,
+        work_date: dateStr,
+        scheduled_hours: parseFloat(bulkScheduledHours) || 8,
+        actual_hours: parseFloat(bulkActualHours) || 8,
+        milestone_ids: bulkMilestones,
+        note: bulkNote.trim() || null
+      }));
+
+      const { data, error } = await supabase
+        .from('project_work_entries')
+        .insert(insertData)
+        .select();
+
+      if (error) throw error;
+
+      if (data) {
+        setEntries(prev => [...prev, ...data.map(d => ({
+          ...d,
+          scheduled_hours: Number(d.scheduled_hours),
+          actual_hours: Number(d.actual_hours)
+        }))]);
+      }
+
+      const msg = skippedCount > 0
+        ? `Dodano ${newDates.length} radnih dana (${skippedCount} preskočeno - već postoji)`
+        : `Dodano ${newDates.length} radnih dana`;
+      toast.success(msg);
+      
+      setShowBulkDialog(false);
+      setMultiSelectedDates([]);
+      setMultiSelectMode(false);
+      resetBulkForm();
+    } catch (error: any) {
+      console.error('Error bulk adding entries:', error);
+      toast.error(t('common.error'));
+    } finally {
+      setIsBulkSubmitting(false);
+    }
   };
 
   const resetAddForm = () => {
@@ -407,6 +522,40 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
         </Card>
       )}
 
+      {/* Multi-select toggle */}
+      {workers.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant={multiSelectMode ? "default" : "outline"}
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={toggleMultiSelectMode}
+          >
+            <CheckSquare className="w-4 h-4" />
+            {multiSelectMode ? 'Višestruki odabir uključen' : 'Označi više dana'}
+          </Button>
+          {multiSelectMode && multiSelectedDates.length > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMultiSelectedDates([])}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                className="gap-2"
+                onClick={() => { resetBulkForm(); setShowBulkDialog(true); }}
+              >
+                <Plus className="w-4 h-4" />
+                {multiSelectedDates.length} dana
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+
       <Card className="p-2 flex justify-center">
         <Calendar
           mode="single"
@@ -417,6 +566,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
           className="p-3 pointer-events-auto"
           modifiers={{
             hasEntry: datesWithoutColor,
+            multiSelected: multiSelectedDates,
             ...Object.fromEntries(
               Array.from(colorGroups.entries()).map(([color, dates], idx) => [`color_${idx}`, dates])
             )
@@ -426,6 +576,12 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
               backgroundColor: 'hsl(var(--primary) / 0.2)',
               fontWeight: 'bold',
               borderRadius: '50%'
+            },
+            multiSelected: {
+              backgroundColor: 'hsl(var(--primary) / 0.4)',
+              fontWeight: 'bold',
+              borderRadius: '50%',
+              boxShadow: 'inset 0 0 0 2px hsl(var(--primary))'
             },
             ...Object.fromEntries(
               Array.from(colorGroups.entries()).map(([color, _], idx) => [
@@ -443,8 +599,107 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       </Card>
 
       <p className="text-xs text-muted-foreground text-center">
-        {t('workers.calendarHint', 'Kliknite na datum za detalje ili dodavanje zapisa')}
+        {multiSelectMode
+          ? `Odaberite dane pa pritisnite gumb za grupno dodavanje (${multiSelectedDates.length} odabrano)`
+          : t('workers.calendarHint', 'Kliknite na datum za detalje ili dodavanje zapisa')}
       </p>
+
+      {/* Bulk Add Dialog */}
+      <Dialog open={showBulkDialog} onOpenChange={(open) => { if (!open) { setShowBulkDialog(false); resetBulkForm(); } }}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" showBackButton>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckSquare className="w-5 h-5" />
+              Grupno dodavanje — {multiSelectedDates.length} dana
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {/* Selected dates preview */}
+            <div className="flex flex-wrap gap-1.5">
+              {multiSelectedDates
+                .sort((a, b) => a.getTime() - b.getTime())
+                .map((d, i) => (
+                  <Badge key={i} variant="secondary" className="text-xs">
+                    {format(d, 'd.M.', { locale: hr })}
+                  </Badge>
+                ))
+              }
+            </div>
+
+            {/* Worker select */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('workers.worker', 'Djelatnik')}</Label>
+              <Select value={bulkWorkerId} onValueChange={handleBulkWorkerChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('workers.selectWorker', 'Odaberi djelatnika')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {workers.map(w => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.first_name} {w.last_name} — {w.position}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Hours */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('workers.scheduledHours', 'Planirano sati')}</Label>
+                <Input type="number" step="0.5" min="0" max="24" value={bulkScheduledHours} onChange={(e) => setBulkScheduledHours(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('workers.actualHours', 'Odrađeno sati')}</Label>
+                <Input type="number" step="0.5" min="0" max="24" value={bulkActualHours} onChange={(e) => setBulkActualHours(e.target.value)} />
+              </div>
+            </div>
+
+            {/* Milestones */}
+            {milestones.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1">
+                  <Flag className="w-3.5 h-3.5" />
+                  {t('workers.milestones', 'Faze rada')} ({bulkMilestones.length}/3)
+                </Label>
+                <div className="space-y-1.5 max-h-24 overflow-y-auto">
+                  {milestones.map((milestone) => (
+                    <div key={milestone.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`cal-bulk-ms-${milestone.id}`}
+                        checked={bulkMilestones.includes(milestone.id)}
+                        onCheckedChange={() => toggleBulkMilestone(milestone.id)}
+                        disabled={!bulkMilestones.includes(milestone.id) && bulkMilestones.length >= 3}
+                      />
+                      <label htmlFor={`cal-bulk-ms-${milestone.id}`} className={cn("text-xs cursor-pointer", !bulkMilestones.includes(milestone.id) && bulkMilestones.length >= 3 && "opacity-50")}>
+                        <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style={{ backgroundColor: milestone.color || '#3b82f6' }} />
+                        {milestone.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Note */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t('workers.note', 'Napomena')}</Label>
+              <Textarea value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')} rows={2} />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => { setShowBulkDialog(false); resetBulkForm(); }}>
+                {t('common.cancel', 'Odustani')}
+              </Button>
+              <Button size="sm" className="flex-1" onClick={handleBulkSubmit} disabled={!bulkWorkerId || isBulkSubmitting}>
+                {isBulkSubmitting ? t('common.saving', 'Spremanje...') : `Dodaj na ${multiSelectedDates.length} dana`}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Day Detail Dialog */}
       <Dialog open={!!selectedDate} onOpenChange={(open) => { if (!open) { setSelectedDate(null); setShowAddForm(false); setEditingEntryId(null); resetAddForm(); } }}>
