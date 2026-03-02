@@ -53,7 +53,8 @@ export const ProjectMilestonesTab = ({
   const MILESTONE_COLORS = [
     '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', 
     '#ec4899', '#06b6d4', '#ef4444', '#84cc16',
-    '#f97316', '#6366f1', '#14b8a6', '#a855f7'
+    '#f97316', '#6366f1', '#14b8a6', '#a855f7',
+    '#ffffff'
   ];
 
   const openDialog = (milestone?: ProjectMilestone) => {
@@ -308,7 +309,7 @@ export const ProjectMilestonesTab = ({
                     type="button"
                     className={cn(
                       "w-7 h-7 rounded-full border-2 transition-transform",
-                      color === c ? "border-foreground scale-110" : "border-transparent"
+                      color === c ? "border-foreground scale-110" : c === '#ffffff' ? "border-muted-foreground/40" : "border-transparent"
                     )}
                     style={{ backgroundColor: c }}
                     onClick={() => setColor(c)}
