@@ -15,7 +15,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -65,6 +65,14 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   const [selectedMilestones, setSelectedMilestones] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Edit state
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editWorkerId, setEditWorkerId] = useState('');
+  const [editScheduledHours, setEditScheduledHours] = useState('8');
+  const [editActualHours, setEditActualHours] = useState('8');
+  const [editMilestones, setEditMilestones] = useState<string[]>([]);
+  const [editNote, setEditNote] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -133,6 +141,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   const handleDayClick = (day: Date) => {
     setSelectedDate(day);
     setShowAddForm(false);
+    setEditingEntryId(null);
     resetAddForm();
   };
 
@@ -228,6 +237,81 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
     );
   }
 
+  const handleStartEdit = (entry: WorkEntry) => {
+    setEditingEntryId(entry.id);
+    setEditWorkerId(entry.worker_id);
+    setEditScheduledHours(entry.scheduled_hours.toString());
+    setEditActualHours(entry.actual_hours.toString());
+    setEditMilestones(entry.milestone_ids || []);
+    setEditNote(entry.note || '');
+    setShowAddForm(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEntryId(null);
+    setEditNote('');
+    setEditMilestones([]);
+  };
+
+  const toggleEditMilestone = (milestoneId: string) => {
+    setEditMilestones(prev => {
+      if (prev.includes(milestoneId)) return prev.filter(id => id !== milestoneId);
+      if (prev.length >= 3) return prev;
+      return [...prev, milestoneId];
+    });
+  };
+
+  const handleUpdateEntry = async () => {
+    if (!editingEntryId) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('project_work_entries')
+        .update({
+          scheduled_hours: parseFloat(editScheduledHours) || 8,
+          actual_hours: parseFloat(editActualHours) || 8,
+          milestone_ids: editMilestones,
+          note: editNote.trim() || null
+        })
+        .eq('id', editingEntryId);
+
+      if (error) throw error;
+
+      setEntries(prev => prev.map(e => e.id === editingEntryId ? {
+        ...e,
+        scheduled_hours: parseFloat(editScheduledHours) || 8,
+        actual_hours: parseFloat(editActualHours) || 8,
+        milestone_ids: editMilestones,
+        note: editNote.trim() || null
+      } : e));
+
+      toast.success(t('common.saved', 'Spremljeno'));
+      setEditingEntryId(null);
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      toast.error(t('common.error'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
+    try {
+      const { error } = await supabase
+        .from('project_work_entries')
+        .delete()
+        .eq('id', entryId);
+
+      if (error) throw error;
+
+      setEntries(prev => prev.filter(e => e.id !== entryId));
+      toast.success(t('common.deleted', 'Obrisano'));
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      toast.error(t('common.error'));
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Summary */}
@@ -320,7 +404,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       </p>
 
       {/* Day Detail Dialog */}
-      <Dialog open={!!selectedDate} onOpenChange={(open) => { if (!open) { setSelectedDate(null); setShowAddForm(false); resetAddForm(); } }}>
+      <Dialog open={!!selectedDate} onOpenChange={(open) => { if (!open) { setSelectedDate(null); setShowAddForm(false); setEditingEntryId(null); resetAddForm(); } }}>
         <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" showBackButton>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -360,6 +444,70 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
                   if (!worker) return null;
                   const cost = entry.actual_hours * worker.hourly_rate;
                   const diff = entry.actual_hours - entry.scheduled_hours;
+                  const isEditing = editingEntryId === entry.id;
+
+                  if (isEditing) {
+                    return (
+                      <Card key={entry.id} className="p-3 border-primary/30 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium text-sm">{worker.first_name} {worker.last_name}</span>
+                            <Badge variant="outline" className="text-xs">{worker.position}</Badge>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">{t('workers.scheduledHours', 'Planirano sati')}</Label>
+                            <Input type="number" step="0.5" min="0" max="24" value={editScheduledHours} onChange={(e) => setEditScheduledHours(e.target.value)} />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">{t('workers.actualHours', 'Odrađeno sati')}</Label>
+                            <Input type="number" step="0.5" min="0" max="24" value={editActualHours} onChange={(e) => setEditActualHours(e.target.value)} />
+                          </div>
+                        </div>
+
+                        {milestones.length > 0 && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs flex items-center gap-1">
+                              <Flag className="w-3.5 h-3.5" />
+                              {t('workers.milestones', 'Faze rada')} ({editMilestones.length}/3)
+                            </Label>
+                            <div className="space-y-1.5 max-h-24 overflow-y-auto">
+                              {milestones.map((milestone) => (
+                                <div key={milestone.id} className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`cal-edit-ms-${milestone.id}`}
+                                    checked={editMilestones.includes(milestone.id)}
+                                    onCheckedChange={() => toggleEditMilestone(milestone.id)}
+                                    disabled={!editMilestones.includes(milestone.id) && editMilestones.length >= 3}
+                                  />
+                                  <label htmlFor={`cal-edit-ms-${milestone.id}`} className={cn("text-xs cursor-pointer", !editMilestones.includes(milestone.id) && editMilestones.length >= 3 && "opacity-50")}>
+                                    {milestone.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">{t('workers.note', 'Napomena')}</Label>
+                          <Textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')} rows={2} />
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1" onClick={handleCancelEdit}>
+                            {t('common.cancel', 'Odustani')}
+                          </Button>
+                          <Button size="sm" className="flex-1" onClick={handleUpdateEntry} disabled={isSubmitting}>
+                            {isSubmitting ? t('common.saving', 'Spremanje...') : t('common.save', 'Spremi')}
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  }
 
                   return (
                     <Card key={entry.id} className="p-3">
@@ -369,7 +517,15 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
                             <User className="w-4 h-4 text-muted-foreground" />
                             <span className="font-medium">{worker.first_name} {worker.last_name}</span>
                           </div>
-                          <Badge variant="outline" className="text-xs">{worker.position}</Badge>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-xs">{worker.position}</Badge>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartEdit(entry)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEntry(entry.id)}>
+                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
