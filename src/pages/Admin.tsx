@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck, Bell, Send } from 'lucide-react';
+import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck, Bell, Send, MessageSquareReply } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -84,6 +84,8 @@ const Admin = () => {
   const [sendingNotif, setSendingNotif] = useState(false);
   const [usersPage, setUsersPage] = useState(1);
   const [hasMoreUsers, setHasMoreUsers] = useState(false);
+  const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
+  const [sendingReply, setSendingReply] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -219,6 +221,30 @@ const Admin = () => {
       toast.error('Greška: ' + (err.message || 'Nepoznata greška'));
     }
     setSendingNotif(false);
+  };
+
+  const sendReplyToReporter = async (report: BugReport) => {
+    const replyText = replyMessages[report.id]?.trim();
+    if (!replyText) {
+      toast.error('Unesite poruku');
+      return;
+    }
+    setSendingReply(report.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('broadcast-notification', {
+        body: {
+          title: `Odgovor na prijavu: ${report.title}`,
+          message: replyText,
+          targetUserId: report.user_id,
+        },
+      });
+      if (error) throw error;
+      toast.success(`Poruka poslana korisniku ${report.user_display_name || ''}`);
+      setReplyMessages(prev => ({ ...prev, [report.id]: '' }));
+    } catch (err: any) {
+      toast.error('Greška: ' + (err.message || 'Nepoznata greška'));
+    }
+    setSendingReply(null);
   };
 
   const parseUserAgent = (ua: string) => {
@@ -572,6 +598,38 @@ const Admin = () => {
                               <SelectItem value="closed">Zatvoreno</SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+
+                        {/* Reply to reporter */}
+                        <div className="pt-2 border-t">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                            <MessageSquareReply className="w-3 h-3" /> Pošalji poruku korisniku:
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder={`Poruka za ${report.user_display_name || 'korisnika'}...`}
+                              value={replyMessages[report.id] || ''}
+                              onChange={(e) => setReplyMessages(prev => ({ ...prev, [report.id]: e.target.value }))}
+                              className="text-sm"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  sendReplyToReporter(report);
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => sendReplyToReporter(report)}
+                              disabled={sendingReply === report.id || !replyMessages[report.id]?.trim()}
+                            >
+                              {sendingReply === report.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Send className="w-3.5 h-3.5" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}

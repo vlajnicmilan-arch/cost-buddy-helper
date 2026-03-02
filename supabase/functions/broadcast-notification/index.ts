@@ -46,12 +46,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { title, message } = await req.json();
+    const { title, message, targetUserId } = await req.json();
     if (!title || !message) {
       return new Response(JSON.stringify({ error: "Title and message are required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // If targetUserId is provided, send to a single user
+    if (targetUserId) {
+      const { error: insertError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: targetUserId,
+          title,
+          message,
+          type: "system",
+          read: false,
+        });
+
+      if (insertError) throw insertError;
+
+      return new Response(
+        JSON.stringify({ success: true, count: 1 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Get all users
