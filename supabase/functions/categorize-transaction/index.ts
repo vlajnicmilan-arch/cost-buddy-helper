@@ -11,14 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const { description, merchant_name, custom_categories } = await req.json();
+    const { description, merchant_name, custom_categories, items } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    if (!description && !merchant_name) {
+    if (!description && !merchant_name && (!items || items.length === 0)) {
       return new Response(JSON.stringify({ category: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -33,11 +33,19 @@ serve(async (req) => {
 
     const allCategories = [...defaultCategories, ...(custom_categories || [])];
 
-    const prompt = `You are a transaction categorizer. Given a transaction description and/or merchant name, return the single most appropriate category.
+    // Build items context if available
+    const itemsContext = items && items.length > 0
+      ? `\nReceipt items: ${items.map((i: any) => i.name).join(", ")}`
+      : "";
+
+    const prompt = `You are a transaction categorizer. Given a transaction description, merchant name, and/or receipt items, return the single most appropriate category.
+
+IMPORTANT: If receipt items are provided, prioritize them over the generic description to determine the category. For example, if the description says "Weekly shopping" but the items are all coffee/drinks, categorize as "food" not "shopping".
 
 Available categories: ${allCategories.join(", ")}
 
 Rules:
+- Coffee, tea, drinks, beverages from cafes or shops → food
 - Supermarkets, grocery stores (Konzum, Lidl, Kaufland, Spar, Plodine, Interspar, Tommy, Studenac, Billa, Aldi, Penny, dm) → groceries
 - Restaurants, cafes, bakeries, fast food, bars → food
 - Gas stations, parking, tolls, public transit → transport
@@ -68,7 +76,7 @@ Return ONLY the category name, nothing else.`;
         model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: prompt },
-          { role: "user", content: `Description: ${description || "N/A"}\nMerchant: ${merchant_name || "N/A"}` },
+          { role: "user", content: `Description: ${description || "N/A"}\nMerchant: ${merchant_name || "N/A"}${itemsContext}` },
         ],
         max_tokens: 20,
       }),

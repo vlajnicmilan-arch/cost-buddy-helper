@@ -138,7 +138,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
             setCategory(cat as Category);
           }
           setAiSuggesting(false);
-        });
+        }, items.length > 0 ? items : undefined);
       }
     }
   }, [type, getSuggestedCategory, aiCategorize, description]);
@@ -155,7 +155,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
             setCategory(cat as Category);
           }
           setAiSuggesting(false);
-        });
+        }, items.length > 0 ? items : undefined);
       }
     }
   }, [type, getSuggestedCategory, aiCategorize, merchantName]);
