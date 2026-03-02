@@ -5,12 +5,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Expense } from '@/types/expense';
-import { Settings2, CreditCard, Tags } from 'lucide-react';
+import { Settings2, CreditCard, Tags, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BulkPaymentSourceDialog } from './BulkPaymentSourceDialog';
 import { BulkCategoryDialog } from './BulkCategoryDialog';
+import { RecategorizeDialog } from './RecategorizeDialog';
 
 interface BulkEditDropdownProps {
   expenses: Expense[];
@@ -21,6 +23,7 @@ export const BulkEditDropdown = ({ expenses, onUpdateExpenses }: BulkEditDropdow
   const { t } = useTranslation();
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [recategorizeDialogOpen, setRecategorizeDialogOpen] = useState(false);
 
   return (
     <>
@@ -31,7 +34,7 @@ export const BulkEditDropdown = ({ expenses, onUpdateExpenses }: BulkEditDropdow
             {t('bulk.bulkEdit', 'Grupno uređivanje')}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuItem onClick={() => setPaymentDialogOpen(true)} className="gap-2 cursor-pointer">
             <CreditCard className="w-4 h-4" />
             {t('bulk.paymentSource', 'Plaćanje')}
@@ -40,10 +43,14 @@ export const BulkEditDropdown = ({ expenses, onUpdateExpenses }: BulkEditDropdow
             <Tags className="w-4 h-4" />
             {t('bulk.category', 'Kategorija')}
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setRecategorizeDialogOpen(true)} className="gap-2 cursor-pointer">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            AI Rekategorizacija
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Payment Source Dialog */}
       <BulkPaymentSourceDialogControlled 
         expenses={expenses} 
         onUpdateExpenses={onUpdateExpenses}
@@ -51,12 +58,18 @@ export const BulkEditDropdown = ({ expenses, onUpdateExpenses }: BulkEditDropdow
         onOpenChange={setPaymentDialogOpen}
       />
 
-      {/* Category Dialog */}
       <BulkCategoryDialogControlled 
         expenses={expenses} 
         onUpdateExpenses={onUpdateExpenses}
         open={categoryDialogOpen}
         onOpenChange={setCategoryDialogOpen}
+      />
+
+      <RecategorizeDialog
+        expenses={expenses}
+        onUpdateExpenses={onUpdateExpenses}
+        open={recategorizeDialogOpen}
+        onOpenChange={setRecategorizeDialogOpen}
       />
     </>
   );
