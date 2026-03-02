@@ -120,7 +120,34 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
     return true;
   });
 
+  // Build color map: date string -> milestone color
+  const dateColorMap = new Map<string, string>();
+  filteredEntries.forEach(e => {
+    if (!dateColorMap.has(e.work_date) && e.milestone_ids && e.milestone_ids.length > 0) {
+      const milestone = milestones.find(m => m.id === e.milestone_ids![0]);
+      if (milestone?.color) {
+        dateColorMap.set(e.work_date, milestone.color);
+      }
+    }
+  });
+
   const workDates = filteredEntries.map(e => parseISO(e.work_date));
+
+  // Group dates by color for modifiers
+  const colorGroups = new Map<string, Date[]>();
+  const datesWithoutColor: Date[] = [];
+  filteredEntries.forEach(e => {
+    const date = parseISO(e.work_date);
+    const color = dateColorMap.get(e.work_date);
+    if (color) {
+      if (!colorGroups.has(color)) colorGroups.set(color, []);
+      // Avoid duplicate dates in same color group
+      const group = colorGroups.get(color)!;
+      if (!group.some(d => isSameDay(d, date))) group.push(date);
+    } else {
+      if (!datesWithoutColor.some(d => isSameDay(d, date))) datesWithoutColor.push(date);
+    }
+  });
 
   const selectedDateEntries = selectedDate
     ? filteredEntries.filter(e => isSameDay(parseISO(e.work_date), selectedDate))
@@ -388,13 +415,29 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
           onSelect={(day) => day && handleDayClick(day)}
           locale={hr}
           className="p-3 pointer-events-auto"
-          modifiers={{ hasEntry: workDates }}
+          modifiers={{
+            hasEntry: datesWithoutColor,
+            ...Object.fromEntries(
+              Array.from(colorGroups.entries()).map(([color, dates], idx) => [`color_${idx}`, dates])
+            )
+          }}
           modifiersStyles={{
             hasEntry: {
               backgroundColor: 'hsl(var(--primary) / 0.2)',
               fontWeight: 'bold',
               borderRadius: '50%'
-            }
+            },
+            ...Object.fromEntries(
+              Array.from(colorGroups.entries()).map(([color, _], idx) => [
+                `color_${idx}`,
+                {
+                  backgroundColor: `${color}33`,
+                  fontWeight: 'bold' as const,
+                  borderRadius: '50%',
+                  boxShadow: `inset 0 0 0 2px ${color}`
+                }
+              ])
+            )
           }}
         />
       </Card>
