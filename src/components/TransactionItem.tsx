@@ -2,7 +2,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, PAYMENT_SOURCES } from 
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { Trash2, Sparkles, MessageCircle } from 'lucide-react';
+import { Trash2, Sparkles, MessageCircle, CreditCard } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,10 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
   const { customPaymentSources } = useCustomPaymentSources();
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+
+  // Detect installment info from note (e.g. "6x rata" or "12x rata • some note")
+  const installmentMatch = expense.note?.match(/^(\d+)x rata/);
+  const installmentLabel = installmentMatch ? `${installmentMatch[1]}x` : null;
 
   const x = useMotionValue(0);
   const controls = useAnimation();
@@ -171,6 +175,19 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   <p className="text-xs">{t('transactions.aiExtracted', 'Skenirano s računa')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {installmentLabel && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded bg-primary/15 text-primary text-[9px] font-semibold shrink-0">
+                    <CreditCard className="w-2.5 h-2.5" />
+                    {installmentLabel}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">{t('installments.payInInstallments', 'Plaćanje na rate')}</p>
                 </TooltipContent>
               </Tooltip>
             )}
