@@ -43,6 +43,7 @@ export interface ProjectMilestone {
   due_date?: string | null;
   completed_at?: string | null;
   sort_order: number;
+  color?: string | null;
   created_at?: string;
   updated_at?: string;
   // Computed

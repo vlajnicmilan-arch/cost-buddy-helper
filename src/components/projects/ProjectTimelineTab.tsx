@@ -241,7 +241,7 @@ export const ProjectTimelineTab = ({
               {/* Milestone info row */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={cn("shrink-0", getStatusColor(effectiveStatus).replace('bg-', 'text-'))}>
+                  <span className="shrink-0" style={{ color: milestone.color || '#3b82f6' }}>
                     {getStatusIcon(effectiveStatus)}
                   </span>
                   <span className="font-medium truncate">{milestone.name}</span>
@@ -264,14 +264,25 @@ export const ProjectTimelineTab = ({
                 <div
                   className={cn(
                     "absolute top-0 h-full rounded-l transition-all",
-                    getStatusColor(effectiveStatus),
-                    "opacity-80"
+                    effectiveStatus === 'overdue' ? 'opacity-80' : 'opacity-80'
                   )}
                   style={{
                     left: barStyle.left,
                     width: barStyle.width,
+                    backgroundColor: effectiveStatus === 'overdue' ? undefined : (milestone.color || '#3b82f6'),
+                    ...(effectiveStatus === 'overdue' ? {} : {})
                   }}
                 >
+                  {/* On-time portion with milestone color */}
+                  {effectiveStatus === 'overdue' ? (
+                    <div 
+                      className="absolute top-0 left-0 h-full rounded-l"
+                      style={{ 
+                        width: `${barStyle.onTimePercent}%`,
+                        backgroundColor: milestone.color || '#3b82f6'
+                      }}
+                    />
+                  ) : null}
                   {/* Overrun overlay (striped pattern) */}
                   {barStyle.onTimePercent < 100 && (
                     <div

@@ -78,7 +78,8 @@ export const useProjectMilestones = (projectId: string | null) => {
           status: milestone.status,
           start_date: milestone.start_date,
           due_date: milestone.due_date,
-          sort_order: milestone.sort_order
+          sort_order: milestone.sort_order,
+          color: milestone.color || '#3b82f6'
         })
         .select()
         .single();
@@ -114,7 +115,8 @@ export const useProjectMilestones = (projectId: string | null) => {
           start_date: milestone.start_date,
           due_date: milestone.due_date,
           completed_at: milestone.status === 'completed' ? new Date().toISOString() : null,
-          sort_order: milestone.sort_order
+          sort_order: milestone.sort_order,
+          color: milestone.color || '#3b82f6'
         })
         .eq('id', milestone.id);
 
