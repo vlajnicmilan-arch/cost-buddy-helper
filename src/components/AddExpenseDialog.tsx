@@ -310,7 +310,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         // For transfers, store destination in income_source_id field
         income_source_id: transferDestinationId || undefined,
-        note: tipNote || undefined
+        note: (isInstallment && scannedData.installment_count) 
+          ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
+          : (tipNote || undefined)
       };
 
       // Check for duplicates
@@ -504,6 +506,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         if (uploadedUrl) receiptUrl = uploadedUrl;
       }
 
+      const installmentNote = `${installmentCount}x rata${note.trim() ? ' • ' + note.trim() : ''}`;
       const installmentExpense = {
         amount: parsedAmount,
         description,
@@ -515,7 +518,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         merchant_name: merchantName || undefined,
         receipt_url: receiptUrl,
         ai_extracted: scannedData !== null,
-        note: note.trim() || undefined,
+        note: installmentNote,
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined
