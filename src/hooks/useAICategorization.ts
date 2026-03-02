@@ -11,14 +11,15 @@ export const useAICategorization = () => {
     (
       description: string,
       merchantName: string,
-      onResult: (category: string) => void
+      onResult: (category: string) => void,
+      items?: { name: string; quantity?: number; total_price?: number }[]
     ) => {
       // Clear previous debounce
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (abortControllerRef.current) abortControllerRef.current.abort();
 
       const text = (description + ' ' + merchantName).trim();
-      if (text.length < 3) return;
+      if (text.length < 3 && (!items || items.length === 0)) return;
 
       debounceRef.current = setTimeout(async () => {
         try {
@@ -29,6 +30,7 @@ export const useAICategorization = () => {
               description,
               merchant_name: merchantName,
               custom_categories: customCatNames,
+              items: items?.map(i => ({ name: i.name })),
             },
           });
 
