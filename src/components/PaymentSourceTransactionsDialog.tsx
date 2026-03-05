@@ -10,6 +10,8 @@ import { ImportBatchDialog } from './ImportBatchDialog';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useInstallments } from '@/hooks/useInstallments';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { resolveCategory, getCategoryBgStyle } from '@/hooks/useResolvedCategory';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
