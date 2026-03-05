@@ -308,7 +308,7 @@ const Dashboard = () => {
                   {searchResults.length > 0 && (
                     <div className="space-y-1 max-h-[300px] overflow-y-auto">
                       {searchResults.map((expense) => {
-                        const catInfo = getCategoryInfo(expense.category as any);
+                        const catInfo = resolveCategory(expense.category, customCategories);
                         return (
                           <div
                             key={expense.id}
