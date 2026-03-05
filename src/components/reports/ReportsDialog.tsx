@@ -330,12 +330,12 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([categoryId, amount]) => {
-        const info = getCategoryInfo(categoryId as any);
+        const info = resolveCategory(categoryId, customCategories);
         return {
           name: info.name,
           value: amount,
           icon: info.icon,
-          color: CATEGORY_COLORS[categoryId] || '#6b7280',
+          color: info.isCustom ? info.color : (CATEGORY_COLORS[categoryId] || '#6b7280'),
         };
       });
   }, [stats.byCategory]);
