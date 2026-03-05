@@ -150,7 +150,7 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
         {/* Category Icon */}
         <div
           className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
-          style={{ backgroundColor: `hsl(var(--${category.color}) / 0.15)` }}
+          style={{ backgroundColor: (category as any).isCustom ? `${category.color}20` : `hsl(var(--${category.color}) / 0.15)` }}
         >
           {category.icon}
         </div>
