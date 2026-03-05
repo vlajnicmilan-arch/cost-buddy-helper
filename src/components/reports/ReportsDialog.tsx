@@ -163,6 +163,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const { t } = useTranslation();
   
   const { customIncomeCategories } = useCustomIncomeCategories();
+  const { customCategories } = useCustomCategories();
   const { formatAmount, currency } = useCurrency();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('report');
