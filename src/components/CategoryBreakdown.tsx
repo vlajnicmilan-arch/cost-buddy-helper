@@ -30,12 +30,25 @@ export const CategoryBreakdown = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { customCategories } = useCustomCategories();
 
-  const sortedCategories = CATEGORIES
+  // Build combined categories: system + custom
+  const allCategoryInfos: CategoryInfo[] = [
+    ...CATEGORIES,
+    ...customCategories.map(c => ({
+      id: c.id as any,
+      name: c.name,
+      icon: c.icon,
+      color: c.color,
+    })),
+  ];
+
+  const sortedCategories = allCategoryInfos
     .map(cat => ({
       ...cat,
       amount: expensesByCategory[cat.id] || 0,
       percentage: total > 0 ? ((expensesByCategory[cat.id] || 0) / total) * 100 : 0,
+      isCustom: customCategories.some(cc => cc.id === cat.id),
     }))
     .filter(cat => cat.amount > 0)
     .sort((a, b) => b.amount - a.amount);
