@@ -1128,7 +1128,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                     {tipTransactions.map(tx => {
                       const tipAmt = parseTipAmount(tx.note!);
                       const baseAmt = tx.amount - tipAmt;
-                      const catInfo = getCategoryInfo(tx.category as any);
+                      const catInfo = resolveCategory(tx.category, customCategories);
                       return (
                         <div key={tx.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
                           <div 
