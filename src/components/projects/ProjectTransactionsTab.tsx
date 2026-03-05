@@ -407,7 +407,7 @@ export const ProjectTransactionsTab = ({
     if (!printWindow) return;
 
     const rows = filteredExpenses.map(e => {
-      const cat = getCategoryInfo(e.category as any);
+      const cat = resolveCategory(e.category, customCategories);
       const milestone = getMilestoneName(e.milestone_id);
       return `<tr>
         <td style="padding:6px 8px;border-bottom:1px solid #eee">${format(new Date(e.date), 'dd.MM.yyyy')}</td>
