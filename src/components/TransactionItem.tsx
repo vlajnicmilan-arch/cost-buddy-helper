@@ -1,5 +1,6 @@
 import { Expense, getCategoryInfo, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
 import { Trash2, Sparkles, MessageCircle, CreditCard } from 'lucide-react';
@@ -18,11 +19,21 @@ const SWIPE_THRESHOLD = -72;
 const DELETE_ZONE = -120;
 
 export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemProps) => {
-  const category = getCategoryInfo(expense.category);
-  const paymentSource = getPaymentSourceInfo(expense.payment_source || 'cash');
   const { customPaymentSources } = useCustomPaymentSources();
+  const { customCategories } = useCustomCategories();
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+
+  // Resolve category: check custom categories first, then system ones
+  const category = useMemo(() => {
+    const custom = customCategories.find(c => c.id === expense.category || c.name === expense.category);
+    if (custom) {
+      return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color, isCustom: true };
+    }
+    return { ...getCategoryInfo(expense.category), isCustom: false };
+  }, [expense.category, customCategories]);
+
+  const paymentSource = getPaymentSourceInfo(expense.payment_source || 'cash');
 
   // Detect installment info from note (e.g. "6x rata" or "12x rata • some note")
   const installmentMatch = expense.note?.match(/^(\d+)x rata/);
@@ -139,7 +150,7 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
         {/* Category Icon */}
         <div
           className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
-          style={{ backgroundColor: `hsl(var(--${category.color}) / 0.15)` }}
+          style={{ backgroundColor: (category as any).isCustom ? `${category.color}20` : `hsl(var(--${category.color}) / 0.15)` }}
         >
           {category.icon}
         </div>

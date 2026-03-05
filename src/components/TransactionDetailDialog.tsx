@@ -13,6 +13,7 @@ import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useTranslation } from 'react-i18next';
 import { TransactionNotesThread } from './TransactionNotesThread';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
@@ -43,6 +44,7 @@ export const TransactionDetailDialog = ({
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { customPaymentSources } = useCustomPaymentSources();
+  const { customCategories } = useCustomCategories();
   const { t, i18n } = useTranslation();
   const isLocalMode = storageMode === 'local' && !user;
   
@@ -228,10 +230,17 @@ export const TransactionDetailDialog = ({
     };
   }, [expense, customPaymentSources]);
 
+  // Resolve category: check custom categories first, then system ones
+  const categoryInfo = useMemo(() => {
+    if (!expense) return { id: 'other', name: 'Ostalo', icon: '📦', color: 'category-other', isCustom: false };
+    const custom = customCategories.find(c => c.id === expense.category || c.name === expense.category);
+    if (custom) {
+      return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color, isCustom: true };
+    }
+    return { ...getCategoryInfo(expense.category), isCustom: false };
+  }, [expense?.category, customCategories]);
+
   if (!expense) return null;
-
-  const categoryInfo = getCategoryInfo(expense.category);
-
 
   const handleEdit = (e?: React.MouseEvent) => {
     e?.stopPropagation();
