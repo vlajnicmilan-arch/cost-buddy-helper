@@ -778,7 +778,7 @@ export const ProjectTransactionsTab = ({
           ) : (
             <>
               {filteredExpenses.map((expense) => {
-                const categoryInfo = getCategoryInfo(expense.category as any);
+                const categoryInfo = resolveCategory(expense.category, customCategories);
                 const isIncome = expense.type === 'income';
                 const milestoneName = getMilestoneName(expense.milestone_id);
                 const authorId = expense.submitted_by || expense.user_id;
