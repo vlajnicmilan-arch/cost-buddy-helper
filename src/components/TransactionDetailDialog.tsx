@@ -232,12 +232,12 @@ export const TransactionDetailDialog = ({
 
   // Resolve category: check custom categories first, then system ones
   const categoryInfo = useMemo(() => {
-    if (!expense) return { id: 'other', name: 'Ostalo', icon: '📦', color: 'category-other' };
+    if (!expense) return { id: 'other', name: 'Ostalo', icon: '📦', color: 'category-other', isCustom: false };
     const custom = customCategories.find(c => c.id === expense.category || c.name === expense.category);
     if (custom) {
-      return { id: custom.id, name: custom.name, icon: custom.icon, color: 'category-other' };
+      return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color, isCustom: true };
     }
-    return getCategoryInfo(expense.category);
+    return { ...getCategoryInfo(expense.category), isCustom: false };
   }, [expense?.category, customCategories]);
 
   if (!expense) return null;
