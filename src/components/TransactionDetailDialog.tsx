@@ -232,9 +232,14 @@ export const TransactionDetailDialog = ({
 
   if (!expense) return null;
 
-  const categoryInfo = getCategoryInfo(expense.category);
-
-
+  // Resolve category: check custom categories first, then system ones
+  const categoryInfo = useMemo(() => {
+    const custom = customCategories.find(c => c.id === expense.category || c.name === expense.category);
+    if (custom) {
+      return { id: custom.id, name: custom.name, icon: custom.icon, color: 'category-other' };
+    }
+    return getCategoryInfo(expense.category);
+  }, [expense.category, customCategories]);
   const handleEdit = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     // Close detail dialog first, then open edit after a tick
