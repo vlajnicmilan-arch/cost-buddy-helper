@@ -14,6 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getCategoryInfo, CATEGORIES, Category, TransactionType } from '@/types/expense';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { resolveCategory, getCategoryBgStyle } from '@/hooks/useResolvedCategory';
 import { ProjectMilestone, ProjectRole } from '@/types/project';
 import { useProjectPendingTransactions } from '@/hooks/useProjectPendingTransactions';
 import { TransactionNotesThread } from '@/components/TransactionNotesThread';

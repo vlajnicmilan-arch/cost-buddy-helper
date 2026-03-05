@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/EmptyState';
 
 import { SummaryCard } from '@/components/SummaryCard';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { PageHeader } from '@/components/PageHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { Input } from '@/components/ui/input';
