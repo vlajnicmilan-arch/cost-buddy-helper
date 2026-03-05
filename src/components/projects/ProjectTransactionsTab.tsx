@@ -71,6 +71,7 @@ export const ProjectTransactionsTab = ({
   const { t, i18n } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { user } = useAuth();
+  const { customCategories } = useCustomCategories();
 
   // Pending transactions hook
   const { 
