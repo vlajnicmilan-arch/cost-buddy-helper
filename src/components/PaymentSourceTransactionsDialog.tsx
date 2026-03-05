@@ -68,6 +68,7 @@ export const PaymentSourceTransactionsDialog = ({
   const { formatAmount } = useCurrency();
   const { plans } = useInstallments();
   const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
+  const { customCategories } = useCustomCategories();
 
   // Filter installment plans for this payment source
   const sourceInstallments = useMemo(() => {
