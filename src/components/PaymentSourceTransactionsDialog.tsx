@@ -606,7 +606,7 @@ export const PaymentSourceTransactionsDialog = ({
                                   className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
                                   style={{ backgroundColor: expense.type === 'transfer' 
                                     ? 'hsl(var(--muted))' 
-                                    : `hsl(var(--${categoryInfo.color}) / 0.15)` 
+                                    : getCategoryBgStyle(categoryInfo)
                                   }}
                                 >
                                   {expense.type === 'transfer' ? (
