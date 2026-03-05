@@ -462,7 +462,7 @@ export const ProjectTransactionsTab = ({
           
           <div className="space-y-2">
             {pendingTransactions.map((tx) => {
-              const categoryInfo = getCategoryInfo(tx.category as any);
+              const categoryInfo = resolveCategory(tx.category, customCategories);
               const isIncome = tx.type === 'income';
               
               return (
