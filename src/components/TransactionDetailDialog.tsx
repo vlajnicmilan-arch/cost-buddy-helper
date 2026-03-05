@@ -44,6 +44,7 @@ export const TransactionDetailDialog = ({
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
   const { customPaymentSources } = useCustomPaymentSources();
+  const { customCategories } = useCustomCategories();
   const { t, i18n } = useTranslation();
   const isLocalMode = storageMode === 'local' && !user;
   
