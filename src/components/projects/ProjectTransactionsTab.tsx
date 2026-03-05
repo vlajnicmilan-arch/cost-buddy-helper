@@ -725,7 +725,7 @@ export const ProjectTransactionsTab = ({
                     <SelectContent>
                       <SelectItem value="all">{t('filters.allCategories', 'Sve kategorije')}</SelectItem>
                       {usedCategories.map((catId) => {
-                        const catInfo = getCategoryInfo(catId as any);
+                        const catInfo = resolveCategory(catId, customCategories);
                         return (
                           <SelectItem key={catId} value={catId}>
                             {catInfo.icon} {catInfo.name}
