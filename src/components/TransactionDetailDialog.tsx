@@ -13,6 +13,7 @@ import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useTranslation } from 'react-i18next';
 import { TransactionNotesThread } from './TransactionNotesThread';
 import { AspectRatio } from '@/components/ui/aspect-ratio';

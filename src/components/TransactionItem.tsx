@@ -1,5 +1,6 @@
 import { Expense, getCategoryInfo, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
 import { Trash2, Sparkles, MessageCircle, CreditCard } from 'lucide-react';
