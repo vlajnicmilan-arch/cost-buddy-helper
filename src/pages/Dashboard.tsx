@@ -100,6 +100,7 @@ const Dashboard = () => {
     isLocalMode,
   } = useExpenses();
 
+  const { customCategories } = useCustomCategories();
   const [searchTerm, setSearchTerm] = useState('');
 
   const searchResults = useMemo(() => {
