@@ -3,6 +3,7 @@ import { CATEGORIES, CategoryInfo, Expense } from '@/types/expense';
 import { CategoryTransactionsDialog } from './CategoryTransactionsDialog';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
