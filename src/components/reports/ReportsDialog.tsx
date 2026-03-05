@@ -1356,7 +1356,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 <Label className="text-sm font-medium">{t('reports.categoryDetails', 'Detalji po kategorijama')}</Label>
                 <div className="space-y-2">
                   {categoryComparison.map(({ category, amount1, amount2, diff, diffPercent }) => {
-                    const info = getCategoryInfo(category as any);
+                    const info = resolveCategory(category, customCategories);
                     return (
                       <div key={category} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
                         <div className="w-8 text-center">{info.icon}</div>
