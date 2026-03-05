@@ -414,7 +414,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   // Comparison chart data
   const comparisonChartData = useMemo(() => {
     return categoryComparison.map(({ category, amount1, amount2 }) => {
-      const info = getCategoryInfo(category as any);
+      const info = resolveCategory(category, customCategories);
       return {
         name: info.name,
         icon: info.icon,
