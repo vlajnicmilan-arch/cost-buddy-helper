@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Expense, getCategoryInfo, getIncomeCategoryInfo, CATEGORIES, INCOME_CATEGORIES, IncomeCategory } from '@/types/expense';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -161,6 +163,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const { t } = useTranslation();
   
   const { customIncomeCategories } = useCustomIncomeCategories();
+  const { customCategories } = useCustomCategories();
   const { formatAmount, currency } = useCurrency();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('report');
@@ -327,12 +330,12 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([categoryId, amount]) => {
-        const info = getCategoryInfo(categoryId as any);
+        const info = resolveCategory(categoryId, customCategories);
         return {
           name: info.name,
           value: amount,
           icon: info.icon,
-          color: CATEGORY_COLORS[categoryId] || '#6b7280',
+          color: info.isCustom ? info.color : (CATEGORY_COLORS[categoryId] || '#6b7280'),
         };
       });
   }, [stats.byCategory]);
@@ -411,7 +414,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   // Comparison chart data
   const comparisonChartData = useMemo(() => {
     return categoryComparison.map(({ category, amount1, amount2 }) => {
-      const info = getCategoryInfo(category as any);
+      const info = resolveCategory(category, customCategories);
       return {
         name: info.name,
         icon: info.icon,
@@ -1125,7 +1128,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                     {tipTransactions.map(tx => {
                       const tipAmt = parseTipAmount(tx.note!);
                       const baseAmt = tx.amount - tipAmt;
-                      const catInfo = getCategoryInfo(tx.category as any);
+                      const catInfo = resolveCategory(tx.category, customCategories);
                       return (
                         <div key={tx.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
                           <div 
@@ -1353,7 +1356,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 <Label className="text-sm font-medium">{t('reports.categoryDetails', 'Detalji po kategorijama')}</Label>
                 <div className="space-y-2">
                   {categoryComparison.map(({ category, amount1, amount2, diff, diffPercent }) => {
-                    const info = getCategoryInfo(category as any);
+                    const info = resolveCategory(category, customCategories);
                     return (
                       <div key={category} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
                         <div className="w-8 text-center">{info.icon}</div>

@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/EmptyState';
 
 import { SummaryCard } from '@/components/SummaryCard';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { PageHeader } from '@/components/PageHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { Input } from '@/components/ui/input';
@@ -98,6 +100,7 @@ const Dashboard = () => {
     isLocalMode,
   } = useExpenses();
 
+  const { customCategories } = useCustomCategories();
   const [searchTerm, setSearchTerm] = useState('');
 
   const searchResults = useMemo(() => {
@@ -153,12 +156,12 @@ const Dashboard = () => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([categoryId, amount]) => {
-        const info = getCategoryInfo(categoryId as any);
+        const info = resolveCategory(categoryId, customCategories);
         return {
           name: info.name,
           value: amount,
           icon: info.icon,
-          color: CATEGORY_COLORS[categoryId] || 'hsl(var(--muted-foreground))',
+          color: info.isCustom ? info.color : (CATEGORY_COLORS[categoryId] || 'hsl(var(--muted-foreground))'),
         };
       });
   }, [expensesByCategory]);
@@ -305,7 +308,7 @@ const Dashboard = () => {
                   {searchResults.length > 0 && (
                     <div className="space-y-1 max-h-[300px] overflow-y-auto">
                       {searchResults.map((expense) => {
-                        const catInfo = getCategoryInfo(expense.category as any);
+                        const catInfo = resolveCategory(expense.category, customCategories);
                         return (
                           <div
                             key={expense.id}

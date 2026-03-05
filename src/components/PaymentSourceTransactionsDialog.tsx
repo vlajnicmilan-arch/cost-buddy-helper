@@ -10,6 +10,8 @@ import { ImportBatchDialog } from './ImportBatchDialog';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useInstallments } from '@/hooks/useInstallments';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { resolveCategory, getCategoryBgStyle } from '@/hooks/useResolvedCategory';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -66,6 +68,7 @@ export const PaymentSourceTransactionsDialog = ({
   const { formatAmount } = useCurrency();
   const { plans } = useInstallments();
   const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
+  const { customCategories } = useCustomCategories();
 
   // Filter installment plans for this payment source
   const sourceInstallments = useMemo(() => {
@@ -467,7 +470,7 @@ export const PaymentSourceTransactionsDialog = ({
                         >
                           <div className="px-3 pb-3 space-y-2">
                             {sourceInstallments.map(plan => {
-                              const catInfo = getCategoryInfo(plan.category as any);
+                              const catInfo = resolveCategory(plan.category, customCategories);
                               const progress = (plan.paidCount / plan.totalCount) * 100;
                               return (
                                 <div key={plan.id} className="p-3 rounded-lg bg-muted/30 space-y-2">
@@ -542,7 +545,7 @@ export const PaymentSourceTransactionsDialog = ({
                   <div className="space-y-0">
                     <AnimatePresence>
                       {filteredSourceExpenses.map((expense, index) => {
-                        const categoryInfo = getCategoryInfo(expense.category);
+                        const categoryInfo = resolveCategory(expense.category, customCategories);
                         const cardInfo = getCardInfo(expense);
                         const isSelected = selectedIds.has(expense.id);
                         const balanceAfter = runningBalances.get(expense.id);
@@ -603,7 +606,7 @@ export const PaymentSourceTransactionsDialog = ({
                                   className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
                                   style={{ backgroundColor: expense.type === 'transfer' 
                                     ? 'hsl(var(--muted))' 
-                                    : `hsl(var(--${categoryInfo.color}) / 0.15)` 
+                                    : getCategoryBgStyle(categoryInfo)
                                   }}
                                 >
                                   {expense.type === 'transfer' ? (

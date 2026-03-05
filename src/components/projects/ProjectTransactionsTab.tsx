@@ -14,6 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getCategoryInfo, CATEGORIES, Category, TransactionType } from '@/types/expense';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { resolveCategory, getCategoryBgStyle } from '@/hooks/useResolvedCategory';
 import { ProjectMilestone, ProjectRole } from '@/types/project';
 import { useProjectPendingTransactions } from '@/hooks/useProjectPendingTransactions';
 import { TransactionNotesThread } from '@/components/TransactionNotesThread';
@@ -69,6 +71,7 @@ export const ProjectTransactionsTab = ({
   const { t, i18n } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { user } = useAuth();
+  const { customCategories } = useCustomCategories();
 
   // Pending transactions hook
   const { 
@@ -404,7 +407,7 @@ export const ProjectTransactionsTab = ({
     if (!printWindow) return;
 
     const rows = filteredExpenses.map(e => {
-      const cat = getCategoryInfo(e.category as any);
+      const cat = resolveCategory(e.category, customCategories);
       const milestone = getMilestoneName(e.milestone_id);
       return `<tr>
         <td style="padding:6px 8px;border-bottom:1px solid #eee">${format(new Date(e.date), 'dd.MM.yyyy')}</td>
@@ -459,7 +462,7 @@ export const ProjectTransactionsTab = ({
           
           <div className="space-y-2">
             {pendingTransactions.map((tx) => {
-              const categoryInfo = getCategoryInfo(tx.category as any);
+              const categoryInfo = resolveCategory(tx.category, customCategories);
               const isIncome = tx.type === 'income';
               
               return (
@@ -722,7 +725,7 @@ export const ProjectTransactionsTab = ({
                     <SelectContent>
                       <SelectItem value="all">{t('filters.allCategories', 'Sve kategorije')}</SelectItem>
                       {usedCategories.map((catId) => {
-                        const catInfo = getCategoryInfo(catId as any);
+                        const catInfo = resolveCategory(catId, customCategories);
                         return (
                           <SelectItem key={catId} value={catId}>
                             {catInfo.icon} {catInfo.name}
@@ -775,7 +778,7 @@ export const ProjectTransactionsTab = ({
           ) : (
             <>
               {filteredExpenses.map((expense) => {
-                const categoryInfo = getCategoryInfo(expense.category as any);
+                const categoryInfo = resolveCategory(expense.category, customCategories);
                 const isIncome = expense.type === 'income';
                 const milestoneName = getMilestoneName(expense.milestone_id);
                 const authorId = expense.submitted_by || expense.user_id;
@@ -1069,7 +1072,7 @@ export const ProjectTransactionsTab = ({
               {/* Transaction summary */}
               <div className="p-3 rounded-lg bg-muted/50 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg shrink-0">
-                  {getCategoryInfo(selectedExpense.category as any).icon}
+                  {resolveCategory(selectedExpense.category, customCategories).icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{selectedExpense.description}</p>
