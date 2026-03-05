@@ -156,12 +156,12 @@ const Dashboard = () => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([categoryId, amount]) => {
-        const info = getCategoryInfo(categoryId as any);
+        const info = resolveCategory(categoryId, customCategories);
         return {
           name: info.name,
           value: amount,
           icon: info.icon,
-          color: CATEGORY_COLORS[categoryId] || 'hsl(var(--muted-foreground))',
+          color: info.isCustom ? info.color : (CATEGORY_COLORS[categoryId] || 'hsl(var(--muted-foreground))'),
         };
       });
   }, [expensesByCategory]);
