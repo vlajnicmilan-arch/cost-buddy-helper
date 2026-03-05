@@ -111,7 +111,7 @@ export const CategoryBreakdown = ({
                   animate={{ width: `${cat.percentage}%` }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   style={{
-                    backgroundColor: `hsl(var(--${cat.color}))`,
+                    backgroundColor: cat.isCustom ? cat.color : `hsl(var(--${cat.color}))`,
                   }}
                 />
               </div>
