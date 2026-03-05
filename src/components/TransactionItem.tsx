@@ -28,9 +28,9 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
   const category = useMemo(() => {
     const custom = customCategories.find(c => c.id === expense.category || c.name === expense.category);
     if (custom) {
-      return { id: custom.id, name: custom.name, icon: custom.icon, color: 'category-other' };
+      return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color, isCustom: true };
     }
-    return getCategoryInfo(expense.category);
+    return { ...getCategoryInfo(expense.category), isCustom: false };
   }, [expense.category, customCategories]);
 
   const paymentSource = getPaymentSourceInfo(expense.payment_source || 'cash');
