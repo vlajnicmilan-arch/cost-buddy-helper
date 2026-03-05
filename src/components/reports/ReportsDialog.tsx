@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Expense, getCategoryInfo, getIncomeCategoryInfo, CATEGORIES, INCOME_CATEGORIES, IncomeCategory } from '@/types/expense';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 
 import { useCurrency } from '@/contexts/CurrencyContext';
