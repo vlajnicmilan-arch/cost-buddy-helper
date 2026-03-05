@@ -230,16 +230,18 @@ export const TransactionDetailDialog = ({
     };
   }, [expense, customPaymentSources]);
 
-  if (!expense) return null;
-
   // Resolve category: check custom categories first, then system ones
   const categoryInfo = useMemo(() => {
+    if (!expense) return { id: 'other', name: 'Ostalo', icon: '📦', color: 'category-other' };
     const custom = customCategories.find(c => c.id === expense.category || c.name === expense.category);
     if (custom) {
       return { id: custom.id, name: custom.name, icon: custom.icon, color: 'category-other' };
     }
     return getCategoryInfo(expense.category);
-  }, [expense.category, customCategories]);
+  }, [expense?.category, customCategories]);
+
+  if (!expense) return null;
+
   const handleEdit = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     // Close detail dialog first, then open edit after a tick
