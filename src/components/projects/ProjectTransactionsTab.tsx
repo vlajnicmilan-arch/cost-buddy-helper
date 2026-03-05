@@ -1072,7 +1072,7 @@ export const ProjectTransactionsTab = ({
               {/* Transaction summary */}
               <div className="p-3 rounded-lg bg-muted/50 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-lg shrink-0">
-                  {getCategoryInfo(selectedExpense.category as any).icon}
+                  {resolveCategory(selectedExpense.category, customCategories).icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{selectedExpense.description}</p>
