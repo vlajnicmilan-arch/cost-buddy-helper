@@ -470,7 +470,7 @@ export const PaymentSourceTransactionsDialog = ({
                         >
                           <div className="px-3 pb-3 space-y-2">
                             {sourceInstallments.map(plan => {
-                              const catInfo = getCategoryInfo(plan.category as any);
+                              const catInfo = resolveCategory(plan.category, customCategories);
                               const progress = (plan.paidCount / plan.totalCount) * 100;
                               return (
                                 <div key={plan.id} className="p-3 rounded-lg bg-muted/30 space-y-2">
