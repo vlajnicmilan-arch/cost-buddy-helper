@@ -328,6 +328,26 @@ export const TransactionDetailDialog = ({
             )}
           </div>
 
+          {/* Context Badges — Budget / Project */}
+          {(budgetName || projectName) && (
+            <div className="flex flex-wrap gap-2">
+              {budgetName && (
+                <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary border-primary/20">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>{budgetName.icon || '📋'}</span>
+                  {budgetName.name}
+                </Badge>
+              )}
+              {projectName && (
+                <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm font-medium bg-accent/10 text-accent-foreground border-accent/20">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>{projectName.icon || '📁'}</span>
+                  {projectName.name}
+                </Badge>
+              )}
+            </div>
+          )}
+
           {/* Payment Source - Highlighted */}
           <div 
             className="p-4 rounded-xl border"
