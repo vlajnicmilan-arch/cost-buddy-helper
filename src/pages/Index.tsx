@@ -467,6 +467,7 @@ const Index = () => {
                                 handleToggleSelect(e.id);
                               }
                             }}
+                            contextLookup={contextLookup}
                           />
                         </div>
                       </div>

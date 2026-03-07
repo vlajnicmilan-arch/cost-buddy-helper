@@ -75,6 +75,7 @@ export const VirtualTransactionList = ({
                         onToggleSelect(e.id);
                       }
                     }}
+                    contextLookup={contextLookup}
                   />
                 </div>
               </div>
