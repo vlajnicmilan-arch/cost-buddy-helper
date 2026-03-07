@@ -8,6 +8,7 @@ import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'fra
 import { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 interface TransactionItemProps {
   expense: Expense;
