@@ -186,15 +186,71 @@ export const useInstallments = () => {
     }
   }, [user, isLocalMode]);
 
+  // Backfill missing expense records for orphan installment plans
+  const backfillMissingExpenses = useCallback(async () => {
+    if (isLocalMode || !user) return;
+
+    try {
+      // Fetch all installment plans
+      const { data: allPlans } = await supabase
+        .from('installment_plans')
+        .select('id, description, total_amount, category, payment_source, payment_source_card_id, type, first_payment_date, installment_count')
+        .eq('user_id', user.id);
+
+      if (!allPlans || allPlans.length === 0) return;
+
+      // Check which plans already have a matching expense
+      const { data: existingExpenses } = await supabase
+        .from('expenses')
+        .select('note, description')
+        .eq('user_id', user.id)
+        .like('note', '%rata%');
+
+      const existingSet = new Set(
+        (existingExpenses || []).map(e => `${e.description}`)
+      );
+
+      const missingPlans = allPlans.filter(plan => !existingSet.has(plan.description));
+
+      if (missingPlans.length === 0) return;
+
+      // Create expense records for missing plans
+      const expensesToInsert = missingPlans.map(plan => ({
+        user_id: user.id,
+        amount: Number(plan.total_amount),
+        description: plan.description,
+        category: plan.category,
+        date: plan.first_payment_date,
+        type: plan.type || 'expense',
+        payment_source: plan.payment_source,
+        payment_source_card_id: plan.payment_source_card_id,
+        note: `${plan.installment_count}x rata`,
+      }));
+
+      const { error } = await supabase
+        .from('expenses')
+        .insert(expensesToInsert);
+
+      if (error) {
+        console.error('Error backfilling installment expenses:', error);
+      } else {
+        console.log(`Backfilled ${missingPlans.length} missing installment expenses`);
+      }
+    } catch (error) {
+      console.error('Error in backfillMissingExpenses:', error);
+    }
+  }, [user, isLocalMode]);
+
   useEffect(() => {
     const run = async () => {
       const changed = await autoMarkDueInstallments();
+      await backfillMissingExpenses();
       await fetchPlans();
       // If auto-marked, refetch to get updated data
       if (changed) await fetchPlans();
     };
     run();
-  }, [autoMarkDueInstallments, fetchPlans]);
+  }, [autoMarkDueInstallments, backfillMissingExpenses, fetchPlans]);
 
   const createPlan = async (input: CreateInstallmentPlanInput): Promise<InstallmentPlan | null> => {
     const { total_amount, installment_count, first_payment_date } = input;
