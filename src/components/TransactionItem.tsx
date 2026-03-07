@@ -46,6 +46,17 @@ export const TransactionItem = ({ expense, onDelete, onClick, contextLookup }: T
   const installmentMatch = expense.note?.match(/^(\d+)x rata/);
   const installmentLabel = installmentMatch ? `${installmentMatch[1]}x` : null;
 
+  // Resolve budget/project context badges
+  const budgetInfo = useMemo(() => {
+    if (!expense.budget_id || !contextLookup?.budgets) return null;
+    return contextLookup.budgets.find(b => b.id === expense.budget_id) || null;
+  }, [expense.budget_id, contextLookup?.budgets]);
+
+  const projectInfo = useMemo(() => {
+    if (!expense.project_id || !contextLookup?.projects) return null;
+    return contextLookup.projects.find(p => p.id === expense.project_id) || null;
+  }, [expense.project_id, contextLookup?.projects]);
+
   const x = useMotionValue(0);
   const controls = useAnimation();
   const isDraggingRef = useRef(false);
