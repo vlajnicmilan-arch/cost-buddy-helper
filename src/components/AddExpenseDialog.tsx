@@ -585,7 +585,11 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
   };
 
-  const categoryInfo = scannedData ? getCategoryInfo(scannedData.category) : null;
+  const categoryInfo = scannedData ? (() => {
+    const custom = customCategories.find(c => c.id === scannedData.category || c.name === scannedData.category);
+    if (custom) return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color };
+    return getCategoryInfo(scannedData.category);
+  })() : null;
 
   return (
     <>
