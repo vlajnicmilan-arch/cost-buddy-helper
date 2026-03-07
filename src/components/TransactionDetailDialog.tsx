@@ -51,6 +51,39 @@ export const TransactionDetailDialog = ({
   
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
+  // Fetch budget/project names for context badges
+  const [budgetName, setBudgetName] = useState<{ name: string; icon?: string | null } | null>(null);
+  const [projectName, setProjectName] = useState<{ name: string; icon?: string | null } | null>(null);
+
+  useEffect(() => {
+    const fetchContext = async () => {
+      if (!expense || !open) return;
+
+      if (expense.budget_id) {
+        const { data } = await supabase
+          .from('budget_plans')
+          .select('name, icon')
+          .eq('id', expense.budget_id)
+          .single();
+        setBudgetName(data ? { name: data.name, icon: data.icon } : null);
+      } else {
+        setBudgetName(null);
+      }
+
+      if (expense.project_id) {
+        const { data } = await supabase
+          .from('projects')
+          .select('name, icon')
+          .eq('id', expense.project_id)
+          .single();
+        setProjectName(data ? { name: data.name, icon: data.icon } : null);
+      } else {
+        setProjectName(null);
+      }
+    };
+    fetchContext();
+  }, [expense?.budget_id, expense?.project_id, open]);
+
   // Fetch submitter name for project/income source transactions
   useEffect(() => {
     const fetchSubmitterName = async () => {
