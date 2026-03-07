@@ -35,7 +35,9 @@ export const DEFAULT_CATEGORY_ICONS = [
   // Tools & Services
   '🔧', '🔨', '⚙️', '🧰', '📦', '📮',
   // Other
-  '🏖️', '⛷️', '🧳', '📸', '🎤', '🧪'
+  '🏖️', '⛷️', '🧳', '📸', '🎤', '🧪',
+  // People
+  '🙍‍♂️', '🙍‍♀️'
 ];
 
 export const DEFAULT_CATEGORY_COLORS = [
