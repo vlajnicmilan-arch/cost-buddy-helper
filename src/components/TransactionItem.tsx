@@ -25,7 +25,7 @@ interface TransactionItemProps {
 const SWIPE_THRESHOLD = -72;
 const DELETE_ZONE = -120;
 
-export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemProps) => {
+export const TransactionItem = ({ expense, onDelete, onClick, contextLookup }: TransactionItemProps) => {
   const { customPaymentSources } = useCustomPaymentSources();
   const { customCategories } = useCustomCategories();
   const { formatAmount } = useCurrency();
