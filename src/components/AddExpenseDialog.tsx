@@ -894,9 +894,14 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   })()}
                 </div>
                 
-                <div>
+                <div className="space-y-1">
                   <span className="text-muted-foreground text-sm">{t('common.description')}:</span>
-                  <p className="font-medium text-sm">{scannedData.description}</p>
+                  <Input
+                    value={scannedData.description}
+                    onChange={(e) => setScannedData({ ...scannedData, description: e.target.value })}
+                    className="rounded-lg text-sm"
+                    placeholder={t('common.description')}
+                  />
                 </div>
                 
                 {scannedData.items.length > 0 && (
