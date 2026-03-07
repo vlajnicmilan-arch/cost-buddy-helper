@@ -750,7 +750,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     </SelectContent>
                   </Select>
                 </div>
-                </div>
 
                 {/* Tip field */}
                 {scannedData.transaction_type !== 'transfer' && (
