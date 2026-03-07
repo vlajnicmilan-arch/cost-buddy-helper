@@ -10,7 +10,9 @@ export interface CustomIncomeCategory {
 
 export const DEFAULT_INCOME_CATEGORY_ICONS = [
   '💰', '💵', '💳', '🏦', '💼', '📈', '🎁', '🏠',
-  '🚗', '💻', '📱', '🛒', '📦', '✨', '🎯', '⭐'
+  '🚗', '💻', '📱', '🛒', '📦', '✨', '🎯', '⭐',
+  '🤝', '📊', '🏆', '💎', '🎖️', '📋', '🧾', '💸',
+  '🪙', '🏢', '🎪', '📡', '🔗', '🌐', '🛠️', '📣'
 ];
 
 export const DEFAULT_INCOME_CATEGORY_COLORS = [
