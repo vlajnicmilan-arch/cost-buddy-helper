@@ -10,10 +10,16 @@ import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 
+export interface TransactionContextLookup {
+  budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
+  projects?: { id: string; name: string; icon?: string | null; color?: string | null }[];
+}
+
 interface TransactionItemProps {
   expense: Expense;
   onDelete: (id: string) => void;
   onClick?: (expense: Expense) => void;
+  contextLookup?: TransactionContextLookup;
 }
 
 const SWIPE_THRESHOLD = -72;
