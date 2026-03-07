@@ -186,7 +186,7 @@ export const useInstallments = () => {
     }
   }, [user, isLocalMode]);
 
-  // Backfill missing expense records for orphan installment plans
+  // One-time backfill: create missing expense records for orphan installment plans & clean duplicates
   const backfillMissingExpenses = useCallback(async () => {
     if (isLocalMode || !user) return;
 
@@ -199,22 +199,52 @@ export const useInstallments = () => {
 
       if (!allPlans || allPlans.length === 0) return;
 
-      // Check which plans already have a matching expense
+      // Fetch ALL expenses with 'rata' in note
       const { data: existingExpenses } = await supabase
         .from('expenses')
-        .select('note, description')
+        .select('id, note, description, amount, created_at')
         .eq('user_id', user.id)
-        .like('note', '%rata%');
+        .like('note', '%rata%')
+        .order('created_at', { ascending: true });
 
-      const existingSet = new Set(
-        (existingExpenses || []).map(e => `${e.description}`)
+      // Build a map: key = "description|amount|note" -> list of expense ids
+      const expenseMap = new Map<string, string[]>();
+      for (const e of existingExpenses || []) {
+        const key = `${e.description}|${e.amount}|${e.note}`;
+        const ids = expenseMap.get(key) || [];
+        ids.push(e.id);
+        expenseMap.set(key, ids);
+      }
+
+      // Delete duplicates (keep first, delete rest)
+      const idsToDelete: string[] = [];
+      for (const [, ids] of expenseMap) {
+        if (ids.length > 1) {
+          idsToDelete.push(...ids.slice(1));
+        }
+      }
+
+      if (idsToDelete.length > 0) {
+        await supabase
+          .from('expenses')
+          .delete()
+          .in('id', idsToDelete);
+        console.log(`Cleaned up ${idsToDelete.length} duplicate installment expenses`);
+      }
+
+      // Now check which plans still need an expense record
+      const existingDescriptions = new Set(
+        (existingExpenses || [])
+          .filter(e => !idsToDelete.includes(e.id))
+          .map(e => `${e.description}|${e.amount}`)
       );
 
-      const missingPlans = allPlans.filter(plan => !existingSet.has(plan.description));
+      const missingPlans = allPlans.filter(plan => 
+        !existingDescriptions.has(`${plan.description}|${plan.total_amount}`)
+      );
 
       if (missingPlans.length === 0) return;
 
-      // Create expense records for missing plans
       const expensesToInsert = missingPlans.map(plan => ({
         user_id: user.id,
         amount: Number(plan.total_amount),
@@ -233,8 +263,6 @@ export const useInstallments = () => {
 
       if (error) {
         console.error('Error backfilling installment expenses:', error);
-      } else {
-        console.log(`Backfilled ${missingPlans.length} missing installment expenses`);
       }
     } catch (error) {
       console.error('Error in backfillMissingExpenses:', error);
@@ -246,7 +274,6 @@ export const useInstallments = () => {
       const changed = await autoMarkDueInstallments();
       await backfillMissingExpenses();
       await fetchPlans();
-      // If auto-marked, refetch to get updated data
       if (changed) await fetchPlans();
     };
     run();
