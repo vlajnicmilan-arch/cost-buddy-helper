@@ -263,9 +263,17 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
           )}>
             {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount))}
           </p>
-          <span className="text-[10px] text-muted-foreground/70">
-            {formatDate(expense.date)}
-          </span>
+          <div className="flex items-center gap-1">
+            {installmentLabel && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded-full bg-primary/15 text-primary text-[10px] font-bold">
+                <CreditCard className="w-2.5 h-2.5" />
+                {installmentLabel}
+              </span>
+            )}
+            <span className="text-[10px] text-muted-foreground/70">
+              {formatDate(expense.date)}
+            </span>
+          </div>
         </div>
 
         {/* Desktop delete button — hover only, hidden on touch */}
