@@ -269,6 +269,24 @@ export const TransactionItem = ({ expense, onDelete, onClick, contextLookup }: T
             {expense.type === 'income' && (
               <span className="text-income">{t('transactions.income', 'Prihod')}</span>
             )}
+            {budgetInfo && (
+              <>
+                <span className="text-muted-foreground/40">•</span>
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-primary truncate max-w-[70px]">
+                  <span className="text-[9px]">{budgetInfo.icon || '📋'}</span>
+                  {budgetInfo.name}
+                </span>
+              </>
+            )}
+            {projectInfo && (
+              <>
+                <span className="text-muted-foreground/40">•</span>
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-accent-foreground truncate max-w-[70px]">
+                  <span className="text-[9px]">{projectInfo.icon || '📁'}</span>
+                  {projectInfo.name}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
