@@ -21,6 +21,7 @@ export const VirtualTransactionList = ({
   onToggleSelect,
   onDelete,
   onClickDetail,
+  contextLookup,
 }: VirtualTransactionListProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
