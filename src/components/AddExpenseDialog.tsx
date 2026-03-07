@@ -729,7 +729,12 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                           {customCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               <span className="flex items-center gap-2">
-                                <span>{cat.icon}</span>
+                                <span 
+                                  className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                                  style={{ backgroundColor: cat.color + '20', color: cat.color }}
+                                >
+                                  {cat.icon}
+                                </span>
                                 <span>{cat.name}</span>
                               </span>
                             </SelectItem>
