@@ -701,10 +701,48 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">{t('common.category')}:</span>
-                    <p className="font-medium">
-                      {categoryInfo?.icon} {categoryInfo?.name}
-                    </p>
+                    <span className="text-muted-foreground text-sm">{t('common.category')}:</span>
+                    <Select
+                      value={scannedData.category}
+                      onValueChange={(value) => {
+                        setScannedData({ ...scannedData, category: value as Category });
+                      }}
+                    >
+                      <SelectTrigger className="w-full rounded-lg">
+                        <SelectValue>
+                          {categoryInfo?.icon} {categoryInfo?.name}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {/* Custom categories first */}
+                        {customCategories.length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                              {t('categories.custom', 'Prilagođene')}
+                            </div>
+                            {customCategories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                <span className="flex items-center gap-2">
+                                  <span>{cat.icon}</span>
+                                  <span>{cat.name}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          {t('categories.standard', 'Standardne')}
+                        </div>
+                        {CATEGORIES.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            <span className="flex items-center gap-2">
+                              <span>{cat.icon}</span>
+                              <span>{cat.name}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
