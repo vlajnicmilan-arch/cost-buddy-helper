@@ -114,6 +114,11 @@ const Index = () => {
   const { budgets: budgetsWithStats } = useBudgets();
   const { projects } = useProjects();
 
+  const contextLookup = useMemo(() => ({
+    budgets: budgetsWithStats.map(b => ({ id: b.id, name: b.name, icon: b.icon, color: b.color })),
+    projects: projects.map(p => ({ id: p.id, name: p.name, icon: p.icon, color: p.color })),
+  }), [budgetsWithStats, projects]);
+
   const {
     expenses,
     allExpenses,
@@ -462,6 +467,7 @@ const Index = () => {
                                 handleToggleSelect(e.id);
                               }
                             }}
+                            contextLookup={contextLookup}
                           />
                         </div>
                       </div>

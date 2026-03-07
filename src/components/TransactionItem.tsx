@@ -8,17 +8,24 @@ import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'fra
 import { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+
+export interface TransactionContextLookup {
+  budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
+  projects?: { id: string; name: string; icon?: string | null; color?: string | null }[];
+}
 
 interface TransactionItemProps {
   expense: Expense;
   onDelete: (id: string) => void;
   onClick?: (expense: Expense) => void;
+  contextLookup?: TransactionContextLookup;
 }
 
 const SWIPE_THRESHOLD = -72;
 const DELETE_ZONE = -120;
 
-export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemProps) => {
+export const TransactionItem = ({ expense, onDelete, onClick, contextLookup }: TransactionItemProps) => {
   const { customPaymentSources } = useCustomPaymentSources();
   const { customCategories } = useCustomCategories();
   const { formatAmount } = useCurrency();
@@ -38,6 +45,17 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
   // Detect installment info from note (e.g. "6x rata" or "12x rata • some note")
   const installmentMatch = expense.note?.match(/^(\d+)x rata/);
   const installmentLabel = installmentMatch ? `${installmentMatch[1]}x` : null;
+
+  // Resolve budget/project context badges
+  const budgetInfo = useMemo(() => {
+    if (!expense.budget_id || !contextLookup?.budgets) return null;
+    return contextLookup.budgets.find(b => b.id === expense.budget_id) || null;
+  }, [expense.budget_id, contextLookup?.budgets]);
+
+  const projectInfo = useMemo(() => {
+    if (!expense.project_id || !contextLookup?.projects) return null;
+    return contextLookup.projects.find(p => p.id === expense.project_id) || null;
+  }, [expense.project_id, contextLookup?.projects]);
 
   const x = useMotionValue(0);
   const controls = useAnimation();
@@ -250,6 +268,24 @@ export const TransactionItem = ({ expense, onDelete, onClick }: TransactionItemP
             )}
             {expense.type === 'income' && (
               <span className="text-income">{t('transactions.income', 'Prihod')}</span>
+            )}
+            {budgetInfo && (
+              <>
+                <span className="text-muted-foreground/40">•</span>
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-primary truncate max-w-[70px]">
+                  <span className="text-[9px]">{budgetInfo.icon || '📋'}</span>
+                  {budgetInfo.name}
+                </span>
+              </>
+            )}
+            {projectInfo && (
+              <>
+                <span className="text-muted-foreground/40">•</span>
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-accent-foreground truncate max-w-[70px]">
+                  <span className="text-[9px]">{projectInfo.icon || '📁'}</span>
+                  {projectInfo.name}
+                </span>
+              </>
             )}
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Checkbox } from '@/components/ui/checkbox';
-import { TransactionItem } from '@/components/TransactionItem';
+import { TransactionItem, TransactionContextLookup } from '@/components/TransactionItem';
 import { Expense } from '@/types/expense';
 
 interface VirtualTransactionListProps {
@@ -10,6 +10,7 @@ interface VirtualTransactionListProps {
   onToggleSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onClickDetail: (expense: Expense) => void;
+  contextLookup?: TransactionContextLookup;
 }
 
 const ITEM_HEIGHT = 52; // px — estimated row height
@@ -20,6 +21,7 @@ export const VirtualTransactionList = ({
   onToggleSelect,
   onDelete,
   onClickDetail,
+  contextLookup,
 }: VirtualTransactionListProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +75,7 @@ export const VirtualTransactionList = ({
                         onToggleSelect(e.id);
                       }
                     }}
+                    contextLookup={contextLookup}
                   />
                 </div>
               </div>
