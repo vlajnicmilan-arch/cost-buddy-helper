@@ -6,7 +6,8 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink, Briefcase, FolderOpen } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -49,6 +50,39 @@ export const TransactionDetailDialog = ({
   const isLocalMode = storageMode === 'local' && !user;
   
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+
+  // Fetch budget/project names for context badges
+  const [budgetName, setBudgetName] = useState<{ name: string; icon?: string | null } | null>(null);
+  const [projectName, setProjectName] = useState<{ name: string; icon?: string | null } | null>(null);
+
+  useEffect(() => {
+    const fetchContext = async () => {
+      if (!expense || !open) return;
+
+      if (expense.budget_id) {
+        const { data } = await supabase
+          .from('budget_plans')
+          .select('name, icon')
+          .eq('id', expense.budget_id)
+          .single();
+        setBudgetName(data ? { name: data.name, icon: data.icon } : null);
+      } else {
+        setBudgetName(null);
+      }
+
+      if (expense.project_id) {
+        const { data } = await supabase
+          .from('projects')
+          .select('name, icon')
+          .eq('id', expense.project_id)
+          .single();
+        setProjectName(data ? { name: data.name, icon: data.icon } : null);
+      } else {
+        setProjectName(null);
+      }
+    };
+    fetchContext();
+  }, [expense?.budget_id, expense?.project_id, open]);
 
   // Fetch submitter name for project/income source transactions
   useEffect(() => {
@@ -293,6 +327,26 @@ export const TransactionDetailDialog = ({
               </p>
             )}
           </div>
+
+          {/* Context Badges — Budget / Project */}
+          {(budgetName || projectName) && (
+            <div className="flex flex-wrap gap-2">
+              {budgetName && (
+                <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary border-primary/20">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>{budgetName.icon || '📋'}</span>
+                  {budgetName.name}
+                </Badge>
+              )}
+              {projectName && (
+                <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm font-medium bg-accent/10 text-accent-foreground border-accent/20">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>{projectName.icon || '📁'}</span>
+                  {projectName.name}
+                </Badge>
+              )}
+            </div>
+          )}
 
           {/* Payment Source - Highlighted */}
           <div 
