@@ -260,6 +260,7 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
   "payment_method": "card",
   "transaction_type": "expense",
   "transfer_destination_name": null,
+  "recipient_name": null,
   "custom_payment_source_id": null,
   "payment_source_card_id": null,
   "is_installment": false,
