@@ -661,12 +661,41 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   </div>
                 ) : null}
 
-                {/* Transfer detection banner */}
+                {/* Transaction type selector for scanned data */}
+                <div className="space-y-1">
+                  <span className="text-muted-foreground text-sm">Tip transakcije:</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setScannedData({ ...scannedData, transaction_type: 'expense', transfer_destination_name: null })}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        scannedData.transaction_type !== 'transfer'
+                          ? 'bg-destructive/10 border-destructive/30 text-destructive'
+                          : 'bg-muted/50 border-border text-muted-foreground'
+                      }`}
+                    >
+                      💸 Trošak
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScannedData({ ...scannedData, transaction_type: 'transfer' })}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        scannedData.transaction_type === 'transfer'
+                          ? 'bg-primary/10 border-primary/30 text-primary'
+                          : 'bg-muted/50 border-border text-muted-foreground'
+                      }`}
+                    >
+                      🔄 Prijenos
+                    </button>
+                  </div>
+                </div>
+
+                {/* Transfer destination info */}
                 {scannedData.transaction_type === 'transfer' && (
                   <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                     <div className="flex items-center gap-2 text-sm font-medium text-primary">
                       <span>🔄</span>
-                      <span>Prepoznat kao transfer{scannedData.transfer_destination_name ? ` → ${scannedData.transfer_destination_name}` : ''}</span>
+                      <span>Prijenos{scannedData.transfer_destination_name ? ` → ${scannedData.transfer_destination_name}` : ''}</span>
                     </div>
                     {scannedData.transfer_destination_name && (() => {
                       const destName = scannedData.transfer_destination_name!.toLowerCase();
