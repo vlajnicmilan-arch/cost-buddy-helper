@@ -185,7 +185,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         // Single image mode: scan immediately
         setReceiptImage(base64);
         
-        const result = await scanReceipt(base64, customPaymentSources);
+        const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
         
         if (result) {
           applyScannedResult(result);

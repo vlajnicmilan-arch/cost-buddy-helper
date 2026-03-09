@@ -236,16 +236,17 @@ KORAK 3: Ako nema podudaranja brojeva
      - Ovo NIKAD nije "expense"! Podizanje gotovine je PRIJENOS novca, ne trošak.
      - Primjer: "PRIVREDNA BANKA ZAGREB / BANKOMAT / ISPLATA 240.00 EUR" → transaction_type: "transfer", transfer_destination_name: "Gotovina"
 
-     BANKARSKA POTVRDA O PRIJENOSU / UPLATI:
-     - Traži: "Potvrda o izvršenoj transakciji", "PLATITELJ", "PRIMATELJ", "IBAN", "Broj računa platitelja", "Broj računa primatelja", "Internet bankarstvo", "Mobilno bankarstvo", "Datum izvršenja", "Poziv na broj", "Način plaćanja: Instant", "Iznos terećenja", "Iznos odobrenja"
-     - Ako dokument sadrži PLATITELJA i PRIMATELJA s IBAN brojevima → OVO JE BANKARSKA POTVRDA!
-     - merchant: ime PLATITELJA ili naziv banke (npr. "Duje Grčić", "OTP banka") - NIKAD ime primatelja kao merchant!
-     - description: opis s potvrde (npr. "posudba", "najam") + " - " + ime PRIMATELJA
-     - recipient_name: ime PRIMATELJA (osoba ili firma koja prima novac, npr. "Vinka Pleško", "HEP d.d.")
-     - transaction_type: "expense" (korisnik može promijeniti u pregledu na "transfer" ili "income")
-     - transfer_destination_name: null
-     - Primjer: Potvrda OTP banke, platitelj Duje Grčić, primatelj Vinka Pleško, opis "posudba", iznos 1736.95 EUR
-       → merchant: "OTP banka", description: "Posudba - Vinka Pleško", recipient_name: "Vinka Pleško", transaction_type: "expense", category: "other"
+      BANKARSKA POTVRDA O PRIJENOSU / UPLATI:
+      - Traži: "Potvrda o izvršenoj transakciji", "PLATITELJ", "PRIMATELJ", "IBAN", "Broj računa platitelja", "Broj računa primatelja", "Internet bankarstvo", "Mobilno bankarstvo", "Datum izvršenja", "Poziv na broj", "Način plaćanja: Instant", "Iznos terećenja", "Iznos odobrenja"
+      - Ako dokument sadrži PLATITELJA i PRIMATELJA s IBAN brojevima → OVO JE BANKARSKA POTVRDA!
+      - merchant: UVIJEK ime PLATITELJA (osoba koja šalje novac, npr. "Duje Grčić") - NIKAD naziv banke, NIKAD ime primatelja!
+      - description: opis s potvrde (npr. "posudba", "najam") + " - " + ime PRIMATELJA
+      - recipient_name: ime PRIMATELJA (osoba ili firma koja prima novac, npr. "Vinka Pleško", "HEP d.d.")
+      - transaction_type: "expense" (korisnik može promijeniti u pregledu na "transfer" ili "income")
+      - transfer_destination_name: null
+      - KRITIČNO ZA PAYMENT SOURCE: Ako na potvrdi piše naziv banke platitelja (OTP, PBZ, ZABA, Erste, Revolut, RBA, Addiko, HPB), usporedi s popisom KORISNIKOVIH RAČUNA iznad i postavi custom_payment_source_id ako se naziv podudara!
+      - Primjer: Potvrda OTP banke, platitelj Duje Grčić, primatelj Vinka Pleško, opis "posudba", iznos 1736.95 EUR
+        → merchant: "Duje Grčić", description: "Posudba - Vinka Pleško", recipient_name: "Vinka Pleško", transaction_type: "expense", category: "other", custom_payment_source_id: (ID OTP računa ako postoji u popisu)
      
      - Ako NIJE dopuna/transfer/bankomat → transaction_type: "expense"
 ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
