@@ -462,15 +462,39 @@ export const PaymentSourceTransactionsDialog = ({
                   </>
                 )}
                 {filteredSourceExpenses.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={selectedIds.size === filteredSourceExpenses.length ? clearSelection : selectAll}
-                    className="h-7 text-xs gap-1.5"
-                  >
-                    <CheckSquare className="w-3.5 h-3.5" />
-                    {selectedIds.size === filteredSourceExpenses.length ? t('common.cancelSelection') : t('common.selectAll')}
-                  </Button>
+                  <>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                          <Download className="w-3.5 h-3.5" />
+                          {t('common.export', 'Izvoz')}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handlePrint}>
+                          <Printer className="w-4 h-4 mr-2" />
+                          {t('common.print', 'Ispis')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportPDF}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportCSV}>
+                          <Download className="w-4 h-4 mr-2" />
+                          CSV
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={selectedIds.size === filteredSourceExpenses.length ? clearSelection : selectAll}
+                      className="h-7 text-xs gap-1.5"
+                    >
+                      <CheckSquare className="w-3.5 h-3.5" />
+                      {selectedIds.size === filteredSourceExpenses.length ? t('common.cancelSelection') : t('common.selectAll')}
+                    </Button>
+                  </>
                 )}
                 <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
                   <XIcon className="h-5 w-5" />
