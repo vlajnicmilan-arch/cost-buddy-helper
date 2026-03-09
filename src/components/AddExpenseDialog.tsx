@@ -228,7 +228,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       installment_count: result.installment_count,
       installment_amount: result.installment_amount,
       transaction_type: result.transaction_type,
-      transfer_destination_name: result.transfer_destination_name
+      transfer_destination_name: result.transfer_destination_name,
+      recipient_name: result.recipient_name
     });
     
     // Auto-enable installment mode if detected on receipt
