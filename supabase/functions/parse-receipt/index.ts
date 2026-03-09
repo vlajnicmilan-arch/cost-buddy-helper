@@ -236,18 +236,18 @@ KORAK 3: Ako nema podudaranja brojeva
      - Ovo NIKAD nije "expense"! Podizanje gotovine je PRIJENOS novca, ne trošak.
      - Primjer: "PRIVREDNA BANKA ZAGREB / BANKOMAT / ISPLATA 240.00 EUR" → transaction_type: "transfer", transfer_destination_name: "Gotovina"
 
-     BANKARSKA POTVRDA O PRIJENOSU (KRITIČNO!):
+     BANKARSKA POTVRDA O PRIJENOSU / UPLATI:
      - Traži: "Potvrda o izvršenoj transakciji", "PLATITELJ", "PRIMATELJ", "IBAN", "Broj računa platitelja", "Broj računa primatelja", "Internet bankarstvo", "Mobilno bankarstvo", "Datum izvršenja", "Poziv na broj", "Način plaćanja: Instant", "Iznos terećenja", "Iznos odobrenja"
-     - Ako dokument sadrži PLATITELJA i PRIMATELJA s IBAN brojevima → OVO JE BANKARSKI PRIJENOS, NE TROŠAK U TRGOVINI!
-     - transaction_type: "transfer" (UVIJEK za bankarske prijenose!)
-     - merchant: ime BANKE (npr. "OTP banka", "Zagrebačka banka", "PBZ"), NE ime primatelja!
-     - description: opis s potvrde (npr. "posudba", "najam", "uplata") + " - " + ime primatelja
-     - transfer_destination_name: ime PRIMATELJA (npr. "Vinka Pleško", "Ivan Horvat")
+     - Ako dokument sadrži PLATITELJA i PRIMATELJA s IBAN brojevima → OVO JE BANKARSKA POTVRDA!
+     - merchant: ime PRIMATELJA (osoba ili firma koja prima novac, npr. "Vinka Pleško", "HEP d.d.")
+     - description: opis s potvrde (npr. "posudba", "najam", "uplata")
+     - transaction_type: "expense" (uplata drugoj osobi/firmi je trošak - korisnik može promijeniti u pregledu)
+     - transfer_destination_name: null (jer je ovo trošak, ne transfer između vlastitih računa)
      - Primjer: Potvrda OTP banke, platitelj Duje Grčić, primatelj Vinka Pleško, opis "posudba", iznos 1736.95 EUR
-       → transaction_type: "transfer", merchant: "OTP banka", description: "Posudba - Vinka Pleško", transfer_destination_name: "Vinka Pleško", category: "other"
-     - NIKAD ne tumači ime primatelja kao naziv trgovine!
+       → transaction_type: "expense", merchant: "Vinka Pleško", description: "Posudba", category: "other"
+     - NIKAD ne tumači naziv banke kao trgovca! Trgovac je PRIMATELJ novca.
      
-     - Ako NIJE dopuna/transfer/bankomat/bankarski prijenos → transaction_type: "expense"
+     - Ako NIJE dopuna/transfer/bankomat → transaction_type: "expense"
 ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
 
 === FORMAT ODGOVORA (SAMO JSON) ===
