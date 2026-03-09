@@ -55,8 +55,9 @@ interface ScannedData {
   is_installment?: boolean;
   installment_count?: number | null;
   installment_amount?: number | null;
-  transaction_type?: 'expense' | 'transfer';
+  transaction_type?: 'expense' | 'transfer' | 'income';
   transfer_destination_name?: string | null;
+  recipient_name?: string | null;
 }
 
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
