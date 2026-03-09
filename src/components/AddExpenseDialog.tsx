@@ -278,16 +278,19 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
       // Determine transaction type - AI may have detected a transfer (e.g. Aircash top-up)
       const isTransfer = scannedData.transaction_type === 'transfer';
+      const isIncome = scannedData.transaction_type === 'income';
       
       // For transfers, try to find destination account by name
       let transferDestinationId: string | undefined;
-      if (isTransfer && scannedData.transfer_destination_name) {
-        const destName = scannedData.transfer_destination_name.toLowerCase();
-        const matchedDest = customPaymentSources.find(
-          s => s.name.toLowerCase().includes(destName) || destName.includes(s.name.toLowerCase())
-        );
-        if (matchedDest) {
-          transferDestinationId = matchedDest.id;
+      if (isTransfer) {
+        const destName = (scannedData.transfer_destination_name || scannedData.recipient_name || '').toLowerCase();
+        if (destName) {
+          const matchedDest = customPaymentSources.find(
+            s => s.name.toLowerCase().includes(destName) || destName.includes(s.name.toLowerCase())
+          );
+          if (matchedDest) {
+            transferDestinationId = matchedDest.id;
+          }
         }
       }
 
@@ -296,12 +299,14 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       const finalAmount = totalWithTip ? parseFloat(totalWithTip) : scannedData.amount;
       const tipNote = tipAmount > 0 ? `Napojnica: €${tipAmount.toFixed(2)}` : '';
 
+      const finalType: TransactionType = isTransfer ? 'transfer' : (isIncome ? 'income' : 'expense');
+
       const newExpense = {
         amount: finalAmount,
         description: scannedData.description,
         category: scannedData.category,
         date: new Date(scannedData.date || expenseDate),
-        type: (isTransfer ? 'transfer' : 'expense') as TransactionType,
+        type: finalType,
         payment_source: finalPaymentSource,
         payment_source_card_id: finalCardId,
         merchant_name: scannedData.merchant || undefined,
