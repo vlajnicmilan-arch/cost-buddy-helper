@@ -221,14 +221,22 @@ KORAK 3: Ako nema podudaranja brojeva
    - installment_current: trenutna rata ako je navedena (npr. 1 od 12)
    - installment_amount: iznos jedne rate ako je naveden (ako nije, izračunaj: amount / installment_count)
 
- 7. DOPUNA / TOP-UP / TRANSFER (KRITIČNO!)
-   - Traži: "DOPUNA", "TOP-UP", "TOP UP", "NADOPLATA", "UPLATA NA", "NADOPUNA", "PREPAID", "VOUCHER", "BON", "E-BON"
-   - Traži usluge: "AIRCASH", "REVOLUT", "PAYPAL", "KEKS PAY", "GOOGLE PAY", "APPLE PAY"
-   - Ako račun opisuje DOPUNU DIGITALNOG NOVČANIKA ili PREPAID USLUGE → transaction_type: "transfer"
-   - transfer_destination_name: naziv odredišnog računa (npr. "Aircash", "Revolut") - koristi TOČAN naziv usluge
-   - Ovo NIJE obični trošak! To je prijenos novca s jednog izvora na drugi.
-   - Primjeri: "AIRCASH DOPUNA 50 EUR" na INA → transaction_type: "transfer", transfer_destination_name: "Aircash"
-   - Ako NIJE dopuna/transfer → transaction_type: "expense"
+ 7. DOPUNA / TOP-UP / TRANSFER / BANKOMAT (KRITIČNO!)
+    - Traži: "DOPUNA", "TOP-UP", "TOP UP", "NADOPLATA", "UPLATA NA", "NADOPUNA", "PREPAID", "VOUCHER", "BON", "E-BON"
+    - Traži usluge: "AIRCASH", "REVOLUT", "PAYPAL", "KEKS PAY", "GOOGLE PAY", "APPLE PAY"
+    - Ako račun opisuje DOPUNU DIGITALNOG NOVČANIKA ili PREPAID USLUGE → transaction_type: "transfer"
+    - transfer_destination_name: naziv odredišnog računa (npr. "Aircash", "Revolut") - koristi TOČAN naziv usluge
+    - Ovo NIJE obični trošak! To je prijenos novca s jednog izvora na drugi.
+    - Primjeri: "AIRCASH DOPUNA 50 EUR" na INA → transaction_type: "transfer", transfer_destination_name: "Aircash"
+    
+    BANKOMAT / ATM ISPLATA (KRITIČNO!):
+    - Traži: "BANKOMAT", "ATM", "ISPLATA", "CASH WITHDRAWAL", "PODIZANJE GOTOVINE"
+    - Ako račun dolazi s BANKOMATA ili opisuje ISPLATU gotovine → transaction_type: "transfer" (UVIJEK!)
+    - transfer_destination_name: "Gotovina" (jer se novac prebacuje s računa na gotovinu)
+    - Ovo NIKAD nije "expense"! Podizanje gotovine je PRIJENOS novca, ne trošak.
+    - Primjer: "PRIVREDNA BANKA ZAGREB / BANKOMAT / ISPLATA 240.00 EUR" → transaction_type: "transfer", transfer_destination_name: "Gotovina"
+    
+    - Ako NIJE dopuna/transfer/bankomat → transaction_type: "expense"
 ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
 
 === FORMAT ODGOVORA (SAMO JSON) ===
