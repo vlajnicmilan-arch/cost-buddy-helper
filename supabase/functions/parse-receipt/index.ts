@@ -455,6 +455,7 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         payment_method: receiptData.payment_method || null,
         transaction_type: receiptData.transaction_type || 'expense',
         transfer_destination_name: receiptData.transfer_destination_name || null,
+        recipient_name: receiptData.recipient_name || null,
         custom_payment_source_id: receiptData.custom_payment_source_id || null,
         payment_source_card_id: receiptData.payment_source_card_id || null,
         is_installment: receiptData.is_installment || false,
