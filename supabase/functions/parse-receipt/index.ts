@@ -221,22 +221,33 @@ KORAK 3: Ako nema podudaranja brojeva
    - installment_current: trenutna rata ako je navedena (npr. 1 od 12)
    - installment_amount: iznos jedne rate ako je naveden (ako nije, izračunaj: amount / installment_count)
 
- 7. DOPUNA / TOP-UP / TRANSFER / BANKOMAT (KRITIČNO!)
-    - Traži: "DOPUNA", "TOP-UP", "TOP UP", "NADOPLATA", "UPLATA NA", "NADOPUNA", "PREPAID", "VOUCHER", "BON", "E-BON"
-    - Traži usluge: "AIRCASH", "REVOLUT", "PAYPAL", "KEKS PAY", "GOOGLE PAY", "APPLE PAY"
-    - Ako račun opisuje DOPUNU DIGITALNOG NOVČANIKA ili PREPAID USLUGE → transaction_type: "transfer"
-    - transfer_destination_name: naziv odredišnog računa (npr. "Aircash", "Revolut") - koristi TOČAN naziv usluge
-    - Ovo NIJE obični trošak! To je prijenos novca s jednog izvora na drugi.
-    - Primjeri: "AIRCASH DOPUNA 50 EUR" na INA → transaction_type: "transfer", transfer_destination_name: "Aircash"
-    
-    BANKOMAT / ATM ISPLATA (KRITIČNO!):
-    - Traži: "BANKOMAT", "ATM", "ISPLATA", "CASH WITHDRAWAL", "PODIZANJE GOTOVINE"
-    - Ako račun dolazi s BANKOMATA ili opisuje ISPLATU gotovine → transaction_type: "transfer" (UVIJEK!)
-    - transfer_destination_name: "Gotovina" (jer se novac prebacuje s računa na gotovinu)
-    - Ovo NIKAD nije "expense"! Podizanje gotovine je PRIJENOS novca, ne trošak.
-    - Primjer: "PRIVREDNA BANKA ZAGREB / BANKOMAT / ISPLATA 240.00 EUR" → transaction_type: "transfer", transfer_destination_name: "Gotovina"
-    
-    - Ako NIJE dopuna/transfer/bankomat → transaction_type: "expense"
+ 7. DOPUNA / TOP-UP / TRANSFER / BANKOMAT / BANKARSKI PRIJENOS (KRITIČNO!)
+     - Traži: "DOPUNA", "TOP-UP", "TOP UP", "NADOPLATA", "UPLATA NA", "NADOPUNA", "PREPAID", "VOUCHER", "BON", "E-BON"
+     - Traži usluge: "AIRCASH", "REVOLUT", "PAYPAL", "KEKS PAY", "GOOGLE PAY", "APPLE PAY"
+     - Ako račun opisuje DOPUNU DIGITALNOG NOVČANIKA ili PREPAID USLUGE → transaction_type: "transfer"
+     - transfer_destination_name: naziv odredišnog računa (npr. "Aircash", "Revolut") - koristi TOČAN naziv usluge
+     - Ovo NIJE obični trošak! To je prijenos novca s jednog izvora na drugi.
+     - Primjeri: "AIRCASH DOPUNA 50 EUR" na INA → transaction_type: "transfer", transfer_destination_name: "Aircash"
+     
+     BANKOMAT / ATM ISPLATA (KRITIČNO!):
+     - Traži: "BANKOMAT", "ATM", "ISPLATA", "CASH WITHDRAWAL", "PODIZANJE GOTOVINE"
+     - Ako račun dolazi s BANKOMATA ili opisuje ISPLATU gotovine → transaction_type: "transfer" (UVIJEK!)
+     - transfer_destination_name: "Gotovina" (jer se novac prebacuje s računa na gotovinu)
+     - Ovo NIKAD nije "expense"! Podizanje gotovine je PRIJENOS novca, ne trošak.
+     - Primjer: "PRIVREDNA BANKA ZAGREB / BANKOMAT / ISPLATA 240.00 EUR" → transaction_type: "transfer", transfer_destination_name: "Gotovina"
+
+     BANKARSKA POTVRDA O PRIJENOSU (KRITIČNO!):
+     - Traži: "Potvrda o izvršenoj transakciji", "PLATITELJ", "PRIMATELJ", "IBAN", "Broj računa platitelja", "Broj računa primatelja", "Internet bankarstvo", "Mobilno bankarstvo", "Datum izvršenja", "Poziv na broj", "Način plaćanja: Instant", "Iznos terećenja", "Iznos odobrenja"
+     - Ako dokument sadrži PLATITELJA i PRIMATELJA s IBAN brojevima → OVO JE BANKARSKI PRIJENOS, NE TROŠAK U TRGOVINI!
+     - transaction_type: "transfer" (UVIJEK za bankarske prijenose!)
+     - merchant: ime BANKE (npr. "OTP banka", "Zagrebačka banka", "PBZ"), NE ime primatelja!
+     - description: opis s potvrde (npr. "posudba", "najam", "uplata") + " - " + ime primatelja
+     - transfer_destination_name: ime PRIMATELJA (npr. "Vinka Pleško", "Ivan Horvat")
+     - Primjer: Potvrda OTP banke, platitelj Duje Grčić, primatelj Vinka Pleško, opis "posudba", iznos 1736.95 EUR
+       → transaction_type: "transfer", merchant: "OTP banka", description: "Posudba - Vinka Pleško", transfer_destination_name: "Vinka Pleško", category: "other"
+     - NIKAD ne tumači ime primatelja kao naziv trgovine!
+     
+     - Ako NIJE dopuna/transfer/bankomat/bankarski prijenos → transaction_type: "expense"
 ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
 
 === FORMAT ODGOVORA (SAMO JSON) ===
