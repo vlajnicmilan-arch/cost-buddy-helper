@@ -16,7 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText, Upload, Loader2, AlertTriangle } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText, Upload, Loader2, AlertTriangle, Printer, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,8 @@ import { usePDFParser } from '@/hooks/usePDFParser';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { CSVImportDialog } from './CSVImportDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -65,7 +67,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
   const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
@@ -303,6 +305,98 @@ export const PaymentSourceTransactionsDialog = ({
     toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
   };
 
+  // Print handler
+  const handlePrint = () => {
+    if (!paymentSource || filteredSourceExpenses.length === 0) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const rows = filteredSourceExpenses.map(e => {
+      const cat = resolveCategory(e.category, customCategories);
+      const isInbound = e.type === 'transfer' && e.income_source_id === paymentSource.id;
+      const sign = e.type === 'income' || isInbound ? '+' : '-';
+      const color = e.type === 'income' || isInbound ? '#16a34a' : '#dc2626';
+      return `<tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${format(e.date, 'dd.MM.yyyy')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.type === 'income' ? t('transactions.income') : e.type === 'transfer' ? t('transactions.transfer') : t('transactions.expense')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.description}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${cat.name}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;color:${color}">${sign}${formatAmount(e.amount)}</td>
+      </tr>`;
+    }).join('');
+
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>${paymentSource.name} - ${t('transactions.transactions')}</title>
+      <style>body{font-family:system-ui,sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px}td{font-size:13px}.summary{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px}h1{font-size:18px;margin-bottom:4px}h2{font-size:15px;color:#666;margin-top:0}</style></head><body>
+      <h1>${paymentSource.icon} ${paymentSource.name}</h1>
+      <h2>${t('summary.balance')}: ${formatAmount(paymentSource.balance)} | ${filteredSourceExpenses.length} ${t('transactions.transactions')}</h2>
+      <table><thead><tr>
+        <th>${t('common.date', 'Datum')}</th>
+        <th>${t('common.type', 'Tip')}</th>
+        <th>${t('common.description', 'Opis')}</th>
+        <th>${t('common.category', 'Kategorija')}</th>
+        <th style="text-align:right">${t('common.amount', 'Iznos')}</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+      <div class="summary">
+        <strong>${t('summary.totalIncome')}:</strong> ${formatAmount(totalIncome)} &nbsp;|&nbsp;
+        <strong>${t('summary.totalExpenses')}:</strong> ${formatAmount(totalExp)} &nbsp;|&nbsp;
+        <strong>${t('transactions.transfers', 'Prijenosi')}:</strong> ${formatAmount(totalTransfers)}
+      </div></body></html>`);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Export handlers
+  const buildReportData = (): ReportData => {
+    const byCategory: Record<string, number> = {};
+    const byPaymentSource: Record<string, number> = {};
+    
+    filteredSourceExpenses.forEach(e => {
+      if (e.type === 'expense') {
+        byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+      }
+      const ps = e.payment_source || 'cash';
+      byPaymentSource[ps] = (byPaymentSource[ps] || 0) + e.amount;
+    });
+
+    const dates = filteredSourceExpenses.map(e => e.date.getTime());
+    const start = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();
+    const end = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
+
+    const currencyConfig: CurrencyConfig = {
+      code: currency.code,
+      symbol: currency.symbol,
+      locale: currency.locale,
+    };
+
+    return {
+      expenses: filteredSourceExpenses,
+      dateRange: { start, end },
+      totals: {
+        income: totalIncome,
+        expenses: totalExp,
+        balance: totalIncome - totalExp,
+        transfers: totalTransfers,
+      },
+      byCategory,
+      byPaymentSource,
+      currency: currencyConfig,
+    };
+  };
+
+  const handleExportPDF = () => {
+    if (!paymentSource || filteredSourceExpenses.length === 0) return;
+    const data = buildReportData();
+    generatePDFReport(data, `${paymentSource.name} - ${t('transactions.transactions')}`);
+    toast.success(t('reports.pdfExported', 'PDF izvoz završen'));
+  };
+
+  const handleExportCSV = () => {
+    if (!paymentSource || filteredSourceExpenses.length === 0) return;
+    const data = buildReportData();
+    generateCSVReport(data);
+    toast.success(t('reports.csvExported', 'CSV izvoz završen'));
+  };
+
   if (!paymentSource) return null;
 
   return (
@@ -368,15 +462,39 @@ export const PaymentSourceTransactionsDialog = ({
                   </>
                 )}
                 {filteredSourceExpenses.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={selectedIds.size === filteredSourceExpenses.length ? clearSelection : selectAll}
-                    className="h-7 text-xs gap-1.5"
-                  >
-                    <CheckSquare className="w-3.5 h-3.5" />
-                    {selectedIds.size === filteredSourceExpenses.length ? t('common.cancelSelection') : t('common.selectAll')}
-                  </Button>
+                  <>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                          <Download className="w-3.5 h-3.5" />
+                          {t('common.export', 'Izvoz')}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handlePrint}>
+                          <Printer className="w-4 h-4 mr-2" />
+                          {t('common.print', 'Ispis')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportPDF}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportCSV}>
+                          <Download className="w-4 h-4 mr-2" />
+                          CSV
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={selectedIds.size === filteredSourceExpenses.length ? clearSelection : selectAll}
+                      className="h-7 text-xs gap-1.5"
+                    >
+                      <CheckSquare className="w-3.5 h-3.5" />
+                      {selectedIds.size === filteredSourceExpenses.length ? t('common.cancelSelection') : t('common.selectAll')}
+                    </Button>
+                  </>
                 )}
                 <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
                   <XIcon className="h-5 w-5" />
