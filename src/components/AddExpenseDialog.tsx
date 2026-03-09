@@ -55,8 +55,9 @@ interface ScannedData {
   is_installment?: boolean;
   installment_count?: number | null;
   installment_amount?: number | null;
-  transaction_type?: 'expense' | 'transfer';
+  transaction_type?: 'expense' | 'transfer' | 'income';
   transfer_destination_name?: string | null;
+  recipient_name?: string | null;
 }
 
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
@@ -227,7 +228,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       installment_count: result.installment_count,
       installment_amount: result.installment_amount,
       transaction_type: result.transaction_type,
-      transfer_destination_name: result.transfer_destination_name
+      transfer_destination_name: result.transfer_destination_name,
+      recipient_name: result.recipient_name
     });
     
     // Auto-enable installment mode if detected on receipt
@@ -276,16 +278,19 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
       // Determine transaction type - AI may have detected a transfer (e.g. Aircash top-up)
       const isTransfer = scannedData.transaction_type === 'transfer';
+      const isIncome = scannedData.transaction_type === 'income';
       
       // For transfers, try to find destination account by name
       let transferDestinationId: string | undefined;
-      if (isTransfer && scannedData.transfer_destination_name) {
-        const destName = scannedData.transfer_destination_name.toLowerCase();
-        const matchedDest = customPaymentSources.find(
-          s => s.name.toLowerCase().includes(destName) || destName.includes(s.name.toLowerCase())
-        );
-        if (matchedDest) {
-          transferDestinationId = matchedDest.id;
+      if (isTransfer) {
+        const destName = (scannedData.transfer_destination_name || scannedData.recipient_name || '').toLowerCase();
+        if (destName) {
+          const matchedDest = customPaymentSources.find(
+            s => s.name.toLowerCase().includes(destName) || destName.includes(s.name.toLowerCase())
+          );
+          if (matchedDest) {
+            transferDestinationId = matchedDest.id;
+          }
         }
       }
 
@@ -294,12 +299,14 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       const finalAmount = totalWithTip ? parseFloat(totalWithTip) : scannedData.amount;
       const tipNote = tipAmount > 0 ? `Napojnica: €${tipAmount.toFixed(2)}` : '';
 
+      const finalType: TransactionType = isTransfer ? 'transfer' : (isIncome ? 'income' : 'expense');
+
       const newExpense = {
         amount: finalAmount,
         description: scannedData.description,
         category: scannedData.category,
         date: new Date(scannedData.date || expenseDate),
-        type: (isTransfer ? 'transfer' : 'expense') as TransactionType,
+        type: finalType,
         payment_source: finalPaymentSource,
         payment_source_card_id: finalCardId,
         merchant_name: scannedData.merchant || undefined,
@@ -669,12 +676,23 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                       type="button"
                       onClick={() => setScannedData({ ...scannedData, transaction_type: 'expense', transfer_destination_name: null })}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                        scannedData.transaction_type !== 'transfer'
+                        scannedData.transaction_type === 'expense'
                           ? 'bg-destructive/10 border-destructive/30 text-destructive'
                           : 'bg-muted/50 border-border text-muted-foreground'
                       }`}
                     >
                       💸 Trošak
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScannedData({ ...scannedData, transaction_type: 'income' })}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        scannedData.transaction_type === 'income'
+                          ? 'bg-income/10 border-income/30 text-income'
+                          : 'bg-muted/50 border-border text-muted-foreground'
+                      }`}
+                    >
+                      💳 Uplata
                     </button>
                     <button
                       type="button"
@@ -690,15 +708,24 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   </div>
                 </div>
 
+                {/* Recipient info for bank transfers */}
+                {scannedData.recipient_name && scannedData.transaction_type !== 'transfer' && (
+                  <div className="p-2 rounded-lg bg-muted/50 border border-border/50">
+                    <p className="text-xs text-muted-foreground">
+                      Primatelj: <span className="font-medium text-foreground">{scannedData.recipient_name}</span>
+                    </p>
+                  </div>
+                )}
+
                 {/* Transfer destination info */}
                 {scannedData.transaction_type === 'transfer' && (
                   <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                     <div className="flex items-center gap-2 text-sm font-medium text-primary">
                       <span>🔄</span>
-                      <span>Prijenos{scannedData.transfer_destination_name ? ` → ${scannedData.transfer_destination_name}` : ''}</span>
+                      <span>Prijenos{scannedData.transfer_destination_name ? ` → ${scannedData.transfer_destination_name}` : (scannedData.recipient_name ? ` → ${scannedData.recipient_name}` : '')}</span>
                     </div>
-                    {scannedData.transfer_destination_name && (() => {
-                      const destName = scannedData.transfer_destination_name!.toLowerCase();
+                    {(scannedData.transfer_destination_name || scannedData.recipient_name) && (() => {
+                      const destName = (scannedData.transfer_destination_name || scannedData.recipient_name || '').toLowerCase();
                       const matched = customPaymentSources.find(
                         s => s.name.toLowerCase().includes(destName) || destName.includes(s.name.toLowerCase())
                       );
@@ -708,7 +735,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                         </p>
                       ) : (
                         <p className="text-xs text-destructive mt-1">
-                          Račun "{scannedData.transfer_destination_name}" nije pronađen. Saldo se neće ažurirati.
+                          Račun "{scannedData.transfer_destination_name || scannedData.recipient_name}" nije pronađen. Saldo se neće ažurirati.
                         </p>
                       );
                     })()}

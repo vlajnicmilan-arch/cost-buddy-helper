@@ -239,13 +239,13 @@ KORAK 3: Ako nema podudaranja brojeva
      BANKARSKA POTVRDA O PRIJENOSU / UPLATI:
      - Traži: "Potvrda o izvršenoj transakciji", "PLATITELJ", "PRIMATELJ", "IBAN", "Broj računa platitelja", "Broj računa primatelja", "Internet bankarstvo", "Mobilno bankarstvo", "Datum izvršenja", "Poziv na broj", "Način plaćanja: Instant", "Iznos terećenja", "Iznos odobrenja"
      - Ako dokument sadrži PLATITELJA i PRIMATELJA s IBAN brojevima → OVO JE BANKARSKA POTVRDA!
-     - merchant: ime PRIMATELJA (osoba ili firma koja prima novac, npr. "Vinka Pleško", "HEP d.d.")
-     - description: opis s potvrde (npr. "posudba", "najam", "uplata")
-     - transaction_type: "expense" (uplata drugoj osobi/firmi je trošak - korisnik može promijeniti u pregledu)
-     - transfer_destination_name: null (jer je ovo trošak, ne transfer između vlastitih računa)
+     - merchant: ime PLATITELJA ili naziv banke (npr. "Duje Grčić", "OTP banka") - NIKAD ime primatelja kao merchant!
+     - description: opis s potvrde (npr. "posudba", "najam") + " - " + ime PRIMATELJA
+     - recipient_name: ime PRIMATELJA (osoba ili firma koja prima novac, npr. "Vinka Pleško", "HEP d.d.")
+     - transaction_type: "expense" (korisnik može promijeniti u pregledu na "transfer" ili "income")
+     - transfer_destination_name: null
      - Primjer: Potvrda OTP banke, platitelj Duje Grčić, primatelj Vinka Pleško, opis "posudba", iznos 1736.95 EUR
-       → transaction_type: "expense", merchant: "Vinka Pleško", description: "Posudba", category: "other"
-     - NIKAD ne tumači naziv banke kao trgovca! Trgovac je PRIMATELJ novca.
+       → merchant: "OTP banka", description: "Posudba - Vinka Pleško", recipient_name: "Vinka Pleško", transaction_type: "expense", category: "other"
      
      - Ako NIJE dopuna/transfer/bankomat → transaction_type: "expense"
 ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
@@ -260,6 +260,7 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
   "payment_method": "card",
   "transaction_type": "expense",
   "transfer_destination_name": null,
+  "recipient_name": null,
   "custom_payment_source_id": null,
   "payment_source_card_id": null,
   "is_installment": false,
@@ -455,6 +456,7 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         payment_method: receiptData.payment_method || null,
         transaction_type: receiptData.transaction_type || 'expense',
         transfer_destination_name: receiptData.transfer_destination_name || null,
+        recipient_name: receiptData.recipient_name || null,
         custom_payment_source_id: receiptData.custom_payment_source_id || null,
         payment_source_card_id: receiptData.payment_source_card_id || null,
         is_installment: receiptData.is_installment || false,
