@@ -423,6 +423,7 @@ export type Database = {
           ai_extracted: boolean | null
           amount: number
           budget_id: string | null
+          business_profile_id: string | null
           category: string
           created_at: string
           date: string
@@ -448,6 +449,7 @@ export type Database = {
           ai_extracted?: boolean | null
           amount: number
           budget_id?: string | null
+          business_profile_id?: string | null
           category?: string
           created_at?: string
           date?: string
@@ -473,6 +475,7 @@ export type Database = {
           ai_extracted?: boolean | null
           amount?: number
           budget_id?: string | null
+          business_profile_id?: string | null
           category?: string
           created_at?: string
           date?: string
@@ -500,6 +503,13 @@ export type Database = {
             columns: ["budget_id"]
             isOneToOne: false
             referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
             referencedColumns: ["id"]
           },
           {

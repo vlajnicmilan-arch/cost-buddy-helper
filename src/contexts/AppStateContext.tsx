@@ -29,6 +29,10 @@ interface AppStateContextValue {
   businessModeEnabled: boolean;
   setBusinessModeEnabled: (enabled: boolean) => void;
 
+  // Active business profile
+  activeBusinessProfileId: string | null;
+  setActiveBusinessProfileId: (id: string | null) => void;
+
   // Onboarding
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
@@ -64,6 +68,9 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('business_mode_enabled') === 'true'
   );
+  const [activeBusinessProfileId, setActiveBusinessProfileIdState] = useState<string | null>(
+    () => localStorage.getItem('active_business_profile_id') || null
+  );
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
@@ -96,6 +103,19 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const setBusinessModeEnabled = useCallback((enabled: boolean) => {
     setBusinessModeEnabledState(enabled);
     localStorage.setItem('business_mode_enabled', enabled.toString());
+    if (!enabled) {
+      setActiveBusinessProfileIdState(null);
+      localStorage.removeItem('active_business_profile_id');
+    }
+  }, []);
+
+  const setActiveBusinessProfileId = useCallback((id: string | null) => {
+    setActiveBusinessProfileIdState(id);
+    if (id) {
+      localStorage.setItem('active_business_profile_id', id);
+    } else {
+      localStorage.removeItem('active_business_profile_id');
+    }
   }, []);
 
   const setOnboardingCompleted = useCallback((completed: boolean) => {
@@ -145,6 +165,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       setFamilyModeEnabled,
       businessModeEnabled,
       setBusinessModeEnabled,
+      activeBusinessProfileId,
+      setActiveBusinessProfileId,
       onboardingCompleted,
       setOnboardingCompleted,
       onAvatarEvent,

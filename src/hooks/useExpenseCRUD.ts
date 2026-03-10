@@ -31,7 +31,7 @@ export const useExpenseCRUD = ({
   const { user } = useAuth();
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated });
   const { checkBudgetAlerts } = useBudgetAlerts();
-  const { emitAvatarEvent } = useAppState();
+  const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
 
   const addExpense = useCallback(async (
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
@@ -72,7 +72,8 @@ export const useExpenseCRUD = ({
             note: expense.note || null,
             expense_nature: expense.expense_nature || null,
             status: isPendingMemberTransaction ? 'pending' : 'approved',
-            submitted_by: isPendingMemberTransaction ? user.id : null
+            submitted_by: isPendingMemberTransaction ? user.id : null,
+            business_profile_id: (expense as any).business_profile_id || activeBusinessProfileId || null,
           })
           .select()
           .single();

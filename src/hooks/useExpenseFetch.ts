@@ -3,12 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
+  const { activeBusinessProfileId } = useAppState();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
@@ -83,7 +85,8 @@ export const useExpenseFetch = () => {
           payment_source: (e.payment_source || 'cash') as PaymentSource,
           income_source_id: e.income_source_id,
           payment_source_card_id: e.payment_source_card_id,
-          expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined
+          expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined,
+          business_profile_id: (e as any).business_profile_id || null,
         })) || []);
       }
     } catch (error) {
@@ -103,6 +106,7 @@ export const useExpenseFetch = () => {
     income_source_id: raw.income_source_id as string | undefined,
     payment_source_card_id: raw.payment_source_card_id as string | undefined,
     expense_nature: (raw.expense_nature as 'regular' | 'extraordinary') || undefined,
+    business_profile_id: (raw as any).business_profile_id || null,
   }), []);
 
   // Initial data load
@@ -178,9 +182,19 @@ export const useExpenseFetch = () => {
 
   // Filtered view for dashboard (respects payment source access levels)
   const dashboardExpenses = useMemo(() => {
-    if (isLocalMode || !user) return expenses;
+    // First filter by business profile context
+    let filtered = expenses;
+    if (activeBusinessProfileId) {
+      // Business mode: show only transactions for this business
+      filtered = expenses.filter(e => e.business_profile_id === activeBusinessProfileId);
+    } else {
+      // Personal mode: show only personal transactions (no business_profile_id)
+      filtered = expenses.filter(e => !e.business_profile_id);
+    }
 
-    return expenses.filter(expense => {
+    if (isLocalMode || !user) return filtered;
+
+    return filtered.filter(expense => {
       const cleanPs = expense.payment_source?.replace('custom:', '');
       const isOnSharedPaymentSource = cleanPs && sharedPaymentSourceIds.has(cleanPs);
 
@@ -202,7 +216,7 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, isLocalMode, user]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, isLocalMode, user, activeBusinessProfileId]);
 
   return {
     expenses,          // raw — all accessible expenses
