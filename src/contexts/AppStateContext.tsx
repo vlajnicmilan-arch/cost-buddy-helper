@@ -165,6 +165,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       setFamilyModeEnabled,
       businessModeEnabled,
       setBusinessModeEnabled,
+      activeBusinessProfileId,
+      setActiveBusinessProfileId,
       onboardingCompleted,
       setOnboardingCompleted,
       onAvatarEvent,
