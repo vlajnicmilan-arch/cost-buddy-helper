@@ -1097,6 +1097,48 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 />
               </div>
             )}
+
+            {/* Business Mode toggle - Cloud only */}
+            {!isLocalMode && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Building2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <Label htmlFor="business-mode" className="text-sm font-medium cursor-pointer">
+                        {t('settings.businessMode', 'Poslovni način')}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t('settings.businessModeDesc', 'Poslovna terminologija i profil tvrtke')}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="business-mode"
+                    checked={businessModeEnabled}
+                    onCheckedChange={(checked) => {
+                      setBusinessModeEnabled(checked);
+                      toast.success(checked 
+                        ? t('settings.businessModeEnabled', 'Poslovni način uključen') 
+                        : t('settings.businessModeDisabled', 'Osobni način vraćen')
+                      );
+                    }}
+                  />
+                </div>
+                {businessModeEnabled && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => setShowBusinessProfile(true)}
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    {t('business.editProfile', 'Uredi poslovni profil')}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           <Separator />
