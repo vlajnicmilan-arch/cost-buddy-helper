@@ -61,6 +61,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('family_mode_enabled') !== 'false'
   );
+  const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(
+    () => localStorage.getItem('business_mode_enabled') === 'true'
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
