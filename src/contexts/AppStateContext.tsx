@@ -29,6 +29,10 @@ interface AppStateContextValue {
   businessModeEnabled: boolean;
   setBusinessModeEnabled: (enabled: boolean) => void;
 
+  // Active business profile
+  activeBusinessProfileId: string | null;
+  setActiveBusinessProfileId: (id: string | null) => void;
+
   // Onboarding
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
