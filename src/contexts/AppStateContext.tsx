@@ -63,6 +63,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   );
   const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('business_mode_enabled') === 'true'
+  );
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
