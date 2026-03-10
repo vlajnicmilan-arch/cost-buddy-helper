@@ -282,6 +282,7 @@ export type Database = {
           email: string | null
           iban: string | null
           id: string
+          is_active: boolean
           is_vat_payer: boolean | null
           legal_form: string | null
           logo_url: string | null
@@ -307,6 +308,7 @@ export type Database = {
           email?: string | null
           iban?: string | null
           id?: string
+          is_active?: boolean
           is_vat_payer?: boolean | null
           legal_form?: string | null
           logo_url?: string | null
@@ -332,6 +334,7 @@ export type Database = {
           email?: string | null
           iban?: string | null
           id?: string
+          is_active?: boolean
           is_vat_payer?: boolean | null
           legal_form?: string | null
           logo_url?: string | null

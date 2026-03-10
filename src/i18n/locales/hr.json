@@ -1051,6 +1051,23 @@
     "mbs": "MBS",
     "courtRegistry": "Trgovački sud",
     "nameRequired": "Naziv tvrtke je obavezan",
-    "saved": "Poslovni profil spremljen"
+    "saved": "Poslovni profil spremljen",
+    "companies": "Tvrtke",
+    "addCompany": "Dodaj tvrtku",
+    "editCompany": "Uredi tvrtku",
+    "newCompany": "Nova tvrtka",
+    "noProfiles": "Nemate dodanih tvrtki",
+    "noDetails": "Bez detalja",
+    "active": "Aktivna",
+    "setActive": "Postavi kao aktivnu",
+    "activated": "Tvrtka postavljena kao aktivna",
+    "deleted": "Tvrtka obrisana",
+    "aiAutoFill": "AI automatsko popunjavanje",
+    "aiSearching": "AI pretražuje...",
+    "aiAutoFillHint": "Unesite naziv ili OIB, zatim kliknite za automatsko popunjavanje",
+    "aiFilledSuccess": "AI je popunio podatke o tvrtki",
+    "aiLookupError": "Greška pri AI pretraživanju",
+    "aiLookupHint": "Unesite naziv tvrtke ili OIB za AI pretragu",
+    "notFound": "Tvrtka nije pronađena"
   }
 }

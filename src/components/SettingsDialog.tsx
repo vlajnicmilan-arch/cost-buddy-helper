@@ -1134,7 +1134,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                     onClick={() => setShowBusinessProfile(true)}
                   >
                     <Building2 className="w-4 h-4 mr-2" />
-                    {t('business.editProfile', 'Uredi poslovni profil')}
+                    {t('business.companies', 'Tvrtke')}
                   </Button>
                 )}
               </div>

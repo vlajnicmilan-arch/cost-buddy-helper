@@ -1038,6 +1038,23 @@
     "mbs": "Handelsregisternummer",
     "courtRegistry": "Handelsgericht",
     "nameRequired": "Firmenname ist erforderlich",
-    "saved": "Firmenprofil gespeichert"
+    "saved": "Firmenprofil gespeichert",
+    "companies": "Unternehmen",
+    "addCompany": "Unternehmen hinzufügen",
+    "editCompany": "Unternehmen bearbeiten",
+    "newCompany": "Neues Unternehmen",
+    "noProfiles": "Keine Unternehmen hinzugefügt",
+    "noDetails": "Keine Details",
+    "active": "Aktiv",
+    "setActive": "Als aktiv setzen",
+    "activated": "Unternehmen als aktiv gesetzt",
+    "deleted": "Unternehmen gelöscht",
+    "aiAutoFill": "KI-Autovervollständigung",
+    "aiSearching": "KI sucht...",
+    "aiAutoFillHint": "Name oder Steuer-ID eingeben, dann klicken",
+    "aiFilledSuccess": "KI hat Firmendaten ausgefüllt",
+    "aiLookupError": "KI-Suchfehler",
+    "aiLookupHint": "Firmenname oder Steuer-ID für KI-Suche eingeben",
+    "notFound": "Unternehmen nicht gefunden"
   }
 }
