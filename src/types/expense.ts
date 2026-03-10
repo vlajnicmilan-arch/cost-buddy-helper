@@ -199,6 +199,7 @@ export interface Expense {
   submitted_by?: string | null;
   note?: string | null;
   expense_nature?: 'regular' | 'extraordinary' | null;
+  business_profile_id?: string | null;
   created_at?: string;
   updated_at?: string;
   import_batch_id?: string | null;
