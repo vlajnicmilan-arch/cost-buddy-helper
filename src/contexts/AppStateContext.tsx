@@ -25,6 +25,10 @@ interface AppStateContextValue {
   familyModeEnabled: boolean;
   setFamilyModeEnabled: (enabled: boolean) => void;
 
+  // Business mode toggle
+  businessModeEnabled: boolean;
+  setBusinessModeEnabled: (enabled: boolean) => void;
+
   // Onboarding
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
@@ -57,6 +61,9 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('family_mode_enabled') !== 'false'
   );
+  const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(
+    () => localStorage.getItem('business_mode_enabled') === 'true'
+  );
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
@@ -84,6 +91,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const setFamilyModeEnabled = useCallback((enabled: boolean) => {
     setFamilyModeEnabledState(enabled);
     localStorage.setItem('family_mode_enabled', enabled.toString());
+  }, []);
+
+  const setBusinessModeEnabled = useCallback((enabled: boolean) => {
+    setBusinessModeEnabledState(enabled);
+    localStorage.setItem('business_mode_enabled', enabled.toString());
   }, []);
 
   const setOnboardingCompleted = useCallback((completed: boolean) => {
@@ -131,6 +143,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       setSimpleModeEnabled,
       familyModeEnabled,
       setFamilyModeEnabled,
+      businessModeEnabled,
+      setBusinessModeEnabled,
       onboardingCompleted,
       setOnboardingCompleted,
       onAvatarEvent,

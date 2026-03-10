@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Building2 } from 'lucide-react';
 import { BugReportDialog } from '@/components/BugReportDialog';
+import { BusinessProfileDialog } from '@/components/BusinessProfileDialog';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -77,6 +78,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [showBusinessProfile, setShowBusinessProfile] = useState(false);
   
   const { storageMode } = useStorage();
   const { user } = useAuth();
@@ -86,6 +88,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
     familyModeEnabled, setFamilyModeEnabled,
+    businessModeEnabled, setBusinessModeEnabled,
     emitFinancialReset,
   } = useAppState();
   const isLocalMode = storageMode === 'local';
@@ -1094,6 +1097,48 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 />
               </div>
             )}
+
+            {/* Business Mode toggle - Cloud only */}
+            {!isLocalMode && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Building2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <Label htmlFor="business-mode" className="text-sm font-medium cursor-pointer">
+                        {t('settings.businessMode', 'Poslovni način')}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t('settings.businessModeDesc', 'Poslovna terminologija i profil tvrtke')}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="business-mode"
+                    checked={businessModeEnabled}
+                    onCheckedChange={(checked) => {
+                      setBusinessModeEnabled(checked);
+                      toast.success(checked 
+                        ? t('settings.businessModeEnabled', 'Poslovni način uključen') 
+                        : t('settings.businessModeDisabled', 'Osobni način vraćen')
+                      );
+                    }}
+                  />
+                </div>
+                {businessModeEnabled && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => setShowBusinessProfile(true)}
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    {t('business.editProfile', 'Uredi poslovni profil')}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           <Separator />
@@ -1417,6 +1462,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       {/* Help Dialog */}
       <HelpDialogContent open={showHelpDialog} onOpenChange={setShowHelpDialog} />
       <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
+      <BusinessProfileDialog open={showBusinessProfile} onOpenChange={setShowBusinessProfile} />
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={(isOpen) => {
