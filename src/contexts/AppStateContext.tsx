@@ -103,6 +103,19 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const setBusinessModeEnabled = useCallback((enabled: boolean) => {
     setBusinessModeEnabledState(enabled);
     localStorage.setItem('business_mode_enabled', enabled.toString());
+    if (!enabled) {
+      setActiveBusinessProfileIdState(null);
+      localStorage.removeItem('active_business_profile_id');
+    }
+  }, []);
+
+  const setActiveBusinessProfileId = useCallback((id: string | null) => {
+    setActiveBusinessProfileIdState(id);
+    if (id) {
+      localStorage.setItem('active_business_profile_id', id);
+    } else {
+      localStorage.removeItem('active_business_profile_id');
+    }
   }, []);
 
   const setOnboardingCompleted = useCallback((completed: boolean) => {
