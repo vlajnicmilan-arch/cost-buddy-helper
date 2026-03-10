@@ -25,6 +25,10 @@ interface AppStateContextValue {
   familyModeEnabled: boolean;
   setFamilyModeEnabled: (enabled: boolean) => void;
 
+  // Business mode toggle
+  businessModeEnabled: boolean;
+  setBusinessModeEnabled: (enabled: boolean) => void;
+
   // Onboarding
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
