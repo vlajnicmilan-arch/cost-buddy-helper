@@ -1462,6 +1462,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       {/* Help Dialog */}
       <HelpDialogContent open={showHelpDialog} onOpenChange={setShowHelpDialog} />
       <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
+      <BusinessProfileDialog open={showBusinessProfile} onOpenChange={setShowBusinessProfile} />
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={(isOpen) => {
