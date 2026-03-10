@@ -88,6 +88,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
     familyModeEnabled, setFamilyModeEnabled,
+    businessModeEnabled, setBusinessModeEnabled,
     emitFinancialReset,
   } = useAppState();
   const isLocalMode = storageMode === 'local';
