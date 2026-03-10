@@ -23,6 +23,24 @@ serve(async (req) => {
     const isOIB = /^\d{11}$/.test(query.trim());
     const searchType = isOIB ? "OIB" : "naziv tvrtke";
 
+    const systemPrompt = `Ti si AI asistent koji pomaže korisnicima popuniti podatke o njihovoj tvrtki u Hrvatskoj.
+
+VAŽNA PRAVILA:
+1. NIKADA ne izmišljaj podatke. Ako nisi 100% siguran u neki podatak, OBAVEZNO ga ostavi kao prazan string "".
+2. Za poznate velike tvrtke (npr. Rimac, HT, INA, Konzum, Podravka) možeš popuniti javno poznate podatke.
+3. Za manje/nepoznate tvrtke, popuni SAMO ono što možeš sigurno zaključiti iz naziva:
+   - Pravni oblik (d.o.o., d.d., j.d.o.o., obrt) - iz naziva tvrtke
+   - Država: "Hrvatska" (ako je hrvatska tvrtka)
+   - Sve ostalo ostavi prazno ako nisi siguran
+4. OIB, MBS, IBAN - NIKADA ne izmišljaj! Ostavi prazno ako ne znaš točan podatak.
+5. Adresu, telefon, email, web - popuni SAMO ako si siguran (javno poznate tvrtke).
+6. Šifru djelatnosti (NKD) - popuni samo ako je očito iz naziva tvrtke (npr. "... Građevinarstvo d.o.o." → 41.20).
+7. PDV obveznik - postavi true samo za tvrtke za koje sigurno znaš, inače false.
+8. Postavi found=true ako prepoznaješ tvrtku ili možeš izvući barem pravni oblik iz naziva.
+   Postavi found=false SAMO ako upit nema smisla.
+
+Korisnik traži podatke prema: ${searchType}`;
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -30,46 +48,40 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
-          {
-            role: "system",
-            content: `Ti si stručnjak za hrvatske poslovne registre. Korisnik će ti dati ${searchType} tvrtke registrirane u Hrvatskoj. Na temelju svog znanja, pronađi i vrati sve dostupne podatke o toj tvrtki. Budi što precizniji. Ako nisi siguran u neki podatak, ostavi ga praznim. Za OIB koristi format bez crtica. Za IBAN koristi HR format.`
-          },
-          {
-            role: "user",
-            content: `Pronađi podatke za hrvatsku tvrtku: ${query.trim()}`
-          }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Pronađi podatke za: ${query.trim()}` }
         ],
         tools: [
           {
             type: "function",
             function: {
               name: "return_company_data",
-              description: "Return structured company data found for the query",
+              description: "Return structured company data. Leave unknown fields as empty string. NEVER fabricate data.",
               parameters: {
                 type: "object",
                 properties: {
-                  company_name: { type: "string", description: "Puni naziv tvrtke" },
-                  oib: { type: "string", description: "OIB (11 znamenki)" },
-                  address: { type: "string", description: "Ulica i kućni broj" },
-                  city: { type: "string", description: "Grad" },
-                  postal_code: { type: "string", description: "Poštanski broj" },
-                  country: { type: "string", description: "Država" },
-                  legal_form: { type: "string", description: "Pravni oblik (d.o.o., j.d.o.o., d.d., obrt)" },
-                  activity_code: { type: "string", description: "NKD šifra djelatnosti" },
-                  activity_description: { type: "string", description: "Opis djelatnosti" },
-                  mbs: { type: "string", description: "Matični broj subjekta" },
-                  court_registry: { type: "string", description: "Trgovački sud" },
-                  is_vat_payer: { type: "boolean", description: "Je li PDV obveznik" },
-                  iban: { type: "string", description: "IBAN" },
-                  bank_name: { type: "string", description: "Naziv banke" },
-                  email: { type: "string", description: "Email" },
-                  phone: { type: "string", description: "Telefon" },
-                  website: { type: "string", description: "Web stranica" },
-                  found: { type: "boolean", description: "Je li tvrtka pronađena" }
+                  company_name: { type: "string", description: "Puni službeni naziv tvrtke s pravnim oblikom. Prazno ako nepoznato." },
+                  oib: { type: "string", description: "OIB (točno 11 znamenki). MORA biti točan ili prazan string." },
+                  address: { type: "string", description: "Ulica i kućni broj. Prazan string ako nepoznato." },
+                  city: { type: "string", description: "Grad sjedišta. Prazan string ako nepoznato." },
+                  postal_code: { type: "string", description: "Poštanski broj. Prazan string ako nepoznato." },
+                  country: { type: "string", description: "Država, default Hrvatska" },
+                  legal_form: { type: "string", description: "Pravni oblik: d.o.o., j.d.o.o., d.d., obrt, udruga, etc." },
+                  activity_code: { type: "string", description: "NKD 2007 šifra djelatnosti (npr. 62.01). Prazan string ako nepoznato." },
+                  activity_description: { type: "string", description: "Opis glavne djelatnosti. Prazan string ako nepoznato." },
+                  mbs: { type: "string", description: "Matični broj subjekta iz sudskog registra. MORA biti točan ili prazan string." },
+                  court_registry: { type: "string", description: "Nadležni trgovački sud. Prazan string ako nepoznato." },
+                  is_vat_payer: { type: "boolean", description: "true samo ako je sigurno PDV obveznik, inače false" },
+                  iban: { type: "string", description: "IBAN u HR formatu. MORA biti točan ili prazan string. NIKADA ne izmišljaj." },
+                  bank_name: { type: "string", description: "Naziv banke. Prazan string ako nepoznato." },
+                  email: { type: "string", description: "Službeni email. Prazan string ako nepoznato." },
+                  phone: { type: "string", description: "Telefon. Prazan string ako nepoznato." },
+                  website: { type: "string", description: "Web stranica. Prazan string ako nepoznato." },
+                  found: { type: "boolean", description: "true ako je tvrtka prepoznata ili se barem može zaključiti pravni oblik" }
                 },
-                required: ["found"],
+                required: ["found", "company_name"],
                 additionalProperties: false
               }
             }
@@ -108,6 +120,7 @@ serve(async (req) => {
     }
 
     const companyData = JSON.parse(toolCall.function.arguments);
+    console.log("Company lookup result:", JSON.stringify(companyData));
 
     return new Response(JSON.stringify(companyData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
