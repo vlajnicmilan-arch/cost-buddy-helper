@@ -78,6 +78,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [showBusinessProfile, setShowBusinessProfile] = useState(false);
   
   const { storageMode } = useStorage();
   const { user } = useAuth();
