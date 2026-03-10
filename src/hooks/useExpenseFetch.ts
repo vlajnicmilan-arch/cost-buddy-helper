@@ -182,9 +182,19 @@ export const useExpenseFetch = () => {
 
   // Filtered view for dashboard (respects payment source access levels)
   const dashboardExpenses = useMemo(() => {
-    if (isLocalMode || !user) return expenses;
+    // First filter by business profile context
+    let filtered = expenses;
+    if (activeBusinessProfileId) {
+      // Business mode: show only transactions for this business
+      filtered = expenses.filter(e => e.business_profile_id === activeBusinessProfileId);
+    } else {
+      // Personal mode: show only personal transactions (no business_profile_id)
+      filtered = expenses.filter(e => !e.business_profile_id);
+    }
 
-    return expenses.filter(expense => {
+    if (isLocalMode || !user) return filtered;
+
+    return filtered.filter(expense => {
       const cleanPs = expense.payment_source?.replace('custom:', '');
       const isOnSharedPaymentSource = cleanPs && sharedPaymentSourceIds.has(cleanPs);
 
@@ -206,7 +216,7 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, isLocalMode, user]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, isLocalMode, user, activeBusinessProfileId]);
 
   return {
     expenses,          // raw — all accessible expenses
