@@ -1212,6 +1212,23 @@
     "mbs": "Company Registry No.",
     "courtRegistry": "Commercial Court",
     "nameRequired": "Company name is required",
-    "saved": "Business profile saved"
+    "saved": "Business profile saved",
+    "companies": "Companies",
+    "addCompany": "Add company",
+    "editCompany": "Edit company",
+    "newCompany": "New company",
+    "noProfiles": "No companies added",
+    "noDetails": "No details",
+    "active": "Active",
+    "setActive": "Set as active",
+    "activated": "Company set as active",
+    "deleted": "Company deleted",
+    "aiAutoFill": "AI auto-fill",
+    "aiSearching": "AI searching...",
+    "aiAutoFillHint": "Enter name or tax ID, then click to auto-fill",
+    "aiFilledSuccess": "AI filled company data",
+    "aiLookupError": "AI lookup error",
+    "aiLookupHint": "Enter company name or tax ID for AI lookup",
+    "notFound": "Company not found"
   }
 }
