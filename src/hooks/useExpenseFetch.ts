@@ -10,6 +10,7 @@ import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 export const useExpenseFetch = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
+  const { activeBusinessProfileId } = useAppState();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
