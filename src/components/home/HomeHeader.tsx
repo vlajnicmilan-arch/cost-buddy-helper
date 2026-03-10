@@ -9,6 +9,7 @@ import { TutorialButton } from '@/components/tutorial';
 import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
+import { BusinessProfileSwitcher } from '@/components/BusinessProfileSwitcher';
 import logo from '@/assets/logo.png';
 import { Expense, ReceiptItem } from '@/types/expense';
 
