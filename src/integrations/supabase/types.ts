@@ -268,6 +268,84 @@ export type Database = {
         }
         Relationships: []
       }
+      business_profiles: {
+        Row: {
+          activity_code: string | null
+          activity_description: string | null
+          address: string | null
+          bank_name: string | null
+          city: string | null
+          company_name: string
+          country: string | null
+          court_registry: string | null
+          created_at: string
+          email: string | null
+          iban: string | null
+          id: string
+          is_vat_payer: boolean | null
+          legal_form: string | null
+          logo_url: string | null
+          mbs: string | null
+          oib: string | null
+          phone: string | null
+          postal_code: string | null
+          updated_at: string
+          user_id: string
+          vat_id: string | null
+          website: string | null
+        }
+        Insert: {
+          activity_code?: string | null
+          activity_description?: string | null
+          address?: string | null
+          bank_name?: string | null
+          city?: string | null
+          company_name: string
+          country?: string | null
+          court_registry?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          is_vat_payer?: boolean | null
+          legal_form?: string | null
+          logo_url?: string | null
+          mbs?: string | null
+          oib?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          user_id: string
+          vat_id?: string | null
+          website?: string | null
+        }
+        Update: {
+          activity_code?: string | null
+          activity_description?: string | null
+          address?: string | null
+          bank_name?: string | null
+          city?: string | null
+          company_name?: string
+          country?: string | null
+          court_registry?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          is_vat_payer?: boolean | null
+          legal_form?: string | null
+          logo_url?: string | null
+          mbs?: string | null
+          oib?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          user_id?: string
+          vat_id?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       custom_categories: {
         Row: {
           color: string
