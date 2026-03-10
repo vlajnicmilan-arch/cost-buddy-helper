@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Save, Loader2 } from 'lucide-react';
+import { Building2, Save, Loader2, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -66,6 +66,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
   const [profile, setProfile] = useState<BusinessProfile>(emptyProfile);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (open && user) {
@@ -111,6 +112,63 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
       console.error('Error loading business profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAILookup = async () => {
+    const query = profile.oib.trim() || profile.company_name.trim();
+    if (!query || query.length < 2) {
+      toast.error(t('business.aiLookupHint', 'Unesite naziv tvrtke ili OIB za AI pretragu'));
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-company', {
+        body: { query },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (!data?.found) {
+        toast.error(t('business.notFound', 'Tvrtka nije pronađena'));
+        return;
+      }
+
+      // Only fill empty fields (don't overwrite user's existing data)
+      setProfile(prev => ({
+        ...prev,
+        company_name: prev.company_name || data.company_name || '',
+        oib: prev.oib || data.oib || '',
+        address: prev.address || data.address || '',
+        city: prev.city || data.city || '',
+        postal_code: prev.postal_code || data.postal_code || '',
+        country: prev.country || data.country || 'Hrvatska',
+        iban: prev.iban || data.iban || '',
+        bank_name: prev.bank_name || data.bank_name || '',
+        email: prev.email || data.email || '',
+        phone: prev.phone || data.phone || '',
+        website: prev.website || data.website || '',
+        is_vat_payer: data.is_vat_payer ?? prev.is_vat_payer,
+        vat_id: prev.vat_id || (data.is_vat_payer ? `HR${data.oib || prev.oib}` : '') || '',
+        activity_code: prev.activity_code || data.activity_code || '',
+        activity_description: prev.activity_description || data.activity_description || '',
+        mbs: prev.mbs || data.mbs || '',
+        court_registry: prev.court_registry || data.court_registry || '',
+        legal_form: prev.legal_form || data.legal_form || '',
+      }));
+
+      toast.success(t('business.aiFilledSuccess', 'AI je popunio podatke o tvrtki'));
+    } catch (error) {
+      console.error('AI lookup error:', error);
+      toast.error(t('business.aiLookupError', 'Greška pri AI pretraživanju'));
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -215,6 +273,27 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
                     />
                   </div>
                 </div>
+
+                {/* AI Auto-fill Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={handleAILookup}
+                  disabled={aiLoading || (!profile.company_name.trim() && !profile.oib.trim())}
+                >
+                  {aiLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  {aiLoading
+                    ? t('business.aiSearching', 'AI pretražuje...')
+                    : t('business.aiAutoFill', 'AI automatsko popunjavanje')}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  {t('business.aiAutoFillHint', 'Unesite naziv ili OIB, zatim kliknite za automatsko popunjavanje')}
+                </p>
               </div>
 
               <Separator />

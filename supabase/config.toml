@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.track-referral]
 verify_jwt = false
+
+[functions.lookup-company]
+verify_jwt = false
