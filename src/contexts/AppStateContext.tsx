@@ -93,6 +93,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('family_mode_enabled', enabled.toString());
   }, []);
 
+  const setBusinessModeEnabled = useCallback((enabled: boolean) => {
+    setBusinessModeEnabledState(enabled);
+    localStorage.setItem('business_mode_enabled', enabled.toString());
+  }, []);
+
   const setOnboardingCompleted = useCallback((completed: boolean) => {
     setOnboardingCompletedState(completed);
     if (completed) localStorage.setItem('onboarding_completed', 'true');
