@@ -1177,5 +1177,41 @@
     "selectSavingsToAdd": "Select savings goal to add:",
     "allSavingsAdded": "All savings goals are already added to the group.",
     "noSavings": "No savings goals added"
+  },
+  "settings": {
+    "businessMode": "Business mode",
+    "businessModeDesc": "Business terminology and company profile",
+    "businessModeEnabled": "Business mode enabled",
+    "businessModeDisabled": "Personal mode restored"
+  },
+  "business": {
+    "title": "Business Profile",
+    "editProfile": "Edit business profile",
+    "basicInfo": "Basic Information",
+    "companyName": "Company Name",
+    "oib": "Tax ID (OIB)",
+    "legalForm": "Legal Form",
+    "addressSection": "Address",
+    "address": "Street and Number",
+    "postalCode": "Postal Code",
+    "city": "City",
+    "country": "Country",
+    "contact": "Contact",
+    "email": "Email",
+    "phone": "Phone",
+    "website": "Website",
+    "banking": "Banking Details",
+    "iban": "IBAN",
+    "bankName": "Bank",
+    "taxRegistry": "Tax & Registry",
+    "vatPayer": "VAT Registered",
+    "vatPayerDesc": "Company is VAT registered",
+    "vatId": "VAT ID",
+    "activityCode": "Activity Code",
+    "activityDesc": "Activity Description",
+    "mbs": "Company Registry No.",
+    "courtRegistry": "Commercial Court",
+    "nameRequired": "Company name is required",
+    "saved": "Business profile saved"
   }
 }
