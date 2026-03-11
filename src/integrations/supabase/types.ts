@@ -1811,11 +1811,12 @@ export type Database = {
       project_work_entries: {
         Row: {
           actual_hours: number
+          business_profile_id: string | null
           created_at: string
           id: string
           milestone_ids: string[] | null
           note: string | null
-          project_id: string
+          project_id: string | null
           scheduled_hours: number
           updated_at: string
           work_date: string
@@ -1823,11 +1824,12 @@ export type Database = {
         }
         Insert: {
           actual_hours?: number
+          business_profile_id?: string | null
           created_at?: string
           id?: string
           milestone_ids?: string[] | null
           note?: string | null
-          project_id: string
+          project_id?: string | null
           scheduled_hours?: number
           updated_at?: string
           work_date: string
@@ -1835,17 +1837,25 @@ export type Database = {
         }
         Update: {
           actual_hours?: number
+          business_profile_id?: string | null
           created_at?: string
           id?: string
           milestone_ids?: string[] | null
           note?: string | null
-          project_id?: string
+          project_id?: string | null
           scheduled_hours?: number
           updated_at?: string
           work_date?: string
           worker_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_work_entries_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_work_entries_project_id_fkey"
             columns: ["project_id"]
@@ -1864,45 +1874,55 @@ export type Database = {
       }
       project_workers: {
         Row: {
+          business_profile_id: string | null
           created_at: string
           first_name: string
           hourly_rate: number
           id: string
           last_name: string
           position: string
-          project_id: string
+          project_id: string | null
           updated_at: string
           work_end_time: string | null
           work_hours: number
           work_start_time: string | null
         }
         Insert: {
+          business_profile_id?: string | null
           created_at?: string
           first_name: string
           hourly_rate?: number
           id?: string
           last_name: string
           position: string
-          project_id: string
+          project_id?: string | null
           updated_at?: string
           work_end_time?: string | null
           work_hours?: number
           work_start_time?: string | null
         }
         Update: {
+          business_profile_id?: string | null
           created_at?: string
           first_name?: string
           hourly_rate?: number
           id?: string
           last_name?: string
           position?: string
-          project_id?: string
+          project_id?: string | null
           updated_at?: string
           work_end_time?: string | null
           work_hours?: number
           work_start_time?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_workers_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_workers_project_id_fkey"
             columns: ["project_id"]
