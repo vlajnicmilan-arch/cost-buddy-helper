@@ -99,14 +99,6 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     // Reset inputs
     if (photoInputRef.current) photoInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
-  };
-    reader.readAsDataURL(file);
-
-    // Reset input
-    if (pdfInputRef.current) {
-      pdfInputRef.current.value = '';
-    }
-  };
 
   const handleImportPDFTransactions = async () => {
     if (!parsedData || !onImportCSV) return;
