@@ -324,7 +324,6 @@ const Index = () => {
           findDuplicates={findDuplicates}
           existingExpenses={allExpenses}
           onRefetch={refetch}
-          onSignOut={handleSignOut}
         />
 
         {/* Local Mode Banner */}
