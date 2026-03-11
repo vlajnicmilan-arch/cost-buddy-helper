@@ -12,6 +12,7 @@ import { BusinessTransactions } from '@/components/business/BusinessTransactions
 import { BusinessReports } from '@/components/business/BusinessReports';
 import { BusinessMore } from '@/components/business/BusinessMore';
 import { Expense } from '@/types/expense';
+import { useBackButton } from '@/hooks/useBackButton';
 
 interface BusinessProfile {
   id: string;
@@ -30,6 +31,9 @@ const Business = () => {
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
+
+  // Handle Android back button: if on a non-dashboard tab, go back to dashboard first
+  useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
   useEffect(() => {
     if (!activeBusinessProfileId) navigate('/');
