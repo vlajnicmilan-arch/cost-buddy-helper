@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Smartphone, Cloud, LayoutDashboard } from 'lucide-react';
+import { LogOut, Smartphone, Cloud, LayoutDashboard, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
@@ -10,8 +10,10 @@ import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { BusinessProfileSwitcher } from '@/components/BusinessProfileSwitcher';
+import { CSVImportDialog } from '@/components/CSVImportDialog';
 import logo from '@/assets/logo.png';
 import { Expense, ReceiptItem } from '@/types/expense';
+import { ParsedTransaction } from '@/lib/csvParsers';
 
 interface HomeHeaderProps {
   displayName: string;
@@ -21,6 +23,9 @@ interface HomeHeaderProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   onCheckDuplicate?: (transaction: { amount: number; description: string; date: Date; type: string; category?: string; merchant_name?: string }) => Expense | null;
   onBulkUpdateExpenses: (expenses: Expense[]) => Promise<any>;
+  onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
+  existingExpenses?: Expense[];
   onRefetch: () => void;
   onSignOut: () => void;
 }
