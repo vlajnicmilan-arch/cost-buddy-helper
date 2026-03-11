@@ -12,6 +12,7 @@ import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import Index from "./pages/Index";
+import Business from "./pages/Business";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Budgets from "./pages/Budgets";
