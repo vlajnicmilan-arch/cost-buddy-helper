@@ -315,6 +315,7 @@ payment_source opcije:
         transactions,
         detected_bank: detectedBank,
         account_iban: accountIban,
+        holder_name: holderName,
         cards_detected: Array.from(cardGroups.keys()),
         summary: {
           total_income: totalIncome,
