@@ -84,6 +84,7 @@ const Business = () => {
             expenses={dashboardExpenses}
             totalReceivable={totalReceivable}
             totalPayable={totalPayable}
+            enabledModules={profile?.enabled_modules || []}
           />
         )}
         {activeTab === 'transactions' && (
