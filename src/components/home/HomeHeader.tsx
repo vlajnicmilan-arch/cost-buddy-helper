@@ -28,7 +28,6 @@ interface HomeHeaderProps {
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
   existingExpenses?: Expense[];
   onRefetch: () => void;
-  onSignOut: () => void;
 }
 
 export const HomeHeader = ({
@@ -43,7 +42,6 @@ export const HomeHeader = ({
   findDuplicates,
   existingExpenses,
   onRefetch,
-  onSignOut,
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
