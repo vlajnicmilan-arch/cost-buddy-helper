@@ -25,6 +25,7 @@ interface RecurringTx {
 export const BusinessRecurring = () => {
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
+  const { activeBusinessProfileId } = useAppState();
   const [items, setItems] = useState<RecurringTx[]>([]);
   const [loading, setLoading] = useState(true);
 
