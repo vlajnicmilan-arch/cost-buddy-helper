@@ -159,6 +159,11 @@ payment_source opcije:
                     description: 'Main account IBAN or account number from the statement',
                     nullable: true
                   },
+                  holder_name: {
+                    type: 'string',
+                    description: 'Name of the account holder as shown on the statement',
+                    nullable: true
+                  },
                   transactions: {
                     type: 'array',
                     description: 'List of extracted transactions',
