@@ -4,15 +4,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
 import { BusinessRecurring } from './BusinessRecurring';
+import { BusinessProfileView } from './BusinessProfileView';
 import { Expense } from '@/types/expense';
 
-type SubView = 'menu' | 'debts' | 'vat' | 'recurring';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring';
 
 interface Props {
   expenses: Expense[];
 }
 
 const menuItems = [
+  { id: 'profile' as SubView, icon: Building2, label: 'Podaci o tvrtki', desc: 'Naziv, OIB, adresa, IBAN i ostali podaci' },
   { id: 'debts' as SubView, icon: Receipt, label: 'Dugovanja i potraživanja', desc: 'Praćenje tko vam duguje i kome vi dugujete' },
   { id: 'vat' as SubView, icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a' },
   { id: 'recurring' as SubView, icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },
@@ -21,25 +23,24 @@ const menuItems = [
 export const BusinessMore = ({ expenses }: Props) => {
   const [view, setView] = useState<SubView>('menu');
 
+  const backButton = (
+    <button onClick={() => setView('menu')} className="text-xs text-primary mb-3 flex items-center gap-1">← Natrag</button>
+  );
+
+  if (view === 'profile') return (
+    <div>{backButton}<BusinessProfileView /></div>
+  );
+
   if (view === 'debts') return (
-    <div>
-      <button onClick={() => setView('menu')} className="text-xs text-primary mb-3 flex items-center gap-1">← Natrag</button>
-      <BusinessDebtTracker />
-    </div>
+    <div>{backButton}<BusinessDebtTracker /></div>
   );
 
   if (view === 'vat') return (
-    <div>
-      <button onClick={() => setView('menu')} className="text-xs text-primary mb-3 flex items-center gap-1">← Natrag</button>
-      <BusinessVATOverview expenses={expenses} />
-    </div>
+    <div>{backButton}<BusinessVATOverview expenses={expenses} /></div>
   );
 
   if (view === 'recurring') return (
-    <div>
-      <button onClick={() => setView('menu')} className="text-xs text-primary mb-3 flex items-center gap-1">← Natrag</button>
-      <BusinessRecurring />
-    </div>
+    <div>{backButton}<BusinessRecurring /></div>
   );
 
   return (
