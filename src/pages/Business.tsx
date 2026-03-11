@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, ArrowLeft, User } from 'lucide-react';
 import { useAppState } from '@/contexts/AppStateContext';
-import { useExpenseFetch } from '@/hooks/useExpenseFetch';
-import { useExpenseCRUD } from '@/hooks/useExpenseCRUD';
+import { useExpenses } from '@/hooks/useExpenses';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +11,6 @@ import { BusinessDashboard } from '@/components/business/BusinessDashboard';
 import { BusinessTransactions } from '@/components/business/BusinessTransactions';
 import { BusinessReports } from '@/components/business/BusinessReports';
 import { BusinessMore } from '@/components/business/BusinessMore';
-import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { Expense } from '@/types/expense';
 
 interface BusinessProfile {
@@ -25,22 +23,16 @@ const Business = () => {
   const navigate = useNavigate();
   const { activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
   const { user } = useAuth();
-  const { dashboardExpenses, expenses: allExpenses, loading } = useExpenseFetch();
-  const { addExpense, updateExpense, deleteExpense } = useExpenseCRUD();
+  const { dashboardExpenses, expenses: allExpenses, loading, addExpense, updateExpense, deleteExpense } = useExpenses();
   const { totalReceivable, totalPayable } = useBusinessDebts();
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
-  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
 
-  // Redirect if no business profile selected
   useEffect(() => {
-    if (!activeBusinessProfileId) {
-      navigate('/');
-    }
+    if (!activeBusinessProfileId) navigate('/');
   }, [activeBusinessProfileId, navigate]);
 
-  // Fetch active profile info
   useEffect(() => {
     if (!activeBusinessProfileId || !user) return;
     supabase
@@ -48,9 +40,7 @@ const Business = () => {
       .select('id, company_name, is_vat_payer')
       .eq('id', activeBusinessProfileId)
       .single()
-      .then(({ data }) => {
-        if (data) setProfile(data);
-      });
+      .then(({ data }) => { if (data) setProfile(data); });
   }, [activeBusinessProfileId, user]);
 
   const handleBackToPersonal = () => {
@@ -58,13 +48,8 @@ const Business = () => {
     navigate('/');
   };
 
-  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    await addExpense(expenseData);
-    setAddExpenseOpen(false);
-  };
-
   const handleEditExpense = async (updatedExpense: Expense) => {
-    await editExpense(updatedExpense.id, updatedExpense);
+    await updateExpense(updatedExpense);
   };
 
   if (!activeBusinessProfileId) return null;
@@ -102,7 +87,7 @@ const Business = () => {
         {activeTab === 'transactions' && (
           <BusinessTransactions
             expenses={dashboardExpenses}
-            onAddClick={() => setAddExpenseOpen(true)}
+            onAddClick={() => {/* TODO: open add dialog */}}
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
           />
@@ -117,11 +102,6 @@ const Business = () => {
           <BusinessMore expenses={dashboardExpenses} />
         )}
       </div>
-
-      {/* Add Expense Dialog */}
-      <AddExpenseDialog
-        onAdd={handleAddExpense}
-      />
 
       <BusinessBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
