@@ -307,10 +307,37 @@ payment_source opcije:
       }
     }
 
-    const transactions = statementData.transactions || [];
-    const detectedBank = statementData.detected_bank || null;
-    const accountIban = statementData.account_iban || null;
-    const holderName = (statementData as any).holder_name || null;
+    // Sanitize text: remove garbled/binary characters
+    function sanitizeText(text: string | null | undefined): string | null {
+      if (!text) return null;
+      // Remove non-printable chars except common whitespace
+      const cleaned = text.replace(/[^\x20-\x7E\u00A0-\u024F\u0400-\u04FF\u0100-\u017F\u2000-\u206F\u20AC\n\r\t čćžšđČĆŽŠĐ]/g, '').trim();
+      // If more than 30% of original was garbage, it's unreadable
+      if (cleaned.length < text.trim().length * 0.5) {
+        console.warn('Garbled text detected, discarding:', text.substring(0, 50));
+        return null;
+      }
+      return cleaned || null;
+    }
+
+    // Filter and sanitize transactions
+    const rawTransactions = statementData.transactions || [];
+    const transactions = rawTransactions.map((t: any) => ({
+      ...t,
+      description: sanitizeText(t.description) || 'Nepoznata transakcija',
+      merchant_name: sanitizeText(t.merchant_name),
+    })).filter((t: any) => {
+      // Skip transactions where both description and merchant are garbled
+      if (t.description === 'Nepoznata transakcija' && !t.merchant_name) {
+        console.warn('Skipping transaction with unreadable text, amount:', t.amount);
+        return false;
+      }
+      return true;
+    });
+
+    const detectedBank = sanitizeText(statementData.detected_bank) || null;
+    const accountIban = sanitizeText(statementData.account_iban) || null;
+    const holderName = sanitizeText((statementData as any).holder_name) || null;
     const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
