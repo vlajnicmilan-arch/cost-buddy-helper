@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle } from 'lucide-react';
+import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { CSVImportDialog } from './CSVImportDialog';
@@ -10,6 +10,8 @@ import { usePDFParser } from '@/hooks/usePDFParser';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from 'react-i18next';
+import { useAppState } from '@/contexts/AppStateContext';
+import { Badge } from '@/components/ui/badge';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -27,13 +29,16 @@ const SUPPORTED_SOURCES = [
 
 export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }: BankConnectionProps) => {
   const { t } = useTranslation();
+  const { activeBusinessProfileId } = useAppState();
   const [infoOpen, setInfoOpen] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
-  const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const { parsing, parsedData, parsePDF, parsePhoto, clearParsedData } = usePDFParser();
 
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -55,10 +60,50 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     };
     reader.readAsDataURL(file);
 
-    // Reset input
     if (pdfInputRef.current) {
       pdfInputRef.current.value = '';
     }
+  };
+  const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Odaberi slikovnu datoteku (JPG, PNG)');
+      return;
+    }
+
+    // Resize image for efficiency
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string;
+      
+      // Compress if needed
+      const img = new window.Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const maxWidth = 1200;
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        
+        const result = await parsePhoto(compressed);
+        if (result && result.transactions.length > 0) {
+          setPdfPreviewOpen(true);
+        } else if (result && result.transactions.length === 0) {
+          toast.error('Nije pronađena nijedna transakcija na fotografiji. Pokušaj s boljom kvalitetom slike.');
+        }
+      };
+      img.src = base64;
+    };
+    reader.readAsDataURL(file);
+
+    // Reset inputs
+    if (photoInputRef.current) photoInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const handleImportPDFTransactions = async () => {
@@ -154,6 +199,45 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       <div className="flex flex-col gap-2">
         {onImportCSV && <CSVImportDialog onImport={onImportCSV} existingExpenses={existingExpenses} findDuplicates={findDuplicates} />}
         
+        {/* Photo Import */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handlePhotoSelect}
+          className="hidden"
+          id="camera-input"
+        />
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handlePhotoSelect}
+          className="hidden"
+          id="photo-input"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            className="gap-2 rounded-xl border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={parsing}
+          >
+            {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+            {t('scanner.camera', 'Fotografiraj')}
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 rounded-xl border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={parsing}
+          >
+            {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+            {t('scanner.gallery', 'Iz galerije')}
+          </Button>
+        </div>
+
         {/* PDF Import */}
         <input
           ref={pdfInputRef}
@@ -207,6 +291,51 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
                   )}
                 </div>
               )}
+
+              {/* Business profile mismatch warning */}
+              {activeBusinessProfileId && parsedData.holder_name && (
+                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-orange-600 dark:text-orange-400">
+                      Provjeri vlasnika računa
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Izvod glasi na: <strong>{parsedData.holder_name}</strong>. 
+                      Trenutno uvoziš u <strong>poslovni profil</strong>. Je li to ispravno?
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Duplicate detection warning */}
+              {findDuplicates && parsedData.transactions.length > 0 && (() => {
+                const txForCheck: ParsedTransaction[] = parsedData.transactions.map(tx => ({
+                  date: tx.date,
+                  description: tx.description,
+                  amount: tx.amount,
+                  type: tx.type,
+                  category: tx.category,
+                  merchant_name: tx.merchant_name || undefined,
+                  source: 'photo',
+                  payment_source: tx.payment_source || 'bank'
+                }));
+                const { duplicates } = findDuplicates(txForCheck);
+                if (duplicates.length === 0) return null;
+                return (
+                  <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-orange-600 dark:text-orange-400">
+                        {duplicates.length} {duplicates.length === 1 ? 'mogući duplikat' : 'mogućih duplikata'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Neke transakcije možda već postoje. Duplikati će biti označeni pri uvozu.
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {parsedData.summary && (
                 <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
@@ -369,6 +498,9 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
           <div className="mt-4 p-4 bg-muted/50 rounded-xl">
             <p className="text-sm font-medium mb-2">{t('import.supportedFormats')}</p>
             <ul className="text-xs text-muted-foreground space-y-2">
+              <li>
+                <strong>📷 Fotografija:</strong> Fotografiraj papirni izvod ili screenshot iz aplikacije banke
+              </li>
               <li>
                 <strong>CSV:</strong> {t('import.csvFormat')}
               </li>

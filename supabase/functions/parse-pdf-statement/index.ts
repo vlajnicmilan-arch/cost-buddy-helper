@@ -38,22 +38,22 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { pdfBase64, bankType } = await req.json();
+    const { pdfBase64, bankType, isImage } = await req.json();
 
     if (!pdfBase64) {
       return new Response(
-        JSON.stringify({ error: 'No PDF provided' }), 
+        JSON.stringify({ error: 'No file provided' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check PDF size (max ~5MB base64 = ~7MB string)
-    const pdfSizeKB = Math.round(pdfBase64.length / 1024);
-    console.log('Processing PDF statement for user:', userId, 'bank:', bankType, 'size:', pdfSizeKB, 'KB');
+    // Check size (max ~5MB base64 = ~7MB string)
+    const fileSizeKB = Math.round(pdfBase64.length / 1024);
+    console.log('Processing statement for user:', userId, 'bank:', bankType, 'isImage:', isImage, 'size:', fileSizeKB, 'KB');
 
     if (pdfBase64.length > 7 * 1024 * 1024) {
       return new Response(
-        JSON.stringify({ error: 'PDF je prevelik. Maksimalna veličina je 5MB.' }), 
+        JSON.stringify({ error: 'Datoteka je prevelika. Maksimalna veličina je 5MB.' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -75,7 +75,12 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Ti si asistent za analizu bankovnih izvoda. Analiziraj tekst izvoda i izvuci SVE transakcije.
+            content: `Ti si asistent za analizu bankovnih izvoda i fotografija izvoda. Analiziraj dokument/fotografiju i izvuci SVE transakcije.
+
+VAŽNO ZA FOTOGRAFIJE:
+- Fotografija može biti papirni izvod, screenshot iz aplikacije, ili potvrda transakcije
+- Čitaj pažljivo čak i ako je kvaliteta slike lošija
+- Ako ne možeš pročitati neki iznos ili datum, preskoči tu transakciju
 
 PRAVILA ZA DETEKCIJU:
 1. BANKA - prepoznaj naziv banke iz zaglavlja/logotipa (PBZ, Erste, Zaba, Revolut, Aircash, OTP, RBA, Addiko, itd.)
@@ -119,15 +124,17 @@ payment_source opcije:
             content: [
               {
                 type: 'text',
-                text: `Analiziraj ovaj bankovni izvod. Izvuci:
+                text: `Analiziraj ${isImage ? 'ovu fotografiju bankovnog izvoda' : 'ovaj bankovni izvod'}. Izvuci:
 1. Naziv banke iz dokumenta
 2. Glavni IBAN ili broj računa
-3. Sve transakcije s detaljima o kartici ako postoje`
+3. Sve transakcije s detaljima o kartici ako postoje
+4. Ime vlasnika računa (holder_name) ako je vidljivo na izvodu`
               },
               {
                 type: 'image_url',
                 image_url: {
-                  url: pdfBase64.startsWith('data:') ? pdfBase64 : `data:application/pdf;base64,${pdfBase64}`
+                  url: pdfBase64.startsWith('data:') ? pdfBase64 : 
+                    isImage ? `data:image/jpeg;base64,${pdfBase64}` : `data:application/pdf;base64,${pdfBase64}`
                 }
               }
             ]
@@ -150,6 +157,11 @@ payment_source opcije:
                   account_iban: {
                     type: 'string',
                     description: 'Main account IBAN or account number from the statement',
+                    nullable: true
+                  },
+                  holder_name: {
+                    type: 'string',
+                    description: 'Name of the account holder as shown on the statement',
                     nullable: true
                   },
                   transactions: {
@@ -283,6 +295,7 @@ payment_source opcije:
     const transactions = statementData.transactions || [];
     const detectedBank = statementData.detected_bank || null;
     const accountIban = statementData.account_iban || null;
+    const holderName = (statementData as any).holder_name || null;
     const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
@@ -302,6 +315,7 @@ payment_source opcije:
         transactions,
         detected_bank: detectedBank,
         account_iban: accountIban,
+        holder_name: holderName,
         cards_detected: Array.from(cardGroups.keys()),
         summary: {
           total_income: totalIncome,
