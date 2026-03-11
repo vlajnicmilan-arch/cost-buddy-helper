@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote } from 'lucide-react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
@@ -9,13 +9,14 @@ import { BusinessModuleSettings } from './BusinessModuleSettings';
 import { TravelOrdersPanel } from './TravelOrdersPanel';
 import { InvoicingPanel } from './InvoicingPanel';
 import { InventoryPanel } from './InventoryPanel';
+import { BusinessWorkforcePanel } from './BusinessWorkforcePanel';
 import { Expense } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { isModuleEnabled } from '@/lib/businessModules';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce';
 
 interface Props {
   expenses: Expense[];
@@ -51,6 +52,7 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'travel') return <div>{backButton}<TravelOrdersPanel /></div>;
   if (view === 'invoicing') return <div>{backButton}<InvoicingPanel /></div>;
   if (view === 'inventory') return <div>{backButton}<InventoryPanel /></div>;
+  if (view === 'workforce') return <div>{backButton}<BusinessWorkforcePanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
@@ -62,6 +64,7 @@ export const BusinessMore = ({ expenses }: Props) => {
     { id: 'travel', icon: Car, label: 'Putni troškovi', desc: 'Putni nalozi, kilometraža, dnevnice', module: 'travel_expenses' },
     { id: 'invoicing', icon: Banknote, label: 'Fakturiranje', desc: 'Klijenti i izdavanje računa', module: 'invoicing' },
     { id: 'inventory', icon: Package, label: 'Zalihe', desc: 'Praćenje artikala i stanja skladišta', module: 'inventory' },
+    { id: 'workforce', icon: Users, label: 'Radnici & satnice', desc: 'Evidencija radnika, sati i troškova rada', module: 'workforce' },
     { id: 'recurring', icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },
   ];
 
