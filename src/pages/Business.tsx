@@ -85,6 +85,7 @@ const Business = () => {
             totalReceivable={totalReceivable}
             totalPayable={totalPayable}
             enabledModules={profile?.enabled_modules || []}
+            industryType={profile?.industry_type || 'other'}
           />
         )}
         {activeTab === 'transactions' && (

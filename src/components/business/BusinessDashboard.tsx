@@ -71,6 +71,10 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable, ena
       {isModuleEnabled(enabledModules, 'flatrate_limit') && (
         <FlatrateLimitWidget expenses={expenses} />
       )}
+      {/* KPI Dashboard Widget */}
+      {isModuleEnabled(enabledModules, 'kpi_dashboard') && (
+        <KPIDashboardWidget expenses={expenses} industryType={industryType as IndustryType} />
+      )}
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="border-none shadow-sm">
