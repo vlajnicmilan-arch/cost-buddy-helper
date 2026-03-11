@@ -81,7 +81,7 @@ export const QuickLinksSection = ({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
+          transition={{ delay: 0.1 }}
           whileHover={{ scale: 1.01 }}
           onClick={() => navigate('/budgets')}
           className="p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg relative overflow-hidden"
