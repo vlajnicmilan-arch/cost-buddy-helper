@@ -503,6 +503,8 @@ export type Database = {
           type: string
           updated_at: string
           user_id: string
+          vat_amount: number | null
+          vat_rate: number | null
         }
         Insert: {
           ai_extracted?: boolean | null
@@ -529,6 +531,8 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id: string
+          vat_amount?: number | null
+          vat_rate?: number | null
         }
         Update: {
           ai_extracted?: boolean | null
@@ -555,6 +559,8 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string
+          vat_amount?: number | null
+          vat_rate?: number | null
         }
         Relationships: [
           {
@@ -1915,6 +1921,103 @@ export type Database = {
             columns: ["expense_id"]
             isOneToOne: false
             referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      travel_order_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          expense_type: string
+          id: string
+          travel_order_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          expense_type: string
+          id?: string
+          travel_order_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          expense_type?: string
+          id?: string
+          travel_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_order_expenses_travel_order_id_fkey"
+            columns: ["travel_order_id"]
+            isOneToOne: false
+            referencedRelation: "travel_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      travel_orders: {
+        Row: {
+          business_profile_id: string
+          created_at: string
+          daily_allowance_type: string | null
+          date_from: string
+          date_to: string
+          destination: string
+          id: string
+          km_end: number | null
+          km_rate: number | null
+          km_start: number | null
+          purpose: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          vehicle: string | null
+        }
+        Insert: {
+          business_profile_id: string
+          created_at?: string
+          daily_allowance_type?: string | null
+          date_from: string
+          date_to: string
+          destination: string
+          id?: string
+          km_end?: number | null
+          km_rate?: number | null
+          km_start?: number | null
+          purpose?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle?: string | null
+        }
+        Update: {
+          business_profile_id?: string
+          created_at?: string
+          daily_allowance_type?: string | null
+          date_from?: string
+          date_to?: string
+          destination?: string
+          id?: string
+          km_end?: number | null
+          km_rate?: number | null
+          km_start?: number | null
+          purpose?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_orders_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
             referencedColumns: ["id"]
           },
         ]
