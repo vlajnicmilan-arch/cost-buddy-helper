@@ -11,6 +11,28 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+const ProfileField = ({ label, value, field, editing, formValue, onUpdate }: { 
+  label: string; 
+  value: string | null | undefined; 
+  field: string;
+  editing: boolean;
+  formValue: string;
+  onUpdate: (field: string, value: string) => void;
+}) => (
+  <div>
+    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</Label>
+    {editing ? (
+      <Input
+        value={formValue}
+        onChange={e => onUpdate(field, e.target.value)}
+        className="h-8 text-sm mt-0.5"
+      />
+    ) : (
+      <p className="text-sm font-medium mt-0.5">{value || <span className="text-muted-foreground/50 italic">—</span>}</p>
+    )}
+  </div>
+);
+
 interface ProfileData {
   id: string;
   company_name: string;
