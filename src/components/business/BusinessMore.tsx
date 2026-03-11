@@ -15,6 +15,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { isModuleEnabled } from '@/lib/businessModules';
+import { useBackButton } from '@/hooks/useBackButton';
 
 type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce';
 
@@ -27,6 +28,9 @@ export const BusinessMore = ({ expenses }: Props) => {
   const { user } = useAuth();
   const [view, setView] = useState<SubView>('menu');
   const [enabledModules, setEnabledModules] = useState<string[]>([]);
+
+  // Handle Android back button: return to menu from sub-views
+  useBackButton(view !== 'menu', () => setView('menu'));
 
   useEffect(() => {
     if (!activeBusinessProfileId || !user) return;
