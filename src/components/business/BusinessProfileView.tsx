@@ -139,15 +139,8 @@ export const BusinessProfileView = () => {
     );
   }
 
-  const Field = ({ label, value, field }: { label: string; value: string | null | undefined; field: string }) => (
-    <ProfileField 
-      label={label} 
-      value={value} 
-      field={field} 
-      editing={editing} 
-      formValue={(form as any)[field] || ''} 
-      onUpdate={(f, v) => updateField(f, v)} 
-    />
+  const F = (label: string, value: string | null | undefined, field: string) => (
+    <ProfileField label={label} value={value} field={field} editing={editing} formValue={(form as any)[field] || ''} onUpdate={updateField} />
   );
 
   return (
@@ -185,20 +178,18 @@ export const BusinessProfileView = () => {
           <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Osnovni podaci</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-1 space-y-2.5">
-          <Field label="Naziv tvrtke" value={profile.company_name} field="company_name" />
-          <Field label="OIB" value={profile.oib} field="oib" />
-          <Field label="MBS" value={profile.mbs} field="mbs" />
-          <Field label="Pravni oblik" value={profile.legal_form} field="legal_form" />
-          <Field label="Trgovački sud" value={profile.court_registry} field="court_registry" />
+          {F("Naziv tvrtke", profile.company_name, "company_name")}
+          {F("OIB", profile.oib, "oib")}
+          {F("MBS", profile.mbs, "mbs")}
+          {F("Pravni oblik", profile.legal_form, "legal_form")}
+          {F("Trgovački sud", profile.court_registry, "court_registry")}
           {editing && (
             <div className="flex items-center justify-between">
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">PDV obveznik</Label>
               <Switch checked={!!form.is_vat_payer} onCheckedChange={v => updateField('is_vat_payer', v)} />
             </div>
           )}
-          {(editing || profile.is_vat_payer) && (
-            <Field label="PDV ID (VAT)" value={profile.vat_id} field="vat_id" />
-          )}
+          {(editing || profile.is_vat_payer) && F("PDV ID (VAT)", profile.vat_id, "vat_id")}
         </CardContent>
       </Card>
 
@@ -208,8 +199,8 @@ export const BusinessProfileView = () => {
           <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Djelatnost</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-1 space-y-2.5">
-          <Field label="Šifra djelatnosti" value={profile.activity_code} field="activity_code" />
-          <Field label="Opis djelatnosti" value={profile.activity_description} field="activity_description" />
+          {F("Šifra djelatnosti", profile.activity_code, "activity_code")}
+          {F("Opis djelatnosti", profile.activity_description, "activity_description")}
         </CardContent>
       </Card>
 
@@ -219,12 +210,12 @@ export const BusinessProfileView = () => {
           <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Adresa</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-1 space-y-2.5">
-          <Field label="Adresa" value={profile.address} field="address" />
+          {F("Adresa", profile.address, "address")}
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Poštanski broj" value={profile.postal_code} field="postal_code" />
-            <Field label="Grad" value={profile.city} field="city" />
+            {F("Poštanski broj", profile.postal_code, "postal_code")}
+            {F("Grad", profile.city, "city")}
           </div>
-          <Field label="Država" value={profile.country} field="country" />
+          {F("Država", profile.country, "country")}
         </CardContent>
       </Card>
 
@@ -234,8 +225,8 @@ export const BusinessProfileView = () => {
           <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bankovni podaci</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-1 space-y-2.5">
-          <Field label="IBAN" value={profile.iban} field="iban" />
-          <Field label="Banka" value={profile.bank_name} field="bank_name" />
+          {F("IBAN", profile.iban, "iban")}
+          {F("Banka", profile.bank_name, "bank_name")}
         </CardContent>
       </Card>
 
@@ -245,9 +236,9 @@ export const BusinessProfileView = () => {
           <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kontakt</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-1 space-y-2.5">
-          <Field label="Email" value={profile.email} field="email" />
-          <Field label="Telefon" value={profile.phone} field="phone" />
-          <Field label="Web stranica" value={profile.website} field="website" />
+          {F("Email", profile.email, "email")}
+          {F("Telefon", profile.phone, "phone")}
+          {F("Web stranica", profile.website, "website")}
         </CardContent>
       </Card>
 
