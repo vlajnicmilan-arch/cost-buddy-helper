@@ -79,14 +79,14 @@ export const usePDFParser = () => {
   const [parsing, setParsing] = useState(false);
   const [parsedData, setParsedData] = useState<PDFParseResult | null>(null);
 
-  const parsePDF = async (pdfBase64: string, bankType?: string): Promise<PDFParseResult | null> => {
+  const parseStatement = async (base64Data: string, bankType?: string, isImage?: boolean): Promise<PDFParseResult | null> => {
     setParsing(true);
     
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData?.session?.access_token) {
-        toast.error('Moraš biti prijavljen za analizu PDF-a');
+        toast.error('Moraš biti prijavljen za analizu izvoda');
         return null;
       }
 
@@ -98,7 +98,11 @@ export const usePDFParser = () => {
             'Authorization': `Bearer ${sessionData.session.access_token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ pdfBase64, bankType }),
+          body: JSON.stringify({ 
+            pdfBase64: base64Data, 
+            bankType,
+            isImage: isImage || false
+          }),
         }
       );
 
@@ -112,12 +116,11 @@ export const usePDFParser = () => {
           return null;
         }
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Greška pri analizi PDF-a');
+        throw new Error(errorData.error || 'Greška pri analizi izvoda');
       }
 
       const data = await response.json();
       
-      // Convert date strings to Date objects and add payment source
       const result: PDFParseResult = {
         transactions: (data.transactions || []).map((tx: any) => ({
           ...tx,
@@ -135,19 +138,24 @@ export const usePDFParser = () => {
 
       setParsedData(result);
       
-      // Show detection info in toast
       const bankInfo = result.detected_bank ? ` (${result.detected_bank})` : '';
       const cardInfo = result.cards_detected.length > 0 ? `, ${result.cards_detected.length} kartica` : '';
       toast.success(`Pronađeno ${result.transactions.length} transakcija${bankInfo}${cardInfo}`);
       return result;
     } catch (error) {
-      console.error('Error parsing PDF:', error);
-      toast.error(error instanceof Error ? error.message : 'Greška pri analizi PDF-a');
+      console.error('Error parsing statement:', error);
+      toast.error(error instanceof Error ? error.message : 'Greška pri analizi izvoda');
       return null;
     } finally {
       setParsing(false);
     }
   };
+
+  // Legacy alias
+  const parsePDF = async (pdfBase64: string, bankType?: string) => parseStatement(pdfBase64, bankType, false);
+
+  // Photo parsing
+  const parsePhoto = async (imageBase64: string) => parseStatement(imageBase64, undefined, true);
 
   const clearParsedData = () => {
     setParsedData(null);
@@ -157,6 +165,7 @@ export const usePDFParser = () => {
     parsing,
     parsedData,
     parsePDF,
+    parsePhoto,
     clearParsedData
   };
 };
