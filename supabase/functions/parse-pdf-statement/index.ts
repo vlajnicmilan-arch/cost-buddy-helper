@@ -109,6 +109,24 @@ PRAVILA ZA TRANSAKCIJE:
   - "income" za STVARNE prihode (plaća, primanja od trećih osoba, povrat)
   - "expense" za STVARNE troškove (kupovina, plaćanja, računi)
   - "transfer" za INTERNE prijenose između vlastitih računa (npr. toplanje Aircash/Revolut, prebacivanje na vlastiti račun)
+
+KRITIČNO - ODREĐIVANJE TIPA (INCOME vs EXPENSE):
+- Na bankovnim izvodima postoje stupci "Isplata" (dugovanje) i "Uplata" (potražni):
+  - "Isplata" stupac = novac IZLAZI s računa = EXPENSE
+  - "Uplata" stupac = novac DOLAZI na račun = INCOME
+- NIKADA ne kategoriziraj plaćanja PREMA državnim institucijama kao "income"!
+- Plaćanja PREMA sljedećim institucijama su UVIJEK "expense":
+  - HZZO (Hrvatski zavod za zdravstveno osiguranje) → bills
+  - HZMO / Doprinos za mirovinsko osiguranje → bills
+  - Porez na dohodak → bills
+  - Državni proračun Republike Hrvatske → bills
+  - Prirez → bills
+  - FINA → bills
+  - Porezna uprava → bills
+- Plaćanja komunalnim poduzećima (vodovod, elektra, plin, odvoz otpada) su EXPENSE → bills
+- Pozajmice DANE drugima su EXPENSE, pozajmice PRIMLJENE su INCOME
+- Najam PRIMLJEN je INCOME, najam PLAĆEN je EXPENSE
+
 - VAŽNO: Prepoznaj interne prijenose! Ključne riječi: "top up", "nadoplata", "uplata na Aircash/Revolut", "prijenos na vlastiti račun", "podizanje gotovine", "ATM"
 - Kategorije: food, transport, shopping, entertainment, bills, health, other
 - Datum u formatu YYYY-MM-DD
