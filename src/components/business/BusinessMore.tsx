@@ -52,6 +52,7 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'travel') return <div>{backButton}<TravelOrdersPanel /></div>;
   if (view === 'invoicing') return <div>{backButton}<InvoicingPanel /></div>;
   if (view === 'inventory') return <div>{backButton}<InventoryPanel /></div>;
+  if (view === 'workforce') return <div>{backButton}<BusinessWorkforcePanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
