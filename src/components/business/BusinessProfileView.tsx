@@ -140,18 +140,14 @@ export const BusinessProfileView = () => {
   }
 
   const Field = ({ label, value, field }: { label: string; value: string | null | undefined; field: string }) => (
-    <div>
-      <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</Label>
-      {editing ? (
-        <Input
-          value={(form as any)[field] || ''}
-          onChange={e => updateField(field, e.target.value)}
-          className="h-8 text-sm mt-0.5"
-        />
-      ) : (
-        <p className="text-sm font-medium mt-0.5">{value || <span className="text-muted-foreground/50 italic">—</span>}</p>
-      )}
-    </div>
+    <ProfileField 
+      label={label} 
+      value={value} 
+      field={field} 
+      editing={editing} 
+      formValue={(form as any)[field] || ''} 
+      onUpdate={(f, v) => updateField(f, v)} 
+    />
   );
 
   return (
