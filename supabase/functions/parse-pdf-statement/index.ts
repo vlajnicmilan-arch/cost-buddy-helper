@@ -295,6 +295,7 @@ payment_source opcije:
     const transactions = statementData.transactions || [];
     const detectedBank = statementData.detected_bank || null;
     const accountIban = statementData.account_iban || null;
+    const holderName = (statementData as any).holder_name || null;
     const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
