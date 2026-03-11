@@ -2,13 +2,11 @@ import { useState, useEffect } from 'react';
 import { Plus, Calendar, Pause, Play, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { RecurringTransactionDialog } from '@/components/recurring/RecurringTransactionDialog';
 
 interface RecurringTx {
   id: string;
@@ -26,7 +24,6 @@ export const BusinessRecurring = () => {
   const { user } = useAuth();
   const [items, setItems] = useState<RecurringTx[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addOpen, setAddOpen] = useState(false);
 
   const fetchItems = async () => {
     if (!user) return;
@@ -70,7 +67,6 @@ export const BusinessRecurring = () => {
 
   return (
     <div className="space-y-4">
-      {/* Monthly obligation estimate */}
       <Card className="border-none shadow-sm">
         <CardContent className="p-3">
           <div className="flex items-center justify-between">
@@ -78,15 +74,10 @@ export const BusinessRecurring = () => {
               <p className="text-[10px] text-muted-foreground">Mjesečne obveze (procjena)</p>
               <p className="text-lg font-bold text-expense">{formatAmount(monthlyTotal)}</p>
             </div>
-            <Button size="sm" className="h-8 gap-1 text-xs" onClick={() => setAddOpen(true)}>
-              <Plus className="w-3 h-3" />
-              Novo
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Active */}
       {active.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground px-1">Aktivne ({active.length})</p>
@@ -119,7 +110,6 @@ export const BusinessRecurring = () => {
         </div>
       )}
 
-      {/* Paused */}
       {paused.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground px-1">Pauzirane ({paused.length})</p>
@@ -146,12 +136,6 @@ export const BusinessRecurring = () => {
           <p className="text-sm text-muted-foreground">Nema ponavljajućih obveza</p>
         </div>
       )}
-
-      <RecurringTransactionDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onSave={() => { setAddOpen(false); fetchItems(); }}
-      />
     </div>
   );
 };

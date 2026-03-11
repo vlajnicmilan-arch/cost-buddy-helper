@@ -1,28 +1,25 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, Filter, ArrowUpRight, ArrowDownRight, ArrowLeftRight } from 'lucide-react';
+import { Plus, Search, ArrowUpRight, ArrowDownRight, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Expense } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
-import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 
 interface Props {
   expenses: Expense[];
-  allExpenses: Expense[];
-  onAddExpense: (data: any) => void;
-  onEditExpense: (id: string, data: any) => void;
+  onAddClick: () => void;
+  onEditExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => void;
 }
 
-export const BusinessTransactions = ({ expenses, allExpenses, onAddExpense, onEditExpense, onDeleteExpense }: Props) => {
+export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDeleteExpense }: Props) => {
   const { formatAmount } = useCurrency();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
@@ -48,18 +45,12 @@ export const BusinessTransactions = ({ expenses, allExpenses, onAddExpense, onEd
 
   return (
     <div className="space-y-3">
-      {/* Search & Filters */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Pretraži..."
-            className="pl-8 h-9 text-sm"
-          />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Pretraži..." className="pl-8 h-9 text-sm" />
         </div>
-        <Button size="sm" className="h-9 gap-1" onClick={() => setAddOpen(true)}>
+        <Button size="sm" className="h-9 gap-1" onClick={onAddClick}>
           <Plus className="w-3.5 h-3.5" />
           Novo
         </Button>
@@ -83,7 +74,6 @@ export const BusinessTransactions = ({ expenses, allExpenses, onAddExpense, onEd
         ))}
       </div>
 
-      {/* Transaction List */}
       <div className="space-y-1">
         {filtered.map(expense => (
           <button
@@ -115,13 +105,6 @@ export const BusinessTransactions = ({ expenses, allExpenses, onAddExpense, onEd
         )}
       </div>
 
-      <AddExpenseDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onAdd={onAddExpense}
-        allExpenses={allExpenses}
-      />
-
       {detailExpense && (
         <TransactionDetailDialog
           expense={detailExpense}
@@ -137,8 +120,8 @@ export const BusinessTransactions = ({ expenses, allExpenses, onAddExpense, onEd
           expense={editExpense}
           open={!!editExpense}
           onOpenChange={(open) => !open && setEditExpense(null)}
-          onSave={(id, data) => { onEditExpense(id, data); setEditExpense(null); }}
-          allExpenses={allExpenses}
+          onSave={async (updatedExpense) => { await onEditExpense(updatedExpense); setEditExpense(null); }}
+          allExpenses={expenses}
         />
       )}
     </div>
