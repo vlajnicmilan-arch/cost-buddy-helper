@@ -6,7 +6,8 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { FlatrateLimitWidget } from './FlatrateLimitWidget';
-import { isModuleEnabled, type ModuleId } from '@/lib/businessModules';
+import { KPIDashboardWidget } from './KPIDashboardWidget';
+import { isModuleEnabled, type ModuleId, type IndustryType } from '@/lib/businessModules';
 
 interface Props {
   expenses: Expense[];
