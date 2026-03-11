@@ -88,7 +88,7 @@ export const PaymentSourceTransactionsDialog = ({
     onOpenChange(false);
   };
 
-  useBackButton(open, handleClose);
+  
 
   // Filter expenses for this payment source
   const sourceExpenses = useMemo(() => {

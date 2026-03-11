@@ -118,8 +118,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
 
-  // Prevent Android back button from closing dialog unexpectedly
-  useBackButton(open, () => setOpen(false));
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
 

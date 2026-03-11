@@ -34,7 +34,7 @@ export const TransactionDetailDialog = ({
   onEdit,
   onDelete
 }: TransactionDetailDialogProps) => {
-  useBackButton(open, () => onOpenChange(false));
+  
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [submitterName, setSubmitterName] = useState<string | null>(null);

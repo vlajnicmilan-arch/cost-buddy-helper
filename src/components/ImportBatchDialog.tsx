@@ -42,7 +42,7 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
     return { totalIncome: inc, totalExpenses: exp, importDate: earliest || new Date() };
   }, [batchExpenses]);
 
-  useBackButton(open, () => onOpenChange(false));
+  
 
   const handleDeleteBatch = async () => {
     if (!onDeleteBatch) return;

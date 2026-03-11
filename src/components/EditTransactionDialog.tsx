@@ -31,7 +31,7 @@ interface EditTransactionDialogProps {
 
 export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: EditTransactionDialogProps) => {
   const { t, i18n } = useTranslation();
-  useBackButton(open, () => onOpenChange(false));
+  
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category | IncomeCategory>('other');
