@@ -133,6 +133,7 @@ export const usePDFParser = () => {
         })),
         detected_bank: data.detected_bank || null,
         account_iban: data.account_iban || null,
+        holder_name: data.holder_name || null,
         cards_detected: data.cards_detected || [],
         summary: data.summary
       };
