@@ -9,6 +9,7 @@ import { BusinessModuleSettings } from './BusinessModuleSettings';
 import { TravelOrdersPanel } from './TravelOrdersPanel';
 import { InvoicingPanel } from './InvoicingPanel';
 import { InventoryPanel } from './InventoryPanel';
+import { BusinessWorkforcePanel } from './BusinessWorkforcePanel';
 import { Expense } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
