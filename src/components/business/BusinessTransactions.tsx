@@ -112,7 +112,6 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
 
       {/* Bank Statement Import */}
       <BankConnection onImportCSV={onImportCSV} findDuplicates={findDuplicates} existingExpenses={existingExpenses} />
-      </div>
 
       {detailExpense && (
         <TransactionDetailDialog
