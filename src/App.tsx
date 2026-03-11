@@ -62,6 +62,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
+      <Route path="/business" element={<Business />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/projects" element={onboardingCompleted ? <Projects /> : <Navigate to="/onboarding" replace />} />
