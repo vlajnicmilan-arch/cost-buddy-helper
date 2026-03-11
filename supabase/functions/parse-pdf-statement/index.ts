@@ -38,22 +38,22 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { pdfBase64, bankType } = await req.json();
+    const { pdfBase64, bankType, isImage } = await req.json();
 
     if (!pdfBase64) {
       return new Response(
-        JSON.stringify({ error: 'No PDF provided' }), 
+        JSON.stringify({ error: 'No file provided' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check PDF size (max ~5MB base64 = ~7MB string)
-    const pdfSizeKB = Math.round(pdfBase64.length / 1024);
-    console.log('Processing PDF statement for user:', userId, 'bank:', bankType, 'size:', pdfSizeKB, 'KB');
+    // Check size (max ~5MB base64 = ~7MB string)
+    const fileSizeKB = Math.round(pdfBase64.length / 1024);
+    console.log('Processing statement for user:', userId, 'bank:', bankType, 'isImage:', isImage, 'size:', fileSizeKB, 'KB');
 
     if (pdfBase64.length > 7 * 1024 * 1024) {
       return new Response(
-        JSON.stringify({ error: 'PDF je prevelik. Maksimalna veličina je 5MB.' }), 
+        JSON.stringify({ error: 'Datoteka je prevelika. Maksimalna veličina je 5MB.' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
