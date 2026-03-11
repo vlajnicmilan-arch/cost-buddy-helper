@@ -499,6 +499,9 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
             <p className="text-sm font-medium mb-2">{t('import.supportedFormats')}</p>
             <ul className="text-xs text-muted-foreground space-y-2">
               <li>
+                <strong>📷 Fotografija:</strong> Fotografiraj papirni izvod ili screenshot iz aplikacije banke
+              </li>
+              <li>
                 <strong>CSV:</strong> {t('import.csvFormat')}
               </li>
               <li>
