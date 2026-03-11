@@ -1,53 +1,66 @@
-import { useState } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
 import { BusinessRecurring } from './BusinessRecurring';
 import { BusinessProfileView } from './BusinessProfileView';
 import { BusinessModuleSettings } from './BusinessModuleSettings';
+import { TravelOrdersPanel } from './TravelOrdersPanel';
 import { Expense } from '@/types/expense';
+import { useAppState } from '@/contexts/AppStateContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { isModuleEnabled } from '@/lib/businessModules';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel';
 
 interface Props {
   expenses: Expense[];
 }
 
-const menuItems = [
-  { id: 'profile' as SubView, icon: Building2, label: 'Podaci o tvrtki', desc: 'Naziv, OIB, adresa, IBAN i ostali podaci' },
-  { id: 'modules' as SubView, icon: Settings2, label: 'Djelatnost i moduli', desc: 'Odaberite djelatnost i prilagodite module' },
-  { id: 'debts' as SubView, icon: Receipt, label: 'Dugovanja i potraživanja', desc: 'Praćenje tko vam duguje i kome vi dugujete' },
-  { id: 'vat' as SubView, icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a' },
-  { id: 'recurring' as SubView, icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },
-];
-
 export const BusinessMore = ({ expenses }: Props) => {
+  const { activeBusinessProfileId } = useAppState();
+  const { user } = useAuth();
   const [view, setView] = useState<SubView>('menu');
+  const [enabledModules, setEnabledModules] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!activeBusinessProfileId || !user) return;
+    supabase
+      .from('business_profiles')
+      .select('enabled_modules')
+      .eq('id', activeBusinessProfileId)
+      .single()
+      .then(({ data }) => {
+        if (data) setEnabledModules((data as any).enabled_modules || []);
+      });
+  }, [activeBusinessProfileId, user]);
 
   const backButton = (
     <button onClick={() => setView('menu')} className="text-xs text-primary mb-3 flex items-center gap-1">← Natrag</button>
   );
 
-  if (view === 'profile') return (
-    <div>{backButton}<BusinessProfileView /></div>
-  );
+  if (view === 'profile') return <div>{backButton}<BusinessProfileView /></div>;
+  if (view === 'modules') return <div>{backButton}<BusinessModuleSettings /></div>;
+  if (view === 'debts') return <div>{backButton}<BusinessDebtTracker /></div>;
+  if (view === 'vat') return <div>{backButton}<BusinessVATOverview expenses={expenses} /></div>;
+  if (view === 'recurring') return <div>{backButton}<BusinessRecurring /></div>;
+  if (view === 'travel') return <div>{backButton}<TravelOrdersPanel /></div>;
 
-  if (view === 'modules') return (
-    <div>{backButton}<BusinessModuleSettings /></div>
-  );
+  type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
-  if (view === 'debts') return (
-    <div>{backButton}<BusinessDebtTracker /></div>
-  );
+  const allMenuItems: MenuItem[] = [
+    { id: 'profile', icon: Building2, label: 'Podaci o tvrtki', desc: 'Naziv, OIB, adresa, IBAN i ostali podaci' },
+    { id: 'modules', icon: Settings2, label: 'Djelatnost i moduli', desc: 'Odaberite djelatnost i prilagodite module' },
+    { id: 'debts', icon: Receipt, label: 'Dugovanja i potraživanja', desc: 'Praćenje tko vam duguje i kome vi dugujete' },
+    { id: 'vat', icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a', module: 'vat_tracking' },
+    { id: 'travel', icon: Car, label: 'Putni troškovi', desc: 'Putni nalozi, kilometraža, dnevnice', module: 'travel_expenses' },
+    { id: 'recurring', icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },
+  ];
 
-  if (view === 'vat') return (
-    <div>{backButton}<BusinessVATOverview expenses={expenses} /></div>
-  );
-
-  if (view === 'recurring') return (
-    <div>{backButton}<BusinessRecurring /></div>
-  );
+  // Filter by enabled modules (items without module field are always shown)
+  const menuItems = allMenuItems.filter(item => !item.module || isModuleEnabled(enabledModules, item.module as any));
 
   return (
     <div className="space-y-2">
