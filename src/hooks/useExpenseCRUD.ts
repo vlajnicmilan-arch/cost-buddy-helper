@@ -344,7 +344,8 @@ export const useExpenseCRUD = ({
           payment_source: tx.payment_source || 'other',
           merchant_name: tx.merchant_name || null,
           ai_extracted: false,
-          import_batch_id: batchId
+          import_batch_id: batchId,
+          business_profile_id: activeBusinessProfileId || null
         }));
 
         // Try bulk insert first; on failure, fall back to individual inserts
