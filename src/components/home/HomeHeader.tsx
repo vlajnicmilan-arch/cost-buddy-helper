@@ -47,6 +47,7 @@ export const HomeHeader = ({
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [importOpen, setImportOpen] = useState(false);
 
   return (
     <header className="flex flex-col gap-4 mb-6 sm:mb-8" data-tutorial="header">
