@@ -49,6 +49,8 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'vat') return <div>{backButton}<BusinessVATOverview expenses={expenses} /></div>;
   if (view === 'recurring') return <div>{backButton}<BusinessRecurring /></div>;
   if (view === 'travel') return <div>{backButton}<TravelOrdersPanel /></div>;
+  if (view === 'invoicing') return <div>{backButton}<InvoicingPanel /></div>;
+  if (view === 'inventory') return <div>{backButton}<InventoryPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
@@ -58,6 +60,8 @@ export const BusinessMore = ({ expenses }: Props) => {
     { id: 'debts', icon: Receipt, label: 'Dugovanja i potraživanja', desc: 'Praćenje tko vam duguje i kome vi dugujete' },
     { id: 'vat', icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a', module: 'vat_tracking' },
     { id: 'travel', icon: Car, label: 'Putni troškovi', desc: 'Putni nalozi, kilometraža, dnevnice', module: 'travel_expenses' },
+    { id: 'invoicing', icon: Banknote, label: 'Fakturiranje', desc: 'Klijenti i izdavanje računa', module: 'invoicing' },
+    { id: 'inventory', icon: Package, label: 'Zalihe', desc: 'Praćenje artikala i stanja skladišta', module: 'inventory' },
     { id: 'recurring', icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },
   ];
 
