@@ -201,6 +201,45 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       <div className="flex flex-col gap-2">
         {onImportCSV && <CSVImportDialog onImport={onImportCSV} existingExpenses={existingExpenses} findDuplicates={findDuplicates} />}
         
+        {/* Photo Import */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handlePhotoSelect}
+          className="hidden"
+          id="camera-input"
+        />
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handlePhotoSelect}
+          className="hidden"
+          id="photo-input"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            className="gap-2 rounded-xl border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={parsing}
+          >
+            {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+            {t('scanner.camera', 'Fotografiraj')}
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 rounded-xl border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={parsing}
+          >
+            {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+            {t('scanner.gallery', 'Iz galerije')}
+          </Button>
+        </div>
+
         {/* PDF Import */}
         <input
           ref={pdfInputRef}
