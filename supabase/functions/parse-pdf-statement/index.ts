@@ -75,7 +75,23 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Ti si asistent za analizu bankovnih izvoda i fotografija izvoda. Analiziraj dokument/fotografiju i izvuci SVE transakcije.
+            content: `Ti si asistent za analizu bankovnih izvoda i fotografija izvoda. Analiziraj dokument/fotografiju i izvuci SAMO STVARNE TRANSAKCIJE.
+
+KRITIČNO - ŠTO NIJE TRANSAKCIJA (NE UKLJUČUJ):
+- "Početno stanje" / "Konačno stanje" / "Stanje na dan" — to su SALDA, NE transakcije!
+- "Promet" / "Ukupni promet" / "Dugovni promet" / "Potražni promet" — to su ZBIRNI IZNOSI
+- "Rekapitulacija" / "Naloga na teret" / "Naloga u korist" — to su STATISTIKE
+- "Prethodno stanje" / "Privremeno stanje" / "Raspoloživo stanje" — to su SALDA
+- "Broj izvoda" / "Broj računa" — to su METAPODACI
+- "Rezervirano za naplatu" / "Dopušteno prekoračenje" / "Rezervirano po nalogu FINA-e" — to su INFORMACIJE O RAČUNU
+- "Evidentirane blokade" / "Blokada računa" — to su OBAVIJESTI
+- Sve što je u zaglavlju ili podnožju dokumenta
+- Bilo koji redak koji ne predstavlja stvarni prijenos novca između dvije strane
+
+ŠTO JEST TRANSAKCIJA (UKLJUČI SAMO OVO):
+- Redovi u tablici transakcija koji imaju: datum, platitelja/primatelja, opis plaćanja i iznos
+- Stvarna plaćanja, uplate, isplate, kupovine, prijenosi novca
+- Svaka transakcija MORA imati jasnog platitelja ili primatelja (osobu, tvrtku ili instituciju)
 
 VAŽNO ZA FOTOGRAFIJE:
 - Fotografija može biti papirni izvod, screenshot iz aplikacije, ili potvrda transakcije
@@ -96,13 +112,12 @@ PRAVILA ZA TRANSAKCIJE:
 - VAŽNO: Prepoznaj interne prijenose! Ključne riječi: "top up", "nadoplata", "uplata na Aircash/Revolut", "prijenos na vlastiti račun", "podizanje gotovine", "ATM"
 - Kategorije: food, transport, shopping, entertainment, bills, health, other
 - Datum u formatu YYYY-MM-DD
+- Za izvode FINA-e: "Sredstva izdvojena po nalogu FINA-e" je expense tipa "bills" (zapljena/ovrha)
 
 PRAVILA ZA OPIS TRANSAKCIJE:
 - Uključi naziv trgovca/primatelja
 - Ako je vidljivo, dodaj tip kartice (Visa, Mastercard, itd.)
 - Ako je vidljivo, dodaj zadnje 4 znamenke kartice u formatu [Visa *1234]
-- Ako je različita kartica od glavne, naznači to
-- Primjer obogaćenog opisa: "KONZUM P-1234 Zagreb [Visa *7262]" ili "Wolt Zagreb [Mastercard *4521]"
 
 payment_source opcije:
 - "cash" za gotovinu
@@ -116,8 +131,8 @@ payment_source opcije:
 - "aircash" za Aircash
 - "crypto" za kripto
 
-- card_last4: zadnje 4 znamenke kartice ako je vidljivo (npr. "*1234" ili "VISA ****5678")
-- Ako ne možeš naći transakcije, vrati prazan niz`
+- card_last4: zadnje 4 znamenke kartice ako je vidljivo
+- Ako ne možeš naći transakcije, vrati PRAZAN NIZ — NE izmišljaj transakcije od salda!`
           },
           {
             role: 'user',
