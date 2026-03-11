@@ -98,6 +98,9 @@ const Business = () => {
             onAddClick={() => {/* TODO: open add dialog */}}
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
+            onImportCSV={importFromCSV}
+            findDuplicates={findDuplicates}
+            existingExpenses={allExpenses}
           />
         )}
         {activeTab === 'reports' && (
