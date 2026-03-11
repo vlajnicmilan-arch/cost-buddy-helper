@@ -61,6 +61,7 @@ export const InvoicingPanel = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [businessProfile, setBusinessProfile] = useState<any>(null);
 
   // Client form
   const [clientName, setClientName] = useState('');
