@@ -30,18 +30,19 @@ export const BusinessRecurring = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchItems = async () => {
-    if (!user) return;
+    if (!user || !activeBusinessProfileId) { setItems([]); setLoading(false); return; }
     setLoading(true);
     const { data } = await supabase
       .from('recurring_transactions')
       .select('id, description, amount, type, frequency, next_due_date, is_active, category')
       .eq('user_id', user.id)
+      .eq('business_profile_id', activeBusinessProfileId)
       .order('next_due_date', { ascending: true });
     setItems(data || []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchItems(); }, [user]);
+  useEffect(() => { fetchItems(); }, [user, activeBusinessProfileId]);
 
   const toggleActive = async (id: string, active: boolean) => {
     await supabase.from('recurring_transactions').update({ is_active: !active }).eq('id', id);
