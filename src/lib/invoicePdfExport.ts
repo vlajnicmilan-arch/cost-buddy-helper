@@ -29,6 +29,7 @@ interface InvoiceData {
   invoice_number: string;
   issue_date: string;
   due_date?: string | null;
+  delivery_date?: string | null;
   total_amount: number;
   vat_amount: number;
   notes?: string | null;
@@ -49,6 +50,10 @@ const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(amount);
 };
 
+const isVatPayer = (business: BusinessProfile): boolean => {
+  return business.is_vat_payer === true;
+};
+
 export const generateInvoicePDF = (
   invoice: InvoiceData,
   items: InvoiceItem[],
@@ -58,6 +63,7 @@ export const generateInvoicePDF = (
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
+  const vatPayer = isVatPayer(business);
   let y = 20;
 
   // --- Header: Business info ---
@@ -73,7 +79,7 @@ export const generateInvoicePDF = (
   if (business.address) bizLines.push(business.address);
   if (business.postal_code || business.city) bizLines.push([business.postal_code, business.city].filter(Boolean).join(' '));
   if (business.oib) bizLines.push(`OIB: ${business.oib}`);
-  if (business.vat_id) bizLines.push(`PDV ID: ${business.vat_id}`);
+  if (vatPayer && business.vat_id) bizLines.push(`PDV ID: ${business.vat_id}`);
   if (business.iban) bizLines.push(`IBAN: ${business.iban}`);
   if (business.bank_name) bizLines.push(`Banka: ${business.bank_name}`);
   if (business.email) bizLines.push(business.email);
@@ -99,6 +105,11 @@ export const generateInvoicePDF = (
   if (invoice.due_date) {
     doc.text(`Datum dospijeća: ${format(new Date(invoice.due_date), 'dd.MM.yyyy.')}`, margin + 80, y);
   }
+  y += 5;
+
+  // Datum isporuke (delivery date) — mandatory for paušalni obrt
+  const deliveryDate = invoice.delivery_date || invoice.issue_date;
+  doc.text(`Datum isporuke: ${format(new Date(deliveryDate), 'dd.MM.yyyy.')}`, margin, y);
   y += 8;
 
   // --- Client info ---
@@ -128,64 +139,88 @@ export const generateInvoicePDF = (
   y += 4;
 
   // --- Items table ---
-  const tableHeaders = ['#', 'Opis', 'Kol.', 'Jed.', 'Cijena', 'PDV %', 'Ukupno'];
-  const tableData = items.map((item, i) => [
-    String(i + 1),
-    item.description,
-    String(item.quantity),
-    item.unit || 'kom',
-    formatCurrency(item.unit_price),
-    `${item.vat_rate ?? 25}%`,
-    formatCurrency(item.total),
-  ]);
+  if (vatPayer) {
+    // R1 račun — with VAT columns
+    const tableHeaders = ['#', 'Opis', 'Kol.', 'Jed.', 'Cijena', 'PDV %', 'Ukupno'];
+    const tableData = items.map((item, i) => [
+      String(i + 1),
+      item.description,
+      String(item.quantity),
+      item.unit || 'kom',
+      formatCurrency(item.unit_price),
+      `${item.vat_rate ?? 25}%`,
+      formatCurrency(item.total),
+    ]);
 
-  autoTable(doc, {
-    startY: y,
-    head: [tableHeaders],
-    body: tableData,
-    margin: { left: margin, right: margin },
-    styles: {
-      fontSize: 8,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [30, 30, 30],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      fontSize: 7,
-    },
-    columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 'auto' },
-      2: { cellWidth: 14, halign: 'right' },
-      3: { cellWidth: 14, halign: 'center' },
-      4: { cellWidth: 28, halign: 'right' },
-      5: { cellWidth: 18, halign: 'center' },
-      6: { cellWidth: 28, halign: 'right' },
-    },
-    alternateRowStyles: { fillColor: [250, 250, 250] },
-  });
+    autoTable(doc, {
+      startY: y,
+      head: [tableHeaders],
+      body: tableData,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [30, 30, 30], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      columnStyles: {
+        0: { cellWidth: 8, halign: 'center' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 14, halign: 'right' },
+        3: { cellWidth: 14, halign: 'center' },
+        4: { cellWidth: 28, halign: 'right' },
+        5: { cellWidth: 18, halign: 'center' },
+        6: { cellWidth: 28, halign: 'right' },
+      },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
+    });
+  } else {
+    // Paušalni obrt — NO VAT columns
+    const tableHeaders = ['#', 'Opis', 'Kol.', 'Jed.', 'Cijena', 'Ukupno'];
+    const tableData = items.map((item, i) => [
+      String(i + 1),
+      item.description,
+      String(item.quantity),
+      item.unit || 'kom',
+      formatCurrency(item.unit_price),
+      formatCurrency(item.total),
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [tableHeaders],
+      body: tableData,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [30, 30, 30], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      columnStyles: {
+        0: { cellWidth: 8, halign: 'center' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 14, halign: 'right' },
+        3: { cellWidth: 14, halign: 'center' },
+        4: { cellWidth: 28, halign: 'right' },
+        5: { cellWidth: 28, halign: 'right' },
+      },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
+    });
+  }
 
   y = (doc as any).lastAutoTable.finalY + 8;
 
   // --- Totals ---
   const totalsX = pageWidth - margin - 60;
-  const baseAmount = invoice.total_amount - invoice.vat_amount;
 
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80);
-  doc.text('Osnovica:', totalsX, y);
-  doc.text(formatCurrency(baseAmount), pageWidth - margin, y, { align: 'right' });
-  y += 5;
-
-  doc.text('PDV:', totalsX, y);
-  doc.text(formatCurrency(invoice.vat_amount), pageWidth - margin, y, { align: 'right' });
-  y += 6;
-
-  doc.setDrawColor(200);
-  doc.line(totalsX, y, pageWidth - margin, y);
-  y += 5;
+  if (vatPayer) {
+    const baseAmount = invoice.total_amount - invoice.vat_amount;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80);
+    doc.text('Osnovica:', totalsX, y);
+    doc.text(formatCurrency(baseAmount), pageWidth - margin, y, { align: 'right' });
+    y += 5;
+    doc.text('PDV:', totalsX, y);
+    doc.text(formatCurrency(invoice.vat_amount), pageWidth - margin, y, { align: 'right' });
+    y += 6;
+    doc.setDrawColor(200);
+    doc.line(totalsX, y, pageWidth - margin, y);
+    y += 5;
+  }
 
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
@@ -193,6 +228,16 @@ export const generateInvoicePDF = (
   doc.text('UKUPNO:', totalsX, y);
   doc.text(formatCurrency(invoice.total_amount), pageWidth - margin, y, { align: 'right' });
   y += 10;
+
+  // --- Mandatory note for paušalni obrt ---
+  if (!vatPayer) {
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(80);
+    const legalNote = 'Obveznik nije u sustavu PDV-a, PDV nije obračunat temeljem čl. 90 st.1 Zakona o PDV-u.';
+    doc.text(legalNote, margin, y);
+    y += 8;
+  }
 
   // --- Payment info ---
   if (business.iban) {
@@ -245,13 +290,21 @@ export const shareInvoicePDF = async (
   const blob = doc.output('blob');
   const file = new File([blob], fileName, { type: 'application/pdf' });
 
-  if (navigator.share && navigator.canShare?.({ files: [file] })) {
-    await navigator.share({
-      title: `Račun ${invoice.invoice_number}`,
-      files: [file],
-    });
-  } else {
-    // Fallback to download
-    doc.save(fileName);
+  try {
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        title: `Račun ${invoice.invoice_number}`,
+        files: [file],
+      });
+      return;
+    }
+  } catch (e) {
+    // Share was cancelled or failed, fall through
   }
+
+  // Fallback: open PDF in new tab for easy sharing
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  // Clean up after a delay
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
 };
