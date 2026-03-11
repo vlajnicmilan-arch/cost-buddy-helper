@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useBackButton } from '@/hooks/useBackButton';
+
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePDFParser } from '@/hooks/usePDFParser';
 import { ParsedTransaction } from '@/lib/csvParsers';
@@ -88,7 +88,7 @@ export const PaymentSourceTransactionsDialog = ({
     onOpenChange(false);
   };
 
-  useBackButton(open, handleClose);
+  
 
   // Filter expenses for this payment source
   const sourceExpenses = useMemo(() => {

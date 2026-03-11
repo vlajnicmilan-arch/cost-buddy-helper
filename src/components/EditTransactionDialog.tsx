@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
-import { useBackButton } from '@/hooks/useBackButton';
+
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 
@@ -31,7 +31,7 @@ interface EditTransactionDialogProps {
 
 export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: EditTransactionDialogProps) => {
   const { t, i18n } = useTranslation();
-  useBackButton(open, () => onOpenChange(false));
+  
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category | IncomeCategory>('other');

@@ -16,7 +16,7 @@ import { useInstallments } from '@/hooks/useInstallments';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
-import { useBackButton } from '@/hooks/useBackButton';
+
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -118,8 +118,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
 
-  // Prevent Android back button from closing dialog unexpectedly
-  useBackButton(open, () => setOpen(false));
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
 

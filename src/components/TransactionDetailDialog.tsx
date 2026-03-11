@@ -18,7 +18,7 @@ import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useTranslation } from 'react-i18next';
 import { TransactionNotesThread } from './TransactionNotesThread';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { useBackButton } from '@/hooks/useBackButton';
+
 interface TransactionDetailDialogProps {
   expense: Expense | null;
   open: boolean;
@@ -34,7 +34,7 @@ export const TransactionDetailDialog = ({
   onEdit,
   onDelete
 }: TransactionDetailDialogProps) => {
-  useBackButton(open, () => onOpenChange(false));
+  
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [submitterName, setSubmitterName] = useState<string | null>(null);

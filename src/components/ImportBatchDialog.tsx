@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useBackButton } from '@/hooks/useBackButton';
+
 
 interface ImportBatchDialogProps {
   open: boolean;
@@ -42,7 +42,7 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
     return { totalIncome: inc, totalExpenses: exp, importDate: earliest || new Date() };
   }, [batchExpenses]);
 
-  useBackButton(open, () => onOpenChange(false));
+  
 
   const handleDeleteBatch = async () => {
     if (!onDeleteBatch) return;
