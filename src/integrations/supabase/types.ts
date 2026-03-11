@@ -408,6 +408,65 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          address: string | null
+          business_profile_id: string
+          city: string | null
+          contact_person: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          oib: string | null
+          phone: string | null
+          postal_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          business_profile_id: string
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          oib?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          business_profile_id?: string
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          oib?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_categories: {
         Row: {
           color: string
@@ -1156,6 +1215,223 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "installment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_items: {
+        Row: {
+          business_profile_id: string
+          category: string | null
+          created_at: string
+          current_quantity: number | null
+          id: string
+          min_quantity: number | null
+          name: string
+          purchase_price: number | null
+          selling_price: number | null
+          sku: string | null
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_profile_id: string
+          category?: string | null
+          created_at?: string
+          current_quantity?: number | null
+          id?: string
+          min_quantity?: number | null
+          name: string
+          purchase_price?: number | null
+          selling_price?: number | null
+          sku?: string | null
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string
+          category?: string | null
+          created_at?: string
+          current_quantity?: number | null
+          id?: string
+          min_quantity?: number | null
+          name?: string
+          purchase_price?: number | null
+          selling_price?: number | null
+          sku?: string | null
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          expense_id: string | null
+          id: string
+          item_id: string
+          note: string | null
+          price: number | null
+          quantity: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          expense_id?: string | null
+          id?: string
+          item_id: string
+          note?: string | null
+          price?: number | null
+          quantity: number
+          type: string
+        }
+        Update: {
+          created_at?: string
+          expense_id?: string | null
+          id?: string
+          item_id?: string
+          note?: string | null
+          price?: number | null
+          quantity?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_items: {
+        Row: {
+          created_at: string
+          description: string
+          discount: number | null
+          id: string
+          invoice_id: string
+          quantity: number | null
+          total: number | null
+          unit: string | null
+          unit_price: number | null
+          vat_rate: number | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          discount?: number | null
+          id?: string
+          invoice_id: string
+          quantity?: number | null
+          total?: number | null
+          unit?: string | null
+          unit_price?: number | null
+          vat_rate?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discount?: number | null
+          id?: string
+          invoice_id?: string
+          quantity?: number | null
+          total?: number | null
+          unit?: string | null
+          unit_price?: number | null
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          business_profile_id: string
+          client_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          notes: string | null
+          paid_at: string | null
+          status: string | null
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+          vat_amount: number | null
+        }
+        Insert: {
+          business_profile_id: string
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id: string
+          vat_amount?: number | null
+        }
+        Update: {
+          business_profile_id?: string
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+          vat_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
