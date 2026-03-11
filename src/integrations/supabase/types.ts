@@ -1710,6 +1710,7 @@ export type Database = {
       recurring_transactions: {
         Row: {
           amount: number
+          business_profile_id: string | null
           category: string
           created_at: string
           day_of_month: number | null
@@ -1732,6 +1733,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          business_profile_id?: string | null
           category?: string
           created_at?: string
           day_of_month?: number | null
@@ -1754,6 +1756,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          business_profile_id?: string | null
           category?: string
           created_at?: string
           day_of_month?: number | null
@@ -1775,6 +1778,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "recurring_transactions_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "recurring_transactions_income_source_id_fkey"
             columns: ["income_source_id"]
