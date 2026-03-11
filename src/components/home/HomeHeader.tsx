@@ -38,6 +38,9 @@ export const HomeHeader = ({
   onAddExpense,
   onCheckDuplicate,
   onBulkUpdateExpenses,
+  onImportCSV,
+  findDuplicates,
+  existingExpenses,
   onRefetch,
   onSignOut,
 }: HomeHeaderProps) => {
