@@ -421,6 +421,23 @@ export const InvoicingPanel = () => {
                 </Card>
 
                 <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={() => {
+                    if (businessProfile) downloadInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient);
+                    else toast.error('Poslovni profil nije učitan');
+                  }}>
+                    <Download className="w-3 h-3" /> PDF
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={async () => {
+                    if (businessProfile) {
+                      try { await shareInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient); }
+                      catch { /* user cancelled share */ }
+                    } else toast.error('Poslovni profil nije učitan');
+                  }}>
+                    <Share2 className="w-3 h-3" /> Podijeli
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
                   {detailInvoice.status !== 'paid' && (
                     <Button size="sm" className="flex-1 gap-1 text-xs" onClick={() => updateInvoiceStatus(detailInvoice.id, 'paid')}>
                       <Check className="w-3 h-3" /> Označi plaćenim
