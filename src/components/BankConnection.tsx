@@ -57,8 +57,13 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       if (result && result.transactions.length > 0) {
         setPdfPreviewOpen(true);
       }
-  };
+    };
+    reader.readAsDataURL(file);
 
+    if (pdfInputRef.current) {
+      pdfInputRef.current.value = '';
+    }
+  };
   const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
