@@ -57,7 +57,49 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       if (result && result.transactions.length > 0) {
         setPdfPreviewOpen(true);
       }
+  };
+
+  const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Odaberi slikovnu datoteku (JPG, PNG)');
+      return;
+    }
+
+    // Resize image for efficiency
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string;
+      
+      // Compress if needed
+      const img = new window.Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const maxWidth = 1200;
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        
+        const result = await parsePhoto(compressed);
+        if (result && result.transactions.length > 0) {
+          setPdfPreviewOpen(true);
+        } else if (result && result.transactions.length === 0) {
+          toast.error('Nije pronađena nijedna transakcija na fotografiji. Pokušaj s boljom kvalitetom slike.');
+        }
+      };
+      img.src = base64;
     };
+    reader.readAsDataURL(file);
+
+    // Reset inputs
+    if (photoInputRef.current) photoInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
     reader.readAsDataURL(file);
 
     // Reset input
