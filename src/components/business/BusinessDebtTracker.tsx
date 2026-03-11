@@ -1,0 +1,222 @@
+import { useState } from 'react';
+import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
+import { useAppState } from '@/contexts/AppStateContext';
+import { format } from 'date-fns';
+
+export const BusinessDebtTracker = () => {
+  const { formatAmount } = useCurrency();
+  const { activeBusinessProfileId } = useAppState();
+  const { debts, loading, addDebt, updateDebt, deleteDebt, totalReceivable, totalPayable } = useBusinessDebts();
+  const [addOpen, setAddOpen] = useState(false);
+  const [filter, setFilter] = useState<string | null>(null);
+
+  // Form state
+  const [formType, setFormType] = useState<'receivable' | 'payable'>('receivable');
+  const [formContact, setFormContact] = useState('');
+  const [formDesc, setFormDesc] = useState('');
+  const [formAmount, setFormAmount] = useState('');
+  const [formDueDate, setFormDueDate] = useState('');
+
+  const resetForm = () => {
+    setFormType('receivable');
+    setFormContact('');
+    setFormDesc('');
+    setFormAmount('');
+    setFormDueDate('');
+  };
+
+  const handleAdd = () => {
+    if (!formContact || !formAmount || !activeBusinessProfileId) return;
+    addDebt({
+      business_profile_id: activeBusinessProfileId,
+      type: formType,
+      contact_name: formContact,
+      description: formDesc || null,
+      amount: parseFloat(formAmount),
+      paid_amount: 0,
+      due_date: formDueDate || null,
+      status: 'active',
+    });
+    setAddOpen(false);
+    resetForm();
+  };
+
+  const markAsPaid = (id: string) => {
+    const debt = debts.find(d => d.id === id);
+    if (debt) updateDebt(id, { status: 'paid', paid_amount: debt.amount });
+  };
+
+  const filtered = filter
+    ? debts.filter(d => d.type === filter)
+    : debts;
+
+  const activeDebts = filtered.filter(d => d.status === 'active' || d.status === 'overdue');
+  const paidDebts = filtered.filter(d => d.status === 'paid' || d.status === 'cancelled');
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="border-none shadow-sm bg-income/5">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <ArrowUpRight className="w-3 h-3 text-income" />
+              <span className="text-[10px] text-muted-foreground">Potraživanja</span>
+            </div>
+            <p className="text-base font-bold text-income">{formatAmount(totalReceivable)}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-sm bg-expense/5">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <ArrowDownRight className="w-3 h-3 text-expense" />
+              <span className="text-[10px] text-muted-foreground">Dugovanja</span>
+            </div>
+            <p className="text-base font-bold text-expense">{formatAmount(totalPayable)}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters & Add */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1.5">
+          {[
+            { value: null, label: 'Sve' },
+            { value: 'receivable', label: 'Potraživanja' },
+            { value: 'payable', label: 'Dugovanja' },
+          ].map(f => (
+            <Badge
+              key={f.label}
+              variant={filter === f.value ? 'default' : 'outline'}
+              className="cursor-pointer text-[10px] px-2 py-0.5"
+              onClick={() => setFilter(f.value)}
+            >
+              {f.label}
+            </Badge>
+          ))}
+        </div>
+        <Button size="sm" className="h-8 gap-1 text-xs" onClick={() => setAddOpen(true)}>
+          <Plus className="w-3 h-3" />
+          Novo
+        </Button>
+      </div>
+
+      {/* Active Debts */}
+      {activeDebts.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground px-1">Aktivna ({activeDebts.length})</p>
+          {activeDebts.map(debt => (
+            <Card key={debt.id} className="border-none shadow-sm">
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      {debt.type === 'receivable' ? (
+                        <ArrowUpRight className="w-3 h-3 text-income flex-shrink-0" />
+                      ) : (
+                        <ArrowDownRight className="w-3 h-3 text-expense flex-shrink-0" />
+                      )}
+                      <span className="text-sm font-medium truncate">{debt.contact_name}</span>
+                    </div>
+                    {debt.description && (
+                      <p className="text-[10px] text-muted-foreground truncate ml-4">{debt.description}</p>
+                    )}
+                    {debt.due_date && (
+                      <p className="text-[10px] text-muted-foreground ml-4">Rok: {format(new Date(debt.due_date), 'dd.MM.yyyy')}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className={`text-sm font-bold ${debt.type === 'receivable' ? 'text-income' : 'text-expense'}`}>
+                      {formatAmount(debt.amount - debt.paid_amount)}
+                    </span>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => markAsPaid(debt.id)}>
+                      <Check className="w-3.5 h-3.5 text-income" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteDebt(debt.id)}>
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Paid Debts */}
+      {paidDebts.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground px-1">Plaćeno ({paidDebts.length})</p>
+          {paidDebts.map(debt => (
+            <div key={debt.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 opacity-60">
+              <div className="flex-1 min-w-0">
+                <span className="text-sm line-through truncate">{debt.contact_name}</span>
+              </div>
+              <span className="text-xs text-muted-foreground">{formatAmount(debt.amount)}</span>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteDebt(debt.id)}>
+                <Trash2 className="w-3 h-3 text-destructive/50" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {debts.length === 0 && !loading && (
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground">Nema zabilježenih dugovanja</p>
+        </div>
+      )}
+
+      {/* Add Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Novo dugovanje</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Vrsta</Label>
+              <Select value={formType} onValueChange={(v: any) => setFormType(v)}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="receivable">Potraživanje (duguju meni)</SelectItem>
+                  <SelectItem value="payable">Dugovanje (ja dugujem)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Kontakt / Tvrtka</Label>
+              <Input value={formContact} onChange={e => setFormContact(e.target.value)} placeholder="Naziv" className="h-9" />
+            </div>
+            <div>
+              <Label className="text-xs">Opis (opcionalno)</Label>
+              <Input value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="Za što?" className="h-9" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Iznos</Label>
+                <Input type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0.00" className="h-9" />
+              </div>
+              <div>
+                <Label className="text-xs">Rok (opcionalno)</Label>
+                <Input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} className="h-9" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleAdd} disabled={!formContact || !formAmount} className="w-full">Dodaj</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
