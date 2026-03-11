@@ -124,15 +124,17 @@ payment_source opcije:
             content: [
               {
                 type: 'text',
-                text: `Analiziraj ovaj bankovni izvod. Izvuci:
+                text: `Analiziraj ${isImage ? 'ovu fotografiju bankovnog izvoda' : 'ovaj bankovni izvod'}. Izvuci:
 1. Naziv banke iz dokumenta
 2. Glavni IBAN ili broj računa
-3. Sve transakcije s detaljima o kartici ako postoje`
+3. Sve transakcije s detaljima o kartici ako postoje
+4. Ime vlasnika računa (holder_name) ako je vidljivo na izvodu`
               },
               {
                 type: 'image_url',
                 image_url: {
-                  url: pdfBase64.startsWith('data:') ? pdfBase64 : `data:application/pdf;base64,${pdfBase64}`
+                  url: pdfBase64.startsWith('data:') ? pdfBase64 : 
+                    isImage ? `data:image/jpeg;base64,${pdfBase64}` : `data:application/pdf;base64,${pdfBase64}`
                 }
               }
             ]
