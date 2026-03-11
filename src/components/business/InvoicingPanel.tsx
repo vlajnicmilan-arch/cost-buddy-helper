@@ -91,8 +91,19 @@ export const InvoicingPanel = () => {
     if (activeBusinessProfileId && user) {
       loadClients();
       loadInvoices();
+      loadBusinessProfile();
     }
   }, [activeBusinessProfileId, user]);
+
+  const loadBusinessProfile = async () => {
+    if (!activeBusinessProfileId) return;
+    const { data } = await supabase
+      .from('business_profiles')
+      .select('*')
+      .eq('id', activeBusinessProfileId)
+      .single();
+    setBusinessProfile(data);
+  };
 
   const loadClients = async () => {
     if (!activeBusinessProfileId) return;
