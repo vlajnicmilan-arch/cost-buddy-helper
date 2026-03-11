@@ -33,6 +33,10 @@ export const BusinessMore = ({ expenses }: Props) => {
     <div>{backButton}<BusinessProfileView /></div>
   );
 
+  if (view === 'modules') return (
+    <div>{backButton}<BusinessModuleSettings /></div>
+  );
+
   if (view === 'debts') return (
     <div>{backButton}<BusinessDebtTracker /></div>
   );
