@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X } from 'lucide-react';
+import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2 } from 'lucide-react';
+import { downloadInvoicePDF, shareInvoicePDF } from '@/lib/invoicePdfExport';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -60,6 +61,7 @@ export const InvoicingPanel = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [businessProfile, setBusinessProfile] = useState<any>(null);
 
   // Client form
   const [clientName, setClientName] = useState('');
@@ -89,8 +91,19 @@ export const InvoicingPanel = () => {
     if (activeBusinessProfileId && user) {
       loadClients();
       loadInvoices();
+      loadBusinessProfile();
     }
   }, [activeBusinessProfileId, user]);
+
+  const loadBusinessProfile = async () => {
+    if (!activeBusinessProfileId) return;
+    const { data } = await supabase
+      .from('business_profiles')
+      .select('*')
+      .eq('id', activeBusinessProfileId)
+      .single();
+    setBusinessProfile(data);
+  };
 
   const loadClients = async () => {
     if (!activeBusinessProfileId) return;
@@ -406,6 +419,23 @@ export const InvoicingPanel = () => {
                     <div className="flex justify-between text-sm font-bold"><span>Ukupno</span><span>{formatAmount(detailInvoice.total_amount)}</span></div>
                   </CardContent>
                 </Card>
+
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={() => {
+                    if (businessProfile) downloadInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient);
+                    else toast.error('Poslovni profil nije učitan');
+                  }}>
+                    <Download className="w-3 h-3" /> PDF
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={async () => {
+                    if (businessProfile) {
+                      try { await shareInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient); }
+                      catch { /* user cancelled share */ }
+                    } else toast.error('Poslovni profil nije učitan');
+                  }}>
+                    <Share2 className="w-3 h-3" /> Podijeli
+                  </Button>
+                </div>
 
                 <div className="flex gap-2">
                   {detailInvoice.status !== 'paid' && (
