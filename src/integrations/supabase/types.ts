@@ -333,8 +333,10 @@ export type Database = {
           court_registry: string | null
           created_at: string
           email: string | null
+          enabled_modules: string[] | null
           iban: string | null
           id: string
+          industry_type: string | null
           is_active: boolean
           is_vat_payer: boolean | null
           legal_form: string | null
@@ -359,8 +361,10 @@ export type Database = {
           court_registry?: string | null
           created_at?: string
           email?: string | null
+          enabled_modules?: string[] | null
           iban?: string | null
           id?: string
+          industry_type?: string | null
           is_active?: boolean
           is_vat_payer?: boolean | null
           legal_form?: string | null
@@ -385,8 +389,10 @@ export type Database = {
           court_registry?: string | null
           created_at?: string
           email?: string | null
+          enabled_modules?: string[] | null
           iban?: string | null
           id?: string
+          industry_type?: string | null
           is_active?: boolean
           is_vat_payer?: boolean | null
           legal_form?: string | null

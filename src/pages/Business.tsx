@@ -17,6 +17,8 @@ interface BusinessProfile {
   id: string;
   company_name: string;
   is_vat_payer: boolean;
+  industry_type?: string;
+  enabled_modules?: string[];
 }
 
 const Business = () => {
@@ -37,10 +39,10 @@ const Business = () => {
     if (!activeBusinessProfileId || !user) return;
     supabase
       .from('business_profiles')
-      .select('id, company_name, is_vat_payer')
+      .select('id, company_name, is_vat_payer, industry_type, enabled_modules')
       .eq('id', activeBusinessProfileId)
       .single()
-      .then(({ data }) => { if (data) setProfile(data); });
+      .then(({ data }) => { if (data) setProfile(data as any); });
   }, [activeBusinessProfileId, user]);
 
   const handleBackToPersonal = () => {
@@ -82,6 +84,7 @@ const Business = () => {
             expenses={dashboardExpenses}
             totalReceivable={totalReceivable}
             totalPayable={totalPayable}
+            enabledModules={profile?.enabled_modules || []}
           />
         )}
         {activeTab === 'transactions' && (

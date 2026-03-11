@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight } from 'lucide-react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
 import { BusinessRecurring } from './BusinessRecurring';
 import { BusinessProfileView } from './BusinessProfileView';
+import { BusinessModuleSettings } from './BusinessModuleSettings';
 import { Expense } from '@/types/expense';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules';
 
 interface Props {
   expenses: Expense[];
@@ -15,6 +16,7 @@ interface Props {
 
 const menuItems = [
   { id: 'profile' as SubView, icon: Building2, label: 'Podaci o tvrtki', desc: 'Naziv, OIB, adresa, IBAN i ostali podaci' },
+  { id: 'modules' as SubView, icon: Settings2, label: 'Djelatnost i moduli', desc: 'Odaberite djelatnost i prilagodite module' },
   { id: 'debts' as SubView, icon: Receipt, label: 'Dugovanja i potraživanja', desc: 'Praćenje tko vam duguje i kome vi dugujete' },
   { id: 'vat' as SubView, icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a' },
   { id: 'recurring' as SubView, icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },
@@ -29,6 +31,10 @@ export const BusinessMore = ({ expenses }: Props) => {
 
   if (view === 'profile') return (
     <div>{backButton}<BusinessProfileView /></div>
+  );
+
+  if (view === 'modules') return (
+    <div>{backButton}<BusinessModuleSettings /></div>
   );
 
   if (view === 'debts') return (
