@@ -17,7 +17,7 @@ interface Props {
 
 const COLORS = ['hsl(172,66%,40%)', 'hsl(0,72%,55%)', 'hsl(43,96%,56%)', 'hsl(199,89%,48%)', 'hsl(280,60%,55%)', 'hsl(24,95%,53%)'];
 
-export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable }: Props) => {
+export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable, enabledModules = [] }: Props) => {
   const { formatAmount } = useCurrency();
   const now = new Date();
   const monthStart = startOfMonth(now);
