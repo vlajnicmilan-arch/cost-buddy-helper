@@ -14,6 +14,7 @@ interface Props {
   totalReceivable: number;
   totalPayable: number;
   enabledModules?: string[];
+  industryType?: string;
 }
 
 const COLORS = ['hsl(172,66%,40%)', 'hsl(0,72%,55%)', 'hsl(43,96%,56%)', 'hsl(199,89%,48%)', 'hsl(280,60%,55%)', 'hsl(24,95%,53%)'];
