@@ -65,6 +65,10 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable, ena
 
   return (
     <div className="space-y-4">
+      {/* Flatrate Limit Widget */}
+      {isModuleEnabled(enabledModules, 'flatrate_limit') && (
+        <FlatrateLimitWidget expenses={expenses} />
+      )}
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="border-none shadow-sm">
