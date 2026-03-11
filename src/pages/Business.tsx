@@ -26,7 +26,7 @@ const Business = () => {
   const navigate = useNavigate();
   const { activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
   const { user } = useAuth();
-  const { expenses: dashboardExpenses, allExpenses, loading, addExpense, updateExpense, deleteExpense } = useExpenses();
+  const { expenses: dashboardExpenses, allExpenses, loading, addExpense, updateExpense, deleteExpense, importFromCSV, findDuplicates } = useExpenses();
   const { totalReceivable, totalPayable } = useBusinessDebts();
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
@@ -98,6 +98,9 @@ const Business = () => {
             onAddClick={() => {/* TODO: open add dialog */}}
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
+            onImportCSV={importFromCSV}
+            findDuplicates={findDuplicates}
+            existingExpenses={allExpenses}
           />
         )}
         {activeTab === 'reports' && (

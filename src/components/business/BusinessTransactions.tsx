@@ -8,15 +8,20 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
+import { BankConnection } from '@/components/BankConnection';
+import { ParsedTransaction } from '@/lib/csvParsers';
 
 interface Props {
   expenses: Expense[];
   onAddClick: () => void;
   onEditExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => void;
+  onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
+  existingExpenses?: Expense[];
 }
 
-export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDeleteExpense }: Props) => {
+export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDeleteExpense, onImportCSV, findDuplicates, existingExpenses }: Props) => {
   const { formatAmount } = useCurrency();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -104,6 +109,9 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
           </div>
         )}
       </div>
+
+      {/* Bank Statement Import */}
+      <BankConnection onImportCSV={onImportCSV} findDuplicates={findDuplicates} existingExpenses={existingExpenses} />
 
       {detailExpense && (
         <TransactionDetailDialog
