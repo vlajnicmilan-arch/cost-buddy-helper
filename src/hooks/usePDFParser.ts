@@ -18,6 +18,7 @@ interface PDFParseResult {
   transactions: ParsedPDFTransaction[];
   detected_bank: string | null;
   account_iban: string | null;
+  holder_name: string | null;
   cards_detected: string[];
   summary: {
     total_income: number;
