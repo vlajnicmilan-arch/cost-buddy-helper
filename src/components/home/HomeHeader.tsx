@@ -52,17 +52,16 @@ export const HomeHeader = ({
   return (
     <header className="flex flex-col gap-4 mb-6 sm:mb-8" data-tutorial="header">
       {/* Top row: Logo, title, and navigation icons */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden flex-shrink-0">
             <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
           </div>
-          <div>
-            <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
               {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">{t('common.manageFinances')}</p>
+            <div className="flex items-center gap-2 mt-0.5">
               <div className="flex items-center gap-1.5">
                 <BusinessProfileSwitcher />
                 <TooltipProvider>
@@ -93,8 +92,8 @@ export const HomeHeader = ({
         </div>
 
         {/* Navigation icons (right side) */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <TutorialButton className="rounded-xl h-9 w-9" />
+        <div className="flex items-center gap-0.5 sm:gap-2 flex-shrink-0">
+          <TutorialButton className="rounded-xl h-8 w-8 sm:h-9 sm:w-9" />
           {!isLocalMode && <NotificationsDropdown />}
           <TooltipProvider>
             <Tooltip>
@@ -103,7 +102,7 @@ export const HomeHeader = ({
                   variant="outline"
                   size="icon"
                   onClick={() => navigate('/dashboard')}
-                  className="rounded-xl h-9 w-9"
+                  className="rounded-xl h-8 w-8 sm:h-9 sm:w-9"
                 >
                   <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
@@ -113,28 +112,7 @@ export const HomeHeader = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <SettingsDialog onDataImported={onRefetch} />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t('settings.title', 'Postavke')}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          {!isLocalMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onSignOut}
-              className="rounded-xl h-9 w-9"
-            >
-              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Button>
-          )}
+          <SettingsDialog onDataImported={onRefetch} />
         </div>
       </div>
 
