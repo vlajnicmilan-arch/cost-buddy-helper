@@ -430,8 +430,7 @@ export const InvoicingPanel = () => {
     <div>
       <button onClick={() => setView('invoices')} className="text-xs text-primary mb-3 flex items-center gap-1">← Natrag</button>
       <h2 className="text-base font-bold mb-3">Novi račun</h2>
-      <ScrollArea className="max-h-[70vh]">
-        <div className="space-y-4 pb-4 pr-1">
+        <div className="space-y-4 pb-24">
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2"><Label className="text-xs">Broj računa</Label><Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} /></div>
             <div className="space-y-2">
