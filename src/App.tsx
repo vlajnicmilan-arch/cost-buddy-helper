@@ -12,6 +12,7 @@ import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import Index from "./pages/Index";
+import Business from "./pages/Business";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Budgets from "./pages/Budgets";
@@ -61,6 +62,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
+      <Route path="/business" element={<Business />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/projects" element={onboardingCompleted ? <Projects /> : <Navigate to="/onboarding" replace />} />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Building2, ChevronDown, User } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -15,6 +16,7 @@ interface BusinessProfile {
 }
 
 export const BusinessProfileSwitcher = () => {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId, setActiveBusinessProfileId, businessModeEnabled } = useAppState();
@@ -82,7 +84,7 @@ export const BusinessProfileSwitcher = () => {
               'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
               activeBusinessProfileId === p.id ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'
             )}
-            onClick={() => { setActiveBusinessProfileId(p.id); setOpen(false); }}
+            onClick={() => { setActiveBusinessProfileId(p.id); setOpen(false); navigate('/business'); }}
           >
             <Building2 className="w-4 h-4" />
             <span className="truncate">{p.company_name}</span>

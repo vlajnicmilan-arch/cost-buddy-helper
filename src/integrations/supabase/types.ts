@@ -268,6 +268,59 @@ export type Database = {
         }
         Relationships: []
       }
+      business_debts: {
+        Row: {
+          amount: number
+          business_profile_id: string
+          contact_name: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          paid_amount: number
+          status: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          business_profile_id: string
+          contact_name: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          paid_amount?: number
+          status?: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          business_profile_id?: string
+          contact_name?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          paid_amount?: number
+          status?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_debts_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_profiles: {
         Row: {
           activity_code: string | null
