@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { FolderKanban, Target, Grid3X3 } from 'lucide-react';
+import { FolderKanban, Target, Grid3X3, FileSpreadsheet } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CategoryBreakdown } from '@/components/CategoryBreakdown';
 import { SavingsGoalsSection } from '@/components/savings';
