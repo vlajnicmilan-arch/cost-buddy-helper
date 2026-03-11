@@ -33,10 +33,32 @@ export const QuickLinksSection = ({
 
   return (
     <div className="lg:col-span-1 space-y-6">
+      {/* Quick link to Import */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.01 }}
+        onClick={() => navigate('/wallet')}
+        className="p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg relative overflow-hidden"
+        style={{ borderLeftWidth: 3, borderLeftColor: 'hsl(220 80% 55%)', background: 'linear-gradient(135deg, hsl(220 80% 55% / 0.06) 0%, hsl(220 80% 55% / 0.02) 50%, transparent 100%)' }}
+      >
+        <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.06] pointer-events-none" style={{ background: 'radial-gradient(circle, hsl(220 80% 55%) 0%, transparent 70%)' }} />
+        <div className="relative flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'hsl(220 80% 55% / 0.1)' }}>
+            <FileSpreadsheet className="w-5 h-5" style={{ color: 'hsl(220 80% 55%)' }} />
+          </div>
+          <div>
+            <p className="font-semibold">{t('import.title', 'Uvoz izvoda')}</p>
+            <p className="text-xs text-muted-foreground">CSV / PDF →</p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Quick link to Projects */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
         whileHover={{ scale: 1.01 }}
         onClick={() => navigate('/projects')}
         className="p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg relative overflow-hidden"
