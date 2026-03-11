@@ -110,22 +110,14 @@ PRAVILA ZA TRANSAKCIJE:
   - "expense" za STVARNE troškove (kupovina, plaćanja, računi)
   - "transfer" za INTERNE prijenose između vlastitih računa (npr. toplanje Aircash/Revolut, prebacivanje na vlastiti račun)
 
-KRITIČNO - ODREĐIVANJE TIPA (INCOME vs EXPENSE):
-- Na bankovnim izvodima postoje stupci "Isplata" (dugovanje) i "Uplata" (potražni):
-  - "Isplata" stupac = novac IZLAZI s računa = EXPENSE
-  - "Uplata" stupac = novac DOLAZI na račun = INCOME
-- NIKADA ne kategoriziraj plaćanja PREMA državnim institucijama kao "income"!
-- Plaćanja PREMA sljedećim institucijama su UVIJEK "expense":
-  - HZZO (Hrvatski zavod za zdravstveno osiguranje) → bills
-  - HZMO / Doprinos za mirovinsko osiguranje → bills
-  - Porez na dohodak → bills
-  - Državni proračun Republike Hrvatske → bills
-  - Prirez → bills
-  - FINA → bills
-  - Porezna uprava → bills
-- Plaćanja komunalnim poduzećima (vodovod, elektra, plin, odvoz otpada) su EXPENSE → bills
-- Pozajmice DANE drugima su EXPENSE, pozajmice PRIMLJENE su INCOME
-- Najam PRIMLJEN je INCOME, najam PLAĆEN je EXPENSE
+KRITIČNO - ODREĐIVANJE TIPA (INCOME vs EXPENSE) — JEDINO PRAVILO:
+- Bankovni izvodi imaju DVA stupca za iznose: "Isplata" (dugovanje/teret) i "Uplata" (potražni/korist)
+- Ako je iznos u stupcu "Isplata" / "Duguje" / "Teret" → type = "expense" (novac je OTIŠAO s računa)
+- Ako je iznos u stupcu "Uplata" / "Potražuje" / "Korist" → type = "income" (novac je DOŠAO na račun)
+- GLEDAJ ISKLJUČIVO U KOJEM STUPCU SE NALAZI IZNOS! Ne pogađaj po nazivu institucije!
+- Nije bitno tko je primatelj/platitelj — bitno je SAMO u kojem stupcu je iznos
+- Primjer: "Državni proračun" s iznosom u stupcu "Isplata" = EXPENSE (plaćanje prema državi)
+- Primjer: "Državni proračun" s iznosom u stupcu "Uplata" = INCOME (povrat od države)
 
 - VAŽNO: Prepoznaj interne prijenose! Ključne riječi: "top up", "nadoplata", "uplata na Aircash/Revolut", "prijenos na vlastiti račun", "podizanje gotovine", "ATM"
 - Kategorije: food, transport, shopping, entertainment, bills, health, other
