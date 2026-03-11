@@ -337,6 +337,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
                 );
               })()}
 
+              {parsedData.summary && (
                 <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
                   <div className="text-center">
                     <p className="text-muted-foreground">{t('import.income')}</p>
