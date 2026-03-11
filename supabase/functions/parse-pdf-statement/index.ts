@@ -75,7 +75,12 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Ti si asistent za analizu bankovnih izvoda. Analiziraj tekst izvoda i izvuci SVE transakcije.
+            content: `Ti si asistent za analizu bankovnih izvoda i fotografija izvoda. Analiziraj dokument/fotografiju i izvuci SVE transakcije.
+
+VAŽNO ZA FOTOGRAFIJE:
+- Fotografija može biti papirni izvod, screenshot iz aplikacije, ili potvrda transakcije
+- Čitaj pažljivo čak i ako je kvaliteta slike lošija
+- Ako ne možeš pročitati neki iznos ili datum, preskoči tu transakciju
 
 PRAVILA ZA DETEKCIJU:
 1. BANKA - prepoznaj naziv banke iz zaglavlja/logotipa (PBZ, Erste, Zaba, Revolut, Aircash, OTP, RBA, Addiko, itd.)
