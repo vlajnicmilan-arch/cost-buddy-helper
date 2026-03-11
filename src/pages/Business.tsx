@@ -17,6 +17,8 @@ interface BusinessProfile {
   id: string;
   company_name: string;
   is_vat_payer: boolean;
+  industry_type?: string;
+  enabled_modules?: string[];
 }
 
 const Business = () => {
