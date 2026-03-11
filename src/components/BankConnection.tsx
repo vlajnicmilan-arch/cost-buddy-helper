@@ -292,7 +292,51 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
                 </div>
               )}
 
-              {parsedData.summary && (
+              {/* Business profile mismatch warning */}
+              {activeBusinessProfileId && parsedData.holder_name && (
+                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-orange-600 dark:text-orange-400">
+                      Provjeri vlasnika računa
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Izvod glasi na: <strong>{parsedData.holder_name}</strong>. 
+                      Trenutno uvoziš u <strong>poslovni profil</strong>. Je li to ispravno?
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Duplicate detection warning */}
+              {findDuplicates && parsedData.transactions.length > 0 && (() => {
+                const txForCheck: ParsedTransaction[] = parsedData.transactions.map(tx => ({
+                  date: tx.date,
+                  description: tx.description,
+                  amount: tx.amount,
+                  type: tx.type,
+                  category: tx.category,
+                  merchant_name: tx.merchant_name || undefined,
+                  source: 'photo',
+                  payment_source: tx.payment_source || 'bank'
+                }));
+                const { duplicates } = findDuplicates(txForCheck);
+                if (duplicates.length === 0) return null;
+                return (
+                  <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-orange-600 dark:text-orange-400">
+                        {duplicates.length} {duplicates.length === 1 ? 'mogući duplikat' : 'mogućih duplikata'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Neke transakcije možda već postoje. Duplikati će biti označeni pri uvozu.
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
                 <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
                   <div className="text-center">
                     <p className="text-muted-foreground">{t('import.income')}</p>
