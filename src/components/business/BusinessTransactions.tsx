@@ -121,7 +121,6 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
           open={!!editExpense}
           onOpenChange={(open) => !open && setEditExpense(null)}
           onSave={async (updatedExpense) => { await onEditExpense(updatedExpense); setEditExpense(null); }}
-          allExpenses={expenses}
         />
       )}
     </div>

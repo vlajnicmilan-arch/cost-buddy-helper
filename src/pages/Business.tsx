@@ -26,7 +26,7 @@ const Business = () => {
   const { activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const { dashboardExpenses, expenses: allExpenses, loading } = useExpenseFetch();
-  const { addExpense, editExpense, deleteExpense } = useExpenseCRUD();
+  const { addExpense, updateExpense, deleteExpense } = useExpenseCRUD();
   const { totalReceivable, totalPayable } = useBusinessDebts();
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
