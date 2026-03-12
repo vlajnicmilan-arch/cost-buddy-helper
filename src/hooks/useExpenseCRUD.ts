@@ -78,7 +78,11 @@ export const useExpenseCRUD = ({
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase insert error details:', { error, code: error.code, message: error.message, details: error.details });
+          throw error;
+        }
+        console.log('✅ Expense saved to DB:', data?.id);
 
         if (items && items.length > 0 && data) {
           await supabase.from('receipt_items').insert(items.map(item => ({
@@ -139,8 +143,9 @@ export const useExpenseCRUD = ({
     } catch (error) {
       console.error('Error adding expense:', error);
       toast.error('Greška pri dodavanju');
+      throw error; // Re-throw so callers know the operation failed
     }
-  }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts]);
+  }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts, activeBusinessProfileId]);
 
   const updateExpense = useCallback(async (expense: Expense) => {
     try {
