@@ -38,17 +38,26 @@ export const useExpenseCRUD = ({
     items?: ReceiptItem[],
     isPendingMemberTransaction?: boolean
   ) => {
+    const normalizedDescription = (expense.description ?? '').trim()
+      || expense.merchant_name?.trim()
+      || (expense.type === 'transfer' ? 'Prijenos' : expense.type === 'income' ? 'Prihod' : 'Trošak');
+
+    const normalizedExpense = {
+      ...expense,
+      description: normalizedDescription,
+    };
+
     try {
       if (isLocalMode) {
-        const newExpense = await saveLocalExpense(expense);
+        const newExpense = await saveLocalExpense(normalizedExpense);
         if (items && items.length > 0) await saveLocalReceiptItems(newExpense.id, items);
         setExpenses(prev => [newExpense, ...prev]);
-        await updateBalance(expense.payment_source, expense.amount, expense.type);
-        if (expense.type === 'transfer' && expense.income_source_id) {
-          await updateBalance(expense.income_source_id, expense.amount, 'income');
+        await updateBalance(normalizedExpense.payment_source, normalizedExpense.amount, normalizedExpense.type);
+        if (normalizedExpense.type === 'transfer' && normalizedExpense.income_source_id) {
+          await updateBalance(normalizedExpense.income_source_id, normalizedExpense.amount, 'income');
         }
-        if (expense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
-        toast.success(expense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
+        if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
+        toast.success(normalizedExpense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
       } else {
         if (!user) { toast.error('Moraš biti prijavljen'); return; }
 
@@ -56,24 +65,24 @@ export const useExpenseCRUD = ({
           .from('expenses')
           .insert({
             user_id: user.id,
-            amount: expense.amount,
-            description: expense.description,
-            category: expense.category,
-            type: expense.type,
-            date: expense.date.toISOString(),
-            payment_source: expense.payment_source || 'cash',
-            payment_source_card_id: expense.payment_source_card_id || null,
-            receipt_url: expense.receipt_url,
-            merchant_name: expense.merchant_name,
-            ai_extracted: expense.ai_extracted,
-            income_source_id: expense.income_source_id,
-            project_id: expense.project_id || null,
-            budget_id: expense.budget_id || null,
-            note: expense.note || null,
-            expense_nature: expense.expense_nature || null,
+            amount: normalizedExpense.amount,
+            description: normalizedExpense.description,
+            category: normalizedExpense.category,
+            type: normalizedExpense.type,
+            date: normalizedExpense.date.toISOString(),
+            payment_source: normalizedExpense.payment_source || 'cash',
+            payment_source_card_id: normalizedExpense.payment_source_card_id || null,
+            receipt_url: normalizedExpense.receipt_url,
+            merchant_name: normalizedExpense.merchant_name,
+            ai_extracted: normalizedExpense.ai_extracted,
+            income_source_id: normalizedExpense.income_source_id,
+            project_id: normalizedExpense.project_id || null,
+            budget_id: normalizedExpense.budget_id || null,
+            note: normalizedExpense.note || null,
+            expense_nature: normalizedExpense.expense_nature || null,
             status: isPendingMemberTransaction ? 'pending' : 'approved',
             submitted_by: isPendingMemberTransaction ? user.id : null,
-            business_profile_id: (expense as any).business_profile_id || activeBusinessProfileId || null,
+            business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
           })
           .select()
           .single();
@@ -95,19 +104,19 @@ export const useExpenseCRUD = ({
         }
 
         // Notifications (fire-and-forget, don't block)
-        if (isPendingMemberTransaction && expense.income_source_id && data) {
+        if (isPendingMemberTransaction && normalizedExpense.income_source_id && data) {
           supabase.functions.invoke('notify-pending-transaction', {
-            body: { expense_id: data.id, income_source_id: expense.income_source_id }
+            body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id }
           }).catch(e => console.error('Notification error:', e));
         }
-        if (expense.project_id && data) {
+        if (normalizedExpense.project_id && data) {
           supabase.functions.invoke('notify-project-transaction', {
-            body: { expense_id: data.id, project_id: expense.project_id, action: 'created' }
+            body: { expense_id: data.id, project_id: normalizedExpense.project_id, action: 'created' }
           }).catch(e => console.error('Notification error:', e));
         }
-        if (expense.note && expense.income_source_id && data) {
+        if (normalizedExpense.note && normalizedExpense.income_source_id && data) {
           supabase.functions.invoke('notify-note-added', {
-            body: { expense_id: data.id, income_source_id: expense.income_source_id, note: expense.note }
+            body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id, note: normalizedExpense.note }
           }).catch(e => console.error('Notification error:', e));
         }
 
@@ -124,25 +133,30 @@ export const useExpenseCRUD = ({
 
         setExpenses(prev => [newExpense, ...prev]);
 
-        const savedIncomeSourceId = data.income_source_id || expense.income_source_id;
-        await updateBalance(expense.payment_source, expense.amount, expense.type);
-        if (expense.type === 'transfer' && savedIncomeSourceId) {
-          await updateBalance(savedIncomeSourceId, expense.amount, 'income').catch(e =>
+        const savedIncomeSourceId = data.income_source_id || normalizedExpense.income_source_id;
+        await updateBalance(normalizedExpense.payment_source, normalizedExpense.amount, normalizedExpense.type);
+        if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
+          await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income').catch(e =>
             console.error('Destination balance update failed:', e)
           );
         }
-        if (expense.type === 'expense') checkBudgetAlerts(expense.category, expense.amount, expense.date);
-        if (expense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
+        if (normalizedExpense.type === 'expense') checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
+        if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
 
         if (isPendingMemberTransaction) {
           toast.success('Transakcija poslana vlasniku na odobrenje');
         } else {
-          toast.success(expense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
+          toast.success(normalizedExpense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
         }
       }
     } catch (error) {
       console.error('Error adding expense:', error);
-      toast.error('Greška pri dodavanju');
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('description')) {
+        toast.error('Nedostaje opis transakcije. Unesi opis i pokušaj ponovno.');
+      } else {
+        toast.error('Greška pri dodavanju');
+      }
       throw error; // Re-throw so callers know the operation failed
     }
   }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts, activeBusinessProfileId]);

@@ -156,7 +156,9 @@ export const useReceiptScanner = () => {
       const result: ParsedReceipt = {
         amount: data.amount,
         merchant: data.merchant,
-        description: data.description,
+        description: (typeof data.description === 'string' && data.description.trim().length > 0)
+          ? data.description.trim()
+          : ((typeof data.merchant === 'string' && data.merchant.trim().length > 0) ? data.merchant.trim() : 'Račun'),
         category: data.category as Category,
         date: data.date || null,
         payment_source: paymentSource,
