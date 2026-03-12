@@ -29,7 +29,7 @@ import { CardLookup } from '@/components/CardLookup';
 import { ScanningOverlay } from '@/components/ScanningOverlay';
 import { useCategoryHabits } from '@/hooks/useCategoryHabits';
 import { useAICategorization } from '@/hooks/useAICategorization';
-
+import { useAppState } from '@/contexts/AppStateContext';
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   checkDuplicate?: (transaction: {
