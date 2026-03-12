@@ -139,8 +139,9 @@ export const useExpenseCRUD = ({
     } catch (error) {
       console.error('Error adding expense:', error);
       toast.error('Greška pri dodavanju');
+      throw error; // Re-throw so callers know the operation failed
     }
-  }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts]);
+  }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts, activeBusinessProfileId]);
 
   const updateExpense = useCallback(async (expense: Expense) => {
     try {

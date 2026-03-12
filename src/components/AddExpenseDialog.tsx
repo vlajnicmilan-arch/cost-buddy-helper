@@ -454,7 +454,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
         recordHabit(expense.merchant_name, expense.category);
       }
-      toast.success(t('transactions.savedSuccess') || 'Transakcija uspješno spremljena!');
+      // Note: success toast is already shown by addExpense/useExpenseCRUD
       // Close dialog FIRST to prevent flash of empty form, then reset
       setOpen(false);
       // Use setTimeout to reset form after dialog animation completes
