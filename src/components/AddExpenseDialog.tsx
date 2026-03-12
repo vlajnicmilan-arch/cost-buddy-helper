@@ -29,7 +29,7 @@ import { CardLookup } from '@/components/CardLookup';
 import { ScanningOverlay } from '@/components/ScanningOverlay';
 import { useCategoryHabits } from '@/hooks/useCategoryHabits';
 import { useAICategorization } from '@/hooks/useAICategorization';
-
+import { useAppState } from '@/contexts/AppStateContext';
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   checkDuplicate?: (transaction: {
@@ -115,6 +115,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const { createPlan: createInstallmentPlan } = useInstallments();
   const { recordHabit, getSuggestedCategory } = useCategoryHabits();
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
+  const { activeBusinessProfileId } = useAppState();
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
 
@@ -313,6 +314,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+        business_profile_id: activeBusinessProfileId || null,
         // For transfers, store destination in income_source_id field
         income_source_id: transferDestinationId || undefined,
         note: (isInstallment && scannedData.installment_count) 
@@ -526,7 +528,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         note: installmentNote,
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
-        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined
+        expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+        business_profile_id: activeBusinessProfileId || null
       };
 
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
@@ -562,6 +565,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       project_id: selectedProjectId || undefined,
       budget_id: selectedBudgetId || undefined,
       expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+      business_profile_id: activeBusinessProfileId || null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
     };
 
