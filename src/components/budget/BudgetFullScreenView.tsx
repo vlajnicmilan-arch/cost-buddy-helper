@@ -447,8 +447,7 @@ export const BudgetFullScreenView = ({
                   <TabsContent value="history" className="space-y-4">
                     <BudgetHistoryTab budget={budget} />
                   </TabsContent>
-
-
+                  <TabsContent value="transactions" className="space-y-4">
                     {loadingExpenses ? (
                       <div className="flex items-center justify-center py-12">
                         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
