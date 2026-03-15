@@ -334,6 +334,10 @@ export type Database = {
           created_at: string
           email: string | null
           enabled_modules: string[] | null
+          eracuni_connected: boolean | null
+          eracuni_secret_key: string | null
+          eracuni_token: string | null
+          eracuni_username: string | null
           iban: string | null
           id: string
           industry_type: string | null
@@ -362,6 +366,10 @@ export type Database = {
           created_at?: string
           email?: string | null
           enabled_modules?: string[] | null
+          eracuni_connected?: boolean | null
+          eracuni_secret_key?: string | null
+          eracuni_token?: string | null
+          eracuni_username?: string | null
           iban?: string | null
           id?: string
           industry_type?: string | null
@@ -390,6 +398,10 @@ export type Database = {
           created_at?: string
           email?: string | null
           enabled_modules?: string[] | null
+          eracuni_connected?: boolean | null
+          eracuni_secret_key?: string | null
+          eracuni_token?: string | null
+          eracuni_username?: string | null
           iban?: string | null
           id?: string
           industry_type?: string | null
@@ -1376,6 +1388,11 @@ export type Database = {
           client_id: string | null
           created_at: string
           due_date: string | null
+          eracun_sent: boolean | null
+          eracun_sent_at: string | null
+          fiscalization_jir: string | null
+          fiscalization_zki: string | null
+          fiscalized_at: string | null
           id: string
           invoice_number: string
           issue_date: string
@@ -1392,6 +1409,11 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           due_date?: string | null
+          eracun_sent?: boolean | null
+          eracun_sent_at?: string | null
+          fiscalization_jir?: string | null
+          fiscalization_zki?: string | null
+          fiscalized_at?: string | null
           id?: string
           invoice_number: string
           issue_date?: string
@@ -1408,6 +1430,11 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           due_date?: string | null
+          eracun_sent?: boolean | null
+          eracun_sent_at?: string | null
+          fiscalization_jir?: string | null
+          fiscalization_zki?: string | null
+          fiscalized_at?: string | null
           id?: string
           invoice_number?: string
           issue_date?: string
