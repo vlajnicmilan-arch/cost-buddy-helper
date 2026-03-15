@@ -44,6 +44,7 @@ export const HomeHeader = ({
   findDuplicates,
   existingExpenses,
   onRefetch,
+}: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [importOpen, setImportOpen] = useState(false);
