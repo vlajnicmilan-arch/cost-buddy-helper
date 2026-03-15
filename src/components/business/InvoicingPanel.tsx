@@ -40,6 +40,11 @@ interface Invoice {
   vat_amount: number;
   notes: string | null;
   paid_at: string | null;
+  fiscalization_jir?: string | null;
+  fiscalization_zki?: string | null;
+  fiscalized_at?: string | null;
+  eracun_sent?: boolean;
+  eracun_sent_at?: string | null;
 }
 
 interface InvoiceItem {
