@@ -41,7 +41,12 @@ import {
   Banknote,
   List,
   HandCoins,
+  Search,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { hr, enUS, de } from 'date-fns/locale';
 import { 
   generatePDFReport, 
   generateCSVReport, 
