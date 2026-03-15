@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck } from 'lucide-react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck, MapPin, Monitor, FileSliders } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
@@ -11,6 +11,9 @@ import { InvoicingPanel } from './InvoicingPanel';
 import { InventoryPanel } from './InventoryPanel';
 import { BusinessWorkforcePanel } from './BusinessWorkforcePanel';
 import { EracuniConnectionPanel } from './EracuniConnectionPanel';
+import { BusinessPremisesPanel } from './BusinessPremisesPanel';
+import { CashRegistersPanel } from './CashRegistersPanel';
+import { InvoiceSettingsPanel } from './InvoiceSettingsPanel';
 import { Expense } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,7 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { isModuleEnabled } from '@/lib/businessModules';
 import { useBackButton } from '@/hooks/useBackButton';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni' | 'premises' | 'registers' | 'invoice-settings';
 
 interface Props {
   expenses: Expense[];
@@ -59,11 +62,17 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'inventory') return <div>{backButton}<InventoryPanel /></div>;
   if (view === 'workforce') return <div>{backButton}<BusinessWorkforcePanel /></div>;
   if (view === 'eracuni') return <div>{backButton}<EracuniConnectionPanel /></div>;
+  if (view === 'premises') return <div>{backButton}<BusinessPremisesPanel /></div>;
+  if (view === 'registers') return <div>{backButton}<CashRegistersPanel /></div>;
+  if (view === 'invoice-settings') return <div>{backButton}<InvoiceSettingsPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
   const allMenuItems: MenuItem[] = [
     { id: 'profile', icon: Building2, label: 'Podaci o tvrtki', desc: 'Naziv, OIB, adresa, IBAN i ostali podaci' },
+    { id: 'premises', icon: MapPin, label: 'Poslovni prostori', desc: 'Oznake prostora za fiskalizaciju računa' },
+    { id: 'registers', icon: Monitor, label: 'Blagajne', desc: 'Naplatni uređaji po poslovnim prostorima' },
+    { id: 'invoice-settings', icon: FileSliders, label: 'Postavke računa', desc: 'PDV obveza, logo, zaglavlje, podnožje', module: 'invoicing' },
     { id: 'modules', icon: Settings2, label: 'Djelatnost i moduli', desc: 'Odaberite djelatnost i prilagodite module' },
     { id: 'debts', icon: Receipt, label: 'Dugovanja i potraživanja', desc: 'Praćenje tko vam duguje i kome vi dugujete' },
     { id: 'vat', icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a', module: 'vat_tracking' },
