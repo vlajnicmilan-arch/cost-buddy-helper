@@ -69,6 +69,7 @@ export const BusinessMore = ({ expenses }: Props) => {
     { id: 'vat', icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a', module: 'vat_tracking' },
     { id: 'travel', icon: Car, label: 'Putni troškovi', desc: 'Putni nalozi, kilometraža, dnevnice', module: 'travel_expenses' },
     { id: 'invoicing', icon: Banknote, label: 'Fakturiranje', desc: 'Klijenti i izdavanje računa', module: 'invoicing' },
+    { id: 'eracuni', icon: FileCheck, label: 'e-Računi.hr', desc: 'Fiskalizacija i e-Računi za obrtnike', module: 'invoicing' },
     { id: 'inventory', icon: Package, label: 'Zalihe', desc: 'Praćenje artikala i stanja skladišta', module: 'inventory' },
     { id: 'workforce', icon: Users, label: 'Radnici & satnice', desc: 'Evidencija radnika, sati i troškova rada', module: 'workforce' },
     { id: 'recurring', icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },
