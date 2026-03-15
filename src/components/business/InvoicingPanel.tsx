@@ -112,6 +112,77 @@ export const InvoicingPanel = () => {
       .eq('id', activeBusinessProfileId)
       .single();
     setBusinessProfile(data);
+    setEracuniConnected((data as any)?.eracuni_connected || false);
+  };
+
+  const fiscalizeInvoice = async (invoiceId: string) => {
+    setFiscalizing(true);
+    try {
+      // First sync to e-Računi
+      const syncRes = await supabase.functions.invoke('eracuni-proxy', {
+        body: { action: 'create_invoice', businessProfileId: activeBusinessProfileId, invoiceId },
+      });
+
+      if (syncRes.error || syncRes.data?.error) {
+        toast.error(syncRes.data?.error || 'Greška pri slanju na e-Računi');
+        setFiscalizing(false);
+        return;
+      }
+
+      // Then fiscalize
+      const res = await supabase.functions.invoke('eracuni-proxy', {
+        body: { action: 'fiscalize', businessProfileId: activeBusinessProfileId, invoiceId },
+      });
+
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Fiskalizacija neuspješna');
+      } else {
+        toast.success(`✅ Fiskalizirano! JIR: ${res.data.jir || 'N/A'}`);
+        setDetailInvoice(null);
+        loadInvoices();
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Greška');
+    }
+    setFiscalizing(false);
+  };
+
+  const sendEracun = async (invoiceId: string) => {
+    setSendingEracun(true);
+    try {
+      const res = await supabase.functions.invoke('eracuni-proxy', {
+        body: { action: 'send_eracun', businessProfileId: activeBusinessProfileId, invoiceId },
+      });
+
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Slanje e-Računa neuspješno');
+      } else {
+        toast.success('✅ e-Račun poslan!');
+        setDetailInvoice(null);
+        loadInvoices();
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Greška');
+    }
+    setSendingEracun(false);
+  };
+
+  const syncToEracuni = async (invoiceId: string) => {
+    setSyncingToEracuni(true);
+    try {
+      const res = await supabase.functions.invoke('eracuni-proxy', {
+        body: { action: 'create_invoice', businessProfileId: activeBusinessProfileId, invoiceId },
+      });
+
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Sinkronizacija neuspješna');
+      } else {
+        toast.success('✅ Račun poslan na e-Računi.hr');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Greška');
+    }
+    setSyncingToEracuni(false);
   };
 
   const loadClients = async () => {
