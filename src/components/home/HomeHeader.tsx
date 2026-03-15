@@ -118,7 +118,7 @@ export const HomeHeader = ({
       {/* Bottom row: Action buttons */}
       <div className="flex flex-wrap items-center gap-2" data-tutorial="add-buttons">
         {!simpleModeEnabled && <BulkEditDropdown expenses={expenses} onUpdateExpenses={onBulkUpdateExpenses} />}
-        {!simpleModeEnabled && <ReportsDialog expenses={expenses} />}
+        {!simpleModeEnabled && <ReportsDialog expenses={reportsExpenses} />}
         {onImportCSV && (
           <>
             <Button 
