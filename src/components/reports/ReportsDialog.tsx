@@ -334,13 +334,45 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       .map(([categoryId, amount]) => {
         const info = resolveCategory(categoryId, customCategories);
         return {
+          id: categoryId,
           name: info.name,
           value: amount,
           icon: info.icon,
           color: info.isCustom ? info.color : (CATEGORY_COLORS[categoryId] || '#6b7280'),
         };
       });
-  }, [stats.byCategory]);
+  }, [stats.byCategory, customCategories]);
+
+  // All categories for search (not limited to 8)
+  const allCategoryData = useMemo(() => {
+    return Object.entries(stats.byCategory)
+      .sort((a, b) => b[1] - a[1])
+      .map(([categoryId, amount]) => {
+        const info = resolveCategory(categoryId, customCategories);
+        return {
+          id: categoryId,
+          name: info.name,
+          value: amount,
+          icon: info.icon,
+          color: info.isCustom ? info.color : (CATEGORY_COLORS[categoryId] || '#6b7280'),
+        };
+      });
+  }, [stats.byCategory, customCategories]);
+
+  // Filtered categories by search
+  const filteredCategoryData = useMemo(() => {
+    if (!categoryFilter.trim()) return allCategoryData;
+    const q = categoryFilter.toLowerCase();
+    return allCategoryData.filter(c => c.name.toLowerCase().includes(q));
+  }, [allCategoryData, categoryFilter]);
+
+  // Transactions for the selected category
+  const selectedCategoryTransactions = useMemo(() => {
+    if (!selectedReportCategory) return [];
+    return filteredExpenses
+      .filter(e => e.type === 'expense' && e.category === selectedReportCategory)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [filteredExpenses, selectedReportCategory]);
 
   // Income transactions for the filtered period
   const incomeTransactions = useMemo(() => {
