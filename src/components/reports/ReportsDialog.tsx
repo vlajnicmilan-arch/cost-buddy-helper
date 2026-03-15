@@ -178,6 +178,8 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   
   // Income source filter
   const [selectedIncomeSourceId, setSelectedIncomeSourceId] = useState<string>('all');
+  const [selectedReportCategory, setSelectedReportCategory] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
   
   // Comparison state
   const [comparePreset, setComparePreset] = useState<ComparePreset>('month-vs-month');
