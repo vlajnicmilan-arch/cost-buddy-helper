@@ -62,11 +62,17 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'inventory') return <div>{backButton}<InventoryPanel /></div>;
   if (view === 'workforce') return <div>{backButton}<BusinessWorkforcePanel /></div>;
   if (view === 'eracuni') return <div>{backButton}<EracuniConnectionPanel /></div>;
+  if (view === 'premises') return <div>{backButton}<BusinessPremisesPanel /></div>;
+  if (view === 'registers') return <div>{backButton}<CashRegistersPanel /></div>;
+  if (view === 'invoice-settings') return <div>{backButton}<InvoiceSettingsPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
   const allMenuItems: MenuItem[] = [
     { id: 'profile', icon: Building2, label: 'Podaci o tvrtki', desc: 'Naziv, OIB, adresa, IBAN i ostali podaci' },
+    { id: 'premises', icon: MapPin, label: 'Poslovni prostori', desc: 'Oznake prostora za fiskalizaciju računa' },
+    { id: 'registers', icon: Monitor, label: 'Blagajne', desc: 'Naplatni uređaji po poslovnim prostorima' },
+    { id: 'invoice-settings', icon: FileSliders, label: 'Postavke računa', desc: 'PDV obveza, logo, zaglavlje, podnožje', module: 'invoicing' },
     { id: 'modules', icon: Settings2, label: 'Djelatnost i moduli', desc: 'Odaberite djelatnost i prilagodite module' },
     { id: 'debts', icon: Receipt, label: 'Dugovanja i potraživanja', desc: 'Praćenje tko vam duguje i kome vi dugujete' },
     { id: 'vat', icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a', module: 'vat_tracking' },
