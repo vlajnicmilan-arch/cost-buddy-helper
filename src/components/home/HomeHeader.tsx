@@ -43,7 +43,7 @@ export const HomeHeader = ({
   onImportCSV,
   findDuplicates,
   existingExpenses,
-}: HomeHeaderProps) => {
+  onRefetch,
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [importOpen, setImportOpen] = useState(false);
