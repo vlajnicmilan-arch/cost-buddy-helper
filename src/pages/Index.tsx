@@ -320,8 +320,8 @@ const Index = () => {
           reportsExpenses={allExpenses}
           onAddExpense={addExpense}
           onCheckDuplicate={checkDuplicate}
+          onBulkUpdateExpenses={bulkUpdateExpenses}
           onImportCSV={importFromCSV}
-          findDuplicates={findDuplicates}
           existingExpenses={allExpenses}
           onRefetch={refetch}
         />

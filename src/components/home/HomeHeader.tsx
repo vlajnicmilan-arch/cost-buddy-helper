@@ -40,8 +40,8 @@ export const HomeHeader = ({
   onAddExpense,
   onCheckDuplicate,
   onBulkUpdateExpenses,
+  onImportCSV,
   findDuplicates,
-  existingExpenses,
   onRefetch,
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
