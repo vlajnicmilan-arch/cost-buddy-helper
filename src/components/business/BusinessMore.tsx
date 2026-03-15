@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck } from 'lucide-react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck, MapPin, Monitor, FileSliders } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
@@ -11,6 +11,9 @@ import { InvoicingPanel } from './InvoicingPanel';
 import { InventoryPanel } from './InventoryPanel';
 import { BusinessWorkforcePanel } from './BusinessWorkforcePanel';
 import { EracuniConnectionPanel } from './EracuniConnectionPanel';
+import { BusinessPremisesPanel } from './BusinessPremisesPanel';
+import { CashRegistersPanel } from './CashRegistersPanel';
+import { InvoiceSettingsPanel } from './InvoiceSettingsPanel';
 import { Expense } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,7 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { isModuleEnabled } from '@/lib/businessModules';
 import { useBackButton } from '@/hooks/useBackButton';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni' | 'premises' | 'registers' | 'invoice-settings';
 
 interface Props {
   expenses: Expense[];
