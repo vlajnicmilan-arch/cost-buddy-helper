@@ -214,18 +214,24 @@ export const BudgetFullScreenView = ({
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-4xl mx-auto p-4 sm:p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-3 mb-6">
-                    <TabsTrigger value="overview" className="gap-2">
+                  <TabsList className="grid w-full grid-cols-4 mb-6">
+                    <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm">
                       <BarChart3 className="w-4 h-4" />
-                      {t('budget.overview', 'Pregled')}
+                      <span className="hidden sm:inline">{t('budget.overview', 'Pregled')}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="transactions" className="gap-2">
+                    <TabsTrigger value="history" className="gap-1.5 text-xs sm:text-sm">
+                      <History className="w-4 h-4" />
+                      <span className="hidden sm:inline">{t('budget.history', 'Povijest')}</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="transactions" className="gap-1.5 text-xs sm:text-sm">
                       <Receipt className="w-4 h-4" />
-                      {t('budget.transactions', 'Transakcije')} ({budgetExpenses.length})
+                      <span className="hidden sm:inline">{t('budget.transactions', 'Transakcije')}</span>
+                      <span className="sm:hidden">({budgetExpenses.length})</span>
                     </TabsTrigger>
-                    <TabsTrigger value="members" className="gap-2">
+                    <TabsTrigger value="members" className="gap-1.5 text-xs sm:text-sm">
                       <Users className="w-4 h-4" />
-                      {t('budget.members', 'Članovi')} ({members.length})
+                      <span className="hidden sm:inline">{t('budget.members', 'Članovi')}</span>
+                      <span className="sm:hidden">({members.length})</span>
                     </TabsTrigger>
                   </TabsList>
 
