@@ -517,6 +517,72 @@ export const InvoicingPanel = () => {
                   </Button>
                 </div>
 
+                {/* e-Računi integration buttons */}
+                {eracuniConnected && (
+                  <div className="space-y-2">
+                    <Separator />
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">e-Računi.hr</p>
+                    
+                    {/* Fiscalization info if already done */}
+                    {detailInvoice.fiscalization_jir && (
+                      <div className="p-2 rounded-lg bg-income/5 text-xs">
+                        <p className="font-medium text-income">✅ Fiskalizirano</p>
+                        <p className="text-muted-foreground">JIR: {detailInvoice.fiscalization_jir}</p>
+                        {detailInvoice.fiscalization_zki && <p className="text-muted-foreground">ZKI: {detailInvoice.fiscalization_zki}</p>}
+                      </div>
+                    )}
+
+                    {detailInvoice.eracun_sent && (
+                      <div className="p-2 rounded-lg bg-primary/5 text-xs">
+                        <p className="font-medium text-primary">📤 e-Račun poslan</p>
+                        {detailInvoice.eracun_sent_at && (
+                          <p className="text-muted-foreground">{format(new Date(detailInvoice.eracun_sent_at), 'dd.MM.yyyy HH:mm')}</p>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      {!detailInvoice.fiscalization_jir && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 gap-1 text-xs"
+                          onClick={() => fiscalizeInvoice(detailInvoice.id)}
+                          disabled={fiscalizing}
+                        >
+                          {fiscalizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                          Fiskaliziraj
+                        </Button>
+                      )}
+                      {!detailInvoice.eracun_sent && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 gap-1 text-xs"
+                          onClick={() => sendEracun(detailInvoice.id)}
+                          disabled={sendingEracun}
+                        >
+                          {sendingEracun ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                          Pošalji e-Račun
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {!detailInvoice.fiscalization_jir && !detailInvoice.eracun_sent && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full gap-1 text-[10px] text-muted-foreground"
+                        onClick={() => syncToEracuni(detailInvoice.id)}
+                        disabled={syncingToEracuni}
+                      >
+                        {syncingToEracuni ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                        Samo sinkroniziraj na e-Računi (bez fiskalizacije)
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   {detailInvoice.status !== 'paid' && (
                     <Button size="sm" className="flex-1 gap-1 text-xs" onClick={() => updateInvoiceStatus(detailInvoice.id, 'paid')}>
