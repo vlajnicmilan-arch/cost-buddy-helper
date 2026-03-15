@@ -17,6 +17,7 @@ import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { TransactionItem } from '@/components/TransactionItem';
 import { useExpenses } from '@/hooks/useExpenses';
+import { BudgetHistoryTab } from './BudgetHistoryTab';
 import { 
   X,
   Edit,
@@ -30,7 +31,8 @@ import {
   Clock,
   Check,
   Receipt,
-  Loader2
+  Loader2,
+  History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
