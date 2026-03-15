@@ -21,6 +21,7 @@ interface HomeHeaderProps {
   isLocalMode: boolean;
   simpleModeEnabled: boolean;
   expenses: Expense[];
+  reportsExpenses: Expense[];
   onAddExpense: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   onCheckDuplicate?: (transaction: { amount: number; description: string; date: Date; type: string; category?: string; merchant_name?: string }) => Expense | null;
   onBulkUpdateExpenses: (expenses: Expense[]) => Promise<any>;
@@ -35,6 +36,7 @@ export const HomeHeader = ({
   isLocalMode,
   simpleModeEnabled,
   expenses,
+  reportsExpenses,
   onAddExpense,
   onCheckDuplicate,
   onBulkUpdateExpenses,
@@ -117,7 +119,7 @@ export const HomeHeader = ({
       {/* Bottom row: Action buttons */}
       <div className="flex flex-wrap items-center gap-2" data-tutorial="add-buttons">
         {!simpleModeEnabled && <BulkEditDropdown expenses={expenses} onUpdateExpenses={onBulkUpdateExpenses} />}
-        {!simpleModeEnabled && <ReportsDialog expenses={expenses} />}
+        {!simpleModeEnabled && <ReportsDialog expenses={reportsExpenses} />}
         {onImportCSV && (
           <>
             <Button 
