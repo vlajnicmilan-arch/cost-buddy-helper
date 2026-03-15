@@ -519,8 +519,8 @@ export const InvoicingPanel = () => {
                   </Button>
                 </div>
 
-                {/* e-Računi integration buttons */}
-                {eracuniConnected && (
+                {/* Fiscalization & e-Računi buttons */}
+                {(fiscalizationEnabled || eracuniConnected) && (
                   <div className="space-y-2">
                     <Separator />
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">e-Računi.hr</p>
