@@ -67,6 +67,7 @@ export const InvoicingPanel = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [eracuniConnected, setEracuniConnected] = useState(false);
+  const [fiscalizationEnabled, setFiscalizationEnabled] = useState(false);
   const [fiscalizing, setFiscalizing] = useState(false);
   const [sendingEracun, setSendingEracun] = useState(false);
   const [syncingToEracuni, setSyncingToEracuni] = useState(false);
