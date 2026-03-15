@@ -42,7 +42,7 @@ export const HomeHeader = ({
   onBulkUpdateExpenses,
   onImportCSV,
   findDuplicates,
-  onRefetch,
+  existingExpenses,
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
