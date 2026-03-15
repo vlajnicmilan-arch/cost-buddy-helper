@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users } from 'lucide-react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
@@ -10,6 +10,7 @@ import { TravelOrdersPanel } from './TravelOrdersPanel';
 import { InvoicingPanel } from './InvoicingPanel';
 import { InventoryPanel } from './InventoryPanel';
 import { BusinessWorkforcePanel } from './BusinessWorkforcePanel';
+import { EracuniConnectionPanel } from './EracuniConnectionPanel';
 import { Expense } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { isModuleEnabled } from '@/lib/businessModules';
 import { useBackButton } from '@/hooks/useBackButton';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni';
 
 interface Props {
   expenses: Expense[];
@@ -57,6 +58,7 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'invoicing') return <div>{backButton}<InvoicingPanel /></div>;
   if (view === 'inventory') return <div>{backButton}<InventoryPanel /></div>;
   if (view === 'workforce') return <div>{backButton}<BusinessWorkforcePanel /></div>;
+  if (view === 'eracuni') return <div>{backButton}<EracuniConnectionPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
@@ -67,6 +69,7 @@ export const BusinessMore = ({ expenses }: Props) => {
     { id: 'vat', icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a', module: 'vat_tracking' },
     { id: 'travel', icon: Car, label: 'Putni troškovi', desc: 'Putni nalozi, kilometraža, dnevnice', module: 'travel_expenses' },
     { id: 'invoicing', icon: Banknote, label: 'Fakturiranje', desc: 'Klijenti i izdavanje računa', module: 'invoicing' },
+    { id: 'eracuni', icon: FileCheck, label: 'e-Računi.hr', desc: 'Fiskalizacija i e-Računi za obrtnike', module: 'invoicing' },
     { id: 'inventory', icon: Package, label: 'Zalihe', desc: 'Praćenje artikala i stanja skladišta', module: 'inventory' },
     { id: 'workforce', icon: Users, label: 'Radnici & satnice', desc: 'Evidencija radnika, sati i troškova rada', module: 'workforce' },
     { id: 'recurring', icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },

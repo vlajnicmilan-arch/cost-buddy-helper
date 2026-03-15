@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2 } from 'lucide-react';
+import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send } from 'lucide-react';
 import { downloadInvoicePDF, shareInvoicePDF } from '@/lib/invoicePdfExport';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,6 +40,11 @@ interface Invoice {
   vat_amount: number;
   notes: string | null;
   paid_at: string | null;
+  fiscalization_jir?: string | null;
+  fiscalization_zki?: string | null;
+  fiscalized_at?: string | null;
+  eracun_sent?: boolean;
+  eracun_sent_at?: string | null;
 }
 
 interface InvoiceItem {
@@ -61,6 +66,10 @@ export const InvoicingPanel = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [eracuniConnected, setEracuniConnected] = useState(false);
+  const [fiscalizing, setFiscalizing] = useState(false);
+  const [sendingEracun, setSendingEracun] = useState(false);
+  const [syncingToEracuni, setSyncingToEracuni] = useState(false);
   const [businessProfile, setBusinessProfile] = useState<any>(null);
 
   // Client form
@@ -103,6 +112,77 @@ export const InvoicingPanel = () => {
       .eq('id', activeBusinessProfileId)
       .single();
     setBusinessProfile(data);
+    setEracuniConnected((data as any)?.eracuni_connected || false);
+  };
+
+  const fiscalizeInvoice = async (invoiceId: string) => {
+    setFiscalizing(true);
+    try {
+      // First sync to e-Računi
+      const syncRes = await supabase.functions.invoke('eracuni-proxy', {
+        body: { action: 'create_invoice', businessProfileId: activeBusinessProfileId, invoiceId },
+      });
+
+      if (syncRes.error || syncRes.data?.error) {
+        toast.error(syncRes.data?.error || 'Greška pri slanju na e-Računi');
+        setFiscalizing(false);
+        return;
+      }
+
+      // Then fiscalize
+      const res = await supabase.functions.invoke('eracuni-proxy', {
+        body: { action: 'fiscalize', businessProfileId: activeBusinessProfileId, invoiceId },
+      });
+
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Fiskalizacija neuspješna');
+      } else {
+        toast.success(`✅ Fiskalizirano! JIR: ${res.data.jir || 'N/A'}`);
+        setDetailInvoice(null);
+        loadInvoices();
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Greška');
+    }
+    setFiscalizing(false);
+  };
+
+  const sendEracun = async (invoiceId: string) => {
+    setSendingEracun(true);
+    try {
+      const res = await supabase.functions.invoke('eracuni-proxy', {
+        body: { action: 'send_eracun', businessProfileId: activeBusinessProfileId, invoiceId },
+      });
+
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Slanje e-Računa neuspješno');
+      } else {
+        toast.success('✅ e-Račun poslan!');
+        setDetailInvoice(null);
+        loadInvoices();
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Greška');
+    }
+    setSendingEracun(false);
+  };
+
+  const syncToEracuni = async (invoiceId: string) => {
+    setSyncingToEracuni(true);
+    try {
+      const res = await supabase.functions.invoke('eracuni-proxy', {
+        body: { action: 'create_invoice', businessProfileId: activeBusinessProfileId, invoiceId },
+      });
+
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Sinkronizacija neuspješna');
+      } else {
+        toast.success('✅ Račun poslan na e-Računi.hr');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Greška');
+    }
+    setSyncingToEracuni(false);
   };
 
   const loadClients = async () => {
@@ -436,6 +516,72 @@ export const InvoicingPanel = () => {
                     <Share2 className="w-3 h-3" /> Podijeli
                   </Button>
                 </div>
+
+                {/* e-Računi integration buttons */}
+                {eracuniConnected && (
+                  <div className="space-y-2">
+                    <Separator />
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">e-Računi.hr</p>
+                    
+                    {/* Fiscalization info if already done */}
+                    {detailInvoice.fiscalization_jir && (
+                      <div className="p-2 rounded-lg bg-income/5 text-xs">
+                        <p className="font-medium text-income">✅ Fiskalizirano</p>
+                        <p className="text-muted-foreground">JIR: {detailInvoice.fiscalization_jir}</p>
+                        {detailInvoice.fiscalization_zki && <p className="text-muted-foreground">ZKI: {detailInvoice.fiscalization_zki}</p>}
+                      </div>
+                    )}
+
+                    {detailInvoice.eracun_sent && (
+                      <div className="p-2 rounded-lg bg-primary/5 text-xs">
+                        <p className="font-medium text-primary">📤 e-Račun poslan</p>
+                        {detailInvoice.eracun_sent_at && (
+                          <p className="text-muted-foreground">{format(new Date(detailInvoice.eracun_sent_at), 'dd.MM.yyyy HH:mm')}</p>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      {!detailInvoice.fiscalization_jir && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 gap-1 text-xs"
+                          onClick={() => fiscalizeInvoice(detailInvoice.id)}
+                          disabled={fiscalizing}
+                        >
+                          {fiscalizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                          Fiskaliziraj
+                        </Button>
+                      )}
+                      {!detailInvoice.eracun_sent && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 gap-1 text-xs"
+                          onClick={() => sendEracun(detailInvoice.id)}
+                          disabled={sendingEracun}
+                        >
+                          {sendingEracun ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                          Pošalji e-Račun
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {!detailInvoice.fiscalization_jir && !detailInvoice.eracun_sent && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full gap-1 text-[10px] text-muted-foreground"
+                        onClick={() => syncToEracuni(detailInvoice.id)}
+                        disabled={syncingToEracuni}
+                      >
+                        {syncingToEracuni ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                        Samo sinkroniziraj na e-Računi (bez fiskalizacije)
+                      </Button>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   {detailInvoice.status !== 'paid' && (
