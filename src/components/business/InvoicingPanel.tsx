@@ -67,6 +67,7 @@ export const InvoicingPanel = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [eracuniConnected, setEracuniConnected] = useState(false);
+  const [fiscalizationEnabled, setFiscalizationEnabled] = useState(false);
   const [fiscalizing, setFiscalizing] = useState(false);
   const [sendingEracun, setSendingEracun] = useState(false);
   const [syncingToEracuni, setSyncingToEracuni] = useState(false);
@@ -113,6 +114,7 @@ export const InvoicingPanel = () => {
       .single();
     setBusinessProfile(data);
     setEracuniConnected((data as any)?.eracuni_connected || false);
+    setFiscalizationEnabled((data as any)?.fiscalization_enabled || false);
   };
 
   const fiscalizeInvoice = async (invoiceId: string) => {
@@ -517,8 +519,8 @@ export const InvoicingPanel = () => {
                   </Button>
                 </div>
 
-                {/* e-Računi integration buttons */}
-                {eracuniConnected && (
+                {/* Fiscalization & e-Računi buttons */}
+                {(fiscalizationEnabled || eracuniConnected) && (
                   <div className="space-y-2">
                     <Separator />
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">e-Računi.hr</p>
