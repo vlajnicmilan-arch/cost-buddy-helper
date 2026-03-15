@@ -66,6 +66,10 @@ export const InvoicingPanel = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [eracuniConnected, setEracuniConnected] = useState(false);
+  const [fiscalizing, setFiscalizing] = useState(false);
+  const [sendingEracun, setSendingEracun] = useState(false);
+  const [syncingToEracuni, setSyncingToEracuni] = useState(false);
   const [businessProfile, setBusinessProfile] = useState<any>(null);
 
   // Client form
