@@ -400,6 +400,8 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
           </div>
         </div>
       )}
+      {/* Bottom spacer for scroll */}
+      <div className="pb-8" />
     </div>
   );
 };
