@@ -41,7 +41,12 @@ import {
   Banknote,
   List,
   HandCoins,
+  Search,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { hr, enUS, de } from 'date-fns/locale';
 import { 
   generatePDFReport, 
   generateCSVReport, 
@@ -178,6 +183,8 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   
   // Income source filter
   const [selectedIncomeSourceId, setSelectedIncomeSourceId] = useState<string>('all');
+  const [selectedReportCategory, setSelectedReportCategory] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
   
   // Comparison state
   const [comparePreset, setComparePreset] = useState<ComparePreset>('month-vs-month');
@@ -332,13 +339,45 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       .map(([categoryId, amount]) => {
         const info = resolveCategory(categoryId, customCategories);
         return {
+          id: categoryId,
           name: info.name,
           value: amount,
           icon: info.icon,
           color: info.isCustom ? info.color : (CATEGORY_COLORS[categoryId] || '#6b7280'),
         };
       });
-  }, [stats.byCategory]);
+  }, [stats.byCategory, customCategories]);
+
+  // All categories for search (not limited to 8)
+  const allCategoryData = useMemo(() => {
+    return Object.entries(stats.byCategory)
+      .sort((a, b) => b[1] - a[1])
+      .map(([categoryId, amount]) => {
+        const info = resolveCategory(categoryId, customCategories);
+        return {
+          id: categoryId,
+          name: info.name,
+          value: amount,
+          icon: info.icon,
+          color: info.isCustom ? info.color : (CATEGORY_COLORS[categoryId] || '#6b7280'),
+        };
+      });
+  }, [stats.byCategory, customCategories]);
+
+  // Filtered categories by search
+  const filteredCategoryData = useMemo(() => {
+    if (!categoryFilter.trim()) return allCategoryData;
+    const q = categoryFilter.toLowerCase();
+    return allCategoryData.filter(c => c.name.toLowerCase().includes(q));
+  }, [allCategoryData, categoryFilter]);
+
+  // Transactions for the selected category
+  const selectedCategoryTransactions = useMemo(() => {
+    if (!selectedReportCategory) return [];
+    return filteredExpenses
+      .filter(e => e.type === 'expense' && e.category === selectedReportCategory)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [filteredExpenses, selectedReportCategory]);
 
   // Income transactions for the filtered period
   const incomeTransactions = useMemo(() => {
@@ -752,18 +791,74 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                   </ResponsiveContainer>
                 </div>
 
-                {/* Category Legend */}
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {chartData.slice(0, 6).map((item) => (
-                    <div key={item.name} className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="truncate flex-1">{item.icon} {item.name}</span>
-                      <span className="font-mono text-xs">{formatCurrency(item.value)}</span>
-                    </div>
-                  ))}
+                {/* Category Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Pretraži kategorije..."
+                    value={categoryFilter}
+                    onChange={(e) => { setCategoryFilter(e.target.value); setSelectedReportCategory(null); }}
+                    className="pl-9 rounded-xl h-9 text-sm"
+                  />
+                </div>
+
+                {/* Category Legend - clickable */}
+                <div className="space-y-1">
+                  {filteredCategoryData.map((item) => {
+                    const isSelected = selectedReportCategory === item.id;
+                    const percentage = stats.expenses > 0 ? ((item.value / stats.expenses) * 100).toFixed(1) : '0';
+                    return (
+                      <div key={item.id}>
+                        <button
+                          onClick={() => setSelectedReportCategory(isSelected ? null : item.id)}
+                          className={cn(
+                            "w-full flex items-center gap-2 p-2 rounded-lg text-sm transition-colors text-left",
+                            isSelected ? "bg-primary/10 ring-1 ring-primary/20" : "hover:bg-muted/50"
+                          )}
+                        >
+                          <div 
+                            className="w-3 h-3 rounded-full shrink-0" 
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <span className="truncate flex-1">{item.icon} {item.name}</span>
+                          <span className="text-xs text-muted-foreground">{percentage}%</span>
+                          <span className="font-mono text-xs font-medium">{formatCurrency(item.value)}</span>
+                          {isSelected ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+                        </button>
+
+                        {/* Transaction list for selected category */}
+                        {isSelected && selectedCategoryTransactions.length > 0 && (
+                          <div className="ml-5 mt-1 mb-2 space-y-1 border-l-2 pl-3" style={{ borderColor: item.color }}>
+                            {selectedCategoryTransactions.map((expense) => (
+                              <div key={expense.id} className="flex items-center gap-2 py-1.5 text-xs">
+                                <span className="text-muted-foreground shrink-0">
+                                  {format(expense.date, 'd. MMM', { locale: hr })}
+                                </span>
+                                <span className="truncate flex-1 text-foreground">
+                                  {expense.merchant_name || expense.description}
+                                </span>
+                                <span className="font-mono font-medium text-expense shrink-0">
+                                  -{formatCurrency(expense.amount)}
+                                </span>
+                              </div>
+                            ))}
+                            <div className="flex items-center justify-between pt-1 border-t border-border/50 text-xs font-medium">
+                              <span className="text-muted-foreground">{selectedCategoryTransactions.length} transakcija</span>
+                              <span className="font-mono text-expense">
+                                -{formatCurrency(selectedCategoryTransactions.reduce((s, e) => s + e.amount, 0))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {isSelected && selectedCategoryTransactions.length === 0 && (
+                          <p className="ml-5 mt-1 mb-2 text-xs text-muted-foreground">Nema transakcija</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {filteredCategoryData.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-2">Nema kategorija za "{categoryFilter}"</p>
+                  )}
                 </div>
               </div>
             )}
