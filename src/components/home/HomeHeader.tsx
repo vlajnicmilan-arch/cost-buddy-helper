@@ -21,6 +21,7 @@ interface HomeHeaderProps {
   isLocalMode: boolean;
   simpleModeEnabled: boolean;
   expenses: Expense[];
+  reportsExpenses: Expense[];
   onAddExpense: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   onCheckDuplicate?: (transaction: { amount: number; description: string; date: Date; type: string; category?: string; merchant_name?: string }) => Expense | null;
   onBulkUpdateExpenses: (expenses: Expense[]) => Promise<any>;

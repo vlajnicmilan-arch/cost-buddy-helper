@@ -317,7 +317,7 @@ const Index = () => {
           isLocalMode={isLocalMode}
           simpleModeEnabled={simpleModeEnabled}
           expenses={expenses}
-          onAddExpense={addExpense}
+          reportsExpenses={allExpenses}
           onCheckDuplicate={checkDuplicate}
           onBulkUpdateExpenses={bulkUpdateExpenses}
           onImportCSV={importFromCSV}
