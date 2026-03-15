@@ -321,6 +321,62 @@ export type Database = {
           },
         ]
       }
+      business_premises: {
+        Row: {
+          address: string | null
+          business_profile_id: string
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          label: string | null
+          name: string
+          postal_code: string | null
+          sort_order: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          business_profile_id: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          name?: string
+          postal_code?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          business_profile_id?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          name?: string
+          postal_code?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_premises_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_profiles: {
         Row: {
           activity_code: string | null
@@ -345,17 +401,23 @@ export type Database = {
           iban: string | null
           id: string
           industry_type: string | null
+          invoice_footer: string | null
+          invoice_header: string | null
+          invoice_payment_days: number | null
           is_active: boolean
           is_vat_payer: boolean | null
           legal_form: string | null
           logo_url: string | null
           mbs: string | null
           oib: string | null
+          owner_name: string | null
           phone: string | null
           postal_code: string | null
           updated_at: string
           user_id: string
+          vat_exemption_note: string | null
           vat_id: string | null
+          vat_obligation_type: string | null
           website: string | null
         }
         Insert: {
@@ -381,17 +443,23 @@ export type Database = {
           iban?: string | null
           id?: string
           industry_type?: string | null
+          invoice_footer?: string | null
+          invoice_header?: string | null
+          invoice_payment_days?: number | null
           is_active?: boolean
           is_vat_payer?: boolean | null
           legal_form?: string | null
           logo_url?: string | null
           mbs?: string | null
           oib?: string | null
+          owner_name?: string | null
           phone?: string | null
           postal_code?: string | null
           updated_at?: string
           user_id: string
+          vat_exemption_note?: string | null
           vat_id?: string | null
+          vat_obligation_type?: string | null
           website?: string | null
         }
         Update: {
@@ -417,20 +485,80 @@ export type Database = {
           iban?: string | null
           id?: string
           industry_type?: string | null
+          invoice_footer?: string | null
+          invoice_header?: string | null
+          invoice_payment_days?: number | null
           is_active?: boolean
           is_vat_payer?: boolean | null
           legal_form?: string | null
           logo_url?: string | null
           mbs?: string | null
           oib?: string | null
+          owner_name?: string | null
           phone?: string | null
           postal_code?: string | null
           updated_at?: string
           user_id?: string
+          vat_exemption_note?: string | null
           vat_id?: string | null
+          vat_obligation_type?: string | null
           website?: string | null
         }
         Relationships: []
+      }
+      cash_registers: {
+        Row: {
+          business_profile_id: string
+          created_at: string
+          device_type: string | null
+          id: string
+          is_active: boolean | null
+          label: string | null
+          name: string
+          premise_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_profile_id: string
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          name?: string
+          premise_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          name?: string
+          premise_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_registers_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_registers_premise_id_fkey"
+            columns: ["premise_id"]
+            isOneToOne: false
+            referencedRelation: "business_premises"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
