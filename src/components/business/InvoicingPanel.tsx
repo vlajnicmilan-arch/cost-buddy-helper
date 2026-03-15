@@ -114,6 +114,7 @@ export const InvoicingPanel = () => {
       .single();
     setBusinessProfile(data);
     setEracuniConnected((data as any)?.eracuni_connected || false);
+    setFiscalizationEnabled((data as any)?.fiscalization_enabled || false);
   };
 
   const fiscalizeInvoice = async (invoiceId: string) => {
