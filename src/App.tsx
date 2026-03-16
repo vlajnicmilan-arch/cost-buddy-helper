@@ -11,6 +11,7 @@ import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import Index from "./pages/Index";
 import Business from "./pages/Business";
 import Dashboard from "./pages/Dashboard";
