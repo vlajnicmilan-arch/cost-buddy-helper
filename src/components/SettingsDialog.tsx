@@ -34,6 +34,8 @@ import {
   requestNotificationPermission
 } from '@/hooks/useNotificationSound';
 import { languages } from '@/i18n';
+import { useAppLock } from '@/contexts/AppLockContext';
+import { SetPinDialog } from '@/components/SetPinDialog';
 
 
 interface SettingsDialogProps {
