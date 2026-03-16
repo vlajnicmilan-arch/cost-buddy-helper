@@ -897,6 +897,47 @@ export const PaymentSourceTransactionsDialog = ({
         />
       )}
 
+      {/* PDF Parsing Overlay */}
+      <AnimatePresence>
+        {parsing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-6 p-8"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="flex flex-col items-center gap-4 text-center"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-primary animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-foreground">Analiziram izvod...</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  AI obrađuje PDF i prepoznaje transakcije. To može potrajati do 30 sekundi.
+                </p>
+              </div>
+              <div className="w-48">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                  <motion.div
+                    className="h-full bg-primary rounded-full"
+                    initial={{ x: '-100%' }}
+                    animate={{ x: '100%' }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+                    style={{ width: '40%' }}
+                  />
+                </div>
+              </div>
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* PDF Preview Dialog */}
       <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
         <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
