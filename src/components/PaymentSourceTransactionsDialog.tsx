@@ -1026,8 +1026,15 @@ export const PaymentSourceTransactionsDialog = ({
             <Button variant="outline" onClick={() => { setDuplicateWarningOpen(false); clearParsedData(); setDuplicateInfo(null); }} className="rounded-xl">
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleConfirmImportWithDuplicates} className="rounded-xl">
-              {t('import.importCount', { count: includeDuplicates ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0) : duplicateInfo?.unique.length || 0 })}
+            <Button onClick={handleConfirmImportWithDuplicates} disabled={isImportingPdf} className="rounded-xl">
+              {isImportingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Uvozim...
+                </>
+              ) : (
+                t('import.importCount', { count: includeDuplicates ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0) : duplicateInfo?.unique.length || 0 })
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
