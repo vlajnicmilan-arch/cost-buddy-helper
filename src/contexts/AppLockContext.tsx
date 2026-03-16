@@ -47,8 +47,9 @@ const isBiometricAvailable = async (): Promise<boolean> => {
   // Check Capacitor biometric plugin
   if ((window as any).Capacitor?.isNativePlatform?.()) {
     try {
-      const { BiometricAuth } = await import('@capacitor-community/biometric-auth');
-      const result = await BiometricAuth.isAvailable();
+      // @ts-ignore - only available in native builds
+      const mod = await import('@capacitor-community/biometric-auth');
+      const result = await mod.BiometricAuth.isAvailable();
       return result.has;
     } catch {
       return false;
