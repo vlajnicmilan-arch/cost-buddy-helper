@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings2, Loader2, Check } from 'lucide-react';
+import { Settings2, Loader2, Check, Palette } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -13,11 +13,24 @@ import {
   type IndustryType, type ModuleId,
 } from '@/lib/businessModules';
 
+export type BusinessTheme = 'ocean-blue' | 'emerald' | 'indigo' | 'crimson' | 'amber' | 'slate' | 'teal';
+
+const BUSINESS_THEMES: { id: BusinessTheme; label: string; description: string; previewColor: string }[] = [
+  { id: 'ocean-blue', label: 'Ocean Blue', description: 'Klasična, profesionalna', previewColor: 'hsl(220 70% 50%)' },
+  { id: 'emerald', label: 'Emerald', description: 'Prirodna, organska', previewColor: 'hsl(160 84% 39%)' },
+  { id: 'indigo', label: 'Indigo', description: 'Kreativna, tech', previewColor: 'hsl(239 84% 67%)' },
+  { id: 'crimson', label: 'Crimson', description: 'Energična, dinamična', previewColor: 'hsl(0 72% 51%)' },
+  { id: 'amber', label: 'Amber', description: 'Topla, craft', previewColor: 'hsl(38 92% 50%)' },
+  { id: 'slate', label: 'Slate', description: 'Minimalistička, luksuzna', previewColor: 'hsl(215 25% 27%)' },
+  { id: 'teal', label: 'Teal', description: 'Moderna, svježa', previewColor: 'hsl(174 72% 40%)' },
+];
+
 export const BusinessModuleSettings = () => {
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const [industryType, setIndustryType] = useState<IndustryType>('other');
   const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
+  const [themeColor, setThemeColor] = useState<BusinessTheme>('ocean-blue');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -26,15 +39,17 @@ export const BusinessModuleSettings = () => {
     setLoading(true);
     supabase
       .from('business_profiles')
-      .select('industry_type, enabled_modules')
+      .select('industry_type, enabled_modules, theme_color')
       .eq('id', activeBusinessProfileId)
       .single()
       .then(({ data }) => {
         if (data) {
           const it = (data as any).industry_type as IndustryType || 'other';
           const em = (data as any).enabled_modules as string[] || [];
+          const tc = (data as any).theme_color as BusinessTheme || 'ocean-blue';
           setIndustryType(it);
           setEnabledModules(em.length > 0 ? em as ModuleId[] : getDefaultModules(it));
+          setThemeColor(tc);
         }
         setLoading(false);
       });
@@ -59,6 +74,7 @@ export const BusinessModuleSettings = () => {
       .update({
         industry_type: industryType,
         enabled_modules: enabledModules,
+        theme_color: themeColor,
       } as any)
       .eq('id', activeBusinessProfileId);
 
@@ -66,7 +82,7 @@ export const BusinessModuleSettings = () => {
     if (error) {
       toast.error('Greška pri spremanju postavki');
     } else {
-      toast.success('Moduli i djelatnost spremljeni');
+      toast.success('Postavke spremljene');
     }
   };
 
@@ -87,6 +103,43 @@ export const BusinessModuleSettings = () => {
         <Settings2 className="w-5 h-5 text-primary" />
         <h2 className="text-base font-bold">Djelatnost i moduli</h2>
       </div>
+
+      {/* Theme Color Selection */}
+      <Card className="border-none shadow-sm">
+        <CardHeader className="p-3 pb-1">
+          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Palette className="w-3.5 h-3.5" />
+            Tema boja
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 pt-2">
+          <div className="grid grid-cols-2 gap-2">
+            {BUSINESS_THEMES.map(theme => (
+              <button
+                key={theme.id}
+                onClick={() => setThemeColor(theme.id)}
+                className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${
+                  themeColor === theme.id
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                    : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'
+                }`}
+              >
+                <div
+                  className="w-6 h-6 rounded-lg flex-shrink-0 shadow-sm"
+                  style={{ backgroundColor: theme.previewColor }}
+                />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium truncate">{theme.label}</p>
+                  <p className="text-[9px] text-muted-foreground truncate">{theme.description}</p>
+                </div>
+                {themeColor === theme.id && (
+                  <Check className="w-3.5 h-3.5 text-primary ml-auto flex-shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Industry Selection */}
       <Card className="border-none shadow-sm">
