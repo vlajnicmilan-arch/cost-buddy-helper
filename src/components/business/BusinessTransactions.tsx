@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, ArrowUpRight, ArrowDownRight, ArrowLeftRight } from 'lucide-react';
+import { Plus, Search, ArrowUpRight, ArrowDownRight, ArrowLeftRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Expense } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { format } from 'date-fns';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
+import { ImportBatchDialog } from '@/components/ImportBatchDialog';
+import { TransactionItem } from '@/components/TransactionItem';
 import { BankConnection } from '@/components/BankConnection';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +30,8 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     let result = expenses;
@@ -44,10 +47,10 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
     return result;
   }, [expenses, typeFilter, search]);
 
-  const typeIcon = (type: string) => {
-    if (type === 'income') return <ArrowUpRight className="w-3.5 h-3.5 text-income" />;
-    if (type === 'transfer') return <ArrowLeftRight className="w-3.5 h-3.5 text-primary" />;
-    return <ArrowDownRight className="w-3.5 h-3.5 text-expense" />;
+  const handleDeleteBatch = async (expenseIds: string[]) => {
+    for (const id of expenseIds) {
+      onDeleteExpense(id);
+    }
   };
 
   return (
@@ -81,29 +84,43 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
         ))}
       </div>
 
-      <div className="space-y-1">
-        {filtered.map(expense => (
-          <button
-            key={expense.id}
-            className="w-full flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-muted/50 transition-colors text-left"
-            onClick={() => setDetailExpense(expense)}
-          >
-            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-              {typeIcon(expense.type)}
+      <div className="space-y-0">
+        {filtered.map((expense, index) => {
+          const prevExpense = index > 0 ? filtered[index - 1] : null;
+          const showBatchStart = expense.import_batch_id &&
+            (!prevExpense || prevExpense.import_batch_id !== expense.import_batch_id);
+          const batchExpenseCount = showBatchStart
+            ? filtered.filter(e => e.import_batch_id === expense.import_batch_id).length
+            : 0;
+
+          return (
+            <div key={expense.id}>
+              {showBatchStart && (
+                <div
+                  className="flex items-center gap-2 my-2 px-2 cursor-pointer group"
+                  onClick={() => {
+                    setSelectedBatchId(expense.import_batch_id!);
+                    setImportBatchDialogOpen(true);
+                  }}
+                >
+                  <div className="flex-1 h-px bg-destructive/40" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/10 border border-destructive/20 group-hover:bg-destructive/20 transition-colors">
+                    <FileText className="w-3 h-3 text-destructive" />
+                    <span className="text-[11px] font-medium text-destructive">
+                      Uvoz • {batchExpenseCount} tr.
+                    </span>
+                  </div>
+                  <div className="flex-1 h-px bg-destructive/40" />
+                </div>
+              )}
+              <TransactionItem
+                expense={expense}
+                onDelete={onDeleteExpense}
+                onClick={(e) => setDetailExpense(e)}
+              />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{expense.description}</p>
-              <p className="text-[10px] text-muted-foreground">
-                {format(expense.date, 'dd.MM.yyyy')} · {expense.category}
-              </p>
-            </div>
-            <span className={`text-sm font-semibold tabular-nums ${
-              expense.type === 'income' ? 'text-income' : expense.type === 'transfer' ? 'text-primary' : 'text-expense'
-            }`}>
-              {expense.type === 'income' ? '+' : expense.type === 'expense' ? '-' : ''}{formatAmount(expense.amount)}
-            </span>
-          </button>
-        ))}
+          );
+        })}
 
         {filtered.length === 0 && (
           <div className="text-center py-8">
@@ -130,6 +147,16 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
           open={!!editExpense}
           onOpenChange={(open) => !open && setEditExpense(null)}
           onSave={async (updatedExpense) => { await onEditExpense(updatedExpense); setEditExpense(null); }}
+        />
+      )}
+
+      {selectedBatchId && (
+        <ImportBatchDialog
+          open={importBatchDialogOpen}
+          onOpenChange={setImportBatchDialogOpen}
+          batchId={selectedBatchId}
+          allExpenses={expenses}
+          onDeleteBatch={handleDeleteBatch}
         />
       )}
     </div>
