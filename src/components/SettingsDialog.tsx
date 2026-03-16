@@ -279,7 +279,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success('Backup uspješno izvezen');
+      toast.success(t('settings.exportSuccess', 'Backup uspješno izvezen'));
     } catch (err) {
       console.error('Export error:', err);
       toast.error('Greška pri izvozu');
