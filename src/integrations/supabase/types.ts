@@ -652,6 +652,7 @@ export type Database = {
       custom_payment_sources: {
         Row: {
           balance: number
+          business_profile_id: string | null
           color: string
           created_at: string
           description: string | null
@@ -664,6 +665,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          business_profile_id?: string | null
           color?: string
           created_at?: string
           description?: string | null
@@ -676,6 +678,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          business_profile_id?: string | null
           color?: string
           created_at?: string
           description?: string | null
@@ -686,7 +689,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "custom_payment_sources_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {
