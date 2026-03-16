@@ -846,9 +846,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                                 onClick={async () => {
                                   try {
                                     await navigator.clipboard.writeText(referralUrl);
-                                    toast.success('Link kopiran!');
+                                    toast.success(t('settings.linkCopied', 'Link kopiran!'));
                                   } catch {
-                                    toast.error('Greška pri kopiranju');
+                                    toast.error(t('settings.copyError', 'Greška pri kopiranju'));
                                   }
                                   setShowShareDialog(false);
                                 }}
