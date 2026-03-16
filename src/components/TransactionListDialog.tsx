@@ -11,11 +11,12 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, CheckSquare, Eye } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, CheckSquare, Eye, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { TransactionItemsExpander } from './TransactionItemsExpander';
+import { ImportBatchDialog } from './ImportBatchDialog';
 
 interface TransactionListDialogProps {
   open: boolean;
