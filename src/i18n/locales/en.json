@@ -245,14 +245,6 @@
     "reorderMode": "Reorder",
     "members": "Members"
   },
-  "nav": {
-    "home": "Home",
-    "dashboard": "Dashboard",
-    "settings": "Settings",
-    "help": "Help",
-    "signOut": "Sign Out",
-    "signIn": "Sign In"
-  },
   "auth": {
     "login": "Login",
     "register": "Register",
