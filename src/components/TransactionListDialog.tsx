@@ -56,7 +56,18 @@ export const TransactionListDialog = ({
   }, [customPaymentSources]);
 
   const typeFilteredExpenses = useMemo(() => {
-    return expenses.filter(e => e.type === type);
+    const filtered = expenses.filter(e => e.type === type);
+    // Sort by created_at desc to keep import batch items grouped together
+    return filtered.sort((a, b) => {
+      if (a.import_batch_id && b.import_batch_id && a.import_batch_id === b.import_batch_id) {
+        return b.date.getTime() - a.date.getTime();
+      }
+      const createdA = a.created_at ?? '';
+      const createdB = b.created_at ?? '';
+      if (createdB > createdA) return 1;
+      if (createdB < createdA) return -1;
+      return 0;
+    });
   }, [expenses, type]);
 
   const filteredExpenses = useMemo(() => {
