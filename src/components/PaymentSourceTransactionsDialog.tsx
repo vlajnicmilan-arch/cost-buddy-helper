@@ -289,6 +289,7 @@ export const PaymentSourceTransactionsDialog = ({
 
   const handleImportPDFTransactions = async () => {
     if (!parsedData || !onImportCSV || !paymentSource) return;
+
     const paymentSourceValue = `custom:${paymentSource.id}`;
     const transactions: ParsedTransaction[] = parsedData.transactions.map(tx => ({
       date: tx.date,
@@ -300,20 +301,39 @@ export const PaymentSourceTransactionsDialog = ({
       source: 'pdf' as const,
       payment_source: paymentSourceValue as any
     }));
-    if (findDuplicates) {
-      const { duplicates, unique } = findDuplicates(transactions);
-      if (duplicates.length > 0) {
-        setDuplicateInfo({ duplicates, unique });
-        setIncludeDuplicates(false);
-        setPdfPreviewOpen(false);
-        setDuplicateWarningOpen(true);
-        return;
+
+    try {
+      setIsImportingPdf(true);
+
+      if (findDuplicates) {
+        const { duplicates, unique } = findDuplicates(transactions);
+
+        if (duplicates.length > 0) {
+          if (unique.length === 0) {
+            toast.info(t('import.noNewTransactions'));
+            setPdfPreviewOpen(false);
+            clearParsedData();
+            return;
+          }
+
+          setDuplicateInfo({ duplicates, unique });
+          setIncludeDuplicates(false);
+          setPdfPreviewOpen(false);
+          setDuplicateWarningOpen(true);
+          return;
+        }
       }
+
+      await onImportCSV(transactions);
+      setPdfPreviewOpen(false);
+      clearParsedData();
+      toast.success(t('import.importedFromPDF', { count: transactions.length }));
+    } catch (error) {
+      console.error('Error importing PDF transactions:', error);
+      toast.error('Greška pri uvozu transakcija');
+    } finally {
+      setIsImportingPdf(false);
     }
-    await onImportCSV(transactions);
-    setPdfPreviewOpen(false);
-    clearParsedData();
-    toast.success(t('import.importedFromPDF', { count: transactions.length }));
   };
 
   const handleConfirmImportWithDuplicates = async () => {
