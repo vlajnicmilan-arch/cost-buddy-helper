@@ -103,11 +103,14 @@ export const PaymentSourceTransactionsDialog = ({
       if (e.type === 'transfer' && e.income_source_id === paymentSource.id) return true;
       return false;
     }).sort((a, b) => {
-      // Normaliziraj datum na početek dana (bez vremena) za primarni sort
-      const dayA = new Date(a.date.getFullYear(), a.date.getMonth(), a.date.getDate()).getTime();
-      const dayB = new Date(b.date.getFullYear(), b.date.getMonth(), b.date.getDate()).getTime();
-      if (dayA !== dayB) return dayB - dayA;
-      // Isti dan → sortiraj po created_at silazno (novije kreirane gore)
+      // If both are in the same batch, sort within batch by date desc
+      if (a.import_batch_id && b.import_batch_id && a.import_batch_id === b.import_batch_id) {
+        const dayA = new Date(a.date.getFullYear(), a.date.getMonth(), a.date.getDate()).getTime();
+        const dayB = new Date(b.date.getFullYear(), b.date.getMonth(), b.date.getDate()).getTime();
+        if (dayA !== dayB) return dayB - dayA;
+        return (b.created_at ?? '') > (a.created_at ?? '') ? 1 : -1;
+      }
+      // Use created_at as primary sort to keep batch items grouped together
       const createdA = a.created_at ?? '';
       const createdB = b.created_at ?? '';
       if (createdB > createdA) return 1;
