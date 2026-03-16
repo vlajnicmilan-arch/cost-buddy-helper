@@ -540,15 +540,15 @@ const Auth = () => {
                 className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
               />
               <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
-                Prihvaćam{' '}
+                {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[0]}
                 <button
                   type="button"
                   onClick={() => navigate('/privacy-policy')}
                   className="text-primary hover:underline"
                 >
-                  Politiku privatnosti
+                  {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
                 </button>
-                {' '}i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.
+                {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
               </label>
             </div>
           )}
