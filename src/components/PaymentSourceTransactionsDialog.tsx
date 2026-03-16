@@ -470,94 +470,97 @@ export const PaymentSourceTransactionsDialog = ({
             className="fixed inset-0 z-50 bg-background flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
-              <div className="flex items-center gap-3 min-w-0">
-                <span 
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0"
-                  style={{ backgroundColor: paymentSource.color + '20', color: paymentSource.color }}
-                >
-                  {paymentSource.icon}
-                </span>
-                <div className="min-w-0">
-                  <h1 className="text-base font-semibold truncate">{paymentSource.name}</h1>
-                  <p className="text-xs text-muted-foreground">
-                    {sourceExpenses.length} {t('transactions.transactions')}
-                  </p>
+            <div className="px-4 py-3 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span 
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0"
+                    style={{ backgroundColor: paymentSource.color + '20', color: paymentSource.color }}
+                  >
+                    {paymentSource.icon}
+                  </span>
+                  <div className="min-w-0">
+                    <h1 className="text-base font-semibold truncate">{paymentSource.name}</h1>
+                    <p className="text-xs text-muted-foreground">
+                      {sourceExpenses.length} {t('transactions.transactions')}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {onImportCSV && (
-                  <>
-                    <input
-                      ref={pdfInputRef}
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      onChange={handlePDFSelect}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => pdfInputRef.current?.click()}
-                      disabled={parsing}
-                      className="h-7 text-xs gap-1.5 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
-                    >
-                      {parsing ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <FileText className="w-3.5 h-3.5" />
-                      )}
-                      PDF
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCsvImportOpen(true)}
-                      className="h-7 text-xs gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      CSV
-                    </Button>
-                  </>
-                )}
-                {filteredSourceExpenses.length > 0 && (
-                  <>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
-                          <Download className="w-3.5 h-3.5" />
-                          {t('common.export', 'Izvoz')}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={handlePrint}>
-                          <Printer className="w-4 h-4 mr-2" />
-                          {t('common.print', 'Ispis')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleExportPDF}>
-                          <FileText className="w-4 h-4 mr-2" />
-                          PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleExportCSV}>
-                          <Download className="w-4 h-4 mr-2" />
-                          CSV
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={selectedIds.size === filteredSourceExpenses.length ? clearSelection : selectAll}
-                      className="h-7 text-xs gap-1.5"
-                    >
-                      <CheckSquare className="w-3.5 h-3.5" />
-                      {selectedIds.size === filteredSourceExpenses.length ? t('common.cancelSelection') : t('common.selectAll')}
-                    </Button>
-                  </>
-                )}
-                <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
-                  <XIcon className="h-5 w-5" />
-                </Button>
+                <div className="flex flex-wrap items-center gap-2 min-w-0 sm:justify-end">
+                  {onImportCSV && (
+                    <>
+                      <input
+                        ref={pdfInputRef}
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        onChange={handlePDFSelect}
+                        className="hidden"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => pdfInputRef.current?.click()}
+                        disabled={parsing}
+                        className="h-7 text-xs gap-1.5 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                      >
+                        {parsing ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <FileText className="w-3.5 h-3.5" />
+                        )}
+                        PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCsvImportOpen(true)}
+                        className="h-7 text-xs gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        CSV
+                      </Button>
+                    </>
+                  )}
+                  {filteredSourceExpenses.length > 0 && (
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                            <Download className="w-3.5 h-3.5" />
+                            {t('common.export', 'Izvoz')}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={handlePrint}>
+                            <Printer className="w-4 h-4 mr-2" />
+                            {t('common.print', 'Ispis')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleExportPDF}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleExportCSV}>
+                            <Download className="w-4 h-4 mr-2" />
+                            CSV
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={selectedIds.size === filteredSourceExpenses.length ? clearSelection : selectAll}
+                        className="h-7 text-xs gap-1.5 max-w-full"
+                      >
+                        <CheckSquare className="w-3.5 h-3.5 shrink-0" />
+                        <span className="sm:hidden">Sve</span>
+                        <span className="hidden sm:inline">{selectedIds.size === filteredSourceExpenses.length ? t('common.cancelSelection') : t('common.selectAll')}</span>
+                      </Button>
+                    </>
+                  )}
+                  <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8 ml-auto sm:ml-0">
+                    <XIcon className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
             </div>
 
