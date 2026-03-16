@@ -96,11 +96,12 @@ const App = () => (
               <Sonner />
               <PWAUpdatePrompt />
               <TutorialOverlay />
-              <BrowserRouter>
-                <BackButtonProvider>
-                  <AppRoutes />
-                </BackButtonProvider>
-              </BrowserRouter>
+                <BrowserRouter>
+                  <BackButtonProvider>
+                    <AppRoutes />
+                    <CookieConsentBanner />
+                  </BackButtonProvider>
+                </BrowserRouter>
             </TutorialProvider>
           </CurrencyProvider>
         </AppStateProvider>
