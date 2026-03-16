@@ -150,11 +150,17 @@
     }
   },
   "nav": {
-    "dashboard": "Overview",
+    "home": "Home",
+    "dashboard": "Dashboard",
     "projects": "Projects",
     "budgets": "Budgets",
     "wallet": "Wallet",
-    "viewAll": "View all"
+    "family": "Family",
+    "viewAll": "View all",
+    "settings": "Settings",
+    "help": "Help",
+    "signOut": "Sign Out",
+    "signIn": "Sign In"
   },
   "common": {
     "save": "Save",
