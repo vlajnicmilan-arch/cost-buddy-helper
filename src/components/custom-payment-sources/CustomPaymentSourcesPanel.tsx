@@ -7,6 +7,10 @@ import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
 import { BalanceCorrectionDialog } from './BalanceCorrectionDialog';
 import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
 import { CustomPaymentSource, SUGGESTED_PAYMENT_SOURCES } from '@/types/customPaymentSource';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useStorage } from '@/contexts/StorageContext';
+import { saveLocalExpense } from '@/lib/storage/indexedDB';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +35,9 @@ interface CustomPaymentSourcesPanelProps {
 
 export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }: CustomPaymentSourcesPanelProps) => {
   const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
+  const { user } = useAuth();
+  const { storageMode } = useStorage();
+  const isLocalMode = storageMode === 'local' && !user;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<CustomPaymentSource | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -45,6 +52,10 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
 
   const handleBalanceCorrection = async (newBalance: number) => {
     if (!balanceCorrectionSource) return;
+    const currentBalance = balanceCorrectionSource.balance || 0;
+    const difference = newBalance - currentBalance;
+
+    // Update the balance on the payment source
     await updateCustomPaymentSource(balanceCorrectionSource.id, {
       name: balanceCorrectionSource.name,
       icon: balanceCorrectionSource.icon,
@@ -52,6 +63,39 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }:
       balance: newBalance,
       description: balanceCorrectionSource.description || undefined,
     });
+
+    // Create a correction transaction so it shows in history
+    if (difference !== 0) {
+      const correctionType = difference > 0 ? 'income' : 'expense';
+      const correctionAmount = Math.abs(difference);
+      const correctionData = {
+        amount: correctionAmount,
+        description: `Korekcija salda — ${balanceCorrectionSource.name}`,
+        category: 'other',
+        type: correctionType,
+        date: new Date(),
+        payment_source: `custom:${balanceCorrectionSource.id}`,
+        note: `Saldo korigiran s ${currentBalance.toFixed(2)} na ${newBalance.toFixed(2)}`,
+        expense_nature: 'correction' as string,
+      };
+
+      if (isLocalMode) {
+        await saveLocalExpense(correctionData as any);
+      } else if (user) {
+        await supabase.from('expenses').insert({
+          user_id: user.id,
+          amount: correctionAmount,
+          description: correctionData.description,
+          category: correctionData.category,
+          type: correctionType,
+          date: new Date().toISOString(),
+          payment_source: correctionData.payment_source,
+          note: correctionData.note,
+          expense_nature: 'correction',
+        });
+      }
+    }
+
     setBalanceCorrectionSource(null);
   };
 
