@@ -34,7 +34,9 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   const [source, setSource] = useState('');
   const [error, setError] = useState('');
   const [importedCount, setImportedCount] = useState(0);
+  const [selectedPaymentSource, setSelectedPaymentSource] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { customPaymentSources } = useCustomPaymentSources();
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
