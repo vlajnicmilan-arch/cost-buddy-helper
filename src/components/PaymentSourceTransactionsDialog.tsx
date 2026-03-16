@@ -348,11 +348,20 @@ export const PaymentSourceTransactionsDialog = ({
       setDuplicateInfo(null);
       return;
     }
-    await onImportCSV(transactionsToImport);
-    setDuplicateWarningOpen(false);
-    clearParsedData();
-    setDuplicateInfo(null);
-    toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
+
+    try {
+      setIsImportingPdf(true);
+      await onImportCSV(transactionsToImport);
+      setDuplicateWarningOpen(false);
+      clearParsedData();
+      setDuplicateInfo(null);
+      toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
+    } catch (error) {
+      console.error('Error importing duplicate-reviewed transactions:', error);
+      toast.error('Greška pri uvozu transakcija');
+    } finally {
+      setIsImportingPdf(false);
+    }
   };
 
   // Print handler
