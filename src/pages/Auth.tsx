@@ -32,6 +32,7 @@ const Auth = () => {
   const [newUserName, setNewUserName] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [gdprConsent, setGdprConsent] = useState(false);
   
   const { signIn, signUp, resendVerificationEmail, resetPassword } = useAuth();
   const navigate = useNavigate();
