@@ -11,6 +11,7 @@ import { BusinessDashboard } from '@/components/business/BusinessDashboard';
 import { BusinessTransactions } from '@/components/business/BusinessTransactions';
 import { BusinessReports } from '@/components/business/BusinessReports';
 import { BusinessMore } from '@/components/business/BusinessMore';
+import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { Expense } from '@/types/expense';
 import { useBackButton } from '@/hooks/useBackButton';
 
