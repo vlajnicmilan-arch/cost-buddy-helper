@@ -446,7 +446,7 @@ export const PaymentSourceTransactionsDialog = ({
                     <input
                       ref={pdfInputRef}
                       type="file"
-                      accept="application/pdf"
+                      accept=".pdf,application/pdf"
                       onChange={handlePDFSelect}
                       className="hidden"
                     />
