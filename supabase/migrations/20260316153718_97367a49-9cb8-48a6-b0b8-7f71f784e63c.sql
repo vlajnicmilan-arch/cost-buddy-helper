@@ -1,0 +1,1 @@
+ALTER TABLE public.business_profiles ADD COLUMN IF NOT EXISTS theme_color text DEFAULT 'ocean-blue';

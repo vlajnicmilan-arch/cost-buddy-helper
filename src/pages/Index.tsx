@@ -64,7 +64,7 @@ const Index = () => {
   const { totalReceivable, totalPayable } = useBusinessDebts();
   const isBusinessMode = !!activeBusinessProfileId;
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
-  const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[] } | null>(null);
+  const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
 
   // Load business profile data
@@ -72,7 +72,7 @@ const Index = () => {
     if (!activeBusinessProfileId || !user) { setBusinessProfile(null); return; }
     supabase
       .from('business_profiles')
-      .select('id, company_name, is_vat_payer, industry_type, enabled_modules')
+      .select('id, company_name, is_vat_payer, industry_type, enabled_modules, theme_color')
       .eq('id', activeBusinessProfileId)
       .single()
       .then(({ data }) => { if (data) setBusinessProfile(data as any); });
@@ -330,7 +330,7 @@ const Index = () => {
     };
 
     return (
-      <div className="business-mode min-h-screen bg-background pb-20">
+      <div className={`business-theme-${businessProfile?.theme_color || 'ocean-blue'} min-h-screen bg-background pb-20`}>
         {/* Compact business header */}
         <div className="sticky top-0 z-40 bg-primary">
           <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-3">

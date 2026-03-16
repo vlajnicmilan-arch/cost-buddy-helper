@@ -413,6 +413,7 @@ export type Database = {
           owner_name: string | null
           phone: string | null
           postal_code: string | null
+          theme_color: string | null
           updated_at: string
           user_id: string
           vat_exemption_note: string | null
@@ -455,6 +456,7 @@ export type Database = {
           owner_name?: string | null
           phone?: string | null
           postal_code?: string | null
+          theme_color?: string | null
           updated_at?: string
           user_id: string
           vat_exemption_note?: string | null
@@ -497,6 +499,7 @@ export type Database = {
           owner_name?: string | null
           phone?: string | null
           postal_code?: string | null
+          theme_color?: string | null
           updated_at?: string
           user_id?: string
           vat_exemption_note?: string | null
