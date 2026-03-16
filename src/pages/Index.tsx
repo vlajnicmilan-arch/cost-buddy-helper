@@ -10,6 +10,7 @@ import { useInstallments } from '@/hooks/useInstallments';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { supabase } from '@/integrations/supabase/client';
 import { TransactionItem } from '@/components/TransactionItem';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
@@ -22,9 +23,15 @@ import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTrans
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import { BottomNav } from '@/components/BottomNav';
+import { BusinessBottomNav, BusinessTab } from '@/components/business/BusinessBottomNav';
+import { BusinessDashboard } from '@/components/business/BusinessDashboard';
+import { BusinessTransactions } from '@/components/business/BusinessTransactions';
+import { BusinessReports } from '@/components/business/BusinessReports';
+import { BusinessMore } from '@/components/business/BusinessMore';
+import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt } from 'lucide-react';
+import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt, ArrowLeft, Building2 } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -45,14 +52,30 @@ import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog'
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SavingsGoalsSection } from '@/components/savings';
 
-
-
 const Index = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading, signOut } = useAuth();
   const { storageMode } = useStorage();
   const { formatAmount } = useCurrency();
-  const { displayName, aiAssistantEnabled, simpleModeEnabled } = useAppState();
+  const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
+  const { totalReceivable, totalPayable } = useBusinessDebts();
+  const isBusinessMode = !!activeBusinessProfileId;
+  const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
+  const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[] } | null>(null);
+
+  // Load business profile data
+  useEffect(() => {
+    if (!activeBusinessProfileId || !user) { setBusinessProfile(null); return; }
+    supabase
+      .from('business_profiles')
+      .select('id, company_name, is_vat_payer, industry_type, enabled_modules')
+      .eq('id', activeBusinessProfileId)
+      .single()
+      .then(({ data }) => { if (data) setBusinessProfile(data as any); });
+  }, [activeBusinessProfileId, user]);
+
+  // Back button for business tabs
+  useBackButton(isBusinessMode && businessTab !== 'dashboard', () => setBusinessTab('dashboard'));
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -287,6 +310,76 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // ── Business Mode Rendering ──
+  if (isBusinessMode) {
+    const handleBackToPersonal = () => {
+      setActiveBusinessProfileId(null);
+      setBusinessTab('dashboard');
+    };
+
+    const handleEditExpense = async (updatedExpense: Expense) => {
+      await updateExpense(updatedExpense);
+    };
+
+    return (
+      <div className="business-mode min-h-screen bg-background pb-16">
+        {/* Compact business header */}
+        <div className="sticky top-0 z-40 bg-primary">
+          <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-3">
+            <button
+              onClick={handleBackToPersonal}
+              className="w-7 h-7 rounded-lg bg-primary-foreground/15 flex items-center justify-center text-primary-foreground hover:bg-primary-foreground/25 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-3.5 h-3.5 text-primary-foreground" />
+              </div>
+              <h1 className="text-sm font-bold text-primary-foreground truncate">
+                {businessProfile?.company_name || 'Tvrtka'}
+              </h1>
+            </div>
+          </div>
+        </div>
+
+        {/* Business Content */}
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          {businessTab === 'dashboard' && (
+            <BusinessDashboard
+              expenses={expenses}
+              totalReceivable={totalReceivable}
+              totalPayable={totalPayable}
+              enabledModules={businessProfile?.enabled_modules || []}
+              industryType={businessProfile?.industry_type || 'other'}
+            />
+          )}
+          {businessTab === 'wallet' && <BusinessWallet />}
+          {businessTab === 'transactions' && (
+            <BusinessTransactions
+              expenses={expenses}
+              onAddClick={() => {}}
+              onEditExpense={handleEditExpense}
+              onDeleteExpense={deleteExpense}
+              onImportCSV={importFromCSV}
+              findDuplicates={findDuplicates}
+              existingExpenses={allExpenses}
+            />
+          )}
+          {businessTab === 'reports' && (
+            <BusinessReports
+              expenses={expenses}
+              companyName={businessProfile?.company_name || 'Tvrtka'}
+            />
+          )}
+          {businessTab === 'more' && <BusinessMore expenses={expenses} />}
+        </div>
+
+        <BusinessBottomNav activeTab={businessTab} onTabChange={setBusinessTab} />
       </div>
     );
   }
