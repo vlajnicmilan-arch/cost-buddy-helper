@@ -773,16 +773,17 @@ export const PaymentSourceTransactionsDialog = ({
                                   isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                                 )}
                               >
-                                {/* Row 1: Checkbox + Icon + Description + Amount */}
-                                <div className="flex items-center gap-1.5">
-                                  <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                                {/* Mobile-robust transaction row */}
+                                <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-1.5 gap-y-1">
+                                  <div onClick={(e) => e.stopPropagation()} className="shrink-0 row-span-2 self-start pt-0.5">
                                     <Checkbox
                                       checked={isSelected}
                                       onCheckedChange={() => toggleSelection(expense.id)}
                                     />
                                   </div>
+
                                   <div 
-                                    className="w-7 h-7 rounded-md flex items-center justify-center text-sm shrink-0"
+                                    className="w-7 h-7 rounded-md flex items-center justify-center text-sm shrink-0 row-span-2 self-start"
                                     style={{ backgroundColor: expense.type === 'transfer' 
                                       ? 'hsl(var(--muted))' 
                                       : getCategoryBgStyle(categoryInfo)
@@ -794,9 +795,11 @@ export const PaymentSourceTransactionsDialog = ({
                                       categoryInfo.icon
                                     )}
                                   </div>
-                                  <p className="flex-1 min-w-0 font-medium text-foreground truncate text-sm leading-tight">
+
+                                  <p className="min-w-0 font-medium text-foreground truncate text-[15px] leading-tight">
                                     {expense.merchant_name || expense.description}
                                   </p>
+
                                   {(() => {
                                     const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
                                     const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
@@ -804,51 +807,48 @@ export const PaymentSourceTransactionsDialog = ({
                                     const prefix = expense.type === 'expense' ? '-' : 
                                       (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
                                     return (
-                                      <p className={cn("font-mono font-semibold text-sm leading-tight shrink-0", colorClass)}>
+                                      <p className={cn("font-mono font-semibold text-[15px] leading-tight shrink-0 whitespace-nowrap text-right", colorClass)}>
                                         {prefix}{formatAmount(expense.amount)}
                                       </p>
                                     );
                                   })()}
-                                </div>
 
-                                {/* Row 2: Category/Type + Date + Running Balance */}
-                                <div className="flex items-center gap-1 mt-1 ml-[calc(1.25rem+1.75rem+0.375rem)]">
-                                 <div className="flex items-center gap-1 text-xs text-muted-foreground leading-tight min-w-0 truncate">
-                                   {expense.type === 'expense' && (
-                                     <span className="truncate max-w-[70px]">{categoryInfo.name}</span>
-                                   )}
-                                   {expense.type === 'transfer' && expense.income_source_id === paymentSource?.id && (
-                                     <span className="text-income whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↓</span>
-                                   )}
-                                   {expense.type === 'transfer' && expense.income_source_id !== paymentSource?.id && (
-                                     <span className="text-primary whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↑</span>
-                                   )}
-                                   {expense.type === 'income' && (
-                                     <span className="text-income">{t('transactions.income', 'Prihod')}</span>
-                                   )}
-                                   {cardInfo && (
-                                     <>
-                                       <span className="text-muted-foreground/40">•</span>
-                                       <span className="text-[11px] font-mono">••{cardInfo.last_four_digits}</span>
-                                     </>
-                                   )}
-                                   <span className="text-muted-foreground/40">•</span>
-                                   <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap">
-                                     {format(expense.date, 'd. MMM', { locale: hr })}
-                                   </span>
-                                 </div>
-                                 <div className="flex-1" />
-                                 {balanceAfter !== undefined && (
-                                   <span className={cn(
-                                     "text-sm font-mono font-bold leading-tight shrink-0",
-                                     balanceAfter >= 0 
-                                       ? "text-primary" 
-                                       : "text-destructive"
-                                   )}>
-                                     <span className="text-[10px] font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
-                                   </span>
-                                 )}
-                               </div>
+                                  <div className="min-w-0 flex items-center gap-1 text-xs text-muted-foreground leading-tight truncate">
+                                    {expense.type === 'expense' && (
+                                      <span className="truncate max-w-[84px]">{categoryInfo.name}</span>
+                                    )}
+                                    {expense.type === 'transfer' && expense.income_source_id === paymentSource?.id && (
+                                      <span className="text-income whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↓</span>
+                                    )}
+                                    {expense.type === 'transfer' && expense.income_source_id !== paymentSource?.id && (
+                                      <span className="text-primary whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↑</span>
+                                    )}
+                                    {expense.type === 'income' && (
+                                      <span className="text-income whitespace-nowrap">{t('transactions.income', 'Prihod')}</span>
+                                    )}
+                                    {cardInfo && (
+                                      <>
+                                        <span className="text-muted-foreground/40">•</span>
+                                        <span className="text-[11px] font-mono whitespace-nowrap">••{cardInfo.last_four_digits}</span>
+                                      </>
+                                    )}
+                                    <span className="text-muted-foreground/40">•</span>
+                                    <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap">
+                                      {format(expense.date, 'd. MMM', { locale: hr })}
+                                    </span>
+                                  </div>
+
+                                  {balanceAfter !== undefined && (
+                                    <span className={cn(
+                                      "text-[15px] font-mono font-bold leading-tight shrink-0 whitespace-nowrap text-right",
+                                      balanceAfter >= 0 
+                                        ? "text-primary" 
+                                        : "text-destructive"
+                                    )}>
+                                      <span className="text-[10px] font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
+                                    </span>
+                                  )}
+                                </div>
                             </motion.div>
                           </div>
                         );
