@@ -807,7 +807,7 @@ export const PaymentSourceTransactionsDialog = ({
                                     const prefix = expense.type === 'expense' ? '-' : 
                                       (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
                                     return (
-                                      <p className={cn("font-mono font-semibold text-[15px] leading-tight shrink-0 whitespace-nowrap text-right", colorClass)}>
+                                      <p className={cn("font-mono font-semibold text-[13px] leading-tight shrink-0 whitespace-nowrap text-right", colorClass)}>
                                         {prefix}{formatAmount(expense.amount)}
                                       </p>
                                     );
