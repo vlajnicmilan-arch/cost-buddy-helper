@@ -65,6 +65,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
+  const [isImportingPdf, setIsImportingPdf] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
@@ -288,6 +289,7 @@ export const PaymentSourceTransactionsDialog = ({
 
   const handleImportPDFTransactions = async () => {
     if (!parsedData || !onImportCSV || !paymentSource) return;
+
     const paymentSourceValue = `custom:${paymentSource.id}`;
     const transactions: ParsedTransaction[] = parsedData.transactions.map(tx => ({
       date: tx.date,
@@ -299,20 +301,39 @@ export const PaymentSourceTransactionsDialog = ({
       source: 'pdf' as const,
       payment_source: paymentSourceValue as any
     }));
-    if (findDuplicates) {
-      const { duplicates, unique } = findDuplicates(transactions);
-      if (duplicates.length > 0) {
-        setDuplicateInfo({ duplicates, unique });
-        setIncludeDuplicates(false);
-        setPdfPreviewOpen(false);
-        setDuplicateWarningOpen(true);
-        return;
+
+    try {
+      setIsImportingPdf(true);
+
+      if (findDuplicates) {
+        const { duplicates, unique } = findDuplicates(transactions);
+
+        if (duplicates.length > 0) {
+          if (unique.length === 0) {
+            toast.info(t('import.noNewTransactions'));
+            setPdfPreviewOpen(false);
+            clearParsedData();
+            return;
+          }
+
+          setDuplicateInfo({ duplicates, unique });
+          setIncludeDuplicates(false);
+          setPdfPreviewOpen(false);
+          setDuplicateWarningOpen(true);
+          return;
+        }
       }
+
+      await onImportCSV(transactions);
+      setPdfPreviewOpen(false);
+      clearParsedData();
+      toast.success(t('import.importedFromPDF', { count: transactions.length }));
+    } catch (error) {
+      console.error('Error importing PDF transactions:', error);
+      toast.error('Greška pri uvozu transakcija');
+    } finally {
+      setIsImportingPdf(false);
     }
-    await onImportCSV(transactions);
-    setPdfPreviewOpen(false);
-    clearParsedData();
-    toast.success(t('import.importedFromPDF', { count: transactions.length }));
   };
 
   const handleConfirmImportWithDuplicates = async () => {
@@ -327,11 +348,20 @@ export const PaymentSourceTransactionsDialog = ({
       setDuplicateInfo(null);
       return;
     }
-    await onImportCSV(transactionsToImport);
-    setDuplicateWarningOpen(false);
-    clearParsedData();
-    setDuplicateInfo(null);
-    toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
+
+    try {
+      setIsImportingPdf(true);
+      await onImportCSV(transactionsToImport);
+      setDuplicateWarningOpen(false);
+      clearParsedData();
+      setDuplicateInfo(null);
+      toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
+    } catch (error) {
+      console.error('Error importing duplicate-reviewed transactions:', error);
+      toast.error('Greška pri uvozu transakcija');
+    } finally {
+      setIsImportingPdf(false);
+    }
   };
 
   // Print handler
@@ -928,8 +958,19 @@ export const PaymentSourceTransactionsDialog = ({
               <div className="p-2 bg-primary/5 rounded-lg text-xs text-muted-foreground text-center">
                 ℹ️ Sve transakcije će biti dodijeljene izvoru: <strong className="text-foreground">{paymentSource?.name}</strong>
               </div>
-              <Button onClick={handleImportPDFTransactions} className="w-full rounded-xl">
-                {t('import.importCount', { count: parsedData.transactions.length })}
+              <Button
+                onClick={handleImportPDFTransactions}
+                disabled={isImportingPdf}
+                className="w-full rounded-xl"
+              >
+                {isImportingPdf ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uvozim...
+                  </>
+                ) : (
+                  t('import.importCount', { count: parsedData.transactions.length })
+                )}
               </Button>
             </div>
           )}
@@ -985,8 +1026,15 @@ export const PaymentSourceTransactionsDialog = ({
             <Button variant="outline" onClick={() => { setDuplicateWarningOpen(false); clearParsedData(); setDuplicateInfo(null); }} className="rounded-xl">
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleConfirmImportWithDuplicates} className="rounded-xl">
-              {t('import.importCount', { count: includeDuplicates ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0) : duplicateInfo?.unique.length || 0 })}
+            <Button onClick={handleConfirmImportWithDuplicates} disabled={isImportingPdf} className="rounded-xl">
+              {isImportingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Uvozim...
+                </>
+              ) : (
+                t('import.importCount', { count: includeDuplicates ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0) : duplicateInfo?.unique.length || 0 })
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
