@@ -10,6 +10,7 @@ import { useInstallments } from '@/hooks/useInstallments';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { supabase } from '@/integrations/supabase/client';
 import { TransactionItem } from '@/components/TransactionItem';
 import { TransactionListDialog } from '@/components/TransactionListDialog';
@@ -22,9 +23,15 @@ import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTrans
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 import { BottomNav } from '@/components/BottomNav';
+import { BusinessBottomNav, BusinessTab } from '@/components/business/BusinessBottomNav';
+import { BusinessDashboard } from '@/components/business/BusinessDashboard';
+import { BusinessTransactions } from '@/components/business/BusinessTransactions';
+import { BusinessReports } from '@/components/business/BusinessReports';
+import { BusinessMore } from '@/components/business/BusinessMore';
+import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt } from 'lucide-react';
+import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt, ArrowLeft, Building2 } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -44,8 +51,6 @@ import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SavingsGoalsSection } from '@/components/savings';
-
-
 
 const Index = () => {
   const { t } = useTranslation();
