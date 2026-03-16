@@ -857,7 +857,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                                   <Copy className="w-6 h-6 text-muted-foreground" />
                                 </div>
-                                <span className="text-sm font-medium">Kopiraj link</span>
+                                <span className="text-sm font-medium">{t('settings.copyLink', 'Kopiraj link')}</span>
                               </button>
                             </>
                           );
