@@ -282,7 +282,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       toast.success(t('settings.exportSuccess', 'Backup uspješno izvezen'));
     } catch (err) {
       console.error('Export error:', err);
-      toast.error('Greška pri izvozu');
+      toast.error(t('settings.exportError', 'Greška pri izvozu'));
     } finally {
       setIsExporting(false);
     }
