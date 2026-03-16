@@ -36,12 +36,20 @@ export const useCustomPaymentSources = () => {
     }
 
     try {
-      // Fetch own payment sources
-      const { data: ownSources, error: ownError } = await supabase
+      // Fetch own payment sources filtered by business context
+      let ownQuery = supabase
         .from('custom_payment_sources' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('sort_order', { ascending: true });
+
+      if (activeBusinessProfileId) {
+        ownQuery = ownQuery.eq('business_profile_id', activeBusinessProfileId);
+      } else {
+        ownQuery = ownQuery.is('business_profile_id', null);
+      }
+
+      const { data: ownSources, error: ownError } = await ownQuery;
 
       if (ownError) throw ownError;
 
