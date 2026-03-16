@@ -64,7 +64,7 @@ const Index = () => {
   const { totalReceivable, totalPayable } = useBusinessDebts();
   const isBusinessMode = !!activeBusinessProfileId;
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
-  const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[] } | null>(null);
+  const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
 
   // Load business profile data
