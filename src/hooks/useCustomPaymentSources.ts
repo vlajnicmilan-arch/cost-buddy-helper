@@ -12,7 +12,7 @@ export const useCustomPaymentSources = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { storageMode } = useStorage();
-  const { onPaymentSourcesReordered, emitPaymentSourcesReordered } = useAppState();
+  const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
 
   const isLocalMode = storageMode === 'local' && !user;
 
@@ -36,12 +36,20 @@ export const useCustomPaymentSources = () => {
     }
 
     try {
-      // Fetch own payment sources
-      const { data: ownSources, error: ownError } = await supabase
+      // Fetch own payment sources filtered by business context
+      let ownQuery = supabase
         .from('custom_payment_sources' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('sort_order', { ascending: true });
+
+      if (activeBusinessProfileId) {
+        ownQuery = ownQuery.eq('business_profile_id', activeBusinessProfileId);
+      } else {
+        ownQuery = ownQuery.is('business_profile_id', null);
+      }
+
+      const { data: ownSources, error: ownError } = await ownQuery;
 
       if (ownError) throw ownError;
 
@@ -97,7 +105,7 @@ export const useCustomPaymentSources = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode]);
+  }, [user, isLocalMode, activeBusinessProfileId]);
 
   useEffect(() => {
     fetchCustomPaymentSources();
@@ -145,6 +153,7 @@ export const useCustomPaymentSources = () => {
           ...sourceData,
           user_id: user.id,
           sort_order: maxSortOrder + 1,
+          business_profile_id: activeBusinessProfileId || null,
         })
         .select()
         .single();
