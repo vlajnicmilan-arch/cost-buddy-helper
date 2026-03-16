@@ -768,51 +768,51 @@ export const PaymentSourceTransactionsDialog = ({
                                   setDetailDialogOpen(true);
                                 }
                                }}
-                               className={cn(
-                                 "group py-2.5 px-3 pr-3 rounded-lg transition-colors cursor-pointer active:bg-muted/70 overflow-hidden",
-                                 isSelected ? "bg-primary/10" : "hover:bg-muted/50"
-                               )}
-                             >
-                               {/* Row 1: Checkbox + Icon + Description + Amount */}
-                               <div className="flex items-center gap-1.5 overflow-hidden">
-                                 <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                                   <Checkbox
-                                     checked={isSelected}
-                                     onCheckedChange={() => toggleSelection(expense.id)}
-                                   />
-                                 </div>
-                                 <div 
-                                   className="w-7 h-7 rounded-md flex items-center justify-center text-sm shrink-0"
-                                   style={{ backgroundColor: expense.type === 'transfer' 
-                                     ? 'hsl(var(--muted))' 
-                                     : getCategoryBgStyle(categoryInfo)
-                                   }}
-                                 >
-                                   {expense.type === 'transfer' ? (
-                                     <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground" />
-                                   ) : (
-                                     categoryInfo.icon
-                                   )}
-                                 </div>
-                                 <p className="flex-1 min-w-0 font-medium text-foreground truncate text-sm leading-tight">
-                                   {expense.merchant_name || expense.description}
-                                 </p>
-                                 {(() => {
-                                   const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
-                                   const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
-                                     expense.type === 'expense' ? 'text-expense' : 'text-muted-foreground';
-                                   const prefix = expense.type === 'expense' ? '-' : 
-                                     (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
-                                   return (
-                                     <p className={cn("font-mono font-semibold text-sm leading-tight shrink-0", colorClass)}>
-                                       {prefix}{formatAmount(expense.amount)}
-                                     </p>
-                                   );
-                                 })()}
-                               </div>
+                                className={cn(
+                                  "group py-2.5 px-3 rounded-lg transition-colors cursor-pointer active:bg-muted/70",
+                                  isSelected ? "bg-primary/10" : "hover:bg-muted/50"
+                                )}
+                              >
+                                {/* Row 1: Checkbox + Icon + Description + Amount */}
+                                <div className="flex items-center gap-1.5">
+                                  <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={() => toggleSelection(expense.id)}
+                                    />
+                                  </div>
+                                  <div 
+                                    className="w-7 h-7 rounded-md flex items-center justify-center text-sm shrink-0"
+                                    style={{ backgroundColor: expense.type === 'transfer' 
+                                      ? 'hsl(var(--muted))' 
+                                      : getCategoryBgStyle(categoryInfo)
+                                    }}
+                                  >
+                                    {expense.type === 'transfer' ? (
+                                      <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground" />
+                                    ) : (
+                                      categoryInfo.icon
+                                    )}
+                                  </div>
+                                  <p className="flex-1 min-w-0 font-medium text-foreground truncate text-sm leading-tight">
+                                    {expense.merchant_name || expense.description}
+                                  </p>
+                                  {(() => {
+                                    const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
+                                    const colorClass = expense.type === 'income' || isInboundTransfer ? 'text-income' : 
+                                      expense.type === 'expense' ? 'text-expense' : 'text-muted-foreground';
+                                    const prefix = expense.type === 'expense' ? '-' : 
+                                      (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
+                                    return (
+                                      <p className={cn("font-mono font-semibold text-sm leading-tight shrink-0", colorClass)}>
+                                        {prefix}{formatAmount(expense.amount)}
+                                      </p>
+                                    );
+                                  })()}
+                                </div>
 
-                               {/* Row 2: Category/Type + Date + Running Balance */}
-                               <div className="flex items-center gap-1 mt-1 ml-[calc(1.25rem+1.75rem+0.375rem)] overflow-hidden">
+                                {/* Row 2: Category/Type + Date + Running Balance */}
+                                <div className="flex items-center gap-1 mt-1 ml-[calc(1.25rem+1.75rem+0.375rem)]">
                                  <div className="flex items-center gap-1 text-xs text-muted-foreground leading-tight min-w-0 truncate">
                                    {expense.type === 'expense' && (
                                      <span className="truncate max-w-[70px]">{categoryInfo.name}</span>
