@@ -1,5 +1,4 @@
 import { LayoutDashboard, ArrowLeftRight, FileBarChart, MoreHorizontal, Wallet } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 export type BusinessTab = 'dashboard' | 'wallet' | 'transactions' | 'reports' | 'more';
@@ -21,8 +20,8 @@ export const BusinessBottomNav = ({ activeTab, onTabChange }: Props) => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/50 safe-area-bottom">
-      <div className="max-w-4xl mx-auto flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md safe-area-bottom">
+      <div className="max-w-4xl mx-auto flex items-center h-14 px-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
@@ -30,17 +29,14 @@ export const BusinessBottomNav = ({ activeTab, onTabChange }: Props) => {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 relative"
+              className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 mx-0.5 rounded-xl transition-all duration-200 ${
+                isActive
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="businessNavIndicator"
-                  className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
-              <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className={`text-[10px] font-medium transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+              <Icon className={`w-[18px] h-[18px] transition-transform ${isActive ? 'scale-110' : ''}`} />
+              <span className={`text-[9px] font-semibold tracking-wide uppercase ${isActive ? '' : 'font-medium'}`}>
                 {tab.label}
               </span>
             </button>
