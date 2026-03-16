@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { storageMode } = useStorage();
+  const { t } = useTranslation();
   
   // Check if user came from storage setup - allow going back
   const cameFromSetup = (location.state as any)?.from === '/setup';
@@ -538,15 +540,15 @@ const Auth = () => {
                 className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
               />
               <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
-                Prihvaćam{' '}
+                {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[0]}
                 <button
                   type="button"
                   onClick={() => navigate('/privacy-policy')}
                   className="text-primary hover:underline"
                 >
-                  Politiku privatnosti
+                  {t('gdpr.privacyPolicyLink', 'Politiku privatnosti')}
                 </button>
-                {' '}i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.
+                {t('gdpr.consentLabel', 'Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.').split('{link}')[1]}
               </label>
             </div>
           )}

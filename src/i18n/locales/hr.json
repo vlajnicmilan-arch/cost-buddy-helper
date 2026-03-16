@@ -1299,5 +1299,15 @@
       "recurringObligations": "Ponavljajuće obveze",
       "recurringObligationsDesc": "Najam, pretplate, leasing i ostalo"
     }
+  },
+  "gdpr": {
+    "bannerTitle": "Privatnost i pohrana podataka",
+    "bannerText": "Ova aplikacija koristi localStorage i IndexedDB za pohranu vaših postavki i financijskih podataka na uređaju. Ne koristimo marketinške kolačiće niti pratimo vaše aktivnosti izvan aplikacije.",
+    "accept": "Prihvaćam",
+    "privacyPolicy": "Politika privatnosti",
+    "consentLabel": "Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.",
+    "privacyPolicyLink": "Politiku privatnosti",
+    "settingsPrivacyTitle": "Politika privatnosti",
+    "settingsPrivacyDesc": "GDPR prava i obrada podataka"
   }
 }

@@ -1454,5 +1454,15 @@
       "recurringObligations": "Recurring obligations",
       "recurringObligationsDesc": "Rent, subscriptions, leasing and more"
     }
+  },
+  "gdpr": {
+    "bannerTitle": "Privacy & data storage",
+    "bannerText": "This app uses localStorage and IndexedDB to store your settings and financial data on your device. We do not use marketing cookies or track your activities outside the app.",
+    "accept": "I accept",
+    "privacyPolicy": "Privacy Policy",
+    "consentLabel": "I accept the {link} and consent to the processing of personal data in accordance with GDPR regulations.",
+    "privacyPolicyLink": "Privacy Policy",
+    "settingsPrivacyTitle": "Privacy Policy",
+    "settingsPrivacyDesc": "GDPR rights and data processing"
   }
 }

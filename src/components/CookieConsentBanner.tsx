@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const CONSENT_KEY = 'gdpr_consent_accepted';
 const CONSENT_DATE_KEY = 'gdpr_consent_date';
@@ -12,6 +13,7 @@ export const hasGdprConsent = () => localStorage.getItem(CONSENT_KEY) === 'true'
 export const CookieConsentBanner = () => {
   const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -43,10 +45,9 @@ export const CookieConsentBanner = () => {
                 <Shield className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 space-y-1">
-                <h3 className="font-semibold text-sm text-foreground">Privatnost i pohrana podataka</h3>
+                <h3 className="font-semibold text-sm text-foreground">{t('gdpr.bannerTitle', 'Privatnost i pohrana podataka')}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Ova aplikacija koristi localStorage i IndexedDB za pohranu vaših postavki i financijskih podataka na uređaju. 
-                  Ne koristimo marketinške kolačiće niti pratimo vaše aktivnosti izvan aplikacije.
+                  {t('gdpr.bannerText', 'Ova aplikacija koristi localStorage i IndexedDB za pohranu vaših postavki i financijskih podataka na uređaju. Ne koristimo marketinške kolačiće niti pratimo vaše aktivnosti izvan aplikacije.')}
                 </p>
               </div>
             </div>
@@ -56,7 +57,7 @@ export const CookieConsentBanner = () => {
                 onClick={handleAccept}
                 className="flex-1 h-9 rounded-xl text-xs font-medium"
               >
-                Prihvaćam
+                {t('gdpr.accept', 'Prihvaćam')}
               </Button>
               <Button
                 variant="ghost"
@@ -64,7 +65,7 @@ export const CookieConsentBanner = () => {
                 onClick={() => navigate('/privacy-policy')}
                 className="h-9 rounded-xl text-xs text-muted-foreground"
               >
-                Politika privatnosti
+                {t('gdpr.privacyPolicy', 'Politika privatnosti')}
               </Button>
             </div>
           </div>
