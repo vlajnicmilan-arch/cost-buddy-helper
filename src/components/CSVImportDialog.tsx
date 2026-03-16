@@ -154,11 +154,12 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     let selectedTransactions = transactions.filter((_, i) => selectedIndices.has(i));
     if (selectedTransactions.length === 0) return;
 
-    // Auto-assign payment source if provided
-    if (defaultPaymentSource) {
+    // Use defaultPaymentSource (from payment source context) or user-selected source
+    const effectiveSource = defaultPaymentSource || (selectedPaymentSource ? `custom:${selectedPaymentSource}` : undefined);
+    if (effectiveSource) {
       selectedTransactions = selectedTransactions.map(tx => ({
         ...tx,
-        payment_source: defaultPaymentSource as any
+        payment_source: effectiveSource as any
       }));
     }
 
