@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, format, subMonths, subQuarters } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 type VATRate = 25 | 13 | 5;
 type VATMode = 'monthly' | 'quarterly';
@@ -17,6 +17,7 @@ interface Props {
 
 export const BusinessVATOverview = ({ expenses }: Props) => {
   const { formatAmount } = useCurrency();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<VATMode>('monthly');
   const now = new Date();
 
@@ -31,7 +32,6 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
 
       const periodExpenses = expenses.filter(e => e.date >= start && e.date <= end);
 
-      // Calculate VAT per rate
       const byRate: Record<number, { output: number; input: number }> = {};
       VAT_RATES.forEach(rate => { byRate[rate] = { output: 0, input: 0 }; });
 
@@ -44,7 +44,6 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
         const vatAmount = expAny.vat_amount as number | null;
 
         if (vatRate && vatAmount) {
-          // Use explicit VAT data
           if (e.type === 'income') {
             totalOutputVAT += vatAmount;
             if (byRate[vatRate]) byRate[vatRate].output += vatAmount;
@@ -53,7 +52,6 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
             if (byRate[vatRate]) byRate[vatRate].input += vatAmount;
           }
         } else {
-          // Fallback: estimate at 25%
           if (e.type === 'income') {
             const vat = e.amount * 0.25 / 1.25;
             totalOutputVAT += vat;
@@ -78,8 +76,8 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
     <div className="space-y-4">
       <div className="flex gap-1.5">
         {([
-          { value: 'monthly' as VATMode, label: 'Mjesečno' },
-          { value: 'quarterly' as VATMode, label: 'Kvartalno' },
+          { value: 'monthly' as VATMode, label: t('business.vat.monthly', 'Mjesečno') },
+          { value: 'quarterly' as VATMode, label: t('business.vat.quarterly', 'Kvartalno') },
         ]).map(m => (
           <Badge
             key={m.value}
@@ -92,7 +90,6 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
         ))}
       </div>
 
-      {/* Current Period Summary */}
       {current && (
         <Card className="border-none shadow-sm">
           <CardHeader className="p-3 pb-1">
@@ -101,24 +98,23 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
           <CardContent className="p-3 pt-1 space-y-3">
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="p-2 rounded-lg bg-muted/50">
-                <p className="text-[10px] text-muted-foreground">Izlazni PDV</p>
+                <p className="text-[10px] text-muted-foreground">{t('business.vat.outputVAT', 'Izlazni PDV')}</p>
                 <p className="text-sm font-bold text-foreground">{formatAmount(current.totalOutputVAT)}</p>
               </div>
               <div className="p-2 rounded-lg bg-muted/50">
-                <p className="text-[10px] text-muted-foreground">Ulazni PDV</p>
+                <p className="text-[10px] text-muted-foreground">{t('business.vat.inputVAT', 'Ulazni PDV')}</p>
                 <p className="text-sm font-bold text-foreground">{formatAmount(current.totalInputVAT)}</p>
               </div>
               <div className={`p-2 rounded-lg ${current.netVAT >= 0 ? 'bg-expense/5' : 'bg-income/5'}`}>
-                <p className="text-[10px] text-muted-foreground">{current.netVAT >= 0 ? 'Za uplatu' : 'Povrat'}</p>
+                <p className="text-[10px] text-muted-foreground">{current.netVAT >= 0 ? t('business.vat.forPayment', 'Za uplatu') : t('business.vat.refund', 'Povrat')}</p>
                 <p className={`text-sm font-bold ${current.netVAT >= 0 ? 'text-expense' : 'text-income'}`}>
                   {formatAmount(Math.abs(current.netVAT))}
                 </p>
               </div>
             </div>
 
-            {/* Breakdown by rate */}
             <div className="space-y-1">
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Po stopama</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{t('business.vat.byRates', 'Po stopama')}</p>
               {VAT_RATES.map(rate => {
                 const r = current.byRate[rate];
                 if (!r || (r.output === 0 && r.input === 0)) return null;
@@ -137,25 +133,24 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
 
             {!hasExplicitVAT && (
               <p className="text-[10px] text-muted-foreground text-center">
-                * Procjena na temelju stope od 25%. Dodajte PDV stopu na transakcije za točniji izračun.
+                {t('business.vat.estimateNote', '* Procjena na temelju stope od 25%. Dodajte PDV stopu na transakcije za točniji izračun.')}
               </p>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* History */}
       <Card className="border-none shadow-sm">
         <CardHeader className="p-3 pb-1">
-          <CardTitle className="text-sm font-semibold">Pregled po periodima</CardTitle>
+          <CardTitle className="text-sm font-semibold">{t('business.vat.periodOverview', 'Pregled po periodima')}</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-1">
           <div className="space-y-1">
             <div className="grid grid-cols-4 text-[10px] text-muted-foreground pb-1 border-b border-border/30">
-              <span>Period</span>
-              <span className="text-right">Izlazni</span>
-              <span className="text-right">Ulazni</span>
-              <span className="text-right">Neto</span>
+              <span>{t('business.vat.period', 'Period')}</span>
+              <span className="text-right">{t('business.vat.output', 'Izlazni')}</span>
+              <span className="text-right">{t('business.vat.input', 'Ulazni')}</span>
+              <span className="text-right">{t('business.vat.net', 'Neto')}</span>
             </div>
             {data.map(d => (
               <div key={d.label} className="grid grid-cols-4 text-xs py-1 border-b border-border/20 last:border-0">
