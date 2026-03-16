@@ -447,7 +447,7 @@ const Index = () => {
 
         {/* ── Summary Cards + Transfers + Recurring ── */}
         <SummarySection
-          balance={balance}
+          balance={customPaymentSources.reduce((sum, s) => sum + (s.balance || 0), 0)}
           netWorth={netWorth}
           totalIncome={totalIncome}
           totalExpenses={totalExpenses}
