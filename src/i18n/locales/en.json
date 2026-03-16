@@ -1340,6 +1340,7 @@
     "notFound": "Company not found",
     "nav": {
       "overview": "Overview",
+      "wallet": "Wallet",
       "transactions": "Transactions",
       "reports": "Reports",
       "more": "More"
