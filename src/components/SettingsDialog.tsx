@@ -197,9 +197,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     setAutoUpdate(enabled);
     setAutoUpdatePreference(enabled);
     if (enabled) {
-      toast.success('Automatsko ažuriranje uključeno');
+      toast.success(t('settings.autoUpdateEnabled', 'Automatsko ažuriranje uključeno'));
     } else {
-      toast.info('Automatsko ažuriranje isključeno');
+      toast.info(t('settings.autoUpdateDisabled', 'Automatsko ažuriranje isključeno'));
     }
   };
 
