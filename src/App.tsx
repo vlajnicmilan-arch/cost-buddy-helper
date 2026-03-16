@@ -8,6 +8,8 @@ import { BackButtonProvider } from "@/contexts/BackButtonContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
+import { AppLockProvider } from "@/contexts/AppLockContext";
+import { LockScreen } from "@/components/LockScreen";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -89,21 +91,24 @@ const App = () => (
     <TooltipProvider>
       <StorageProvider>
         <AppStateProvider>
-          <CurrencyProvider>
-            <TutorialProvider>
-              <OfflineBanner />
-              <Toaster />
-              <Sonner />
-              <PWAUpdatePrompt />
-              <TutorialOverlay />
+          <AppLockProvider>
+            <CurrencyProvider>
+              <TutorialProvider>
+                <OfflineBanner />
+                <Toaster />
+                <Sonner />
+                <PWAUpdatePrompt />
+                <TutorialOverlay />
+                <LockScreen />
                 <BrowserRouter>
                   <BackButtonProvider>
                     <AppRoutes />
                     <CookieConsentBanner />
                   </BackButtonProvider>
                 </BrowserRouter>
-            </TutorialProvider>
-          </CurrencyProvider>
+              </TutorialProvider>
+            </CurrencyProvider>
+          </AppLockProvider>
         </AppStateProvider>
       </StorageProvider>
     </TooltipProvider>

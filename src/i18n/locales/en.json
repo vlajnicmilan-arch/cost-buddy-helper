@@ -1464,5 +1464,26 @@
     "privacyPolicyLink": "Privacy Policy",
     "settingsPrivacyTitle": "Privacy Policy",
     "settingsPrivacyDesc": "GDPR rights and data processing"
+  },
+  "lock": {
+    "title": "App is locked",
+    "enterPin": "Enter PIN to unlock",
+    "wrongPin": "Wrong PIN",
+    "pinLock": "PIN lock",
+    "pinLockDesc": "Lock app after inactivity",
+    "setPin": "Set PIN",
+    "confirmPin": "Confirm PIN",
+    "enterNewPin": "Enter a 4-6 digit PIN",
+    "reenterPin": "Re-enter PIN to confirm",
+    "pinsDontMatch": "PINs don't match. Try again.",
+    "pinSet": "PIN has been set",
+    "changePin": "Change PIN",
+    "removePin": "Remove PIN",
+    "pinRemoved": "PIN has been removed",
+    "timeout": "Lock after",
+    "immediately": "Immediately",
+    "seconds": "sec",
+    "biometric": "Biometrics",
+    "biometricDesc": "Fingerprint or face recognition"
   }
 }

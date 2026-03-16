@@ -1296,5 +1296,26 @@
     "privacyPolicyLink": "Datenschutzrichtlinie",
     "settingsPrivacyTitle": "Datenschutzrichtlinie",
     "settingsPrivacyDesc": "DSGVO-Rechte und Datenverarbeitung"
+  },
+  "lock": {
+    "title": "App ist gesperrt",
+    "enterPin": "PIN zum Entsperren eingeben",
+    "wrongPin": "Falscher PIN",
+    "pinLock": "PIN-Sperre",
+    "pinLockDesc": "App nach Inaktivität sperren",
+    "setPin": "PIN festlegen",
+    "confirmPin": "PIN bestätigen",
+    "enterNewPin": "4-6-stellige PIN eingeben",
+    "reenterPin": "PIN zur Bestätigung erneut eingeben",
+    "pinsDontMatch": "PINs stimmen nicht überein. Versuchen Sie es erneut.",
+    "pinSet": "PIN wurde festgelegt",
+    "changePin": "PIN ändern",
+    "removePin": "PIN entfernen",
+    "pinRemoved": "PIN wurde entfernt",
+    "timeout": "Sperren nach",
+    "immediately": "Sofort",
+    "seconds": "Sek",
+    "biometric": "Biometrie",
+    "biometricDesc": "Fingerabdruck oder Gesichtserkennung"
   }
 }

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Building2 } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Building2, Lock, Fingerprint } from 'lucide-react';
 import { BugReportDialog } from '@/components/BugReportDialog';
 import { BusinessProfileDialog } from '@/components/BusinessProfileDialog';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,8 @@ import {
   requestNotificationPermission
 } from '@/hooks/useNotificationSound';
 import { languages } from '@/i18n';
+import { useAppLock } from '@/contexts/AppLockContext';
+import { SetPinDialog } from '@/components/SetPinDialog';
 
 
 interface SettingsDialogProps {
@@ -79,6 +81,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [showBusinessProfile, setShowBusinessProfile] = useState(false);
+  const [showSetPin, setShowSetPin] = useState(false);
   
   const { storageMode } = useStorage();
   const { user } = useAuth();
@@ -92,6 +95,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     emitFinancialReset,
   } = useAppState();
   const isLocalMode = storageMode === 'local';
+  const appLock = useAppLock();
   
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
@@ -710,6 +714,103 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Security / Lock Section */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                {t('settings.security', 'Sigurnost')}
+              </h3>
+              
+              {/* PIN Lock toggle */}
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">
+                      {t('lock.pinLock', 'PIN zaključavanje')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('lock.pinLockDesc', 'Zaključaj aplikaciju nakon neaktivnosti')}
+                    </p>
+                  </div>
+                </div>
+                {appLock.hasPinSet ? (
+                  <Switch
+                    checked={appLock.isLockEnabled}
+                    onCheckedChange={(checked) => appLock.enableLock(checked)}
+                  />
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl text-xs"
+                    onClick={() => setShowSetPin(true)}
+                  >
+                    {t('lock.setPin', 'Postavi PIN')}
+                  </Button>
+                )}
+              </div>
+
+              {appLock.hasPinSet && (
+                <>
+                  {/* Lock timeout */}
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <RefreshCw className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">
+                          {t('lock.timeout', 'Zaključaj nakon')}
+                        </Label>
+                      </div>
+                    </div>
+                    <Select
+                      value={String(appLock.lockTimeout)}
+                      onValueChange={(v) => appLock.setLockTimeout(Number(v) as any)}
+                    >
+                      <SelectTrigger className="w-[110px] rounded-xl text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">{t('lock.immediately', 'Odmah')}</SelectItem>
+                        <SelectItem value="30">30 {t('lock.seconds', 'sek')}</SelectItem>
+                        <SelectItem value="60">1 min</SelectItem>
+                        <SelectItem value="120">2 min</SelectItem>
+                        <SelectItem value="300">5 min</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Change PIN */}
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 rounded-xl"
+                    onClick={() => setShowSetPin(true)}
+                  >
+                    <Lock className="w-4 h-4" />
+                    {t('lock.changePin', 'Promijeni PIN')}
+                  </Button>
+
+                  {/* Remove PIN */}
+                  <Button
+                    variant="ghost"
+                    className="w-full gap-2 rounded-xl text-destructive hover:text-destructive"
+                    onClick={() => {
+                      appLock.removePin();
+                      toast.success(t('lock.pinRemoved', 'PIN je uklonjen'));
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    {t('lock.removePin', 'Ukloni PIN')}
+                  </Button>
+                </>
+              )}
             </div>
 
             <Separator />
@@ -1480,6 +1581,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Set PIN Dialog */}
+      <SetPinDialog open={showSetPin} onOpenChange={setShowSetPin} />
 
       {/* Help Dialog */}
       <HelpDialogContent open={showHelpDialog} onOpenChange={setShowHelpDialog} />

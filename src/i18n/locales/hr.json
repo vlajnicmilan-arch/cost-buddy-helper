@@ -1309,5 +1309,26 @@
     "privacyPolicyLink": "Politiku privatnosti",
     "settingsPrivacyTitle": "Politika privatnosti",
     "settingsPrivacyDesc": "GDPR prava i obrada podataka"
+  },
+  "lock": {
+    "title": "Aplikacija je zaključana",
+    "enterPin": "Unesite PIN za otključavanje",
+    "wrongPin": "Pogrešan PIN",
+    "pinLock": "PIN zaključavanje",
+    "pinLockDesc": "Zaključaj aplikaciju nakon neaktivnosti",
+    "setPin": "Postavi PIN",
+    "confirmPin": "Potvrdite PIN",
+    "enterNewPin": "Unesite 4-6 znamenkasti PIN",
+    "reenterPin": "Unesite PIN ponovo za potvrdu",
+    "pinsDontMatch": "PIN-ovi se ne podudaraju. Pokušajte ponovo.",
+    "pinSet": "PIN je postavljen",
+    "changePin": "Promijeni PIN",
+    "removePin": "Ukloni PIN",
+    "pinRemoved": "PIN je uklonjen",
+    "timeout": "Zaključaj nakon",
+    "immediately": "Odmah",
+    "seconds": "sek",
+    "biometric": "Biometrija",
+    "biometricDesc": "Otisak prsta ili prepoznavanje lica"
   }
 }
