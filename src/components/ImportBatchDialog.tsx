@@ -162,7 +162,7 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
     </AnimatePresence>
 
     <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-      <AlertDialogContent className="z-[70]" style={{ zIndex: 70 }}>
+      <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Obriši cijeli uvoz?</AlertDialogTitle>
           <AlertDialogDescription>
