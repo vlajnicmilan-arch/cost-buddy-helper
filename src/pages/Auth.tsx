@@ -39,6 +39,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { storageMode } = useStorage();
+  const { t } = useTranslation();
   
   // Check if user came from storage setup - allow going back
   const cameFromSetup = (location.state as any)?.from === '/setup';
