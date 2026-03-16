@@ -566,7 +566,7 @@ export const PaymentSourceTransactionsDialog = ({
 
             {/* Content */}
             <ScrollArea className="flex-1">
-              <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 py-4 space-y-4">
+              <div className="max-w-2xl mx-auto w-full pl-3 pr-5 sm:px-4 py-4 space-y-4">
                 {/* Balance & Summary */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-primary/10 col-span-2">
@@ -807,7 +807,7 @@ export const PaymentSourceTransactionsDialog = ({
                                     const prefix = expense.type === 'expense' ? '-' : 
                                       (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
                                     return (
-                                      <p className={cn("font-mono font-semibold text-[15px] leading-tight shrink-0 whitespace-nowrap text-right", colorClass)}>
+                                      <p className={cn("font-mono font-semibold text-[13px] leading-tight shrink-0 whitespace-nowrap text-right", colorClass)}>
                                         {prefix}{formatAmount(expense.amount)}
                                       </p>
                                     );
@@ -840,7 +840,7 @@ export const PaymentSourceTransactionsDialog = ({
 
                                   {balanceAfter !== undefined && (
                                     <span className={cn(
-                                      "text-[15px] font-mono font-bold leading-tight shrink-0 whitespace-nowrap text-right",
+                                      "text-[13px] font-mono font-bold leading-tight shrink-0 whitespace-nowrap text-right",
                                       balanceAfter >= 0 
                                         ? "text-primary" 
                                         : "text-destructive"
