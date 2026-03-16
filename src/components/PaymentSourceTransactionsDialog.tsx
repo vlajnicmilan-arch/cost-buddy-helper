@@ -840,7 +840,7 @@ export const PaymentSourceTransactionsDialog = ({
 
                                   {balanceAfter !== undefined && (
                                     <span className={cn(
-                                      "text-[15px] font-mono font-bold leading-tight shrink-0 whitespace-nowrap text-right",
+                                      "text-[13px] font-mono font-bold leading-tight shrink-0 whitespace-nowrap text-right",
                                       balanceAfter >= 0 
                                         ? "text-primary" 
                                         : "text-destructive"
