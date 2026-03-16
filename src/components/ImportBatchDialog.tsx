@@ -162,7 +162,7 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
     </AnimatePresence>
 
     <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-      <AlertDialogContent>
+      <AlertDialogContent className="z-[70]" style={{ zIndex: 70 }}>
         <AlertDialogHeader>
           <AlertDialogTitle>Obriši cijeli uvoz?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -170,11 +170,11 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleting}>Odustani</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleting} className="min-h-[44px]">Odustani</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDeleteBatch}
             disabled={deleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[44px]"
           >
             {deleting ? 'Brisanje...' : `Obriši ${batchExpenses.length} transakcija`}
           </AlertDialogAction>
