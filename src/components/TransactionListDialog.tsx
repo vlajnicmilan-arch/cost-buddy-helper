@@ -455,7 +455,7 @@ export const TransactionListDialog = ({
             if (!open) setSelectedBatchId(null);
           }}
           batchId={selectedBatchId}
-          allExpenses={filteredExpenses}
+          allExpenses={expenses}
           onDeleteBatch={handleDeleteBatch}
         />
       )}
