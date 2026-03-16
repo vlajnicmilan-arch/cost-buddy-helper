@@ -57,7 +57,25 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { storageMode } = useStorage();
   const { formatAmount } = useCurrency();
-  const { displayName, aiAssistantEnabled, simpleModeEnabled } = useAppState();
+  const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
+  const { totalReceivable, totalPayable } = useBusinessDebts();
+  const isBusinessMode = !!activeBusinessProfileId;
+  const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
+  const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[] } | null>(null);
+
+  // Load business profile data
+  useEffect(() => {
+    if (!activeBusinessProfileId || !user) { setBusinessProfile(null); return; }
+    supabase
+      .from('business_profiles')
+      .select('id, company_name, is_vat_payer, industry_type, enabled_modules')
+      .eq('id', activeBusinessProfileId)
+      .single()
+      .then(({ data }) => { if (data) setBusinessProfile(data as any); });
+  }, [activeBusinessProfileId, user]);
+
+  // Back button for business tabs
+  useBackButton(isBusinessMode && businessTab !== 'dashboard', () => setBusinessTab('dashboard'));
   const navigate = useNavigate();
   const location = useLocation();
 
