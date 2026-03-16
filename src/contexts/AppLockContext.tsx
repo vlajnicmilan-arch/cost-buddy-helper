@@ -43,20 +43,14 @@ const hashPin = (pin: string): string => {
   return 'pin_' + Math.abs(hash).toString(36);
 };
 
-const isBiometricAvailable = async (): Promise<boolean> => {
-  // Check Capacitor biometric plugin
-  if ((window as any).Capacitor?.isNativePlatform?.()) {
-    try {
-      // @ts-ignore - only available in native builds
-      const mod = await import('@capacitor-community/biometric-auth');
-      const result = await mod.BiometricAuth.isAvailable();
-      return result.has;
-    } catch {
-      return false;
-    }
+const getBiometricPlugin = async () => {
+  try {
+    // Dynamic require only works in native Capacitor builds
+    const mod = (window as any).__capacitorBiometricAuth;
+    return mod || null;
+  } catch {
+    return null;
   }
-  // Web: check WebAuthn
-  return !!(window.PublicKeyCredential);
 };
 
 export const AppLockProvider = ({ children }: { children: ReactNode }) => {
