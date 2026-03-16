@@ -301,7 +301,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       const data = JSON.parse(content);
 
       if (!data.expenses || !Array.isArray(data.expenses)) {
-        throw new Error('Nevažeći format datoteke');
+        throw new Error(t('settings.invalidFileFormat', 'Nevažeći format datoteke'));
       }
 
       if (isLocalMode) {
