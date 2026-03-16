@@ -153,6 +153,7 @@ export const useCustomPaymentSources = () => {
           ...sourceData,
           user_id: user.id,
           sort_order: maxSortOrder + 1,
+          business_profile_id: activeBusinessProfileId || null,
         })
         .select()
         .single();
