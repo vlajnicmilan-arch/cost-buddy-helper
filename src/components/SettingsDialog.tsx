@@ -788,8 +788,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                         <Share2 className="w-4 h-4 text-primary" />
                       </div>
                       <div className="text-left">
-                        <p className="text-sm font-medium">Pozovi prijatelja</p>
-                        <p className="text-xs text-muted-foreground">Podijeli link za preuzimanje aplikacije</p>
+                        <p className="text-sm font-medium">{t('settings.inviteFriend', 'Pozovi prijatelja')}</p>
+                        <p className="text-xs text-muted-foreground">{t('settings.inviteFriendDesc', 'Podijeli link za preuzimanje aplikacije')}</p>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
