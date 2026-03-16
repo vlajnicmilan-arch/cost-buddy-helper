@@ -774,7 +774,7 @@ export const PaymentSourceTransactionsDialog = ({
                               )}
                             >
                               {/* Row 1: Checkbox + Icon + Description + Amount */}
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 overflow-hidden">
                                 <div onClick={(e) => e.stopPropagation()}>
                                   <Checkbox
                                     checked={isSelected}
@@ -795,7 +795,7 @@ export const PaymentSourceTransactionsDialog = ({
                                     categoryInfo.icon
                                   )}
                                 </div>
-                                <p className="flex-1 min-w-0 font-medium text-foreground truncate text-sm leading-tight">
+                                <p className="flex-1 min-w-0 font-medium text-foreground truncate text-xs sm:text-sm leading-tight">
                                   {expense.merchant_name || expense.description}
                                 </p>
                                 {(() => {
@@ -805,7 +805,7 @@ export const PaymentSourceTransactionsDialog = ({
                                   const prefix = expense.type === 'expense' ? '-' : 
                                     (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
                                   return (
-                                    <p className={cn("font-mono font-bold text-sm sm:text-base leading-tight shrink-0 text-right", colorClass)}>
+                                    <p className={cn("font-mono font-bold text-xs sm:text-sm leading-tight shrink-0 text-right", colorClass)}>
                                       {prefix}{formatAmount(expense.amount)}
                                     </p>
                                   );
