@@ -213,14 +213,6 @@
     "reorderMode": "Neuordnung",
     "members": "Mitglieder"
   },
-  "nav": {
-    "home": "Startseite",
-    "dashboard": "Dashboard",
-    "settings": "Einstellungen",
-    "help": "Hilfe",
-    "signOut": "Abmelden",
-    "signIn": "Anmelden"
-  },
   "auth": {
     "login": "Anmelden",
     "register": "Registrieren",
