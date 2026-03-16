@@ -798,7 +798,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
                     <DialogContent className="max-w-sm rounded-2xl">
                       <DialogHeader>
-                        <DialogTitle className="text-center">Podijeli s prijateljem</DialogTitle>
+                        <DialogTitle className="text-center">{t('settings.shareWithFriend', 'Podijeli s prijateljem')}</DialogTitle>
                       </DialogHeader>
                       <div className="grid grid-cols-2 gap-3 py-4">
                         {(() => {
