@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Calendar, Pause, Play, Trash2 } from 'lucide-react';
+import { Calendar, Pause, Play, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -8,6 +8,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface RecurringTx {
   id: string;
@@ -22,6 +23,7 @@ interface RecurringTx {
 
 export const BusinessRecurring = () => {
   const { formatAmount } = useCurrency();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
   const [items, setItems] = useState<RecurringTx[]>([]);
@@ -49,15 +51,15 @@ export const BusinessRecurring = () => {
 
   const deleteItem = async (id: string) => {
     await supabase.from('recurring_transactions').delete().eq('id', id);
-    toast.success('Obrisano');
+    toast.success(t('common.deleted', 'Obrisano'));
     fetchItems();
   };
 
   const freqLabel: Record<string, string> = {
-    daily: 'Dnevno',
-    weekly: 'Tjedno',
-    monthly: 'Mjesečno',
-    yearly: 'Godišnje',
+    daily: t('business.recurring.daily', 'Dnevno'),
+    weekly: t('business.recurring.weekly', 'Tjedno'),
+    monthly: t('business.recurring.monthly', 'Mjesečno'),
+    yearly: t('business.recurring.yearly', 'Godišnje'),
   };
 
   const active = items.filter(i => i.is_active);
@@ -74,7 +76,7 @@ export const BusinessRecurring = () => {
         <CardContent className="p-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-muted-foreground">Mjesečne obveze (procjena)</p>
+              <p className="text-[10px] text-muted-foreground">{t('business.recurring.monthlyObligations', 'Mjesečne obveze (procjena)')}</p>
               <p className="text-lg font-bold text-expense">{formatAmount(monthlyTotal)}</p>
             </div>
           </div>
@@ -83,7 +85,7 @@ export const BusinessRecurring = () => {
 
       {active.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-muted-foreground px-1">Aktivne ({active.length})</p>
+          <p className="text-xs font-medium text-muted-foreground px-1">{t('business.recurring.active', 'Aktivne')} ({active.length})</p>
           {active.map(item => (
             <Card key={item.id} className="border-none shadow-sm">
               <CardContent className="p-3">
@@ -93,7 +95,7 @@ export const BusinessRecurring = () => {
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] text-muted-foreground">{freqLabel[item.frequency] || item.frequency}</span>
                       <span className="text-[10px] text-muted-foreground">
-                        Sljedeće: {format(new Date(item.next_due_date), 'dd.MM.yyyy')}
+                        {t('business.recurring.next', 'Sljedeće')}: {format(new Date(item.next_due_date), 'dd.MM.yyyy')}
                       </span>
                     </div>
                   </div>
@@ -115,7 +117,7 @@ export const BusinessRecurring = () => {
 
       {paused.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-muted-foreground px-1">Pauzirane ({paused.length})</p>
+          <p className="text-xs font-medium text-muted-foreground px-1">{t('business.recurring.paused', 'Pauzirane')} ({paused.length})</p>
           {paused.map(item => (
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 opacity-60">
               <div className="flex-1 min-w-0">
@@ -136,7 +138,7 @@ export const BusinessRecurring = () => {
       {items.length === 0 && !loading && (
         <div className="text-center py-8">
           <Calendar className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
-          <p className="text-sm text-muted-foreground">Nema ponavljajućih obveza</p>
+          <p className="text-sm text-muted-foreground">{t('business.recurring.noRecurring', 'Nema ponavljajućih obveza')}</p>
         </div>
       )}
     </div>

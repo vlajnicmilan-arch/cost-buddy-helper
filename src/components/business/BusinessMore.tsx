@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { isModuleEnabled } from '@/lib/businessModules';
 import { useBackButton } from '@/hooks/useBackButton';
+import { useTranslation } from 'react-i18next';
 
 type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni' | 'premises' | 'registers' | 'invoice-settings';
 
@@ -30,10 +31,10 @@ interface Props {
 export const BusinessMore = ({ expenses }: Props) => {
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [view, setView] = useState<SubView>('menu');
   const [enabledModules, setEnabledModules] = useState<string[]>([]);
 
-  // Handle Android back button: return to menu from sub-views
   useBackButton(view !== 'menu', () => setView('menu'));
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export const BusinessMore = ({ expenses }: Props) => {
   }, [activeBusinessProfileId, user]);
 
   const backButton = (
-    <button onClick={() => setView('menu')} className="text-xs text-primary mb-3 flex items-center gap-1">← Natrag</button>
+    <button onClick={() => setView('menu')} className="text-xs text-primary mb-3 flex items-center gap-1">{t('business.more.back', '← Natrag')}</button>
   );
 
   if (view === 'profile') return <div>{backButton}<BusinessProfileView /></div>;
@@ -69,22 +70,21 @@ export const BusinessMore = ({ expenses }: Props) => {
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
   const allMenuItems: MenuItem[] = [
-    { id: 'profile', icon: Building2, label: 'Podaci o tvrtki', desc: 'Naziv, OIB, adresa, IBAN i ostali podaci' },
-    { id: 'premises', icon: MapPin, label: 'Poslovni prostori', desc: 'Oznake prostora za fiskalizaciju računa' },
-    { id: 'registers', icon: Monitor, label: 'Blagajne', desc: 'Naplatni uređaji po poslovnim prostorima' },
-    { id: 'invoice-settings', icon: FileSliders, label: 'Postavke računa', desc: 'PDV obveza, logo, zaglavlje, podnožje', module: 'invoicing' },
-    { id: 'modules', icon: Settings2, label: 'Djelatnost i moduli', desc: 'Odaberite djelatnost i prilagodite module' },
-    { id: 'debts', icon: Receipt, label: 'Dugovanja i potraživanja', desc: 'Praćenje tko vam duguje i kome vi dugujete' },
-    { id: 'vat', icon: FileText, label: 'PDV pregled', desc: 'Procjena ulaznog i izlaznog PDV-a', module: 'vat_tracking' },
-    { id: 'travel', icon: Car, label: 'Putni troškovi', desc: 'Putni nalozi, kilometraža, dnevnice', module: 'travel_expenses' },
-    { id: 'invoicing', icon: Banknote, label: 'Fakturiranje', desc: 'Klijenti i izdavanje računa', module: 'invoicing' },
-    { id: 'eracuni', icon: FileCheck, label: 'e-Računi.hr', desc: 'Fiskalizacija i e-Računi za obrtnike', module: 'invoicing' },
-    { id: 'inventory', icon: Package, label: 'Zalihe', desc: 'Praćenje artikala i stanja skladišta', module: 'inventory' },
-    { id: 'workforce', icon: Users, label: 'Radnici & satnice', desc: 'Evidencija radnika, sati i troškova rada', module: 'workforce' },
-    { id: 'recurring', icon: RefreshCw, label: 'Ponavljajuće obveze', desc: 'Najam, pretplate, leasing i ostalo' },
+    { id: 'profile', icon: Building2, label: t('business.more.companyData', 'Podaci o tvrtki'), desc: t('business.more.companyDataDesc', 'Naziv, OIB, adresa, IBAN i ostali podaci') },
+    { id: 'premises', icon: MapPin, label: t('business.more.premises', 'Poslovni prostori'), desc: t('business.more.premisesDesc', 'Oznake prostora za fiskalizaciju računa') },
+    { id: 'registers', icon: Monitor, label: t('business.more.registers', 'Blagajne'), desc: t('business.more.registersDesc', 'Naplatni uređaji po poslovnim prostorima') },
+    { id: 'invoice-settings', icon: FileSliders, label: t('business.more.invoiceSettings', 'Postavke računa'), desc: t('business.more.invoiceSettingsDesc', 'PDV obveza, logo, zaglavlje, podnožje'), module: 'invoicing' },
+    { id: 'modules', icon: Settings2, label: t('business.more.modulesAndIndustry', 'Djelatnost i moduli'), desc: t('business.more.modulesAndIndustryDesc', 'Odaberite djelatnost i prilagodite module') },
+    { id: 'debts', icon: Receipt, label: t('business.more.debtsAndReceivables', 'Dugovanja i potraživanja'), desc: t('business.more.debtsAndReceivablesDesc', 'Praćenje tko vam duguje i kome vi dugujete') },
+    { id: 'vat', icon: FileText, label: t('business.more.vatOverview', 'PDV pregled'), desc: t('business.more.vatOverviewDesc', 'Procjena ulaznog i izlaznog PDV-a'), module: 'vat_tracking' },
+    { id: 'travel', icon: Car, label: t('business.more.travelExpenses', 'Putni troškovi'), desc: t('business.more.travelExpensesDesc', 'Putni nalozi, kilometraža, dnevnice'), module: 'travel_expenses' },
+    { id: 'invoicing', icon: Banknote, label: t('business.more.invoicing', 'Fakturiranje'), desc: t('business.more.invoicingDesc', 'Klijenti i izdavanje računa'), module: 'invoicing' },
+    { id: 'eracuni', icon: FileCheck, label: t('business.more.eInvoices', 'e-Računi.hr'), desc: t('business.more.eInvoicesDesc', 'Fiskalizacija i e-Računi za obrtnike'), module: 'invoicing' },
+    { id: 'inventory', icon: Package, label: t('business.more.inventory', 'Zalihe'), desc: t('business.more.inventoryDesc', 'Praćenje artikala i stanja skladišta'), module: 'inventory' },
+    { id: 'workforce', icon: Users, label: t('business.more.workforce', 'Radnici & satnice'), desc: t('business.more.workforceDesc', 'Evidencija radnika, sati i troškova rada'), module: 'workforce' },
+    { id: 'recurring', icon: RefreshCw, label: t('business.more.recurringObligations', 'Ponavljajuće obveze'), desc: t('business.more.recurringObligationsDesc', 'Najam, pretplate, leasing i ostalo') },
   ];
 
-  // Filter by enabled modules (items without module field are always shown)
   const menuItems = allMenuItems.filter(item => !item.module || isModuleEnabled(enabledModules, item.module as any));
 
   return (

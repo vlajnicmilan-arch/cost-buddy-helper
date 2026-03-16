@@ -10,6 +10,7 @@ import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
 import { BankConnection } from '@/components/BankConnection';
 import { ParsedTransaction } from '@/lib/csvParsers';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   expenses: Expense[];
@@ -23,6 +24,7 @@ interface Props {
 
 export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDeleteExpense, onImportCSV, findDuplicates, existingExpenses }: Props) => {
   const { formatAmount } = useCurrency();
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
@@ -53,20 +55,20 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Pretraži..." className="pl-8 h-9 text-sm" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('business.transactions.search', 'Pretraži...')} className="pl-8 h-9 text-sm" />
         </div>
         <Button size="sm" className="h-9 gap-1" onClick={onAddClick}>
           <Plus className="w-3.5 h-3.5" />
-          Novo
+          {t('business.transactions.new', 'Novo')}
         </Button>
       </div>
 
       <div className="flex gap-1.5">
         {[
-          { value: null, label: 'Sve' },
-          { value: 'expense', label: 'Rashodi' },
-          { value: 'income', label: 'Prihodi' },
-          { value: 'transfer', label: 'Transferi' },
+          { value: null, label: t('business.transactions.all', 'Sve') },
+          { value: 'expense', label: t('business.transactions.expenses', 'Rashodi') },
+          { value: 'income', label: t('business.transactions.income', 'Prihodi') },
+          { value: 'transfer', label: t('business.transactions.transfers', 'Transferi') },
         ].map(f => (
           <Badge
             key={f.label}
@@ -105,12 +107,11 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
 
         {filtered.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">Nema transakcija</p>
+            <p className="text-sm text-muted-foreground">{t('business.transactions.noTransactions', 'Nema transakcija')}</p>
           </div>
         )}
       </div>
 
-      {/* Bank Statement Import */}
       <BankConnection onImportCSV={onImportCSV} findDuplicates={findDuplicates} existingExpenses={existingExpenses} />
 
       {detailExpense && (
