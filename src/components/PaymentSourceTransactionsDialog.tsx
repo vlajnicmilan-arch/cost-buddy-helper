@@ -244,20 +244,31 @@ export const PaymentSourceTransactionsDialog = ({
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.type !== 'application/pdf') {
+    // Accept PDF by MIME type or file extension (mobile browsers may not set type correctly)
+    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPDF) {
       toast.error(t('import.selectPDF'));
       return;
     }
+    // Reset input immediately so same file can be re-selected
+    if (pdfInputRef.current) pdfInputRef.current.value = '';
+    
     const reader = new FileReader();
+    reader.onerror = () => {
+      toast.error('Greška pri čitanju datoteke');
+    };
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
+      if (!base64) {
+        toast.error('Greška pri čitanju datoteke');
+        return;
+      }
       const result = await parsePDF(base64);
       if (result && result.transactions.length > 0) {
         setPdfPreviewOpen(true);
       }
     };
     reader.readAsDataURL(file);
-    if (pdfInputRef.current) pdfInputRef.current.value = '';
   };
 
   const handleImportPDFTransactions = async () => {
