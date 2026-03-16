@@ -103,27 +103,19 @@ export const PaymentSourceTransactionsDialog = ({
       if (e.type === 'transfer' && e.income_source_id === paymentSource.id) return true;
       return false;
     }).sort((a, b) => {
-      // Group batch items together: if both have same batch, keep them adjacent
+      // If both are in the same batch, sort within batch by date desc
       if (a.import_batch_id && b.import_batch_id && a.import_batch_id === b.import_batch_id) {
-        // Within same batch, sort by date desc then created_at desc
         const dayA = new Date(a.date.getFullYear(), a.date.getMonth(), a.date.getDate()).getTime();
         const dayB = new Date(b.date.getFullYear(), b.date.getMonth(), b.date.getDate()).getTime();
         if (dayA !== dayB) return dayB - dayA;
-        const createdA = a.created_at ?? '';
-        const createdB = b.created_at ?? '';
-        return createdB > createdA ? 1 : createdB < createdA ? -1 : 0;
+        return (b.created_at ?? '') > (a.created_at ?? '') ? 1 : -1;
       }
-      // For batch items, use created_at of import as primary sort key to keep batch grouped
-      const sortKeyA = a.import_batch_id ? (a.created_at ?? '') : '';
-      const sortKeyB = b.import_batch_id ? (b.created_at ?? '') : '';
-      // Primary sort: date descending
-      const dayA = new Date(a.date.getFullYear(), a.date.getMonth(), a.date.getDate()).getTime();
-      const dayB = new Date(b.date.getFullYear(), b.date.getMonth(), b.date.getDate()).getTime();
-      if (dayA !== dayB) return dayB - dayA;
-      // Same day → sort by created_at desc
+      // Use created_at as primary sort to keep batch items grouped together
       const createdA = a.created_at ?? '';
       const createdB = b.created_at ?? '';
-      return createdB > createdA ? 1 : createdB < createdA ? -1 : 0;
+      if (createdB > createdA) return 1;
+      if (createdB < createdA) return -1;
+      return 0;
     });
   }, [expenses, paymentSource]);
 
