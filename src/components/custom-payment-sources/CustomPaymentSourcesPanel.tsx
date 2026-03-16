@@ -7,6 +7,10 @@ import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
 import { BalanceCorrectionDialog } from './BalanceCorrectionDialog';
 import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
 import { CustomPaymentSource, SUGGESTED_PAYMENT_SOURCES } from '@/types/customPaymentSource';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useStorage } from '@/contexts/StorageContext';
+import { saveLocalExpense } from '@/lib/storage/indexedDB';
 import {
   AlertDialog,
   AlertDialogAction,
