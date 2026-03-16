@@ -812,17 +812,17 @@ export const PaymentSourceTransactionsDialog = ({
                                 })()}
                               </div>
 
-                              {/* Row 2: Category/Type + Running Balance + Date + Actions */}
-                              <div className="flex items-center gap-1.5 mt-1.5 ml-[calc(1rem+2rem+0.5rem)]">
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground leading-tight min-w-0">
+                              {/* Row 2: Category/Type + Running Balance + Date */}
+                              <div className="flex items-center gap-1 mt-1.5 ml-[calc(1rem+2rem+0.5rem)] overflow-hidden">
+                                <div className="flex items-center gap-1 text-[11px] text-muted-foreground leading-tight min-w-0 shrink">
                                   {expense.type === 'expense' && (
-                                    <span className="truncate max-w-[80px]">{categoryInfo.name}</span>
+                                    <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
                                   )}
                                   {expense.type === 'transfer' && expense.income_source_id === paymentSource?.id && (
-                                    <span className="text-income">{t('transactions.transfer', 'Prijenos')} ↓</span>
+                                    <span className="text-income whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↓</span>
                                   )}
                                   {expense.type === 'transfer' && expense.income_source_id !== paymentSource?.id && (
-                                    <span className="text-primary">{t('transactions.transfer', 'Prijenos')} ↑</span>
+                                    <span className="text-primary whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↑</span>
                                   )}
                                   {expense.type === 'income' && (
                                     <span className="text-income">{t('transactions.income', 'Prihod')}</span>
@@ -830,23 +830,23 @@ export const PaymentSourceTransactionsDialog = ({
                                   {cardInfo && (
                                     <>
                                       <span className="text-muted-foreground/40">•</span>
-                                      <span className="text-[11px] font-mono">••{cardInfo.last_four_digits}</span>
+                                      <span className="text-[10px] font-mono">••{cardInfo.last_four_digits}</span>
                                     </>
                                   )}
                                   <span className="text-muted-foreground/40">•</span>
-                                  <span className="text-[11px] text-muted-foreground/70">
+                                  <span className="text-[10px] text-muted-foreground/70 whitespace-nowrap">
                                     {format(expense.date, 'd. MMM', { locale: hr })}
                                   </span>
                                 </div>
-                                <div className="flex-1" />
+                                <div className="flex-1 min-w-1" />
                                 {balanceAfter !== undefined && (
                                   <span className={cn(
-                                    "text-sm sm:text-base font-mono font-bold leading-tight shrink-0",
+                                    "text-xs sm:text-sm font-mono font-bold leading-tight shrink-0",
                                     balanceAfter >= 0 
                                       ? "text-primary" 
                                       : "text-destructive"
                                   )}>
-                                    <span className="text-[10px] sm:text-xs font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
+                                    <span className="text-[9px] sm:text-[10px] font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
                                   </span>
                                 )}
                               </div>
