@@ -467,7 +467,7 @@ export const PaymentSourceTransactionsDialog = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-background flex flex-col"
+            className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="px-4 py-3 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
@@ -566,7 +566,7 @@ export const PaymentSourceTransactionsDialog = ({
 
             {/* Content */}
             <ScrollArea className="flex-1">
-              <div className="max-w-2xl mx-auto w-full px-4 py-4 space-y-4">
+              <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 py-4 space-y-4 overflow-hidden">
                 {/* Balance & Summary */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-primary/10 col-span-2">
@@ -774,7 +774,7 @@ export const PaymentSourceTransactionsDialog = ({
                               )}
                             >
                               {/* Row 1: Checkbox + Icon + Description + Amount */}
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 overflow-hidden">
                                 <div onClick={(e) => e.stopPropagation()}>
                                   <Checkbox
                                     checked={isSelected}
@@ -795,7 +795,7 @@ export const PaymentSourceTransactionsDialog = ({
                                     categoryInfo.icon
                                   )}
                                 </div>
-                                <p className="flex-1 min-w-0 font-medium text-foreground truncate text-sm leading-tight">
+                                <p className="flex-1 min-w-0 font-medium text-foreground truncate text-xs sm:text-sm leading-tight">
                                   {expense.merchant_name || expense.description}
                                 </p>
                                 {(() => {
@@ -805,24 +805,24 @@ export const PaymentSourceTransactionsDialog = ({
                                   const prefix = expense.type === 'expense' ? '-' : 
                                     (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
                                   return (
-                                    <p className={cn("font-mono font-bold text-sm sm:text-base leading-tight shrink-0 text-right", colorClass)}>
+                                    <p className={cn("font-mono font-bold text-xs sm:text-sm leading-tight shrink-0 text-right", colorClass)}>
                                       {prefix}{formatAmount(expense.amount)}
                                     </p>
                                   );
                                 })()}
                               </div>
 
-                              {/* Row 2: Category/Type + Running Balance + Date + Actions */}
-                              <div className="flex items-center gap-1.5 mt-1.5 ml-[calc(1rem+2rem+0.5rem)]">
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground leading-tight min-w-0">
+                              {/* Row 2: Category/Type + Running Balance + Date */}
+                              <div className="flex items-center gap-1 mt-1.5 ml-[calc(1rem+2rem+0.5rem)] overflow-hidden">
+                                <div className="flex items-center gap-1 text-[11px] text-muted-foreground leading-tight min-w-0 shrink">
                                   {expense.type === 'expense' && (
-                                    <span className="truncate max-w-[80px]">{categoryInfo.name}</span>
+                                    <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
                                   )}
                                   {expense.type === 'transfer' && expense.income_source_id === paymentSource?.id && (
-                                    <span className="text-income">{t('transactions.transfer', 'Prijenos')} ↓</span>
+                                    <span className="text-income whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↓</span>
                                   )}
                                   {expense.type === 'transfer' && expense.income_source_id !== paymentSource?.id && (
-                                    <span className="text-primary">{t('transactions.transfer', 'Prijenos')} ↑</span>
+                                    <span className="text-primary whitespace-nowrap">{t('transactions.transfer', 'Prijenos')} ↑</span>
                                   )}
                                   {expense.type === 'income' && (
                                     <span className="text-income">{t('transactions.income', 'Prihod')}</span>
@@ -830,23 +830,23 @@ export const PaymentSourceTransactionsDialog = ({
                                   {cardInfo && (
                                     <>
                                       <span className="text-muted-foreground/40">•</span>
-                                      <span className="text-[11px] font-mono">••{cardInfo.last_four_digits}</span>
+                                      <span className="text-[10px] font-mono">••{cardInfo.last_four_digits}</span>
                                     </>
                                   )}
                                   <span className="text-muted-foreground/40">•</span>
-                                  <span className="text-[11px] text-muted-foreground/70">
+                                  <span className="text-[10px] text-muted-foreground/70 whitespace-nowrap">
                                     {format(expense.date, 'd. MMM', { locale: hr })}
                                   </span>
                                 </div>
-                                <div className="flex-1" />
+                                <div className="flex-1 min-w-1" />
                                 {balanceAfter !== undefined && (
                                   <span className={cn(
-                                    "text-sm sm:text-base font-mono font-bold leading-tight shrink-0",
+                                    "text-xs sm:text-sm font-mono font-bold leading-tight shrink-0",
                                     balanceAfter >= 0 
                                       ? "text-primary" 
                                       : "text-destructive"
                                   )}>
-                                    <span className="text-[10px] sm:text-xs font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
+                                    <span className="text-[9px] sm:text-[10px] font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
                                   </span>
                                 )}
                               </div>
