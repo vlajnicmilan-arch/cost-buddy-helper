@@ -85,6 +85,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     setSource('');
     setError('');
     setImportedCount(0);
+    setSelectedPaymentSource('');
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
