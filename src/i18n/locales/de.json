@@ -118,11 +118,17 @@
     }
   },
   "nav": {
+    "home": "Startseite",
     "dashboard": "Übersicht",
     "projects": "Projekte",
     "budgets": "Budgets",
     "wallet": "Geldbörse",
-    "viewAll": "Alle anzeigen"
+    "family": "Familie",
+    "viewAll": "Alle anzeigen",
+    "settings": "Einstellungen",
+    "help": "Hilfe",
+    "signOut": "Abmelden",
+    "signIn": "Anmelden"
   },
   "common": {
     "save": "Speichern",
