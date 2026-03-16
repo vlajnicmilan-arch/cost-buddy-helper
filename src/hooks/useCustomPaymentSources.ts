@@ -105,7 +105,7 @@ export const useCustomPaymentSources = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode]);
+  }, [user, isLocalMode, activeBusinessProfileId]);
 
   useEffect(() => {
     fetchCustomPaymentSources();
