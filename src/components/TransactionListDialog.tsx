@@ -435,6 +435,19 @@ export const TransactionListDialog = ({
         onOpenChange={setEditDialogOpen}
         onSave={handleSave}
       />
+
+      {selectedBatchId && (
+        <ImportBatchDialog
+          open={importBatchDialogOpen}
+          onOpenChange={(open) => {
+            setImportBatchDialogOpen(open);
+            if (!open) setSelectedBatchId(null);
+          }}
+          batchId={selectedBatchId}
+          allExpenses={filteredExpenses}
+          onDeleteBatch={handleDeleteBatch}
+        />
+      )}
     </>
   );
 };
