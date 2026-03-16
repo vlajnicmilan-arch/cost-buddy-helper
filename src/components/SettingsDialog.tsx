@@ -902,8 +902,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                       <Shield className="w-4 h-4 text-primary" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium">Admin panel</p>
-                      <p className="text-xs text-muted-foreground">Pregledaj prijave problema</p>
+                      <p className="text-sm font-medium">{t('settings.adminPanel', 'Admin panel')}</p>
+                      <p className="text-xs text-muted-foreground">{t('settings.adminPanelDesc', 'Pregledaj prijave problema')}</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
