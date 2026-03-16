@@ -72,7 +72,7 @@ const Index = () => {
     if (!activeBusinessProfileId || !user) { setBusinessProfile(null); return; }
     supabase
       .from('business_profiles')
-      .select('id, company_name, is_vat_payer, industry_type, enabled_modules')
+      .select('id, company_name, is_vat_payer, industry_type, enabled_modules, theme_color')
       .eq('id', activeBusinessProfileId)
       .single()
       .then(({ data }) => { if (data) setBusinessProfile(data as any); });
