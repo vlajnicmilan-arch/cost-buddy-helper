@@ -130,11 +130,11 @@ export const useExpenses = (options?: UseExpensesOptions) => {
 
   const totals = useMemo(() => {
     const totalExpenses = dashboardExpenses
-      .filter(e => e.type === 'expense')
+      .filter(e => e.type === 'expense' && e.expense_nature !== 'correction')
       .reduce((sum, e) => sum + Number(e.amount), 0);
 
     const totalIncome = dashboardExpenses
-      .filter(e => e.type === 'income')
+      .filter(e => e.type === 'income' && e.expense_nature !== 'correction')
       .reduce((sum, e) => sum + Number(e.amount), 0);
 
     const totalTransfers = dashboardExpenses
