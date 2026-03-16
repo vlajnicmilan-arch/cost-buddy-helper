@@ -519,17 +519,41 @@ const Auth = () => {
               />
             </div>
             {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-            {!isLogin && (
+           {!isLogin && (
               <p className="text-xs text-muted-foreground">
                 Minimalno 6 znakova
               </p>
             )}
           </div>
 
+          {/* GDPR Consent checkbox - only on registration */}
+          {!isLogin && (
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="gdprConsent"
+                checked={gdprConsent}
+                onChange={(e) => setGdprConsent(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-relaxed">
+                Prihvaćam{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/privacy-policy')}
+                  className="text-primary hover:underline"
+                >
+                  Politiku privatnosti
+                </button>
+                {' '}i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.
+              </label>
+            </div>
+          )}
+
           <Button 
             type="submit" 
             className="w-full h-12 rounded-xl font-medium"
-            disabled={loading}
+            disabled={loading || (!isLogin && !gdprConsent)}
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isLogin ? 'Prijava' : 'Registracija'}
@@ -545,6 +569,7 @@ const Auth = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setErrors({});
+                setGdprConsent(false);
               }}
               className="text-primary font-medium hover:underline"
             >
