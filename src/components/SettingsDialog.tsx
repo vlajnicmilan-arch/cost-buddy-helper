@@ -881,8 +881,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                       <Bug className="w-4 h-4 text-destructive" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium">Prijavi problem</p>
-                      <p className="text-xs text-muted-foreground">Prijavite grešku ili nejasnoću</p>
+                      <p className="text-sm font-medium">{t('settings.reportProblem', 'Prijavi problem')}</p>
+                      <p className="text-xs text-muted-foreground">{t('settings.reportProblemDesc', 'Prijavite grešku ili nejasnoću')}</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
