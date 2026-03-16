@@ -83,6 +83,14 @@ export const TransactionListDialog = ({
     await onDelete(id);
   };
 
+  const handleDeleteBatch = async (expenseIds: string[]) => {
+    const visibleIds = new Set(filteredExpenses.map((expense) => expense.id));
+    const safeIds = expenseIds.filter((id) => visibleIds.has(id));
+    await Promise.all(safeIds.map((id) => onDelete(id)));
+    setImportBatchDialogOpen(false);
+    setSelectedBatchId(null);
+  };
+
   // Selection handlers
   const toggleSelection = (id: string) => {
     const newSelected = new Set(selectedIds);
