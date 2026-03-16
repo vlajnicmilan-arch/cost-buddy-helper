@@ -65,7 +65,7 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[60] bg-background flex flex-col"
+          className="fixed inset-0 z-50 bg-background flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
