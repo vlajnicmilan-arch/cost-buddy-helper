@@ -15,7 +15,6 @@ interface BusinessProfile {
 }
 
 export const BusinessProfileSwitcher = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId, setActiveBusinessProfileId, businessModeEnabled } = useAppState();
