@@ -248,10 +248,18 @@ export const PaymentSourceTransactionsDialog = ({
     const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPDF) {
       toast.error(t('import.selectPDF'));
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
       return;
     }
-    // Reset input immediately so same file can be re-selected
+    
+    // Clone the file into a Blob before resetting input — on mobile, resetting
+    // the input can invalidate the File reference before FileReader finishes.
+    const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type || 'application/pdf' });
+    
+    // Reset input so same file can be re-selected next time
     if (pdfInputRef.current) pdfInputRef.current.value = '';
+    
+    toast.info('Učitavanje PDF-a...');
     
     const reader = new FileReader();
     reader.onerror = () => {
@@ -263,12 +271,19 @@ export const PaymentSourceTransactionsDialog = ({
         toast.error('Greška pri čitanju datoteke');
         return;
       }
-      const result = await parsePDF(base64);
-      if (result && result.transactions.length > 0) {
-        setPdfPreviewOpen(true);
+      try {
+        const result = await parsePDF(base64);
+        if (result && result.transactions.length > 0) {
+          setPdfPreviewOpen(true);
+        } else if (result && result.transactions.length === 0) {
+          toast.warning('PDF je obrađen, ali nisu pronađene transakcije.');
+        }
+      } catch (err) {
+        console.error('PDF parse error:', err);
+        toast.error('Greška pri analizi PDF izvoda');
       }
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(fileBlob);
   };
 
   const handleImportPDFTransactions = async () => {
