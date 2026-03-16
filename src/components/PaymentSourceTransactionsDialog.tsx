@@ -103,16 +103,27 @@ export const PaymentSourceTransactionsDialog = ({
       if (e.type === 'transfer' && e.income_source_id === paymentSource.id) return true;
       return false;
     }).sort((a, b) => {
-      // Normaliziraj datum na početek dana (bez vremena) za primarni sort
+      // Group batch items together: if both have same batch, keep them adjacent
+      if (a.import_batch_id && b.import_batch_id && a.import_batch_id === b.import_batch_id) {
+        // Within same batch, sort by date desc then created_at desc
+        const dayA = new Date(a.date.getFullYear(), a.date.getMonth(), a.date.getDate()).getTime();
+        const dayB = new Date(b.date.getFullYear(), b.date.getMonth(), b.date.getDate()).getTime();
+        if (dayA !== dayB) return dayB - dayA;
+        const createdA = a.created_at ?? '';
+        const createdB = b.created_at ?? '';
+        return createdB > createdA ? 1 : createdB < createdA ? -1 : 0;
+      }
+      // For batch items, use created_at of import as primary sort key to keep batch grouped
+      const sortKeyA = a.import_batch_id ? (a.created_at ?? '') : '';
+      const sortKeyB = b.import_batch_id ? (b.created_at ?? '') : '';
+      // Primary sort: date descending
       const dayA = new Date(a.date.getFullYear(), a.date.getMonth(), a.date.getDate()).getTime();
       const dayB = new Date(b.date.getFullYear(), b.date.getMonth(), b.date.getDate()).getTime();
       if (dayA !== dayB) return dayB - dayA;
-      // Isti dan → sortiraj po created_at silazno (novije kreirane gore)
+      // Same day → sort by created_at desc
       const createdA = a.created_at ?? '';
       const createdB = b.created_at ?? '';
-      if (createdB > createdA) return 1;
-      if (createdB < createdA) return -1;
-      return 0;
+      return createdB > createdA ? 1 : createdB < createdA ? -1 : 0;
     });
   }, [expenses, paymentSource]);
 
