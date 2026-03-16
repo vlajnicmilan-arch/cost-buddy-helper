@@ -803,7 +803,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                       <div className="grid grid-cols-2 gap-3 py-4">
                         {(() => {
                           const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
-                          const shareText = 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!';
+                          const shareText = t('settings.shareText', 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!');
                           return (
                             <>
                               <button
