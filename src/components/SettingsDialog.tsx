@@ -95,6 +95,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     emitFinancialReset,
   } = useAppState();
   const isLocalMode = storageMode === 'local';
+  const appLock = useAppLock();
   
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
