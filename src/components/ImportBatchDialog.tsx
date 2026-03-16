@@ -65,7 +65,7 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[60] bg-background flex flex-col"
+          className="fixed inset-0 z-50 bg-background flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
@@ -80,19 +80,19 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               {onDeleteBatch && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={() => setConfirmOpen(true)} 
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }} 
+                  className="h-10 w-10 min-h-[44px] min-w-[44px] text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-5 w-5" />
                 </Button>
               )}
-              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-8 w-8">
-                <XIcon className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onOpenChange(false); }} className="h-10 w-10 min-h-[44px] min-w-[44px]">
+                <XIcon className="h-6 w-6" />
               </Button>
             </div>
           </div>
@@ -170,11 +170,11 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleting}>Odustani</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleting} className="min-h-[44px]">Odustani</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDeleteBatch}
             disabled={deleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[44px]"
           >
             {deleting ? 'Brisanje...' : `Obriši ${batchExpenses.length} transakcija`}
           </AlertDialogAction>
