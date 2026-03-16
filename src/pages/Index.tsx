@@ -344,9 +344,14 @@ const Index = () => {
               <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
                 <Building2 className="w-3.5 h-3.5 text-primary-foreground" />
               </div>
-              <h1 className="text-sm font-bold text-primary-foreground truncate">
-                {businessProfile?.company_name || 'Tvrtka'}
-              </h1>
+              <div className="min-w-0">
+                <h1 className="text-sm font-bold text-primary-foreground truncate">
+                  {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
+                </h1>
+                <p className="text-[10px] text-primary-foreground/70 truncate">
+                  {businessProfile?.company_name || 'Tvrtka'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
