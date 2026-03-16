@@ -31,7 +31,7 @@ import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt, ArrowLeft, Building2 } from 'lucide-react';
+import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt, ArrowLeft, Building2, FileSpreadsheet } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -51,6 +51,9 @@ import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SavingsGoalsSection } from '@/components/savings';
+import { ReportsDialog } from '@/components/reports/ReportsDialog';
+import { AddExpenseDialog } from '@/components/AddExpenseDialog';
+import { CSVImportDialog } from '@/components/CSVImportDialog';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -62,6 +65,7 @@ const Index = () => {
   const isBusinessMode = !!activeBusinessProfileId;
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[] } | null>(null);
+  const [businessImportOpen, setBusinessImportOpen] = useState(false);
 
   // Load business profile data
   useEffect(() => {
@@ -326,7 +330,7 @@ const Index = () => {
     };
 
     return (
-      <div className="business-mode min-h-screen bg-background pb-16">
+      <div className="business-mode min-h-screen bg-background pb-20">
         {/* Compact business header */}
         <div className="sticky top-0 z-40 bg-primary">
           <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-3">
@@ -348,15 +352,168 @@ const Index = () => {
         </div>
 
         {/* Business Content */}
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4">
           {businessTab === 'dashboard' && (
-            <BusinessDashboard
-              expenses={expenses}
-              totalReceivable={totalReceivable}
-              totalPayable={totalPayable}
-              enabledModules={businessProfile?.enabled_modules || []}
-              industryType={businessProfile?.industry_type || 'other'}
-            />
+            <>
+              {/* Action buttons (no BulkEdit for business) */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <ReportsDialog expenses={allExpenses} />
+                {importFromCSV && (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      className="gap-2 rounded-xl"
+                      onClick={() => setBusinessImportOpen(true)}
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      {t('import.title', 'Uvoz izvoda')}
+                    </Button>
+                    <CSVImportDialog
+                      onImport={importFromCSV}
+                      findDuplicates={findDuplicates}
+                      existingExpenses={allExpenses}
+                      externalOpen={businessImportOpen}
+                      onExternalOpenChange={setBusinessImportOpen}
+                    />
+                  </>
+                )}
+                <AddExpenseDialog onAdd={addExpense} checkDuplicate={checkDuplicate} />
+              </div>
+
+              {/* Payment Sources */}
+              <PaymentSourcesSection
+                customPaymentSources={customPaymentSources}
+                onSourceClick={(source) => {
+                  setSelectedPaymentSource(source);
+                  setPaymentSourceDialogOpen(true);
+                }}
+              />
+
+              {/* Summary Cards */}
+              <SummarySection
+                balance={customPaymentSources.reduce((sum, s) => sum + (s.balance || 0), 0)}
+                netWorth={netWorth}
+                totalIncome={totalIncome}
+                totalExpenses={totalExpenses}
+                totalTransfers={totalTransfers}
+                monthlyTransfers={monthlyTransfers}
+                monthlyTransferCount={monthlyTransferCount}
+                allTransfers={allTransfers}
+                recurringCount={recurringTransactions.filter(r => r.is_active).length}
+                isLocalMode={isLocalMode}
+                simpleModeEnabled={false}
+                onIncomeClick={() => setIncomeDialogOpen(true)}
+                onExpenseClick={() => setExpenseDialogOpen(true)}
+                onTransferClick={() => setTransferDialogOpen(true)}
+                onRecurringClick={() => setRecurringPanelOpen(true)}
+              />
+
+              {/* Receivables & Payables */}
+              {(totalReceivable > 0 || totalPayable > 0) && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, transparent 100%)' }}>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.receivables', 'Potraživanja')}</p>
+                    <p className="text-sm font-bold text-income">{formatAmount(totalReceivable)}</p>
+                  </div>
+                  <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)' }}>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.payables', 'Dugovanja')}</p>
+                    <p className="text-sm font-bold text-destructive">{formatAmount(totalPayable)}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Transactions */}
+              <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen}>
+                <div className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 ${transactionsOpen ? 'p-6' : 'p-4'}`}>
+                  <CollapsibleTrigger asChild>
+                    <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
+                      <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <Receipt className="w-5 h-5 text-primary" />
+                        {t('transactions.recent', 'Nedavno')}
+                      </h2>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {filteredDashboardExpenses.length !== expenses.length
+                            ? t('transactions.transactionsCountFiltered', { filtered: filteredDashboardExpenses.length, total: expenses.length })
+                            : t('transactions.transactionsCount', { count: expenses.length })}
+                        </span>
+                        <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${transactionsOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-4 space-y-4">
+                    <TransactionFilters
+                      filters={dashboardFilters}
+                      onFiltersChange={setDashboardFilters}
+                      showCardFilter={allCards.length > 0}
+                      showScopeFilter={false}
+                      cards={allCards}
+                    />
+                    <BulkActionsToolbar
+                      selectedCount={selectedTransactionIds.size}
+                      onClearSelection={handleClearSelection}
+                      onSelectAll={handleSelectAll}
+                      totalCount={filteredDashboardExpenses.length}
+                      onBulkCategoryChange={handleBulkCategoryChange}
+                      onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
+                      onBulkDelete={handleBulkDelete}
+                    />
+                    {expensesLoading ? (
+                      <div className="py-12 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : filteredDashboardExpenses.length === 0 ? (
+                      <EmptyState
+                        variant="transactions"
+                        title={expenses.length === 0 ? t('transactions.noTransactions') : t('transactions.noResults', 'Nema rezultata za odabrane filtere')}
+                        description={expenses.length === 0 ? t('transactions.addFirstTransaction') : undefined}
+                        compact
+                      />
+                    ) : (
+                      <div className="space-y-1">
+                        {filteredDashboardExpenses.slice(0, 50).map((expense) => (
+                          <div key={expense.id} className="flex items-center gap-2">
+                            <Checkbox
+                              checked={selectedTransactionIds.has(expense.id)}
+                              onCheckedChange={() => handleToggleSelect(expense.id)}
+                              className="shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <TransactionItem
+                                expense={expense}
+                                onDelete={deleteExpense}
+                                onClick={(e) => {
+                                  if (selectedTransactionIds.size === 0) {
+                                    setSelectedTransaction(e);
+                                    setDetailDialogOpen(true);
+                                  } else {
+                                    handleToggleSelect(e.id);
+                                  }
+                                }}
+                                contextLookup={contextLookup}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Quick Links: Projects & Budgets */}
+              <div className="mt-6 space-y-4">
+                <QuickLinksSection
+                  simpleModeEnabled={false}
+                  isLocalMode={false}
+                  expensesByCategory={expensesByCategory}
+                  totalExpenses={totalExpenses}
+                  expenses={expenses}
+                  onUpdateExpense={updateExpense}
+                  onDeleteExpense={deleteExpense}
+                />
+              </div>
+            </>
           )}
           {businessTab === 'wallet' && <BusinessWallet />}
           {businessTab === 'transactions' && (
@@ -378,6 +535,62 @@ const Index = () => {
           )}
           {businessTab === 'more' && <BusinessMore expenses={expenses} />}
         </div>
+
+        {/* Dialogs for business mode */}
+        <TransactionListDialog
+          open={incomeDialogOpen}
+          onOpenChange={setIncomeDialogOpen}
+          type="income"
+          expenses={expenses}
+          onUpdate={updateExpense}
+          onDelete={deleteExpense}
+          total={totalIncome}
+        />
+        <TransactionListDialog
+          open={expenseDialogOpen}
+          onOpenChange={setExpenseDialogOpen}
+          type="expense"
+          expenses={expenses}
+          onUpdate={updateExpense}
+          onDelete={deleteExpense}
+          total={totalExpenses}
+        />
+        <TransferListDialog
+          open={transferDialogOpen}
+          onOpenChange={setTransferDialogOpen}
+          transfers={allTransfers}
+          totalAmount={totalTransfers}
+        />
+        <TransactionDetailDialog
+          expense={selectedTransaction}
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+          onEdit={(expense) => {
+            setSelectedTransaction(expense);
+            setEditDialogOpen(true);
+          }}
+          onDelete={deleteExpense}
+        />
+        <EditTransactionDialog
+          expense={selectedTransaction}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSave={updateExpense}
+        />
+        <PaymentSourceTransactionsDialog
+          open={paymentSourceDialogOpen}
+          onOpenChange={setPaymentSourceDialogOpen}
+          paymentSource={selectedPaymentSource}
+          expenses={allExpenses}
+          onUpdate={updateExpense}
+          onDelete={deleteExpense}
+          onImportCSV={importFromCSV}
+          findDuplicates={findDuplicates}
+        />
+
+        {recurringPanelOpen && (
+          <RecurringTransactionsPanel onClose={() => setRecurringPanelOpen(false)} />
+        )}
 
         <BusinessBottomNav activeTab={businessTab} onTabChange={setBusinessTab} />
       </div>
