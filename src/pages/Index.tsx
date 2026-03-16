@@ -330,7 +330,7 @@ const Index = () => {
     };
 
     return (
-      <div className="business-mode min-h-screen bg-background pb-20">
+      <div className={`business-theme-${businessProfile?.theme_color || 'ocean-blue'} min-h-screen bg-background pb-20`}>
         {/* Compact business header */}
         <div className="sticky top-0 z-40 bg-primary">
           <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-3">
