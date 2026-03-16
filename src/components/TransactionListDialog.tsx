@@ -264,69 +264,93 @@ export const TransactionListDialog = ({
               </div>
             ) : (
               <AnimatePresence>
-                {filteredExpenses.map((expense) => {
+                {filteredExpenses.map((expense, index) => {
                   const categoryInfo = getCategoryInfo(expense.category);
                   const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
                   const isSelected = selectedIds.has(expense.id);
+                  const prevExpense = index > 0 ? filteredExpenses[index - 1] : null;
+                  const showBatchStart = expense.import_batch_id && (!prevExpense || prevExpense.import_batch_id !== expense.import_batch_id);
+                  const batchExpenseCount = showBatchStart
+                    ? filteredExpenses.filter((item) => item.import_batch_id === expense.import_batch_id).length
+                    : 0;
                   
                   return (
-                    <motion.div
-                      key={expense.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className={cn(
-                        "flex items-center gap-2 py-2.5 px-2 rounded-lg transition-colors cursor-pointer",
-                        isSelected 
-                          ? "bg-primary/10" 
-                          : "hover:bg-muted/50"
-                      )}
-                      onClick={() => {
-                        setDetailExpense(expense);
-                        setDetailDialogOpen(true);
-                      }}
-                    >
-                      {/* Checkbox */}
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleSelection(expense.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="shrink-0"
-                      />
-
-                      {/* Category Icon */}
-                      <div 
-                        className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
-                        style={{ backgroundColor: `hsl(var(--${categoryInfo.color}) / 0.15)` }}
-                      >
-                        {categoryInfo.icon}
-                      </div>
-
-                      {/* Main Content */}
-                      <div className="flex-1 min-w-0 mr-2">
-                        <p className="font-medium text-foreground truncate text-sm leading-tight">
-                          {expense.merchant_name || expense.description}
-                        </p>
-                        <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
-                          <span>{paymentInfo.icon} {paymentInfo.name}</span>
-                          <span className="text-muted-foreground/40">•</span>
-                          <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
+                    <div key={expense.id}>
+                      {showBatchStart && (
+                        <div
+                          className="flex items-center gap-2 my-2 px-2 cursor-pointer group"
+                          onClick={() => {
+                            setSelectedBatchId(expense.import_batch_id!);
+                            setImportBatchDialogOpen(true);
+                          }}
+                        >
+                          <div className="flex-1 h-px bg-destructive/40" />
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/10 border border-destructive/20 group-hover:bg-destructive/20 transition-colors">
+                            <FileText className="w-3 h-3 text-destructive" />
+                            <span className="text-[11px] font-medium text-destructive">
+                              Uvoz • {batchExpenseCount} tr.
+                            </span>
+                          </div>
+                          <div className="flex-1 h-px bg-destructive/40" />
                         </div>
-                      </div>
+                      )}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className={cn(
+                          "flex items-center gap-2 py-2.5 px-2 rounded-lg transition-colors cursor-pointer",
+                          isSelected 
+                            ? "bg-primary/10" 
+                            : "hover:bg-muted/50"
+                        )}
+                        onClick={() => {
+                          setDetailExpense(expense);
+                          setDetailDialogOpen(true);
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelection(expense.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="shrink-0"
+                        />
 
-                      {/* Amount & Date */}
-                      <div className="flex flex-col items-end shrink-0 gap-0.5">
-                        <p className={cn(
-                          "font-mono font-bold text-sm leading-tight",
-                          type === 'income' ? "text-income" : "text-expense"
-                        )}>
-                          {type === 'expense' ? '-' : '+'}{formatAmount(expense.amount)}
-                        </p>
-                        <span className="text-[10px] text-muted-foreground/70">
-                          {format(expense.date, 'd. MMM', { locale: hr })}
-                        </span>
-                      </div>
-                    </motion.div>
+                        {/* Category Icon */}
+                        <div 
+                          className="w-8 h-8 rounded-md flex items-center justify-center text-base shrink-0"
+                          style={{ backgroundColor: `hsl(var(--${categoryInfo.color}) / 0.15)` }}
+                        >
+                          {categoryInfo.icon}
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="flex-1 min-w-0 mr-2">
+                          <p className="font-medium text-foreground truncate text-sm leading-tight">
+                            {expense.merchant_name || expense.description}
+                          </p>
+                          <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
+                            <span>{paymentInfo.icon} {paymentInfo.name}</span>
+                            <span className="text-muted-foreground/40">•</span>
+                            <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
+                          </div>
+                        </div>
+
+                        {/* Amount & Date */}
+                        <div className="flex flex-col items-end shrink-0 gap-0.5">
+                          <p className={cn(
+                            "font-mono font-bold text-sm leading-tight",
+                            type === 'income' ? "text-income" : "text-expense"
+                          )}>
+                            {type === 'expense' ? '-' : '+'}{formatAmount(expense.amount)}
+                          </p>
+                          <span className="text-[10px] text-muted-foreground/70">
+                            {format(expense.date, 'd. MMM', { locale: hr })}
+                          </span>
+                        </div>
+                      </motion.div>
+                    </div>
                   );
                 })}
               </AnimatePresence>
