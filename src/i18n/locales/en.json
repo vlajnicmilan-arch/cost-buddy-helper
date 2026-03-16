@@ -1292,12 +1292,6 @@
     "allSavingsAdded": "All savings goals are already added to the group.",
     "noSavings": "No savings goals added"
   },
-  "settings": {
-    "businessMode": "Business mode",
-    "businessModeDesc": "Business terminology and company profile",
-    "businessModeEnabled": "Business mode enabled",
-    "businessModeDisabled": "Personal mode restored"
-  },
   "business": {
     "title": "Business Profile",
     "editProfile": "Edit business profile",
