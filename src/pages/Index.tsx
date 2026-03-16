@@ -357,26 +357,26 @@ const Index = () => {
               {/* Action buttons (no BulkEdit for business) */}
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 <ReportsDialog expenses={allExpenses} />
-                {onImportCSV && (
+                {importFromCSV && (
                   <>
                     <Button 
                       variant="outline" 
                       className="gap-2 rounded-xl"
-                      onClick={() => setImportOpen(true)}
+                      onClick={() => setBusinessImportOpen(true)}
                     >
                       <FileSpreadsheet className="w-4 h-4" />
                       {t('import.title', 'Uvoz izvoda')}
                     </Button>
                     <CSVImportDialog
-                      onImport={onImportCSV}
+                      onImport={importFromCSV}
                       findDuplicates={findDuplicates}
                       existingExpenses={allExpenses}
-                      externalOpen={importOpen}
-                      onExternalOpenChange={setImportOpen}
+                      externalOpen={businessImportOpen}
+                      onExternalOpenChange={setBusinessImportOpen}
                     />
                   </>
                 )}
-                <AddExpenseDialog onAdd={onAddExpense} checkDuplicate={onCheckDuplicate} />
+                <AddExpenseDialog onAdd={addExpense} checkDuplicate={checkDuplicate} />
               </div>
 
               {/* Payment Sources */}
