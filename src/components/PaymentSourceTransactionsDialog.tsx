@@ -566,7 +566,7 @@ export const PaymentSourceTransactionsDialog = ({
 
             {/* Content */}
             <ScrollArea className="flex-1">
-              <div className="max-w-2xl mx-auto w-full px-3 pr-4 sm:px-4 sm:pr-5 py-4 space-y-4">
+              <div className="max-w-2xl mx-auto w-full pl-3 pr-5 sm:px-4 py-4 space-y-4">
                 {/* Balance & Summary */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-primary/10 col-span-2">
