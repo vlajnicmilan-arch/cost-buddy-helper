@@ -361,8 +361,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       onDataImported?.();
     } catch (err) {
       console.error('Import error:', err);
-      setImportError(err instanceof Error ? err.message : 'Greška pri uvozu podataka');
-      toast.error('Greška pri uvozu');
+      setImportError(err instanceof Error ? err.message : t('settings.importError', 'Greška pri uvozu podataka'));
+      toast.error(t('settings.importError', 'Greška pri uvozu'));
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {
