@@ -151,8 +151,9 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       if ((window as any).Capacitor?.isNativePlatform?.()) {
-        const { BiometricAuth } = await import('@capacitor-community/biometric-auth');
-        await BiometricAuth.authenticate({
+        // @ts-ignore - only available in native builds
+        const mod = await import('@capacitor-community/biometric-auth');
+        await mod.BiometricAuth.authenticate({
           reason: 'Otključajte V&M Balance',
           title: 'Biometrijska provjera',
           subtitle: 'Koristite otisak prsta ili prepoznavanje lica',
