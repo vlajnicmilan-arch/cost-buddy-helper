@@ -331,6 +331,31 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                 </span>
               </div>
 
+              {/* Payment source selector - shown when no default source is set */}
+              {!defaultPaymentSource && customPaymentSources.length > 0 && (
+                <div className="py-3 border-b border-border/30">
+                  <label className="text-xs text-muted-foreground mb-1.5 block">
+                    <CreditCard className="w-3 h-3 inline mr-1" />
+                    Izvor plaćanja za uvoz
+                  </label>
+                  <Select value={selectedPaymentSource} onValueChange={setSelectedPaymentSource}>
+                    <SelectTrigger className="h-9 rounded-xl text-sm">
+                      <SelectValue placeholder="Odaberi izvor plaćanja..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customPaymentSources.map(ps => (
+                        <SelectItem key={ps.id} value={ps.id}>
+                          <span className="flex items-center gap-2">
+                            <span>{ps.icon}</span>
+                            <span>{ps.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <ScrollArea className="flex-1 max-h-[300px] -mx-6 px-6">
                 <div className="space-y-1 py-2">
                   {transactions.map((tx, index) => {
