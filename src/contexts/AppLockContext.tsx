@@ -145,17 +145,19 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       if ((window as any).Capacitor?.isNativePlatform?.()) {
-        // @ts-ignore - only available in native builds
-        const mod = await import('@capacitor-community/biometric-auth');
-        await mod.BiometricAuth.authenticate({
-          reason: 'Otključajte V&M Balance',
-          title: 'Biometrijska provjera',
-          subtitle: 'Koristite otisak prsta ili prepoznavanje lica',
-          negativeButtonText: 'Koristi PIN',
-        });
-        setIsLocked(false);
-        localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-        return true;
+        // Biometric plugin must be registered globally in native builds
+        const BiometricAuth = (window as any).BiometricAuth;
+        if (BiometricAuth) {
+          await BiometricAuth.authenticate({
+            reason: 'Otključajte V&M Balance',
+            title: 'Biometrijska provjera',
+            subtitle: 'Koristite otisak prsta ili prepoznavanje lica',
+            negativeButtonText: 'Koristi PIN',
+          });
+          setIsLocked(false);
+          localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+          return true;
+        }
       }
     } catch {
       return false;
