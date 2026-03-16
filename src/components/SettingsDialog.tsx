@@ -832,7 +832,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                               </button>
                               <button
                                 onClick={() => {
-                                  window.open(`mailto:?subject=${encodeURIComponent('Preuzmi CostBuddy')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank');
+                                  window.open(`mailto:?subject=${encodeURIComponent('CostBuddy')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank');
                                   setShowShareDialog(false);
                                 }}
                                 className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
