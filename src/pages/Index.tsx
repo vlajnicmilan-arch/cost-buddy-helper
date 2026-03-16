@@ -314,6 +314,76 @@ const Index = () => {
     );
   }
 
+  // ── Business Mode Rendering ──
+  if (isBusinessMode) {
+    const handleBackToPersonal = () => {
+      setActiveBusinessProfileId(null);
+      setBusinessTab('dashboard');
+    };
+
+    const handleEditExpense = async (updatedExpense: Expense) => {
+      await updateExpense(updatedExpense);
+    };
+
+    return (
+      <div className="business-mode min-h-screen bg-background pb-16">
+        {/* Compact business header */}
+        <div className="sticky top-0 z-40 bg-primary">
+          <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-3">
+            <button
+              onClick={handleBackToPersonal}
+              className="w-7 h-7 rounded-lg bg-primary-foreground/15 flex items-center justify-center text-primary-foreground hover:bg-primary-foreground/25 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-3.5 h-3.5 text-primary-foreground" />
+              </div>
+              <h1 className="text-sm font-bold text-primary-foreground truncate">
+                {businessProfile?.company_name || 'Tvrtka'}
+              </h1>
+            </div>
+          </div>
+        </div>
+
+        {/* Business Content */}
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          {businessTab === 'dashboard' && (
+            <BusinessDashboard
+              expenses={expenses}
+              totalReceivable={totalReceivable}
+              totalPayable={totalPayable}
+              enabledModules={businessProfile?.enabled_modules || []}
+              industryType={businessProfile?.industry_type || 'other'}
+            />
+          )}
+          {businessTab === 'wallet' && <BusinessWallet />}
+          {businessTab === 'transactions' && (
+            <BusinessTransactions
+              expenses={expenses}
+              onAddClick={() => {}}
+              onEditExpense={handleEditExpense}
+              onDeleteExpense={deleteExpense}
+              onImportCSV={importFromCSV}
+              findDuplicates={findDuplicates}
+              existingExpenses={allExpenses}
+            />
+          )}
+          {businessTab === 'reports' && (
+            <BusinessReports
+              expenses={expenses}
+              companyName={businessProfile?.company_name || 'Tvrtka'}
+            />
+          )}
+          {businessTab === 'more' && <BusinessMore expenses={expenses} />}
+        </div>
+
+        <BusinessBottomNav activeTab={businessTab} onTabChange={setBusinessTab} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden pb-20">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
