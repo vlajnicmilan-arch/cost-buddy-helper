@@ -12,7 +12,7 @@ export const useCustomPaymentSources = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { storageMode } = useStorage();
-  const { onPaymentSourcesReordered, emitPaymentSourcesReordered } = useAppState();
+  const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
 
   const isLocalMode = storageMode === 'local' && !user;
 
