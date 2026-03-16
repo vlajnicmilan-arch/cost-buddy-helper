@@ -93,6 +93,9 @@ const Business = () => {
             industryType={profile?.industry_type || 'other'}
           />
         )}
+        {activeTab === 'wallet' && (
+          <BusinessWallet />
+        )}
         {activeTab === 'transactions' && (
           <BusinessTransactions
             expenses={dashboardExpenses}
