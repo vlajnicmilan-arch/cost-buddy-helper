@@ -31,7 +31,7 @@ import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt, ArrowLeft, Building2 } from 'lucide-react';
+import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt, ArrowLeft, Building2, FileSpreadsheet } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
