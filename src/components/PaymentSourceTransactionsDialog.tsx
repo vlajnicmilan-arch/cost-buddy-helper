@@ -65,6 +65,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
+  const [isImportingPdf, setIsImportingPdf] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
