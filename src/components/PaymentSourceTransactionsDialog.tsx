@@ -949,8 +949,19 @@ export const PaymentSourceTransactionsDialog = ({
               <div className="p-2 bg-primary/5 rounded-lg text-xs text-muted-foreground text-center">
                 ℹ️ Sve transakcije će biti dodijeljene izvoru: <strong className="text-foreground">{paymentSource?.name}</strong>
               </div>
-              <Button onClick={handleImportPDFTransactions} className="w-full rounded-xl">
-                {t('import.importCount', { count: parsedData.transactions.length })}
+              <Button
+                onClick={handleImportPDFTransactions}
+                disabled={isImportingPdf}
+                className="w-full rounded-xl"
+              >
+                {isImportingPdf ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uvozim...
+                  </>
+                ) : (
+                  t('import.importCount', { count: parsedData.transactions.length })
+                )}
               </Button>
             </div>
           )}
