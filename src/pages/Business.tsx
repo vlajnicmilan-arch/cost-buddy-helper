@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, ArrowLeft, User } from 'lucide-react';
+import { Building2, ArrowLeft, User, Settings } from 'lucide-react';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
@@ -33,7 +33,6 @@ const Business = () => {
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
 
-  // Handle Android back button: if on a non-dashboard tab, go back to dashboard first
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
   useEffect(() => {
@@ -62,22 +61,23 @@ const Business = () => {
   if (!activeBusinessProfileId) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={handleBackToPersonal} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <User className="w-3 h-3" />
+    <div className="business-mode min-h-screen bg-background pb-16">
+      {/* Compact business header */}
+      <div className="sticky top-0 z-40 bg-primary">
+        <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-3">
+          <button
+            onClick={handleBackToPersonal}
+            className="w-7 h-7 rounded-lg bg-primary-foreground/15 flex items-center justify-center text-primary-foreground hover:bg-primary-foreground/25 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
           </button>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-sm font-bold truncate">{profile?.company_name || 'Tvrtka'}</h1>
-              <p className="text-[10px] text-muted-foreground">Poslovni način</p>
-            </div>
+            <h1 className="text-sm font-bold text-primary-foreground truncate">
+              {profile?.company_name || 'Tvrtka'}
+            </h1>
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@ const Business = () => {
         {activeTab === 'transactions' && (
           <BusinessTransactions
             expenses={dashboardExpenses}
-            onAddClick={() => {/* TODO: open add dialog */}}
+            onAddClick={() => {}}
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
             onImportCSV={importFromCSV}

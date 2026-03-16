@@ -83,6 +83,23 @@
     --category-other: 170 15% 45%;
   }
 
+  /* Business mode theme override */
+  .business-mode {
+    --primary: 220 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 220 70% 50%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 220 70% 50%;
+  }
+
+  .dark .business-mode {
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 217 91% 60%;
+  }
+
   .dark {
     /* #0A1A2F - anthracite blue background */
     --background: 214 65% 11%;
