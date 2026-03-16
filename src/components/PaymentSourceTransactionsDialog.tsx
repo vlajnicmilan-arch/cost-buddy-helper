@@ -802,7 +802,7 @@ export const PaymentSourceTransactionsDialog = ({
                                   const prefix = expense.type === 'expense' ? '-' : 
                                     (expense.type === 'income' || isInboundTransfer) ? '+' : '↔';
                                   return (
-                                    <p className={cn("font-mono font-bold text-base leading-tight shrink-0", colorClass)}>
+                                    <p className={cn("font-mono font-bold text-sm sm:text-base leading-tight shrink-0 text-right", colorClass)}>
                                       {prefix}{formatAmount(expense.amount)}
                                     </p>
                                   );
@@ -838,12 +838,12 @@ export const PaymentSourceTransactionsDialog = ({
                                 <div className="flex-1" />
                                 {balanceAfter !== undefined && (
                                   <span className={cn(
-                                    "text-base font-mono font-bold leading-tight shrink-0",
+                                    "text-sm sm:text-base font-mono font-bold leading-tight shrink-0",
                                     balanceAfter >= 0 
                                       ? "text-primary" 
                                       : "text-destructive"
                                   )}>
-                                    <span className="text-xs font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
+                                    <span className="text-[10px] sm:text-xs font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
                                   </span>
                                 )}
                               </div>
