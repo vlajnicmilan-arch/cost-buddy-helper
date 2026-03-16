@@ -1582,6 +1582,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Set PIN Dialog */}
+      <SetPinDialog open={showSetPin} onOpenChange={setShowSetPin} />
+
       {/* Help Dialog */}
       <HelpDialogContent open={showHelpDialog} onOpenChange={setShowHelpDialog} />
       <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
