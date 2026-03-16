@@ -16,11 +16,12 @@ export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { familyModeEnabled } = useAppState();
+  const { familyModeEnabled, activeBusinessProfileId } = useAppState();
 
-  const navItems = allNavItems.filter(item => 
-    item.path !== '/family' || familyModeEnabled
-  );
+  const navItems = allNavItems.filter(item => {
+    if (item.path === '/family') return familyModeEnabled && !activeBusinessProfileId;
+    return true;
+  });
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/50 safe-area-bottom">
