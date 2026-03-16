@@ -249,14 +249,6 @@
     "reorderMode": "Preslagivanje",
     "members": "Članovi"
   },
-  "nav": {
-    "home": "Početna",
-    "dashboard": "Nadzorna ploča",
-    "settings": "Postavke",
-    "help": "Pomoć",
-    "signOut": "Odjava",
-    "signIn": "Prijava"
-  },
   "auth": {
     "login": "Prijava",
     "register": "Registracija",
