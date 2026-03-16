@@ -51,6 +51,9 @@ import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SavingsGoalsSection } from '@/components/savings';
+import { ReportsDialog } from '@/components/reports/ReportsDialog';
+import { AddExpenseDialog } from '@/components/AddExpenseDialog';
+import { CSVImportDialog } from '@/components/CSVImportDialog';
 
 const Index = () => {
   const { t } = useTranslation();
