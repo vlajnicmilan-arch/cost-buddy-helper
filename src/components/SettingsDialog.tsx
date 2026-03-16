@@ -1288,7 +1288,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
           {/* App Info */}
           <div className="text-center text-xs text-muted-foreground space-y-1">
             <p>V&M Balance</p>
-            <p>Verzija 1.0.0</p>
+            <p>{t('settings.version', 'Verzija')} 1.0.0</p>
           </div>
         </div>
         </ScrollArea>
