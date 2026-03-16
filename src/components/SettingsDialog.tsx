@@ -1285,6 +1285,28 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
           <Separator />
 
+          {/* Privacy & Legal */}
+          <div className="space-y-2">
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate('/privacy-policy');
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Politika privatnosti</p>
+                <p className="text-xs text-muted-foreground">GDPR prava i obrada podataka</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          <Separator />
+
           {/* App Info */}
           <div className="text-center text-xs text-muted-foreground space-y-1">
             <p>V&M Balance</p>
