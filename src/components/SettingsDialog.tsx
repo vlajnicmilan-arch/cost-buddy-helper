@@ -357,7 +357,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         setImportResult({ expenses: expenseCount, items: itemCount });
       }
 
-      toast.success('Podaci uspješno uvezeni');
+      toast.success(t('settings.importSuccess', 'Podaci uspješno uvezeni'));
       onDataImported?.();
     } catch (err) {
       console.error('Import error:', err);
