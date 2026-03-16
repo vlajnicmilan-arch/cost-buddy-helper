@@ -838,12 +838,12 @@ export const PaymentSourceTransactionsDialog = ({
                                 <div className="flex-1" />
                                 {balanceAfter !== undefined && (
                                   <span className={cn(
-                                    "text-base font-mono font-bold leading-tight shrink-0",
+                                    "text-sm sm:text-base font-mono font-bold leading-tight shrink-0",
                                     balanceAfter >= 0 
                                       ? "text-primary" 
                                       : "text-destructive"
                                   )}>
-                                    <span className="text-xs font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
+                                    <span className="text-[10px] sm:text-xs font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
                                   </span>
                                 )}
                               </div>
