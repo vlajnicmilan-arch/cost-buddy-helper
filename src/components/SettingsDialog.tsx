@@ -1298,8 +1298,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 <Shield className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium">Politika privatnosti</p>
-                <p className="text-xs text-muted-foreground">GDPR prava i obrada podataka</p>
+                <p className="text-sm font-medium">{t('gdpr.settingsPrivacyTitle', 'Politika privatnosti')}</p>
+                <p className="text-xs text-muted-foreground">{t('gdpr.settingsPrivacyDesc', 'GDPR prava i obrada podataka')}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
