@@ -48,7 +48,10 @@ export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDe
   }, [expenses, typeFilter, search]);
 
   const handleDeleteBatch = async (expenseIds: string[]) => {
-    for (const id of expenseIds) {
+    // Only delete expenses that are actually in our filtered list (safety check)
+    const validIds = new Set(expenses.map(e => e.id));
+    const safeIds = expenseIds.filter(id => validIds.has(id));
+    for (const id of safeIds) {
       onDeleteExpense(id);
     }
   };
