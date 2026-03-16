@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Upload, FileText, Check, AlertCircle, Loader2, Copy } from 'lucide-react';
+import { Upload, FileText, Check, AlertCircle, Loader2, Copy, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseCSV, ParsedTransaction } from '@/lib/csvParsers';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
