@@ -44,6 +44,8 @@ export const TransactionListDialog = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
 
   const { customPaymentSources } = useCustomPaymentSources();
   const { formatAmount } = useCurrency();
