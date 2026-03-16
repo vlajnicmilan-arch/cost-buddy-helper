@@ -415,6 +415,7 @@ const Index = () => {
           onCheckDuplicate={checkDuplicate}
           onBulkUpdateExpenses={bulkUpdateExpenses}
           onImportCSV={importFromCSV}
+          findDuplicates={findDuplicates}
           existingExpenses={allExpenses}
           onRefetch={refetch}
         />
