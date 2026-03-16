@@ -154,11 +154,17 @@
     }
   },
   "nav": {
+    "home": "Početna",
     "dashboard": "Pregled",
     "projects": "Projekti",
     "budgets": "Budžeti",
     "wallet": "Novčanik",
-    "viewAll": "Pogledaj sve"
+    "family": "Obitelj",
+    "viewAll": "Pogledaj sve",
+    "settings": "Postavke",
+    "help": "Pomoć",
+    "signOut": "Odjava",
+    "signIn": "Prijava"
   },
   "common": {
     "save": "Spremi",
