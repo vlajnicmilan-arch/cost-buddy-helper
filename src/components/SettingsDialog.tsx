@@ -197,9 +197,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     setAutoUpdate(enabled);
     setAutoUpdatePreference(enabled);
     if (enabled) {
-      toast.success('Automatsko ažuriranje uključeno');
+      toast.success(t('settings.autoUpdateEnabled', 'Automatsko ažuriranje uključeno'));
     } else {
-      toast.info('Automatsko ažuriranje isključeno');
+      toast.info(t('settings.autoUpdateDisabled', 'Automatsko ažuriranje isključeno'));
     }
   };
 
@@ -279,10 +279,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success('Backup uspješno izvezen');
+      toast.success(t('settings.exportSuccess', 'Backup uspješno izvezen'));
     } catch (err) {
       console.error('Export error:', err);
-      toast.error('Greška pri izvozu');
+      toast.error(t('settings.exportError', 'Greška pri izvozu'));
     } finally {
       setIsExporting(false);
     }
@@ -301,7 +301,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       const data = JSON.parse(content);
 
       if (!data.expenses || !Array.isArray(data.expenses)) {
-        throw new Error('Nevažeći format datoteke');
+        throw new Error(t('settings.invalidFileFormat', 'Nevažeći format datoteke'));
       }
 
       if (isLocalMode) {
@@ -357,12 +357,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         setImportResult({ expenses: expenseCount, items: itemCount });
       }
 
-      toast.success('Podaci uspješno uvezeni');
+      toast.success(t('settings.importSuccess', 'Podaci uspješno uvezeni'));
       onDataImported?.();
     } catch (err) {
       console.error('Import error:', err);
-      setImportError(err instanceof Error ? err.message : 'Greška pri uvozu podataka');
-      toast.error('Greška pri uvozu');
+      setImportError(err instanceof Error ? err.message : t('settings.importError', 'Greška pri uvozu podataka'));
+      toast.error(t('settings.importError', 'Greška pri uvozu'));
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {
@@ -788,8 +788,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                         <Share2 className="w-4 h-4 text-primary" />
                       </div>
                       <div className="text-left">
-                        <p className="text-sm font-medium">Pozovi prijatelja</p>
-                        <p className="text-xs text-muted-foreground">Podijeli link za preuzimanje aplikacije</p>
+                        <p className="text-sm font-medium">{t('settings.inviteFriend', 'Pozovi prijatelja')}</p>
+                        <p className="text-xs text-muted-foreground">{t('settings.inviteFriendDesc', 'Podijeli link za preuzimanje aplikacije')}</p>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -798,12 +798,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
                     <DialogContent className="max-w-sm rounded-2xl">
                       <DialogHeader>
-                        <DialogTitle className="text-center">Podijeli s prijateljem</DialogTitle>
+                        <DialogTitle className="text-center">{t('settings.shareWithFriend', 'Podijeli s prijateljem')}</DialogTitle>
                       </DialogHeader>
                       <div className="grid grid-cols-2 gap-3 py-4">
                         {(() => {
                           const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
-                          const shareText = 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!';
+                          const shareText = t('settings.shareText', 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!');
                           return (
                             <>
                               <button
@@ -832,7 +832,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                               </button>
                               <button
                                 onClick={() => {
-                                  window.open(`mailto:?subject=${encodeURIComponent('Preuzmi CostBuddy')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank');
+                                  window.open(`mailto:?subject=${encodeURIComponent('CostBuddy')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank');
                                   setShowShareDialog(false);
                                 }}
                                 className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
@@ -846,9 +846,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                                 onClick={async () => {
                                   try {
                                     await navigator.clipboard.writeText(referralUrl);
-                                    toast.success('Link kopiran!');
+                                    toast.success(t('settings.linkCopied', 'Link kopiran!'));
                                   } catch {
-                                    toast.error('Greška pri kopiranju');
+                                    toast.error(t('settings.copyError', 'Greška pri kopiranju'));
                                   }
                                   setShowShareDialog(false);
                                 }}
@@ -857,7 +857,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                                   <Copy className="w-6 h-6 text-muted-foreground" />
                                 </div>
-                                <span className="text-sm font-medium">Kopiraj link</span>
+                                <span className="text-sm font-medium">{t('settings.copyLink', 'Kopiraj link')}</span>
                               </button>
                             </>
                           );
@@ -881,8 +881,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                       <Bug className="w-4 h-4 text-destructive" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium">Prijavi problem</p>
-                      <p className="text-xs text-muted-foreground">Prijavite grešku ili nejasnoću</p>
+                      <p className="text-sm font-medium">{t('settings.reportProblem', 'Prijavi problem')}</p>
+                      <p className="text-xs text-muted-foreground">{t('settings.reportProblemDesc', 'Prijavite grešku ili nejasnoću')}</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -902,8 +902,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                       <Shield className="w-4 h-4 text-primary" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium">Admin panel</p>
-                      <p className="text-xs text-muted-foreground">Pregledaj prijave problema</p>
+                      <p className="text-sm font-medium">{t('settings.adminPanel', 'Admin panel')}</p>
+                      <p className="text-xs text-muted-foreground">{t('settings.adminPanelDesc', 'Pregledaj prijave problema')}</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -1288,7 +1288,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
           {/* App Info */}
           <div className="text-center text-xs text-muted-foreground space-y-1">
             <p>V&M Balance</p>
-            <p>Verzija 1.0.0</p>
+            <p>{t('settings.version', 'Verzija')} 1.0.0</p>
           </div>
         </div>
         </ScrollArea>
