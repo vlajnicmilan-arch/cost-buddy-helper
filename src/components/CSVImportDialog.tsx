@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Upload, FileText, Check, AlertCircle, Loader2, Copy } from 'lucide-react';
+import { Upload, FileText, Check, AlertCircle, Loader2, Copy, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseCSV, ParsedTransaction } from '@/lib/csvParsers';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -32,7 +34,9 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   const [source, setSource] = useState('');
   const [error, setError] = useState('');
   const [importedCount, setImportedCount] = useState(0);
+  const [selectedPaymentSource, setSelectedPaymentSource] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { customPaymentSources } = useCustomPaymentSources();
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
@@ -81,6 +85,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     setSource('');
     setError('');
     setImportedCount(0);
+    setSelectedPaymentSource('');
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,11 +154,12 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     let selectedTransactions = transactions.filter((_, i) => selectedIndices.has(i));
     if (selectedTransactions.length === 0) return;
 
-    // Auto-assign payment source if provided
-    if (defaultPaymentSource) {
+    // Use defaultPaymentSource (from payment source context) or user-selected source
+    const effectiveSource = defaultPaymentSource || (selectedPaymentSource ? `custom:${selectedPaymentSource}` : undefined);
+    if (effectiveSource) {
       selectedTransactions = selectedTransactions.map(tx => ({
         ...tx,
-        payment_source: defaultPaymentSource as any
+        payment_source: effectiveSource as any
       }));
     }
 
@@ -324,6 +330,31 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                   {source}
                 </span>
               </div>
+
+              {/* Payment source selector - shown when no default source is set */}
+              {!defaultPaymentSource && customPaymentSources.length > 0 && (
+                <div className="py-3 border-b border-border/30">
+                  <label className="text-xs text-muted-foreground mb-1.5 block">
+                    <CreditCard className="w-3 h-3 inline mr-1" />
+                    Izvor plaćanja za uvoz
+                  </label>
+                  <Select value={selectedPaymentSource} onValueChange={setSelectedPaymentSource}>
+                    <SelectTrigger className="h-9 rounded-xl text-sm">
+                      <SelectValue placeholder="Odaberi izvor plaćanja..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customPaymentSources.map(ps => (
+                        <SelectItem key={ps.id} value={ps.id}>
+                          <span className="flex items-center gap-2">
+                            <span>{ps.icon}</span>
+                            <span>{ps.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <ScrollArea className="flex-1 max-h-[300px] -mx-6 px-6">
                 <div className="space-y-1 py-2">
