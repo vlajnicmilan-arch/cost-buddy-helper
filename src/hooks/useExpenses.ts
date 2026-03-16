@@ -154,7 +154,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     const balance = totalIncome - totalExpenses;
 
     const expensesByCategory = dashboardExpenses
-      .filter(e => e.type === 'expense')
+      .filter(e => e.type === 'expense' && (e.expense_nature as string) !== 'correction')
       .reduce((acc, e) => {
         acc[e.category] = (acc[e.category] || 0) + Number(e.amount);
         return acc;
