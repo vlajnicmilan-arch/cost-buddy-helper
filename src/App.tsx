@@ -91,21 +91,24 @@ const App = () => (
     <TooltipProvider>
       <StorageProvider>
         <AppStateProvider>
-          <CurrencyProvider>
-            <TutorialProvider>
-              <OfflineBanner />
-              <Toaster />
-              <Sonner />
-              <PWAUpdatePrompt />
-              <TutorialOverlay />
+          <AppLockProvider>
+            <CurrencyProvider>
+              <TutorialProvider>
+                <OfflineBanner />
+                <Toaster />
+                <Sonner />
+                <PWAUpdatePrompt />
+                <TutorialOverlay />
+                <LockScreen />
                 <BrowserRouter>
                   <BackButtonProvider>
                     <AppRoutes />
                     <CookieConsentBanner />
                   </BackButtonProvider>
                 </BrowserRouter>
-            </TutorialProvider>
-          </CurrencyProvider>
+              </TutorialProvider>
+            </CurrencyProvider>
+          </AppLockProvider>
         </AppStateProvider>
       </StorageProvider>
     </TooltipProvider>
