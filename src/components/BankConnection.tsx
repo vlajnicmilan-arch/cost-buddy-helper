@@ -192,6 +192,12 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
 
     await onImportCSV(transactionsToImport);
     setDuplicateWarningOpen(false);
+    // Extract merchants for partner detection
+    const merchants = transactionsToImport.map(t => t.merchant_name).filter(Boolean) as string[];
+    if (merchants.length > 0 && activeBusinessProfileId) {
+      setDetectedMerchants(merchants);
+      setPartnersDialogOpen(true);
+    }
     clearParsedData();
     setDuplicateInfo(null);
     toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
