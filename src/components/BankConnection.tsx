@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
 import { Badge } from '@/components/ui/badge';
+import { DetectedPartnersDialog } from './DetectedPartnersDialog';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -35,6 +36,8 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
+  const [partnersDialogOpen, setPartnersDialogOpen] = useState(false);
+  const [detectedMerchants, setDetectedMerchants] = useState<string[]>([]);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -162,6 +165,12 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     // No duplicates, import all
     await onImportCSV(transactions);
     setPdfPreviewOpen(false);
+    // Extract merchants for partner detection
+    const merchants = transactions.map(t => t.merchant_name).filter(Boolean) as string[];
+    if (merchants.length > 0 && activeBusinessProfileId) {
+      setDetectedMerchants(merchants);
+      setPartnersDialogOpen(true);
+    }
     clearParsedData();
     toast.success(t('import.importedFromPDF', { count: transactions.length }));
   };
@@ -183,6 +192,12 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
 
     await onImportCSV(transactionsToImport);
     setDuplicateWarningOpen(false);
+    // Extract merchants for partner detection
+    const merchants = transactionsToImport.map(t => t.merchant_name).filter(Boolean) as string[];
+    if (merchants.length > 0 && activeBusinessProfileId) {
+      setDetectedMerchants(merchants);
+      setPartnersDialogOpen(true);
+    }
     clearParsedData();
     setDuplicateInfo(null);
     toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
@@ -575,6 +590,12 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
           </div>
         </DialogContent>
       </Dialog>
+      {/* Detected Partners Dialog */}
+      <DetectedPartnersDialog
+        open={partnersDialogOpen}
+        onOpenChange={setPartnersDialogOpen}
+        merchantNames={detectedMerchants}
+      />
     </motion.div>
   );
 };
