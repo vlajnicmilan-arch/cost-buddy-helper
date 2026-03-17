@@ -159,6 +159,75 @@ export const usePDFParser = () => {
   // Photo parsing
   const parsePhoto = async (imageBase64: string) => parseStatement(imageBase64, undefined, true);
 
+  // HTML parsing
+  const parseHTML = async (htmlContent: string): Promise<PDFParseResult | null> => {
+    setParsing(true);
+    
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData?.session?.access_token) {
+        toast.error('Moraš biti prijavljen za analizu izvoda');
+        return null;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf-statement`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessionData.session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ htmlContent }),
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast.error('Previše zahtjeva. Pokušaj ponovno za minutu.');
+          return null;
+        }
+        if (response.status === 402) {
+          toast.error('Nedostaje kredita za AI obradu.');
+          return null;
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Greška pri analizi izvoda');
+      }
+
+      const data = await response.json();
+      
+      const result: PDFParseResult = {
+        transactions: (data.transactions || []).map((tx: any) => ({
+          ...tx,
+          date: new Date(tx.date),
+          category: tx.category as Category,
+          type: tx.type as TransactionType,
+          payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
+          card_last4: tx.card_last4 || null
+        })),
+        detected_bank: data.detected_bank || null,
+        account_iban: data.account_iban || null,
+        holder_name: data.holder_name || null,
+        cards_detected: data.cards_detected || [],
+        summary: data.summary
+      };
+
+      setParsedData(result);
+      
+      const bankInfo = result.detected_bank ? ` (${result.detected_bank})` : '';
+      toast.success(`Pronađeno ${result.transactions.length} transakcija${bankInfo}`);
+      return result;
+    } catch (error) {
+      console.error('Error parsing HTML statement:', error);
+      toast.error(error instanceof Error ? error.message : 'Greška pri analizi HTML izvoda');
+      return null;
+    } finally {
+      setParsing(false);
+    }
+  };
+
   const clearParsedData = () => {
     setParsedData(null);
   };
@@ -168,6 +237,7 @@ export const usePDFParser = () => {
     parsedData,
     parsePDF,
     parsePhoto,
+    parseHTML,
     clearParsedData
   };
 };

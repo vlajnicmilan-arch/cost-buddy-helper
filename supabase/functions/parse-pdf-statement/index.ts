@@ -149,7 +149,19 @@ payment_source opcije:
           },
           {
             role: 'user',
-            content: [
+            content: isHTML ? [
+              {
+                type: 'text',
+                text: `Analiziraj ovaj HTML bankovni izvod. Izvuci:
+1. Naziv banke iz dokumenta
+2. Glavni IBAN ili broj računa
+3. Sve transakcije s detaljima o kartici ako postoje
+4. Ime vlasnika računa (holder_name) ako je vidljivo na izvodu
+
+HTML SADRŽAJ:
+${htmlContent}`
+              }
+            ] : [
               {
                 type: 'text',
                 text: `Analiziraj ${isImage ? 'ovu fotografiju bankovnog izvoda' : 'ovaj bankovni izvod'}. Izvuci:

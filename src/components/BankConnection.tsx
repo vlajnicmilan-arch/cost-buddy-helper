@@ -261,6 +261,29 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
           )}
           {parsing ? t('import.analyzingPDF') : t('import.importPDF')}
         </Button>
+
+        {/* HTML Import */}
+        <input
+          ref={htmlInputRef}
+          type="file"
+          accept=".html,.htm,text/html"
+          onChange={handleHTMLSelect}
+          className="hidden"
+          id="html-input"
+        />
+        <Button
+          variant="outline"
+          className="w-full gap-2 rounded-xl border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+          onClick={() => htmlInputRef.current?.click()}
+          disabled={parsing}
+        >
+          {parsing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Code2 className="w-4 h-4" />
+          )}
+          {parsing ? t('import.analyzingPDF') : 'Uvezi HTML izvod'}
+        </Button>
       </div>
 
       {/* PDF Preview Dialog */}
