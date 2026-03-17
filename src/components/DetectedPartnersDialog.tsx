@@ -36,6 +36,17 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
     }
   }, [open, merchantNames, activeBusinessProfileId]);
 
+  // Normalize name: lowercase, sort words alphabetically, remove extra spaces
+  const normalizeName = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[.,\-_]/g, ' ')
+      .split(/\s+/)
+      .filter(Boolean)
+      .sort()
+      .join(' ');
+  };
+
   const loadExistingClients = async () => {
     if (!activeBusinessProfileId) return;
     setLoading(true);
@@ -46,22 +57,34 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
         .select('id, name')
         .eq('business_profile_id', activeBusinessProfileId);
 
-      const existingMap = new Map(
-        (existingClients || []).map(c => [c.name.toLowerCase().trim(), c.id])
-      );
-
-      // Count occurrences from merchant names
-      const countMap = new Map<string, number>();
-      merchantNames.forEach(name => {
-        const key = name.trim();
-        if (key) countMap.set(key, (countMap.get(key) || 0) + 1);
+      // Build normalized map of existing clients
+      const existingMap = new Map<string, string>();
+      (existingClients || []).forEach(c => {
+        existingMap.set(normalizeName(c.name), c.id);
       });
 
-      const detectedPartners: DetectedPartner[] = Array.from(countMap.entries()).map(([name, count]) => ({
-        name,
-        transactionCount: count,
+      // Group merchant names by normalized key, pick the most common original name as display
+      const groupMap = new Map<string, { displayName: string; count: number; names: Map<string, number> }>();
+      merchantNames.forEach(rawName => {
+        const name = rawName.trim();
+        if (!name) return;
+        const key = normalizeName(name);
+        const group = groupMap.get(key) || { displayName: name, count: 0, names: new Map() };
+        group.count++;
+        group.names.set(name, (group.names.get(name) || 0) + 1);
+        // Use most frequent variant as display name
+        let maxCount = 0;
+        group.names.forEach((cnt, n) => {
+          if (cnt > maxCount) { maxCount = cnt; group.displayName = n; }
+        });
+        groupMap.set(key, group);
+      });
+
+      const detectedPartners: DetectedPartner[] = Array.from(groupMap.entries()).map(([key, group]) => ({
+        name: group.displayName,
+        transactionCount: group.count,
         totalAmount: 0,
-        existingClientId: existingMap.get(name.toLowerCase().trim()),
+        existingClientId: existingMap.get(key),
       }));
 
       // Sort: new partners first, then existing
