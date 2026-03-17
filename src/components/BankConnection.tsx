@@ -152,10 +152,10 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
 
     // Check for duplicates if function is provided
     if (findDuplicates) {
-      const { duplicates, fuzzyDuplicates, unique } = findDuplicates(transactions);
+      const { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique } = findDuplicates(transactions);
       
       if (duplicates.length > 0 || fuzzyDuplicates.length > 0) {
-        setDuplicateInfo({ duplicates, fuzzyDuplicates, unique });
+        setDuplicateInfo({ duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique });
         setIncludeDuplicates(false);
         setSelectedFuzzy(new Set());
         setPdfPreviewOpen(false);
