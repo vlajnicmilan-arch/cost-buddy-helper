@@ -54,8 +54,8 @@ export const HomeHeader = ({
       {/* Top row: Logo, title, and navigation icons */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden flex-shrink-0">
-            <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden flex-shrink-0">
+            <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.6] object-cover" />
           </div>
           <div className="min-w-0">
             <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
