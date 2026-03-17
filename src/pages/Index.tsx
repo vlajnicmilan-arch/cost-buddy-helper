@@ -332,7 +332,8 @@ const Index = () => {
 
     return (
       <div className={`business-theme-${businessProfile?.theme_color || 'ocean-blue'} min-h-screen bg-background pb-20`}>
-        {/* Business header - matches personal style */}
+        {/* Accent bar + Business header */}
+        <div className="h-1 bg-primary rounded-b-full" />
         <div className="max-w-4xl mx-auto px-3 sm:px-4 pt-4">
           <div className="flex items-center gap-2 sm:gap-3 mb-4">
             <button
@@ -341,14 +342,14 @@ const Index = () => {
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/15 border-2 border-primary/30 flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
                 {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+              <p className="text-xs sm:text-sm text-primary/80 font-medium truncate">
                 {businessProfile?.company_name || 'Tvrtka'}
               </p>
             </div>
