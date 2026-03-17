@@ -122,6 +122,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
   };
 
   const totalCost = collaborators.reduce((sum, c) => sum + c.total_price, 0);
+  const totalPaid = collaborators.reduce((sum, c) => sum + c.paid_amount, 0);
 
   return {
     collaborators,
@@ -131,5 +132,6 @@ export const useProjectCollaborators = (projectId: string | null) => {
     deleteCollaborator,
     refetch: fetchCollaborators,
     totalCost,
+    totalPaid,
   };
 };
