@@ -332,27 +332,25 @@ const Index = () => {
 
     return (
       <div className={`business-theme-${businessProfile?.theme_color || 'ocean-blue'} min-h-screen bg-background pb-20`}>
-        {/* Compact business header */}
-        <div className="sticky top-0 z-40 bg-primary">
-          <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-3">
+        {/* Business header - matches personal style */}
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 pt-4">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4">
             <button
               onClick={handleBackToPersonal}
-              className="w-7 h-7 rounded-lg bg-primary-foreground/15 flex items-center justify-center text-primary-foreground hover:bg-primary-foreground/25 transition-colors"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-muted/60 flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors flex-shrink-0"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-                <Building2 className="w-3.5 h-3.5 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-sm font-bold text-primary-foreground truncate">
-                  {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
-                </h1>
-                <p className="text-[10px] text-primary-foreground/70 truncate">
-                  {businessProfile?.company_name || 'Tvrtka'}
-                </p>
-              </div>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
+                {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                {businessProfile?.company_name || 'Tvrtka'}
+              </p>
             </div>
           </div>
         </div>
