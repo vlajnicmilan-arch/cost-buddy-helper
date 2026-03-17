@@ -136,8 +136,13 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
                       </div>
                     )}
 
-                    <div className="mt-2 text-sm font-medium">
-                      {t('collaborators.price', 'Cijena')}: <span className="text-primary">{formatAmount(c.total_price)}</span>
+                    <div className="mt-2 text-sm space-y-0.5">
+                      <div className="font-medium">
+                        {t('collaborators.agreed', 'Dogovoreno')}: <span className="text-muted-foreground">{formatAmount(c.total_price)}</span>
+                      </div>
+                      <div className="font-medium">
+                        {t('collaborators.paid', 'Isplaćeno')}: <span className="text-primary">{formatAmount(c.paid_amount)}</span>
+                      </div>
                     </div>
 
                     {c.contact_info && (
