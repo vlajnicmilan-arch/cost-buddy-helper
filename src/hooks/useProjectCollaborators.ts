@@ -86,6 +86,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
           company_name: collaborator.company_name || null,
           service_description: collaborator.service_description,
           total_price: collaborator.total_price,
+          paid_amount: collaborator.paid_amount || 0,
           milestone_id: collaborator.milestone_id || null,
           status: collaborator.status,
           contact_info: collaborator.contact_info || null,
