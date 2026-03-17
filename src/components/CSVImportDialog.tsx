@@ -287,12 +287,15 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col min-h-0"
             >
-              {duplicateCount > 0 && (
+              {(duplicateCount > 0 || fuzzyCount > 0) && (
                 <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col gap-2 text-amber-700 dark:text-amber-400">
                   <div className="flex items-center gap-2">
                     <Copy className="w-4 h-4 flex-shrink-0" />
                     <span className="text-xs font-medium">
-                      {duplicateCount} potencijalnih duplikata pronađeno — automatski preskočeni
+                      {duplicateCount > 0 && `${duplicateCount} sigurnih duplikata`}
+                      {duplicateCount > 0 && fuzzyCount > 0 && ', '}
+                      {fuzzyCount > 0 && `${fuzzyCount} mogućih (±3 dana)`}
+                      {' — strogi automatski preskočeni'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -312,14 +315,13 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                         e.stopPropagation();
                         setSkipDuplicates(!skipDuplicates);
                         if (skipDuplicates) {
-                          // Include all
                           setSelectedIndices(new Set(transactions.map((_, i) => i)));
                         } else {
                           selectOnlyNew();
                         }
                       }}
                     >
-                      {skipDuplicates ? 'Uključi duplikate' : 'Preskoči duplikate'}
+                      {skipDuplicates ? 'Uključi sve' : 'Preskoči duplikate'}
                     </Button>
                   </div>
                 </div>
