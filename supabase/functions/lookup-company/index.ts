@@ -70,14 +70,15 @@ async function searchCompanySources(
 async function extractWithAI(
   query: string,
   scrapedContent: string,
-  lovableApiKey: string
+  lovableApiKey: string,
+  source: "sudreg" | "web"
 ): Promise<any> {
   const isOIB = /^\d{11}$/.test(query.trim());
   const searchType = isOIB ? "OIB" : "naziv tvrtke";
 
-  const systemPrompt = `Izvuci strukturirane podatke o tvrtki iz sadržaja sudskog registra RH. Ako podatak NIJE u tekstu, ostavi prazan string "". NIKADA ne izmišljaj. Postavi found=true SAMO ako pronađeš barem jedan konkretan podatak osim samog naziva (npr. OIB, adresa, grad, poštanski broj, email, telefon, MBS, sud, djelatnost). Korisnik traži po: ${searchType}`;
+  const systemPrompt = `Izvuci strukturirane podatke o tvrtki iz javno dostupnih izvora. Prioritet daj službenim registrima i službenim stranicama tvrtke. Ako podatak NIJE izričito u tekstu, ostavi prazan string \"\". NIKADA ne izmišljaj. Postavi found=true SAMO ako pronađeš barem jedan konkretan podatak osim samog naziva. Korisnik traži po: ${searchType}`;
 
-  const userMessage = `Izvuci sve moguće podatke za tvrtku "${query.trim()}" iz sljedećeg sadržaja. found=true samo ako postoji barem jedan konkretan podatak osim naziva.\n\nSadržaj:\n${scrapedContent}`;
+  const userMessage = `Izvuci sve moguće podatke za tvrtku \"${query.trim()}\" iz sljedećeg sadržaja. found=true samo ako postoji barem jedan konkretan podatak osim naziva.\n\nSadržaj:\n${scrapedContent}`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
