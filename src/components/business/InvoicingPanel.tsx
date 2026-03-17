@@ -462,10 +462,14 @@ export const InvoicingPanel = () => {
       {backButton}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-bold">Klijenti</h2>
-        <div className="flex gap-1.5">
-          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs" onClick={scanTransactionsForPartners} disabled={scanning}>
+        <div className="flex gap-1.5 flex-wrap">
+          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs" onClick={scanTransactionsForPartners} disabled={scanning || enriching}>
             {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanSearch className="w-3.5 h-3.5" />}
             Skeniraj
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs" onClick={enrichClientsFromRegistry} disabled={enriching || scanning || clients.filter(c => !c.oib).length === 0}>
+            {enriching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DatabaseZap className="w-3.5 h-3.5" />}
+            {enriching ? `${enrichProgress.current}/${enrichProgress.total}` : 'Obogati'}
           </Button>
           <Button size="sm" className="gap-1 h-8 text-xs" onClick={() => setView('new_client')}>
             <Plus className="w-3.5 h-3.5" /> Novi
