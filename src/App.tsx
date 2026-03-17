@@ -14,75 +14,84 @@ import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
-import Index from "./pages/Index";
-import Business from "./pages/Business";
-import Dashboard from "./pages/Dashboard";
-import Projects from "./pages/Projects";
-import Budgets from "./pages/Budgets";
-import Wallet from "./pages/Wallet";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import StorageSetup from "./pages/StorageSetup";
-import Install from "./pages/Install";
-import JoinProject from "./pages/JoinProject";
-import JoinBudget from "./pages/JoinBudget";
-import Family from "./pages/Family";
-import JoinFamily from "./pages/JoinFamily";
-import Onboarding from "./pages/Onboarding";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import NotFound from "./pages/NotFound";
-import Admin from "./pages/Admin";
 import { Loader2 } from "lucide-react";
+import { lazy, Suspense } from "react";
+
+// Lazy load all page components
+const Index = lazy(() => import("./pages/Index"));
+const Business = lazy(() => import("./pages/Business"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Projects = lazy(() => import("./pages/Projects"));
+const Budgets = lazy(() => import("./pages/Budgets"));
+const Wallet = lazy(() => import("./pages/Wallet"));
+const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const StorageSetup = lazy(() => import("./pages/StorageSetup"));
+const Install = lazy(() => import("./pages/Install"));
+const JoinProject = lazy(() => import("./pages/JoinProject"));
+const JoinBudget = lazy(() => import("./pages/JoinBudget"));
+const Family = lazy(() => import("./pages/Family"));
+const JoinFamily = lazy(() => import("./pages/JoinFamily"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Admin = lazy(() => import("./pages/Admin"));
 
 const queryClient = new QueryClient();
+
+const PageLoader = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+  </div>
+);
 
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
 
   if (!isInitialized) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!storageMode) {
     return (
-      <Routes>
-        <Route path="/setup" element={<StorageSetup />} />
-        <Route path="/install" element={<Install />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="*" element={<Navigate to="/setup" replace />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/setup" element={<StorageSetup />} />
+          <Route path="/install" element={<Install />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="*" element={<Navigate to="/setup" replace />} />
+        </Routes>
+      </Suspense>
     );
   }
 
   return (
-    <Routes>
-      <Route path="/" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
-      <Route path="/business" element={<Business />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/projects" element={onboardingCompleted ? <Projects /> : <Navigate to="/onboarding" replace />} />
-      <Route path="/budgets" element={onboardingCompleted ? <Budgets /> : <Navigate to="/onboarding" replace />} />
-      <Route path="/wallet" element={onboardingCompleted ? <Wallet /> : <Navigate to="/onboarding" replace />} />
-      <Route path="/family" element={onboardingCompleted ? <Family /> : <Navigate to="/onboarding" replace />} />
-      <Route path="/join-family/:token" element={<JoinFamily />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/setup" element={<StorageSetup />} />
-      <Route path="/install" element={<Install />} />
-      <Route path="/join-project/:token" element={<JoinProject />} />
-      <Route path="/join-budget/:token" element={<JoinBudget />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
+        <Route path="/business" element={<Business />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/projects" element={onboardingCompleted ? <Projects /> : <Navigate to="/onboarding" replace />} />
+        <Route path="/budgets" element={onboardingCompleted ? <Budgets /> : <Navigate to="/onboarding" replace />} />
+        <Route path="/wallet" element={onboardingCompleted ? <Wallet /> : <Navigate to="/onboarding" replace />} />
+        <Route path="/family" element={onboardingCompleted ? <Family /> : <Navigate to="/onboarding" replace />} />
+        <Route path="/join-family/:token" element={<JoinFamily />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/setup" element={<StorageSetup />} />
+        <Route path="/install" element={<Install />} />
+        <Route path="/join-project/:token" element={<JoinProject />} />
+        <Route path="/join-budget/:token" element={<JoinBudget />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 };
 
