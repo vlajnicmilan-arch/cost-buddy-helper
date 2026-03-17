@@ -536,6 +536,26 @@ export const PaymentSourceTransactionsDialog = ({
                         )}
                         PDF
                       </Button>
+                      <input
+                        ref={htmlInputRef}
+                        type="file"
+                        accept=".html,.htm,text/html"
+                        onChange={handleHTMLSelect}
+                        className="hidden"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => htmlInputRef.current?.click()}
+                        disabled={parsing}
+                        className="h-7 text-xs gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+                      >
+                        {parsing ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Code2 className="w-3.5 h-3.5" />
+                        )}
+                        HTML
                       <Button
                         variant="outline"
                         size="sm"
