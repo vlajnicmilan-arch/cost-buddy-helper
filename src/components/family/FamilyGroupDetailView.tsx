@@ -425,7 +425,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                           <p className="font-medium text-sm truncate">{sharedProject.project_name || 'Projekt'}</p>
                           <p className="text-xs text-muted-foreground">{t('family.projectNotAvailable')}</p>
                         </div>
-                        {isOwner && (
+                        {(isOwner || sharedProject.added_by === user?.id) && (
                           <Button variant="ghost" size="icon" onClick={() => removeSharedProject(sharedProject.id)} className="h-7 w-7 text-destructive hover:text-destructive">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
