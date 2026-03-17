@@ -365,9 +365,9 @@ export const PaymentSourceTransactionsDialog = ({
 
   const handleConfirmImportWithDuplicates = async () => {
     if (!duplicateInfo || !onImportCSV) return;
-    const transactionsToImport = includeDuplicates 
-      ? [...duplicateInfo.unique, ...duplicateInfo.duplicates]
-      : duplicateInfo.unique;
+    const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, i) => selectedFuzzy.has(i));
+    const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
+    const transactionsToImport = [...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude];
     if (transactionsToImport.length === 0) {
       toast.info(t('import.noNewTransactions'));
       setDuplicateWarningOpen(false);
