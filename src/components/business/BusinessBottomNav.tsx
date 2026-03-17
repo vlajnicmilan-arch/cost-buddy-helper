@@ -1,7 +1,7 @@
-import { LayoutDashboard, ArrowLeftRight, FileBarChart, MoreHorizontal, Wallet } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, FileBarChart, MoreHorizontal, Wallet, FolderKanban } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export type BusinessTab = 'dashboard' | 'wallet' | 'transactions' | 'reports' | 'more';
+export type BusinessTab = 'dashboard' | 'wallet' | 'transactions' | 'projects' | 'reports' | 'more';
 
 interface Props {
   activeTab: BusinessTab;
