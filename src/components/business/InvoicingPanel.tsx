@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send } from 'lucide-react';
+import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send, ScanSearch } from 'lucide-react';
+import { DetectedPartnersDialog } from '@/components/DetectedPartnersDialog';
 import { downloadInvoicePDF, shareInvoicePDF } from '@/lib/invoicePdfExport';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -91,6 +92,9 @@ export const InvoicingPanel = () => {
     { description: '', quantity: 1, unit: 'kom', unit_price: 0, discount: 0, vat_rate: 25 },
   ]);
   const [saving, setSaving] = useState(false);
+  const [scanPartnersOpen, setScanPartnersOpen] = useState(false);
+  const [scannedMerchants, setScannedMerchants] = useState<string[]>([]);
+  const [scanning, setScanning] = useState(false);
 
   // Detail
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
@@ -237,6 +241,37 @@ export const InvoicingPanel = () => {
     loadClients();
   };
 
+  const scanTransactionsForPartners = async () => {
+    if (!user || !activeBusinessProfileId) return;
+    setScanning(true);
+    try {
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('merchant_name')
+        .eq('user_id', user.id)
+        .eq('business_profile_id', activeBusinessProfileId)
+        .not('merchant_name', 'is', null);
+
+      const merchants = (expenses || [])
+        .map((e: any) => e.merchant_name as string)
+        .filter(Boolean);
+
+      if (merchants.length === 0) {
+        toast.info('Nije pronađen nijedan partner u transakcijama.');
+        setScanning(false);
+        return;
+      }
+
+      setScannedMerchants(merchants);
+      setScanPartnersOpen(true);
+    } catch (error) {
+      console.error('Error scanning transactions:', error);
+      toast.error('Greška pri skeniranju transakcija');
+    } finally {
+      setScanning(false);
+    }
+  };
+
   const calcItemTotal = (item: InvoiceItem) => {
     const base = item.quantity * item.unit_price;
     const discounted = base * (1 - item.discount / 100);
@@ -360,9 +395,15 @@ export const InvoicingPanel = () => {
       {backButton}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-bold">Klijenti</h2>
-        <Button size="sm" className="gap-1 h-8 text-xs" onClick={() => setView('new_client')}>
-          <Plus className="w-3.5 h-3.5" /> Novi klijent
-        </Button>
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs" onClick={scanTransactionsForPartners} disabled={scanning}>
+            {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanSearch className="w-3.5 h-3.5" />}
+            Skeniraj
+          </Button>
+          <Button size="sm" className="gap-1 h-8 text-xs" onClick={() => setView('new_client')}>
+            <Plus className="w-3.5 h-3.5" /> Novi
+          </Button>
+        </div>
       </div>
       {clients.length === 0 ? (
         <Card className="border-none shadow-sm">
@@ -390,6 +431,14 @@ export const InvoicingPanel = () => {
           ))}
         </div>
       )}
+      <DetectedPartnersDialog
+        open={scanPartnersOpen}
+        onOpenChange={(open) => {
+          setScanPartnersOpen(open);
+          if (!open) loadClients();
+        }}
+        merchantNames={scannedMerchants}
+      />
     </div>
   );
 
