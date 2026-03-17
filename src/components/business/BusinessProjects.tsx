@@ -72,7 +72,15 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         .select('budget, status')
         .eq('project_id', project.id);
       const completedMilestones = (milestones || []).filter((m: any) => m.status === 'completed');
-      const spent = completedMilestones.reduce((sum: number, m: any) => sum + Number(m.budget || 0), 0);
+      const milestoneSpent = completedMilestones.reduce((sum: number, m: any) => sum + Number(m.budget || 0), 0);
+
+      const { data: collabData } = await (supabase
+        .from('project_collaborators') as any)
+        .select('paid_amount')
+        .eq('project_id', project.id);
+      const collabPaid = (collabData || []).reduce((sum: number, c: any) => sum + Number(c.paid_amount || 0), 0);
+
+      const spent = milestoneSpent + collabPaid;
 
       const { count: memberCount } = await (supabase
         .from('project_members') as any)
