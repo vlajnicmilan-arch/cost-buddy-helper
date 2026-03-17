@@ -93,15 +93,16 @@ export const ProjectFullScreenView = ({
 
   const budget = project.total_budget || 0;
   
-  // Calculate spent from completed milestones (unified logic)
+  // Calculate spent from completed milestones + paid collaborator amounts (unified logic)
   const completedMilestonesList = milestones.filter(m => m.status === 'completed');
   const spentFromMilestones = completedMilestonesList.reduce((sum, m) => sum + (m.budget || 0), 0);
+  const totalSpent = spentFromMilestones + collaboratorsPaid;
   const completedMilestones = completedMilestonesList.length;
   
-  // Remaining = Allocated (received funds) - Spent (completed milestones)
-  const remaining = totalAllocated - spentFromMilestones;
+  // Remaining = Allocated (received funds) - Spent (milestones + collaborators paid)
+  const remaining = totalAllocated - totalSpent;
   const budgetUsedPercentage = totalAllocated > 0 
-    ? (spentFromMilestones / totalAllocated) * 100 
+    ? (totalSpent / totalAllocated) * 100 
     : 0;
   const budgetWarning = budgetUsedPercentage >= 90;
   const overdueMilestones = milestones.filter(m => m.status === 'overdue').length;
