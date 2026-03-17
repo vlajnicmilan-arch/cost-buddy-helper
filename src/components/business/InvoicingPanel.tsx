@@ -431,6 +431,14 @@ export const InvoicingPanel = () => {
           ))}
         </div>
       )}
+      <DetectedPartnersDialog
+        open={scanPartnersOpen}
+        onOpenChange={(open) => {
+          setScanPartnersOpen(open);
+          if (!open) loadClients();
+        }}
+        merchantNames={scannedMerchants}
+      />
     </div>
   );
 
