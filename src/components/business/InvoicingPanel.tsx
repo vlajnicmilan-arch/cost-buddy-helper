@@ -274,69 +274,42 @@ export const InvoicingPanel = () => {
     }
   };
 
-  const enrichClientsFromRegistry = async () => {
-    if (!user || !activeBusinessProfileId) return;
-    // Find clients missing OIB (primary indicator of incomplete data)
-    const incompleteClients = clients.filter(c => !c.oib);
-    if (incompleteClients.length === 0) {
-      toast.info('Svi klijenti već imaju OIB – nema što za obogatiti.');
-      return;
-    }
-
+  const enrichClientFromRegistry = async (client: Client) => {
     setEnriching(true);
-    setEnrichProgress({ current: 0, total: incompleteClients.length });
-    let updated = 0;
-    let failed = 0;
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-company', {
+        body: { query: client.name },
+      });
 
-    for (let i = 0; i < incompleteClients.length; i++) {
-      const client = incompleteClients[i];
-      setEnrichProgress({ current: i + 1, total: incompleteClients.length });
-
-      try {
-        const { data, error } = await supabase.functions.invoke('lookup-company', {
-          body: { query: client.name },
-        });
-
-        if (error || !data?.found) {
-          failed++;
-          continue;
-        }
-
-        // Build update object only with non-empty values that client doesn't already have
-        const updates: Record<string, any> = {};
-        if (data.oib && !client.oib) updates.oib = data.oib;
-        if (data.address && !client.address) updates.address = data.address;
-        if (data.city && !client.city) updates.city = data.city;
-        if (data.email && !client.email) updates.email = data.email;
-        if (data.phone && !client.phone) updates.phone = data.phone;
-        if (data.contact_person && !client.contact_person) updates.contact_person = data.contact_person;
-        // Update name to official name if found
-        if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
-
-        if (Object.keys(updates).length > 0) {
-          await supabase.from('clients').update(updates as any).eq('id', client.id);
-          updated++;
-        }
-
-        // Small delay to avoid rate limiting
-        if (i < incompleteClients.length - 1) {
-          await new Promise(r => setTimeout(r, 1500));
-        }
-      } catch (err: any) {
-        console.error(`Error enriching client ${client.name}:`, err);
-        if (err?.status === 429) {
-          toast.error('Previše zahtjeva – pokušajte ponovno za minutu.');
-          break;
-        }
-        failed++;
+      if (error || !data?.found) {
+        toast.error('Podaci nisu pronađeni u registru.');
+        setEnriching(false);
+        return;
       }
-    }
 
+      const updates: Record<string, any> = {};
+      if (data.oib && !client.oib) updates.oib = data.oib;
+      if (data.address && !client.address) updates.address = data.address;
+      if (data.city && !client.city) updates.city = data.city;
+      if (data.email && !client.email) updates.email = data.email;
+      if (data.phone && !client.phone) updates.phone = data.phone;
+      if (data.contact_person && !client.contact_person) updates.contact_person = data.contact_person;
+      if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('clients').update(updates as any).eq('id', client.id);
+        toast.success('Podaci klijenta ažurirani iz registra!');
+        loadClients();
+        // Update selected client in dialog
+        setSelectedClient(prev => prev ? { ...prev, ...updates } : null);
+      } else {
+        toast.info('Nema novih podataka za ažuriranje.');
+      }
+    } catch (err: any) {
+      console.error('Error enriching client:', err);
+      toast.error(err?.message || 'Greška pri pretrazi registra.');
+    }
     setEnriching(false);
-    loadClients();
-    if (updated > 0) toast.success(`Obogaćeno ${updated} klijenata podacima iz registra.`);
-    if (failed > 0 && updated === 0) toast.info(`Nije pronađeno podataka za ${failed} klijenata.`);
-    else if (failed > 0) toast.info(`Za ${failed} klijenata nisu pronađeni podaci.`);
   };
 
   const calcItemTotal = (item: InvoiceItem) => {
