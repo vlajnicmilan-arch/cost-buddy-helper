@@ -118,8 +118,15 @@ export const ProjectCollaboratorDialog = ({
           </div>
 
           <div className="space-y-1.5">
-            <Label>{t('collaborators.totalPrice', 'Ukupna cijena')}</Label>
+            <Label>{t('collaborators.agreedPrice', 'Dogovoreni iznos')}</Label>
             <Input type="number" step="0.01" min="0" value={totalPrice} onChange={e => setTotalPrice(e.target.value)} required />
+            <p className="text-[11px] text-muted-foreground">{t('collaborators.agreedPriceHint', 'Za projekcije i predviđene troškove')}</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t('collaborators.paidAmount', 'Isplaćeni iznos')}</Label>
+            <Input type="number" step="0.01" min="0" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
+            <p className="text-[11px] text-muted-foreground">{t('collaborators.paidAmountHint', 'Utječe na stvarne obračune projekta')}</p>
           </div>
 
           <div className="space-y-1.5">
