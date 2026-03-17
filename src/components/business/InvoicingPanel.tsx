@@ -274,15 +274,40 @@ export const InvoicingPanel = () => {
     }
   };
 
+  const cleanCompanyName = (name: string): string => {
+    // Remove city names at end (after comma or last word in CAPS that's a city)
+    let cleaned = name.trim();
+    // Remove trailing city after comma
+    cleaned = cleaned.replace(/,\s*[A-ZČĆŽŠĐ][A-ZČĆŽŠĐa-zčćžšđ\s/]+$/i, '');
+    // Remove common long legal form descriptions
+    cleaned = cleaned.replace(/\s+(jednostavno\s+)?dru[šs]tvo\s+s\s+ograni[čc]enom\s+odgovorno[šs][ćc]u.*$/i, '');
+    cleaned = cleaned.replace(/\s+za\s+proizvodnju.*$/i, '');
+    cleaned = cleaned.replace(/\s+za\s+trgovinu.*$/i, '');
+    // Remove trailing city name (single word, all caps, at end)
+    cleaned = cleaned.replace(/\s+[A-ZČĆŽŠĐ]{3,}$/i, '').trim();
+    // Remove PJ (poslovni jedinica) suffix
+    cleaned = cleaned.replace(/\s+PJ\s+.*$/i, '').trim();
+    return cleaned || name;
+  };
+
   const enrichClientFromRegistry = async (client: Client) => {
     setEnriching(true);
     try {
+      const query = cleanCompanyName(client.name);
+      console.log('Enriching client, cleaned query:', query);
+      
       const { data, error } = await supabase.functions.invoke('lookup-company', {
-        body: { query: client.name },
+        body: { query },
       });
 
-      if (error || !data?.found) {
-        toast.error('Podaci nisu pronađeni u registru.');
+      if (error) {
+        toast.error('Greška pri pretrazi registra.');
+        setEnriching(false);
+        return;
+      }
+
+      if (!data?.found) {
+        toast.info('Podaci nisu pronađeni u registru za: ' + query);
         setEnriching(false);
         return;
       }
@@ -295,12 +320,12 @@ export const InvoicingPanel = () => {
       if (data.phone && !client.phone) updates.phone = data.phone;
       if (data.contact_person && !client.contact_person) updates.contact_person = data.contact_person;
       if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
+      if (data.postal_code) updates.postal_code = data.postal_code;
 
       if (Object.keys(updates).length > 0) {
         await supabase.from('clients').update(updates as any).eq('id', client.id);
         toast.success('Podaci klijenta ažurirani iz registra!');
         loadClients();
-        // Update selected client in dialog
         setSelectedClient(prev => prev ? { ...prev, ...updates } : null);
       } else {
         toast.info('Nema novih podataka za ažuriranje.');
