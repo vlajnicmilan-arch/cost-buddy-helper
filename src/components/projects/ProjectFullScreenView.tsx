@@ -222,7 +222,7 @@ export const ProjectFullScreenView = ({
 
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-7 w-full mb-6">
+                <TabsList className="grid grid-cols-8 w-full mb-6">
                   <TabsTrigger value="overview" className="gap-1">
                     <TrendingUp className="w-4 h-4" />
                     <span className="hidden sm:inline">{t('projects.overview')}</span>
