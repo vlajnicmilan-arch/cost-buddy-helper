@@ -92,6 +92,9 @@ export const InvoicingPanel = () => {
     { description: '', quantity: 1, unit: 'kom', unit_price: 0, discount: 0, vat_rate: 25 },
   ]);
   const [saving, setSaving] = useState(false);
+  const [scanPartnersOpen, setScanPartnersOpen] = useState(false);
+  const [scannedMerchants, setScannedMerchants] = useState<string[]>([]);
+  const [scanning, setScanning] = useState(false);
 
   // Detail
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
