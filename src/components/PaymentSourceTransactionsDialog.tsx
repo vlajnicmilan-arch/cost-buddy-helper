@@ -71,7 +71,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
+  const { parsing, parsedData, parsePDF, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
 
   // Filter installment plans for this payment source
