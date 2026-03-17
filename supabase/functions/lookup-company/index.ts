@@ -158,7 +158,7 @@ async function extractWithAI(
     companyData.bank_name,
   ];
   companyData.found = usefulFields.some((value) => typeof value === "string" ? value.trim().length > 0 : Boolean(value));
-  companyData.source = "sudreg";
+  companyData.source = source;
   return companyData;
 }
 
