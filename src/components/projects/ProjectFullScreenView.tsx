@@ -25,6 +25,7 @@ import { ProjectTransactionsTab } from './ProjectTransactionsTab';
 import { ProjectTimelineTab } from './ProjectTimelineTab';
 import { ProjectReportsDialog } from './ProjectReportsDialog';
 import { ProjectWorkersTab } from './ProjectWorkersTab';
+import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProjectFullScreenViewProps {
