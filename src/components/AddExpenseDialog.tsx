@@ -188,6 +188,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         
         if (result) {
           applyScannedResult(result);
+        } else {
+          // Scan failed or returned no data - clear the image so user can retry
+          console.warn('Receipt scan returned no result');
         }
       }
     };
