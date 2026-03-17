@@ -368,6 +368,7 @@ export const ProjectFullScreenView = ({
                   />
                 </TabsContent>
 
+                <TabsContent value="funding" className="m-0">
                   <ProjectFundingTab
                     projectId={project.id}
                     funding={funding}
