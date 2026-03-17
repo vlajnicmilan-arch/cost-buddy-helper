@@ -300,20 +300,40 @@ export const InvoicingPanel = () => {
 
     try {
       const targetClientId = client.id;
-      const query = client.oib?.trim() || cleanCompanyName(client.name);
-      console.log('Enriching client, cleaned query:', query);
+      const searchQueries = Array.from(
+        new Set(
+          [
+            client.oib?.trim(),
+            client.name.trim(),
+            cleanCompanyName(client.name),
+          ].filter((value): value is string => Boolean(value && value.trim().length > 0))
+        )
+      );
 
-      const { data, error } = await supabase.functions.invoke('lookup-company', {
-        body: { query },
-      });
+      let data: any = null;
+      let lastError: string | null = null;
+      let successfulQuery = searchQueries[0] || client.name.trim();
 
-      if (error) {
-        toast.error(error.message || 'Greška pri pretrazi registra.');
-        return;
+      for (const searchQuery of searchQueries) {
+        console.log('Enriching client, query:', searchQuery);
+        const response = await supabase.functions.invoke('lookup-company', {
+          body: { query: searchQuery },
+        });
+
+        if (response.error) {
+          lastError = response.error.message || 'Greška pri pretrazi registra.';
+          continue;
+        }
+
+        if (response.data?.found) {
+          data = response.data;
+          successfulQuery = searchQuery;
+          break;
+        }
       }
 
       if (!data?.found) {
-        toast.info('Nije pronađen konkretan podatak u sudskom registru za: ' + query);
+        toast.error(lastError || `Nema rezultata za: ${successfulQuery}`);
         return;
       }
 
@@ -330,7 +350,7 @@ export const InvoicingPanel = () => {
 
       const hasRealUpdates = Object.keys(updates).length > 0;
       if (!hasRealUpdates) {
-        toast.info('Registar nije vratio dodatne podatke osim naziva.');
+        toast.info('Registar nije vratio nove podatke za ažuriranje.');
         return;
       }
 
