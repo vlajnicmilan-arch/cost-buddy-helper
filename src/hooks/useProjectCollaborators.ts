@@ -65,7 +65,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
 
       if (error) throw error;
 
-      const newItem = { ...data, total_price: Number(data.total_price) };
+      const newItem = { ...data, total_price: Number(data.total_price), paid_amount: Number(data.paid_amount || 0) };
       setCollaborators(prev => [newItem, ...prev]);
       toast.success(t('collaborators.added', 'Suradnik dodan'));
       return newItem;
