@@ -165,6 +165,12 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     // No duplicates, import all
     await onImportCSV(transactions);
     setPdfPreviewOpen(false);
+    // Extract merchants for partner detection
+    const merchants = transactions.map(t => t.merchant_name).filter(Boolean) as string[];
+    if (merchants.length > 0 && activeBusinessProfileId) {
+      setDetectedMerchants(merchants);
+      setPartnersDialogOpen(true);
+    }
     clearParsedData();
     toast.success(t('import.importedFromPDF', { count: transactions.length }));
   };
