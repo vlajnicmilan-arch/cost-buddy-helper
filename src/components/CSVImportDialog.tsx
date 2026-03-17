@@ -81,12 +81,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   };
 
   const duplicateCount = duplicateIndices.size;
+  const fuzzyCount = fuzzyDuplicateIndices.size;
 
   const resetState = () => {
     setStep('upload');
     setTransactions([]);
     setSelectedIndices(new Set());
     setDuplicateIndices(new Set());
+    setFuzzyDuplicateIndices(new Set());
     setSkipDuplicates(true);
     setSource('');
     setError('');
