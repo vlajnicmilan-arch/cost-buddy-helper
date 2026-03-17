@@ -38,7 +38,8 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const { parsing, parsedData, parsePDF, parsePhoto, clearParsedData } = usePDFParser();
+  const htmlInputRef = useRef<HTMLInputElement>(null);
+  const { parsing, parsedData, parsePDF, parsePhoto, parseHTML, clearParsedData } = usePDFParser();
 
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
