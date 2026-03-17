@@ -119,7 +119,7 @@ async function extractWithAI(
                 phone: { type: "string", description: "Telefon" },
                 website: { type: "string", description: "Web" },
                 found: { type: "boolean", description: "true samo ako postoji barem jedan konkretan podatak osim naziva" },
-                source: { type: "string", description: "'sudreg'" },
+                source: { type: "string", description: "'sudreg' ili 'web'" },
               },
               required: ["found", "company_name", "source"],
               additionalProperties: false,
