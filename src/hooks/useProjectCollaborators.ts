@@ -54,6 +54,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
           company_name: input.company_name || null,
           service_description: input.service_description,
           total_price: input.total_price,
+          paid_amount: input.paid_amount || 0,
           milestone_id: input.milestone_id || null,
           status: input.status || 'active',
           contact_info: input.contact_info || null,
