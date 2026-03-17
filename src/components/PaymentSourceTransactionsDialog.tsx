@@ -333,7 +333,7 @@ export const PaymentSourceTransactionsDialog = ({
       setIsImportingPdf(true);
 
       if (findDuplicates) {
-        const { duplicates, fuzzyDuplicates, unique } = findDuplicates(transactions);
+        const { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique } = findDuplicates(transactions);
 
         if (duplicates.length > 0 || fuzzyDuplicates.length > 0) {
           if (unique.length === 0 && fuzzyDuplicates.length === 0) {
