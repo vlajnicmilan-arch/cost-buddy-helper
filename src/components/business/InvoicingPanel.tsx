@@ -463,13 +463,27 @@ export const InvoicingPanel = () => {
         <div className="space-y-2">
           {clients.map(c => (
             <Card key={c.id} className="border-none shadow-sm">
-              <CardContent className="p-3 flex items-center gap-3">
+              <CardContent className="p-3 flex items-center gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{c.name}</p>
                   <p className="text-[10px] text-muted-foreground truncate">
                     {[c.oib, c.city, c.email].filter(Boolean).join(' · ') || 'Bez detalja'}
                   </p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-primary"
+                  onClick={() => enrichClient(c)}
+                  disabled={enrichingClientId === c.id}
+                  title="Povuci podatke iz registra"
+                >
+                  {enrichingClientId === c.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <SearchCheck className="w-3.5 h-3.5" />
+                  )}
+                </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteClient(c.id)}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
