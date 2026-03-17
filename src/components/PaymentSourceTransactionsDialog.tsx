@@ -64,6 +64,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
+  const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
