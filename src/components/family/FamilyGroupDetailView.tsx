@@ -473,12 +473,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 <PiggyBank className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedSavings')}
               </h2>
-              {isOwner && (
-                <Button variant="ghost" size="sm" onClick={() => setShowAddSavings(!showAddSavings)} className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('family.add')}
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowAddSavings(!showAddSavings)} className="h-8 gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {t('family.add')}
+              </Button>
             </div>
 
             {showAddSavings && availableSavings.length > 0 && (
