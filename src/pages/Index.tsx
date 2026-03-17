@@ -29,6 +29,7 @@ import { BusinessTransactions } from '@/components/business/BusinessTransactions
 import { BusinessReports } from '@/components/business/BusinessReports';
 import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
+import { BusinessProjects } from '@/components/business/BusinessProjects';
 import { Expense, Category } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt, ArrowLeft, Building2, FileSpreadsheet } from 'lucide-react';
