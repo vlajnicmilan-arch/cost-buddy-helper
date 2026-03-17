@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
 import { Badge } from '@/components/ui/badge';
+import { DetectedPartnersDialog } from './DetectedPartnersDialog';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
