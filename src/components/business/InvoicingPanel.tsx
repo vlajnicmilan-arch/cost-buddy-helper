@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send, ScanSearch } from 'lucide-react';
+import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send, ScanSearch, SearchCheck } from 'lucide-react';
 import { DetectedPartnersDialog } from '@/components/DetectedPartnersDialog';
 import { downloadInvoicePDF, shareInvoicePDF } from '@/lib/invoicePdfExport';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -95,6 +95,7 @@ export const InvoicingPanel = () => {
   const [scanPartnersOpen, setScanPartnersOpen] = useState(false);
   const [scannedMerchants, setScannedMerchants] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [enrichingClientId, setEnrichingClientId] = useState<string | null>(null);
 
   // Detail
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
@@ -272,6 +273,52 @@ export const InvoicingPanel = () => {
     }
   };
 
+  const enrichClient = async (client: Client) => {
+    if (enrichingClientId) return;
+    setEnrichingClientId(client.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-company', {
+        body: { query: client.name },
+      });
+
+      if (error) throw error;
+      if (!data?.found) {
+        toast.info(`Nije pronađeno podataka za "${client.name}"`);
+        return;
+      }
+
+      const updates: Record<string, any> = {};
+      if (data.company_name && data.company_name !== client.name) updates.name = data.company_name;
+      if (data.oib && !client.oib) updates.oib = data.oib;
+      if (data.address && !client.address) updates.address = data.address;
+      if (data.city && !client.city) updates.city = data.city;
+      if (data.postal_code) updates.postal_code = data.postal_code;
+      if (data.email && !client.email) updates.email = data.email;
+      if (data.phone && !client.phone) updates.phone = data.phone;
+      if (data.contact_person) updates.contact_person = data.contact_person;
+
+      if (Object.keys(updates).length === 0) {
+        toast.info('Klijent već ima sve dostupne podatke.');
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from('clients')
+        .update(updates)
+        .eq('id', client.id) as any;
+
+      if (updateError) throw updateError;
+
+      toast.success(`Podaci ažurirani za "${data.company_name || client.name}" (izvor: ${data.source === 'sudreg' ? 'sudski registar' : 'AI'})`);
+      loadClients();
+    } catch (error: any) {
+      console.error('Error enriching client:', error);
+      toast.error('Greška pri dohvatu podataka');
+    } finally {
+      setEnrichingClientId(null);
+    }
+  };
+
   const calcItemTotal = (item: InvoiceItem) => {
     const base = item.quantity * item.unit_price;
     const discounted = base * (1 - item.discount / 100);
@@ -416,13 +463,27 @@ export const InvoicingPanel = () => {
         <div className="space-y-2">
           {clients.map(c => (
             <Card key={c.id} className="border-none shadow-sm">
-              <CardContent className="p-3 flex items-center gap-3">
+              <CardContent className="p-3 flex items-center gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{c.name}</p>
                   <p className="text-[10px] text-muted-foreground truncate">
                     {[c.oib, c.city, c.email].filter(Boolean).join(' · ') || 'Bez detalja'}
                   </p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-primary"
+                  onClick={() => enrichClient(c)}
+                  disabled={enrichingClientId === c.id}
+                  title="Povuci podatke iz registra"
+                >
+                  {enrichingClientId === c.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <SearchCheck className="w-3.5 h-3.5" />
+                  )}
+                </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteClient(c.id)}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
