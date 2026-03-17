@@ -556,6 +556,7 @@ export const PaymentSourceTransactionsDialog = ({
                           <Code2 className="w-3.5 h-3.5" />
                         )}
                         HTML
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
