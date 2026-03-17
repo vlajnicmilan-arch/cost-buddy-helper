@@ -89,7 +89,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         continue;
       }
 
-      // Fuzzy match: same amount + same type + date within ±3 days (but NOT same date, since that's strict)
+      // Fuzzy match: same amount + same type + date within ±3 days + similar description/merchant
       const fuzzyMatch = expenses.find(existing => {
         const sameAmount = Math.abs(Number(existing.amount) - tx.amount) < 0.01;
         const sameType = existing.type === tx.type;
@@ -101,7 +101,25 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         // Only fuzzy if different date but within 3 days
         if (dayDiff < 0.5 || dayDiff > 3) return false;
 
-        return true;
+        // Must also have similar merchant or description to be a fuzzy duplicate
+        if (existing.merchant_name && tx.merchant_name &&
+            areMerchantsSimilar(existing.merchant_name, tx.merchant_name)) return true;
+
+        const existingDesc = existing.description.toLowerCase().trim();
+        const txDesc = tx.description.toLowerCase().trim();
+        if (existingDesc === txDesc) return true;
+        if (existingDesc.includes(txDesc) || txDesc.includes(existingDesc)) return true;
+
+        // Word overlap check
+        const wa = existingDesc.split(/\s+/).filter(w => w.length >= 3);
+        const wb = txDesc.split(/\s+/).filter(w => w.length >= 3);
+        if (wa.length > 0 && wb.length > 0) {
+          const common = wa.filter(w => wb.some(w2 => w2.includes(w) || w.includes(w2)));
+          const minLen = Math.min(wa.length, wb.length);
+          if (common.length / minLen >= 0.5) return true;
+        }
+
+        return false;
       });
 
       if (fuzzyMatch) {
