@@ -1,8 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useProjects } from '@/hooks/useProjects';
-import { useProjectStats } from '@/hooks/useProjectStats';
-import { useProjectMilestones } from '@/hooks/useProjectMilestones';
-import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,11 +38,58 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [personalProjects, setPersonalProjects] = useState<any[]>([]);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
+  const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
 
   // Filter only business projects for this profile
   const businessProjects = projects.filter(p => 
     (p as any).business_profile_id === activeBusinessProfileId
   );
+
+  // Fetch stats for all business projects
+  const fetchAllStats = useCallback(async () => {
+    if (businessProjects.length === 0) return;
+    const stats: Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }> = {};
+    
+    for (const project of businessProjects) {
+      const { data: expenses } = await (supabase
+        .from('expenses')
+        .select('amount, type, status') as any)
+        .eq('project_id', project.id);
+
+      const approvedIncomes = (expenses || []).filter(
+        (e: any) => e.type === 'income' && (!e.status || e.status === 'approved')
+      );
+      const income = approvedIncomes.reduce((sum: number, e: any) => sum + Number(e.amount), 0);
+
+      const { data: fundingData } = await supabase
+        .from('project_funding')
+        .select('allocated_amount')
+        .eq('project_id', project.id);
+      const fundingTotal = (fundingData || []).reduce((sum, f) => sum + Number(f.allocated_amount || 0), 0);
+
+      const { data: milestones } = await supabase
+        .from('project_milestones')
+        .select('budget, status')
+        .eq('project_id', project.id);
+      const completedMilestones = (milestones || []).filter((m: any) => m.status === 'completed');
+      const spent = completedMilestones.reduce((sum: number, m: any) => sum + Number(m.budget || 0), 0);
+
+      const { count: memberCount } = await (supabase
+        .from('project_members') as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', project.id);
+
+      stats[project.id] = {
+        spent,
+        income: income + fundingTotal,
+        memberCount: memberCount || 0,
+        milestoneCount: (milestones || []).length,
+      };
+    }
+    setProjectStats(stats);
+  }, [businessProjects.map(p => p.id).join(',')]);
+
+  useEffect(() => { fetchAllStats(); }, [fetchAllStats]);
 
   const fetchPersonalProjects = async () => {
     if (!user) return;
@@ -57,7 +101,6 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         .eq('user_id', user.id)
         .is('business_profile_id', null)
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
       setPersonalProjects(data || []);
     } catch (err) {
@@ -71,8 +114,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
     if (!user || !activeBusinessProfileId) return;
     setImportingIds(prev => new Set(prev).add(project.id));
     try {
-      // Create a copy of the project linked to the business profile
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('projects')
         .insert({
           user_id: user.id,
@@ -85,33 +127,24 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           start_date: project.start_date,
           end_date: project.end_date,
           business_profile_id: activeBusinessProfileId,
-        })
-        .select()
-        .single();
-
+        });
       if (error) throw error;
-
-      toast.success(t('projects.imported', `Projekt "${project.name}" uvezen`).replace('"', '"'));
+      toast.success(`Projekt "${project.name}" uvezen`);
       refetch();
       onRefreshExpenses?.();
     } catch (err) {
       console.error('Error importing project:', err);
       toast.error(t('common.error'));
     } finally {
-      setImportingIds(prev => {
-        const next = new Set(prev);
-        next.delete(project.id);
-        return next;
-      });
+      setImportingIds(prev => { const n = new Set(prev); n.delete(project.id); return n; });
     }
   };
 
-  const handleDeleteProject = async () => {
-    if (!projectToDelete) return;
-    await deleteProject(projectToDelete);
-    setDeleteConfirmOpen(false);
-    setProjectToDelete(null);
-    onRefreshExpenses?.();
+  const handleCloseFullScreen = () => {
+    setDetailDialogOpen(false);
+    setSelectedProject(null);
+    refetch();
+    fetchAllStats();
   };
 
   if (loading) {
@@ -135,10 +168,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
             variant="outline"
             size="sm"
             className="gap-1.5 rounded-xl"
-            onClick={() => {
-              setImportDialogOpen(true);
-              fetchPersonalProjects();
-            }}
+            onClick={() => { setImportDialogOpen(true); fetchPersonalProjects(); }}
           >
             <Download className="w-4 h-4" />
             {t('projects.importPersonal', 'Uvezi')}
@@ -146,10 +176,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           <Button
             size="sm"
             className="gap-1.5 rounded-xl"
-            onClick={() => {
-              setEditingProject(null);
-              setDialogOpen(true);
-            }}
+            onClick={() => { setEditingProject(null); setDialogOpen(true); }}
           >
             <Plus className="w-4 h-4" />
             {t('projects.new', 'Novi')}
@@ -166,28 +193,24 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         />
       ) : (
         <AnimatePresence mode="popLayout">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-3">
             {businessProjects.map((project) => (
               <motion.div
                 key={project.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                layout
               >
                 <ProjectCard
                   project={project}
-                  onClick={() => {
-                    setSelectedProject(project);
-                    setDetailDialogOpen(true);
-                  }}
-                  onEdit={(p) => {
-                    setEditingProject(p);
-                    setDialogOpen(true);
-                  }}
-                  onDelete={(id) => {
-                    setProjectToDelete(id);
-                    setDeleteConfirmOpen(true);
-                  }}
+                  spent={projectStats[project.id]?.spent || 0}
+                  income={projectStats[project.id]?.income || 0}
+                  memberCount={projectStats[project.id]?.memberCount || 0}
+                  milestoneCount={projectStats[project.id]?.milestoneCount || 0}
+                  onEdit={(p) => { setEditingProject(p); setDialogOpen(true); }}
+                  onDelete={(id) => { setProjectToDelete(id); setDeleteConfirmOpen(true); }}
+                  onClick={(p) => { setSelectedProject(p); setDetailDialogOpen(true); }}
                 />
               </motion.div>
             ))}
@@ -213,25 +236,12 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
       />
 
       {/* Full Screen View */}
-      {selectedProject && (
-        <ProjectFullScreenView
-          project={selectedProject}
-          open={detailDialogOpen}
-          onOpenChange={setDetailDialogOpen}
-          onEdit={(p) => {
-            setEditingProject(p);
-            setDialogOpen(true);
-          }}
-          onDelete={(id) => {
-            setProjectToDelete(id);
-            setDeleteConfirmOpen(true);
-          }}
-          onUpdate={async (p) => {
-            await updateProject(p);
-            refetch();
-          }}
-        />
-      )}
+      <ProjectFullScreenView
+        open={detailDialogOpen}
+        onClose={handleCloseFullScreen}
+        project={selectedProject}
+        onRefreshExpenses={() => { refetch(); fetchAllStats(); onRefreshExpenses?.(); }}
+      />
 
       {/* Delete Confirm */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -239,12 +249,22 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           <AlertDialogHeader>
             <AlertDialogTitle>{t('projects.deleteConfirmTitle', 'Obriši projekt?')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('projects.deleteConfirmDescription', 'Ova radnja je nepovratna. Svi podaci projekta bit će trajno obrisani.')}
+              {t('projects.deleteConfirmDescription', 'Ova radnja je nepovratna.')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={async () => {
+                if (projectToDelete) {
+                  await deleteProject(projectToDelete);
+                  setDeleteConfirmOpen(false);
+                  setProjectToDelete(null);
+                  onRefreshExpenses?.();
+                }
+              }}
+              className="bg-destructive text-destructive-foreground"
+            >
               {t('common.delete', 'Obriši')}
             </AlertDialogAction>
           </AlertDialogFooter>
