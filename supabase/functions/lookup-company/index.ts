@@ -180,8 +180,11 @@ serve(async (req) => {
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 
     let scrapedContent: string | null = null;
+    let source: "sudreg" | "web" = "sudreg";
     if (FIRECRAWL_API_KEY) {
-      scrapedContent = await searchSudreg(query.trim(), FIRECRAWL_API_KEY);
+      const searchResult = await searchCompanySources(query.trim(), FIRECRAWL_API_KEY);
+      scrapedContent = searchResult.content;
+      source = searchResult.source;
     }
 
     if (!scrapedContent) {
@@ -194,7 +197,7 @@ serve(async (req) => {
       });
     }
 
-    const companyData = await extractWithAI(query.trim(), scrapedContent, LOVABLE_API_KEY);
+    const companyData = await extractWithAI(query.trim(), scrapedContent, LOVABLE_API_KEY, source);
 
     return new Response(JSON.stringify(companyData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
