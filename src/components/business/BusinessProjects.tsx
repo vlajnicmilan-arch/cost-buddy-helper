@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useProjects } from '@/hooks/useProjects';
+import { useProjectStats } from '@/hooks/useProjectStats';
+import { useProjectMilestones } from '@/hooks/useProjectMilestones';
+import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +14,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, FolderKanban, Download, Loader2, Check } from 'lucide-react';
+import { Plus, FolderKanban, Download, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { toast } from 'sonner';
