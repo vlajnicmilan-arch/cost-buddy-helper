@@ -95,6 +95,8 @@ export const InvoicingPanel = () => {
   const [scanPartnersOpen, setScanPartnersOpen] = useState(false);
   const [scannedMerchants, setScannedMerchants] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState({ current: 0, total: 0 });
 
   // Detail
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
