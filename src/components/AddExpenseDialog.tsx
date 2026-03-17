@@ -188,6 +188,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         
         if (result) {
           applyScannedResult(result);
+        } else {
+          // Scan failed or returned no data - clear the image so user can retry
+          console.warn('Receipt scan returned no result');
         }
       }
     };
@@ -603,6 +606,10 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   return (
     <>
     <Dialog open={open} onOpenChange={(isOpen) => {
+      // CRITICAL: Prevent closing while scanning, reviewing scanned data, or saving
+      if (!isOpen && (scanning || showScannedPreview || isSaving)) {
+        return;
+      }
       setOpen(isOpen);
       if (isOpen) {
         // Refetch all needed data when dialog opens
