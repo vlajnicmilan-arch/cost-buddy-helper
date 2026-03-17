@@ -272,7 +272,7 @@ export const InvoicingPanel = () => {
     }
   };
 
-
+  const calcItemTotal = (item: InvoiceItem) => {
     const base = item.quantity * item.unit_price;
     const discounted = base * (1 - item.discount / 100);
     return discounted * (1 + item.vat_rate / 100);
