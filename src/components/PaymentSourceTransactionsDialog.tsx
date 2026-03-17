@@ -332,17 +332,17 @@ export const PaymentSourceTransactionsDialog = ({
       setIsImportingPdf(true);
 
       if (findDuplicates) {
-        const { duplicates, unique } = findDuplicates(transactions);
+        const { duplicates, fuzzyDuplicates, unique } = findDuplicates(transactions);
 
-        if (duplicates.length > 0) {
-          if (unique.length === 0) {
+        if (duplicates.length > 0 || fuzzyDuplicates.length > 0) {
+          if (unique.length === 0 && fuzzyDuplicates.length === 0) {
             toast.info(t('import.noNewTransactions'));
             setPdfPreviewOpen(false);
             clearParsedData();
             return;
           }
 
-          setDuplicateInfo({ duplicates, unique });
+          setDuplicateInfo({ duplicates, fuzzyDuplicates, unique });
           setIncludeDuplicates(false);
           setPdfPreviewOpen(false);
           setDuplicateWarningOpen(true);
