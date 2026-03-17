@@ -212,7 +212,8 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         court_registry: prev.court_registry || data.court_registry || '',
         legal_form: prev.legal_form || data.legal_form || '',
       }));
-      toast.success(t('business.aiFilledSuccess', 'AI je popunio podatke o tvrtki'));
+      const sourceLabel = data.source === 'sudreg' ? 'sudskog registra' : 'AI baze';
+      toast.success(t('business.aiFilledSuccess', `Podaci popunjeni iz ${sourceLabel}`).replace('{{source}}', sourceLabel));
     } catch (error) {
       console.error('AI lookup error:', error);
       toast.error(t('business.aiLookupError', 'Greška pri AI pretraživanju'));
