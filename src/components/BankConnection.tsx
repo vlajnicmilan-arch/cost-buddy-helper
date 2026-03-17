@@ -470,29 +470,82 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
           
           {duplicateInfo && (
             <div className="flex-1 overflow-y-auto space-y-4">
+              {/* Summary */}
               <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm">
                 <p className="font-medium text-orange-600 dark:text-orange-400">
-                  {t('import.duplicatesExist', { count: duplicateInfo.duplicates.length })}
+                  {duplicateInfo.duplicates.length > 0 && `${duplicateInfo.duplicates.length} sigurnih duplikata (automatski preskočeno)`}
+                  {duplicateInfo.duplicates.length > 0 && duplicateInfo.fuzzyDuplicates.length > 0 && ' • '}
+                  {duplicateInfo.fuzzyDuplicates.length > 0 && `${duplicateInfo.fuzzyDuplicates.length} mogućih duplikata (±3 dana)`}
                 </p>
                 <p className="text-muted-foreground text-xs mt-1">
                   {t('import.newTransactionsReady', { count: duplicateInfo.unique.length })}
                 </p>
               </div>
 
+              {/* Strict duplicates - collapsed list */}
               {duplicateInfo.duplicates.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">{t('import.duplicates')}:</p>
-                  <div className="max-h-40 overflow-y-auto space-y-2">
+                  <p className="text-sm font-medium text-destructive/80">🚫 Sigurni duplikati (isti datum i iznos):</p>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
                     {duplicateInfo.duplicates.map((tx, idx) => (
                       <div 
                         key={idx} 
-                        className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm border border-border/50"
+                        className="flex items-center justify-between p-2 bg-destructive/5 rounded-lg text-sm border border-destructive/10 opacity-60"
                       >
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate text-xs">{tx.description}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {tx.date.toLocaleDateString()}
-                          </p>
+                          <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()}</p>
+                        </div>
+                        <p className={`font-mono text-xs ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                          {tx.type === 'income' ? '+' : '-'}€{tx.amount.toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg">
+                    <Checkbox 
+                      id="include-strict-duplicates" 
+                      checked={includeDuplicates}
+                      onCheckedChange={(checked) => setIncludeDuplicates(checked === true)}
+                    />
+                    <label htmlFor="include-strict-duplicates" className="text-xs cursor-pointer text-muted-foreground">
+                      Ipak uvezi sigurne duplikate ({duplicateInfo.duplicates.length})
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Fuzzy duplicates - individual checkboxes */}
+              {duplicateInfo.fuzzyDuplicates.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">⚠️ Mogući duplikati (±3 dana, isti iznos):</p>
+                  <p className="text-xs text-muted-foreground">Odaberi koje želiš uvesti:</p>
+                  <div className="max-h-48 overflow-y-auto space-y-1">
+                    {duplicateInfo.fuzzyDuplicates.map((tx, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`flex items-center gap-2 p-2 rounded-lg text-sm border cursor-pointer transition-colors ${
+                          selectedFuzzy.has(idx) 
+                            ? 'bg-primary/5 border-primary/20' 
+                            : 'bg-amber-500/5 border-amber-500/15'
+                        }`}
+                        onClick={() => {
+                          const next = new Set(selectedFuzzy);
+                          next.has(idx) ? next.delete(idx) : next.add(idx);
+                          setSelectedFuzzy(next);
+                        }}
+                      >
+                        <Checkbox 
+                          checked={selectedFuzzy.has(idx)}
+                          onCheckedChange={() => {
+                            const next = new Set(selectedFuzzy);
+                            next.has(idx) ? next.delete(idx) : next.add(idx);
+                            setSelectedFuzzy(next);
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate text-xs">{tx.description}</p>
+                          <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()}</p>
                         </div>
                         <p className={`font-mono text-xs ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
                           {tx.type === 'income' ? '+' : '-'}€{tx.amount.toFixed(2)}
@@ -502,17 +555,6 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
                   </div>
                 </div>
               )}
-
-              <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-xl">
-                <Checkbox 
-                  id="include-duplicates" 
-                  checked={includeDuplicates}
-                  onCheckedChange={(checked) => setIncludeDuplicates(checked === true)}
-                />
-                <label htmlFor="include-duplicates" className="text-sm cursor-pointer">
-                  {t('import.importDuplicatesAnyway', { count: duplicateInfo.duplicates.length })}
-                </label>
-              </div>
             </div>
           )}
 
@@ -533,9 +575,9 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
               className="rounded-xl"
             >
               {t('import.importCount', { 
-                count: includeDuplicates 
-                  ? (duplicateInfo?.unique.length || 0) + (duplicateInfo?.duplicates.length || 0)
-                  : duplicateInfo?.unique.length || 0
+                count: (duplicateInfo?.unique.length || 0) + 
+                       selectedFuzzy.size + 
+                       (includeDuplicates ? (duplicateInfo?.duplicates.length || 0) : 0)
               })}
             </Button>
           </DialogFooter>
