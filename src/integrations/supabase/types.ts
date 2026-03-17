@@ -1810,6 +1810,7 @@ export type Database = {
           last_name: string
           milestone_id: string | null
           note: string | null
+          paid_amount: number
           project_id: string
           service_description: string
           status: string
@@ -1825,6 +1826,7 @@ export type Database = {
           last_name: string
           milestone_id?: string | null
           note?: string | null
+          paid_amount?: number
           project_id: string
           service_description: string
           status?: string
@@ -1840,6 +1842,7 @@ export type Database = {
           last_name?: string
           milestone_id?: string | null
           note?: string | null
+          paid_amount?: number
           project_id?: string
           service_description?: string
           status?: string
