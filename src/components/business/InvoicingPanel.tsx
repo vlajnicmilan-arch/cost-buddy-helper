@@ -300,7 +300,7 @@ export const InvoicingPanel = () => {
 
     try {
       const targetClientId = client.id;
-      const query = cleanCompanyName(client.name);
+      const query = client.oib?.trim() || cleanCompanyName(client.name);
       console.log('Enriching client, cleaned query:', query);
 
       const { data, error } = await supabase.functions.invoke('lookup-company', {
@@ -308,7 +308,7 @@ export const InvoicingPanel = () => {
       });
 
       if (error) {
-        toast.error('Greška pri pretrazi registra.');
+        toast.error(error.message || 'Greška pri pretrazi registra.');
         return;
       }
 
@@ -318,14 +318,15 @@ export const InvoicingPanel = () => {
       }
 
       const updates: Record<string, any> = {};
-      if (data.oib && !client.oib) updates.oib = data.oib;
-      if (data.address && !client.address) updates.address = data.address;
-      if (data.city && !client.city) updates.city = data.city;
-      if (data.email && !client.email) updates.email = data.email;
-      if (data.phone && !client.phone) updates.phone = data.phone;
-      if (data.contact_person && !client.contact_person) updates.contact_person = data.contact_person;
+      if (data.oib && data.oib !== client.oib) updates.oib = data.oib;
+      if (data.address && data.address !== client.address) updates.address = data.address;
+      if (data.city && data.city !== client.city) updates.city = data.city;
+      if (data.email && data.email !== client.email) updates.email = data.email;
+      if (data.phone && data.phone !== client.phone) updates.phone = data.phone;
+      if (data.contact_person && data.contact_person !== client.contact_person) updates.contact_person = data.contact_person;
       if (data.postal_code) updates.postal_code = data.postal_code;
-      if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
+      if (data.country) updates.country = data.country;
+      if (data.company_name && data.company_name.length > 2 && data.company_name !== client.name) updates.name = data.company_name;
 
       const hasRealUpdates = Object.keys(updates).length > 0;
       if (!hasRealUpdates) {
