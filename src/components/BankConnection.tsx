@@ -590,6 +590,12 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
           </div>
         </DialogContent>
       </Dialog>
+      {/* Detected Partners Dialog */}
+      <DetectedPartnersDialog
+        open={partnersDialogOpen}
+        onOpenChange={setPartnersDialogOpen}
+        merchantNames={detectedMerchants}
+      />
     </motion.div>
   );
 };
