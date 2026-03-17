@@ -291,7 +291,7 @@ export const InvoicingPanel = () => {
   };
 
   const enrichClientFromRegistry = async (client: Client) => {
-    setEnriching(true);
+    setEnrichingClientId(client.id);
     try {
       const query = cleanCompanyName(client.name);
       console.log('Enriching client, cleaned query:', query);
@@ -302,13 +302,13 @@ export const InvoicingPanel = () => {
 
       if (error) {
         toast.error('Greška pri pretrazi registra.');
-        setEnriching(false);
+        setEnrichingClientId(null);
         return;
       }
 
       if (!data?.found) {
         toast.info('Nije pronađen konkretan podatak u sudskom registru za: ' + query);
-        setEnriching(false);
+        setEnrichingClientId(null);
         return;
       }
 
@@ -324,7 +324,7 @@ export const InvoicingPanel = () => {
       const hasRealUpdates = Object.keys(updates).length > 0;
       if (!hasRealUpdates) {
         toast.info('Registar nije vratio dodatne podatke osim naziva.');
-        setEnriching(false);
+        setEnrichingClientId(null);
         return;
       }
 
@@ -342,7 +342,7 @@ export const InvoicingPanel = () => {
       console.error('Error enriching client:', err);
       toast.error(err?.message || 'Greška pri pretrazi registra.');
     }
-    setEnriching(false);
+    setEnrichingClientId(null);
   };
 
   const calcItemTotal = (item: InvoiceItem) => {
