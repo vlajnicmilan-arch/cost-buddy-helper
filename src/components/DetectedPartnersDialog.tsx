@@ -36,15 +36,22 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
     }
   }, [open, merchantNames, activeBusinessProfileId]);
 
-  // Normalize name: lowercase, sort words alphabetically, remove extra spaces
+  // Normalize name: extract core business name, ignore address/postal/city details
   const normalizeName = (name: string): string => {
-    return name
-      .toLowerCase()
+    let n = name.toLowerCase().trim();
+    // Remove common legal suffixes variations for grouping
+    // but keep them as part of the core name
+    // Strip everything after common address indicators (postal codes, city names, slashes for bilingual)
+    // Pattern: remove trailing address info like "6310 IZOLA", "IZOLA/ISOLA", "ZAGREB", postal codes
+    n = n
+      .replace(/[,]\s*\d{4,5}\s+\w+.*$/i, '') // ", 6310 Izola..."
+      .replace(/\s+\d{4,5}\s+\w+.*$/i, '')    // " 6310 Izola..."  
+      .replace(/\s+[A-Za-zčćžšđ]+\/[A-Za-zčćžšđ]+.*$/i, '') // " IZOLA/ISOLA..."
       .replace(/[.,\-_]/g, ' ')
-      .split(/\s+/)
-      .filter(Boolean)
-      .sort()
-      .join(' ');
+      .replace(/\s+/g, ' ')
+      .trim();
+    // Sort words for order-independent matching ("Milan Vlajnić" = "Vlajnić Milan")
+    return n.split(/\s+/).filter(Boolean).sort().join(' ');
   };
 
   const loadExistingClients = async () => {
