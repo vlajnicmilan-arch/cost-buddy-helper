@@ -41,6 +41,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const [duplicateIndices, setDuplicateIndices] = useState<Set<number>>(new Set());
+  const [fuzzyDuplicateIndices, setFuzzyDuplicateIndices] = useState<Set<number>>(new Set());
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
   // Simple fallback duplicate detection: same amount and same date (day-level)
@@ -56,22 +57,27 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   };
 
   // Detect duplicates using fuzzy findDuplicates if available, else simple check
-  const detectDuplicates = (txs: ParsedTransaction[]): Set<number> => {
+  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number> } => {
     if (findDuplicates) {
-      const { duplicates } = findDuplicates(txs);
-      const dupSet = new Set<number>();
+      const { duplicates, fuzzyDuplicates } = findDuplicates(txs);
+      const strictSet = new Set<number>();
+      const fuzzySet = new Set<number>();
       duplicates.forEach(dup => {
         const idx = txs.findIndex(tx => tx === dup);
-        if (idx >= 0) dupSet.add(idx);
+        if (idx >= 0) strictSet.add(idx);
       });
-      return dupSet;
+      fuzzyDuplicates.forEach(dup => {
+        const idx = txs.findIndex(tx => tx === dup);
+        if (idx >= 0) fuzzySet.add(idx);
+      });
+      return { strict: strictSet, fuzzy: fuzzySet };
     }
     // Fallback: simple check
-    const dupSet = new Set<number>();
+    const strictSet = new Set<number>();
     txs.forEach((tx, i) => {
-      if (isSimpleDuplicate(tx)) dupSet.add(i);
+      if (isSimpleDuplicate(tx)) strictSet.add(i);
     });
-    return dupSet;
+    return { strict: strictSet, fuzzy: new Set() };
   };
 
   const duplicateCount = duplicateIndices.size;
