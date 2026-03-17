@@ -76,6 +76,7 @@ export const ProjectCollaboratorDialog = ({
       company_name: companyName.trim() || null,
       service_description: serviceDescription.trim(),
       total_price: parseFloat(totalPrice) || 0,
+      paid_amount: parseFloat(paidAmount) || 0,
       milestone_id: milestoneId === 'none' ? null : milestoneId,
       status,
       contact_info: contactInfo.trim() || null,
