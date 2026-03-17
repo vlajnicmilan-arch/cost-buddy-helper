@@ -449,7 +449,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                           setProjectFullScreenOpen(true);
                         }}
                       />
-                      {isOwner && (
+                      {(isOwner || sharedProject.added_by === user?.id) && (
                         <Button
                           variant="ghost"
                           size="icon"
