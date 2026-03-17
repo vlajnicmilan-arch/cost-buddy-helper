@@ -86,10 +86,14 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
 
       {/* Total */}
       {collaborators.length > 0 && (
-        <Card className="p-4 bg-muted/50">
+        <Card className="p-4 bg-muted/50 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{t('collaborators.totalCost', 'Ukupni trošak suradnika')}:</span>
-            <span className="text-lg font-bold text-primary">{formatAmount(totalCost)}</span>
+            <span className="text-sm text-muted-foreground">{t('collaborators.agreedTotal', 'Dogovoreno ukupno')}:</span>
+            <span className="text-lg font-bold text-muted-foreground">{formatAmount(totalCost)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{t('collaborators.paidTotal', 'Isplaćeno ukupno')}:</span>
+            <span className="text-lg font-bold text-primary">{formatAmount(totalPaid)}</span>
           </div>
         </Card>
       )}
