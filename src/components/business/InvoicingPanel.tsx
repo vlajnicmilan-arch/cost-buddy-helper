@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send } from 'lucide-react';
+import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send, ScanSearch } from 'lucide-react';
+import { DetectedPartnersDialog } from '@/components/DetectedPartnersDialog';
 import { downloadInvoicePDF, shareInvoicePDF } from '@/lib/invoicePdfExport';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
