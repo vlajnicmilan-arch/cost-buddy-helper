@@ -20,7 +20,7 @@ interface CSVImportDialogProps {
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   defaultPaymentSource?: string;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
@@ -41,6 +41,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const [duplicateIndices, setDuplicateIndices] = useState<Set<number>>(new Set());
+  const [fuzzyDuplicateIndices, setFuzzyDuplicateIndices] = useState<Set<number>>(new Set());
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
   // Simple fallback duplicate detection: same amount and same date (day-level)
@@ -56,31 +57,38 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   };
 
   // Detect duplicates using fuzzy findDuplicates if available, else simple check
-  const detectDuplicates = (txs: ParsedTransaction[]): Set<number> => {
+  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number> } => {
     if (findDuplicates) {
-      const { duplicates } = findDuplicates(txs);
-      const dupSet = new Set<number>();
+      const { duplicates, fuzzyDuplicates } = findDuplicates(txs);
+      const strictSet = new Set<number>();
+      const fuzzySet = new Set<number>();
       duplicates.forEach(dup => {
         const idx = txs.findIndex(tx => tx === dup);
-        if (idx >= 0) dupSet.add(idx);
+        if (idx >= 0) strictSet.add(idx);
       });
-      return dupSet;
+      fuzzyDuplicates.forEach(dup => {
+        const idx = txs.findIndex(tx => tx === dup);
+        if (idx >= 0) fuzzySet.add(idx);
+      });
+      return { strict: strictSet, fuzzy: fuzzySet };
     }
     // Fallback: simple check
-    const dupSet = new Set<number>();
+    const strictSet = new Set<number>();
     txs.forEach((tx, i) => {
-      if (isSimpleDuplicate(tx)) dupSet.add(i);
+      if (isSimpleDuplicate(tx)) strictSet.add(i);
     });
-    return dupSet;
+    return { strict: strictSet, fuzzy: new Set() };
   };
 
   const duplicateCount = duplicateIndices.size;
+  const fuzzyCount = fuzzyDuplicateIndices.size;
 
   const resetState = () => {
     setStep('upload');
     setTransactions([]);
     setSelectedIndices(new Set());
     setDuplicateIndices(new Set());
+    setFuzzyDuplicateIndices(new Set());
     setSkipDuplicates(true);
     setSource('');
     setError('');
@@ -106,13 +114,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
       setTransactions(result.transactions);
       setSource(result.source);
       // Detect duplicates
-      const dups = detectDuplicates(result.transactions);
-      setDuplicateIndices(dups);
-      // Auto-deselect duplicates
-      const nonDupIndices = new Set(
-        result.transactions.map((_, i) => i).filter(i => !dups.has(i))
+      const { strict, fuzzy } = detectDuplicates(result.transactions);
+      setDuplicateIndices(strict);
+      setFuzzyDuplicateIndices(fuzzy);
+      // Auto-deselect strict duplicates, keep fuzzy selected (user decides)
+      const nonStrictDupIndices = new Set(
+        result.transactions.map((_, i) => i).filter(i => !strict.has(i))
       );
-      setSelectedIndices(nonDupIndices);
+      setSelectedIndices(nonStrictDupIndices);
       setStep('preview');
     } catch (err) {
       setError(t('import.fileReadError'));
@@ -278,12 +287,15 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col min-h-0"
             >
-              {duplicateCount > 0 && (
+              {(duplicateCount > 0 || fuzzyCount > 0) && (
                 <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col gap-2 text-amber-700 dark:text-amber-400">
                   <div className="flex items-center gap-2">
                     <Copy className="w-4 h-4 flex-shrink-0" />
                     <span className="text-xs font-medium">
-                      {duplicateCount} potencijalnih duplikata pronađeno — automatski preskočeni
+                      {duplicateCount > 0 && `${duplicateCount} sigurnih duplikata`}
+                      {duplicateCount > 0 && fuzzyCount > 0 && ', '}
+                      {fuzzyCount > 0 && `${fuzzyCount} mogućih (±3 dana)`}
+                      {' — strogi automatski preskočeni'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -303,14 +315,13 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                         e.stopPropagation();
                         setSkipDuplicates(!skipDuplicates);
                         if (skipDuplicates) {
-                          // Include all
                           setSelectedIndices(new Set(transactions.map((_, i) => i)));
                         } else {
                           selectOnlyNew();
                         }
                       }}
                     >
-                      {skipDuplicates ? 'Uključi duplikate' : 'Preskoči duplikate'}
+                      {skipDuplicates ? 'Uključi sve' : 'Preskoči duplikate'}
                     </Button>
                   </div>
                 </div>
@@ -360,7 +371,8 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                 <div className="space-y-1 py-2">
                   {transactions.map((tx, index) => {
                     const categoryInfo = getCategoryInfo(tx.category);
-                    const dup = duplicateIndices.has(index);
+                    const isStrict = duplicateIndices.has(index);
+                    const isFuzzy = fuzzyDuplicateIndices.has(index);
                     return (
                       <motion.div
                         key={index}
@@ -369,11 +381,13 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                         transition={{ delay: index * 0.02 }}
                         onClick={() => toggleTransaction(index)}
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-                          dup && !selectedIndices.has(index)
-                            ? 'bg-amber-500/5 border border-amber-500/20 opacity-50'
-                            : selectedIndices.has(index) 
-                              ? 'bg-muted/50 border border-primary/20' 
-                              : 'bg-muted/20 border border-transparent opacity-50'
+                          isStrict && !selectedIndices.has(index)
+                            ? 'bg-destructive/5 border border-destructive/20 opacity-50'
+                            : isFuzzy && !selectedIndices.has(index)
+                              ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
+                              : selectedIndices.has(index) 
+                                ? 'bg-muted/50 border border-primary/20' 
+                                : 'bg-muted/20 border border-transparent opacity-50'
                         }`}
                       >
                         <Checkbox
@@ -386,9 +400,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                             <p className="text-sm font-medium truncate">
                               {tx.description}
                             </p>
-                            {dup && (
+                            {isStrict && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-destructive/40 text-destructive shrink-0">
+                                Duplikat
+                              </Badge>
+                            )}
+                            {isFuzzy && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
-                                Duplikat?
+                                ±3 dana?
                               </Badge>
                             )}
                           </div>

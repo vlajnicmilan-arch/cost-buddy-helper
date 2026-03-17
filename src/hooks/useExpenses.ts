@@ -55,19 +55,23 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   // Duplicate detection utilities
   const findDuplicates = useCallback((transactions: ParsedTransaction[]): {
     duplicates: ParsedTransaction[];
+    fuzzyDuplicates: ParsedTransaction[];
     unique: ParsedTransaction[];
   } => {
     const duplicates: ParsedTransaction[] = [];
+    const fuzzyDuplicates: ParsedTransaction[] = [];
     const unique: ParsedTransaction[] = [];
 
+    const DAY_MS = 86400000;
+
     for (const tx of transactions) {
-      const isDuplicate = expenses.some(existing => {
+      // Strict match: same date + same amount + same type + description/merchant match
+      const isStrictDuplicate = expenses.some(existing => {
         const sameDate = existing.date.toDateString() === tx.date.toDateString();
         const sameAmount = Math.abs(Number(existing.amount) - tx.amount) < 0.01;
         const sameType = existing.type === tx.type;
         if (!sameDate || !sameAmount || !sameType) return false;
 
-        // Fuzzy merchant match
         if (existing.merchant_name && tx.merchant_name &&
             areMerchantsSimilar(existing.merchant_name, tx.merchant_name)) return true;
 
@@ -77,10 +81,35 @@ export const useExpenses = (options?: UseExpensesOptions) => {
           existingDesc.includes(txDesc) ||
           txDesc.includes(existingDesc);
       });
-      isDuplicate ? duplicates.push(tx) : unique.push(tx);
+
+      if (isStrictDuplicate) {
+        duplicates.push(tx);
+        continue;
+      }
+
+      // Fuzzy match: same amount + same type + date within ±3 days (but NOT same date, since that's strict)
+      const isFuzzyDuplicate = expenses.some(existing => {
+        const sameAmount = Math.abs(Number(existing.amount) - tx.amount) < 0.01;
+        const sameType = existing.type === tx.type;
+        if (!sameAmount || !sameType) return false;
+
+        const existingTime = existing.date.getTime();
+        const txTime = tx.date.getTime();
+        const dayDiff = Math.abs(existingTime - txTime) / DAY_MS;
+        // Only fuzzy if different date but within 3 days
+        if (dayDiff < 0.5 || dayDiff > 3) return false;
+
+        return true;
+      });
+
+      if (isFuzzyDuplicate) {
+        fuzzyDuplicates.push(tx);
+      } else {
+        unique.push(tx);
+      }
     }
 
-    return { duplicates, unique };
+    return { duplicates, fuzzyDuplicates, unique };
   }, [expenses, areMerchantsSimilar]);
 
 

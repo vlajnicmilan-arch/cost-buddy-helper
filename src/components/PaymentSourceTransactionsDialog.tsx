@@ -38,7 +38,7 @@ interface PaymentSourceTransactionsDialogProps {
   onUpdate: (expense: Expense) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
 }
 
 export const PaymentSourceTransactionsDialog = ({
@@ -64,7 +64,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
-  const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
@@ -332,17 +332,17 @@ export const PaymentSourceTransactionsDialog = ({
       setIsImportingPdf(true);
 
       if (findDuplicates) {
-        const { duplicates, unique } = findDuplicates(transactions);
+        const { duplicates, fuzzyDuplicates, unique } = findDuplicates(transactions);
 
-        if (duplicates.length > 0) {
-          if (unique.length === 0) {
+        if (duplicates.length > 0 || fuzzyDuplicates.length > 0) {
+          if (unique.length === 0 && fuzzyDuplicates.length === 0) {
             toast.info(t('import.noNewTransactions'));
             setPdfPreviewOpen(false);
             clearParsedData();
             return;
           }
 
-          setDuplicateInfo({ duplicates, unique });
+          setDuplicateInfo({ duplicates, fuzzyDuplicates, unique });
           setIncludeDuplicates(false);
           setPdfPreviewOpen(false);
           setDuplicateWarningOpen(true);

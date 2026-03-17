@@ -19,7 +19,7 @@ interface Props {
   onEditExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => void;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
   existingExpenses?: Expense[];
 }
 
