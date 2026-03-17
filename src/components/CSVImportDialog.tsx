@@ -114,13 +114,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
       setTransactions(result.transactions);
       setSource(result.source);
       // Detect duplicates
-      const dups = detectDuplicates(result.transactions);
-      setDuplicateIndices(dups);
-      // Auto-deselect duplicates
-      const nonDupIndices = new Set(
-        result.transactions.map((_, i) => i).filter(i => !dups.has(i))
+      const { strict, fuzzy } = detectDuplicates(result.transactions);
+      setDuplicateIndices(strict);
+      setFuzzyDuplicateIndices(fuzzy);
+      // Auto-deselect strict duplicates, keep fuzzy selected (user decides)
+      const nonStrictDupIndices = new Set(
+        result.transactions.map((_, i) => i).filter(i => !strict.has(i))
       );
-      setSelectedIndices(nonDupIndices);
+      setSelectedIndices(nonStrictDupIndices);
       setStep('preview');
     } catch (err) {
       setError(t('import.fileReadError'));
