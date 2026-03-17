@@ -34,6 +34,7 @@ export const ProjectCollaboratorDialog = ({
   const [companyName, setCompanyName] = useState('');
   const [serviceDescription, setServiceDescription] = useState('');
   const [totalPrice, setTotalPrice] = useState('');
+  const [paidAmount, setPaidAmount] = useState('');
   const [milestoneId, setMilestoneId] = useState('none');
   const [status, setStatus] = useState('active');
   const [contactInfo, setContactInfo] = useState('');
@@ -46,6 +47,7 @@ export const ProjectCollaboratorDialog = ({
       setCompanyName(collaborator.company_name || '');
       setServiceDescription(collaborator.service_description);
       setTotalPrice(String(collaborator.total_price));
+      setPaidAmount(String(collaborator.paid_amount || 0));
       setMilestoneId(collaborator.milestone_id || 'none');
       setStatus(collaborator.status);
       setContactInfo(collaborator.contact_info || '');
@@ -56,6 +58,7 @@ export const ProjectCollaboratorDialog = ({
       setCompanyName('');
       setServiceDescription('');
       setTotalPrice('');
+      setPaidAmount('');
       setMilestoneId('none');
       setStatus('active');
       setContactInfo('');
