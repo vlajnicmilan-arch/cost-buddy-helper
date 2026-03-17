@@ -360,7 +360,14 @@ export const ProjectFullScreenView = ({
                   />
                 </TabsContent>
 
-                <TabsContent value="funding" className="m-0">
+                <TabsContent value="collaborators" className="m-0">
+                  <ProjectCollaboratorsTab
+                    projectId={project.id}
+                    milestones={milestones}
+                    isManager={isManager}
+                  />
+                </TabsContent>
+
                   <ProjectFundingTab
                     projectId={project.id}
                     funding={funding}
