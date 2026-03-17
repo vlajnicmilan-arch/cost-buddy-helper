@@ -95,7 +95,7 @@ export const InvoicingPanel = () => {
   const [scanPartnersOpen, setScanPartnersOpen] = useState(false);
   const [scannedMerchants, setScannedMerchants] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
-  const [enriching, setEnriching] = useState(false);
+  const [enrichingClientId, setEnrichingClientId] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // Detail
@@ -291,7 +291,7 @@ export const InvoicingPanel = () => {
   };
 
   const enrichClientFromRegistry = async (client: Client) => {
-    setEnriching(true);
+    setEnrichingClientId(client.id);
     try {
       const query = cleanCompanyName(client.name);
       console.log('Enriching client, cleaned query:', query);
@@ -302,13 +302,13 @@ export const InvoicingPanel = () => {
 
       if (error) {
         toast.error('Greška pri pretrazi registra.');
-        setEnriching(false);
+        setEnrichingClientId(null);
         return;
       }
 
       if (!data?.found) {
         toast.info('Nije pronađen konkretan podatak u sudskom registru za: ' + query);
-        setEnriching(false);
+        setEnrichingClientId(null);
         return;
       }
 
@@ -324,7 +324,7 @@ export const InvoicingPanel = () => {
       const hasRealUpdates = Object.keys(updates).length > 0;
       if (!hasRealUpdates) {
         toast.info('Registar nije vratio dodatne podatke osim naziva.');
-        setEnriching(false);
+        setEnrichingClientId(null);
         return;
       }
 
@@ -342,7 +342,7 @@ export const InvoicingPanel = () => {
       console.error('Error enriching client:', err);
       toast.error(err?.message || 'Greška pri pretrazi registra.');
     }
-    setEnriching(false);
+    setEnrichingClientId(null);
   };
 
   const calcItemTotal = (item: InvoiceItem) => {
@@ -523,8 +523,8 @@ export const InvoicingPanel = () => {
               </div>
               <Separator />
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 gap-1.5 text-xs" onClick={() => enrichClientFromRegistry(selectedClient)} disabled={enriching}>
-                  {enriching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DatabaseZap className="w-3.5 h-3.5" />}
+                <Button variant="outline" className="flex-1 gap-1.5 text-xs" onClick={() => enrichClientFromRegistry(selectedClient)} disabled={enrichingClientId === selectedClient.id}>
+                  {enrichingClientId === selectedClient.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DatabaseZap className="w-3.5 h-3.5" />}
                   Obogati iz registra
                 </Button>
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => { deleteClient(selectedClient.id); setSelectedClient(null); }}>
