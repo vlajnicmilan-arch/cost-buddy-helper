@@ -387,17 +387,20 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
                   source: 'photo',
                   payment_source: tx.payment_source || 'bank'
                 }));
-                const { duplicates } = findDuplicates(txForCheck);
-                if (duplicates.length === 0) return null;
+                const { duplicates, fuzzyDuplicates } = findDuplicates(txForCheck);
+                const totalDups = duplicates.length + fuzzyDuplicates.length;
+                if (totalDups === 0) return null;
                 return (
                   <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="font-medium text-orange-600 dark:text-orange-400">
-                        {duplicates.length} {duplicates.length === 1 ? 'mogući duplikat' : 'mogućih duplikata'}
+                        {duplicates.length > 0 && `${duplicates.length} ${duplicates.length === 1 ? 'sigurni duplikat' : 'sigurnih duplikata'}`}
+                        {duplicates.length > 0 && fuzzyDuplicates.length > 0 && ', '}
+                        {fuzzyDuplicates.length > 0 && `${fuzzyDuplicates.length} ${fuzzyDuplicates.length === 1 ? 'mogući duplikat' : 'mogućih duplikata'} (±3 dana)`}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Neke transakcije možda već postoje. Duplikati će biti označeni pri uvozu.
+                        Duplikati će biti označeni pri uvozu. Moći ćeš odabrati koje želiš uvesti.
                       </p>
                     </div>
                   </div>
