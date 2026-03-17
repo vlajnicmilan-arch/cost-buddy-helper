@@ -96,7 +96,7 @@ export const InvoicingPanel = () => {
   const [scannedMerchants, setScannedMerchants] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
   const [enriching, setEnriching] = useState(false);
-  const [enrichProgress, setEnrichProgress] = useState({ current: 0, total: 0 });
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // Detail
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
@@ -274,69 +274,42 @@ export const InvoicingPanel = () => {
     }
   };
 
-  const enrichClientsFromRegistry = async () => {
-    if (!user || !activeBusinessProfileId) return;
-    // Find clients missing OIB (primary indicator of incomplete data)
-    const incompleteClients = clients.filter(c => !c.oib);
-    if (incompleteClients.length === 0) {
-      toast.info('Svi klijenti već imaju OIB – nema što za obogatiti.');
-      return;
-    }
-
+  const enrichClientFromRegistry = async (client: Client) => {
     setEnriching(true);
-    setEnrichProgress({ current: 0, total: incompleteClients.length });
-    let updated = 0;
-    let failed = 0;
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-company', {
+        body: { query: client.name },
+      });
 
-    for (let i = 0; i < incompleteClients.length; i++) {
-      const client = incompleteClients[i];
-      setEnrichProgress({ current: i + 1, total: incompleteClients.length });
-
-      try {
-        const { data, error } = await supabase.functions.invoke('lookup-company', {
-          body: { query: client.name },
-        });
-
-        if (error || !data?.found) {
-          failed++;
-          continue;
-        }
-
-        // Build update object only with non-empty values that client doesn't already have
-        const updates: Record<string, any> = {};
-        if (data.oib && !client.oib) updates.oib = data.oib;
-        if (data.address && !client.address) updates.address = data.address;
-        if (data.city && !client.city) updates.city = data.city;
-        if (data.email && !client.email) updates.email = data.email;
-        if (data.phone && !client.phone) updates.phone = data.phone;
-        if (data.contact_person && !client.contact_person) updates.contact_person = data.contact_person;
-        // Update name to official name if found
-        if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
-
-        if (Object.keys(updates).length > 0) {
-          await supabase.from('clients').update(updates as any).eq('id', client.id);
-          updated++;
-        }
-
-        // Small delay to avoid rate limiting
-        if (i < incompleteClients.length - 1) {
-          await new Promise(r => setTimeout(r, 1500));
-        }
-      } catch (err: any) {
-        console.error(`Error enriching client ${client.name}:`, err);
-        if (err?.status === 429) {
-          toast.error('Previše zahtjeva – pokušajte ponovno za minutu.');
-          break;
-        }
-        failed++;
+      if (error || !data?.found) {
+        toast.error('Podaci nisu pronađeni u registru.');
+        setEnriching(false);
+        return;
       }
-    }
 
+      const updates: Record<string, any> = {};
+      if (data.oib && !client.oib) updates.oib = data.oib;
+      if (data.address && !client.address) updates.address = data.address;
+      if (data.city && !client.city) updates.city = data.city;
+      if (data.email && !client.email) updates.email = data.email;
+      if (data.phone && !client.phone) updates.phone = data.phone;
+      if (data.contact_person && !client.contact_person) updates.contact_person = data.contact_person;
+      if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('clients').update(updates as any).eq('id', client.id);
+        toast.success('Podaci klijenta ažurirani iz registra!');
+        loadClients();
+        // Update selected client in dialog
+        setSelectedClient(prev => prev ? { ...prev, ...updates } : null);
+      } else {
+        toast.info('Nema novih podataka za ažuriranje.');
+      }
+    } catch (err: any) {
+      console.error('Error enriching client:', err);
+      toast.error(err?.message || 'Greška pri pretrazi registra.');
+    }
     setEnriching(false);
-    loadClients();
-    if (updated > 0) toast.success(`Obogaćeno ${updated} klijenata podacima iz registra.`);
-    if (failed > 0 && updated === 0) toast.info(`Nije pronađeno podataka za ${failed} klijenata.`);
-    else if (failed > 0) toast.info(`Za ${failed} klijenata nisu pronađeni podaci.`);
   };
 
   const calcItemTotal = (item: InvoiceItem) => {
@@ -462,14 +435,10 @@ export const InvoicingPanel = () => {
       {backButton}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-bold">Klijenti</h2>
-        <div className="flex gap-1.5 flex-wrap">
-          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs" onClick={scanTransactionsForPartners} disabled={scanning || enriching}>
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs" onClick={scanTransactionsForPartners} disabled={scanning}>
             {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanSearch className="w-3.5 h-3.5" />}
             Skeniraj
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs" onClick={enrichClientsFromRegistry} disabled={enriching || scanning || clients.filter(c => !c.oib).length === 0}>
-            {enriching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DatabaseZap className="w-3.5 h-3.5" />}
-            {enriching ? `${enrichProgress.current}/${enrichProgress.total}` : 'Obogati'}
           </Button>
           <Button size="sm" className="gap-1 h-8 text-xs" onClick={() => setView('new_client')}>
             <Plus className="w-3.5 h-3.5" /> Novi
@@ -486,7 +455,7 @@ export const InvoicingPanel = () => {
       ) : (
         <div className="space-y-2">
           {clients.map(c => (
-            <Card key={c.id} className="border-none shadow-sm">
+            <Card key={c.id} className="border-none shadow-sm cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setSelectedClient(c)}>
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{c.name}</p>
@@ -494,14 +463,46 @@ export const InvoicingPanel = () => {
                     {[c.oib, c.city, c.email].filter(Boolean).join(' · ') || 'Bez detalja'}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteClient(c.id)}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Client Detail Dialog */}
+      <Dialog open={!!selectedClient} onOpenChange={(open) => { if (!open) setSelectedClient(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">{selectedClient?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedClient && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-muted-foreground">OIB:</span><p className="font-medium">{selectedClient.oib || '—'}</p></div>
+                <div><span className="text-muted-foreground">Grad:</span><p className="font-medium">{selectedClient.city || '—'}</p></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Adresa:</span><p className="font-medium">{selectedClient.address || '—'}</p></div>
+                <div><span className="text-muted-foreground">Email:</span><p className="font-medium">{selectedClient.email || '—'}</p></div>
+                <div><span className="text-muted-foreground">Telefon:</span><p className="font-medium">{selectedClient.phone || '—'}</p></div>
+                {selectedClient.contact_person && (
+                  <div className="col-span-2"><span className="text-muted-foreground">Kontakt osoba:</span><p className="font-medium">{selectedClient.contact_person}</p></div>
+                )}
+              </div>
+              <Separator />
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 gap-1.5 text-xs" onClick={() => enrichClientFromRegistry(selectedClient)} disabled={enriching}>
+                  {enriching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DatabaseZap className="w-3.5 h-3.5" />}
+                  Obogati iz registra
+                </Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => { deleteClient(selectedClient.id); setSelectedClient(null); }}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <DetectedPartnersDialog
         open={scanPartnersOpen}
         onOpenChange={(open) => {
