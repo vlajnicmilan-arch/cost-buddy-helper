@@ -523,8 +523,8 @@ export const InvoicingPanel = () => {
               </div>
               <Separator />
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 gap-1.5 text-xs" onClick={() => enrichClientFromRegistry(selectedClient)} disabled={enriching}>
-                  {enriching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DatabaseZap className="w-3.5 h-3.5" />}
+                <Button variant="outline" className="flex-1 gap-1.5 text-xs" onClick={() => enrichClientFromRegistry(selectedClient)} disabled={enrichingClientId === selectedClient.id}>
+                  {enrichingClientId === selectedClient.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DatabaseZap className="w-3.5 h-3.5" />}
                   Obogati iz registra
                 </Button>
                 <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => { deleteClient(selectedClient.id); setSelectedClient(null); }}>
