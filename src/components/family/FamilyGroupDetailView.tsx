@@ -311,12 +311,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 <Target className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedBudgets')}
               </h2>
-              {isOwner && (
-                <Button variant="ghost" size="sm" onClick={() => setShowAddBudget(!showAddBudget)} className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('family.add')}
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowAddBudget(!showAddBudget)} className="h-8 gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {t('family.add')}
+              </Button>
             </div>
 
             {showAddBudget && availableBudgets.length > 0 && (
