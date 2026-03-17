@@ -39,7 +39,7 @@ const STATUS_LABELS: Record<string, string> = {
 export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: ProjectCollaboratorsTabProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { collaborators, loading, addCollaborator, updateCollaborator, deleteCollaborator, totalCost } = useProjectCollaborators(projectId);
+  const { collaborators, loading, addCollaborator, updateCollaborator, deleteCollaborator, totalCost, totalPaid } = useProjectCollaborators(projectId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ProjectCollaborator | null>(null);
