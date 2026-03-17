@@ -291,24 +291,29 @@ export const InvoicingPanel = () => {
   };
 
   const enrichClientFromRegistry = async (client: Client) => {
+    if (enrichingClientId) {
+      toast.info('Pričekajte da završi trenutno obogaćivanje klijenta.');
+      return;
+    }
+
     setEnrichingClientId(client.id);
+
     try {
+      const targetClientId = client.id;
       const query = cleanCompanyName(client.name);
       console.log('Enriching client, cleaned query:', query);
-      
+
       const { data, error } = await supabase.functions.invoke('lookup-company', {
         body: { query },
       });
 
       if (error) {
         toast.error('Greška pri pretrazi registra.');
-        setEnrichingClientId(null);
         return;
       }
 
       if (!data?.found) {
         toast.info('Nije pronađen konkretan podatak u sudskom registru za: ' + query);
-        setEnrichingClientId(null);
         return;
       }
 
@@ -320,29 +325,34 @@ export const InvoicingPanel = () => {
       if (data.phone && !client.phone) updates.phone = data.phone;
       if (data.contact_person && !client.contact_person) updates.contact_person = data.contact_person;
       if (data.postal_code) updates.postal_code = data.postal_code;
+      if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
 
       const hasRealUpdates = Object.keys(updates).length > 0;
       if (!hasRealUpdates) {
         toast.info('Registar nije vratio dodatne podatke osim naziva.');
-        setEnrichingClientId(null);
         return;
       }
 
-      if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
+      const { error: updateError } = await supabase
+        .from('clients')
+        .update(updates as any)
+        .eq('id', targetClientId);
 
-      if (Object.keys(updates).length > 0) {
-        await supabase.from('clients').update(updates as any).eq('id', client.id);
-        toast.success('Podaci klijenta ažurirani iz registra!');
-        loadClients();
-        setSelectedClient(prev => prev ? { ...prev, ...updates } : null);
-      } else {
-        toast.info('Nema novih podataka za ažuriranje.');
+      if (updateError) {
+        console.error('Error updating client after enrichment:', updateError);
+        toast.error('Podaci su pronađeni, ali spremanje klijenta nije uspjelo.');
+        return;
       }
+
+      toast.success('Podaci klijenta ažurirani iz registra!');
+      loadClients();
+      setSelectedClient((prev) => prev && prev.id === targetClientId ? { ...prev, ...updates } : prev);
     } catch (err: any) {
       console.error('Error enriching client:', err);
       toast.error(err?.message || 'Greška pri pretrazi registra.');
+    } finally {
+      setEnrichingClientId((current) => current === client.id ? null : current);
     }
-    setEnrichingClientId(null);
   };
 
   const calcItemTotal = (item: InvoiceItem) => {
