@@ -293,7 +293,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                       <p className="font-medium text-sm truncate">{source.source_name || 'Račun'}</p>
                     </div>
                     <span className="text-sm font-semibold">{formatAmount(source.source_balance || 0)}</span>
-                    {isOwner && (
+                    {(isOwner || source.added_by === user?.id) && (
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedSource(source.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
