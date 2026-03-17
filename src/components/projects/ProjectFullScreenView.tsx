@@ -8,6 +8,7 @@ import { ProjectWithOwnership, PROJECT_STATUS_LABELS } from '@/types/project';
 import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useProjectFunding } from '@/hooks/useProjectFunding';
+import { useProjectCollaborators } from '@/hooks/useProjectCollaborators';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
