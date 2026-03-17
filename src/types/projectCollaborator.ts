@@ -6,6 +6,7 @@ export interface ProjectCollaborator {
   company_name?: string | null;
   service_description: string;
   total_price: number;
+  paid_amount: number;
   milestone_id?: string | null;
   status: string;
   contact_info?: string | null;

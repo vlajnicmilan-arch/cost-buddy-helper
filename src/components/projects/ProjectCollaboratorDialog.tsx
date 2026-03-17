@@ -34,6 +34,7 @@ export const ProjectCollaboratorDialog = ({
   const [companyName, setCompanyName] = useState('');
   const [serviceDescription, setServiceDescription] = useState('');
   const [totalPrice, setTotalPrice] = useState('');
+  const [paidAmount, setPaidAmount] = useState('');
   const [milestoneId, setMilestoneId] = useState('none');
   const [status, setStatus] = useState('active');
   const [contactInfo, setContactInfo] = useState('');
@@ -46,6 +47,7 @@ export const ProjectCollaboratorDialog = ({
       setCompanyName(collaborator.company_name || '');
       setServiceDescription(collaborator.service_description);
       setTotalPrice(String(collaborator.total_price));
+      setPaidAmount(String(collaborator.paid_amount || 0));
       setMilestoneId(collaborator.milestone_id || 'none');
       setStatus(collaborator.status);
       setContactInfo(collaborator.contact_info || '');
@@ -56,6 +58,7 @@ export const ProjectCollaboratorDialog = ({
       setCompanyName('');
       setServiceDescription('');
       setTotalPrice('');
+      setPaidAmount('');
       setMilestoneId('none');
       setStatus('active');
       setContactInfo('');
@@ -73,6 +76,7 @@ export const ProjectCollaboratorDialog = ({
       company_name: companyName.trim() || null,
       service_description: serviceDescription.trim(),
       total_price: parseFloat(totalPrice) || 0,
+      paid_amount: parseFloat(paidAmount) || 0,
       milestone_id: milestoneId === 'none' ? null : milestoneId,
       status,
       contact_info: contactInfo.trim() || null,
@@ -114,8 +118,15 @@ export const ProjectCollaboratorDialog = ({
           </div>
 
           <div className="space-y-1.5">
-            <Label>{t('collaborators.totalPrice', 'Ukupna cijena')}</Label>
+            <Label>{t('collaborators.agreedPrice', 'Dogovoreni iznos')}</Label>
             <Input type="number" step="0.01" min="0" value={totalPrice} onChange={e => setTotalPrice(e.target.value)} required />
+            <p className="text-[11px] text-muted-foreground">{t('collaborators.agreedPriceHint', 'Za projekcije i predviđene troškove')}</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t('collaborators.paidAmount', 'Isplaćeni iznos')}</Label>
+            <Input type="number" step="0.01" min="0" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
+            <p className="text-[11px] text-muted-foreground">{t('collaborators.paidAmountHint', 'Utječe na stvarne obračune projekta')}</p>
           </div>
 
           <div className="space-y-1.5">

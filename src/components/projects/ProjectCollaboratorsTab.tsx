@@ -39,7 +39,7 @@ const STATUS_LABELS: Record<string, string> = {
 export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: ProjectCollaboratorsTabProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { collaborators, loading, addCollaborator, updateCollaborator, deleteCollaborator, totalCost } = useProjectCollaborators(projectId);
+  const { collaborators, loading, addCollaborator, updateCollaborator, deleteCollaborator, totalCost, totalPaid } = useProjectCollaborators(projectId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ProjectCollaborator | null>(null);
@@ -86,10 +86,14 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
 
       {/* Total */}
       {collaborators.length > 0 && (
-        <Card className="p-4 bg-muted/50">
+        <Card className="p-4 bg-muted/50 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{t('collaborators.totalCost', 'Ukupni trošak suradnika')}:</span>
-            <span className="text-lg font-bold text-primary">{formatAmount(totalCost)}</span>
+            <span className="text-sm text-muted-foreground">{t('collaborators.agreedTotal', 'Dogovoreno ukupno')}:</span>
+            <span className="text-lg font-bold text-muted-foreground">{formatAmount(totalCost)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{t('collaborators.paidTotal', 'Isplaćeno ukupno')}:</span>
+            <span className="text-lg font-bold text-primary">{formatAmount(totalPaid)}</span>
           </div>
         </Card>
       )}
@@ -132,8 +136,13 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
                       </div>
                     )}
 
-                    <div className="mt-2 text-sm font-medium">
-                      {t('collaborators.price', 'Cijena')}: <span className="text-primary">{formatAmount(c.total_price)}</span>
+                    <div className="mt-2 text-sm space-y-0.5">
+                      <div className="font-medium">
+                        {t('collaborators.agreed', 'Dogovoreno')}: <span className="text-muted-foreground">{formatAmount(c.total_price)}</span>
+                      </div>
+                      <div className="font-medium">
+                        {t('collaborators.paid', 'Isplaćeno')}: <span className="text-primary">{formatAmount(c.paid_amount)}</span>
+                      </div>
                     </div>
 
                     {c.contact_info && (

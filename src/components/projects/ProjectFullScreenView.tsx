@@ -8,6 +8,7 @@ import { ProjectWithOwnership, PROJECT_STATUS_LABELS } from '@/types/project';
 import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useProjectFunding } from '@/hooks/useProjectFunding';
+import { useProjectCollaborators } from '@/hooks/useProjectCollaborators';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +61,7 @@ export const ProjectFullScreenView = ({
   const { milestones, loading: milestonesLoading, refetch: refetchMilestones } = useProjectMilestones(project?.id || null);
   const { funding, incomeSources, totalAllocated, totalSourcesCount, loading: fundingLoading, refetch: refetchFunding } = useProjectFunding(project?.id || null);
   const { members, invitations, isManager, loading: membersLoading, refetch: refetchMembers } = useProjectMembers(project?.id || null);
+  const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
   
   const currentUserRole = project?.role || 'viewer';
 
@@ -91,15 +93,16 @@ export const ProjectFullScreenView = ({
 
   const budget = project.total_budget || 0;
   
-  // Calculate spent from completed milestones (unified logic)
+  // Calculate spent from completed milestones + paid collaborator amounts (unified logic)
   const completedMilestonesList = milestones.filter(m => m.status === 'completed');
   const spentFromMilestones = completedMilestonesList.reduce((sum, m) => sum + (m.budget || 0), 0);
+  const totalSpent = spentFromMilestones + collaboratorsPaid;
   const completedMilestones = completedMilestonesList.length;
   
-  // Remaining = Allocated (received funds) - Spent (completed milestones)
-  const remaining = totalAllocated - spentFromMilestones;
+  // Remaining = Allocated (received funds) - Spent (milestones + collaborators paid)
+  const remaining = totalAllocated - totalSpent;
   const budgetUsedPercentage = totalAllocated > 0 
-    ? (spentFromMilestones / totalAllocated) * 100 
+    ? (totalSpent / totalAllocated) * 100 
     : 0;
   const budgetWarning = budgetUsedPercentage >= 90;
   const overdueMilestones = milestones.filter(m => m.status === 'overdue').length;
@@ -167,7 +170,7 @@ export const ProjectFullScreenView = ({
               milestones={milestones}
               members={members}
               expenses={expenses}
-              totalSpent={spentFromMilestones}
+              totalSpent={totalSpent}
               totalAllocated={totalAllocated}
             />
 
@@ -204,8 +207,8 @@ export const ProjectFullScreenView = ({
                         <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
                       </div>
                       <div className="p-2 sm:p-3 rounded-lg bg-expense/10 text-center">
-                        <p className="text-base sm:text-2xl font-bold text-expense truncate">{formatAmount(spentFromMilestones)}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
+                        <p className="text-base sm:text-2xl font-bold text-expense truncate">{formatAmount(totalSpent)}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.spent', 'Potrošeno')}</p>
                       </div>
                       <div className="p-2 sm:p-3 rounded-lg bg-primary/10 text-center">
                         <p className={cn("text-base sm:text-2xl font-bold truncate", remaining >= 0 ? "text-primary" : "text-destructive")}>

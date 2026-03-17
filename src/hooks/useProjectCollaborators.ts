@@ -29,6 +29,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
       setCollaborators((data || []).map((c: any) => ({
         ...c,
         total_price: Number(c.total_price),
+        paid_amount: Number(c.paid_amount || 0),
       })));
     } catch (error) {
       console.error('Error fetching collaborators:', error);
@@ -53,6 +54,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
           company_name: input.company_name || null,
           service_description: input.service_description,
           total_price: input.total_price,
+          paid_amount: input.paid_amount || 0,
           milestone_id: input.milestone_id || null,
           status: input.status || 'active',
           contact_info: input.contact_info || null,
@@ -63,7 +65,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
 
       if (error) throw error;
 
-      const newItem = { ...data, total_price: Number(data.total_price) };
+      const newItem = { ...data, total_price: Number(data.total_price), paid_amount: Number(data.paid_amount || 0) };
       setCollaborators(prev => [newItem, ...prev]);
       toast.success(t('collaborators.added', 'Suradnik dodan'));
       return newItem;
@@ -84,6 +86,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
           company_name: collaborator.company_name || null,
           service_description: collaborator.service_description,
           total_price: collaborator.total_price,
+          paid_amount: collaborator.paid_amount || 0,
           milestone_id: collaborator.milestone_id || null,
           status: collaborator.status,
           contact_info: collaborator.contact_info || null,
@@ -119,6 +122,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
   };
 
   const totalCost = collaborators.reduce((sum, c) => sum + c.total_price, 0);
+  const totalPaid = collaborators.reduce((sum, c) => sum + c.paid_amount, 0);
 
   return {
     collaborators,
@@ -128,5 +132,6 @@ export const useProjectCollaborators = (projectId: string | null) => {
     deleteCollaborator,
     refetch: fetchCollaborators,
     totalCost,
+    totalPaid,
   };
 };
