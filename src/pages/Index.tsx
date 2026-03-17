@@ -532,6 +532,9 @@ const Index = () => {
               existingExpenses={allExpenses}
             />
           )}
+          {businessTab === 'projects' && (
+            <BusinessProjects onRefreshExpenses={refetch} />
+          )}
           {businessTab === 'reports' && (
             <BusinessReports
               expenses={expenses}
