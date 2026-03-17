@@ -371,7 +371,8 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                 <div className="space-y-1 py-2">
                   {transactions.map((tx, index) => {
                     const categoryInfo = getCategoryInfo(tx.category);
-                    const dup = duplicateIndices.has(index);
+                    const isStrict = duplicateIndices.has(index);
+                    const isFuzzy = fuzzyDuplicateIndices.has(index);
                     return (
                       <motion.div
                         key={index}
@@ -380,11 +381,13 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                         transition={{ delay: index * 0.02 }}
                         onClick={() => toggleTransaction(index)}
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-                          dup && !selectedIndices.has(index)
-                            ? 'bg-amber-500/5 border border-amber-500/20 opacity-50'
-                            : selectedIndices.has(index) 
-                              ? 'bg-muted/50 border border-primary/20' 
-                              : 'bg-muted/20 border border-transparent opacity-50'
+                          isStrict && !selectedIndices.has(index)
+                            ? 'bg-destructive/5 border border-destructive/20 opacity-50'
+                            : isFuzzy && !selectedIndices.has(index)
+                              ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
+                              : selectedIndices.has(index) 
+                                ? 'bg-muted/50 border border-primary/20' 
+                                : 'bg-muted/20 border border-transparent opacity-50'
                         }`}
                       >
                         <Checkbox
@@ -397,9 +400,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                             <p className="text-sm font-medium truncate">
                               {tx.description}
                             </p>
-                            {dup && (
+                            {isStrict && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-destructive/40 text-destructive shrink-0">
+                                Duplikat
+                              </Badge>
+                            )}
+                            {isFuzzy && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
-                                Duplikat?
+                                ±3 dana?
                               </Badge>
                             )}
                           </div>
