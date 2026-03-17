@@ -53,11 +53,11 @@ async function extractWithAI(
   const hasScrapedData = scrapedContent && scrapedContent.length > 100;
 
   const systemPrompt = hasScrapedData
-    ? `Izvuci strukturirane podatke o tvrtki iz sadržaja sudskog registra RH. Ako podatak NIJE u tekstu, ostavi prazan string. NIKADA ne izmišljaj. Korisnik traži po: ${searchType}`
-    : `Pomozi popuniti podatke o tvrtki u HR. NIKADA ne izmišljaj OIB/MBS/IBAN. Za poznate tvrtke popuni javno poznate podatke. Korisnik traži po: ${searchType}`;
+    ? `Izvuci strukturirane podatke o tvrtki iz sadržaja sudskog registra RH. Ako podatak NIJE u tekstu, ostavi prazan string "". NIKADA ne izmišljaj. Ako pronađeš BILO KOJI podatak o tvrtki (OIB, adresa, naziv), postavi found=true. Korisnik traži po: ${searchType}`
+    : `Pomozi popuniti podatke o tvrtki u HR. NIKADA ne izmišljaj OIB/MBS/IBAN. Za poznate tvrtke popuni javno poznate podatke. Ako prepoznaješ tvrtku ili možeš odrediti barem pravni oblik, postavi found=true. Korisnik traži po: ${searchType}`;
 
   const userMessage = hasScrapedData
-    ? `Izvuci podatke za: ${query.trim()}\n\nSadržaj:\n${scrapedContent}`
+    ? `Izvuci sve moguće podatke za tvrtku "${query.trim()}" iz sljedećeg sadržaja. Postavi found=true ako pronađeš bilo što korisno.\n\nSadržaj:\n${scrapedContent}`
     : `Pronađi podatke za: ${query.trim()}`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
