@@ -2115,6 +2115,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          business_profile_id: string | null
           color: string | null
           created_at: string
           description: string | null
@@ -2129,6 +2130,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          business_profile_id?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
@@ -2143,6 +2145,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          business_profile_id?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
@@ -2156,7 +2159,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipt_items: {
         Row: {

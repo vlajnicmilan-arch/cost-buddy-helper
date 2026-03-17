@@ -137,6 +137,7 @@ export const useProjects = () => {
           total_budget: project.total_budget,
           start_date: project.start_date,
           end_date: project.end_date,
+          ...((project as any).business_profile_id ? { business_profile_id: (project as any).business_profile_id } : {}),
         })
         .select()
         .single();

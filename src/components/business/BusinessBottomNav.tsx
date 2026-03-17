@@ -1,7 +1,7 @@
-import { LayoutDashboard, ArrowLeftRight, FileBarChart, MoreHorizontal, Wallet } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, FileBarChart, MoreHorizontal, Wallet, FolderKanban } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export type BusinessTab = 'dashboard' | 'wallet' | 'transactions' | 'reports' | 'more';
+export type BusinessTab = 'dashboard' | 'wallet' | 'transactions' | 'projects' | 'reports' | 'more';
 
 interface Props {
   activeTab: BusinessTab;
@@ -15,6 +15,7 @@ export const BusinessBottomNav = ({ activeTab, onTabChange }: Props) => {
     { id: 'dashboard' as BusinessTab, icon: LayoutDashboard, label: t('business.nav.overview', 'Pregled') },
     { id: 'wallet' as BusinessTab, icon: Wallet, label: t('business.nav.wallet', 'Novčanik') },
     { id: 'transactions' as BusinessTab, icon: ArrowLeftRight, label: t('business.nav.transactions', 'Transakcije') },
+    { id: 'projects' as BusinessTab, icon: FolderKanban, label: t('nav.projects', 'Projekti') },
     { id: 'reports' as BusinessTab, icon: FileBarChart, label: t('business.nav.reports', 'Izvještaji') },
     { id: 'more' as BusinessTab, icon: MoreHorizontal, label: t('business.nav.more', 'Više') },
   ];
