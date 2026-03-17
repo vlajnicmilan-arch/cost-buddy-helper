@@ -45,20 +45,15 @@ async function searchSudreg(query: string, apiKey: string): Promise<string | nul
 
 async function extractWithAI(
   query: string,
-  scrapedContent: string | null,
+  scrapedContent: string,
   lovableApiKey: string
 ): Promise<any> {
   const isOIB = /^\d{11}$/.test(query.trim());
   const searchType = isOIB ? "OIB" : "naziv tvrtke";
-  const hasScrapedData = scrapedContent && scrapedContent.length > 100;
 
-  const systemPrompt = hasScrapedData
-    ? `Izvuci strukturirane podatke o tvrtki iz sadržaja sudskog registra RH. Ako podatak NIJE u tekstu, ostavi prazan string "". NIKADA ne izmišljaj. Ako pronađeš BILO KOJI podatak o tvrtki (OIB, adresa, naziv), postavi found=true. Korisnik traži po: ${searchType}`
-    : `Pomozi popuniti podatke o tvrtki u HR. NIKADA ne izmišljaj OIB/MBS/IBAN. Za poznate tvrtke popuni javno poznate podatke. Ako prepoznaješ tvrtku ili možeš odrediti barem pravni oblik, postavi found=true. Korisnik traži po: ${searchType}`;
+  const systemPrompt = `Izvuci strukturirane podatke o tvrtki iz sadržaja sudskog registra RH. Ako podatak NIJE u tekstu, ostavi prazan string "". NIKADA ne izmišljaj. Postavi found=true SAMO ako pronađeš barem jedan konkretan podatak osim samog naziva (npr. OIB, adresa, grad, poštanski broj, email, telefon, MBS, sud, djelatnost). Korisnik traži po: ${searchType}`;
 
-  const userMessage = hasScrapedData
-    ? `Izvuci sve moguće podatke za tvrtku "${query.trim()}" iz sljedećeg sadržaja. Postavi found=true ako pronađeš bilo što korisno.\n\nSadržaj:\n${scrapedContent}`
-    : `Pronađi podatke za: ${query.trim()}`;
+  const userMessage = `Izvuci sve moguće podatke za tvrtku "${query.trim()}" iz sljedećeg sadržaja. found=true samo ako postoji barem jedan konkretan podatak osim naziva.\n\nSadržaj:\n${scrapedContent}`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -98,8 +93,8 @@ async function extractWithAI(
                 email: { type: "string", description: "Email" },
                 phone: { type: "string", description: "Telefon" },
                 website: { type: "string", description: "Web" },
-                found: { type: "boolean", description: "true ako pronađeni podaci" },
-                source: { type: "string", description: "'sudreg' ili 'ai'" },
+                found: { type: "boolean", description: "true samo ako postoji barem jedan konkretan podatak osim naziva" },
+                source: { type: "string", description: "'sudreg'" },
               },
               required: ["found", "company_name", "source"],
               additionalProperties: false,
@@ -122,7 +117,23 @@ async function extractWithAI(
   if (!toolCall) throw { status: 500, message: "No data returned from AI" };
 
   const companyData = JSON.parse(toolCall.function.arguments);
-  companyData.source = hasScrapedData ? "sudreg" : "ai";
+  const usefulFields = [
+    companyData.oib,
+    companyData.address,
+    companyData.city,
+    companyData.postal_code,
+    companyData.email,
+    companyData.phone,
+    companyData.mbs,
+    companyData.court_registry,
+    companyData.activity_code,
+    companyData.activity_description,
+    companyData.website,
+    companyData.iban,
+    companyData.bank_name,
+  ];
+  companyData.found = usefulFields.some((value) => typeof value === "string" ? value.trim().length > 0 : Boolean(value));
+  companyData.source = "sudreg";
   return companyData;
 }
 
