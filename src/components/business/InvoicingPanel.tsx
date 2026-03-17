@@ -241,7 +241,38 @@ export const InvoicingPanel = () => {
     loadClients();
   };
 
-  const calcItemTotal = (item: InvoiceItem) => {
+  const scanTransactionsForPartners = async () => {
+    if (!user || !activeBusinessProfileId) return;
+    setScanning(true);
+    try {
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('merchant_name')
+        .eq('user_id', user.id)
+        .eq('business_profile_id', activeBusinessProfileId)
+        .not('merchant_name', 'is', null);
+
+      const merchants = (expenses || [])
+        .map((e: any) => e.merchant_name as string)
+        .filter(Boolean);
+
+      if (merchants.length === 0) {
+        toast.info('Nije pronađen nijedan partner u transakcijama.');
+        setScanning(false);
+        return;
+      }
+
+      setScannedMerchants(merchants);
+      setScanPartnersOpen(true);
+    } catch (error) {
+      console.error('Error scanning transactions:', error);
+      toast.error('Greška pri skeniranju transakcija');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+
     const base = item.quantity * item.unit_price;
     const discounted = base * (1 - item.discount / 100);
     return discounted * (1 + item.vat_rate / 100);
