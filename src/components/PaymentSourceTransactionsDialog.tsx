@@ -288,6 +288,31 @@ export const PaymentSourceTransactionsDialog = ({
     reader.readAsDataURL(fileBlob);
   };
 
+  const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
+    if (!isHTMLFile) {
+      toast.error('Odaberi HTML datoteku (.html ili .htm)');
+      if (htmlInputRef.current) htmlInputRef.current.value = '';
+      return;
+    }
+    if (htmlInputRef.current) htmlInputRef.current.value = '';
+    toast.info('Učitavanje HTML izvoda...');
+    try {
+      const content = await file.text();
+      const result = await parseHTML(content);
+      if (result && result.transactions.length > 0) {
+        setPdfPreviewOpen(true);
+      } else if (result && result.transactions.length === 0) {
+        toast.warning('HTML je obrađen, ali nisu pronađene transakcije.');
+      }
+    } catch (err) {
+      console.error('HTML parse error:', err);
+      toast.error('Greška pri analizi HTML izvoda');
+    }
+  };
+
   const handleImportPDFTransactions = async () => {
     if (!parsedData || !onImportCSV || !paymentSource) return;
 
