@@ -343,7 +343,7 @@ export const PaymentSourceTransactionsDialog = ({
             return;
           }
 
-          setDuplicateInfo({ duplicates, fuzzyDuplicates, unique });
+          setDuplicateInfo({ duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique });
           setIncludeDuplicates(false);
           setSelectedFuzzy(new Set());
           setPdfPreviewOpen(false);
