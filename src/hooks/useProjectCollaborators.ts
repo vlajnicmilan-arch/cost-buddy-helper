@@ -29,6 +29,7 @@ export const useProjectCollaborators = (projectId: string | null) => {
       setCollaborators((data || []).map((c: any) => ({
         ...c,
         total_price: Number(c.total_price),
+        paid_amount: Number(c.paid_amount || 0),
       })));
     } catch (error) {
       console.error('Error fetching collaborators:', error);
