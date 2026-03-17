@@ -273,6 +273,52 @@ export const InvoicingPanel = () => {
     }
   };
 
+  const enrichClient = async (client: Client) => {
+    if (enrichingClientId) return;
+    setEnrichingClientId(client.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-company', {
+        body: { query: client.name },
+      });
+
+      if (error) throw error;
+      if (!data?.found) {
+        toast.info(`Nije pronađeno podataka za "${client.name}"`);
+        return;
+      }
+
+      const updates: Record<string, any> = {};
+      if (data.company_name && data.company_name !== client.name) updates.name = data.company_name;
+      if (data.oib && !client.oib) updates.oib = data.oib;
+      if (data.address && !client.address) updates.address = data.address;
+      if (data.city && !client.city) updates.city = data.city;
+      if (data.postal_code) updates.postal_code = data.postal_code;
+      if (data.email && !client.email) updates.email = data.email;
+      if (data.phone && !client.phone) updates.phone = data.phone;
+      if (data.contact_person) updates.contact_person = data.contact_person;
+
+      if (Object.keys(updates).length === 0) {
+        toast.info('Klijent već ima sve dostupne podatke.');
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from('clients')
+        .update(updates)
+        .eq('id', client.id) as any;
+
+      if (updateError) throw updateError;
+
+      toast.success(`Podaci ažurirani za "${data.company_name || client.name}" (izvor: ${data.source === 'sudreg' ? 'sudski registar' : 'AI'})`);
+      loadClients();
+    } catch (error: any) {
+      console.error('Error enriching client:', error);
+      toast.error('Greška pri dohvatu podataka');
+    } finally {
+      setEnrichingClientId(null);
+    }
+  };
+
   const calcItemTotal = (item: InvoiceItem) => {
     const base = item.quantity * item.unit_price;
     const discounted = base * (1 - item.discount / 100);
