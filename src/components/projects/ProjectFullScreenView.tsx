@@ -225,46 +225,46 @@ export const ProjectFullScreenView = ({
 
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-8 w-full mb-6">
-                  <TabsTrigger value="overview" className="gap-1">
-                    <TrendingUp className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('projects.overview')}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="timeline" className="gap-1">
-                    <GanttChart className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('projects.timeline')}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="milestones" className="gap-1">
-                    <Target className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('projects.milestones')}</span>
-                    {milestones.length > 0 && (
-                      <Badge variant="secondary" className="ml-1 h-5 px-1 hidden sm:inline-flex">
-                        {completedMilestones}/{milestones.length}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="workers" className="gap-1">
-                    <ClipboardList className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('workers.tab', 'Evidencija')}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="collaborators" className="gap-1">
-                    <Handshake className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('collaborators.tab', 'Suradnici')}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="funding" className="gap-1">
-                    <Wallet className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('projects.funding')}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="members" className="gap-1">
-                    <Users className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('projects.team')}</span>
-                    <Badge variant="secondary" className="ml-1 h-5 px-1 hidden sm:inline-flex">{members.length}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="transactions" className="gap-1">
-                    <FileText className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('projects.transactions')}</span>
-                  </TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto -mx-4 px-4 mb-6 scrollbar-hide">
+                  <TabsList className="inline-flex gap-1.5 h-auto p-1 bg-muted/60 rounded-xl w-auto min-w-max">
+                    <TabsTrigger value="overview" className="gap-1.5 rounded-lg px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      {t('projects.overview', 'Pregled')}
+                    </TabsTrigger>
+                    <TabsTrigger value="timeline" className="gap-1.5 rounded-lg px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <GanttChart className="w-3.5 h-3.5" />
+                      {t('projects.timeline', 'Timeline')}
+                    </TabsTrigger>
+                    <TabsTrigger value="milestones" className="gap-1.5 rounded-lg px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <Target className="w-3.5 h-3.5" />
+                      {t('projects.milestones', 'Faze')}
+                      {milestones.length > 0 && (
+                        <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger value="workers" className="gap-1.5 rounded-lg px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      {t('workers.tab', 'Radnici')}
+                    </TabsTrigger>
+                    <TabsTrigger value="collaborators" className="gap-1.5 rounded-lg px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <Handshake className="w-3.5 h-3.5" />
+                      {t('collaborators.tab', 'Suradnici')}
+                    </TabsTrigger>
+                    <TabsTrigger value="funding" className="gap-1.5 rounded-lg px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <Wallet className="w-3.5 h-3.5" />
+                      {t('projects.funding', 'Financiranje')}
+                    </TabsTrigger>
+                    <TabsTrigger value="members" className="gap-1.5 rounded-lg px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <Users className="w-3.5 h-3.5" />
+                      {t('projects.team', 'Tim')}
+                      <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{members.length}</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="transactions" className="gap-1.5 rounded-lg px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <FileText className="w-3.5 h-3.5" />
+                      {t('projects.transactions', 'Transakcije')}
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
 
                 <TabsContent value="overview" className="m-0 space-y-4">
                   {/* Quick stats */}
