@@ -244,6 +244,10 @@ export const ProjectFullScreenView = ({
                     <ClipboardList className="w-4 h-4" />
                     <span className="hidden sm:inline">{t('workers.tab', 'Evidencija')}</span>
                   </TabsTrigger>
+                  <TabsTrigger value="collaborators" className="gap-1">
+                    <Handshake className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t('collaborators.tab', 'Suradnici')}</span>
+                  </TabsTrigger>
                   <TabsTrigger value="funding" className="gap-1">
                     <Wallet className="w-4 h-4" />
                     <span className="hidden sm:inline">{t('projects.funding')}</span>
