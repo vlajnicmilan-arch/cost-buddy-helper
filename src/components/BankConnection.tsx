@@ -65,6 +65,31 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       pdfInputRef.current.value = '';
     }
   };
+
+  const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
+    if (!isHTMLFile) {
+      toast.error('Odaberi HTML datoteku (.html ili .htm)');
+      return;
+    }
+
+    const content = await file.text();
+    const result = await parseHTML(content);
+    
+    if (result && result.transactions.length > 0) {
+      setPdfPreviewOpen(true);
+    } else if (result && result.transactions.length === 0) {
+      toast.error('Nije pronađena nijedna transakcija u HTML datoteci.');
+    }
+
+    if (htmlInputRef.current) {
+      htmlInputRef.current.value = '';
+    }
+  };
+
   const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
