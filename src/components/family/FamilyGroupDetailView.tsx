@@ -237,12 +237,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 <Wallet className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedAccounts')}
               </h2>
-              {isOwner && (
-                <Button variant="ghost" size="sm" onClick={() => setShowAddSource(!showAddSource)} className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('family.add')}
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowAddSource(!showAddSource)} className="h-8 gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {t('family.add')}
+              </Button>
             </div>
 
             {showAddSource && availableSources.length > 0 && (
@@ -295,7 +293,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                       <p className="font-medium text-sm truncate">{source.source_name || 'Račun'}</p>
                     </div>
                     <span className="text-sm font-semibold">{formatAmount(source.source_balance || 0)}</span>
-                    {isOwner && (
+                    {(isOwner || source.added_by === user?.id) && (
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedSource(source.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -313,12 +311,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 <Target className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedBudgets')}
               </h2>
-              {isOwner && (
-                <Button variant="ghost" size="sm" onClick={() => setShowAddBudget(!showAddBudget)} className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('family.add')}
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowAddBudget(!showAddBudget)} className="h-8 gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {t('family.add')}
+              </Button>
             </div>
 
             {showAddBudget && availableBudgets.length > 0 && (
@@ -366,7 +362,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                       <p className="font-medium text-sm truncate">{budget.budget_name || 'Budžet'}</p>
                     </div>
                     <span className="text-sm font-semibold">{formatAmount(budget.budget_total || 0)}</span>
-                    {isOwner && (
+                    {(isOwner || budget.added_by === user?.id) && (
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSharedBudget(budget.id); }} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -385,12 +381,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 <FolderKanban className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedProjects')}
               </h2>
-              {isOwner && (
-                <Button variant="ghost" size="sm" onClick={() => setShowAddProject(!showAddProject)} className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('family.add')}
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowAddProject(!showAddProject)} className="h-8 gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {t('family.add')}
+              </Button>
             </div>
 
             {showAddProject && availableProjects.length > 0 && (
@@ -431,7 +425,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                           <p className="font-medium text-sm truncate">{sharedProject.project_name || 'Projekt'}</p>
                           <p className="text-xs text-muted-foreground">{t('family.projectNotAvailable')}</p>
                         </div>
-                        {isOwner && (
+                        {(isOwner || sharedProject.added_by === user?.id) && (
                           <Button variant="ghost" size="icon" onClick={() => removeSharedProject(sharedProject.id)} className="h-7 w-7 text-destructive hover:text-destructive">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -455,7 +449,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                           setProjectFullScreenOpen(true);
                         }}
                       />
-                      {isOwner && (
+                      {(isOwner || sharedProject.added_by === user?.id) && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -479,12 +473,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 <PiggyBank className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedSavings')}
               </h2>
-              {isOwner && (
-                <Button variant="ghost" size="sm" onClick={() => setShowAddSavings(!showAddSavings)} className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('family.add')}
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowAddSavings(!showAddSavings)} className="h-8 gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {t('family.add')}
+              </Button>
             </div>
 
             {showAddSavings && availableSavings.length > 0 && (
@@ -535,7 +527,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                         {formatAmount(saving.goal_current || 0)} / {formatAmount(saving.goal_target || 0)}
                       </p>
                     </div>
-                    {isOwner && (
+                    {(isOwner || saving.added_by === user?.id) && (
                       <Button variant="ghost" size="icon" onClick={() => removeSharedSavings(saving.id)} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
