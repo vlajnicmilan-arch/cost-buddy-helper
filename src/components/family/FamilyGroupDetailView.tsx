@@ -527,7 +527,7 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                         {formatAmount(saving.goal_current || 0)} / {formatAmount(saving.goal_target || 0)}
                       </p>
                     </div>
-                    {isOwner && (
+                    {(isOwner || saving.added_by === user?.id) && (
                       <Button variant="ghost" size="icon" onClick={() => removeSharedSavings(saving.id)} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
