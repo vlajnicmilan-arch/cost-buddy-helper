@@ -207,8 +207,8 @@ export const ProjectFullScreenView = ({
                         <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
                       </div>
                       <div className="p-2 sm:p-3 rounded-lg bg-expense/10 text-center">
-                        <p className="text-base sm:text-2xl font-bold text-expense truncate">{formatAmount(spentFromMilestones)}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
+                        <p className="text-base sm:text-2xl font-bold text-expense truncate">{formatAmount(totalSpent)}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.spent', 'Potrošeno')}</p>
                       </div>
                       <div className="p-2 sm:p-3 rounded-lg bg-primary/10 text-center">
                         <p className={cn("text-base sm:text-2xl font-bold truncate", remaining >= 0 ? "text-primary" : "text-destructive")}>
