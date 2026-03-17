@@ -381,12 +381,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 <FolderKanban className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedProjects')}
               </h2>
-              {isOwner && (
-                <Button variant="ghost" size="sm" onClick={() => setShowAddProject(!showAddProject)} className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('family.add')}
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowAddProject(!showAddProject)} className="h-8 gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {t('family.add')}
+              </Button>
             </div>
 
             {showAddProject && availableProjects.length > 0 && (
