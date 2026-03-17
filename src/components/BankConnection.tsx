@@ -16,7 +16,7 @@ import { DetectedPartnersDialog } from './DetectedPartnersDialog';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
   existingExpenses?: import('@/types/expense').Expense[];
 }
 
