@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon } from 'lucide-react';
+import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { CSVImportDialog } from './CSVImportDialog';
