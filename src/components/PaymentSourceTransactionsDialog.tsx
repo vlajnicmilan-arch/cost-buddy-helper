@@ -16,7 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText, Upload, Loader2, AlertTriangle, Printer, Download } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText, Upload, Loader2, AlertTriangle, Printer, Download, Code2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -67,10 +67,11 @@ export const PaymentSourceTransactionsDialog = ({
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const htmlInputRef = useRef<HTMLInputElement>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, parsedData, parsePDF, clearParsedData } = usePDFParser();
+  const { parsing, parsedData, parsePDF, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
 
   // Filter installment plans for this payment source
@@ -285,6 +286,31 @@ export const PaymentSourceTransactionsDialog = ({
       }
     };
     reader.readAsDataURL(fileBlob);
+  };
+
+  const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
+    if (!isHTMLFile) {
+      toast.error('Odaberi HTML datoteku (.html ili .htm)');
+      if (htmlInputRef.current) htmlInputRef.current.value = '';
+      return;
+    }
+    if (htmlInputRef.current) htmlInputRef.current.value = '';
+    toast.info('Učitavanje HTML izvoda...');
+    try {
+      const content = await file.text();
+      const result = await parseHTML(content);
+      if (result && result.transactions.length > 0) {
+        setPdfPreviewOpen(true);
+      } else if (result && result.transactions.length === 0) {
+        toast.warning('HTML je obrađen, ali nisu pronađene transakcije.');
+      }
+    } catch (err) {
+      console.error('HTML parse error:', err);
+      toast.error('Greška pri analizi HTML izvoda');
+    }
   };
 
   const handleImportPDFTransactions = async () => {
@@ -509,6 +535,27 @@ export const PaymentSourceTransactionsDialog = ({
                           <FileText className="w-3.5 h-3.5" />
                         )}
                         PDF
+                      </Button>
+                      <input
+                        ref={htmlInputRef}
+                        type="file"
+                        accept=".html,.htm,text/html"
+                        onChange={handleHTMLSelect}
+                        className="hidden"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => htmlInputRef.current?.click()}
+                        disabled={parsing}
+                        className="h-7 text-xs gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+                      >
+                        {parsing ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Code2 className="w-3.5 h-3.5" />
+                        )}
+                        HTML
                       </Button>
                       <Button
                         variant="outline"

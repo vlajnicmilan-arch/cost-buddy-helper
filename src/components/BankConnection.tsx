@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon } from 'lucide-react';
+import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { CSVImportDialog } from './CSVImportDialog';
@@ -38,7 +38,8 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const { parsing, parsedData, parsePDF, parsePhoto, clearParsedData } = usePDFParser();
+  const htmlInputRef = useRef<HTMLInputElement>(null);
+  const { parsing, parsedData, parsePDF, parsePhoto, parseHTML, clearParsedData } = usePDFParser();
 
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -64,6 +65,31 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       pdfInputRef.current.value = '';
     }
   };
+
+  const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
+    if (!isHTMLFile) {
+      toast.error('Odaberi HTML datoteku (.html ili .htm)');
+      return;
+    }
+
+    const content = await file.text();
+    const result = await parseHTML(content);
+    
+    if (result && result.transactions.length > 0) {
+      setPdfPreviewOpen(true);
+    } else if (result && result.transactions.length === 0) {
+      toast.error('Nije pronađena nijedna transakcija u HTML datoteci.');
+    }
+
+    if (htmlInputRef.current) {
+      htmlInputRef.current.value = '';
+    }
+  };
+
   const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -259,6 +285,29 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
             <FileText className="w-4 h-4" />
           )}
           {parsing ? t('import.analyzingPDF') : t('import.importPDF')}
+        </Button>
+
+        {/* HTML Import */}
+        <input
+          ref={htmlInputRef}
+          type="file"
+          accept=".html,.htm,text/html"
+          onChange={handleHTMLSelect}
+          className="hidden"
+          id="html-input"
+        />
+        <Button
+          variant="outline"
+          className="w-full gap-2 rounded-xl border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+          onClick={() => htmlInputRef.current?.click()}
+          disabled={parsing}
+        >
+          {parsing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Code2 className="w-4 h-4" />
+          )}
+          {parsing ? t('import.analyzingPDF') : 'Uvezi HTML izvod'}
         </Button>
       </div>
 
