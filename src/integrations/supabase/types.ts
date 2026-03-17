@@ -1800,6 +1800,69 @@ export type Database = {
         }
         Relationships: []
       }
+      project_collaborators: {
+        Row: {
+          company_name: string | null
+          contact_info: string | null
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          milestone_id: string | null
+          note: string | null
+          project_id: string
+          service_description: string
+          status: string
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          contact_info?: string | null
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          milestone_id?: string | null
+          note?: string | null
+          project_id: string
+          service_description: string
+          status?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          contact_info?: string | null
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          milestone_id?: string | null
+          note?: string | null
+          project_id?: string
+          service_description?: string
+          status?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_collaborators_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_collaborators_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_funding: {
         Row: {
           allocated_amount: number
