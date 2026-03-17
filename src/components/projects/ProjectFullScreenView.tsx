@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
-  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList
+  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
