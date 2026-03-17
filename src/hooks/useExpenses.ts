@@ -56,10 +56,12 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   const findDuplicates = useCallback((transactions: ParsedTransaction[]): {
     duplicates: ParsedTransaction[];
     fuzzyDuplicates: ParsedTransaction[];
+    fuzzyMatchedExpenses: Expense[];
     unique: ParsedTransaction[];
   } => {
     const duplicates: ParsedTransaction[] = [];
     const fuzzyDuplicates: ParsedTransaction[] = [];
+    const fuzzyMatchedExpenses: Expense[] = [];
     const unique: ParsedTransaction[] = [];
 
     const DAY_MS = 86400000;
@@ -88,7 +90,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       }
 
       // Fuzzy match: same amount + same type + date within ±3 days (but NOT same date, since that's strict)
-      const isFuzzyDuplicate = expenses.some(existing => {
+      const fuzzyMatch = expenses.find(existing => {
         const sameAmount = Math.abs(Number(existing.amount) - tx.amount) < 0.01;
         const sameType = existing.type === tx.type;
         if (!sameAmount || !sameType) return false;
@@ -102,14 +104,15 @@ export const useExpenses = (options?: UseExpensesOptions) => {
         return true;
       });
 
-      if (isFuzzyDuplicate) {
+      if (fuzzyMatch) {
         fuzzyDuplicates.push(tx);
+        fuzzyMatchedExpenses.push(fuzzyMatch);
       } else {
         unique.push(tx);
       }
     }
 
-    return { duplicates, fuzzyDuplicates, unique };
+    return { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique };
   }, [expenses, areMerchantsSimilar]);
 
 

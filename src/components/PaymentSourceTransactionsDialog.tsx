@@ -38,7 +38,7 @@ interface PaymentSourceTransactionsDialogProps {
   onUpdate: (expense: Expense) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; unique: ParsedTransaction[] };
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] };
 }
 
 export const PaymentSourceTransactionsDialog = ({
@@ -65,7 +65,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
-  const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; unique: ParsedTransaction[] } | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] } | null>(null);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
@@ -333,7 +333,7 @@ export const PaymentSourceTransactionsDialog = ({
       setIsImportingPdf(true);
 
       if (findDuplicates) {
-        const { duplicates, fuzzyDuplicates, unique } = findDuplicates(transactions);
+        const { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique } = findDuplicates(transactions);
 
         if (duplicates.length > 0 || fuzzyDuplicates.length > 0) {
           if (unique.length === 0 && fuzzyDuplicates.length === 0) {
@@ -343,7 +343,7 @@ export const PaymentSourceTransactionsDialog = ({
             return;
           }
 
-          setDuplicateInfo({ duplicates, fuzzyDuplicates, unique });
+          setDuplicateInfo({ duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique });
           setIncludeDuplicates(false);
           setSelectedFuzzy(new Set());
           setPdfPreviewOpen(false);
@@ -1117,43 +1117,62 @@ export const PaymentSourceTransactionsDialog = ({
                 </div>
               )}
 
-              {/* Fuzzy duplicates - individual checkboxes */}
+              {/* Fuzzy duplicates - comparison view with individual checkboxes */}
               {duplicateInfo.fuzzyDuplicates.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-amber-600 dark:text-amber-400">⚠️ Mogući duplikati (±3 dana, isti iznos):</p>
-                  <p className="text-xs text-muted-foreground">Odaberi koje želiš uvesti:</p>
-                  <div className="max-h-48 overflow-y-auto space-y-1">
-                    {duplicateInfo.fuzzyDuplicates.map((tx, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`flex items-center gap-2 p-2 rounded-lg text-sm border cursor-pointer transition-colors ${
-                          selectedFuzzy.has(idx) 
-                            ? 'bg-primary/5 border-primary/20' 
-                            : 'bg-amber-500/5 border-amber-500/15'
-                        }`}
-                        onClick={() => {
-                          const next = new Set(selectedFuzzy);
-                          next.has(idx) ? next.delete(idx) : next.add(idx);
-                          setSelectedFuzzy(next);
-                        }}
-                      >
-                        <Checkbox 
-                          checked={selectedFuzzy.has(idx)}
-                          onCheckedChange={() => {
+                  <p className="text-xs text-muted-foreground">Usporedi i odaberi koje želiš uvesti:</p>
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+                    {duplicateInfo.fuzzyDuplicates.map((tx, idx) => {
+                      const matchedExpense = duplicateInfo.fuzzyMatchedExpenses[idx];
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden ${
+                            selectedFuzzy.has(idx) 
+                              ? 'border-primary/30' 
+                              : 'border-amber-500/20'
+                          }`}
+                          onClick={() => {
                             const next = new Set(selectedFuzzy);
                             next.has(idx) ? next.delete(idx) : next.add(idx);
                             setSelectedFuzzy(next);
                           }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate text-xs">{tx.description}</p>
-                          <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()}</p>
+                        >
+                          {/* Existing transaction */}
+                          <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30">
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">Postojeća</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate text-xs">{matchedExpense.description}</p>
+                              <p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p>
+                            </div>
+                            <p className={cn("font-mono text-xs shrink-0", matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>
+                              {matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}
+                            </p>
+                          </div>
+                          {/* New transaction */}
+                          <div className={`flex items-center gap-2 p-2 ${selectedFuzzy.has(idx) ? 'bg-primary/5' : 'bg-amber-500/5'}`}>
+                            <Checkbox 
+                              checked={selectedFuzzy.has(idx)}
+                              className="ml-0.5"
+                              onCheckedChange={() => {
+                                const next = new Set(selectedFuzzy);
+                                next.has(idx) ? next.delete(idx) : next.add(idx);
+                                setSelectedFuzzy(next);
+                              }}
+                            />
+                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-8 shrink-0">Nova</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate text-xs">{tx.description}</p>
+                              <p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p>
+                            </div>
+                            <p className={cn("font-mono text-xs shrink-0", tx.type === 'income' ? 'text-income' : 'text-expense')}>
+                              {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
+                            </p>
+                          </div>
                         </div>
-                        <p className={cn("font-mono text-xs", tx.type === 'income' ? 'text-income' : 'text-expense')}>
-                          {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
