@@ -237,12 +237,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 <Wallet className="h-4 w-4 text-muted-foreground" />
                 {t('family.sharedAccounts')}
               </h2>
-              {isOwner && (
-                <Button variant="ghost" size="sm" onClick={() => setShowAddSource(!showAddSource)} className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('family.add')}
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowAddSource(!showAddSource)} className="h-8 gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {t('family.add')}
+              </Button>
             </div>
 
             {showAddSource && availableSources.length > 0 && (
