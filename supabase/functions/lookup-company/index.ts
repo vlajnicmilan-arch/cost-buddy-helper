@@ -5,42 +5,66 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function searchSudreg(query: string, apiKey: string): Promise<string | null> {
-  try {
-    const isOIB = /^\d{11}$/.test(query.trim());
-    const searchQuery = isOIB
-      ? `site:sudreg.pravosudje.hr OIB ${query.trim()}`
-      : `site:sudreg.pravosudje.hr "${query.trim()}"`;
+async function searchCompanySources(
+  query: string,
+  apiKey: string,
+): Promise<{ content: string | null; source: "sudreg" | "web" }> {
+  const trimmedQuery = query.trim();
+  const isOIB = /^\d{11}$/.test(trimmedQuery);
+  const searches: Array<{ source: "sudreg" | "web"; query: string; limit: number }> = [
+    {
+      source: "sudreg",
+      query: isOIB
+        ? `site:sudreg.pravosudje.hr OIB ${trimmedQuery}`
+        : `site:sudreg.pravosudje.hr "${trimmedQuery}"`,
+      limit: 2,
+    },
+    {
+      source: "web",
+      query: isOIB
+        ? `"${trimmedQuery}" OIB adresa kontakt tvrtka`
+        : `"${trimmedQuery}" OIB adresa kontakt`,
+      limit: 3,
+    },
+  ];
 
-    const response = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: searchQuery,
-        limit: 2,
-        scrapeOptions: { formats: ["markdown"] },
-      }),
-    });
+  for (const search of searches) {
+    try {
+      const response = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: search.query,
+          limit: search.limit,
+          scrapeOptions: { formats: ["markdown"] },
+        }),
+      });
 
-    if (!response.ok) return null;
+      if (!response.ok) continue;
 
-    const data = await response.json();
-    const contents: string[] = [];
-    if (data?.data && Array.isArray(data.data)) {
-      for (const result of data.data) {
-        if (result.markdown) contents.push(result.markdown);
+      const data = await response.json();
+      const contents: string[] = [];
+      if (data?.data && Array.isArray(data.data)) {
+        for (const result of data.data) {
+          if (result.markdown) contents.push(result.markdown);
+        }
       }
-    }
 
-    if (contents.length === 0) return null;
-    return contents.join("\n\n---\n\n").slice(0, 5000);
-  } catch (e) {
-    console.error("Firecrawl search exception:", e);
-    return null;
+      if (contents.length > 0) {
+        return {
+          content: contents.join("\n\n---\n\n").slice(0, 7000),
+          source: search.source,
+        };
+      }
+    } catch (e) {
+      console.error(`Firecrawl ${search.source} search exception:`, e);
+    }
   }
+
+  return { content: null, source: "sudreg" };
 }
 
 async function extractWithAI(
