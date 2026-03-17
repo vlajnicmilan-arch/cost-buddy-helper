@@ -159,6 +159,16 @@ serve(async (req) => {
       scrapedContent = await searchSudreg(query.trim(), FIRECRAWL_API_KEY);
     }
 
+    if (!scrapedContent) {
+      return new Response(JSON.stringify({
+        found: false,
+        source: "sudreg",
+        company_name: query.trim(),
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const companyData = await extractWithAI(query.trim(), scrapedContent, LOVABLE_API_KEY);
 
     return new Response(JSON.stringify(companyData), {

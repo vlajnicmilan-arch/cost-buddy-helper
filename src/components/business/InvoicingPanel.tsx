@@ -307,7 +307,7 @@ export const InvoicingPanel = () => {
       }
 
       if (!data?.found) {
-        toast.info('Podaci nisu pronađeni u registru za: ' + query);
+        toast.info('Nije pronađen konkretan podatak u sudskom registru za: ' + query);
         setEnriching(false);
         return;
       }
@@ -319,8 +319,16 @@ export const InvoicingPanel = () => {
       if (data.email && !client.email) updates.email = data.email;
       if (data.phone && !client.phone) updates.phone = data.phone;
       if (data.contact_person && !client.contact_person) updates.contact_person = data.contact_person;
-      if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
       if (data.postal_code) updates.postal_code = data.postal_code;
+
+      const hasRealUpdates = Object.keys(updates).length > 0;
+      if (!hasRealUpdates) {
+        toast.info('Registar nije vratio dodatne podatke osim naziva.');
+        setEnriching(false);
+        return;
+      }
+
+      if (data.company_name && data.company_name.length > 2) updates.name = data.company_name;
 
       if (Object.keys(updates).length > 0) {
         await supabase.from('clients').update(updates as any).eq('id', client.id);
