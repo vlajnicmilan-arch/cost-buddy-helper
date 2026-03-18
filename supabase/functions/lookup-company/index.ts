@@ -37,7 +37,6 @@ async function searchSudreg(query: string, apiKey: string): Promise<string | nul
     const data = await response.json();
     console.log("Firecrawl search results count:", data?.data?.length || 0);
 
-    // Combine markdown content from results
     const contents: string[] = [];
     if (data?.data && Array.isArray(data.data)) {
       for (const result of data.data) {
@@ -48,21 +47,22 @@ async function searchSudreg(query: string, apiKey: string): Promise<string | nul
     }
 
     if (contents.length === 0) return null;
-    return contents.join("\n\n---\n\n").slice(0, 8000); // Limit context size
+    return contents.join("\n\n---\n\n").slice(0, 8000);
   } catch (e) {
     console.error("Firecrawl search exception:", e);
     return null;
   }
 }
 
-// Step 2: Also try scraping the direct sudreg search page
+// Step 2: Try scraping sudreg detail page directly (new ORDS URL pattern)
 async function scrapeSudregDirect(query: string, apiKey: string): Promise<string | null> {
   try {
     const isOIB = /^\d{11}$/.test(query.trim());
-    // Try the ORDS REST endpoint that sudreg exposes
+    
+    // New ORDS-based URL pattern for sudreg
     const searchUrl = isOIB
-      ? `https://sudreg.pravosudje.hr/registar/f?p=150:28:0::NO:28:P28_SBT_OIB:${query.trim()}`
-      : `https://sudreg.pravosudje.hr/registar/f?p=150:28:0::NO:28:P28_SBT_NAZIV:${encodeURIComponent(query.trim())}`;
+      ? `https://sudreg.pravosudje.hr/ords/r/esudreg/public/pretraga?p28_sbt_oib=${query.trim()}`
+      : `https://sudreg.pravosudje.hr/ords/r/esudreg/public/pretraga?p28_sbt_naziv=${encodeURIComponent(query.trim())}`;
 
     console.log("Firecrawl scrape URL:", searchUrl);
 
@@ -75,7 +75,7 @@ async function scrapeSudregDirect(query: string, apiKey: string): Promise<string
       body: JSON.stringify({
         url: searchUrl,
         formats: ["markdown"],
-        waitFor: 3000,
+        waitFor: 5000, // APEX needs more time to render
       }),
     });
 
@@ -93,6 +93,43 @@ async function scrapeSudregDirect(query: string, apiKey: string): Promise<string
     return markdown.slice(0, 8000);
   } catch (e) {
     console.error("Firecrawl scrape exception:", e);
+    return null;
+  }
+}
+
+// Step 2b: Also try a general web search as fallback
+async function webSearchFallback(query: string, apiKey: string): Promise<string | null> {
+  try {
+    const searchQuery = `"${query.trim()}" OIB adresa Hrvatska`;
+    console.log("Firecrawl web fallback search:", searchQuery);
+
+    const response = await fetch("https://api.firecrawl.dev/v1/search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: searchQuery,
+        limit: 3,
+        scrapeOptions: { formats: ["markdown"] },
+      }),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const contents: string[] = [];
+    if (data?.data && Array.isArray(data.data)) {
+      for (const result of data.data) {
+        if (result.markdown) contents.push(result.markdown);
+      }
+    }
+
+    if (contents.length === 0) return null;
+    return contents.join("\n\n---\n\n").slice(0, 6000);
+  } catch (e) {
+    console.error("Web search fallback exception:", e);
     return null;
   }
 }
@@ -231,9 +268,9 @@ serve(async (req) => {
 
     // Try Firecrawl if available
     if (FIRECRAWL_API_KEY) {
-      console.log("Attempting Firecrawl search for:", query.trim());
+      console.log("Attempting Firecrawl lookup for:", query.trim());
 
-      // Try both search and direct scrape in parallel
+      // Try search and direct scrape in parallel
       const [searchResult, scrapeResult] = await Promise.all([
         searchSudreg(query.trim(), FIRECRAWL_API_KEY),
         scrapeSudregDirect(query.trim(), FIRECRAWL_API_KEY),
@@ -242,10 +279,16 @@ serve(async (req) => {
       // Prefer direct scrape (more detailed), fallback to search
       scrapedContent = scrapeResult || searchResult;
 
+      // If sudreg didn't return results, try general web search
+      if (!scrapedContent) {
+        console.log("No sudreg content, trying web search fallback...");
+        scrapedContent = await webSearchFallback(query.trim(), FIRECRAWL_API_KEY);
+      }
+
       if (scrapedContent) {
-        console.log("Got scraped content from sudreg, length:", scrapedContent.length);
+        console.log("Got scraped content, length:", scrapedContent.length);
       } else {
-        console.log("No sudreg content found, falling back to AI-only");
+        console.log("No content found, falling back to AI-only");
       }
     } else {
       console.log("FIRECRAWL_API_KEY not configured, using AI-only lookup");
