@@ -337,6 +337,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         business_profile_id: activeBusinessProfileId || null,
+        cash_register_id: selectedCashRegisterId || null,
         // For transfers, store destination in income_source_id field
         income_source_id: transferDestinationId || undefined,
         note: (isInstallment && scannedData.installment_count) 
