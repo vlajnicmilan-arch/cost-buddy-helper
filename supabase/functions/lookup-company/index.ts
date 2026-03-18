@@ -5,215 +5,164 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Clean merchant name for better search: extract main keyword, remove city/address/legal form noise
-function cleanSearchQuery(query: string): string {
-  let cleaned = query.trim();
-  
-  // Remove common legal form suffixes for search (we'll get proper name from results)
-  const legalForms = [
-    'jednostavno drustvo s ogranicenom odgovornoscu',
-    'jednostavno društvo s ograničenom odgovornošću',
-    'drustvo s ogranicenom odgovornoscu',
-    'društvo s ograničenom odgovornošću',
-    'dionicko drustvo',
-    'dioničko društvo',
-    'j.d.o.o.', 'd.o.o.', 'd.d.', 'j.t.d.', 'k.d.',
-  ];
-  
-  for (const form of legalForms) {
-    cleaned = cleaned.replace(new RegExp(form, 'gi'), '').trim();
+const SUDREG_API = "https://sudreg-data.gov.hr/api/javni";
+const TOKEN_URL = `${SUDREG_API}/oauth/token`;
+
+// Get OAuth2 token using client credentials
+async function getAccessToken(clientId: string, clientSecret: string): Promise<string> {
+  const response = await fetch(TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Token error:", response.status, errText);
+    throw new Error(`Failed to get access token: ${response.status}`);
   }
-  
-  // Remove trailing activity descriptions like "za trgovinu", "za proizvodnju" etc.
-  cleaned = cleaned.replace(/\bza\s+\w+(\s*,?\s*\w+)*$/gi, '').trim();
-  
-  // Remove city names that appear after comma at the end
-  cleaned = cleaned.replace(/,\s*[A-ZČĆŽŠĐ][A-ZČĆŽŠĐa-zčćžšđ\s-]+$/g, '').trim();
-  
-  // Remove trailing commas and whitespace
-  cleaned = cleaned.replace(/[,\s]+$/, '').trim();
-  
-  // If we cleaned too aggressively and have less than 2 chars, use original
-  if (cleaned.length < 2) return query.trim();
-  
-  return cleaned;
+
+  const data = await response.json();
+  return data.access_token;
 }
 
-// Search sudreg via Firecrawl
-async function searchSudreg(query: string, apiKey: string): Promise<string | null> {
-  try {
-    const isOIB = /^\d{11}$/.test(query.trim());
-    const cleanedQuery = isOIB ? query.trim() : cleanSearchQuery(query);
-    
-    const searchQuery = isOIB
-      ? `site:sudreg.pravosudje.hr OIB ${cleanedQuery}`
-      : `site:sudreg.pravosudje.hr "${cleanedQuery}"`;
+// Fetch from sudreg API endpoint
+async function sudregFetch(endpoint: string, token: string, params: Record<string, string> = {}): Promise<any[]> {
+  const url = new URL(`${SUDREG_API}${endpoint}`);
+  url.searchParams.set("no_data_error", "0");
+  url.searchParams.set("omit_nulls", "0");
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
 
-    console.log("Firecrawl search query:", searchQuery);
+  console.log("Sudreg fetch:", url.toString());
 
-    const response = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: searchQuery,
-        limit: 3,
-        scrapeOptions: { formats: ["markdown"] },
-      }),
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error(`Sudreg ${endpoint} error:`, response.status, errText);
+    return [];
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
+}
+
+// Search for a subject by OIB or name using the /subjekti endpoint
+async function findSubject(query: string, token: string): Promise<any | null> {
+  const isOIB = /^\d{11}$/.test(query.trim());
+
+  // The sudreg API uses /subjekti for the main subjects table
+  // We need to search through bulk data - try filtering
+  if (isOIB) {
+    // Search by OIB in subjekti table
+    const subjects = await sudregFetch("/subjekti", token, {
+      oib: query.trim(),
+      limit: "5",
     });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Firecrawl search error:", response.status, errText);
-      return null;
-    }
-
-    const data = await response.json();
-    console.log("Firecrawl search results count:", data?.data?.length || 0);
-
-    const contents: string[] = [];
-    if (data?.data && Array.isArray(data.data)) {
-      for (const result of data.data) {
-        if (result.markdown) {
-          contents.push(result.markdown);
-        }
-      }
-    }
-
-    if (contents.length === 0) return null;
-    return contents.join("\n\n---\n\n").slice(0, 8000);
-  } catch (e) {
-    console.error("Firecrawl search exception:", e);
-    return null;
+    if (subjects.length > 0) return subjects[0];
   }
+
+  // If OIB search didn't work or it's a name search, try tvrtke
+  // The API is bulk-oriented, so we need to search differently
+  // Try the /subjekti endpoint with filters
+  const subjects = await sudregFetch("/subjekti", token, {
+    ...(isOIB ? { oib: query.trim() } : {}),
+    limit: "10",
+  });
+
+  if (isOIB && subjects.length > 0) {
+    // Filter by OIB
+    const match = subjects.find((s: any) => String(s.oib) === query.trim());
+    if (match) return match;
+  }
+
+  return subjects.length > 0 ? subjects[0] : null;
 }
 
-// Try scraping sudreg detail page directly
-async function scrapeSudregDirect(query: string, apiKey: string): Promise<string | null> {
-  try {
-    const isOIB = /^\d{11}$/.test(query.trim());
-    const cleanedQuery = isOIB ? query.trim() : cleanSearchQuery(query);
-    
-    const searchUrl = isOIB
-      ? `https://sudreg.pravosudje.hr/ords/r/esudreg/public/pretraga?p28_sbt_oib=${cleanedQuery}`
-      : `https://sudreg.pravosudje.hr/ords/r/esudreg/public/pretraga?p28_sbt_naziv=${encodeURIComponent(cleanedQuery)}`;
+// Get company details by MBS from multiple endpoints
+async function getCompanyDetails(mbs: number, token: string) {
+  const [tvrtke, sjedista, pravniOblici, emailAdrese] = await Promise.all([
+    sudregFetch("/tvrtke", token, { mbs: String(mbs), limit: "1" }),
+    sudregFetch("/sjedista", token, { mbs: String(mbs), limit: "1" }),
+    sudregFetch("/pravni_oblici", token, { mbs: String(mbs), limit: "1", expand_relations: "1" }),
+    sudregFetch("/email_adrese", token, { mbs: String(mbs), limit: "5" }),
+  ]);
 
-    console.log("Firecrawl scrape URL:", searchUrl);
-
-    const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: searchUrl,
-        formats: ["markdown"],
-        waitFor: 8000, // APEX needs more time to render
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Firecrawl scrape error:", response.status, errText);
-      return null;
-    }
-
-    const data = await response.json();
-    const markdown = data?.data?.markdown || data?.markdown;
-    if (!markdown || markdown.length < 100) {
-      console.log("Firecrawl scrape content too short:", markdown?.length || 0);
-      return null;
-    }
-
-    console.log("Firecrawl scrape content length:", markdown.length);
-    return markdown.slice(0, 8000);
-  } catch (e) {
-    console.error("Firecrawl scrape exception:", e);
-    return null;
-  }
+  return {
+    tvrtka: tvrtke[0] || null,
+    sjediste: sjedista[0] || null,
+    pravniOblik: pravniOblici[0] || null,
+    emails: emailAdrese,
+  };
 }
 
-// General web search as fallback
-async function webSearchFallback(query: string, apiKey: string): Promise<string | null> {
-  try {
-    const isOIB = /^\d{11}$/.test(query.trim());
-    const cleanedQuery = isOIB ? query.trim() : cleanSearchQuery(query);
-    
-    const searchQuery = isOIB 
-      ? `"${cleanedQuery}" OIB tvrtka Hrvatska`
-      : `"${cleanedQuery}" OIB adresa Hrvatska`;
-    console.log("Firecrawl web fallback search:", searchQuery);
+// Build structured company data from sudreg results
+function buildCompanyData(subject: any, details: any): any {
+  const { tvrtka, sjediste, pravniOblik, emails } = details;
 
-    const response = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: searchQuery,
-        limit: 3,
-        scrapeOptions: { formats: ["markdown"] },
-      }),
-    });
+  const address = sjediste
+    ? [sjediste.ulica, sjediste.kucni_broj ? `${sjediste.kucni_broj}${sjediste.kucni_podbroj || ""}` : ""]
+        .filter(Boolean)
+        .join(" ")
+    : "";
 
-    if (!response.ok) return null;
+  const city = sjediste?.naziv_naselja || sjediste?.naselje_van_sifrarnika || "";
+  const postalCode = sjediste?.postanski_broj ? String(sjediste.postanski_broj) : "";
+  const county = sjediste?.naziv_zupanije || "";
 
-    const data = await response.json();
-    const contents: string[] = [];
-    if (data?.data && Array.isArray(data.data)) {
-      for (const result of data.data) {
-        if (result.markdown) contents.push(result.markdown);
-      }
-    }
+  // Map sud_id_nadlezan to court name
+  const courtMap: Record<number, string> = {
+    1: "Trgovački sud u Zagrebu",
+    2: "Trgovački sud u Splitu",
+    3: "Trgovački sud u Rijeci",
+    4: "Trgovački sud u Osijeku",
+    5: "Trgovački sud u Varaždinu",
+    6: "Trgovački sud u Zadru",
+    7: "Trgovački sud u Bjelovaru",
+    8: "Trgovački sud u Pazinu",
+  };
 
-    if (contents.length === 0) return null;
-    return contents.join("\n\n---\n\n").slice(0, 6000);
-  } catch (e) {
-    console.error("Web search fallback exception:", e);
-    return null;
-  }
+  const legalFormName = pravniOblik?.pravni_oblik_naziv || pravniOblik?.naziv || "";
+  const companyName = tvrtka?.ime || subject?.tvrtka || "";
+
+  return {
+    found: true,
+    company_name: companyName,
+    oib: subject?.oib ? String(subject.oib) : "",
+    mbs: subject?.mbs ? String(subject.mbs) : "",
+    address: address,
+    city: city,
+    postal_code: postalCode,
+    country: "Hrvatska",
+    legal_form: legalFormName,
+    activity_code: "",
+    activity_description: "",
+    court_registry: courtMap[subject?.sud_id_nadlezan] || (subject?.sud_id_nadlezan ? `Sud ID: ${subject.sud_id_nadlezan}` : ""),
+    is_vat_payer: false,
+    iban: "",
+    bank_name: "",
+    email: emails.length > 0 ? emails[0].adresa || "" : "",
+    phone: "",
+    website: "",
+    source: "sudreg",
+  };
 }
 
-// Use AI to extract structured data from scraped content
-async function extractWithAI(
-  query: string,
-  scrapedContent: string | null,
-  lovableApiKey: string
-): Promise<any> {
+// Fallback: use AI to extract data (when sudreg API fails or for non-registered entities like obrti)
+async function extractWithAI(query: string, lovableApiKey: string): Promise<any> {
   const isOIB = /^\d{11}$/.test(query.trim());
   const searchType = isOIB ? "OIB" : "naziv tvrtke";
-
-  const hasScrapedData = scrapedContent && scrapedContent.length > 100;
-
-  const systemPrompt = hasScrapedData
-    ? `Ti si AI asistent koji izvlači strukturirane podatke o tvrtkama iz sadržaja sudskog registra RH.
-
-PRAVILA:
-1. Analiziraj SAMO podatke iz priloženog sadržaja sudskog registra.
-2. Izvuci sve dostupne podatke: naziv, OIB, MBS, adresu, pravni oblik, djelatnost, sud, itd.
-3. Ako neki podatak NIJE u priloženom sadržaju, ostavi ga kao prazan string "".
-4. NIKADA ne izmišljaj podatke koji nisu u priloženom tekstu.
-5. Postavi found=true ako si pronašao relevantne podatke o tvrtki.
-
-Korisnik traži podatke prema: ${searchType}`
-    : `Ti si AI asistent koji pomaže korisnicima popuniti podatke o njihovoj tvrtki u Hrvatskoj.
-
-VAŽNA PRAVILA:
-1. NIKADA ne izmišljaj podatke. Ako nisi 100% siguran u neki podatak, OBAVEZNO ga ostavi kao prazan string "".
-2. Za poznate velike tvrtke možeš popuniti javno poznate podatke.
-3. Za manje/nepoznate tvrtke, popuni SAMO ono što možeš sigurno zaključiti iz naziva.
-4. OIB, MBS, IBAN - NIKADA ne izmišljaj! Ostavi prazno ako ne znaš točan podatak.
-5. Postavi found=true ako prepoznaješ tvrtku ili možeš izvući barem pravni oblik iz naziva.
-
-Korisnik traži podatke prema: ${searchType}`;
-
-  const userMessage = hasScrapedData
-    ? `Izvuci podatke za: ${query.trim()}\n\nSadržaj iz sudskog registra:\n${scrapedContent}`
-    : `Pronađi podatke za: ${query.trim()}`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -224,38 +173,40 @@ Korisnik traži podatke prema: ${searchType}`;
     body: JSON.stringify({
       model: "google/gemini-2.5-flash",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
+        {
+          role: "system",
+          content: `Ti si AI asistent koji pomaže korisnicima popuniti podatke o njihovoj tvrtki u Hrvatskoj.
+VAŽNA PRAVILA:
+1. NIKADA ne izmišljaj podatke. Ako nisi 100% siguran, ostavi prazan string "".
+2. OIB, MBS, IBAN - NIKADA ne izmišljaj!
+3. Postavi found=true samo ako prepoznaješ tvrtku.
+Korisnik traži prema: ${searchType}`,
+        },
+        { role: "user", content: `Pronađi podatke za: ${query.trim()}` },
       ],
       tools: [
         {
           type: "function",
           function: {
             name: "return_company_data",
-            description:
-              "Return structured company data extracted from court register content. Leave unknown fields as empty string.",
+            description: "Return structured company data. Leave unknown fields as empty string.",
             parameters: {
               type: "object",
               properties: {
-                company_name: { type: "string", description: "Puni službeni naziv tvrtke s pravnim oblikom" },
-                oib: { type: "string", description: "OIB (točno 11 znamenki). MORA biti iz sadržaja ili prazan." },
-                address: { type: "string", description: "Ulica i kućni broj" },
-                city: { type: "string", description: "Grad sjedišta" },
-                postal_code: { type: "string", description: "Poštanski broj" },
-                country: { type: "string", description: "Država, default Hrvatska" },
-                legal_form: { type: "string", description: "Pravni oblik: d.o.o., j.d.o.o., d.d., obrt, udruga, etc." },
-                activity_code: { type: "string", description: "NKD 2007 šifra djelatnosti (npr. 62.01)" },
-                activity_description: { type: "string", description: "Opis glavne djelatnosti" },
-                mbs: { type: "string", description: "Matični broj subjekta iz sudskog registra" },
-                court_registry: { type: "string", description: "Nadležni trgovački sud" },
-                is_vat_payer: { type: "boolean", description: "true ako je PDV obveznik" },
-                iban: { type: "string", description: "IBAN. MORA biti iz sadržaja ili prazan." },
-                bank_name: { type: "string", description: "Naziv banke" },
-                email: { type: "string", description: "Službeni email" },
-                phone: { type: "string", description: "Telefon" },
-                website: { type: "string", description: "Web stranica" },
-                found: { type: "boolean", description: "true ako su pronađeni podaci o tvrtki" },
-                source: { type: "string", description: "Izvor podataka: 'sudreg' ili 'ai'" },
+                company_name: { type: "string" },
+                oib: { type: "string" },
+                address: { type: "string" },
+                city: { type: "string" },
+                postal_code: { type: "string" },
+                country: { type: "string" },
+                legal_form: { type: "string" },
+                mbs: { type: "string" },
+                court_registry: { type: "string" },
+                email: { type: "string" },
+                phone: { type: "string" },
+                website: { type: "string" },
+                found: { type: "boolean" },
+                source: { type: "string" },
               },
               required: ["found", "company_name", "source"],
               additionalProperties: false,
@@ -268,26 +219,17 @@ Korisnik traži podatke prema: ${searchType}`;
   });
 
   if (!response.ok) {
-    if (response.status === 429) {
-      throw { status: 429, message: "Previše zahtjeva, pokušajte ponovno za minutu." };
-    }
-    if (response.status === 402) {
-      throw { status: 402, message: "Nedovoljno kredita." };
-    }
-    const t = await response.text();
-    console.error("AI gateway error:", response.status, t);
+    if (response.status === 429) throw { status: 429, message: "Previše zahtjeva, pokušajte ponovno za minutu." };
+    if (response.status === 402) throw { status: 402, message: "Nedovoljno kredita." };
     throw { status: 500, message: "AI gateway error" };
   }
 
   const data = await response.json();
   const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-
-  if (!toolCall) {
-    throw { status: 500, message: "No data returned from AI" };
-  }
+  if (!toolCall) throw { status: 500, message: "No data returned from AI" };
 
   const companyData = JSON.parse(toolCall.function.arguments);
-  companyData.source = hasScrapedData ? "sudreg" : "ai";
+  companyData.source = "ai";
   return companyData;
 }
 
@@ -303,44 +245,81 @@ serve(async (req) => {
       });
     }
 
+    const SUDREG_CLIENT_ID = Deno.env.get("SUDREG_CLIENT_ID");
+    const SUDREG_CLIENT_SECRET = Deno.env.get("SUDREG_CLIENT_SECRET");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+    // Try official sudreg API first
+    if (SUDREG_CLIENT_ID && SUDREG_CLIENT_SECRET) {
+      try {
+        console.log("Attempting official sudreg API lookup for:", query.trim());
 
-    let scrapedContent: string | null = null;
+        const token = await getAccessToken(SUDREG_CLIENT_ID, SUDREG_CLIENT_SECRET);
+        console.log("Got sudreg access token");
 
-    // Try Firecrawl if available
-    if (FIRECRAWL_API_KEY) {
-      console.log("Attempting Firecrawl lookup for:", query.trim());
+        // First get subject list and find our target
+        const isOIB = /^\d{11}$/.test(query.trim());
+        
+        // Fetch subjects - the API may support filtering
+        let subjects: any[] = [];
+        if (isOIB) {
+          subjects = await sudregFetch("/subjekti", token, {
+            oib: query.trim(),
+            limit: "5",
+          });
+        }
 
-      // Try search and direct scrape in parallel
-      const [searchResult, scrapeResult] = await Promise.all([
-        searchSudreg(query.trim(), FIRECRAWL_API_KEY),
-        scrapeSudregDirect(query.trim(), FIRECRAWL_API_KEY),
-      ]);
+        // If no OIB results, or searching by name, try broader search
+        if (subjects.length === 0 && !isOIB) {
+          // For name search, get all subjects and filter (API might not support name filter)
+          // Instead, search tvrtke endpoint which has company names
+          const tvrtke = await sudregFetch("/tvrtke", token, { limit: "1000" });
+          const cleanQuery = query.trim().toLowerCase();
+          const matchedTvrtka = tvrtke.find((t: any) => 
+            t.ime?.toLowerCase().includes(cleanQuery) || 
+            t.naznaka_imena?.toLowerCase().includes(cleanQuery)
+          );
+          
+          if (matchedTvrtka) {
+            // Found by name in tvrtke, now get full subject by MBS
+            subjects = await sudregFetch("/subjekti", token, {
+              mbs: String(matchedTvrtka.mbs),
+              limit: "1",
+            });
+          }
+        }
 
-      // Prefer direct scrape (more detailed), fallback to search
-      scrapedContent = scrapeResult || searchResult;
+        if (subjects.length > 0) {
+          const subject = isOIB
+            ? subjects.find((s: any) => String(s.oib) === query.trim()) || subjects[0]
+            : subjects[0];
 
-      // If sudreg didn't return results, try general web search
-      if (!scrapedContent) {
-        console.log("No sudreg content, trying web search fallback...");
-        scrapedContent = await webSearchFallback(query.trim(), FIRECRAWL_API_KEY);
-      }
+          console.log("Found subject, MBS:", subject.mbs, "OIB:", subject.oib);
 
-      if (scrapedContent) {
-        console.log("Got scraped content, length:", scrapedContent.length);
-      } else {
-        console.log("No content found, falling back to AI-only");
+          // Get detailed info from related tables
+          const details = await getCompanyDetails(subject.mbs, token);
+          const companyData = buildCompanyData(subject, details);
+
+          console.log("Company lookup result:", JSON.stringify(companyData));
+          return new Response(JSON.stringify(companyData), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        console.log("No subject found in sudreg API, falling back to AI");
+      } catch (e) {
+        console.error("Sudreg API error:", e);
+        console.log("Falling back to AI lookup");
       }
     } else {
-      console.log("FIRECRAWL_API_KEY not configured, using AI-only lookup");
+      console.log("SUDREG credentials not configured, using AI-only lookup");
     }
 
-    // Extract structured data using AI (with or without scraped content)
-    const companyData = await extractWithAI(query.trim(), scrapedContent, LOVABLE_API_KEY);
-    console.log("Company lookup result:", JSON.stringify(companyData));
+    // Fallback to AI
+    const companyData = await extractWithAI(query.trim(), LOVABLE_API_KEY);
+    console.log("Company lookup result (AI):", JSON.stringify(companyData));
 
     return new Response(JSON.stringify(companyData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -357,10 +336,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : e.message || "Unknown error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
