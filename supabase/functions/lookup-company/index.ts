@@ -5,13 +5,49 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Step 1: Search sudreg via Firecrawl
+// Clean merchant name for better search: extract main keyword, remove city/address/legal form noise
+function cleanSearchQuery(query: string): string {
+  let cleaned = query.trim();
+  
+  // Remove common legal form suffixes for search (we'll get proper name from results)
+  const legalForms = [
+    'jednostavno drustvo s ogranicenom odgovornoscu',
+    'jednostavno društvo s ograničenom odgovornošću',
+    'drustvo s ogranicenom odgovornoscu',
+    'društvo s ograničenom odgovornošću',
+    'dionicko drustvo',
+    'dioničko društvo',
+    'j.d.o.o.', 'd.o.o.', 'd.d.', 'j.t.d.', 'k.d.',
+  ];
+  
+  for (const form of legalForms) {
+    cleaned = cleaned.replace(new RegExp(form, 'gi'), '').trim();
+  }
+  
+  // Remove trailing activity descriptions like "za trgovinu", "za proizvodnju" etc.
+  cleaned = cleaned.replace(/\bza\s+\w+(\s*,?\s*\w+)*$/gi, '').trim();
+  
+  // Remove city names that appear after comma at the end
+  cleaned = cleaned.replace(/,\s*[A-ZČĆŽŠĐ][A-ZČĆŽŠĐa-zčćžšđ\s-]+$/g, '').trim();
+  
+  // Remove trailing commas and whitespace
+  cleaned = cleaned.replace(/[,\s]+$/, '').trim();
+  
+  // If we cleaned too aggressively and have less than 2 chars, use original
+  if (cleaned.length < 2) return query.trim();
+  
+  return cleaned;
+}
+
+// Search sudreg via Firecrawl
 async function searchSudreg(query: string, apiKey: string): Promise<string | null> {
   try {
     const isOIB = /^\d{11}$/.test(query.trim());
+    const cleanedQuery = isOIB ? query.trim() : cleanSearchQuery(query);
+    
     const searchQuery = isOIB
-      ? `site:sudreg.pravosudje.hr OIB ${query.trim()}`
-      : `site:sudreg.pravosudje.hr "${query.trim()}"`;
+      ? `site:sudreg.pravosudje.hr OIB ${cleanedQuery}`
+      : `site:sudreg.pravosudje.hr "${cleanedQuery}"`;
 
     console.log("Firecrawl search query:", searchQuery);
 
@@ -54,15 +90,15 @@ async function searchSudreg(query: string, apiKey: string): Promise<string | nul
   }
 }
 
-// Step 2: Try scraping sudreg detail page directly (new ORDS URL pattern)
+// Try scraping sudreg detail page directly
 async function scrapeSudregDirect(query: string, apiKey: string): Promise<string | null> {
   try {
     const isOIB = /^\d{11}$/.test(query.trim());
+    const cleanedQuery = isOIB ? query.trim() : cleanSearchQuery(query);
     
-    // New ORDS-based URL pattern for sudreg
     const searchUrl = isOIB
-      ? `https://sudreg.pravosudje.hr/ords/r/esudreg/public/pretraga?p28_sbt_oib=${query.trim()}`
-      : `https://sudreg.pravosudje.hr/ords/r/esudreg/public/pretraga?p28_sbt_naziv=${encodeURIComponent(query.trim())}`;
+      ? `https://sudreg.pravosudje.hr/ords/r/esudreg/public/pretraga?p28_sbt_oib=${cleanedQuery}`
+      : `https://sudreg.pravosudje.hr/ords/r/esudreg/public/pretraga?p28_sbt_naziv=${encodeURIComponent(cleanedQuery)}`;
 
     console.log("Firecrawl scrape URL:", searchUrl);
 
@@ -75,7 +111,7 @@ async function scrapeSudregDirect(query: string, apiKey: string): Promise<string
       body: JSON.stringify({
         url: searchUrl,
         formats: ["markdown"],
-        waitFor: 5000, // APEX needs more time to render
+        waitFor: 8000, // APEX needs more time to render
       }),
     });
 
@@ -87,7 +123,10 @@ async function scrapeSudregDirect(query: string, apiKey: string): Promise<string
 
     const data = await response.json();
     const markdown = data?.data?.markdown || data?.markdown;
-    if (!markdown || markdown.length < 50) return null;
+    if (!markdown || markdown.length < 100) {
+      console.log("Firecrawl scrape content too short:", markdown?.length || 0);
+      return null;
+    }
 
     console.log("Firecrawl scrape content length:", markdown.length);
     return markdown.slice(0, 8000);
@@ -97,10 +136,15 @@ async function scrapeSudregDirect(query: string, apiKey: string): Promise<string
   }
 }
 
-// Step 2b: Also try a general web search as fallback
+// General web search as fallback
 async function webSearchFallback(query: string, apiKey: string): Promise<string | null> {
   try {
-    const searchQuery = `"${query.trim()}" OIB adresa Hrvatska`;
+    const isOIB = /^\d{11}$/.test(query.trim());
+    const cleanedQuery = isOIB ? query.trim() : cleanSearchQuery(query);
+    
+    const searchQuery = isOIB 
+      ? `"${cleanedQuery}" OIB tvrtka Hrvatska`
+      : `"${cleanedQuery}" OIB adresa Hrvatska`;
     console.log("Firecrawl web fallback search:", searchQuery);
 
     const response = await fetch("https://api.firecrawl.dev/v1/search", {
@@ -134,7 +178,7 @@ async function webSearchFallback(query: string, apiKey: string): Promise<string 
   }
 }
 
-// Step 3: Use AI to extract structured data from scraped content
+// Use AI to extract structured data from scraped content
 async function extractWithAI(
   query: string,
   scrapedContent: string | null,
