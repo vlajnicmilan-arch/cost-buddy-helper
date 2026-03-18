@@ -511,6 +511,7 @@ export type Database = {
       }
       cash_registers: {
         Row: {
+          balance: number
           business_profile_id: string
           created_at: string
           device_type: string | null
@@ -523,6 +524,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          balance?: number
           business_profile_id: string
           created_at?: string
           device_type?: string | null
@@ -535,6 +537,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          balance?: number
           business_profile_id?: string
           created_at?: string
           device_type?: string | null

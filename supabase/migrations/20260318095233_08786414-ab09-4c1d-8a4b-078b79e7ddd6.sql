@@ -1,0 +1,1 @@
+ALTER TABLE public.cash_registers ADD COLUMN IF NOT EXISTS balance numeric NOT NULL DEFAULT 0;
