@@ -43,6 +43,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
   const [saving, setSaving] = useState(false);
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
   const [partnerDetails, setPartnerDetails] = useState<Record<string, PartnerDetails>>({});
+  const [lookingUp, setLookingUp] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && merchantNames.length > 0 && activeBusinessProfileId) {
