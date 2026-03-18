@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Monitor, Plus, Pencil, Trash2, Loader2, Check, X } from 'lucide-react';
+import { Monitor, Plus, Pencil, Trash2, Loader2, Check, X, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ interface CashRegister {
   device_type: string;
   premise_id: string;
   is_active: boolean;
+  balance: number;
 }
 
 interface Premise {
@@ -37,8 +38,10 @@ export const CashRegistersPanel = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CashRegister | null>(null);
-  const [form, setForm] = useState({ name: '', label: '', device_type: 'mob', premise_id: '' });
+  const [form, setForm] = useState({ name: '', label: '', device_type: 'mob', premise_id: '', balance: '0' });
   const [saving, setSaving] = useState(false);
+  const [editingBalance, setEditingBalance] = useState<string | null>(null);
+  const [balanceInput, setBalanceInput] = useState('');
 
   const fetchData = async () => {
     if (!activeBusinessProfileId || !user) return;
@@ -57,13 +60,13 @@ export const CashRegistersPanel = () => {
   const openNew = () => {
     if (premises.length === 0) { toast.error('Prvo dodajte poslovni prostor'); return; }
     setEditing(null);
-    setForm({ name: String(registers.length + 1), label: '', device_type: 'mob', premise_id: premises[0].id });
+    setForm({ name: String(registers.length + 1), label: '', device_type: 'mob', premise_id: premises[0].id, balance: '0' });
     setDialogOpen(true);
   };
 
   const openEdit = (r: CashRegister) => {
     setEditing(r);
-    setForm({ name: r.name, label: r.label || '', device_type: r.device_type, premise_id: r.premise_id });
+    setForm({ name: r.name, label: r.label || '', device_type: r.device_type, premise_id: r.premise_id, balance: String(r.balance || 0) });
     setDialogOpen(true);
   };
 
@@ -77,6 +80,7 @@ export const CashRegistersPanel = () => {
       name: form.name.trim(),
       label: form.label.trim() || null,
       device_type: form.device_type,
+      balance: parseFloat(form.balance) || 0,
     };
 
     if (editing) {
@@ -91,6 +95,15 @@ export const CashRegistersPanel = () => {
     setSaving(false);
     setDialogOpen(false);
     fetchData();
+  };
+
+  const handleBalanceSave = async (id: string) => {
+    const val = parseFloat(balanceInput);
+    if (isNaN(val)) return;
+    const { error } = await supabase.from('cash_registers').update({ balance: val }).eq('id', id);
+    if (error) toast.error('Greška pri ažuriranju stanja');
+    else { toast.success('Stanje ažurirano'); fetchData(); }
+    setEditingBalance(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -152,6 +165,35 @@ export const CashRegistersPanel = () => {
                     )}
                   </div>
                   <p className="text-[10px] text-muted-foreground">{getPremiseName(r.premise_id)}{r.label ? ` · ${r.label}` : ''}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Wallet className="w-3 h-3 text-muted-foreground" />
+                    {editingBalance === r.id ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={balanceInput}
+                          onChange={e => setBalanceInput(e.target.value)}
+                          className="h-6 w-24 text-xs"
+                          autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter') handleBalanceSave(r.id); if (e.key === 'Escape') setEditingBalance(null); }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => handleBalanceSave(r.id)}>
+                          <Check className="w-3 h-3 text-income" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setEditingBalance(null)}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        className="text-xs font-mono font-semibold text-foreground hover:text-primary transition-colors"
+                        onClick={() => { setEditingBalance(r.id); setBalanceInput(String(r.balance || 0)); }}
+                      >
+                        {(r.balance || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-1">
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(r)}>
@@ -205,6 +247,10 @@ export const CashRegistersPanel = () => {
             <div>
               <Label className="text-xs">Naziv</Label>
               <Input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="Mobilna blagajna" className="h-8 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs">Početno stanje (€)</Label>
+              <Input type="number" step="0.01" value={form.balance} onChange={e => setForm(f => ({ ...f, balance: e.target.value }))} placeholder="0.00" className="h-8 text-sm" />
             </div>
             <Button className="w-full h-9 text-sm" onClick={handleSave} disabled={saving || !form.name.trim() || !form.premise_id}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? 'Spremi' : 'Dodaj'}
