@@ -150,13 +150,25 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
     }
   };
 
-  const togglePartner = (name: string) => {
+  const togglePartner = (name: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setSelectedPartners(prev => {
       const next = new Set(prev);
       if (next.has(name)) next.delete(name);
       else next.add(name);
       return next;
     });
+  };
+
+  const toggleExpand = (name: string) => {
+    setExpandedPartner(prev => prev === name ? null : name);
+  };
+
+  const updatePartnerDetail = (name: string, field: keyof PartnerDetails, value: string) => {
+    setPartnerDetails(prev => ({
+      ...prev,
+      [name]: { ...prev[name], [field]: value },
+    }));
   };
 
   const handleSave = async () => {
@@ -167,25 +179,45 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       const toCreate = partners.filter(p => selectedPartners.has(p.name) && !p.existingClientId);
       const toUpdate = partners.filter(p => selectedPartners.has(p.name) && p.existingClientId);
 
-      // Create new clients
+      // Create new clients with details
       if (toCreate.length > 0) {
         const { error: insertError } = await supabase
           .from('clients')
-          .insert(toCreate.map(p => ({
-            business_profile_id: activeBusinessProfileId,
-            user_id: user.id,
-            name: p.name,
-          })));
+          .insert(toCreate.map(p => {
+            const details = partnerDetails[p.name] || {};
+            return {
+              business_profile_id: activeBusinessProfileId,
+              user_id: user.id,
+              name: p.name,
+              ...(details.oib && { oib: details.oib }),
+              ...(details.address && { address: details.address }),
+              ...(details.city && { city: details.city }),
+              ...(details.postal_code && { postal_code: details.postal_code }),
+              ...(details.email && { email: details.email }),
+              ...(details.phone && { phone: details.phone }),
+              ...(details.contact_person && { contact_person: details.contact_person }),
+            };
+          }));
 
         if (insertError) throw insertError;
       }
 
-      // Update existing (touch updated_at to mark as recently seen)
+      // Update existing with any new details provided
       for (const p of toUpdate) {
         if (p.existingClientId) {
+          const details = partnerDetails[p.name] || {};
+          const updateData: Record<string, string> = { updated_at: new Date().toISOString() };
+          if (details.oib) updateData.oib = details.oib;
+          if (details.address) updateData.address = details.address;
+          if (details.city) updateData.city = details.city;
+          if (details.postal_code) updateData.postal_code = details.postal_code;
+          if (details.email) updateData.email = details.email;
+          if (details.phone) updateData.phone = details.phone;
+          if (details.contact_person) updateData.contact_person = details.contact_person;
+
           await supabase
             .from('clients')
-            .update({ updated_at: new Date().toISOString() })
+            .update(updateData)
             .eq('id', p.existingClientId);
         }
       }
