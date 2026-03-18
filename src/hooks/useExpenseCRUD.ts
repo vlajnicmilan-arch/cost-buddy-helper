@@ -144,6 +144,16 @@ export const useExpenseCRUD = ({
         if (normalizedExpense.type === 'expense') checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
         if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
 
+        // Update cash register balance if assigned
+        const cashRegisterId = (normalizedExpense as any).cash_register_id;
+        if (cashRegisterId) {
+          const balanceChange = normalizedExpense.type === 'income' ? normalizedExpense.amount : -normalizedExpense.amount;
+          const { data: reg } = await supabase.from('cash_registers').select('balance').eq('id', cashRegisterId).single();
+          if (reg) {
+            await supabase.from('cash_registers').update({ balance: reg.balance + balanceChange }).eq('id', cashRegisterId);
+          }
+        }
+
         if (isPendingMemberTransaction) {
           toast.success('Transakcija poslana vlasniku na odobrenje');
         } else {
