@@ -19,6 +19,7 @@ interface CashRegister {
   device_type: string;
   premise_id: string;
   is_active: boolean;
+  balance: number;
 }
 
 interface Premise {
