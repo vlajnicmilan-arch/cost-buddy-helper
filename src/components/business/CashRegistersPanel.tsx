@@ -248,6 +248,10 @@ export const CashRegistersPanel = () => {
               <Label className="text-xs">Naziv</Label>
               <Input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="Mobilna blagajna" className="h-8 text-sm" />
             </div>
+            <div>
+              <Label className="text-xs">Početno stanje (€)</Label>
+              <Input type="number" step="0.01" value={form.balance} onChange={e => setForm(f => ({ ...f, balance: e.target.value }))} placeholder="0.00" className="h-8 text-sm" />
+            </div>
             <Button className="w-full h-9 text-sm" onClick={handleSave} disabled={saving || !form.name.trim() || !form.premise_id}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? 'Spremi' : 'Dodaj'}
             </Button>
