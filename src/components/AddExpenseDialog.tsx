@@ -87,7 +87,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
-  
+  const [selectedCashRegisterId, setSelectedCashRegisterId] = useState<string | null>(null);
+  const [cashRegisters, setCashRegisters] = useState<{ id: string; name: string; label: string | null; balance: number; premise_id: string }[]>([]);
   // Installment state
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(12);
