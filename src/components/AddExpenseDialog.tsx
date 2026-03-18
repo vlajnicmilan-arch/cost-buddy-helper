@@ -169,6 +169,23 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     }
   }, [open, customPaymentSources]);
 
+  // Fetch cash registers when in business mode
+  useEffect(() => {
+    if (open && activeBusinessProfileId) {
+      supabase.from('cash_registers')
+        .select('id, name, label, balance, premise_id')
+        .eq('business_profile_id', activeBusinessProfileId)
+        .eq('is_active', true)
+        .order('created_at')
+        .then(({ data }) => {
+          setCashRegisters(data || []);
+        });
+    } else {
+      setCashRegisters([]);
+      setSelectedCashRegisterId(null);
+    }
+  }, [open, activeBusinessProfileId]);
+
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
     if (!file) return;
