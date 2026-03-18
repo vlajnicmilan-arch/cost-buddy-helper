@@ -1524,6 +1524,40 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 />
               </div>
 
+              {/* Cash Register Selector - Business mode only */}
+              {activeBusinessProfileId && cashRegisters.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">🏪 Blagajna</Label>
+                  <Select
+                    value={selectedCashRegisterId || 'none'}
+                    onValueChange={(value) => setSelectedCashRegisterId(value === 'none' ? null : value)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl bg-background">
+                      <SelectValue placeholder="Bez blagajne">
+                        {(() => {
+                          if (!selectedCashRegisterId) return 'Bez blagajne';
+                          const reg = cashRegisters.find(r => r.id === selectedCashRegisterId);
+                          return reg ? `${reg.label || reg.name} (€${reg.balance.toFixed(2)})` : 'Bez blagajne';
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">Bez blagajne</span>
+                      </SelectItem>
+                      {cashRegisters.map((reg) => (
+                        <SelectItem key={reg.id} value={reg.id}>
+                          <div className="flex items-center justify-between gap-3">
+                            <span>{reg.label || reg.name}</span>
+                            <span className="text-xs text-muted-foreground">€{reg.balance.toFixed(2)}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* Transfer Destination */}
               {type === 'transfer' && (
                 <div className="space-y-3">
