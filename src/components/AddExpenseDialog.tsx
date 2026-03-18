@@ -460,6 +460,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setSelectedProjectId(null);
     setSelectedBudgetId(null);
     setExpenseNature('regular');
+    setSelectedCashRegisterId(null);
     // Reset installment state
     setIsInstallment(false);
     setInstallmentCount(12);
