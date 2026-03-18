@@ -39,10 +39,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
   // Normalize name: extract core business name, ignore address/postal/city details
   const normalizeName = (name: string): string => {
     let n = name.toLowerCase().trim();
-    // Remove common legal suffixes variations for grouping
-    // but keep them as part of the core name
     // Strip everything after common address indicators (postal codes, city names, slashes for bilingual)
-    // Pattern: remove trailing address info like "6310 IZOLA", "IZOLA/ISOLA", "ZAGREB", postal codes
     n = n
       .replace(/[,]\s*\d{4,5}\s+\w+.*$/i, '') // ", 6310 Izola..."
       .replace(/\s+\d{4,5}\s+\w+.*$/i, '')    // " 6310 Izola..."  
@@ -52,6 +49,20 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       .trim();
     // Sort words for order-independent matching ("Milan Vlajnić" = "Vlajnić Milan")
     return n.split(/\s+/).filter(Boolean).sort().join(' ');
+  };
+
+  // Fuzzy match: check if two names are similar enough (one contains the other, or high word overlap)
+  const namesMatch = (a: string, b: string): boolean => {
+    if (a === b) return true;
+    // One contains the other
+    if (a.includes(b) || b.includes(a)) return true;
+    // Word overlap: if shorter name's words are mostly found in longer name
+    const wordsA = a.split(' ').filter(w => w.length > 2);
+    const wordsB = b.split(' ').filter(w => w.length > 2);
+    if (wordsA.length === 0 || wordsB.length === 0) return false;
+    const [shorter, longer] = wordsA.length <= wordsB.length ? [wordsA, wordsB] : [wordsB, wordsA];
+    const matchCount = shorter.filter(w => longer.some(lw => lw.includes(w) || w.includes(lw))).length;
+    return matchCount / shorter.length >= 0.6;
   };
 
   const loadExistingClients = async () => {
@@ -64,11 +75,21 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
         .select('id, name')
         .eq('business_profile_id', activeBusinessProfileId);
 
-      // Build normalized map of existing clients
-      const existingMap = new Map<string, string>();
-      (existingClients || []).forEach(c => {
-        existingMap.set(normalizeName(c.name), c.id);
-      });
+      // Build normalized list of existing clients
+      const existingNormalized = (existingClients || []).map(c => ({
+        id: c.id,
+        normalized: normalizeName(c.name),
+      }));
+
+      // Find matching existing client using fuzzy matching
+      const findExistingClient = (normalizedKey: string): string | undefined => {
+        // Exact match first
+        const exact = existingNormalized.find(c => c.normalized === normalizedKey);
+        if (exact) return exact.id;
+        // Fuzzy match
+        const fuzzy = existingNormalized.find(c => namesMatch(c.normalized, normalizedKey));
+        return fuzzy?.id;
+      };
 
       // Group merchant names by normalized key, pick the most common original name as display
       const groupMap = new Map<string, { displayName: string; count: number; names: Map<string, number> }>();
@@ -91,7 +112,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
         name: group.displayName,
         transactionCount: group.count,
         totalAmount: 0,
-        existingClientId: existingMap.get(key),
+        existingClientId: findExistingClient(key),
       }));
 
       // Sort: new partners first, then existing
