@@ -5,17 +5,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SUDREG_API = "https://sudreg-data.gov.hr/api/javni";
-const TOKEN_URL = "https://sudreg-data.gov.hr/api/oauth/token";
+const SUDREG_API = "https://sudreg-data.gov.hr/api";
+const TOKEN_URL = `${SUDREG_API}/oauth/token`;
 
-// Get OAuth2 token using client credentials (HTTP Basic Auth)
 async function getAccessToken(clientId: string, clientSecret: string): Promise<string> {
   const credentials = btoa(`${clientId}:${clientSecret}`);
-  
   const response = await fetch(TOKEN_URL, {
     method: "POST",
     headers: {
-      "Authorization": `Basic ${credentials}`,
+      Authorization: `Basic ${credentials}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials",
@@ -32,18 +30,12 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
   return data.access_token;
 }
 
-// Fetch from sudreg API
-async function sudregFetch(endpoint: string, token: string, params: Record<string, string> = {}): Promise<any> {
-  const url = new URL(`${SUDREG_API}${endpoint}`);
-  url.searchParams.set("no_data_error", "0");
-  url.searchParams.set("omit_nulls", "0");
-  for (const [k, v] of Object.entries(params)) {
-    url.searchParams.set(k, v);
-  }
+// Use the correct endpoint: /javni/detalji_subjekta
+async function fetchSubjectDetails(token: string, tipIdentifikatora: string, identifikator: string): Promise<any> {
+  const url = `${SUDREG_API}/javni/detalji_subjekta?expand_relations=true&tip_identifikatora=${tipIdentifikatora}&identifikator=${identifikator}`;
+  console.log("Sudreg detalji_subjekta fetch:", url);
 
-  console.log("Sudreg fetch:", url.toString());
-
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -52,96 +44,26 @@ async function sudregFetch(endpoint: string, token: string, params: Record<strin
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error(`Sudreg ${endpoint} error:`, response.status, errText.slice(0, 300));
-    return [];
+    console.error("Sudreg detalji_subjekta error:", response.status, errText.slice(0, 300));
+    return null;
   }
 
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  return await response.json();
 }
 
-// Find subject by OIB - search through /subjekti with pagination
-async function findSubjectByOIB(oib: string, token: string): Promise<any | null> {
-  // The /subjekti endpoint is bulk - we need to scan for OIB
-  // Try first 5000 subjects (5 pages of 1000)
-  for (let offset = 0; offset < 5000; offset += 1000) {
-    const subjects = await sudregFetch("/subjekti", token, {
-      only_active: "1",
-      limit: "1000",
-      offset: String(offset),
-    });
-    
-    if (!Array.isArray(subjects) || subjects.length === 0) break;
-    
-    const match = subjects.find((s: any) => {
-      const subjectOib = String(s.oib || "").padStart(11, "0");
-      return subjectOib === oib.padStart(11, "0");
-    });
-    
-    if (match) return match;
-  }
-  
-  return null;
-}
+// Build structured company data from detalji_subjekta response
+function buildCompanyData(data: any): any {
+  const companyName = data.skracena_tvrtka?.ime || data.tvrtka?.ime || "";
+  const oib = data.oib ? String(data.oib).padStart(11, "0") : "";
+  const mbs = data.mbs ? String(data.mbs).padStart(9, "0") : "";
 
-// Find subject by name - use tvrtka_naziv filter on /subjekti
-async function findSubjectByName(name: string, token: string): Promise<any | null> {
-  // Clean the name for search
-  const cleanName = name
-    .replace(/\b(d\.o\.o\.|j\.d\.o\.o\.|d\.d\.|j\.t\.d\.|k\.d\.)\b/gi, "")
-    .replace(/\b(jednostavno\s+)?dru[sš]tvo\s+s\s+ograni[cč]enom\s+odgovorno[sš][cć]u\b/gi, "")
-    .replace(/\bza\s+\w+(\s*,?\s*\w+)*$/gi, "")
-    .replace(/,\s*[A-ZČĆŽŠĐ][A-ZČĆŽŠĐa-zčćžšđ\s-]+$/g, "")
-    .replace(/[,\s]+$/, "")
-    .trim();
-
-  if (cleanName.length < 2) return null;
-
-  console.log("Searching by name:", cleanName);
-
-  // Use tvrtka_naziv filter
-  const subjects = await sudregFetch("/subjekti", token, {
-    tvrtka_naziv: cleanName,
-    only_active: "1",
-    limit: "20",
-  });
-
-  if (Array.isArray(subjects) && subjects.length > 0) {
-    return subjects[0];
-  }
-
-  return null;
-}
-
-// Get full company details from multiple endpoints by MBS
-async function getCompanyDetails(mbs: number, token: string) {
-  const [tvrtke, sjedista, pravniOblici, emailAdrese] = await Promise.all([
-    sudregFetch("/tvrtke", token, { mbs: String(mbs), limit: "1" }),
-    sudregFetch("/sjedista", token, { mbs: String(mbs), limit: "1" }),
-    sudregFetch("/pravni_oblici", token, { mbs: String(mbs), limit: "1", expand_relations: "1" }),
-    sudregFetch("/email_adrese", token, { mbs: String(mbs), limit: "5" }),
-  ]);
-
-  return {
-    tvrtka: Array.isArray(tvrtke) && tvrtke.length > 0 ? tvrtke[0] : null,
-    sjediste: Array.isArray(sjedista) && sjedista.length > 0 ? sjedista[0] : null,
-    pravniOblik: Array.isArray(pravniOblici) && pravniOblici.length > 0 ? pravniOblici[0] : null,
-    emails: Array.isArray(emailAdrese) ? emailAdrese : [],
-  };
-}
-
-// Build structured company data
-function buildCompanyData(subject: any, details: any): any {
-  const { tvrtka, sjediste, pravniOblik, emails } = details;
-
-  const address = sjediste
-    ? [sjediste.ulica, sjediste.kucni_broj ? `${sjediste.kucni_broj}${sjediste.kucni_podbroj || ""}` : ""]
-        .filter(Boolean)
-        .join(" ")
-    : "";
-
-  const city = sjediste?.naziv_naselja || sjediste?.naziv_opcine || "";
-  const postalCode = sjediste?.postanski_broj ? String(sjediste.postanski_broj) : "";
+  const sjediste = data.sjediste || {};
+  const address = [
+    sjediste.ulica,
+    sjediste.kucni_broj ? `${sjediste.kucni_broj}${sjediste.kucni_podbroj || ""}` : "",
+  ].filter(Boolean).join(" ");
+  const city = sjediste.naziv_naselja || sjediste.naziv_opcine || "";
+  const postalCode = sjediste.postanski_broj ? String(sjediste.postanski_broj) : "";
 
   const courtMap: Record<number, string> = {
     1: "Trgovački sud u Zagrebu",
@@ -154,24 +76,22 @@ function buildCompanyData(subject: any, details: any): any {
     8: "Trgovački sud u Pazinu",
   };
 
-  const oibFormatted = subject?.oib ? String(subject.oib).padStart(11, "0") : "";
-  const mbsFormatted = subject?.mbs ? String(subject.mbs).padStart(9, "0") : "";
-  const companyName = tvrtka?.ime || subject?.tvrtka_naziv || "";
-  const legalForm = pravniOblik?.pravni_oblik_naziv || pravniOblik?.naziv || "";
+  const legalForm = data.pravni_oblik?.naziv || "";
+  const emails = Array.isArray(data.email_adrese) ? data.email_adrese : [];
 
   return {
     found: true,
     company_name: companyName,
-    oib: oibFormatted,
-    mbs: mbsFormatted,
+    oib,
+    mbs,
     address,
     city,
     postal_code: postalCode,
     country: "Hrvatska",
     legal_form: legalForm,
-    activity_code: "",
-    activity_description: "",
-    court_registry: courtMap[subject?.sud_id_nadlezan] || "",
+    activity_code: data.glavna_djelatnost?.nkd_oznaka || "",
+    activity_description: data.glavna_djelatnost?.tekst_djelatnosti || "",
+    court_registry: courtMap[data.sud_id_nadlezan] || "",
     is_vat_payer: false,
     iban: "",
     bank_name: "",
@@ -182,7 +102,7 @@ function buildCompanyData(subject: any, details: any): any {
   };
 }
 
-// AI fallback for entities not in court register (obrti, udruge, etc.)
+// AI fallback for entities not in court register
 async function extractWithAI(query: string, lovableApiKey: string): Promise<any> {
   const isOIB = /^\d{11}$/.test(query.trim());
 
@@ -270,26 +190,22 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const isOIB = /^\d{11}$/.test(query.trim());
+    const trimmed = query.trim();
+    const isOIB = /^\d{11}$/.test(trimmed);
+    const isMBS = /^\d{9}$/.test(trimmed);
 
     // Try official sudreg API
-    if (SUDREG_CLIENT_ID && SUDREG_CLIENT_SECRET) {
+    if (SUDREG_CLIENT_ID && SUDREG_CLIENT_SECRET && (isOIB || isMBS)) {
       try {
-        console.log("Sudreg API lookup for:", query.trim());
+        console.log("Sudreg detalji_subjekta lookup for:", trimmed);
         const token = await getAccessToken(SUDREG_CLIENT_ID, SUDREG_CLIENT_SECRET);
 
-        let subject: any = null;
+        const tipIdentifikatora = isOIB ? "oib" : "mbs";
+        const subjectData = await fetchSubjectDetails(token, tipIdentifikatora, trimmed);
 
-        if (isOIB) {
-          subject = await findSubjectByOIB(query.trim(), token);
-        } else {
-          subject = await findSubjectByName(query.trim(), token);
-        }
-
-        if (subject) {
-          console.log("Found subject MBS:", subject.mbs, "OIB:", subject.oib);
-          const details = await getCompanyDetails(subject.mbs, token);
-          const companyData = buildCompanyData(subject, details);
+        if (subjectData && subjectData.mbs) {
+          console.log("Found subject:", subjectData.skracena_tvrtka?.ime || subjectData.tvrtka?.ime, "MBS:", subjectData.mbs);
+          const companyData = buildCompanyData(subjectData);
           console.log("Result:", JSON.stringify(companyData));
 
           return new Response(JSON.stringify(companyData), {
@@ -297,15 +213,15 @@ serve(async (req) => {
           });
         }
 
-        console.log("Subject not found in sudreg (may be obrt/udruga), falling back to AI");
+        console.log("Subject not found in sudreg, falling back to AI");
       } catch (e) {
         console.error("Sudreg API error:", e instanceof Error ? e.message : e);
         console.log("Falling back to AI");
       }
     }
 
-    // Fallback to AI (for obrti, udruge, and when sudreg API fails)
-    const companyData = await extractWithAI(query.trim(), LOVABLE_API_KEY);
+    // For name searches or fallback
+    const companyData = await extractWithAI(trimmed, LOVABLE_API_KEY);
     console.log("AI result:", JSON.stringify(companyData));
 
     return new Response(JSON.stringify(companyData), {
