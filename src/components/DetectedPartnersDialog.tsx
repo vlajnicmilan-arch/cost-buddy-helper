@@ -366,6 +366,23 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
                     {isExpanded && (
                       <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full rounded-lg gap-2 text-xs"
+                          disabled={lookingUp === partner.name}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            lookupFromRegistry(partner.name);
+                          }}
+                        >
+                          {lookingUp === partner.name ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Search className="w-3.5 h-3.5" />
+                          )}
+                          {lookingUp === partner.name ? 'Pretražujem registar...' : 'Dohvati iz sudskog registra'}
+                        </Button>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">OIB</Label>
