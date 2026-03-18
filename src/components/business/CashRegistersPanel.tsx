@@ -38,8 +38,10 @@ export const CashRegistersPanel = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CashRegister | null>(null);
-  const [form, setForm] = useState({ name: '', label: '', device_type: 'mob', premise_id: '' });
+  const [form, setForm] = useState({ name: '', label: '', device_type: 'mob', premise_id: '', balance: '0' });
   const [saving, setSaving] = useState(false);
+  const [editingBalance, setEditingBalance] = useState<string | null>(null);
+  const [balanceInput, setBalanceInput] = useState('');
 
   const fetchData = async () => {
     if (!activeBusinessProfileId || !user) return;
