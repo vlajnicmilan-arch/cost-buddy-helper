@@ -36,21 +36,27 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
 async function fetchSubjectDetails(token: string, tipIdentifikatora: string, identifikator: string): Promise<any> {
   const url = `${SUDREG_API}/javni/detalji_subjekta?expand_relations=true&tip_identifikatora=${tipIdentifikatora}&identifikator=${identifikator}`;
   console.log("Sudreg detalji_subjekta fetch:", url);
+  console.log("Using Bearer token (first 30):", token.substring(0, 30));
 
   const response = await fetch(url, {
+    method: "GET",
     headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/json",
     },
   });
 
+  console.log("Sudreg response status:", response.status, "headers:", JSON.stringify(Object.fromEntries(response.headers.entries())));
+
   if (!response.ok) {
     const errText = await response.text();
-    console.error("Sudreg detalji_subjekta error:", response.status, errText.slice(0, 300));
+    console.error("Sudreg detalji_subjekta error:", response.status, errText.slice(0, 500));
     return null;
   }
 
-  return await response.json();
+  const data = await response.json();
+  console.log("Sudreg response data keys:", Object.keys(data).join(", "));
+  return data;
 }
 
 // Build structured company data from detalji_subjekta response
