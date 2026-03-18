@@ -75,11 +75,21 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
         .select('id, name')
         .eq('business_profile_id', activeBusinessProfileId);
 
-      // Build normalized map of existing clients
-      const existingMap = new Map<string, string>();
-      (existingClients || []).forEach(c => {
-        existingMap.set(normalizeName(c.name), c.id);
-      });
+      // Build normalized list of existing clients
+      const existingNormalized = (existingClients || []).map(c => ({
+        id: c.id,
+        normalized: normalizeName(c.name),
+      }));
+
+      // Find matching existing client using fuzzy matching
+      const findExistingClient = (normalizedKey: string): string | undefined => {
+        // Exact match first
+        const exact = existingNormalized.find(c => c.normalized === normalizedKey);
+        if (exact) return exact.id;
+        // Fuzzy match
+        const fuzzy = existingNormalized.find(c => namesMatch(c.normalized, normalizedKey));
+        return fuzzy?.id;
+      };
 
       // Group merchant names by normalized key, pick the most common original name as display
       const groupMap = new Map<string, { displayName: string; count: number; names: Map<string, number> }>();
@@ -102,7 +112,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
         name: group.displayName,
         transactionCount: group.count,
         totalAmount: 0,
-        existingClientId: existingMap.get(key),
+        existingClientId: findExistingClient(key),
       }));
 
       // Sort: new partners first, then existing
