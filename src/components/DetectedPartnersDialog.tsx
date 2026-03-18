@@ -39,10 +39,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
   // Normalize name: extract core business name, ignore address/postal/city details
   const normalizeName = (name: string): string => {
     let n = name.toLowerCase().trim();
-    // Remove common legal suffixes variations for grouping
-    // but keep them as part of the core name
     // Strip everything after common address indicators (postal codes, city names, slashes for bilingual)
-    // Pattern: remove trailing address info like "6310 IZOLA", "IZOLA/ISOLA", "ZAGREB", postal codes
     n = n
       .replace(/[,]\s*\d{4,5}\s+\w+.*$/i, '') // ", 6310 Izola..."
       .replace(/\s+\d{4,5}\s+\w+.*$/i, '')    // " 6310 Izola..."  
@@ -52,6 +49,20 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       .trim();
     // Sort words for order-independent matching ("Milan Vlajnić" = "Vlajnić Milan")
     return n.split(/\s+/).filter(Boolean).sort().join(' ');
+  };
+
+  // Fuzzy match: check if two names are similar enough (one contains the other, or high word overlap)
+  const namesMatch = (a: string, b: string): boolean => {
+    if (a === b) return true;
+    // One contains the other
+    if (a.includes(b) || b.includes(a)) return true;
+    // Word overlap: if shorter name's words are mostly found in longer name
+    const wordsA = a.split(' ').filter(w => w.length > 2);
+    const wordsB = b.split(' ').filter(w => w.length > 2);
+    if (wordsA.length === 0 || wordsB.length === 0) return false;
+    const [shorter, longer] = wordsA.length <= wordsB.length ? [wordsA, wordsB] : [wordsB, wordsA];
+    const matchCount = shorter.filter(w => longer.some(lw => lw.includes(w) || w.includes(lw))).length;
+    return matchCount / shorter.length >= 0.6;
   };
 
   const loadExistingClients = async () => {
