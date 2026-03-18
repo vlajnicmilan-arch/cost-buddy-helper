@@ -125,12 +125,17 @@ async function extractWithAI(query: string, lovableApiKey: string): Promise<any>
       messages: [
         {
           role: "system",
-          content: `Ti si AI asistent koji pomaže popuniti podatke o hrvatskim tvrtkama.
-PRAVILA:
-1. NIKADA ne izmišljaj podatke - ostavi prazan string "" ako nisi siguran.
-2. OIB, MBS, IBAN - NIKADA ne izmišljaj!
-3. found=true samo ako prepoznaješ tvrtku.
-Korisnik traži prema: ${isOIB ? "OIB" : "naziv tvrtke"}`,
+          content: `Ti si AI asistent koji pomaže pronaći podatke o hrvatskim tvrtkama i obrtima.
+
+KRITIČNA PRAVILA:
+1. Ako NISI 100% SIGURAN koji je točan naziv tvrtke za dani OIB - vrati found=false.
+2. NIKADA ne izmišljaj podatke. Ako nisi siguran za bilo koji podatak, ostavi prazan string "".
+3. OIB, MBS, IBAN - NIKADA ne izmišljaj! Samo vrati ako si APSOLUTNO siguran.
+4. Bolje je vratiti found=false nego dati krive podatke.
+5. OIB je JEDINSTVENI identifikator - za jedan OIB postoji TOČNO JEDNA tvrtka/obrt. Ne pogađaj!
+6. Ako korisnik traži po OIB-u i nisi siguran koja tvrtka ima taj OIB, OBAVEZNO vrati found=false.
+
+Korisnik traži prema: ${isOIB ? "OIB broju" : "nazivu tvrtke"}`,
         },
         { role: "user", content: `Pronađi podatke za: ${query.trim()}` },
       ],
@@ -138,7 +143,7 @@ Korisnik traži prema: ${isOIB ? "OIB" : "naziv tvrtke"}`,
         type: "function",
         function: {
           name: "return_company_data",
-          description: "Return structured company data.",
+          description: "Return structured company data. Return found=false if not sure.",
           parameters: {
             type: "object",
             properties: {
