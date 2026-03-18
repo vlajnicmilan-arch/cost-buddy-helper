@@ -237,9 +237,49 @@ export const InvoicingPanel = () => {
     setView('clients');
   };
 
+  const openClientDetail = (client: Client) => {
+    setEditingClient(client);
+  };
+
+  const updateEditingClientField = (field: keyof Client, value: string) => {
+    setEditingClient(prev => prev ? { ...prev, [field]: value } : prev);
+  };
+
+  const saveEditingClient = async () => {
+    if (!editingClient || !editingClient.name.trim()) {
+      toast.error('Unesite naziv klijenta');
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase
+      .from('clients')
+      .update({
+        name: editingClient.name.trim(),
+        oib: editingClient.oib?.trim() || null,
+        address: editingClient.address?.trim() || null,
+        city: editingClient.city?.trim() || null,
+        email: editingClient.email?.trim() || null,
+        phone: editingClient.phone?.trim() || null,
+        contact_person: editingClient.contact_person?.trim() || null,
+      } as any)
+      .eq('id', editingClient.id);
+
+    setSaving(false);
+    if (error) {
+      toast.error('Greška pri spremanju klijenta');
+      return;
+    }
+
+    toast.success('Klijent ažuriran');
+    setEditingClient(null);
+    loadClients();
+  };
+
   const deleteClient = async (id: string) => {
     await supabase.from('clients').delete().eq('id', id) as any;
     toast.success('Klijent obrisan');
+    if (editingClient?.id === id) setEditingClient(null);
     loadClients();
   };
 
