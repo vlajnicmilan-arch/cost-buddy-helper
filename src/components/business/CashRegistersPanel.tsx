@@ -60,7 +60,7 @@ export const CashRegistersPanel = () => {
   const openNew = () => {
     if (premises.length === 0) { toast.error('Prvo dodajte poslovni prostor'); return; }
     setEditing(null);
-    setForm({ name: String(registers.length + 1), label: '', device_type: 'mob', premise_id: premises[0].id });
+    setForm({ name: String(registers.length + 1), label: '', device_type: 'mob', premise_id: premises[0].id, balance: '0' });
     setDialogOpen(true);
   };
 
