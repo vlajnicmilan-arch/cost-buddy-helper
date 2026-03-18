@@ -97,6 +97,15 @@ export const CashRegistersPanel = () => {
     fetchData();
   };
 
+  const handleBalanceSave = async (id: string) => {
+    const val = parseFloat(balanceInput);
+    if (isNaN(val)) return;
+    const { error } = await supabase.from('cash_registers').update({ balance: val }).eq('id', id);
+    if (error) toast.error('Greška pri ažuriranju stanja');
+    else { toast.success('Stanje ažurirano'); fetchData(); }
+    setEditingBalance(null);
+  };
+
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('cash_registers').delete().eq('id', id);
     if (error) toast.error('Greška pri brisanju');
