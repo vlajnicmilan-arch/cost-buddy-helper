@@ -80,6 +80,7 @@ export const CashRegistersPanel = () => {
       name: form.name.trim(),
       label: form.label.trim() || null,
       device_type: form.device_type,
+      balance: parseFloat(form.balance) || 0,
     };
 
     if (editing) {
