@@ -66,7 +66,7 @@ export const CashRegistersPanel = () => {
 
   const openEdit = (r: CashRegister) => {
     setEditing(r);
-    setForm({ name: r.name, label: r.label || '', device_type: r.device_type, premise_id: r.premise_id });
+    setForm({ name: r.name, label: r.label || '', device_type: r.device_type, premise_id: r.premise_id, balance: String(r.balance || 0) });
     setDialogOpen(true);
   };
 
