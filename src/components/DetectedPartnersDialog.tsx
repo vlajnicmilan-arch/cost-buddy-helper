@@ -282,39 +282,127 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
             {/* Partner list */}
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-              {partners.map((partner) => (
-                <div
-                  key={partner.name}
-                  className={`flex items-center gap-3 p-3 rounded-xl text-sm transition-colors cursor-pointer ${
-                    selectedPartners.has(partner.name)
-                      ? 'bg-primary/10 border border-primary/30'
-                      : 'bg-muted/50 border border-transparent'
-                  }`}
-                  onClick={() => togglePartner(partner.name)}
-                >
-                  <Checkbox
-                    checked={selectedPartners.has(partner.name)}
-                    onCheckedChange={() => togglePartner(partner.name)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{partner.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {partner.transactionCount} {partner.transactionCount === 1 ? 'transakcija' : 'transakcija'}
-                    </p>
+              {partners.map((partner) => {
+                const isExpanded = expandedPartner === partner.name;
+                const details = partnerDetails[partner.name] || {};
+                return (
+                  <div
+                    key={partner.name}
+                    className={`rounded-xl text-sm transition-colors border ${
+                      selectedPartners.has(partner.name)
+                        ? 'bg-primary/10 border-primary/30'
+                        : 'bg-muted/50 border-transparent'
+                    }`}
+                  >
+                    <div
+                      className="flex items-center gap-3 p-3 cursor-pointer"
+                      onClick={() => toggleExpand(partner.name)}
+                    >
+                      <Checkbox
+                        checked={selectedPartners.has(partner.name)}
+                        onCheckedChange={() => togglePartner(partner.name)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{partner.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {partner.transactionCount} {partner.transactionCount === 1 ? 'transakcija' : 'transakcija'}
+                        </p>
+                      </div>
+                      {partner.existingClientId ? (
+                        <Badge variant="outline" className="text-xs gap-1 shrink-0">
+                          <RefreshCw className="w-3 h-3" />
+                          Postojeći
+                        </Badge>
+                      ) : (
+                        <Badge className="text-xs gap-1 shrink-0">
+                          <Plus className="w-3 h-3" />
+                          Novi
+                        </Badge>
+                      )}
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                      )}
+                    </div>
+
+                    {isExpanded && (
+                      <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">OIB</Label>
+                            <Input
+                              placeholder="12345678901"
+                              value={details.oib || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'oib', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Kontakt osoba</Label>
+                            <Input
+                              placeholder="Ime i prezime"
+                              value={details.contact_person || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'contact_person', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Adresa</Label>
+                          <Input
+                            placeholder="Ulica i broj"
+                            value={details.address || ''}
+                            onChange={(e) => updatePartnerDetail(partner.name, 'address', e.target.value)}
+                            className="h-8 text-xs rounded-lg"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Grad</Label>
+                            <Input
+                              placeholder="Zagreb"
+                              value={details.city || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'city', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Poštanski broj</Label>
+                            <Input
+                              placeholder="10000"
+                              value={details.postal_code || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'postal_code', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Email</Label>
+                            <Input
+                              placeholder="email@primjer.hr"
+                              value={details.email || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'email', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Telefon</Label>
+                            <Input
+                              placeholder="+385..."
+                              value={details.phone || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'phone', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {partner.existingClientId ? (
-                    <Badge variant="outline" className="text-xs gap-1 shrink-0">
-                      <RefreshCw className="w-3 h-3" />
-                      Postojeći
-                    </Badge>
-                  ) : (
-                    <Badge className="text-xs gap-1 shrink-0">
-                      <Plus className="w-3 h-3" />
-                      Novi
-                    </Badge>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
