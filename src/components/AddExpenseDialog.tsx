@@ -1067,7 +1067,32 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   </Select>
                 </div>
 
-                {/* Expense Nature - only when linked to project or budget */}
+                {/* Cash Register - Business mode scanned preview */}
+                {activeBusinessProfileId && cashRegisters.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-muted-foreground text-sm">🏪 Blagajna:</span>
+                    <Select
+                      value={selectedCashRegisterId || 'none'}
+                      onValueChange={(value) => setSelectedCashRegisterId(value === 'none' ? null : value)}
+                    >
+                      <SelectTrigger className="w-full rounded-lg">
+                        <SelectValue placeholder="Bez blagajne" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Bez blagajne</SelectItem>
+                        {cashRegisters.map((reg) => (
+                          <SelectItem key={reg.id} value={reg.id}>
+                            <div className="flex items-center justify-between gap-3">
+                              <span>{reg.label || reg.name}</span>
+                              <span className="text-xs text-muted-foreground">€{reg.balance.toFixed(2)}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {(selectedProjectId || selectedBudgetId) && (
                   <div className="space-y-2">
                     <span className="text-muted-foreground text-sm">{t('transactions.expenseNature', 'Vrsta troška')}:</span>
