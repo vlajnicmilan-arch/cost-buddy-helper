@@ -200,6 +200,7 @@ export interface Expense {
   note?: string | null;
   expense_nature?: 'regular' | 'extraordinary' | null;
   business_profile_id?: string | null;
+  cash_register_id?: string | null;
   created_at?: string;
   updated_at?: string;
   import_batch_id?: string | null;

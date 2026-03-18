@@ -83,6 +83,7 @@ export const useExpenseCRUD = ({
             status: isPendingMemberTransaction ? 'pending' : 'approved',
             submitted_by: isPendingMemberTransaction ? user.id : null,
             business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
+            cash_register_id: (normalizedExpense as any).cash_register_id || null,
           })
           .select()
           .single();
