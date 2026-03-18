@@ -151,8 +151,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
     }
   };
 
-  const togglePartner = (name: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
+  const togglePartner = (name: string) => {
     setSelectedPartners(prev => {
       const next = new Set(prev);
       if (next.has(name)) next.delete(name);
