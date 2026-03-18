@@ -36,21 +36,27 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
 async function fetchSubjectDetails(token: string, tipIdentifikatora: string, identifikator: string): Promise<any> {
   const url = `${SUDREG_API}/javni/detalji_subjekta?expand_relations=true&tip_identifikatora=${tipIdentifikatora}&identifikator=${identifikator}`;
   console.log("Sudreg detalji_subjekta fetch:", url);
+  console.log("Using Bearer token (first 30):", token.substring(0, 30));
 
   const response = await fetch(url, {
+    method: "GET",
     headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/json",
     },
   });
 
+  console.log("Sudreg response status:", response.status, "headers:", JSON.stringify(Object.fromEntries(response.headers.entries())));
+
   if (!response.ok) {
     const errText = await response.text();
-    console.error("Sudreg detalji_subjekta error:", response.status, errText.slice(0, 300));
+    console.error("Sudreg detalji_subjekta error:", response.status, errText.slice(0, 500));
     return null;
   }
 
-  return await response.json();
+  const data = await response.json();
+  console.log("Sudreg response data keys:", Object.keys(data).join(", "));
+  return data;
 }
 
 // Build structured company data from detalji_subjekta response
@@ -119,12 +125,17 @@ async function extractWithAI(query: string, lovableApiKey: string): Promise<any>
       messages: [
         {
           role: "system",
-          content: `Ti si AI asistent koji pomaže popuniti podatke o hrvatskim tvrtkama.
-PRAVILA:
-1. NIKADA ne izmišljaj podatke - ostavi prazan string "" ako nisi siguran.
-2. OIB, MBS, IBAN - NIKADA ne izmišljaj!
-3. found=true samo ako prepoznaješ tvrtku.
-Korisnik traži prema: ${isOIB ? "OIB" : "naziv tvrtke"}`,
+          content: `Ti si AI asistent koji pomaže pronaći podatke o hrvatskim tvrtkama i obrtima.
+
+KRITIČNA PRAVILA:
+1. Ako NISI 100% SIGURAN koji je točan naziv tvrtke za dani OIB - vrati found=false.
+2. NIKADA ne izmišljaj podatke. Ako nisi siguran za bilo koji podatak, ostavi prazan string "".
+3. OIB, MBS, IBAN - NIKADA ne izmišljaj! Samo vrati ako si APSOLUTNO siguran.
+4. Bolje je vratiti found=false nego dati krive podatke.
+5. OIB je JEDINSTVENI identifikator - za jedan OIB postoji TOČNO JEDNA tvrtka/obrt. Ne pogađaj!
+6. Ako korisnik traži po OIB-u i nisi siguran koja tvrtka ima taj OIB, OBAVEZNO vrati found=false.
+
+Korisnik traži prema: ${isOIB ? "OIB broju" : "nazivu tvrtke"}`,
         },
         { role: "user", content: `Pronađi podatke za: ${query.trim()}` },
       ],
@@ -132,7 +143,7 @@ Korisnik traži prema: ${isOIB ? "OIB" : "naziv tvrtke"}`,
         type: "function",
         function: {
           name: "return_company_data",
-          description: "Return structured company data.",
+          description: "Return structured company data. Return found=false if not sure.",
           parameters: {
             type: "object",
             properties: {
