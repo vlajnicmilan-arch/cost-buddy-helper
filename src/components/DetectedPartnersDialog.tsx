@@ -3,11 +3,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Check, Plus, RefreshCw } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Users, Check, Plus, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
+
+interface PartnerDetails {
+  oib?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  email?: string;
+  phone?: string;
+  contact_person?: string;
+}
 
 interface DetectedPartner {
   name: string;
