@@ -96,6 +96,7 @@ export const InvoicingPanel = () => {
   const [scannedMerchants, setScannedMerchants] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
   const [enrichingClientId, setEnrichingClientId] = useState<string | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   // Detail
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
@@ -236,9 +237,49 @@ export const InvoicingPanel = () => {
     setView('clients');
   };
 
+  const openClientDetail = (client: Client) => {
+    setEditingClient(client);
+  };
+
+  const updateEditingClientField = (field: keyof Client, value: string) => {
+    setEditingClient(prev => prev ? { ...prev, [field]: value } : prev);
+  };
+
+  const saveEditingClient = async () => {
+    if (!editingClient || !editingClient.name.trim()) {
+      toast.error('Unesite naziv klijenta');
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase
+      .from('clients')
+      .update({
+        name: editingClient.name.trim(),
+        oib: editingClient.oib?.trim() || null,
+        address: editingClient.address?.trim() || null,
+        city: editingClient.city?.trim() || null,
+        email: editingClient.email?.trim() || null,
+        phone: editingClient.phone?.trim() || null,
+        contact_person: editingClient.contact_person?.trim() || null,
+      } as any)
+      .eq('id', editingClient.id);
+
+    setSaving(false);
+    if (error) {
+      toast.error('Greška pri spremanju klijenta');
+      return;
+    }
+
+    toast.success('Klijent ažuriran');
+    setEditingClient(null);
+    loadClients();
+  };
+
   const deleteClient = async (id: string) => {
     await supabase.from('clients').delete().eq('id', id) as any;
     toast.success('Klijent obrisan');
+    if (editingClient?.id === id) setEditingClient(null);
     loadClients();
   };
 
@@ -462,7 +503,11 @@ export const InvoicingPanel = () => {
       ) : (
         <div className="space-y-2">
           {clients.map(c => (
-            <Card key={c.id} className="border-none shadow-sm">
+            <Card
+              key={c.id}
+              className="border-none shadow-sm cursor-pointer hover:bg-muted/30 transition-colors"
+              onClick={() => openClientDetail(c)}
+            >
               <CardContent className="p-3 flex items-center gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{c.name}</p>
@@ -474,7 +519,10 @@ export const InvoicingPanel = () => {
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 text-primary"
-                  onClick={() => enrichClient(c)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    enrichClient(c);
+                  }}
                   disabled={enrichingClientId === c.id}
                   title="Povuci podatke iz registra"
                 >
@@ -484,7 +532,15 @@ export const InvoicingPanel = () => {
                     <SearchCheck className="w-3.5 h-3.5" />
                   )}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteClient(c.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteClient(c.id);
+                  }}
+                >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </CardContent>
@@ -492,6 +548,64 @@ export const InvoicingPanel = () => {
           ))}
         </div>
       )}
+      <Dialog open={!!editingClient} onOpenChange={(open) => { if (!open) setEditingClient(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Klijent</DialogTitle>
+          </DialogHeader>
+          {editingClient && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-xs">Naziv *</Label>
+                <Input value={editingClient.name} onChange={(e) => updateEditingClientField('name', e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label className="text-xs">OIB</Label>
+                  <Input value={editingClient.oib || ''} onChange={(e) => updateEditingClientField('oib', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Kontakt osoba</Label>
+                  <Input value={editingClient.contact_person || ''} onChange={(e) => updateEditingClientField('contact_person', e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Adresa</Label>
+                <Input value={editingClient.address || ''} onChange={(e) => updateEditingClientField('address', e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label className="text-xs">Grad</Label>
+                  <Input value={editingClient.city || ''} onChange={(e) => updateEditingClientField('city', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={editingClient.email || ''} onChange={(e) => updateEditingClientField('email', e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Telefon</Label>
+                <Input value={editingClient.phone || ''} onChange={(e) => updateEditingClientField('phone', e.target.value)} />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => enrichClient(editingClient)}
+                  disabled={enrichingClientId === editingClient.id}
+                >
+                  {enrichingClientId === editingClient.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <SearchCheck className="w-4 h-4" />}
+                  Dohvati iz registra
+                </Button>
+                <Button className="flex-1" onClick={saveEditingClient} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Spremi
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <DetectedPartnersDialog
         open={scanPartnersOpen}
         onOpenChange={(open) => {
