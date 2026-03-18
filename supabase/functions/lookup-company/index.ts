@@ -26,7 +26,9 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
   }
 
   const data = await response.json();
-  console.log("Token obtained, expires_in:", data.expires_in);
+  console.log("Token response keys:", Object.keys(data).join(", "));
+  console.log("Token obtained, expires_in:", data.expires_in, "token_type:", data.token_type, "scope:", data.scope);
+  console.log("Token first 20 chars:", String(data.access_token).substring(0, 20));
   return data.access_token;
 }
 
