@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Users, Check, Plus, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Users, Check, Plus, RefreshCw, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,6 +43,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
   const [saving, setSaving] = useState(false);
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
   const [partnerDetails, setPartnerDetails] = useState<Record<string, PartnerDetails>>({});
+  const [lookingUp, setLookingUp] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && merchantNames.length > 0 && activeBusinessProfileId) {
@@ -169,6 +170,42 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       ...prev,
       [name]: { ...prev[name], [field]: value },
     }));
+  };
+
+  const lookupFromRegistry = async (partnerName: string) => {
+    setLookingUp(partnerName);
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-company', {
+        body: { query: partnerName },
+      });
+
+      if (error) throw error;
+      if (!data?.found) {
+        toast.info(`Nije pronađeno podataka za "${partnerName}"`);
+        return;
+      }
+
+      const newDetails: PartnerDetails = {
+        ...(partnerDetails[partnerName] || {}),
+      };
+      if (data.oib) newDetails.oib = data.oib;
+      if (data.address) newDetails.address = data.address;
+      if (data.city) newDetails.city = data.city;
+      if (data.postal_code) newDetails.postal_code = data.postal_code;
+      if (data.email) newDetails.email = data.email;
+      if (data.phone) newDetails.phone = data.phone;
+      if (data.contact_person) newDetails.contact_person = data.contact_person;
+
+      setPartnerDetails(prev => ({ ...prev, [partnerName]: newDetails }));
+
+      const source = data.source === 'sudreg' ? 'sudski registar' : 'AI';
+      toast.success(`Podaci učitani za "${data.company_name || partnerName}" (izvor: ${source})`);
+    } catch (error: any) {
+      console.error('Error looking up company:', error);
+      toast.error('Greška pri dohvatu podataka iz registra');
+    } finally {
+      setLookingUp(null);
+    }
   };
 
   const handleSave = async () => {
@@ -329,6 +366,23 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
                     {isExpanded && (
                       <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full rounded-lg gap-2 text-xs"
+                          disabled={lookingUp === partner.name}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            lookupFromRegistry(partner.name);
+                          }}
+                        >
+                          {lookingUp === partner.name ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Search className="w-3.5 h-3.5" />
+                          )}
+                          {lookingUp === partner.name ? 'Pretražujem registar...' : 'Dohvati iz sudskog registra'}
+                        </Button>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">OIB</Label>
