@@ -1,0 +1,1 @@
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS cash_register_id uuid REFERENCES public.cash_registers(id) ON DELETE SET NULL;

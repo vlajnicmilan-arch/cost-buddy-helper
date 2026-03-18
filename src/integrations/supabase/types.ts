@@ -711,6 +711,7 @@ export type Database = {
           amount: number
           budget_id: string | null
           business_profile_id: string | null
+          cash_register_id: string | null
           category: string
           created_at: string
           date: string
@@ -739,6 +740,7 @@ export type Database = {
           amount: number
           budget_id?: string | null
           business_profile_id?: string | null
+          cash_register_id?: string | null
           category?: string
           created_at?: string
           date?: string
@@ -767,6 +769,7 @@ export type Database = {
           amount?: number
           budget_id?: string | null
           business_profile_id?: string | null
+          cash_register_id?: string | null
           category?: string
           created_at?: string
           date?: string
@@ -803,6 +806,13 @@ export type Database = {
             columns: ["business_profile_id"]
             isOneToOne: false
             referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_cash_register_id_fkey"
+            columns: ["cash_register_id"]
+            isOneToOne: false
+            referencedRelation: "cash_registers"
             referencedColumns: ["id"]
           },
           {
