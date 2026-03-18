@@ -207,33 +207,39 @@ serve(async (req) => {
     const isOIB = /^\d{11}$/.test(trimmed);
     const isMBS = /^\d{9}$/.test(trimmed);
 
-    // Try official sudreg API
-    if (SUDREG_CLIENT_ID && SUDREG_CLIENT_SECRET && (isOIB || isMBS)) {
-      try {
-        console.log("Sudreg detalji_subjekta lookup for:", trimmed);
-        const token = await getAccessToken(SUDREG_CLIENT_ID, SUDREG_CLIENT_SECRET);
+    // For OIB/MBS searches, only use sudreg API (AI hallucinates for numeric identifiers)
+    if (isOIB || isMBS) {
+      if (SUDREG_CLIENT_ID && SUDREG_CLIENT_SECRET) {
+        try {
+          console.log("Sudreg detalji_subjekta lookup for:", trimmed);
+          const token = await getAccessToken(SUDREG_CLIENT_ID, SUDREG_CLIENT_SECRET);
 
-        const tipIdentifikatora = isOIB ? "oib" : "mbs";
-        const subjectData = await fetchSubjectDetails(token, tipIdentifikatora, trimmed);
+          const tipIdentifikatora = isOIB ? "oib" : "mbs";
+          const subjectData = await fetchSubjectDetails(token, tipIdentifikatora, trimmed);
 
-        if (subjectData && subjectData.mbs) {
-          console.log("Found subject:", subjectData.skracena_tvrtka?.ime || subjectData.tvrtka?.ime, "MBS:", subjectData.mbs);
-          const companyData = buildCompanyData(subjectData);
-          console.log("Result:", JSON.stringify(companyData));
-
-          return new Response(JSON.stringify(companyData), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          if (subjectData && subjectData.mbs) {
+            console.log("Found subject:", subjectData.skracena_tvrtka?.ime || subjectData.tvrtka?.ime, "MBS:", subjectData.mbs);
+            const companyData = buildCompanyData(subjectData);
+            return new Response(JSON.stringify(companyData), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        } catch (e) {
+          console.error("Sudreg API error:", e instanceof Error ? e.message : e);
         }
-
-        console.log("Subject not found in sudreg, falling back to AI");
-      } catch (e) {
-        console.error("Sudreg API error:", e instanceof Error ? e.message : e);
-        console.log("Falling back to AI");
       }
+
+      // Don't use AI for OIB/MBS - it hallucinates
+      return new Response(JSON.stringify({ 
+        found: false, 
+        error: "Tvrtka nije pronađena u sudskom registru. Provjerite OIB/MBS ili pretražite po nazivu tvrtke.",
+        source: "sudreg" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // For name searches or fallback
+    // For name searches, use AI
     const companyData = await extractWithAI(trimmed, LOVABLE_API_KEY);
     console.log("AI result:", JSON.stringify(companyData));
 
