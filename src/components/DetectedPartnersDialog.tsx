@@ -334,11 +334,12 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
                       className="flex items-center gap-3 p-3 cursor-pointer"
                       onClick={() => toggleExpand(partner.name)}
                     >
-                      <Checkbox
-                        checked={selectedPartners.has(partner.name)}
-                        onCheckedChange={() => togglePartner(partner.name)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedPartners.has(partner.name)}
+                          onCheckedChange={() => togglePartner(partner.name)}
+                        />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{partner.name}</p>
                         <p className="text-xs text-muted-foreground">
