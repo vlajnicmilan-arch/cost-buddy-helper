@@ -172,6 +172,42 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
     }));
   };
 
+  const lookupFromRegistry = async (partnerName: string) => {
+    setLookingUp(partnerName);
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-company', {
+        body: { query: partnerName },
+      });
+
+      if (error) throw error;
+      if (!data?.found) {
+        toast.info(`Nije pronađeno podataka za "${partnerName}"`);
+        return;
+      }
+
+      const newDetails: PartnerDetails = {
+        ...(partnerDetails[partnerName] || {}),
+      };
+      if (data.oib) newDetails.oib = data.oib;
+      if (data.address) newDetails.address = data.address;
+      if (data.city) newDetails.city = data.city;
+      if (data.postal_code) newDetails.postal_code = data.postal_code;
+      if (data.email) newDetails.email = data.email;
+      if (data.phone) newDetails.phone = data.phone;
+      if (data.contact_person) newDetails.contact_person = data.contact_person;
+
+      setPartnerDetails(prev => ({ ...prev, [partnerName]: newDetails }));
+
+      const source = data.source === 'sudreg' ? 'sudski registar' : 'AI';
+      toast.success(`Podaci učitani za "${data.company_name || partnerName}" (izvor: ${source})`);
+    } catch (error: any) {
+      console.error('Error looking up company:', error);
+      toast.error('Greška pri dohvatu podataka iz registra');
+    } finally {
+      setLookingUp(null);
+    }
+  };
+
   const handleSave = async () => {
     if (!user || !activeBusinessProfileId || selectedPartners.size === 0) return;
     setSaving(true);
