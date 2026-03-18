@@ -3,11 +3,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Check, Plus, RefreshCw } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Users, Check, Plus, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
+
+interface PartnerDetails {
+  oib?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  email?: string;
+  phone?: string;
+  contact_person?: string;
+}
 
 interface DetectedPartner {
   name: string;
@@ -29,6 +41,8 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
   const [selectedPartners, setSelectedPartners] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
+  const [partnerDetails, setPartnerDetails] = useState<Record<string, PartnerDetails>>({});
 
   useEffect(() => {
     if (open && merchantNames.length > 0 && activeBusinessProfileId) {
@@ -136,13 +150,25 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
     }
   };
 
-  const togglePartner = (name: string) => {
+  const togglePartner = (name: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setSelectedPartners(prev => {
       const next = new Set(prev);
       if (next.has(name)) next.delete(name);
       else next.add(name);
       return next;
     });
+  };
+
+  const toggleExpand = (name: string) => {
+    setExpandedPartner(prev => prev === name ? null : name);
+  };
+
+  const updatePartnerDetail = (name: string, field: keyof PartnerDetails, value: string) => {
+    setPartnerDetails(prev => ({
+      ...prev,
+      [name]: { ...prev[name], [field]: value },
+    }));
   };
 
   const handleSave = async () => {
@@ -153,25 +179,45 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       const toCreate = partners.filter(p => selectedPartners.has(p.name) && !p.existingClientId);
       const toUpdate = partners.filter(p => selectedPartners.has(p.name) && p.existingClientId);
 
-      // Create new clients
+      // Create new clients with details
       if (toCreate.length > 0) {
         const { error: insertError } = await supabase
           .from('clients')
-          .insert(toCreate.map(p => ({
-            business_profile_id: activeBusinessProfileId,
-            user_id: user.id,
-            name: p.name,
-          })));
+          .insert(toCreate.map(p => {
+            const details = partnerDetails[p.name] || {};
+            return {
+              business_profile_id: activeBusinessProfileId,
+              user_id: user.id,
+              name: p.name,
+              ...(details.oib && { oib: details.oib }),
+              ...(details.address && { address: details.address }),
+              ...(details.city && { city: details.city }),
+              ...(details.postal_code && { postal_code: details.postal_code }),
+              ...(details.email && { email: details.email }),
+              ...(details.phone && { phone: details.phone }),
+              ...(details.contact_person && { contact_person: details.contact_person }),
+            };
+          }));
 
         if (insertError) throw insertError;
       }
 
-      // Update existing (touch updated_at to mark as recently seen)
+      // Update existing with any new details provided
       for (const p of toUpdate) {
         if (p.existingClientId) {
+          const details = partnerDetails[p.name] || {};
+          const updateData: Record<string, string> = { updated_at: new Date().toISOString() };
+          if (details.oib) updateData.oib = details.oib;
+          if (details.address) updateData.address = details.address;
+          if (details.city) updateData.city = details.city;
+          if (details.postal_code) updateData.postal_code = details.postal_code;
+          if (details.email) updateData.email = details.email;
+          if (details.phone) updateData.phone = details.phone;
+          if (details.contact_person) updateData.contact_person = details.contact_person;
+
           await supabase
             .from('clients')
-            .update({ updated_at: new Date().toISOString() })
+            .update(updateData)
             .eq('id', p.existingClientId);
         }
       }
@@ -236,39 +282,127 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
             {/* Partner list */}
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-              {partners.map((partner) => (
-                <div
-                  key={partner.name}
-                  className={`flex items-center gap-3 p-3 rounded-xl text-sm transition-colors cursor-pointer ${
-                    selectedPartners.has(partner.name)
-                      ? 'bg-primary/10 border border-primary/30'
-                      : 'bg-muted/50 border border-transparent'
-                  }`}
-                  onClick={() => togglePartner(partner.name)}
-                >
-                  <Checkbox
-                    checked={selectedPartners.has(partner.name)}
-                    onCheckedChange={() => togglePartner(partner.name)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{partner.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {partner.transactionCount} {partner.transactionCount === 1 ? 'transakcija' : 'transakcija'}
-                    </p>
+              {partners.map((partner) => {
+                const isExpanded = expandedPartner === partner.name;
+                const details = partnerDetails[partner.name] || {};
+                return (
+                  <div
+                    key={partner.name}
+                    className={`rounded-xl text-sm transition-colors border ${
+                      selectedPartners.has(partner.name)
+                        ? 'bg-primary/10 border-primary/30'
+                        : 'bg-muted/50 border-transparent'
+                    }`}
+                  >
+                    <div
+                      className="flex items-center gap-3 p-3 cursor-pointer"
+                      onClick={() => toggleExpand(partner.name)}
+                    >
+                      <Checkbox
+                        checked={selectedPartners.has(partner.name)}
+                        onCheckedChange={() => togglePartner(partner.name)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{partner.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {partner.transactionCount} {partner.transactionCount === 1 ? 'transakcija' : 'transakcija'}
+                        </p>
+                      </div>
+                      {partner.existingClientId ? (
+                        <Badge variant="outline" className="text-xs gap-1 shrink-0">
+                          <RefreshCw className="w-3 h-3" />
+                          Postojeći
+                        </Badge>
+                      ) : (
+                        <Badge className="text-xs gap-1 shrink-0">
+                          <Plus className="w-3 h-3" />
+                          Novi
+                        </Badge>
+                      )}
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                      )}
+                    </div>
+
+                    {isExpanded && (
+                      <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">OIB</Label>
+                            <Input
+                              placeholder="12345678901"
+                              value={details.oib || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'oib', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Kontakt osoba</Label>
+                            <Input
+                              placeholder="Ime i prezime"
+                              value={details.contact_person || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'contact_person', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Adresa</Label>
+                          <Input
+                            placeholder="Ulica i broj"
+                            value={details.address || ''}
+                            onChange={(e) => updatePartnerDetail(partner.name, 'address', e.target.value)}
+                            className="h-8 text-xs rounded-lg"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Grad</Label>
+                            <Input
+                              placeholder="Zagreb"
+                              value={details.city || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'city', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Poštanski broj</Label>
+                            <Input
+                              placeholder="10000"
+                              value={details.postal_code || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'postal_code', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Email</Label>
+                            <Input
+                              placeholder="email@primjer.hr"
+                              value={details.email || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'email', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Telefon</Label>
+                            <Input
+                              placeholder="+385..."
+                              value={details.phone || ''}
+                              onChange={(e) => updatePartnerDetail(partner.name, 'phone', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {partner.existingClientId ? (
-                    <Badge variant="outline" className="text-xs gap-1 shrink-0">
-                      <RefreshCw className="w-3 h-3" />
-                      Postojeći
-                    </Badge>
-                  ) : (
-                    <Badge className="text-xs gap-1 shrink-0">
-                      <Plus className="w-3 h-3" />
-                      Novi
-                    </Badge>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
