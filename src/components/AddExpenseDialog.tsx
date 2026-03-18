@@ -552,7 +552,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
-        business_profile_id: activeBusinessProfileId || null
+        business_profile_id: activeBusinessProfileId || null,
+        cash_register_id: selectedCashRegisterId || null,
       };
 
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
