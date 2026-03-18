@@ -207,33 +207,12 @@ serve(async (req) => {
     const isOIB = /^\d{11}$/.test(trimmed);
     const isMBS = /^\d{9}$/.test(trimmed);
 
-    // For OIB/MBS searches, only use sudreg API (AI hallucinates for numeric identifiers)
+    // Numeric identifiers are temporarily disabled because official registry access is unreliable.
     if (isOIB || isMBS) {
-      if (SUDREG_CLIENT_ID && SUDREG_CLIENT_SECRET) {
-        try {
-          console.log("Sudreg detalji_subjekta lookup for:", trimmed);
-          const token = await getAccessToken(SUDREG_CLIENT_ID, SUDREG_CLIENT_SECRET);
-
-          const tipIdentifikatora = isOIB ? "oib" : "mbs";
-          const subjectData = await fetchSubjectDetails(token, tipIdentifikatora, trimmed);
-
-          if (subjectData && subjectData.mbs) {
-            console.log("Found subject:", subjectData.skracena_tvrtka?.ime || subjectData.tvrtka?.ime, "MBS:", subjectData.mbs);
-            const companyData = buildCompanyData(subjectData);
-            return new Response(JSON.stringify(companyData), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
-        } catch (e) {
-          console.error("Sudreg API error:", e instanceof Error ? e.message : e);
-        }
-      }
-
-      // Don't use AI for OIB/MBS - it hallucinates
-      return new Response(JSON.stringify({ 
-        found: false, 
-        error: "Tvrtka nije pronađena u sudskom registru. Provjerite OIB/MBS ili pretražite po nazivu tvrtke.",
-        source: "sudreg" 
+      return new Response(JSON.stringify({
+        found: false,
+        error: "Pretraga po OIB/MBS je trenutno isključena. Upišite naziv tvrtke.",
+        source: "disabled_numeric_lookup"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

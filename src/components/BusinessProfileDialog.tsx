@@ -175,9 +175,9 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
   };
 
   const handleAILookup = async () => {
-    const query = profile.oib.trim() || profile.company_name.trim();
+    const query = profile.company_name.trim();
     if (!query || query.length < 2) {
-      toast.error(t('business.aiLookupHint', 'Unesite naziv tvrtke ili OIB za AI pretragu'));
+      toast.error(t('business.aiLookupHint', 'Unesite naziv tvrtke za pretragu'));
       return;
     }
 
@@ -188,8 +188,14 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
       });
 
       if (error) throw error;
-      if (data?.error) { toast.error(data.error); return; }
-      if (!data?.found) { toast.error(t('business.notFound', 'Tvrtka nije pronađena')); return; }
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      if (!data?.found) {
+        toast.error(t('business.notFound', 'Tvrtka nije pronađena'));
+        return;
+      }
 
       setProfile(prev => ({
         ...prev,

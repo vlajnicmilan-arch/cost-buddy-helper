@@ -318,8 +318,7 @@ export const InvoicingPanel = () => {
     if (enrichingClientId) return;
     setEnrichingClientId(client.id);
     try {
-      // Use OIB if available for more accurate lookup, otherwise use name
-      const lookupQuery = client.oib && /^\d{11}$/.test(client.oib) ? client.oib : client.name;
+      const lookupQuery = client.name.trim();
       const { data, error } = await supabase.functions.invoke('lookup-company', {
         body: { query: lookupQuery },
       });
