@@ -405,17 +405,17 @@ export const BusinessWorkforcePanel = () => {
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Ime</Label>
-                <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Ime" required />
+                <Label>{t('workforce.firstName')}</Label>
+                <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t('workforce.firstName')} required />
               </div>
               <div className="space-y-1.5">
-                <Label>Prezime</Label>
-                <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Prezime" required />
+                <Label>{t('workforce.lastName')}</Label>
+                <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t('workforce.lastName')} required />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Radno mjesto</Label>
-              <Input value={position} onChange={e => setPosition(e.target.value)} placeholder="npr. Zidar, Programer..." required />
+              <Label>{t('workforce.position')}</Label>
+              <Input value={position} onChange={e => setPosition(e.target.value)} placeholder={t('workforce.positionPlaceholder')} required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
