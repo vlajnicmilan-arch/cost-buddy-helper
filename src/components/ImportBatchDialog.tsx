@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 
 interface ImportBatchDialogProps {
@@ -20,6 +21,7 @@ interface ImportBatchDialogProps {
 }
 
 export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, onDeleteBatch }: ImportBatchDialogProps) => {
+  const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -41,8 +43,6 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
     }
     return { totalIncome: inc, totalExpenses: exp, importDate: earliest || new Date() };
   }, [batchExpenses]);
-
-  
 
   const handleDeleteBatch = async () => {
     if (!onDeleteBatch) return;
@@ -74,9 +74,9 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
                 <FileText className="w-5 h-5" />
               </span>
               <div className="min-w-0">
-                <h1 className="text-base font-semibold truncate">Uvezeno izvješće</h1>
+                <h1 className="text-base font-semibold truncate">{t('importBatch.title')}</h1>
                 <p className="text-xs text-muted-foreground">
-                  {format(importDate, 'd. MMM yyyy', { locale: hr })} • {batchExpenses.length} transakcija
+                  {format(importDate, 'd. MMM yyyy', { locale: hr })} • {batchExpenses.length} {t('importBatch.transactions')}
                 </p>
               </div>
             </div>
@@ -104,14 +104,14 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
                 <div className="p-3 rounded-xl bg-muted/50">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="w-3 h-3 text-primary" />
-                    <p className="text-xs text-muted-foreground">Prihodi</p>
+                    <p className="text-xs text-muted-foreground">{t('importBatch.income')}</p>
                   </div>
                   <p className="text-sm font-semibold text-primary font-mono">+{formatAmount(totalIncome)}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/50">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingDown className="w-3 h-3 text-destructive" />
-                    <p className="text-xs text-muted-foreground">Rashodi</p>
+                    <p className="text-xs text-muted-foreground">{t('importBatch.expenses')}</p>
                   </div>
                   <p className="text-sm font-semibold text-expense font-mono">-{formatAmount(totalExpenses)}</p>
                 </div>
@@ -164,19 +164,19 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
     <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Obriši cijeli uvoz?</AlertDialogTitle>
+          <AlertDialogTitle>{t('importBatch.deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Ovo će trajno obrisati svih {batchExpenses.length} transakcija iz ovog uvoza. Ova radnja se ne može poništiti.
+            {t('importBatch.deleteDesc', { count: batchExpenses.length })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleting} className="min-h-[44px]">Odustani</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleting} className="min-h-[44px]">{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDeleteBatch}
             disabled={deleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[44px]"
           >
-            {deleting ? 'Brisanje...' : `Obriši ${batchExpenses.length} transakcija`}
+            {deleting ? t('importBatch.deleting') : t('importBatch.deleteCount', { count: batchExpenses.length })}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

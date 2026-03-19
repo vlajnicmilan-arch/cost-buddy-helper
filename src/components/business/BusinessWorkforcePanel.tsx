@@ -18,6 +18,7 @@ import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, Users, CalendarDa
 import { toast } from 'sonner';
 import { startOfMonth, endOfMonth, format, subMonths, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface Worker {
   id: string;
@@ -42,6 +43,7 @@ interface WorkEntry {
 }
 
 export const BusinessWorkforcePanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -105,7 +107,7 @@ export const BusinessWorkforcePanel = () => {
       }));
     } catch (err) {
       console.error(err);
-      toast.error('Greška pri učitavanju radnika');
+      toast.error(t('workforce.loadError'));
     } finally {
       setLoading(false);
     }
@@ -148,17 +150,17 @@ export const BusinessWorkforcePanel = () => {
       if (editingWorker) {
         const { error } = await supabase.from('project_workers').update(payload).eq('id', editingWorker.id);
         if (error) throw error;
-        toast.success('Radnik ažuriran');
+        toast.success(t('workforce.workerUpdated'));
       } else {
         const { error } = await supabase.from('project_workers').insert({ ...payload, project_id: null } as any);
         if (error) throw error;
-        toast.success('Radnik dodan');
+        toast.success(t('workforce.workerAdded'));
       }
       setDialogOpen(false);
       fetchWorkers();
     } catch (err) {
       console.error(err);
-      toast.error('Greška pri spremanju');
+      toast.error(t('workforce.saveError'));
     }
   };
 
@@ -167,12 +169,12 @@ export const BusinessWorkforcePanel = () => {
     try {
       const { error } = await supabase.from('project_workers').delete().eq('id', deleteId);
       if (error) throw error;
-      toast.success('Radnik uklonjen');
+      toast.success(t('workforce.workerRemoved'));
       setDeleteId(null);
       fetchWorkers();
     } catch (err) {
       console.error(err);
-      toast.error('Greška pri brisanju');
+      toast.error(t('workforce.deleteError'));
     }
   };
 
@@ -209,20 +211,20 @@ export const BusinessWorkforcePanel = () => {
         note: entryNote || null,
       } as any);
       if (error) throw error;
-      toast.success('Unos dodan');
+      toast.success(t('workforce.entryAdded'));
       setEntryDialogOpen(false);
       setEntryDate(''); setEntryHours(''); setEntryNote('');
       fetchEntries();
       fetchWorkers();
     } catch (err) {
       console.error(err);
-      toast.error('Greška pri unosu');
+      toast.error(t('workforce.entryError'));
     }
   };
 
   const deleteEntry = async (id: string) => {
     const { error } = await supabase.from('project_work_entries').delete().eq('id', id);
-    if (!error) { fetchEntries(); fetchWorkers(); toast.success('Unos uklonjen'); }
+    if (!error) { fetchEntries(); fetchWorkers(); toast.success(t('workforce.entryRemoved')); }
   };
 
   const totalCost = workers.reduce((s, w) => s + w.actualCostTotal, 0);
@@ -238,7 +240,7 @@ export const BusinessWorkforcePanel = () => {
 
     return (
       <div className="space-y-4">
-        <button onClick={() => setSelectedWorker(null)} className="text-xs text-primary flex items-center gap-1">← Natrag na popis</button>
+        <button onClick={() => setSelectedWorker(null)} className="text-xs text-primary flex items-center gap-1">{t('workforce.backToList')}</button>
         
         <div className="flex items-center justify-between">
           <div>
@@ -246,7 +248,7 @@ export const BusinessWorkforcePanel = () => {
             <p className="text-xs text-muted-foreground">{selectedWorker.position}</p>
           </div>
           <Button size="sm" onClick={() => { setEntryDate(format(new Date(), 'yyyy-MM-dd')); setEntryHours(selectedWorker.work_hours.toString()); setEntryDialogOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> Unos sati
+            <Plus className="w-4 h-4 mr-1" /> {t('workforce.addHours')}
           </Button>
         </div>
 
@@ -261,8 +263,8 @@ export const BusinessWorkforcePanel = () => {
         <Card className="border-none shadow-sm bg-muted/50">
           <CardContent className="p-3 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Ukupno ovaj mjesec</p>
-              <p className="text-sm font-medium">{monthTotal}h odrađeno</p>
+              <p className="text-xs text-muted-foreground">{t('workforce.totalThisMonth')}</p>
+              <p className="text-sm font-medium">{t('workforce.hoursWorked', { hours: monthTotal })}</p>
             </div>
             <p className="text-lg font-bold text-primary">{formatAmount(monthCost)}</p>
           </CardContent>
@@ -300,23 +302,23 @@ export const BusinessWorkforcePanel = () => {
         {/* Add entry dialog */}
         <Dialog open={entryDialogOpen} onOpenChange={setEntryDialogOpen}>
           <DialogContent className="sm:max-w-sm">
-            <DialogHeader><DialogTitle>Unos radnih sati</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t('workforce.addWorkEntry')}</DialogTitle></DialogHeader>
             <form onSubmit={handleAddEntry} className="space-y-4">
               <div className="space-y-2">
-                <Label>Datum</Label>
+                <Label>{t('workforce.date')}</Label>
                 <Input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Odrađeni sati</Label>
+                <Label>{t('workforce.hoursWorkedLabel')}</Label>
                 <Input type="number" step="0.5" min="0" value={entryHours} onChange={e => setEntryHours(e.target.value)} placeholder={selectedWorker.work_hours.toString()} />
               </div>
               <div className="space-y-2">
-                <Label>Napomena (opcionalno)</Label>
-                <Input value={entryNote} onChange={e => setEntryNote(e.target.value)} placeholder="npr. Prekovremeni rad" />
+                <Label>{t('workforce.noteOptional')}</Label>
+                <Input value={entryNote} onChange={e => setEntryNote(e.target.value)} placeholder={t('workforce.notePlaceholder')} />
               </div>
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setEntryDialogOpen(false)}>Odustani</Button>
-                <Button type="submit">Spremi</Button>
+                <Button type="button" variant="outline" onClick={() => setEntryDialogOpen(false)}>{t('common.cancel')}</Button>
+                <Button type="submit">{t('common.save')}</Button>
               </div>
             </form>
           </DialogContent>
@@ -330,11 +332,11 @@ export const BusinessWorkforcePanel = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold">Radnici & satnice</h3>
+          <h3 className="font-semibold">{t('workforce.title')}</h3>
           <Badge variant="secondary">{workers.length}</Badge>
         </div>
         <Button size="sm" onClick={openAdd}>
-          <Plus className="w-4 h-4 mr-1" /> Dodaj
+          <Plus className="w-4 h-4 mr-1" /> {t('workforce.add')}
         </Button>
       </div>
 
@@ -343,8 +345,8 @@ export const BusinessWorkforcePanel = () => {
         <Card className="border-none shadow-sm bg-muted/50">
           <CardContent className="p-3 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Ukupni trošak rada</p>
-              <p className="text-xs text-muted-foreground">{totalHours}h odrađeno</p>
+              <p className="text-xs text-muted-foreground">{t('workforce.totalLaborCost')}</p>
+              <p className="text-xs text-muted-foreground">{t('workforce.hoursWorked', { hours: totalHours })}</p>
             </div>
             <p className="text-lg font-bold text-primary">{formatAmount(totalCost)}</p>
           </CardContent>
@@ -355,8 +357,8 @@ export const BusinessWorkforcePanel = () => {
       {workers.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>Nema unesenih radnika</p>
-          <p className="text-sm">Dodajte radnike za praćenje radnog vremena i troškova</p>
+          <p>{t('workforce.noWorkers')}</p>
+          <p className="text-sm">{t('workforce.noWorkersHint')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -374,7 +376,7 @@ export const BusinessWorkforcePanel = () => {
                       <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{formatAmount(w.hourly_rate)}/h</span>
                     </div>
                     <p className="text-xs mt-1 font-medium">
-                      Odrađeno: {w.actualHoursTotal}h = <span className="text-primary">{formatAmount(w.actualCostTotal)}</span>
+                      {t('workforce.worked')}: {w.actualHoursTotal}h = <span className="text-primary">{formatAmount(w.actualCostTotal)}</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
@@ -396,46 +398,46 @@ export const BusinessWorkforcePanel = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingWorker ? 'Uredi radnika' : 'Dodaj radnika'}</DialogTitle>
+            <DialogTitle>{editingWorker ? t('workforce.editWorker') : t('workforce.addWorker')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Ime</Label>
-                <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Ime" required />
+                <Label>{t('workforce.firstName')}</Label>
+                <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t('workforce.firstName')} required />
               </div>
               <div className="space-y-1.5">
-                <Label>Prezime</Label>
-                <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Prezime" required />
+                <Label>{t('workforce.lastName')}</Label>
+                <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t('workforce.lastName')} required />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Radno mjesto</Label>
-              <Input value={position} onChange={e => setPosition(e.target.value)} placeholder="npr. Zidar, Programer..." required />
+              <Label>{t('workforce.position')}</Label>
+              <Input value={position} onChange={e => setPosition(e.target.value)} placeholder={t('workforce.positionPlaceholder')} required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Od</Label>
+                <Label className="text-xs">{t('workforce.from')}</Label>
                 <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Do</Label>
+                <Label className="text-xs">{t('workforce.to')}</Label>
                 <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Zadani sati/dan</Label>
+                <Label>{t('workforce.defaultHours')}</Label>
                 <Input type="number" step="0.5" min="0" value={workHours} onChange={e => setWorkHours(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Cijena sata (€)</Label>
+                <Label>{t('workforce.hourlyRate')}</Label>
                 <Input type="number" step="0.01" min="0" value={hourlyRate} onChange={e => setHourlyRate(e.target.value)} placeholder="0.00" />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Odustani</Button>
-              <Button type="submit">{editingWorker ? 'Spremi' : 'Dodaj'}</Button>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
+              <Button type="submit">{editingWorker ? t('common.save') : t('common.add')}</Button>
             </div>
           </form>
         </DialogContent>
@@ -445,12 +447,12 @@ export const BusinessWorkforcePanel = () => {
       <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ukloni radnika?</AlertDialogTitle>
-            <AlertDialogDescription>Svi zapisi o radnim satima ovog radnika bit će izbrisani.</AlertDialogDescription>
+            <AlertDialogTitle>{t('workforce.removeWorkerTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('workforce.removeWorkerDesc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Odustani</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">Ukloni</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">{t('workforce.remove')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -8,6 +8,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   INDUSTRIES, MODULES, getIndustry, getDefaultModules, getAvailableModules,
   type IndustryType, type ModuleId,
@@ -15,17 +16,28 @@ import {
 
 export type BusinessTheme = 'ocean-blue' | 'emerald' | 'indigo' | 'crimson' | 'amber' | 'slate' | 'teal';
 
-const BUSINESS_THEMES: { id: BusinessTheme; label: string; description: string; previewColor: string }[] = [
-  { id: 'ocean-blue', label: 'Ocean Blue', description: 'Klasična, profesionalna', previewColor: 'hsl(220 70% 50%)' },
-  { id: 'emerald', label: 'Emerald', description: 'Prirodna, organska', previewColor: 'hsl(160 84% 39%)' },
-  { id: 'indigo', label: 'Indigo', description: 'Kreativna, tech', previewColor: 'hsl(239 84% 67%)' },
-  { id: 'crimson', label: 'Crimson', description: 'Energična, dinamična', previewColor: 'hsl(0 72% 51%)' },
-  { id: 'amber', label: 'Amber', description: 'Topla, craft', previewColor: 'hsl(38 92% 50%)' },
-  { id: 'slate', label: 'Slate', description: 'Minimalistička, luksuzna', previewColor: 'hsl(215 25% 27%)' },
-  { id: 'teal', label: 'Teal', description: 'Moderna, svježa', previewColor: 'hsl(174 72% 40%)' },
+const THEME_DESCRIPTION_KEYS: Record<BusinessTheme, string> = {
+  'ocean-blue': 'businessModules.themeOceanBlue',
+  'emerald': 'businessModules.themeEmerald',
+  'indigo': 'businessModules.themeIndigo',
+  'crimson': 'businessModules.themeCrimson',
+  'amber': 'businessModules.themeAmber',
+  'slate': 'businessModules.themeSlate',
+  'teal': 'businessModules.themeTeal',
+};
+
+const BUSINESS_THEMES: { id: BusinessTheme; label: string; previewColor: string }[] = [
+  { id: 'ocean-blue', label: 'Ocean Blue', previewColor: 'hsl(220 70% 50%)' },
+  { id: 'emerald', label: 'Emerald', previewColor: 'hsl(160 84% 39%)' },
+  { id: 'indigo', label: 'Indigo', previewColor: 'hsl(239 84% 67%)' },
+  { id: 'crimson', label: 'Crimson', previewColor: 'hsl(0 72% 51%)' },
+  { id: 'amber', label: 'Amber', previewColor: 'hsl(38 92% 50%)' },
+  { id: 'slate', label: 'Slate', previewColor: 'hsl(215 25% 27%)' },
+  { id: 'teal', label: 'Teal', previewColor: 'hsl(174 72% 40%)' },
 ];
 
 export const BusinessModuleSettings = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const [industryType, setIndustryType] = useState<IndustryType>('other');
@@ -80,9 +92,9 @@ export const BusinessModuleSettings = () => {
 
     setSaving(false);
     if (error) {
-      toast.error('Greška pri spremanju postavki');
+      toast.error(t('businessModules.saveError'));
     } else {
-      toast.success('Postavke spremljene');
+      toast.success(t('businessModules.saved'));
     }
   };
 
@@ -101,7 +113,7 @@ export const BusinessModuleSettings = () => {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
         <Settings2 className="w-5 h-5 text-primary" />
-        <h2 className="text-base font-bold">Djelatnost i moduli</h2>
+        <h2 className="text-base font-bold">{t('businessModules.title')}</h2>
       </div>
 
       {/* Theme Color Selection */}
@@ -109,7 +121,7 @@ export const BusinessModuleSettings = () => {
         <CardHeader className="p-3 pb-1">
           <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Palette className="w-3.5 h-3.5" />
-            Tema boja
+            {t('businessModules.themeColor')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-2">
@@ -130,7 +142,7 @@ export const BusinessModuleSettings = () => {
                 />
                 <div className="min-w-0">
                   <p className="text-xs font-medium truncate">{theme.label}</p>
-                  <p className="text-[9px] text-muted-foreground truncate">{theme.description}</p>
+                  <p className="text-[9px] text-muted-foreground truncate">{t(THEME_DESCRIPTION_KEYS[theme.id])}</p>
                 </div>
                 {themeColor === theme.id && (
                   <Check className="w-3.5 h-3.5 text-primary ml-auto flex-shrink-0" />
@@ -144,7 +156,7 @@ export const BusinessModuleSettings = () => {
       {/* Industry Selection */}
       <Card className="border-none shadow-sm">
         <CardHeader className="p-3 pb-1">
-          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Odaberite djelatnost</CardTitle>
+          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('businessModules.selectIndustry')}</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-2">
           <div className="grid grid-cols-2 gap-2">
@@ -174,7 +186,7 @@ export const BusinessModuleSettings = () => {
       {/* Module Toggles */}
       <Card className="border-none shadow-sm">
         <CardHeader className="p-3 pb-1">
-          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aktivni moduli</CardTitle>
+          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('businessModules.activeModules')}</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-2 space-y-2">
           {MODULES.filter(m => availableModules.includes(m.id)).map(mod => {
@@ -190,7 +202,7 @@ export const BusinessModuleSettings = () => {
                     <p className="text-xs font-medium">{mod.label}</p>
                     {isRecommended && (
                       <Badge variant="outline" className="text-[8px] px-1 py-0 border-primary/30 text-primary">
-                        Preporučeno
+                        {t('businessModules.recommended')}
                       </Badge>
                     )}
                   </div>
@@ -210,7 +222,7 @@ export const BusinessModuleSettings = () => {
       {industry.categories.length > 0 && (
         <Card className="border-none shadow-sm">
           <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Preporučene kategorije troškova</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('businessModules.recommendedCategories')}</CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-2">
             <div className="flex flex-wrap gap-1.5">
@@ -226,7 +238,7 @@ export const BusinessModuleSettings = () => {
 
       <Button className="w-full gap-2" onClick={handleSave} disabled={saving}>
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-        Spremi postavke
+        {t('businessModules.saveSettings')}
       </Button>
     </div>
   );
