@@ -265,8 +265,8 @@ export const BusinessWorkforcePanel = () => {
         <Card className="border-none shadow-sm bg-muted/50">
           <CardContent className="p-3 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Ukupno ovaj mjesec</p>
-              <p className="text-sm font-medium">{monthTotal}h odrađeno</p>
+              <p className="text-xs text-muted-foreground">{t('workforce.totalThisMonth')}</p>
+              <p className="text-sm font-medium">{t('workforce.hoursWorked', { hours: monthTotal })}</p>
             </div>
             <p className="text-lg font-bold text-primary">{formatAmount(monthCost)}</p>
           </CardContent>
