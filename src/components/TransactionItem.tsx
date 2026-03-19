@@ -297,7 +297,7 @@ export const TransactionItem = ({ expense, onDelete, onClick, contextLookup }: T
             expense.type === 'expense' ? 'text-expense' :
             expense.type === 'transfer' ? 'text-muted-foreground' : 'text-income'
           )}>
-            {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount))}
+            {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount), expense.currency as any)}
           </p>
           <div className="flex items-center gap-1">
             {installmentLabel && (

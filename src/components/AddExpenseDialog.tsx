@@ -124,16 +124,18 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
 
-  // Derive currency symbol from the selected payment source
-  const selectedSourceCurrency = useMemo(() => {
-    if (!multiCurrencyEnabled) return primaryCurrency.symbol;
+  // Derive currency symbol and code from the selected payment source
+  const selectedSourceCurrencyCode = useMemo(() => {
+    if (!multiCurrencyEnabled) return primaryCurrency.code;
     const source = customPaymentSources.find(s => s.id === paymentSource || `custom:${s.id}` === paymentSource);
-    if (source?.currency) {
-      const curr = CURRENCIES.find(c => c.code === source.currency);
-      return curr?.symbol || primaryCurrency.symbol;
-    }
-    return primaryCurrency.symbol;
-  }, [multiCurrencyEnabled, paymentSource, customPaymentSources, primaryCurrency.symbol]);
+    if (source?.currency) return source.currency;
+    return primaryCurrency.code;
+  }, [multiCurrencyEnabled, paymentSource, customPaymentSources, primaryCurrency.code]);
+
+  const selectedSourceCurrency = useMemo(() => {
+    const curr = CURRENCIES.find(c => c.code === selectedSourceCurrencyCode);
+    return curr?.symbol || primaryCurrency.symbol;
+  }, [selectedSourceCurrencyCode, primaryCurrency.symbol]);
 
   // Auto-suggest category when merchant name changes
   const handleMerchantChange = useCallback((value: string) => {
@@ -349,6 +351,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         business_profile_id: activeBusinessProfileId || null,
         cash_register_id: selectedCashRegisterId || null,
+        currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         // For transfers, store destination in income_source_id field
         income_source_id: transferDestinationId || undefined,
         note: (isInstallment && scannedData.installment_count) 
@@ -566,6 +569,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         business_profile_id: activeBusinessProfileId || null,
         cash_register_id: selectedCashRegisterId || null,
+        currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       };
 
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
@@ -603,6 +607,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
       business_profile_id: activeBusinessProfileId || null,
       cash_register_id: selectedCashRegisterId || null,
+      currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
     };
 

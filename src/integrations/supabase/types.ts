@@ -717,6 +717,7 @@ export type Database = {
           cash_register_id: string | null
           category: string
           created_at: string
+          currency: string | null
           date: string
           description: string
           expense_nature: string | null
@@ -746,6 +747,7 @@ export type Database = {
           cash_register_id?: string | null
           category?: string
           created_at?: string
+          currency?: string | null
           date?: string
           description: string
           expense_nature?: string | null
@@ -775,6 +777,7 @@ export type Database = {
           cash_register_id?: string | null
           category?: string
           created_at?: string
+          currency?: string | null
           date?: string
           description?: string
           expense_nature?: string | null
