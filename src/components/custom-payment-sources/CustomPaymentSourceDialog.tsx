@@ -51,11 +51,13 @@ export const CustomPaymentSourceDialog = ({
   const [color, setColor] = useState('#6b7280');
   const [balance, setBalance] = useState('0');
   const [description, setDescription] = useState('');
+  const [sourceCurrency, setSourceCurrency] = useState<CurrencyCode>('EUR');
   const [cards, setCards] = useState<CardInput[]>([]);
   const [saving, setSaving] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
   const { t } = useTranslation();
+  const { currency, multiCurrencyEnabled } = useCurrency();
   useEffect(() => {
     if (open) {
       if (source) {
