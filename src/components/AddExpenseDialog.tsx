@@ -9,7 +9,7 @@ import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useInstallments } from '@/hooks/useInstallments';
