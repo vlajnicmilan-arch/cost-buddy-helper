@@ -386,7 +386,7 @@ export const CustomPaymentSourceDialog = ({
                   </div>
                 </div>
                 <span className={`font-mono font-semibold ${formattedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
-                  €{formattedBalance.toFixed(2)}
+                  {(CURRENCIES.find(c => c.code === sourceCurrency)?.symbol || '€')}{formattedBalance.toFixed(2)}
                 </span>
               </div>
               {cards.filter(c => c.last_four_digits).length > 0 && (

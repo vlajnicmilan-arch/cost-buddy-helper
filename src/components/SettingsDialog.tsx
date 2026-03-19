@@ -1287,6 +1287,32 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Multi-currency toggle */}
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">
+                    {t('settings.multiCurrency', 'Viševalutni računi')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.multiCurrencyDesc', 'Svaki izvor plaćanja može imati svoju valutu')}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={multiCurrencyEnabled}
+                onCheckedChange={(checked) => {
+                  setMultiCurrencyEnabled(checked);
+                  toast.success(checked 
+                    ? t('settings.multiCurrencyEnabled', 'Viševalutni način omogućen') 
+                    : t('settings.multiCurrencyDisabled', 'Viševalutni način onemogućen'));
+                }}
+              />
+            </div>
           </div>
 
           <Separator />
