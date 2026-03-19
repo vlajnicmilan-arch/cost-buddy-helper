@@ -4,6 +4,7 @@ import { RecurringTransactionsPanel } from '@/components/recurring/RecurringTran
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useInstallments } from '@/hooks/useInstallments';
