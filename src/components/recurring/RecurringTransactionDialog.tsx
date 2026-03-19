@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,17 +18,18 @@ interface RecurringTransactionDialogProps {
   editData?: RecurringTransaction | null;
 }
 
-const FREQUENCY_OPTIONS = [
-  { value: 'daily', label: 'Dnevno' },
-  { value: 'weekly', label: 'Tjedno' },
-  { value: 'biweekly', label: 'Dvotjedno' },
-  { value: 'monthly', label: 'Mjesečno' },
-  { value: 'yearly', label: 'Godišnje' },
-];
-
 export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editData }: RecurringTransactionDialogProps) => {
+  const { t } = useTranslation();
   const { customPaymentSources } = useCustomPaymentSources();
   const { customCategories } = useCustomCategories();
+
+  const FREQUENCY_OPTIONS = [
+    { value: 'daily', label: t('recurring.daily') },
+    { value: 'weekly', label: t('recurring.weekly') },
+    { value: 'biweekly', label: t('recurring.biweekly') },
+    { value: 'monthly', label: t('recurring.monthly') },
+    { value: 'yearly', label: t('recurring.yearly') },
+  ];
 
   const [type, setType] = useState<TransactionType>('expense');
   const [description, setDescription] = useState('');
@@ -119,35 +121,35 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editData ? 'Uredi ponavljajuću transakciju' : 'Nova ponavljajuća transakcija'}</DialogTitle>
+          <DialogTitle>{editData ? t('recurring.editTransaction') : t('recurring.newTransaction')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           {/* Type toggle */}
           <div className="grid grid-cols-3 gap-1 p-1 bg-muted rounded-xl">
-            {(['expense', 'income', 'transfer'] as TransactionType[]).map(t => (
+            {(['expense', 'income', 'transfer'] as TransactionType[]).map(tp => (
               <Button
-                key={t}
+                key={tp}
                 type="button"
-                variant={type === t ? 'default' : 'ghost'}
+                variant={type === tp ? 'default' : 'ghost'}
                 size="sm"
                 className="rounded-lg text-xs"
                 onClick={() => {
-                  setType(t);
-                  if (t === 'income') setCategory('salary');
-                  else if (t === 'expense') setCategory('bills');
+                  setType(tp);
+                  if (tp === 'income') setCategory('salary');
+                  else if (tp === 'expense') setCategory('bills');
                 }}
               >
-                {t === 'expense' ? '💸 Trošak' : t === 'income' ? '💰 Prihod' : '↔️ Prijenos'}
+                {tp === 'expense' ? t('recurring.expense') : tp === 'income' ? t('recurring.income') : t('recurring.transfer')}
               </Button>
             ))}
           </div>
 
           {/* Merchant */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Trgovina / Izvor</Label>
+            <Label className="text-sm">{t('recurring.merchantLabel')}</Label>
             <Input
-              placeholder="npr. HEP, A1, Netflix..."
+              placeholder={t('recurring.merchantPlaceholder')}
               value={merchantName}
               onChange={e => setMerchantName(e.target.value)}
               className="h-11 rounded-xl"
@@ -156,9 +158,9 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Opis *</Label>
+            <Label className="text-sm">{t('recurring.descriptionLabel')}</Label>
             <Input
-              placeholder="npr. Struja, Pretplata, Plaća..."
+              placeholder={t('recurring.descriptionPlaceholder')}
               value={description}
               onChange={e => setDescription(e.target.value)}
               className="h-11 rounded-xl"
@@ -167,7 +169,7 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
 
           {/* Amount */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Iznos *</Label>
+            <Label className="text-sm">{t('recurring.amountLabel')}</Label>
             <Input
               type="number"
               inputMode="decimal"
@@ -181,7 +183,7 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
           {/* Category */}
           {type !== 'transfer' && (
             <div className="space-y-1.5">
-              <Label className="text-sm">Kategorija</Label>
+              <Label className="text-sm">{t('recurring.categoryLabel')}</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger className="h-11 rounded-xl">
                   <SelectValue />
@@ -199,13 +201,13 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
 
           {/* Payment Source */}
           <div className="space-y-1.5">
-            <Label className="text-sm">{type === 'transfer' ? 'Sa računa' : 'Izvor plaćanja'}</Label>
+            <Label className="text-sm">{type === 'transfer' ? t('recurring.fromAccount') : t('recurring.paymentSourceLabel')}</Label>
             <Select value={paymentSource} onValueChange={setPaymentSource}>
               <SelectTrigger className="h-11 rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cash">💵 Gotovina</SelectItem>
+                <SelectItem value="cash">{t('recurring.cash')}</SelectItem>
                 {customPaymentSources.map(s => (
                   <SelectItem key={s.id} value={`custom:${s.id}`}>
                     {s.icon} {s.name}
@@ -218,10 +220,10 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
           {/* Transfer destination */}
           {type === 'transfer' && (
             <div className="space-y-1.5">
-              <Label className="text-sm">Na račun</Label>
+              <Label className="text-sm">{t('recurring.toAccount')}</Label>
               <Select value={transferTo} onValueChange={setTransferTo}>
                 <SelectTrigger className="h-11 rounded-xl">
-                  <SelectValue placeholder="Odaberi odredište" />
+                  <SelectValue placeholder={t('recurring.selectDestination')} />
                 </SelectTrigger>
                 <SelectContent>
                   {customPaymentSources
@@ -238,7 +240,7 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
 
           {/* Frequency */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Učestalost</Label>
+            <Label className="text-sm">{t('recurring.frequencyLabel')}</Label>
             <Select value={frequency} onValueChange={setFrequency}>
               <SelectTrigger className="h-11 rounded-xl">
                 <SelectValue />
@@ -254,7 +256,7 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
           {/* Day of month for monthly */}
           {frequency === 'monthly' && (
             <div className="space-y-1.5">
-              <Label className="text-sm">Dan u mjesecu</Label>
+              <Label className="text-sm">{t('recurring.dayOfMonth')}</Label>
               <Input
                 type="number"
                 min="1"
@@ -268,7 +270,7 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
 
           {/* Next due date */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Sljedeći datum izvršenja</Label>
+            <Label className="text-sm">{t('recurring.nextDueDate')}</Label>
             <Input
               type="date"
               value={nextDueDate}
@@ -279,9 +281,9 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
 
           {/* Note */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Bilješka</Label>
+            <Label className="text-sm">{t('recurring.noteLabel')}</Label>
             <Input
-              placeholder="Opcionalna bilješka..."
+              placeholder={t('recurring.notePlaceholder')}
               value={note}
               onChange={e => setNote(e.target.value)}
               className="h-11 rounded-xl"
@@ -295,14 +297,14 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
               className="flex-1 rounded-xl"
               onClick={() => onOpenChange(false)}
             >
-              <X className="w-4 h-4 mr-1" /> Odustani
+              <X className="w-4 h-4 mr-1" /> {t('recurring.cancel')}
             </Button>
             <Button
               className="flex-1 rounded-xl"
               onClick={handleSave}
               disabled={saving || !description.trim() || !amount || parseFloat(amount) <= 0}
             >
-              <Save className="w-4 h-4 mr-1" /> {editData ? 'Spremi' : 'Dodaj'}
+              <Save className="w-4 h-4 mr-1" /> {editData ? t('recurring.save') : t('recurring.add')}
             </Button>
           </div>
         </div>

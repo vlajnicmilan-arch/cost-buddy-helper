@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBackButton } from "@/hooks/useBackButton";
 
@@ -41,6 +42,7 @@ const DialogContent = React.forwardRef<
   DialogContentProps
 >(({ className, children, showBackButton = true, ...props }, ref) => {
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   return (
     <DialogPortal>
@@ -58,7 +60,7 @@ const DialogContent = React.forwardRef<
         {isMobile && showBackButton ? (
           <DialogPrimitive.Close className="absolute right-3 top-3 z-10 flex h-8 items-center gap-1.5 rounded-full bg-muted/90 px-3 text-foreground opacity-90 ring-offset-background transition-all hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Povratak</span>
+            <span className="text-sm font-medium">{t('common.goBack')}</span>
           </DialogPrimitive.Close>
         ) : (
           <DialogPrimitive.Close className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-muted/90 text-foreground opacity-90 ring-offset-background transition-all hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none sm:right-4 sm:top-4 sm:h-6 sm:w-6 sm:rounded-sm sm:bg-transparent sm:opacity-70">
