@@ -449,12 +449,12 @@ export const BusinessWorkforcePanel = () => {
       <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ukloni radnika?</AlertDialogTitle>
-            <AlertDialogDescription>Svi zapisi o radnim satima ovog radnika bit će izbrisani.</AlertDialogDescription>
+            <AlertDialogTitle>{t('workforce.removeWorkerTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('workforce.removeWorkerDesc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Odustani</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">Ukloni</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">{t('workforce.remove')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
