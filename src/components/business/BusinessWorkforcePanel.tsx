@@ -378,7 +378,7 @@ export const BusinessWorkforcePanel = () => {
                       <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{formatAmount(w.hourly_rate)}/h</span>
                     </div>
                     <p className="text-xs mt-1 font-medium">
-                      Odrađeno: {w.actualHoursTotal}h = <span className="text-primary">{formatAmount(w.actualCostTotal)}</span>
+                      {t('workforce.worked')}: {w.actualHoursTotal}h = <span className="text-primary">{formatAmount(w.actualCostTotal)}</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
