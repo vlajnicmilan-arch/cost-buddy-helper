@@ -61,7 +61,8 @@ const Index = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading, signOut } = useAuth();
   const { storageMode } = useStorage();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
+  const { convert } = useExchangeRates(multiCurrencyEnabled);
   const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
   const { totalReceivable, totalPayable } = useBusinessDebts();
   const isBusinessMode = !!activeBusinessProfileId;
