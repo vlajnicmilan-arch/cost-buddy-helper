@@ -242,7 +242,7 @@ export const BusinessWorkforcePanel = () => {
 
     return (
       <div className="space-y-4">
-        <button onClick={() => setSelectedWorker(null)} className="text-xs text-primary flex items-center gap-1">← Natrag na popis</button>
+        <button onClick={() => setSelectedWorker(null)} className="text-xs text-primary flex items-center gap-1">{t('workforce.backToList')}</button>
         
         <div className="flex items-center justify-between">
           <div>
