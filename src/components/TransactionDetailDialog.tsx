@@ -319,7 +319,7 @@ export const TransactionDetailDialog = ({
               expense.type === 'income' ? "text-income" : 
               expense.type === 'transfer' ? "text-primary" : "text-expense"
             )}>
-              {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount))}
+              {expense.type === 'expense' ? '-' : expense.type === 'transfer' ? '↔' : '+'}{formatAmount(Number(expense.amount), expense.currency as any)}
             </p>
             {expense.type === 'transfer' && (
               <p className="text-xs text-muted-foreground mt-1">
