@@ -4,6 +4,7 @@ import { RecurringTransactionsPanel } from '@/components/recurring/RecurringTran
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useInstallments } from '@/hooks/useInstallments';
@@ -60,7 +61,8 @@ const Index = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading, signOut } = useAuth();
   const { storageMode } = useStorage();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
+  const { convert } = useExchangeRates(multiCurrencyEnabled);
   const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
   const { totalReceivable, totalPayable } = useBusinessDebts();
   const isBusinessMode = !!activeBusinessProfileId;
@@ -233,10 +235,16 @@ const Index = () => {
   );
 
   const netWorth = useMemo(() => {
-    const totalAccountBalances = customPaymentSources.reduce((sum, source) => sum + (source.balance || 0), 0);
+    const totalAccountBalances = customPaymentSources.reduce((sum, source) => {
+      const bal = source.balance || 0;
+      if (multiCurrencyEnabled && source.currency && source.currency !== currency.code) {
+        return sum + convert(bal, source.currency, currency.code);
+      }
+      return sum + bal;
+    }, 0);
     const remainingObligations = installmentPlans.reduce((sum, plan) => sum + (plan.remainingAmount || 0), 0);
     return totalAccountBalances - remainingObligations;
-  }, [customPaymentSources, installmentPlans]);
+  }, [customPaymentSources, installmentPlans, multiCurrencyEnabled, currency.code, convert]);
 
   useAutoBackup();
 
@@ -396,7 +404,13 @@ const Index = () => {
 
               {/* Summary Cards */}
               <SummarySection
-                balance={customPaymentSources.reduce((sum, s) => sum + (s.balance || 0), 0)}
+                balance={customPaymentSources.reduce((sum, s) => {
+                  const bal = s.balance || 0;
+                  if (multiCurrencyEnabled && s.currency && s.currency !== currency.code) {
+                    return sum + convert(bal, s.currency, currency.code);
+                  }
+                  return sum + bal;
+                }, 0)}
                 netWorth={netWorth}
                 totalIncome={totalIncome}
                 totalExpenses={totalExpenses}
@@ -668,7 +682,13 @@ const Index = () => {
 
         {/* ── Summary Cards + Transfers + Recurring ── */}
         <SummarySection
-          balance={customPaymentSources.reduce((sum, s) => sum + (s.balance || 0), 0)}
+          balance={customPaymentSources.reduce((sum, s) => {
+            const bal = s.balance || 0;
+            if (multiCurrencyEnabled && s.currency && s.currency !== currency.code) {
+              return sum + convert(bal, s.currency, currency.code);
+            }
+            return sum + bal;
+          }, 0)}
           netWorth={netWorth}
           totalIncome={totalIncome}
           totalExpenses={totalExpenses}

@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CustomPaymentSource, PaymentSourceCard, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
 import { Plus, X, CreditCard, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
+import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 interface CardInput {
   id?: string;
   card_name: string;
@@ -20,6 +22,7 @@ interface PaymentSourceData {
   icon: string;
   color: string;
   balance: number;
+  currency?: string;
   description?: string;
   cards?: CardInput[];
 }
@@ -48,11 +51,13 @@ export const CustomPaymentSourceDialog = ({
   const [color, setColor] = useState('#6b7280');
   const [balance, setBalance] = useState('0');
   const [description, setDescription] = useState('');
+  const [sourceCurrency, setSourceCurrency] = useState<CurrencyCode>('EUR');
   const [cards, setCards] = useState<CardInput[]>([]);
   const [saving, setSaving] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
   const { t } = useTranslation();
+  const { currency, multiCurrencyEnabled } = useCurrency();
   useEffect(() => {
     if (open) {
       if (source) {
@@ -61,6 +66,7 @@ export const CustomPaymentSourceDialog = ({
         setColor(source.color);
         setBalance(source.balance?.toString() || '0');
         setDescription(source.description || '');
+        setSourceCurrency((source.currency as CurrencyCode) || currency.code);
         setCards((source.cards || []).map(c => ({
           id: c.id,
           card_name: c.card_name,
@@ -73,6 +79,7 @@ export const CustomPaymentSourceDialog = ({
         setColor(initialData.color || '#6b7280');
         setBalance(initialData.balance?.toString() || '0');
         setDescription(initialData.description || '');
+        setSourceCurrency(currency.code);
         setCards(initialData.cards || []);
       } else {
         setName('');
@@ -80,10 +87,11 @@ export const CustomPaymentSourceDialog = ({
         setColor('#6b7280');
         setBalance('0');
         setDescription('');
+        setSourceCurrency(currency.code);
         setCards([]);
       }
     }
-  }, [open, source, initialData]);
+  }, [open, source, initialData, currency.code]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -94,6 +102,7 @@ export const CustomPaymentSourceDialog = ({
         icon, 
         color, 
         balance: parseFloat(balance) || 0,
+        currency: multiCurrencyEnabled ? sourceCurrency : undefined,
         description: description.trim() || undefined
       });
 
@@ -191,16 +200,37 @@ export const CustomPaymentSourceDialog = ({
 
           {/* Balance */}
           <div className="space-y-2">
-            <Label htmlFor="balance">{t('common.balance')} (€)</Label>
-            <Input
-              id="balance"
-              type="number"
-              step="0.01"
-              value={balance}
-              onChange={(e) => setBalance(e.target.value)}
-              placeholder="0.00"
-              className="font-mono"
-            />
+            <Label htmlFor="balance">
+              {t('common.balance')} ({multiCurrencyEnabled ? CURRENCIES.find(c => c.code === sourceCurrency)?.symbol || sourceCurrency : '€'})
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="balance"
+                type="number"
+                step="0.01"
+                value={balance}
+                onChange={(e) => setBalance(e.target.value)}
+                placeholder="0.00"
+                className="font-mono flex-1"
+              />
+              {multiCurrencyEnabled && (
+                <Select value={sourceCurrency} onValueChange={(v) => setSourceCurrency(v as CurrencyCode)}>
+                  <SelectTrigger className="w-[90px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((curr) => (
+                      <SelectItem key={curr.code} value={curr.code}>
+                        <span className="flex items-center gap-1">
+                          <span>{curr.symbol}</span>
+                          <span className="text-xs">{curr.code}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           {/* Description */}
@@ -356,7 +386,7 @@ export const CustomPaymentSourceDialog = ({
                   </div>
                 </div>
                 <span className={`font-mono font-semibold ${formattedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
-                  €{formattedBalance.toFixed(2)}
+                  {(CURRENCIES.find(c => c.code === sourceCurrency)?.symbol || '€')}{formattedBalance.toFixed(2)}
                 </span>
               </div>
               {cards.filter(c => c.last_four_digits).length > 0 && (

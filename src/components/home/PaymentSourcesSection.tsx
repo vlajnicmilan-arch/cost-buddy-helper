@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Wallet, ChevronDown } from 'lucide-react';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 
 interface PaymentSourcesSectionProps {
@@ -12,11 +13,18 @@ interface PaymentSourcesSectionProps {
 
 export const PaymentSourcesSection = ({ customPaymentSources, onSourceClick }: PaymentSourcesSectionProps) => {
   const { t } = useTranslation();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
+  const { convert } = useExchangeRates(multiCurrencyEnabled);
 
   if (customPaymentSources.length === 0) return null;
 
-  const totalBalance = customPaymentSources.reduce((sum, s) => sum + s.balance, 0);
+  const totalBalance = customPaymentSources.reduce((sum, s) => {
+    const bal = s.balance || 0;
+    if (multiCurrencyEnabled && s.currency && s.currency !== currency.code) {
+      return sum + convert(bal, s.currency, currency.code);
+    }
+    return sum + bal;
+  }, 0);
 
   return (
     <Collapsible className="mb-4" data-tutorial="payment-sources">
@@ -59,53 +67,67 @@ export const PaymentSourcesSection = ({ customPaymentSources, onSourceClick }: P
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3"
         >
-          {customPaymentSources.map((source) => (
-            <motion.div
-              key={source.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => onSourceClick(source)}
-              className="p-3 sm:p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group relative overflow-hidden"
-              style={{
-                background: `linear-gradient(135deg, ${source.color}0A 0%, ${source.color}04 50%, transparent 100%)`,
-                borderLeftWidth: 3,
-                borderLeftColor: source.color,
-                boxShadow: `0 2px 12px ${source.color}08`,
-              }}
-              whileHover={{
-                boxShadow: `0 4px 20px ${source.color}18`,
-              }}
-            >
-              {/* Subtle radial glow in corner */}
-              <div
-                className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-300"
-                style={{ background: `radial-gradient(circle, ${source.color} 0%, transparent 70%)` }}
-              />
-              <div className="relative flex items-center gap-2.5 mb-2.5">
-                <span
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-sm"
-                  style={{
-                    background: `linear-gradient(135deg, ${source.color}25, ${source.color}15)`,
-                    color: source.color,
-                  }}
-                >
-                  {source.icon}
-                </span>
-                <span className="text-xs sm:text-sm font-semibold truncate flex-1 text-foreground/90">{source.name}</span>
-              </div>
-              <p className="relative text-base sm:text-lg font-bold font-mono tracking-tight">
-                <span className={source.balance < 0 ? 'text-destructive' : ''} style={{ color: source.balance >= 0 ? source.color : undefined }}>
-                  {formatAmount(source.balance)}
-                </span>
-              </p>
-              {source.cards && source.cards.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {source.cards.length} {source.cards.length === 1 ? t('common.card') : t('common.cards')}
+          {customPaymentSources.map((source) => {
+            const sourceCurr = multiCurrencyEnabled && source.currency
+              ? CURRENCIES.find(c => c.code === source.currency)
+              : null;
+
+            return (
+              <motion.div
+                key={source.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => onSourceClick(source)}
+                className="p-3 sm:p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group relative overflow-hidden"
+                style={{
+                  background: `linear-gradient(135deg, ${source.color}0A 0%, ${source.color}04 50%, transparent 100%)`,
+                  borderLeftWidth: 3,
+                  borderLeftColor: source.color,
+                  boxShadow: `0 2px 12px ${source.color}08`,
+                }}
+                whileHover={{
+                  boxShadow: `0 4px 20px ${source.color}18`,
+                }}
+              >
+                {/* Subtle radial glow in corner */}
+                <div
+                  className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-300"
+                  style={{ background: `radial-gradient(circle, ${source.color} 0%, transparent 70%)` }}
+                />
+                <div className="relative flex items-center gap-2.5 mb-2.5">
+                  <span
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-sm"
+                    style={{
+                      background: `linear-gradient(135deg, ${source.color}25, ${source.color}15)`,
+                      color: source.color,
+                    }}
+                  >
+                    {source.icon}
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold truncate flex-1 text-foreground/90">{source.name}</span>
+                </div>
+                <p className="relative text-base sm:text-lg font-bold font-mono tracking-tight">
+                  <span className={source.balance < 0 ? 'text-destructive' : ''} style={{ color: source.balance >= 0 ? source.color : undefined }}>
+                    {sourceCurr
+                      ? formatAmount(source.balance, source.currency as any)
+                      : formatAmount(source.balance)
+                    }
+                  </span>
                 </p>
-              )}
-            </motion.div>
-          ))}
+                {sourceCurr && sourceCurr.code !== currency.code && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                    ≈ {formatAmount(convert(source.balance, source.currency!, currency.code))}
+                  </p>
+                )}
+                {source.cards && source.cards.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {source.cards.length} {source.cards.length === 1 ? t('common.card') : t('common.cards')}
+                  </p>
+                )}
+              </motion.div>
+            );
+          })}
         </motion.div>
       </CollapsibleContent>
     </Collapsible>
