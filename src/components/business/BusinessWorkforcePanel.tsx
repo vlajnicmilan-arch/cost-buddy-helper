@@ -109,7 +109,7 @@ export const BusinessWorkforcePanel = () => {
       }));
     } catch (err) {
       console.error(err);
-      toast.error('Greška pri učitavanju radnika');
+      toast.error(t('workforce.loadError'));
     } finally {
       setLoading(false);
     }
