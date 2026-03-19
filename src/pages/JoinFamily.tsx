@@ -78,7 +78,7 @@ const JoinFamily = () => {
 
   if (authLoading || status === 'loading') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground">Pridruživanje grupi...</p>
@@ -89,7 +89,7 @@ const JoinFamily = () => {
 
   if (status === 'auth_required') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-sm">
           <h1 className="text-xl font-bold">Pridruži se obiteljskoj grupi</h1>
           <p className="text-muted-foreground">Morate se prijaviti za pridruživanje grupi.</p>
@@ -103,7 +103,7 @@ const JoinFamily = () => {
 
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-sm">
           <XCircle className="w-12 h-12 text-destructive mx-auto" />
           <h1 className="text-xl font-bold">Greška</h1>
@@ -115,7 +115,7 @@ const JoinFamily = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-background flex items-center justify-center p-4">
       <div className="text-center space-y-4 max-w-sm">
         <CheckCircle className="w-12 h-12 text-primary mx-auto" />
         <h1 className="text-xl font-bold">Uspješno!</h1>

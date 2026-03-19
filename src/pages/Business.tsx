@@ -61,7 +61,7 @@ const Business = () => {
   if (!activeBusinessProfileId) return null;
 
   return (
-    <div className="business-mode min-h-screen bg-background pb-16">
+    <div className="business-mode min-h-dvh bg-background pb-16">
       {/* Compact business header */}
       <div className="sticky top-0 z-40 bg-primary">
         <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-3">

@@ -304,7 +304,7 @@ const Admin = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -312,7 +312,7 @@ const Admin = () => {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-4">
+      <div className="min-h-dvh bg-background flex flex-col items-center justify-center gap-4 p-4">
         <p className="text-muted-foreground">Nemate pristup ovoj stranici.</p>
         <Button variant="outline" onClick={() => navigate('/')}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Natrag
@@ -335,7 +335,7 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="max-w-3xl mx-auto p-4 pb-24 space-y-3">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/')}>
