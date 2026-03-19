@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send, ScanSearch, SearchCheck } from 'lucide-react';
+import { Plus, FileText, Loader2, Trash2, ChevronRight, Users, Check, X, Download, Share2, Zap, Send, ScanSearch, SearchCheck, Printer, Mail } from 'lucide-react';
 import { DetectedPartnersDialog } from '@/components/DetectedPartnersDialog';
-import { downloadInvoicePDF, shareInvoicePDF } from '@/lib/invoicePdfExport';
+import { downloadInvoicePDF, shareInvoicePDF, generateInvoicePDF } from '@/lib/invoicePdfExport';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -727,20 +727,45 @@ export const InvoicingPanel = () => {
                   </CardContent>
                 </Card>
 
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={() => {
+                <div className="grid grid-cols-2 gap-2">
+                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => {
+                    if (!businessProfile) { toast.error('Poslovni profil nije učitan'); return; }
+                    const doc = generateInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient);
+                    const blob = doc.output('blob');
+                    const url = URL.createObjectURL(blob);
+                    const printWindow = window.open(url, '_blank');
+                    if (printWindow) {
+                      printWindow.addEventListener('load', () => { printWindow.print(); });
+                    }
+                    setTimeout(() => URL.revokeObjectURL(url), 60000);
+                  }}>
+                    <Printer className="w-3 h-3" /> Ispis
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => {
                     if (businessProfile) downloadInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient);
                     else toast.error('Poslovni profil nije učitan');
                   }}>
                     <Download className="w-3 h-3" /> PDF
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={async () => {
+                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={async () => {
                     if (businessProfile) {
                       try { await shareInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient); }
                       catch { /* user cancelled share */ }
                     } else toast.error('Poslovni profil nije učitan');
                   }}>
                     <Share2 className="w-3 h-3" /> Podijeli
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => {
+                    const clientEmail = detailClient?.email;
+                    const subject = encodeURIComponent(`Račun ${detailInvoice.invoice_number}`);
+                    const body = encodeURIComponent(
+                      `Poštovani,\n\nU prilogu šaljemo račun br. ${detailInvoice.invoice_number} na iznos od ${detailInvoice.total_amount.toFixed(2)} €.\n\nMolimo za plaćanje do ${detailInvoice.due_date ? format(new Date(detailInvoice.due_date), 'dd.MM.yyyy.') : 'dogovorenog roka'}.\n\nS poštovanjem,\n${businessProfile?.company_name || ''}`
+                    );
+                    const mailto = `mailto:${clientEmail || ''}?subject=${subject}&body=${body}`;
+                    window.open(mailto, '_self');
+                    toast.info('Otvorite PDF i priložite ga u email');
+                  }}>
+                    <Mail className="w-3 h-3" /> Email
                   </Button>
                 </div>
 
