@@ -64,23 +64,22 @@ export const useRecurringTransactions = () => {
   }, [fetchRecurring]);
 
   const addRecurring = async (recurring: RecurringTransactionInsert) => {
-    if (!user) return;
+    if (!user) throw new Error('Not authenticated');
 
-    try {
-      const { error } = await supabase
-        .from('recurring_transactions')
-        .insert({
-          ...recurring,
-          user_id: user.id,
-        } as any);
+    const { error } = await supabase
+      .from('recurring_transactions')
+      .insert({
+        ...recurring,
+        user_id: user.id,
+      } as any);
 
-      if (error) throw error;
-      toast.success('Ponavljajuća transakcija dodana');
-      await fetchRecurring();
-    } catch (error) {
+    if (error) {
       console.error('Error adding recurring transaction:', error);
-      toast.error('Greška pri dodavanju');
+      toast.error(`Greška pri dodavanju: ${error.message}`);
+      throw error;
     }
+    toast.success('Ponavljajuća transakcija dodana');
+    await fetchRecurring();
   };
 
   const updateRecurring = async (id: string, updates: Partial<RecurringTransactionInsert>) => {
