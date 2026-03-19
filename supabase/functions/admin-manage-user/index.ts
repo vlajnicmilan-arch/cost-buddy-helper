@@ -46,11 +46,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { action, userId, role } = await req.json();
+    const body = await req.json();
+    const { action, userId, role, password } = body;
 
     if (action === "ban") {
       const { error } = await supabase.auth.admin.updateUserById(userId, {
-        ban_duration: "876600h", // ~100 years
+        ban_duration: "876600h",
       });
       if (error) throw error;
       return new Response(JSON.stringify({ success: true, message: "User banned" }), {
@@ -86,6 +87,22 @@ Deno.serve(async (req) => {
         .eq("role", role);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true, message: "Role removed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "update_password") {
+      if (!password || password.length < 6) {
+        return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        password,
+      });
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, message: "Password updated" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
