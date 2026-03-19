@@ -235,10 +235,16 @@ const Index = () => {
   );
 
   const netWorth = useMemo(() => {
-    const totalAccountBalances = customPaymentSources.reduce((sum, source) => sum + (source.balance || 0), 0);
+    const totalAccountBalances = customPaymentSources.reduce((sum, source) => {
+      const bal = source.balance || 0;
+      if (multiCurrencyEnabled && source.currency && source.currency !== currency.code) {
+        return sum + convert(bal, source.currency, currency.code);
+      }
+      return sum + bal;
+    }, 0);
     const remainingObligations = installmentPlans.reduce((sum, plan) => sum + (plan.remainingAmount || 0), 0);
     return totalAccountBalances - remainingObligations;
-  }, [customPaymentSources, installmentPlans]);
+  }, [customPaymentSources, installmentPlans, multiCurrencyEnabled, currency.code, convert]);
 
   useAutoBackup();
 
