@@ -359,8 +359,8 @@ export const BusinessWorkforcePanel = () => {
       {workers.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>Nema unesenih radnika</p>
-          <p className="text-sm">Dodajte radnike za praćenje radnog vremena i troškova</p>
+          <p>{t('workforce.noWorkers')}</p>
+          <p className="text-sm">{t('workforce.noWorkersHint')}</p>
         </div>
       ) : (
         <div className="space-y-3">
