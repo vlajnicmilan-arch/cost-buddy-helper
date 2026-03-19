@@ -438,8 +438,8 @@ export const BusinessWorkforcePanel = () => {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Odustani</Button>
-              <Button type="submit">{editingWorker ? 'Spremi' : 'Dodaj'}</Button>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
+              <Button type="submit">{editingWorker ? t('common.save') : t('common.add')}</Button>
             </div>
           </form>
         </DialogContent>
