@@ -85,7 +85,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   
   const { storageMode } = useStorage();
   const { user } = useAuth();
-  const { currency, setCurrency } = useCurrency();
+  const { currency, setCurrency, multiCurrencyEnabled, setMultiCurrencyEnabled } = useCurrency();
   const { 
     displayName, setDisplayName,
     aiAssistantEnabled, setAiAssistantEnabled,
