@@ -319,8 +319,8 @@ export const BusinessWorkforcePanel = () => {
                 <Input value={entryNote} onChange={e => setEntryNote(e.target.value)} placeholder={t('workforce.notePlaceholder')} />
               </div>
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setEntryDialogOpen(false)}>Odustani</Button>
-                <Button type="submit">Spremi</Button>
+                <Button type="button" variant="outline" onClick={() => setEntryDialogOpen(false)}>{t('common.cancel')}</Button>
+                <Button type="submit">{t('common.save')}</Button>
               </div>
             </form>
           </DialogContent>
