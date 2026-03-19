@@ -90,6 +90,27 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "update_password") {
+      const { password } = await req.json().catch(() => ({ password: undefined }));
+      const body = await req.text().catch(() => "");
+      // Already parsed above, re-parse from original
+      const parsed = JSON.parse(body || "{}");
+      const newPassword = parsed.password;
+      if (!newPassword || newPassword.length < 6) {
+        return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        password: newPassword,
+      });
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, message: "Password updated" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
