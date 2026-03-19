@@ -661,6 +661,7 @@ export type Database = {
           business_profile_id: string | null
           color: string
           created_at: string
+          currency: string | null
           description: string | null
           icon: string
           id: string
@@ -674,6 +675,7 @@ export type Database = {
           business_profile_id?: string | null
           color?: string
           created_at?: string
+          currency?: string | null
           description?: string | null
           icon?: string
           id?: string
@@ -687,6 +689,7 @@ export type Database = {
           business_profile_id?: string | null
           color?: string
           created_at?: string
+          currency?: string | null
           description?: string | null
           icon?: string
           id?: string
@@ -1792,6 +1795,7 @@ export type Database = {
           currency: string | null
           display_name: string | null
           id: string
+          multi_currency_enabled: boolean | null
           updated_at: string
           user_id: string
         }
@@ -1800,6 +1804,7 @@ export type Database = {
           currency?: string | null
           display_name?: string | null
           id?: string
+          multi_currency_enabled?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -1808,6 +1813,7 @@ export type Database = {
           currency?: string | null
           display_name?: string | null
           id?: string
+          multi_currency_enabled?: boolean | null
           updated_at?: string
           user_id?: string
         }
