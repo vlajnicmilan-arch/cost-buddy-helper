@@ -400,7 +400,7 @@ export const BusinessWorkforcePanel = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingWorker ? 'Uredi radnika' : 'Dodaj radnika'}</DialogTitle>
+            <DialogTitle>{editingWorker ? t('workforce.editWorker') : t('workforce.addWorker')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
