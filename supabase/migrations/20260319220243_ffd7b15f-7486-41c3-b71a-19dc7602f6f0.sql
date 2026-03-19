@@ -1,0 +1,1 @@
+ALTER TABLE public.expenses ADD COLUMN currency text DEFAULT NULL;
