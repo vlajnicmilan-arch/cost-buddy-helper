@@ -18,6 +18,9 @@ import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, Users, CalendarDa
 import { toast } from 'sonner';
 import { startOfMonth, endOfMonth, format, subMonths, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { startOfMonth, endOfMonth, format, subMonths, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { hr } from 'date-fns/locale';
 
 interface Worker {
   id: string;
