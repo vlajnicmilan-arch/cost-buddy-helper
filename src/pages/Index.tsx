@@ -404,7 +404,13 @@ const Index = () => {
 
               {/* Summary Cards */}
               <SummarySection
-                balance={customPaymentSources.reduce((sum, s) => sum + (s.balance || 0), 0)}
+                balance={customPaymentSources.reduce((sum, s) => {
+                  const bal = s.balance || 0;
+                  if (multiCurrencyEnabled && s.currency && s.currency !== currency.code) {
+                    return sum + convert(bal, s.currency, currency.code);
+                  }
+                  return sum + bal;
+                }, 0)}
                 netWorth={netWorth}
                 totalIncome={totalIncome}
                 totalExpenses={totalExpenses}
