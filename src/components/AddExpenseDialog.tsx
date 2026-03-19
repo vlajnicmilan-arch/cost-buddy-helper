@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Category, CATEGORIES, Expense, PaymentSource, PAYMENT_SOURCES, PAYMENT_
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useInstallments } from '@/hooks/useInstallments';
@@ -108,7 +108,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const multiGalleryInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency: primaryCurrency, multiCurrencyEnabled } = useCurrency();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { customCategories, refetch: refetchCustomCategories } = useCustomCategories();
@@ -123,6 +123,17 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
+
+  // Derive currency symbol from the selected payment source
+  const selectedSourceCurrency = useMemo(() => {
+    if (!multiCurrencyEnabled) return primaryCurrency.symbol;
+    const source = customPaymentSources.find(s => s.id === paymentSource || `custom:${s.id}` === paymentSource);
+    if (source?.currency) {
+      const curr = CURRENCIES.find(c => c.code === source.currency);
+      return curr?.symbol || primaryCurrency.symbol;
+    }
+    return primaryCurrency.symbol;
+  }, [multiCurrencyEnabled, paymentSource, customPaymentSources, primaryCurrency.symbol]);
 
   // Auto-suggest category when merchant name changes
   const handleMerchantChange = useCallback((value: string) => {
@@ -1466,7 +1477,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                               </span>
                               <span>{source.name}</span>
                               <span className="text-xs text-muted-foreground ml-auto">
-                                €{source.balance.toFixed(2)}
+                                {(CURRENCIES.find(c => c.code === source.currency)?.symbol || primaryCurrency.symbol)}{source.balance.toFixed(2)}
                               </span>
                             </div>
                           </SelectItem>
@@ -1645,7 +1656,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                                   </span>
                                   <span>{source.name}</span>
                                   <span className="text-xs text-muted-foreground ml-auto">
-                                    €{source.balance.toFixed(2)}
+                                    {(CURRENCIES.find(c => c.code === source.currency)?.symbol || primaryCurrency.symbol)}{source.balance.toFixed(2)}
                                   </span>
                                 </div>
                               </SelectItem>
@@ -1928,7 +1939,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
               {/* Amount */}
               <div className="space-y-2">
                 <Label htmlFor="amount" className="text-sm font-medium">
-                  {t('transactions.amountEur')}
+                  {`${t('common.amount')} (${selectedSourceCurrency})`}
                   {items.length > 0 && (
                     <span className="text-xs text-muted-foreground ml-2">
                       ({t('common.total').toLowerCase()})
