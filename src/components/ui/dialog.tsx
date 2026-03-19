@@ -3,7 +3,6 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useBackButton } from "@/hooks/useBackButton";
 
 import { cn } from "@/lib/utils";
