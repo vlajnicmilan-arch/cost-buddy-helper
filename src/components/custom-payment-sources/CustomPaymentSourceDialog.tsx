@@ -66,6 +66,7 @@ export const CustomPaymentSourceDialog = ({
         setColor(source.color);
         setBalance(source.balance?.toString() || '0');
         setDescription(source.description || '');
+        setSourceCurrency((source.currency as CurrencyCode) || currency.code);
         setCards((source.cards || []).map(c => ({
           id: c.id,
           card_name: c.card_name,
@@ -78,6 +79,7 @@ export const CustomPaymentSourceDialog = ({
         setColor(initialData.color || '#6b7280');
         setBalance(initialData.balance?.toString() || '0');
         setDescription(initialData.description || '');
+        setSourceCurrency(currency.code);
         setCards(initialData.cards || []);
       } else {
         setName('');
@@ -85,10 +87,11 @@ export const CustomPaymentSourceDialog = ({
         setColor('#6b7280');
         setBalance('0');
         setDescription('');
+        setSourceCurrency(currency.code);
         setCards([]);
       }
     }
-  }, [open, source, initialData]);
+  }, [open, source, initialData, currency.code]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
