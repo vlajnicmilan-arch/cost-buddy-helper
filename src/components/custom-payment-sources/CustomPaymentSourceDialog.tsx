@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CustomPaymentSource, PaymentSourceCard, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
 import { Plus, X, CreditCard, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
+import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 interface CardInput {
   id?: string;
   card_name: string;
