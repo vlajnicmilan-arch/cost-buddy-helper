@@ -22,6 +22,7 @@ interface PaymentSourceData {
   icon: string;
   color: string;
   balance: number;
+  currency?: string;
   description?: string;
   cards?: CardInput[];
 }
