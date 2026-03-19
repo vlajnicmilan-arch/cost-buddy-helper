@@ -536,7 +536,7 @@ export const TransactionDetailDialog = ({
                       )}
                     </div>
                     <span className="font-mono font-medium shrink-0">
-                      {formatAmount(item.total_price)}
+                      {formatAmount(item.total_price, expense.currency as any)}
                     </span>
                   </div>
                 ))}
