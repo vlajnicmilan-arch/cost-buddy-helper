@@ -152,11 +152,11 @@ export const BusinessWorkforcePanel = () => {
       if (editingWorker) {
         const { error } = await supabase.from('project_workers').update(payload).eq('id', editingWorker.id);
         if (error) throw error;
-        toast.success('Radnik ažuriran');
+        toast.success(t('workforce.workerUpdated'));
       } else {
         const { error } = await supabase.from('project_workers').insert({ ...payload, project_id: null } as any);
         if (error) throw error;
-        toast.success('Radnik dodan');
+        toast.success(t('workforce.workerAdded'));
       }
       setDialogOpen(false);
       fetchWorkers();
