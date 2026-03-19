@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { supabase } from '@/integrations/supabase/client';
 
-export type CurrencyCode = 'EUR' | 'USD' | 'GBP' | 'CHF' | 'HRK' | 'PLN' | 'CZK' | 'HUF' | 'RSD' | 'BAM';
+export type CurrencyCode = 'EUR' | 'USD' | 'GBP' | 'CHF' | 'HRK' | 'PLN' | 'CZK' | 'HUF' | 'RSD' | 'BAM' | 'PEN';
 
 export interface Currency {
   code: CurrencyCode;
