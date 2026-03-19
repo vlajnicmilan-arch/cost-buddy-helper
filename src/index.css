@@ -385,3 +385,10 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* iOS dynamic viewport height fallback */
+@supports not (min-height: 100dvh) {
+  .min-h-dvh {
+    min-height: -webkit-fill-available;
+  }
+}
