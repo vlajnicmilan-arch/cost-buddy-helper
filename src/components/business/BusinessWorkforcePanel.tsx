@@ -213,14 +213,14 @@ export const BusinessWorkforcePanel = () => {
         note: entryNote || null,
       } as any);
       if (error) throw error;
-      toast.success('Unos dodan');
+      toast.success(t('workforce.entryAdded'));
       setEntryDialogOpen(false);
       setEntryDate(''); setEntryHours(''); setEntryNote('');
       fetchEntries();
       fetchWorkers();
     } catch (err) {
       console.error(err);
-      toast.error('Greška pri unosu');
+      toast.error(t('workforce.entryError'));
     }
   };
 
