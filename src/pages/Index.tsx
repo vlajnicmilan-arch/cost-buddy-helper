@@ -313,7 +313,7 @@ const Index = () => {
 
   if (authLoading && storageMode === 'cloud') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -321,7 +321,7 @@ const Index = () => {
 
   if (!user && storageMode === 'cloud') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -339,7 +339,7 @@ const Index = () => {
     };
 
     return (
-      <div className={`business-theme-${businessProfile?.theme_color || 'ocean-blue'} min-h-screen bg-background pb-20`}>
+      <div className={`business-theme-${businessProfile?.theme_color || 'ocean-blue'} min-h-dvh bg-background pb-20`}>
         {/* Accent bar + Business header */}
         <div className="h-1 bg-primary rounded-b-full" />
         <div className="max-w-4xl mx-auto px-3 sm:px-4 pt-4">
@@ -620,7 +620,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden pb-20">
+    <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
 
         {/* ── Financial Assistant Dialog (portal-rendered, outside header to avoid click conflicts) ── */}

@@ -190,7 +190,7 @@ const Install = () => {
 
   if (isStandalone || isInstalled) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex flex-col items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -212,7 +212,7 @@ const Install = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col p-4 sm:p-6">
+    <div className="min-h-dvh bg-background flex flex-col p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <Button

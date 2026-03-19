@@ -224,7 +224,7 @@ const Auth = () => {
   // Email verification waiting screen
   if (awaitingVerification) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Logo */}
           <div className="text-center">
@@ -310,7 +310,7 @@ const Auth = () => {
   // Password reset email sent screen
   if (resetEmailSent) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Logo */}
           <div className="text-center">
@@ -364,7 +364,7 @@ const Auth = () => {
   // Forgot password form
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Logo */}
           <div className="text-center">
@@ -426,7 +426,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         {/* Back button - show when user can go back */}
         {canGoBack && (

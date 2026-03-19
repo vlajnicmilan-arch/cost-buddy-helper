@@ -28,7 +28,7 @@ export const OfflineBanner = () => {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -60, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-destructive text-destructive-foreground py-2 px-4 text-sm font-medium shadow-md"
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-destructive text-destructive-foreground py-2 px-4 text-sm font-medium shadow-md safe-area-top"
         >
           <WifiOff className="w-4 h-4 shrink-0" />
           <span>{t('offline.noConnection')}</span>

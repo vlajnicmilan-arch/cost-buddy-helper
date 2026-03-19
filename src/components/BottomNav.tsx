@@ -24,7 +24,7 @@ export const BottomNav = () => {
   });
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/50 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/50 safe-area-bottom" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="max-w-4xl mx-auto flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const isActive = item.activePaths.includes(location.pathname);

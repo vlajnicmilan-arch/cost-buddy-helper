@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      minHeight: {
+        dvh: '100dvh',
+      },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],

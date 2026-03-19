@@ -36,7 +36,7 @@ const Budgets = () => {
 
   if (authLoading && storageMode === 'cloud') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -44,7 +44,7 @@ const Budgets = () => {
 
   if (isLocalMode) {
     return (
-      <div className="min-h-screen bg-background pb-20">
+      <div className="min-h-dvh bg-background pb-20">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -62,7 +62,7 @@ const Budgets = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-dvh bg-background pb-20">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
