@@ -334,11 +334,11 @@ export const BusinessWorkforcePanel = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold">Radnici & satnice</h3>
+          <h3 className="font-semibold">{t('workforce.title')}</h3>
           <Badge variant="secondary">{workers.length}</Badge>
         </div>
         <Button size="sm" onClick={openAdd}>
-          <Plus className="w-4 h-4 mr-1" /> Dodaj
+          <Plus className="w-4 h-4 mr-1" /> {t('workforce.add')}
         </Button>
       </div>
 
