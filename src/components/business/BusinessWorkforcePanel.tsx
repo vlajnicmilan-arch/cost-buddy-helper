@@ -250,7 +250,7 @@ export const BusinessWorkforcePanel = () => {
             <p className="text-xs text-muted-foreground">{selectedWorker.position}</p>
           </div>
           <Button size="sm" onClick={() => { setEntryDate(format(new Date(), 'yyyy-MM-dd')); setEntryHours(selectedWorker.work_hours.toString()); setEntryDialogOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> Unos sati
+            <Plus className="w-4 h-4 mr-1" /> {t('workforce.addHours')}
           </Button>
         </div>
 
