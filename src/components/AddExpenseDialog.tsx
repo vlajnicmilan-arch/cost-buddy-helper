@@ -1477,7 +1477,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                               </span>
                               <span>{source.name}</span>
                               <span className="text-xs text-muted-foreground ml-auto">
-                                €{source.balance.toFixed(2)}
+                                {(CURRENCIES.find(c => c.code === source.currency)?.symbol || primaryCurrency.symbol)}{source.balance.toFixed(2)}
                               </span>
                             </div>
                           </SelectItem>
