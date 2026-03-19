@@ -1939,7 +1939,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
               {/* Amount */}
               <div className="space-y-2">
                 <Label htmlFor="amount" className="text-sm font-medium">
-                  {t('transactions.amountEur')}
+                  {`${t('common.amount')} (${selectedSourceCurrency})`}
                   {items.length > 0 && (
                     <span className="text-xs text-muted-foreground ml-2">
                       ({t('common.total').toLowerCase()})
