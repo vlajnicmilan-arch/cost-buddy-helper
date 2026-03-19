@@ -15,6 +15,7 @@ export interface CustomPaymentSource {
   icon: string;
   color: string;
   balance: number;
+  currency?: string;
   description?: string | null;
   sort_order?: number;
   business_profile_id?: string | null;

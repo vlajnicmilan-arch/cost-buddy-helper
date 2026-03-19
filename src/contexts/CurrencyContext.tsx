@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,13 +27,16 @@ export const CURRENCIES: Currency[] = [
 ];
 
 const CURRENCY_STORAGE_KEY = 'vm-balance-currency';
+const MULTI_CURRENCY_KEY = 'vm-multi-currency-enabled';
 const DEFAULT_CURRENCY: CurrencyCode = 'EUR';
 
 interface CurrencyContextType {
   currency: Currency;
   setCurrency: (code: CurrencyCode) => Promise<void>;
-  formatAmount: (amount: number) => string;
+  formatAmount: (amount: number, currencyCode?: CurrencyCode) => string;
   loading: boolean;
+  multiCurrencyEnabled: boolean;
+  setMultiCurrencyEnabled: (enabled: boolean) => Promise<void>;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -42,6 +45,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const [currencyCode, setCurrencyCode] = useState<CurrencyCode>(DEFAULT_CURRENCY);
+  const [multiCurrencyEnabled, setMultiCurrencyEnabledState] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const isLocalMode = storageMode === 'local';
@@ -56,16 +60,18 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
           if (stored && CURRENCIES.some(c => c.code === stored)) {
             setCurrencyCode(stored as CurrencyCode);
           }
+          setMultiCurrencyEnabledState(localStorage.getItem(MULTI_CURRENCY_KEY) === 'true');
         } else if (user) {
           const { data } = await supabase
             .from('profiles')
-            .select('currency')
+            .select('currency, multi_currency_enabled')
             .eq('user_id', user.id)
             .single();
           
           if (data?.currency && CURRENCIES.some(c => c.code === data.currency)) {
             setCurrencyCode(data.currency as CurrencyCode);
           }
+          setMultiCurrencyEnabledState((data as any)?.multi_currency_enabled ?? false);
         }
       } catch (error) {
         console.error('Failed to load currency preference:', error);
@@ -84,7 +90,6 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       if (isLocalMode) {
         localStorage.setItem(CURRENCY_STORAGE_KEY, code);
       } else if (user) {
-        // First check if profile exists
         const { data: existing } = await supabase
           .from('profiles')
           .select('id')
@@ -107,17 +112,35 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const setMultiCurrencyEnabled = useCallback(async (enabled: boolean) => {
+    setMultiCurrencyEnabledState(enabled);
+    
+    try {
+      if (isLocalMode) {
+        localStorage.setItem(MULTI_CURRENCY_KEY, String(enabled));
+      } else if (user) {
+        await supabase
+          .from('profiles')
+          .update({ multi_currency_enabled: enabled } as any)
+          .eq('user_id', user.id);
+      }
+    } catch (error) {
+      console.error('Failed to save multi-currency preference:', error);
+    }
+  }, [isLocalMode, user]);
+
   const currency = CURRENCIES.find(c => c.code === currencyCode) || CURRENCIES[0];
 
-  const formatAmount = (amount: number): string => {
+  const formatAmount = useCallback((amount: number, overrideCurrencyCode?: CurrencyCode): string => {
+    const code = overrideCurrencyCode || currency.code;
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
-      currency: currency.code,
+      currency: code,
     }).format(amount);
-  };
+  }, [currency.code]);
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount, loading }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount, loading, multiCurrencyEnabled, setMultiCurrencyEnabled }}>
       {children}
     </CurrencyContext.Provider>
   );
