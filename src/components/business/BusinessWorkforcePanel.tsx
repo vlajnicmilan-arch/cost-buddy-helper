@@ -304,19 +304,19 @@ export const BusinessWorkforcePanel = () => {
         {/* Add entry dialog */}
         <Dialog open={entryDialogOpen} onOpenChange={setEntryDialogOpen}>
           <DialogContent className="sm:max-w-sm">
-            <DialogHeader><DialogTitle>Unos radnih sati</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t('workforce.addWorkEntry')}</DialogTitle></DialogHeader>
             <form onSubmit={handleAddEntry} className="space-y-4">
               <div className="space-y-2">
-                <Label>Datum</Label>
+                <Label>{t('workforce.date')}</Label>
                 <Input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Odrađeni sati</Label>
+                <Label>{t('workforce.hoursWorkedLabel')}</Label>
                 <Input type="number" step="0.5" min="0" value={entryHours} onChange={e => setEntryHours(e.target.value)} placeholder={selectedWorker.work_hours.toString()} />
               </div>
               <div className="space-y-2">
-                <Label>Napomena (opcionalno)</Label>
-                <Input value={entryNote} onChange={e => setEntryNote(e.target.value)} placeholder="npr. Prekovremeni rad" />
+                <Label>{t('workforce.noteOptional')}</Label>
+                <Input value={entryNote} onChange={e => setEntryNote(e.target.value)} placeholder={t('workforce.notePlaceholder')} />
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setEntryDialogOpen(false)}>Odustani</Button>
