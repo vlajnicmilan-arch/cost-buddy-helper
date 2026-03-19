@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { supabase } from '@/integrations/supabase/client';
 
-export type CurrencyCode = 'EUR' | 'USD' | 'GBP' | 'CHF' | 'HRK' | 'PLN' | 'CZK' | 'HUF' | 'RSD' | 'BAM';
+export type CurrencyCode = 'EUR' | 'USD' | 'GBP' | 'CHF' | 'HRK' | 'PLN' | 'CZK' | 'HUF' | 'RSD' | 'BAM' | 'PEN';
 
 export interface Currency {
   code: CurrencyCode;
@@ -23,6 +23,7 @@ export const CURRENCIES: Currency[] = [
   { code: 'HUF', symbol: 'Ft', name: 'Hungarian Forint', locale: 'hu-HU' },
   { code: 'RSD', symbol: 'RSD', name: 'Serbian Dinar', locale: 'sr-RS' },
   { code: 'BAM', symbol: 'KM', name: 'Convertible Mark', locale: 'bs-BA' },
+  { code: 'PEN', symbol: 'S/', name: 'Peruvian Sol', locale: 'es-PE' },
 ];
 
 const CURRENCY_STORAGE_KEY = 'vm-balance-currency';
