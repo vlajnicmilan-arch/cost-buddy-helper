@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
     
     // Check if it's the service role key (internal/system call)
     const isServiceRole = token === supabaseServiceKey;
+    console.log("Auth check:", { tokenLength: token.length, serviceKeyLength: supabaseServiceKey.length, isServiceRole });
     
     if (!isServiceRole) {
       const { data: { user: caller } } = await supabase.auth.getUser(token);
