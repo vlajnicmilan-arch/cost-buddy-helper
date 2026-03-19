@@ -45,6 +45,7 @@ interface WorkEntry {
 }
 
 export const BusinessWorkforcePanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
