@@ -200,16 +200,37 @@ export const CustomPaymentSourceDialog = ({
 
           {/* Balance */}
           <div className="space-y-2">
-            <Label htmlFor="balance">{t('common.balance')} (€)</Label>
-            <Input
-              id="balance"
-              type="number"
-              step="0.01"
-              value={balance}
-              onChange={(e) => setBalance(e.target.value)}
-              placeholder="0.00"
-              className="font-mono"
-            />
+            <Label htmlFor="balance">
+              {t('common.balance')} ({multiCurrencyEnabled ? CURRENCIES.find(c => c.code === sourceCurrency)?.symbol || sourceCurrency : '€'})
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="balance"
+                type="number"
+                step="0.01"
+                value={balance}
+                onChange={(e) => setBalance(e.target.value)}
+                placeholder="0.00"
+                className="font-mono flex-1"
+              />
+              {multiCurrencyEnabled && (
+                <Select value={sourceCurrency} onValueChange={(v) => setSourceCurrency(v as CurrencyCode)}>
+                  <SelectTrigger className="w-[90px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((curr) => (
+                      <SelectItem key={curr.code} value={curr.code}>
+                        <span className="flex items-center gap-1">
+                          <span>{curr.symbol}</span>
+                          <span className="text-xs">{curr.code}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           {/* Description */}
