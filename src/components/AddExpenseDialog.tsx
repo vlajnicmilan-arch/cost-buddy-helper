@@ -124,16 +124,18 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
 
-  // Derive currency symbol from the selected payment source
-  const selectedSourceCurrency = useMemo(() => {
-    if (!multiCurrencyEnabled) return primaryCurrency.symbol;
+  // Derive currency symbol and code from the selected payment source
+  const selectedSourceCurrencyCode = useMemo(() => {
+    if (!multiCurrencyEnabled) return primaryCurrency.code;
     const source = customPaymentSources.find(s => s.id === paymentSource || `custom:${s.id}` === paymentSource);
-    if (source?.currency) {
-      const curr = CURRENCIES.find(c => c.code === source.currency);
-      return curr?.symbol || primaryCurrency.symbol;
-    }
-    return primaryCurrency.symbol;
-  }, [multiCurrencyEnabled, paymentSource, customPaymentSources, primaryCurrency.symbol]);
+    if (source?.currency) return source.currency;
+    return primaryCurrency.code;
+  }, [multiCurrencyEnabled, paymentSource, customPaymentSources, primaryCurrency.code]);
+
+  const selectedSourceCurrency = useMemo(() => {
+    const curr = CURRENCIES.find(c => c.code === selectedSourceCurrencyCode);
+    return curr?.symbol || primaryCurrency.symbol;
+  }, [selectedSourceCurrencyCode, primaryCurrency.symbol]);
 
   // Auto-suggest category when merchant name changes
   const handleMerchantChange = useCallback((value: string) => {
