@@ -429,11 +429,11 @@ export const BusinessWorkforcePanel = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Zadani sati/dan</Label>
+                <Label>{t('workforce.defaultHours')}</Label>
                 <Input type="number" step="0.5" min="0" value={workHours} onChange={e => setWorkHours(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Cijena sata (€)</Label>
+                <Label>{t('workforce.hourlyRate')}</Label>
                 <Input type="number" step="0.01" min="0" value={hourlyRate} onChange={e => setHourlyRate(e.target.value)} placeholder="0.00" />
               </div>
             </div>
