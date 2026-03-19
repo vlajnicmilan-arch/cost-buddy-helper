@@ -284,6 +284,17 @@
   html, body {
     overflow-x: hidden;
     overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent horizontal swipe/scroll inside all overlays on iOS */
+  [data-radix-dialog-overlay],
+  [data-radix-dialog-content],
+  [vaul-drawer],
+  [vaul-overlay] {
+    overflow-x: hidden;
+    overscroll-behavior: none;
+    touch-action: pan-y pinch-zoom;
   }
 
   body {
