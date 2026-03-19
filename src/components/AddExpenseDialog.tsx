@@ -109,7 +109,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
   const { formatAmount, currency: primaryCurrency, multiCurrencyEnabled } = useCurrency();
-  import { CURRENCIES } from '@/contexts/CurrencyContext';
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { customCategories, refetch: refetchCustomCategories } = useCustomCategories();
