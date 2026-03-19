@@ -419,11 +419,11 @@ export const BusinessWorkforcePanel = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Od</Label>
+                <Label className="text-xs">{t('workforce.from')}</Label>
                 <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Do</Label>
+                <Label className="text-xs">{t('workforce.to')}</Label>
                 <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
               </div>
             </div>
