@@ -281,6 +281,11 @@
     @apply border-border;
   }
 
+  html, body {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
