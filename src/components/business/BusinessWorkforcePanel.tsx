@@ -171,12 +171,12 @@ export const BusinessWorkforcePanel = () => {
     try {
       const { error } = await supabase.from('project_workers').delete().eq('id', deleteId);
       if (error) throw error;
-      toast.success('Radnik uklonjen');
+      toast.success(t('workforce.workerRemoved'));
       setDeleteId(null);
       fetchWorkers();
     } catch (err) {
       console.error(err);
-      toast.error('Greška pri brisanju');
+      toast.error(t('workforce.deleteError'));
     }
   };
 
