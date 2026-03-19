@@ -162,7 +162,7 @@ export const BusinessWorkforcePanel = () => {
       fetchWorkers();
     } catch (err) {
       console.error(err);
-      toast.error('Greška pri spremanju');
+      toast.error(t('workforce.saveError'));
     }
   };
 
