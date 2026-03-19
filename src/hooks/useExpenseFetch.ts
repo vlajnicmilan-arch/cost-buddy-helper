@@ -108,6 +108,7 @@ export const useExpenseFetch = () => {
     payment_source_card_id: raw.payment_source_card_id as string | undefined,
     expense_nature: (raw.expense_nature as 'regular' | 'extraordinary') || undefined,
     business_profile_id: (raw as any).business_profile_id || null,
+    currency: (raw as any).currency || null,
   }), []);
 
   // Initial data load

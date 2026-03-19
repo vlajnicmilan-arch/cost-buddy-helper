@@ -215,6 +215,7 @@ export const useExpenseCRUD = ({
             expense_nature: expense.expense_nature || null,
             note: expense.note || null,
             cash_register_id: expense.cash_register_id || null,
+            currency: expense.currency || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', expense.id);
