@@ -102,6 +102,7 @@ export const CustomPaymentSourceDialog = ({
         icon, 
         color, 
         balance: parseFloat(balance) || 0,
+        currency: multiCurrencyEnabled ? sourceCurrency : undefined,
         description: description.trim() || undefined
       });
 
