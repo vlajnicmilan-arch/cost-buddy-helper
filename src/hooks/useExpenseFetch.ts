@@ -87,6 +87,7 @@ export const useExpenseFetch = () => {
           payment_source_card_id: e.payment_source_card_id,
           expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined,
           business_profile_id: (e as any).business_profile_id || null,
+          currency: (e as any).currency || null,
         })) || []);
       }
     } catch (error) {
