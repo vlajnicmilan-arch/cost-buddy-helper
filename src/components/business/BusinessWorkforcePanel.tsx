@@ -226,7 +226,7 @@ export const BusinessWorkforcePanel = () => {
 
   const deleteEntry = async (id: string) => {
     const { error } = await supabase.from('project_work_entries').delete().eq('id', id);
-    if (!error) { fetchEntries(); fetchWorkers(); toast.success('Unos uklonjen'); }
+    if (!error) { fetchEntries(); fetchWorkers(); toast.success(t('workforce.entryRemoved')); }
   };
 
   const totalCost = workers.reduce((s, w) => s + w.actualCostTotal, 0);
