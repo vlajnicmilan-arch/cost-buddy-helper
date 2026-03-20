@@ -14,6 +14,7 @@ export const useCustomPaymentSources = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
+  const { hasAccess } = useFeatureAccess();
 
   const isLocalMode = storageMode === 'local' && !user;
 
