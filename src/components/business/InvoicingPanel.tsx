@@ -353,7 +353,7 @@ export const InvoicingPanel = () => {
 
       if (updateError) throw updateError;
 
-      toast.success(t('toasts.dataUpdatedFor', { name: data.company_name || client.name, source: data.source === 'sudreg' ? 'sudski registar' : 'AI' })));
+      toast.success(t('toasts.dataUpdatedFor', { name: data.company_name || client.name, source: data.source === 'sudreg' ? 'sudski registar' : 'AI' }));
       loadClients();
     } catch (error: any) {
       console.error('Error enriching client:', error);

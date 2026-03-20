@@ -110,6 +110,7 @@ export const useFamilyGroups = () => {
 };
 
 export const useFamilyMembers = (groupId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [invitations, setInvitations] = useState<FamilyInvitation[]>([]);
@@ -280,6 +281,7 @@ export const useFamilyMembers = (groupId: string | null) => {
 };
 
 export const useFamilySharedResources = (groupId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [sharedSources, setSharedSources] = useState<FamilySharedSource[]>([]);
   const [sharedBudgets, setSharedBudgets] = useState<FamilySharedBudget[]>([]);
@@ -654,6 +656,7 @@ export interface FamilyActivity {
 }
 
 export const useFamilyActivity = (groupId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [activities, setActivities] = useState<FamilyActivity[]>([]);
   const [loading, setLoading] = useState(true);
