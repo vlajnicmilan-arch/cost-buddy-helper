@@ -271,7 +271,7 @@ export const useExpenseCRUD = ({
         });
         toast.success(t('feedback.bulkUpdated', { count: expensesToUpdate.length }));
       } else {
-        if (!user) { toast.error('Moraš biti prijavljen'); return; }
+        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
 
         await Promise.all(expensesToUpdate.map(async (expense) => {
           const { error } = await supabase
