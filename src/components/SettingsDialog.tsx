@@ -36,7 +36,7 @@ import {
 import { languages } from '@/i18n';
 import { useAppLock } from '@/contexts/AppLockContext';
 import { SetPinDialog } from '@/components/SetPinDialog';
-
+import { SubscriptionSection } from '@/components/SubscriptionSection';
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
