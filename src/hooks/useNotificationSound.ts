@@ -39,26 +39,43 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   return false;
 };
 
-export const showBrowserNotification = (title: string, body: string): void => {
+export const showBrowserNotification = async (title: string, body: string): Promise<void> => {
   if (!getPushNotificationsEnabled()) return;
-  
-  // Show notification even when app is active (removed document.hidden check)
-  if (Notification.permission === 'granted') {
-    const notification = new Notification(title, {
-      body,
-      icon: '/logo-192.png',
-      badge: '/logo-192.png',
-      tag: 'vm-balance-notification',
-      requireInteraction: false,
-    });
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
+  const options: NotificationOptions = {
+    body,
+    icon: '/logo-192.png',
+    badge: '/logo-192.png',
+    tag: `vm-notification-${Date.now()}`,
+    requireInteraction: false,
+    silent: false,
+  };
+
+  // Try Service Worker first — required for system tray on mobile PWA/Capacitor
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, {
+        ...options,
+        data: { url: window.location.origin },
+      } as any);
+      return;
+    } catch (swError) {
+      console.warn('SW notification failed, falling back:', swError);
+    }
+  }
+
+  // Fallback to regular Notification API (desktop browsers)
+  try {
+    const notification = new Notification(title, options);
     notification.onclick = () => {
       window.focus();
       notification.close();
     };
-
-    // Auto close after 5 seconds
     setTimeout(() => notification.close(), 5000);
+  } catch (error) {
+    console.error('Notification error:', error);
   }
 };
 
