@@ -46,6 +46,16 @@ const Business = () => {
     if (!activeBusinessProfileId) navigate('/', { replace: true });
   }, [activeBusinessProfileId, navigate]);
 
+  useEffect(() => {
+    if (!activeBusinessProfileId || !user) return;
+    supabase
+      .from('business_profiles')
+      .select('id, company_name, is_vat_payer, industry_type, enabled_modules')
+      .eq('id', activeBusinessProfileId)
+      .single()
+      .then(({ data }) => { if (data) setProfile(data as any); });
+  }, [activeBusinessProfileId, user]);
+
   // Gate: if user doesn't have business access, show upgrade prompt
   if (!canAccessBusiness) {
     return (
@@ -67,8 +77,6 @@ const Business = () => {
       </div>
     );
   }
-
-  useEffect(() => {
     if (!activeBusinessProfileId || !user) return;
     supabase
       .from('business_profiles')
