@@ -10,7 +10,9 @@ const autoVersion = `1.${now.getFullYear() % 100}.${String(now.getMonth() + 1).p
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  server: {
+  define: {
+    __APP_VERSION__: JSON.stringify(autoVersion),
+  },
     host: "::",
     port: 8080,
     hmr: {
