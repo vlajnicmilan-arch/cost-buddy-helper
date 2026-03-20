@@ -91,4 +91,6 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
       </PopoverContent>
     </Popover>
   );
-};
+});
+
+BusinessProfileSwitcher.displayName = 'BusinessProfileSwitcher';
