@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
 
 export interface RecurringTransaction {
