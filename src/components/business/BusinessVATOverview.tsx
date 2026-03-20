@@ -51,9 +51,7 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
         }
       });
 
-      // TODO: Output VAT from invoices will be added later
-      // For now, output VAT only from income transactions with explicit vat_rate
-      });
+      // TODO: Izlazni PDV iz faktura (invoice_items) će biti dodan kasnije
 
       const netVAT = totalOutputVAT - totalInputVAT;
       return { label, totalOutputVAT, totalInputVAT, netVAT, byRate };
