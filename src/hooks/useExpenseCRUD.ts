@@ -167,7 +167,7 @@ export const useExpenseCRUD = ({
       console.error('Error adding expense:', error);
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('description')) {
-        toast.error('Nedostaje opis transakcije. Unesi opis i pokušaj ponovno.');
+        toast.error(t('feedback.missingDescription'));
       } else {
         toast.error(t('toasts.premiseAddError'));
       }
