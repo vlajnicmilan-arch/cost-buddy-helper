@@ -15,15 +15,14 @@ type BillingInterval = 'monthly' | 'yearly';
 const Paywall: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { subscribed, loading } = useSubscription();
+  const { tier: currentTier, subscribed, loading: subLoading } = useSubscription();
 
   // Redirect to home if subscription becomes active
   useEffect(() => {
-    if (!loading && subscribed) {
+    if (!subLoading && subscribed) {
       navigate('/', { replace: true });
     }
-  }, [subscribed, loading, navigate]);
-  const { tier: currentTier, subscribed } = useSubscription();
+  }, [subscribed, subLoading, navigate]);
   const [interval, setInterval] = useState<BillingInterval>('monthly');
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
 
