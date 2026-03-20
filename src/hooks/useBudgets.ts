@@ -24,6 +24,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
   const { storageMode } = useStorage();
   const { expenses: internalExpenses } = useExpenses();
   const { t } = useTranslation();
+  const { hasAccess } = useFeatureAccess();
   
   // Use external expenses if provided, otherwise use internal
   const expenses = options?.externalExpenses ?? internalExpenses;
