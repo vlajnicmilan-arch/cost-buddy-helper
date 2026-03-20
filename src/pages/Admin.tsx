@@ -448,7 +448,7 @@ const Admin = () => {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {format(new Date(u.created_at), 'dd.MM.yyyy.', { locale: hr })}
@@ -461,6 +461,11 @@ const Admin = () => {
                             <span>Zadnja prijava: {format(new Date(latestLoginAt), 'dd.MM. HH:mm', { locale: hr })}</span>
                           );
                         })()}
+                        {u.app_version && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                            v{u.app_version}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
