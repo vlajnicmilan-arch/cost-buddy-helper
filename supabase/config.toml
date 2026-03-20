@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.eracuni-proxy]
 verify_jwt = false
+
+[functions.detect-loans]
+verify_jwt = false

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,10 +23,15 @@ interface LoanDetectionDialogProps {
 export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfirm }: LoanDetectionDialogProps) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
-    new Set(detectedLoans.map((_, i) => i))
-  );
-  const [editedLoans, setEditedLoans] = useState<DetectedLoan[]>(detectedLoans);
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [editedLoans, setEditedLoans] = useState<DetectedLoan[]>([]);
+
+  useEffect(() => {
+    if (detectedLoans.length > 0) {
+      setEditedLoans(detectedLoans);
+      setSelectedIndices(new Set(detectedLoans.map((_, i) => i)));
+    }
+  }, [detectedLoans]);
 
   const toggleIndex = (idx: number) => {
     setSelectedIndices(prev => {
