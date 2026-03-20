@@ -65,6 +65,54 @@ export const BusinessDebtTracker = () => {
     if (debt) updateDebt(id, { status: 'paid', paid_amount: debt.amount });
   };
 
+  const handleRetroactiveScan = async () => {
+    if (!activeBusinessProfileId) return;
+    setScanning(true);
+    try {
+      // Filter business expenses for this profile
+      const businessTxs = allExpenses.filter(e => 
+        (e as any).business_profile_id === activeBusinessProfileId
+      ).map(e => ({
+        id: e.id,
+        description: e.description,
+        amount: Number(e.amount),
+        type: e.type,
+        date: e.date instanceof Date ? e.date : new Date(e.date),
+      }));
+
+      const detected = await detectLoans(businessTxs);
+      if (detected.length === 0) {
+        toast.info(t('business.debts.noLoansFound', 'Nije pronađena nijedna pozajmica u transakcijama'));
+      } else {
+        setDetectedLoans(detected);
+        setLoanDialogOpen(true);
+      }
+    } catch (e) {
+      console.error('Scan error:', e);
+      toast.error('Greška pri skeniranju');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleConfirmLoans = (loans: DetectedLoan[]) => {
+    if (!activeBusinessProfileId) return;
+    for (const loan of loans) {
+      addDebt({
+        business_profile_id: activeBusinessProfileId,
+        type: loan.type,
+        contact_name: loan.contactName,
+        description: loan.description,
+        amount: loan.amount,
+        paid_amount: 0,
+        due_date: null,
+        status: 'active',
+      });
+    }
+    toast.success(t('business.debts.loansAdded', { count: loans.length, defaultValue: `Dodano ${loans.length} pozajmica` }));
+    setDetectedLoans([]);
+  };
+
   const filtered = filter ? debts.filter(d => d.type === filter) : debts;
   const activeDebts = filtered.filter(d => d.status === 'active' || d.status === 'overdue');
   const paidDebts = filtered.filter(d => d.status === 'paid' || d.status === 'cancelled');
