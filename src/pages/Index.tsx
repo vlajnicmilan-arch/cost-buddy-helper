@@ -751,6 +751,20 @@ const Index = () => {
           </div>
         )}
 
+        {/* ── Welcome Checklist for new users ── */}
+        <WelcomeChecklist
+          hasPaymentSources={customPaymentSources.length > 0}
+          hasTransactions={expenses.length > 0}
+          hasBudgets={budgetsWithStats.length > 0}
+          onAddPaymentSource={() => navigate('/wallet')}
+          onAddTransaction={() => {
+            // Trigger add expense dialog
+            const addBtn = document.querySelector('[data-tutorial="add-buttons"] button:last-child') as HTMLButtonElement;
+            addBtn?.click();
+          }}
+          onAddBudget={() => navigate('/budgets')}
+        />
+
         {/* ── Payment Sources ── */}
         <PaymentSourcesSection
           customPaymentSources={customPaymentSources}

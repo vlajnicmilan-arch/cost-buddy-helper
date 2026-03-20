@@ -12,6 +12,7 @@ import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { BusinessProfileSwitcher } from '@/components/BusinessProfileSwitcher';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import logo from '@/assets/logo.png';
 import { Expense, ReceiptItem } from '@/types/expense';
 import { ParsedTransaction } from '@/lib/csvParsers';
