@@ -8,6 +8,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import {
+import { useTranslation } from 'react-i18next';
   saveLocalExpense,
   updateLocalExpense,
   deleteLocalExpense,
@@ -28,6 +29,7 @@ export const useExpenseCRUD = ({
   setExpenses,
   onBalanceUpdated,
 }: UseExpenseCRUDOptions) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated });
   const { checkBudgetAlerts } = useBudgetAlerts();
@@ -167,7 +169,7 @@ export const useExpenseCRUD = ({
       if (msg.includes('description')) {
         toast.error('Nedostaje opis transakcije. Unesi opis i pokušaj ponovno.');
       } else {
-        toast.error('Greška pri dodavanju');
+        toast.error(t('toasts.premiseAddError'));
       }
       throw error; // Re-throw so callers know the operation failed
     }
@@ -255,7 +257,7 @@ export const useExpenseCRUD = ({
       }
     } catch (error) {
       console.error('Error updating expense:', error);
-      toast.error('Greška pri ažuriranju');
+      toast.error(t('toasts.recategorizeError'));
     }
   }, [isLocalMode, user, expenses, setExpenses, handleTransactionUpdate, onBalanceUpdated]);
 
@@ -331,7 +333,7 @@ export const useExpenseCRUD = ({
       toast.success('Obrisano');
     } catch (error) {
       console.error('Error deleting expense:', error);
-      toast.error('Greška pri brisanju');
+      toast.error(t('toasts.cashRegisterDeleteError'));
     }
   }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated]);
 
@@ -441,7 +443,7 @@ export const useExpenseCRUD = ({
       }
     } catch (error) {
       console.error('Error importing CSV:', error);
-      toast.error('Greška pri uvozu transakcija');
+      toast.error(t('toasts.importError'));
       throw error;
     }
   }, [isLocalMode, user, setExpenses, updateBalance, onBalanceUpdated]);

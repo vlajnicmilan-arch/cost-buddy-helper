@@ -104,7 +104,7 @@ export const BusinessDebtTracker = () => {
       }
     } catch (e) {
       console.error('Scan error:', e);
-      toast.error('Greška pri skeniranju');
+      toast.error(t('toasts.scanError'));
     } finally {
       setScanning(false);
     }

@@ -10,8 +10,10 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export const EracuniConnectionPanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,12 +76,12 @@ export const EracuniConnectionPanel = () => {
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Certifikat ne smije biti veći od 5MB');
+      toast.error(t('toasts.certTooLarge'));
       return;
     }
 
     if (!certPassword.trim()) {
-      toast.error('Unesite lozinku certifikata prije uploada');
+      toast.error(t('toasts.enterCertPassword'));
       return;
     }
 
@@ -94,7 +96,7 @@ export const EracuniConnectionPanel = () => {
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
-      toast.error(`Greška pri uploadu: ${uploadError.message}`);
+      toast.error(t('toasts.uploadError', { message: uploadError.message }));
       setUploading(false);
       return;
     }
@@ -111,9 +113,9 @@ export const EracuniConnectionPanel = () => {
       .eq('id', activeBusinessProfileId);
 
     if (updateError) {
-      toast.error('Greška pri spremanju podataka certifikata');
+      toast.error(t('toasts.certDataError'));
     } else {
-      toast.success('✅ Fina certifikat uspješno uvezen!');
+      toast.success(t('toasts.certImported'));
       setCertUploaded(true);
       setCertUploadedAt(new Date().toISOString());
       setFiscalizationEnabled(true);
@@ -167,13 +169,13 @@ export const EracuniConnectionPanel = () => {
       .eq('id', activeBusinessProfileId);
 
     setSaving(false);
-    if (error) toast.error('Greška pri spremanju');
-    else toast.success('API podaci spremljeni');
+    if (error) toast.error(t('toasts.profileSaveError'));
+    else toast.success(t('toasts.apiDataSaved'));
   };
 
   const testConnection = async () => {
     if (!username.trim() || !secretKey.trim() || !token.trim()) {
-      toast.error('Unesite sve API podatke');
+      toast.error(t('toasts.enterAllApiData'));
       return;
     }
     await saveCredentials();
@@ -184,11 +186,11 @@ export const EracuniConnectionPanel = () => {
       });
 
       if (response.error) {
-        toast.error(`Povezivanje neuspješno: ${response.error.message}`);
+        toast.error(t('toasts.connectionFailed', { message: response.error.message }));
       } else if (response.data?.error) {
         toast.error(response.data.error);
       } else {
-        toast.success('✅ Uspješno povezano s e-Računi!');
+        toast.success(t('toasts.eracuniConnected'));
         setConnected(true);
       }
     } catch (err: any) {
@@ -211,7 +213,7 @@ export const EracuniConnectionPanel = () => {
 
     setUsername(''); setSecretKey(''); setToken('');
     setConnected(false);
-    toast.success('e-Računi odspojeni');
+    toast.success(t('toasts.eracuniDisconnected'));
   };
 
   if (loading) {
@@ -281,7 +283,7 @@ export const EracuniConnectionPanel = () => {
                     type={showCertPassword ? 'text' : 'password'}
                     value={certPassword}
                     onChange={e => setCertPassword(e.target.value)}
-                    placeholder="Lozinka za otključavanje certifikata"
+                    placeholder={t('placeholders.certPassword')}
                     className="h-8 text-sm pr-8"
                   />
                   <button
@@ -342,7 +344,7 @@ export const EracuniConnectionPanel = () => {
 
           <div className="space-y-2">
             <Label className="text-xs">Korisničko ime</Label>
-            <Input value={username} onChange={e => setUsername(e.target.value)} placeholder="Vaše korisničko ime" className="h-8 text-sm" />
+            <Input value={username} onChange={e => setUsername(e.target.value)} placeholder={t('placeholders.eracuniUsername')} className="h-8 text-sm" />
           </div>
 
           <div className="space-y-2">

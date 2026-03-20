@@ -503,10 +503,10 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const handleExportPDF = () => {
     try {
       generatePDFReport(getReportData());
-      toast.success('PDF izvješće generirano!');
+      toast.success(t('toasts.pdfReportGenerated'));
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Greška pri generiranju PDF-a');
+      toast.error(t('toasts.pdfGenerateError'));
     }
   };
 
@@ -516,7 +516,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       toast.success('CSV datoteka generirana!');
     } catch (error) {
       console.error('Error generating CSV:', error);
-      toast.error('Greška pri generiranju CSV-a');
+      toast.error(t('toasts.csvGenerateError'));
     }
   };
 
@@ -526,7 +526,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       toast.success('JSON datoteka generirana!');
     } catch (error) {
       console.error('Error generating JSON:', error);
-      toast.error('Greška pri generiranju JSON-a');
+      toast.error(t('toasts.jsonGenerateError'));
     }
   };
 
@@ -795,7 +795,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Pretraži kategorije..."
+                    placeholder={t('placeholders.searchCategories')}
                     value={categoryFilter}
                     onChange={(e) => { setCategoryFilter(e.target.value); setSelectedReportCategory(null); }}
                     className="pl-9 rounded-xl h-9 text-sm"

@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { APP_VERSION } from '@/lib/version';
+import { useTranslation } from 'react-i18next';
 
 interface BugReportDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface BugReportDialogProps {
 }
 
 export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +40,7 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      toast.error('Molimo popunite naslov i opis problema');
+      toast.error(t('toasts.fillTitleAndDescription'));
       return;
     }
 
@@ -58,13 +60,13 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
 
       if (error) throw error;
 
-      toast.success('Problem uspješno prijavljen! Hvala na povratnoj informaciji.');
+      toast.success(t('toasts.bugReportSent'));
       setTitle('');
       setDescription('');
       onOpenChange(false);
     } catch (error) {
       console.error('Bug report error:', error);
-      toast.error('Greška pri slanju prijave. Pokušajte ponovno.');
+      toast.error(t('toasts.bugReportError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +98,7 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
             <Label htmlFor="bug-description">Opis problema</Label>
             <Textarea
               id="bug-description"
-              placeholder="Opišite što se dogodilo, što ste očekivali i korake za reprodukciju..."
+              placeholder={t('placeholders.describeProblem')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={5}

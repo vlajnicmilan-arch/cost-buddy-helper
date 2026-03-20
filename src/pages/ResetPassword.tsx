@@ -9,6 +9,7 @@ import { Lock, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
 
 const passwordSchema = z.object({
   password: z.string().min(6, 'Lozinka mora imati najmanje 6 znakova').max(72, 'Lozinka je predugačka'),
@@ -94,7 +95,7 @@ const ResetPassword = () => {
       }
       
       setSuccess(true);
-      toast.success('Lozinka je uspješno promijenjena!');
+      toast.success(t('toasts.passwordChanged'));
     } finally {
       setLoading(false);
     }

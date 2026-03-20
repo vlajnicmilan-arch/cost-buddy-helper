@@ -96,7 +96,7 @@ export const useBudgetMembers = (budgetId: string | null) => {
       toast.success(t('budget.memberRoleUpdated', 'Uloga člana ažurirana'));
     } catch (error) {
       console.error('Error updating member role:', error);
-      toast.error(t('common.error', 'Greška'));
+      toast.error(t('common.error', t('toasts.error')));
     }
   };
 
@@ -113,7 +113,7 @@ export const useBudgetMembers = (budgetId: string | null) => {
       toast.success(t('budget.memberRemoved', 'Član uklonjen'));
     } catch (error) {
       console.error('Error removing member:', error);
-      toast.error(t('common.error', 'Greška'));
+      toast.error(t('common.error', t('toasts.error')));
     }
   };
 
@@ -130,7 +130,7 @@ export const useBudgetMembers = (budgetId: string | null) => {
       toast.success(t('budget.invitationCancelled', 'Pozivnica otkazana'));
     } catch (error) {
       console.error('Error cancelling invitation:', error);
-      toast.error(t('common.error', 'Greška'));
+      toast.error(t('common.error', t('toasts.error')));
     }
   };
 
@@ -164,7 +164,7 @@ export const useBudgetMembers = (budgetId: string | null) => {
       return link;
     } catch (error) {
       console.error('Error generating invite link:', error);
-      toast.error(t('common.error', 'Greška'));
+      toast.error(t('common.error', t('toasts.error')));
       return null;
     }
   };

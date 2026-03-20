@@ -107,7 +107,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newCategory) {
-      toast.error(t('bulk.selectTransactionsAndCategory', 'Odaberi transakcije i novu kategoriju'));
+      toast.error(t('bulk.selectTransactionsAndCategory', t('toasts.selectTransactionsAndCategory')));
       return;
     }
 
@@ -129,7 +129,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
       setNewCategory('');
       setOpen(false);
     } catch (error) {
-      toast.error(t('bulk.updateError', 'Greška pri ažuriranju transakcija'));
+      toast.error(t('bulk.updateError', t('toasts.updateError')));
     } finally {
       setSaving(false);
     }

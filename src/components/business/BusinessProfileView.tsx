@@ -10,6 +10,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const ProfileField = ({ label, value, field, editing, formValue, onUpdate }: { 
   label: string; 
@@ -57,6 +58,7 @@ interface ProfileData {
 }
 
 export const BusinessProfileView = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -111,9 +113,9 @@ export const BusinessProfileView = () => {
 
     setSaving(false);
     if (error) {
-      toast.error('Greška pri spremanju');
+      toast.error(t('toasts.profileSaveError'));
     } else {
-      toast.success('Podaci tvrtke ažurirani');
+      toast.success(t('toasts.profileUpdated'));
       setProfile({ ...profile, ...form } as ProfileData);
       setEditing(false);
     }

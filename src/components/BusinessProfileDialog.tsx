@@ -457,7 +457,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
           </div>
           <div className="space-y-2">
             <Label>{t('business.bankName', 'Banka')}</Label>
-            <Input value={profile.bank_name} onChange={e => updateField('bank_name', e.target.value)} placeholder="Zagrebačka banka" />
+            <Input value={profile.bank_name} onChange={e => updateField('bank_name', e.target.value)} placeholder={t('placeholders.bankName')} />
           </div>
         </div>
 
@@ -491,11 +491,11 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
           </div>
           <div className="space-y-2">
             <Label>{t('business.activityDesc', 'Opis djelatnosti')}</Label>
-            <Input value={profile.activity_description} onChange={e => updateField('activity_description', e.target.value)} placeholder="Računalno programiranje" />
+            <Input value={profile.activity_description} onChange={e => updateField('activity_description', e.target.value)} placeholder={t('placeholders.activityCode')} />
           </div>
           <div className="space-y-2">
             <Label>{t('business.courtRegistry', 'Trgovački sud')}</Label>
-            <Input value={profile.court_registry} onChange={e => updateField('court_registry', e.target.value)} placeholder="Trgovački sud u Zagrebu" />
+            <Input value={profile.court_registry} onChange={e => updateField('court_registry', e.target.value)} placeholder={t('placeholders.courtRegistry')} />
           </div>
         </div>
       </div>

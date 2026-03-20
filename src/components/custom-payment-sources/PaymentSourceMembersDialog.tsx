@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Users, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Eye, Edit3 } from 'lucide-react';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
+import { useTranslation } from 'react-i18next';
 
 interface PaymentSourceMembersDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ export const PaymentSourceMembersDialog = ({
   onOpenChange,
   paymentSource,
 }: PaymentSourceMembersDialogProps) => {
+  const { t } = useTranslation();
   const { members, invitations, loading, isOwner, removeMember, updateMemberRole, cancelInvitation, refetch } = 
     usePaymentSourceMembers(paymentSource?.id || null);
   
@@ -35,7 +37,7 @@ export const PaymentSourceMembersDialog = ({
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim() || !paymentSource) {
-      toast.error('Unesite email adresu');
+      toast.error(t('toasts.enterEmail'));
       return;
     }
 
@@ -54,23 +56,23 @@ export const PaymentSourceMembersDialog = ({
       
       if (data.error) {
         if (data.error === 'user_not_found') {
-          toast.error('Korisnik s tim emailom nije pronađen');
+          toast.error(t('toasts.userNotFound'));
         } else if (data.error === 'already_member') {
-          toast.error('Korisnik je već član');
+          toast.error(t('toasts.alreadyMember'));
         } else if (data.error === 'already_invited') {
-          toast.error('Korisnik već ima aktivnu pozivnicu');
+          toast.error(t('toasts.alreadyInvited'));
         } else {
-          toast.error(data.message || 'Greška');
+          toast.error(data.message || t('toasts.error'));
         }
         return;
       }
 
-      toast.success('Pozivnica poslana');
+      toast.success(t('toasts.invitationSent'));
       setInviteEmail('');
       refetch();
     } catch (error) {
       console.error('Error sending invitation:', error);
-      toast.error('Greška pri slanju pozivnice');
+      toast.error(t('toasts.invitationSendError'));
     } finally {
       setSendingInvite(false);
     }

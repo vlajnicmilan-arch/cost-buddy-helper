@@ -396,7 +396,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                   </label>
                   <Select value={selectedPaymentSource} onValueChange={setSelectedPaymentSource}>
                     <SelectTrigger className="h-9 rounded-xl text-sm">
-                      <SelectValue placeholder="Odaberi izvor plaćanja..." />
+                      <SelectValue placeholder={t('placeholders.selectPaymentSource')} />
                     </SelectTrigger>
                     <SelectContent>
                       {customPaymentSources.map(ps => (

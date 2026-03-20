@@ -15,6 +15,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 interface TravelOrder {
   id: string;
@@ -65,6 +66,7 @@ const EXPENSE_TYPES = [
 const FULL_DAILY_ALLOWANCE = 26.55; // HR domestic rate
 
 export const TravelOrdersPanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -118,7 +120,7 @@ export const TravelOrdersPanel = () => {
 
   const handleSave = async () => {
     if (!user || !activeBusinessProfileId || !destination.trim()) {
-      toast.error('Unesite odredište');
+      toast.error(t('toasts.enterDestination'));
       return;
     }
     setSaving(true);
@@ -143,7 +145,7 @@ export const TravelOrdersPanel = () => {
       .single() as any;
 
     if (error) {
-      toast.error('Greška pri spremanju');
+      toast.error(t('toasts.profileSaveError'));
       setSaving(false);
       return;
     }
@@ -161,7 +163,7 @@ export const TravelOrdersPanel = () => {
       );
     }
 
-    toast.success('Putni nalog spremljen');
+    toast.success(t('toasts.travelOrderSaved'));
     resetForm();
     setDialogOpen(false);
     setSaving(false);
@@ -170,7 +172,7 @@ export const TravelOrdersPanel = () => {
 
   const handleDelete = async (id: string) => {
     await supabase.from('travel_orders').delete().eq('id', id) as any;
-    toast.success('Putni nalog obrisan');
+    toast.success(t('toasts.travelOrderDeleted'));
     setDetailOrder(null);
     loadOrders();
   };

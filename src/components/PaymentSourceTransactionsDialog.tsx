@@ -262,16 +262,16 @@ export const PaymentSourceTransactionsDialog = ({
     // Reset input so same file can be re-selected next time
     if (pdfInputRef.current) pdfInputRef.current.value = '';
     
-    toast.info('Učitavanje PDF-a...');
+    toast.info(t('toasts.loadingPdf'));
     
     const reader = new FileReader();
     reader.onerror = () => {
-      toast.error('Greška pri čitanju datoteke');
+      toast.error(t('toasts.fileReadError'));
     };
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
       if (!base64) {
-        toast.error('Greška pri čitanju datoteke');
+        toast.error(t('toasts.fileReadError'));
         return;
       }
       try {
@@ -279,11 +279,11 @@ export const PaymentSourceTransactionsDialog = ({
         if (result && result.transactions.length > 0) {
           setPdfPreviewOpen(true);
         } else if (result && result.transactions.length === 0) {
-          toast.warning('PDF je obrađen, ali nisu pronađene transakcije.');
+          toast.warning(t('toasts.pdfNoTransactions'));
         }
       } catch (err) {
         console.error('PDF parse error:', err);
-        toast.error('Greška pri analizi PDF izvoda');
+        toast.error(t('toasts.pdfAnalysisError'));
       }
     };
     reader.readAsDataURL(fileBlob);
@@ -294,23 +294,23 @@ export const PaymentSourceTransactionsDialog = ({
     if (!file) return;
     const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
     if (!isHTMLFile) {
-      toast.error('Odaberi HTML datoteku (.html ili .htm)');
+      toast.error(t('toasts.selectHtmlFile'));
       if (htmlInputRef.current) htmlInputRef.current.value = '';
       return;
     }
     if (htmlInputRef.current) htmlInputRef.current.value = '';
-    toast.info('Učitavanje HTML izvoda...');
+    toast.info(t('toasts.loadingHtml'));
     try {
       const content = await file.text();
       const result = await parseHTML(content);
       if (result && result.transactions.length > 0) {
         setPdfPreviewOpen(true);
       } else if (result && result.transactions.length === 0) {
-        toast.warning('HTML je obrađen, ali nisu pronađene transakcije.');
+        toast.warning(t('toasts.htmlNoTransactions'));
       }
     } catch (err) {
       console.error('HTML parse error:', err);
-      toast.error('Greška pri analizi HTML izvoda');
+      toast.error(t('toasts.htmlAnalysisError'));
     }
   };
 
@@ -358,7 +358,7 @@ export const PaymentSourceTransactionsDialog = ({
       toast.success(t('import.importedFromPDF', { count: transactions.length }));
     } catch (error) {
       console.error('Error importing PDF transactions:', error);
-      toast.error('Greška pri uvozu transakcija');
+      toast.error(t('toasts.importError'));
     } finally {
       setIsImportingPdf(false);
     }
@@ -386,7 +386,7 @@ export const PaymentSourceTransactionsDialog = ({
       toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
     } catch (error) {
       console.error('Error importing duplicate-reviewed transactions:', error);
-      toast.error('Greška pri uvozu transakcija');
+      toast.error(t('toasts.importError'));
     } finally {
       setIsImportingPdf(false);
     }

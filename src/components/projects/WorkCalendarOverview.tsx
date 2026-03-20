@@ -240,7 +240,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       const skippedCount = dateStrings.length - newDates.length;
 
       if (newDates.length === 0) {
-        toast.error('Svi odabrani datumi već imaju zapise za ovog djelatnika');
+        toast.error(t('toasts.duplicateDatesForWorker'));
         setIsBulkSubmitting(false);
         return;
       }

@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useTranslation } from 'react-i18next';
 
 interface PartnerDetails {
   oib?: string;
@@ -35,6 +36,7 @@ interface DetectedPartnersDialogProps {
 }
 
 export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: DetectedPartnersDialogProps) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
   const [partners, setPartners] = useState<DetectedPartner[]>([]);
@@ -180,7 +182,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
       if (error) throw error;
       if (!data?.found) {
-        toast.info(`Nije pronađeno podataka za "${partnerName}"`);
+        toast.info(t('toasts.noDataFoundFor', { name: partnerName }));
         return;
       }
 
@@ -198,10 +200,10 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       setPartnerDetails(prev => ({ ...prev, [partnerName]: newDetails }));
 
       const source = data.source === 'sudreg' ? 'sudski registar' : 'AI';
-      toast.success(`Podaci učitani za "${data.company_name || partnerName}" (izvor: ${source})`);
+      toast.success(t('toasts.dataLoadedFor', { name: data.company_name || partnerName, source }));
     } catch (error: any) {
       console.error('Error looking up company:', error);
-      toast.error('Greška pri dohvatu podataka iz registra');
+      toast.error(t('toasts.registryFetchError'));
     } finally {
       setLookingUp(null);
     }
@@ -269,7 +271,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving partners:', error);
-      toast.error('Greška pri spremanju partnera');
+      toast.error(t('toasts.partnerSaveError'));
     } finally {
       setSaving(false);
     }

@@ -11,6 +11,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface CashRegister {
   id: string;
@@ -31,6 +32,7 @@ interface Premise {
 const deviceTypeLabels: Record<string, string> = { mob: 'MOB', web: 'WEB', pos: 'POS', other: 'Ostalo' };
 
 export const CashRegistersPanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const [registers, setRegisters] = useState<CashRegister[]>([]);
@@ -85,12 +87,12 @@ export const CashRegistersPanel = () => {
 
     if (editing) {
       const { error } = await supabase.from('cash_registers').update(payload).eq('id', editing.id);
-      if (error) toast.error('Greška pri ažuriranju');
-      else toast.success('Blagajna ažurirana');
+      if (error) toast.error(t('toasts.recategorizeError'));
+      else toast.success(t('toasts.cashRegisterUpdated'));
     } else {
       const { error } = await supabase.from('cash_registers').insert(payload);
-      if (error) toast.error('Greška pri dodavanju');
-      else toast.success('Blagajna dodana');
+      if (error) toast.error(t('toasts.premiseAddError'));
+      else toast.success(t('toasts.cashRegisterAdded'));
     }
     setSaving(false);
     setDialogOpen(false);
@@ -101,14 +103,14 @@ export const CashRegistersPanel = () => {
     const val = parseFloat(balanceInput);
     if (isNaN(val)) return;
     const { error } = await supabase.from('cash_registers').update({ balance: val }).eq('id', id);
-    if (error) toast.error('Greška pri ažuriranju stanja');
-    else { toast.success('Stanje ažurirano'); fetchData(); }
+    if (error) toast.error(t('toasts.cashRegisterBalanceError'));
+    else { toast.success(t('toasts.cashRegisterBalanceUpdated')); fetchData(); }
     setEditingBalance(null);
   };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('cash_registers').delete().eq('id', id);
-    if (error) toast.error('Greška pri brisanju');
+    if (error) toast.error(t('toasts.cashRegisterDeleteError'));
     else { toast.success('Obrisano'); fetchData(); }
   };
 

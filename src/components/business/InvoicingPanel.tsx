@@ -18,6 +18,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 interface Client {
   id: string;
@@ -60,6 +61,7 @@ interface InvoiceItem {
 type View = 'menu' | 'clients' | 'invoices' | 'new_invoice' | 'new_client';
 
 export const InvoicingPanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -150,7 +152,7 @@ export const InvoicingPanel = () => {
         loadInvoices();
       }
     } catch (err: any) {
-      toast.error(err.message || 'Greška');
+      toast.error(err.message || t('toasts.error'));
     }
     setFiscalizing(false);
   };
@@ -165,12 +167,12 @@ export const InvoicingPanel = () => {
       if (res.error || res.data?.error) {
         toast.error(res.data?.error || 'Slanje e-Računa neuspješno');
       } else {
-        toast.success('✅ e-Račun poslan!');
+        toast.success(t('toasts.eInvoiceSent'));
         setDetailInvoice(null);
         loadInvoices();
       }
     } catch (err: any) {
-      toast.error(err.message || 'Greška');
+      toast.error(err.message || t('toasts.error'));
     }
     setSendingEracun(false);
   };
@@ -185,10 +187,10 @@ export const InvoicingPanel = () => {
       if (res.error || res.data?.error) {
         toast.error(res.data?.error || 'Sinkronizacija neuspješna');
       } else {
-        toast.success('✅ Račun poslan na e-Računi.hr');
+        toast.success(t('toasts.eInvoiceSentToEracuni'));
       }
     } catch (err: any) {
-      toast.error(err.message || 'Greška');
+      toast.error(err.message || t('toasts.error'));
     }
     setSyncingToEracuni(false);
   };
@@ -215,7 +217,7 @@ export const InvoicingPanel = () => {
 
   const saveClient = async () => {
     if (!user || !activeBusinessProfileId || !clientName.trim()) {
-      toast.error('Unesite naziv klijenta');
+      toast.error(t('toasts.enterClientName'));
       return;
     }
     setSaving(true);
@@ -230,8 +232,8 @@ export const InvoicingPanel = () => {
       phone: clientPhone.trim() || null,
     } as any);
     setSaving(false);
-    if (error) { toast.error('Greška'); return; }
-    toast.success('Klijent dodan');
+    if (error) { toast.error(t('toasts.error')); return; }
+    toast.success(t('toasts.clientAdded'));
     setClientName(''); setClientOib(''); setClientAddress(''); setClientCity(''); setClientEmail(''); setClientPhone('');
     loadClients();
     setView('clients');
@@ -247,7 +249,7 @@ export const InvoicingPanel = () => {
 
   const saveEditingClient = async () => {
     if (!editingClient || !editingClient.name.trim()) {
-      toast.error('Unesite naziv klijenta');
+      toast.error(t('toasts.enterClientName'));
       return;
     }
 
@@ -267,18 +269,18 @@ export const InvoicingPanel = () => {
 
     setSaving(false);
     if (error) {
-      toast.error('Greška pri spremanju klijenta');
+      toast.error(t('toasts.clientSaveError'));
       return;
     }
 
-    toast.success('Klijent ažuriran');
+    toast.success(t('toasts.clientUpdated'));
     setEditingClient(null);
     loadClients();
   };
 
   const deleteClient = async (id: string) => {
     await supabase.from('clients').delete().eq('id', id) as any;
-    toast.success('Klijent obrisan');
+    toast.success(t('toasts.clientDeleted'));
     if (editingClient?.id === id) setEditingClient(null);
     loadClients();
   };
@@ -299,7 +301,7 @@ export const InvoicingPanel = () => {
         .filter(Boolean);
 
       if (merchants.length === 0) {
-        toast.info('Nije pronađen nijedan partner u transakcijama.');
+        toast.info(t('toasts.noPartnersInTransactions'));
         setScanning(false);
         return;
       }
@@ -308,7 +310,7 @@ export const InvoicingPanel = () => {
       setScanPartnersOpen(true);
     } catch (error) {
       console.error('Error scanning transactions:', error);
-      toast.error('Greška pri skeniranju transakcija');
+      toast.error(t('toasts.transactionScanError'));
     } finally {
       setScanning(false);
     }
@@ -325,7 +327,7 @@ export const InvoicingPanel = () => {
 
       if (error) throw error;
       if (!data?.found) {
-        toast.info(`Nije pronađeno podataka za "${client.name}"`);
+        toast.info(t('toasts.noDataFoundFor', { name: client.name }));
         return;
       }
 
@@ -340,7 +342,7 @@ export const InvoicingPanel = () => {
       if (data.contact_person) updates.contact_person = data.contact_person;
 
       if (Object.keys(updates).length === 0) {
-        toast.info('Klijent već ima sve dostupne podatke.');
+        toast.info(t('toasts.clientAlreadyComplete'));
         return;
       }
 
@@ -351,11 +353,11 @@ export const InvoicingPanel = () => {
 
       if (updateError) throw updateError;
 
-      toast.success(`Podaci ažurirani za "${data.company_name || client.name}" (izvor: ${data.source === 'sudreg' ? 'sudski registar' : 'AI'})`);
+      toast.success(t('toasts.dataUpdatedFor', { name: data.company_name || client.name, source: data.source === 'sudreg' ? 'sudski registar' : 'AI' })));
       loadClients();
     } catch (error: any) {
       console.error('Error enriching client:', error);
-      toast.error('Greška pri dohvatu podataka');
+      toast.error(t('toasts.dataFetchError'));
     } finally {
       setEnrichingClientId(null);
     }
@@ -403,7 +405,7 @@ export const InvoicingPanel = () => {
       notes: invoiceNotes.trim() || null,
     } as any).select().single() as any;
 
-    if (error || !inv) { toast.error('Greška'); setSaving(false); return; }
+    if (error || !inv) { toast.error(t('toasts.error')); setSaving(false); return; }
 
     await supabase.from('invoice_items').insert(
       validItems.map(item => ({
@@ -418,7 +420,7 @@ export const InvoicingPanel = () => {
       })) as any
     );
 
-    toast.success(`Račun ${invNum} kreiran`);
+    toast.success(t('toasts.invoiceCreated', { number: invNum }));
     setSaving(false);
     setInvoiceItems([{ description: '', quantity: 1, unit: 'kom', unit_price: 0, discount: 0, vat_rate: 25 }]);
     setInvoiceNumber(''); setSelectedClientId(''); setInvoiceNotes('');
@@ -450,7 +452,7 @@ export const InvoicingPanel = () => {
 
   const deleteInvoice = async (id: string) => {
     await supabase.from('invoices').delete().eq('id', id) as any;
-    toast.success('Račun obrisan');
+    toast.success(t('toasts.invoiceDeleted'));
     setDetailInvoice(null);
     loadInvoices();
   };
@@ -729,7 +731,7 @@ export const InvoicingPanel = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => {
-                    if (!businessProfile) { toast.error('Poslovni profil nije učitan'); return; }
+                    if (!businessProfile) { toast.error(t('toasts.profileNotLoaded')); return; }
                     const doc = generateInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient);
                     const blob = doc.output('blob');
                     const url = URL.createObjectURL(blob);
@@ -743,7 +745,7 @@ export const InvoicingPanel = () => {
                   </Button>
                   <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => {
                     if (businessProfile) downloadInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient);
-                    else toast.error('Poslovni profil nije učitan');
+                    else toast.error(t('toasts.profileNotLoaded'));
                   }}>
                     <Download className="w-3 h-3" /> PDF
                   </Button>
@@ -751,7 +753,7 @@ export const InvoicingPanel = () => {
                     if (businessProfile) {
                       try { await shareInvoicePDF(detailInvoice, detailItems, businessProfile, detailClient); }
                       catch { /* user cancelled share */ }
-                    } else toast.error('Poslovni profil nije učitan');
+                    } else toast.error(t('toasts.profileNotLoaded'));
                   }}>
                     <Share2 className="w-3 h-3" /> Podijeli
                   </Button>
@@ -763,7 +765,7 @@ export const InvoicingPanel = () => {
                     );
                     const mailto = `mailto:${clientEmail || ''}?subject=${subject}&body=${body}`;
                     window.open(mailto, '_self');
-                    toast.info('Otvorite PDF i priložite ga u email');
+                    toast.info(t('toasts.openPdfAndAttach'));
                   }}>
                     <Mail className="w-3 h-3" /> Email
                   </Button>
@@ -922,7 +924,7 @@ export const InvoicingPanel = () => {
 
           <div className="space-y-2">
             <Label className="text-xs">Napomene</Label>
-            <Textarea value={invoiceNotes} onChange={e => setInvoiceNotes(e.target.value)} placeholder="Napomene na računu..." className="min-h-[50px]" />
+            <Textarea value={invoiceNotes} onChange={e => setInvoiceNotes(e.target.value)} placeholder={t('placeholders.invoiceNotes')} className="min-h-[50px]" />
           </div>
 
           <Button className="w-full" onClick={saveInvoice} disabled={saving}>

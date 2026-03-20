@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export interface RecurringTransaction {
   id: string;
@@ -32,6 +33,7 @@ export interface RecurringTransaction {
 export type RecurringTransactionInsert = Omit<RecurringTransaction, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'business_profile_id'>;
 
 export const useRecurringTransactions = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const { activeBusinessProfileId } = useAppState();
@@ -108,7 +110,7 @@ export const useRecurringTransactions = () => {
       await fetchRecurring();
     } catch (error) {
       console.error('Error updating recurring transaction:', error);
-      toast.error('Greška pri ažuriranju');
+      toast.error(t('toasts.recategorizeError'));
     }
   };
 
@@ -126,7 +128,7 @@ export const useRecurringTransactions = () => {
       setRecurringTransactions(prev => prev.filter(r => r.id !== id));
     } catch (error) {
       console.error('Error deleting recurring transaction:', error);
-      toast.error('Greška pri brisanju');
+      toast.error(t('toasts.cashRegisterDeleteError'));
     }
   };
 

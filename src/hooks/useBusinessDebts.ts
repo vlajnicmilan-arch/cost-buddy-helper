@@ -4,8 +4,10 @@ import { useAuth } from './useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
 import { BusinessDebt, DebtType, DebtStatus } from '@/types/businessDebt';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export const useBusinessDebts = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
   const [debts, setDebts] = useState<BusinessDebt[]>([]);
@@ -41,7 +43,7 @@ export const useBusinessDebts = () => {
     const { error } = await supabase
       .from('business_debts' as any)
       .insert({ ...debt, user_id: user.id } as any);
-    if (error) { toast.error('Greška pri dodavanju'); return; }
+    if (error) { toast.error(t('toasts.premiseAddError')); return; }
     toast.success('Dugovanje dodano');
     fetchDebts();
   };
@@ -51,7 +53,7 @@ export const useBusinessDebts = () => {
       .from('business_debts' as any)
       .update(updates as any)
       .eq('id', id);
-    if (error) { toast.error('Greška pri ažuriranju'); return; }
+    if (error) { toast.error(t('toasts.recategorizeError')); return; }
     toast.success('Ažurirano');
     fetchDebts();
   };
@@ -61,7 +63,7 @@ export const useBusinessDebts = () => {
       .from('business_debts' as any)
       .delete()
       .eq('id', id);
-    if (error) { toast.error('Greška pri brisanju'); return; }
+    if (error) { toast.error(t('toasts.cashRegisterDeleteError')); return; }
     toast.success('Obrisano');
     fetchDebts();
   };

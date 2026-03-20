@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface BugReport {
   id: string;
@@ -122,7 +123,7 @@ const Admin = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      toast.error('Greška pri učitavanju prijava');
+      toast.error(t('toasts.loadBugReportsError'));
       setLoading(false);
       return;
     }
@@ -168,7 +169,7 @@ const Admin = () => {
       setHasMoreUsers(result?.pagination?.hasMore ?? false);
       setUsersPage(page);
     } catch (err: any) {
-      toast.error('Greška pri učitavanju korisnika');
+      toast.error(t('toasts.loadUsersError'));
       console.error(err);
     }
     setUsersLoading(false);
@@ -181,7 +182,7 @@ const Admin = () => {
       .eq('id', id);
 
     if (error) {
-      toast.error('Greška pri ažuriranju statusa');
+      toast.error(t('toasts.statusUpdateError'));
     } else {
       setReports(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
       toast.success(`Status promijenjen u "${statusLabels[newStatus]}"`);
@@ -205,7 +206,7 @@ const Admin = () => {
 
   const sendBroadcastNotification = async () => {
     if (!notifTitle.trim() || !notifMessage.trim()) {
-      toast.error('Unesite naslov i poruku');
+      toast.error(t('toasts.enterTitleAndMessage'));
       return;
     }
     setSendingNotif(true);
@@ -226,7 +227,7 @@ const Admin = () => {
   const sendReplyToReporter = async (report: BugReport) => {
     const replyText = replyMessages[report.id]?.trim();
     if (!replyText) {
-      toast.error('Unesite poruku');
+      toast.error(t('toasts.enterMessage'));
       return;
     }
     setSendingReply(report.id);
@@ -650,7 +651,7 @@ const Admin = () => {
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Naslov</label>
                   <Input
-                    placeholder="npr. Novo ažuriranje aplikacije"
+                    placeholder={t('placeholders.notificationTitle')}
                     value={notifTitle}
                     onChange={(e) => setNotifTitle(e.target.value)}
                   />

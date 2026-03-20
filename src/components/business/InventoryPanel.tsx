@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface InventoryItem {
   id: string;
@@ -38,6 +39,7 @@ interface Movement {
 type View = 'list' | 'new_item' | 'detail' | 'movement';
 
 export const InventoryPanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -82,7 +84,7 @@ export const InventoryPanel = () => {
 
   const saveItem = async () => {
     if (!user || !activeBusinessProfileId || !itemName.trim()) {
-      toast.error('Unesite naziv artikla');
+      toast.error(t('toasts.enterItemName'));
       return;
     }
     setSaving(true);
@@ -99,8 +101,8 @@ export const InventoryPanel = () => {
       current_quantity: Number(itemCurrentQty) || 0,
     } as any);
     setSaving(false);
-    if (error) { toast.error('Greška'); return; }
-    toast.success('Artikl dodan');
+    if (error) { toast.error(t('toasts.error')); return; }
+    toast.success(t('toasts.itemAdded'));
     resetItemForm();
     loadItems();
     setView('list');
@@ -113,7 +115,7 @@ export const InventoryPanel = () => {
 
   const deleteItem = async (id: string) => {
     await supabase.from('inventory_items').delete().eq('id', id) as any;
-    toast.success('Artikl obrisan');
+    toast.success(t('toasts.itemDeleted'));
     setSelectedItem(null);
     setView('list');
     loadItems();
@@ -133,7 +135,7 @@ export const InventoryPanel = () => {
 
   const saveMovement = async () => {
     if (!selectedItem || !movementQty || Number(movementQty) <= 0) {
-      toast.error('Unesite količinu');
+      toast.error(t('toasts.enterQuantity'));
       return;
     }
     setSaving(true);
@@ -157,7 +159,7 @@ export const InventoryPanel = () => {
       .update({ current_quantity: newQty } as any)
       .eq('id', selectedItem.id);
 
-    toast.success(movementType === 'in' ? 'Ulaz zabilježen' : 'Izlaz zabilježen');
+    toast.success(movementType === 'in' ? t('toasts.movementIn') : t('toasts.movementOut'));
     setSaving(false);
     setMovementQty(''); setMovementPrice(''); setMovementNote('');
     setView('detail');
@@ -191,7 +193,7 @@ export const InventoryPanel = () => {
         </div>
         <div className="space-y-2">
           <Label className="text-xs">Napomena</Label>
-          <Input value={movementNote} onChange={e => setMovementNote(e.target.value)} placeholder="npr. Dobavljač XY" />
+          <Input value={movementNote} onChange={e => setMovementNote(e.target.value)} placeholder={t('placeholders.supplierName')} />
         </div>
         <p className="text-xs text-muted-foreground">
           Trenutno stanje: <span className="font-medium">{selectedItem.current_quantity} {selectedItem.unit}</span>

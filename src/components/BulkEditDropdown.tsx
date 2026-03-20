@@ -148,7 +148,7 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newPaymentSource) {
-      toast.error('Odaberi transakcije i novi izvor plaćanja');
+      toast.error(t('toasts.selectTransactionsAndSource'));
       return;
     }
 
@@ -164,11 +164,11 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
       await onUpdateExpenses(updatedExpenses);
       
       const sourceInfo = getPaymentSourceInfo(newPaymentSource);
-      toast.success(`Ažurirano ${selectedIds.size} transakcija na "${sourceInfo.name}"`);
+      toast.success(t('toasts.transactionsUpdatedSource', { count: selectedIds.size, name: sourceInfo.name }));
       
       handleClose();
     } catch (error) {
-      toast.error('Greška pri ažuriranju transakcija');
+      toast.error(t('toasts.updateError'));
     } finally {
       setSaving(false);
     }
@@ -223,7 +223,7 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
           <div className="flex items-center gap-2 shrink-0">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Pretraži transakcije..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 h-9" />
+              <Input placeholder={t('placeholders.searchTransactions')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 h-9" />
             </div>
             <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={selectAll}>
               {selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
@@ -263,7 +263,7 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
           <div className="flex-1">
             <Select value={newPaymentSource} onValueChange={(v) => setNewPaymentSource(v as PaymentSource)}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Odaberi novi izvor plaćanja..." />
+                <SelectValue placeholder={t('placeholders.selectNewPaymentSource')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] z-[100]">
                 {PAYMENT_SOURCE_GROUPS.map((group) => (
@@ -364,7 +364,7 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newCategory) {
-      toast.error('Odaberi transakcije i novu kategoriju');
+      toast.error(t('toasts.selectTransactionsAndCategory'));
       return;
     }
     setSaving(true);
@@ -373,10 +373,10 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
       const updatedExpenses = expensesToUpdate.map(e => ({ ...e, category: newCategory, updated_at: new Date().toISOString() }));
       await onUpdateExpenses(updatedExpenses);
       const categoryInfo = getCategoryInfoExtended(newCategory);
-      toast.success(`Ažurirano ${selectedIds.size} transakcija na "${categoryInfo.name}"`);
+      toast.success(t('toasts.transactionsUpdatedCategory', { count: selectedIds.size, name: categoryInfo.name }));
       handleClose();
     } catch (error) {
-      toast.error('Greška pri ažuriranju transakcija');
+      toast.error(t('toasts.updateError'));
     } finally {
       setSaving(false);
     }
@@ -423,7 +423,7 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
           <div className="flex items-center gap-2 shrink-0">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Pretraži transakcije..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 h-9" />
+              <Input placeholder={t('placeholders.searchTransactions')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 h-9" />
             </div>
             <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={selectAll}>
               {selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}

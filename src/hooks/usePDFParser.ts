@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, TransactionType } from '@/types/expense';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export interface ParsedPDFTransaction {
   date: Date;
@@ -77,6 +78,7 @@ function detectPaymentSource(
 }
 
 export const usePDFParser = () => {
+  const { t } = useTranslation();
   const [parsing, setParsing] = useState(false);
   const [parsedData, setParsedData] = useState<PDFParseResult | null>(null);
 
@@ -221,7 +223,7 @@ export const usePDFParser = () => {
       return result;
     } catch (error) {
       console.error('Error parsing HTML statement:', error);
-      toast.error(error instanceof Error ? error.message : 'Greška pri analizi HTML izvoda');
+      toast.error(error instanceof Error ? error.message : t('toasts.htmlAnalysisError'));
       return null;
     } finally {
       setParsing(false);
