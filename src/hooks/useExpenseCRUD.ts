@@ -158,9 +158,9 @@ export const useExpenseCRUD = ({
         }
 
         if (isPendingMemberTransaction) {
-          toast.success('Transakcija poslana vlasniku na odobrenje');
+          toast.success(t('feedback.pendingSent'));
         } else {
-          toast.success(normalizedExpense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
+          toast.success(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
         }
       }
     } catch (error) {
