@@ -65,7 +65,7 @@ const JoinFamily = () => {
         }
 
         setStatus('success');
-        toast.success(`Pridružili ste se grupi "${invitation.target_name}"!`);
+        toast.success(t('toasts.joinedGroup', { name: invitation.target_name }));
       } catch (error) {
         console.error('Error accepting family invitation:', error);
         setStatus('error');

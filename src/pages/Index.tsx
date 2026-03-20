@@ -323,7 +323,7 @@ const Index = () => {
         last_generated_date: new Date().toISOString().split('T')[0],
       });
     }
-    toast.success(`${selectedIds.length} obveza označeno kao plaćeno`);
+    toast.success(t('toasts.obligationsMarkedPaid', { count: selectedIds.length }));
     refetchRecurring();
   }, [recurringTransactions, updateRecurring, refetchRecurring, calculateNextDueDateForMatch]);
 

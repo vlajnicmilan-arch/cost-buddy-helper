@@ -164,7 +164,7 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
       await onUpdateExpenses(updatedExpenses);
       
       const sourceInfo = getPaymentSourceInfo(newPaymentSource);
-      toast.success(`Ažurirano ${selectedIds.size} transakcija na "${sourceInfo.name}"`);
+      toast.success(t('toasts.transactionsUpdatedSource', { count: selectedIds.size, name: sourceInfo.name }));
       
       handleClose();
     } catch (error) {
@@ -373,7 +373,7 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
       const updatedExpenses = expensesToUpdate.map(e => ({ ...e, category: newCategory, updated_at: new Date().toISOString() }));
       await onUpdateExpenses(updatedExpenses);
       const categoryInfo = getCategoryInfoExtended(newCategory);
-      toast.success(`Ažurirano ${selectedIds.size} transakcija na "${categoryInfo.name}"`);
+      toast.success(t('toasts.transactionsUpdatedCategory', { count: selectedIds.size, name: categoryInfo.name }));
       handleClose();
     } catch (error) {
       toast.error(t('toasts.updateError'));

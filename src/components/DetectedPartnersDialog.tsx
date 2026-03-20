@@ -182,7 +182,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
       if (error) throw error;
       if (!data?.found) {
-        toast.info(`Nije pronađeno podataka za "${partnerName}"`);
+        toast.info(t('toasts.noDataFoundFor', { name: partnerName }));
         return;
       }
 
@@ -200,7 +200,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       setPartnerDetails(prev => ({ ...prev, [partnerName]: newDetails }));
 
       const source = data.source === 'sudreg' ? 'sudski registar' : 'AI';
-      toast.success(`Podaci učitani za "${data.company_name || partnerName}" (izvor: ${source})`);
+      toast.success(t('toasts.dataLoadedFor', { name: data.company_name || partnerName, source }));
     } catch (error: any) {
       console.error('Error looking up company:', error);
       toast.error(t('toasts.registryFetchError'));

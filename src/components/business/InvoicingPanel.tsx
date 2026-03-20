@@ -327,7 +327,7 @@ export const InvoicingPanel = () => {
 
       if (error) throw error;
       if (!data?.found) {
-        toast.info(`Nije pronađeno podataka za "${client.name}"`);
+        toast.info(t('toasts.noDataFoundFor', { name: client.name }));
         return;
       }
 
@@ -353,7 +353,7 @@ export const InvoicingPanel = () => {
 
       if (updateError) throw updateError;
 
-      toast.success(`Podaci ažurirani za "${data.company_name || client.name}" (izvor: ${data.source === 'sudreg' ? 'sudski registar' : 'AI'})`);
+      toast.success(t('toasts.dataUpdatedFor', { name: data.company_name || client.name, source: data.source === 'sudreg' ? 'sudski registar' : 'AI' })));
       loadClients();
     } catch (error: any) {
       console.error('Error enriching client:', error);
@@ -420,7 +420,7 @@ export const InvoicingPanel = () => {
       })) as any
     );
 
-    toast.success(`Račun ${invNum} kreiran`);
+    toast.success(t('toasts.invoiceCreated', { number: invNum }));
     setSaving(false);
     setInvoiceItems([{ description: '', quantity: 1, unit: 'kom', unit_price: 0, discount: 0, vat_rate: 25 }]);
     setInvoiceNumber(''); setSelectedClientId(''); setInvoiceNotes('');

@@ -96,7 +96,7 @@ export const EracuniConnectionPanel = () => {
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
-      toast.error(`Greška pri uploadu: ${uploadError.message}`);
+      toast.error(t('toasts.uploadError', { message: uploadError.message }));
       setUploading(false);
       return;
     }
@@ -186,7 +186,7 @@ export const EracuniConnectionPanel = () => {
       });
 
       if (response.error) {
-        toast.error(`Povezivanje neuspješno: ${response.error.message}`);
+        toast.error(t('toasts.connectionFailed', { message: response.error.message }));
       } else if (response.data?.error) {
         toast.error(response.data.error);
       } else {

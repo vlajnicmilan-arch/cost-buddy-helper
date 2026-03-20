@@ -97,7 +97,7 @@ export const InvoiceSettingsPanel = () => {
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Maksimalna veličina: 2MB');
+      toast.error(t('toasts.maxFileSize', { size: '2MB' }));
       return;
     }
 

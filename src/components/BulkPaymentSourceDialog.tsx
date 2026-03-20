@@ -90,7 +90,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
       await onUpdateExpenses(updatedExpenses);
       
       const sourceInfo = getPaymentSourceInfo(newPaymentSource);
-      toast.success(`Ažurirano ${selectedIds.size} transakcija na "${sourceInfo.name}"`);
+      toast.success(t('toasts.transactionsUpdatedSource', { count: selectedIds.size, name: sourceInfo.name }));
       
       setSelectedIds(new Set());
       setNewPaymentSource('');
