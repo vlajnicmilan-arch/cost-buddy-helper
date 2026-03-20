@@ -77,14 +77,7 @@ const Business = () => {
       </div>
     );
   }
-    if (!activeBusinessProfileId || !user) return;
-    supabase
-      .from('business_profiles')
-      .select('id, company_name, is_vat_payer, industry_type, enabled_modules')
-      .eq('id', activeBusinessProfileId)
-      .single()
-      .then(({ data }) => { if (data) setProfile(data as any); });
-  }, [activeBusinessProfileId, user]);
+
 
   const handleBackToPersonal = () => {
     setActiveBusinessProfileId(null);
