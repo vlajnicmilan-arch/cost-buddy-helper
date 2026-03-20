@@ -27,6 +27,7 @@ export const useAuth = () => {
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
             appVersion: APP_VERSION,
+            eventType: 'sign_in',
           };
           supabase.from('user_login_logs').insert({
             user_id: session.user.id,
