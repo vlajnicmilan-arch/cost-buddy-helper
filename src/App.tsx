@@ -50,6 +50,7 @@ const PageLoader = () => (
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
+  const { trialExpired, subscribed, loading: subLoading } = useSubscription();
 
   if (!isInitialized) {
     return <PageLoader />;
@@ -66,6 +67,21 @@ const AppRoutes = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<Navigate to="/setup" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // Show paywall if trial expired and not subscribed (cloud mode only)
+  if (storageMode === 'cloud' && !subLoading && trialExpired && !subscribed) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/paywall" element={<Paywall />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
       </Suspense>
     );
@@ -89,6 +105,7 @@ const AppRoutes = () => {
         <Route path="/install" element={<Install />} />
         <Route path="/join-project/:token" element={<JoinProject />} />
         <Route path="/join-budget/:token" element={<JoinBudget />} />
+        <Route path="/paywall" element={<Paywall />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
