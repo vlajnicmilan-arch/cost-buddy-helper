@@ -110,6 +110,7 @@ export const useFamilyGroups = () => {
 };
 
 export const useFamilyMembers = (groupId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [invitations, setInvitations] = useState<FamilyInvitation[]>([]);
