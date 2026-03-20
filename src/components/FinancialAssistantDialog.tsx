@@ -335,6 +335,15 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-[500px] h-[85vh] sm:h-[600px] flex flex-col p-0">
+        {!canAccessAI ? (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <UpgradePrompt
+              feature="AI Financijski Asistent"
+              requiredTier={getRequiredTier('ai_assistant')}
+            />
+          </div>
+        ) : (
+        <>
         <DialogHeader className="p-4 pb-2 border-b">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
