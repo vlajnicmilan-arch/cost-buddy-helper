@@ -501,10 +501,23 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
         recordHabit(expense.merchant_name, expense.category);
       }
-      // Note: success toast is already shown by addExpense/useExpenseCRUD
+
+      // Check for loan detection in business mode
+      if (activeBusinessProfileId && expense.type !== 'transfer') {
+        const detected = detectSingleLoan(
+          expense.description,
+          Number(expense.amount),
+          expense.type,
+          expense.date instanceof Date ? expense.date : new Date(expense.date)
+        );
+        if (detected) {
+          setLoanDetected(detected);
+          setLoanDialogOpen(true);
+        }
+      }
+
       // Close dialog FIRST to prevent flash of empty form, then reset
       setOpen(false);
-      // Use setTimeout to reset form after dialog animation completes
       setTimeout(() => {
         resetForm();
       }, 150);
@@ -512,6 +525,24 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       console.error('Error saving transaction:', error);
       toast.error(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
     }
+  };
+
+  const handleLoanConfirm = (loans: DetectedLoan[]) => {
+    if (!activeBusinessProfileId) return;
+    for (const loan of loans) {
+      addDebt({
+        business_profile_id: activeBusinessProfileId,
+        type: loan.type,
+        contact_name: loan.contactName,
+        description: loan.description,
+        amount: loan.amount,
+        paid_amount: 0,
+        due_date: null,
+        status: 'active',
+      });
+    }
+    toast.success(`Pozajmica dodana u evidenciju dugovanja`);
+    setLoanDetected(null);
   };
 
   // Handle duplicate confirmation
