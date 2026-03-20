@@ -224,7 +224,7 @@ const Paywall: React.FC = () => {
             </div>
           </div>
           {interval === 'yearly' && (
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-3">
+            <p className="text-xs text-primary mb-3">
               Ušteda {((proMonthly * 12) - proYearly).toFixed(2)}€ godišnje
             </p>
           )}
