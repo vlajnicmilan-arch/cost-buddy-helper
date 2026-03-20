@@ -29,7 +29,7 @@ export interface RecurringTransaction {
   updated_at: string;
 }
 
-export type RecurringTransactionInsert = Omit<RecurringTransaction, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type RecurringTransactionInsert = Omit<RecurringTransaction, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'business_profile_id'>;
 
 export const useRecurringTransactions = () => {
   const { user } = useAuth();
