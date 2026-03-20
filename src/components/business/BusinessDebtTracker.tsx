@@ -67,19 +67,33 @@ export const BusinessDebtTracker = () => {
   };
 
   const handleRetroactiveScan = async () => {
-    if (!activeBusinessProfileId) return;
+    if (!activeBusinessProfileId || !user) return;
     setScanning(true);
     try {
-      // Filter business expenses for this profile
-      const businessTxs = allExpenses.filter(e => 
-        (e as any).business_profile_id === activeBusinessProfileId
-      ).map(e => ({
+      // Fetch business transactions directly from DB
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('id, description, amount, type, date')
+        .eq('user_id', user.id)
+        .eq('business_profile_id', activeBusinessProfileId)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+
+      const businessTxs = (data || []).map((e: any) => ({
         id: e.id,
         description: e.description,
         amount: Number(e.amount),
         type: e.type,
-        date: e.date instanceof Date ? e.date : new Date(e.date),
+        date: new Date(e.date),
       }));
+
+      if (businessTxs.length === 0) {
+        toast.info(t('business.debts.noTransactions', 'Nema transakcija za skeniranje'));
+        setScanning(false);
+        return;
+      }
 
       const detected = await detectLoans(businessTxs);
       if (detected.length === 0) {
