@@ -44,13 +44,11 @@ const Family = () => {
       const group = groups.find(g => g.id === state.openGroupId);
       if (group) {
         setSelectedGroup(group);
-        if (state.openChat) {
-          setInitialOpenChat(true);
-        }
-        navigate(location.pathname, { replace: true, state: {} });
+        if (state.openChat) setInitialOpenChat(true);
+        window.history.replaceState({}, document.title);
       }
     }
-  }, [groups, location.state, selectedGroup, navigate, location.pathname]);
+  }, [location.state, groups, selectedGroup]);
 
   if (authLoading && storageMode === 'cloud') {
     return (
@@ -101,6 +99,7 @@ const Family = () => {
   }
 
   if (selectedGroup) {
+    return (
       <FamilyGroupDetailView
         group={selectedGroup}
         initialOpenChat={initialOpenChat}
