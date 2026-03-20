@@ -330,7 +330,7 @@ export const useExpenseCRUD = ({
         console.warn('[deleteExpense] Could not find expense to reverse balance for id:', id);
       }
 
-      toast.success('Obrisano');
+      toast.success(t('feedback.deleted'));
     } catch (error) {
       console.error('Error deleting expense:', error);
       toast.error(t('toasts.cashRegisterDeleteError'));
