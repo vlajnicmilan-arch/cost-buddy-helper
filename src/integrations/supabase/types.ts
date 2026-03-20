@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       bank_connections: {
         Row: {
           account_id: string | null
@@ -2637,6 +2655,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2711,6 +2768,7 @@ export type Database = {
       milestone_status: "pending" | "in_progress" | "completed" | "overdue"
       project_role: "manager" | "member" | "viewer"
       project_status: "draft" | "active" | "paused" | "completed" | "cancelled"
+      subscription_tier: "free" | "pro" | "business"
       transaction_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -2844,6 +2902,7 @@ export const Constants = {
       milestone_status: ["pending", "in_progress", "completed", "overdue"],
       project_role: ["manager", "member", "viewer"],
       project_status: ["draft", "active", "paused", "completed", "cancelled"],
+      subscription_tier: ["free", "pro", "business"],
       transaction_status: ["pending", "approved", "rejected"],
     },
   },
