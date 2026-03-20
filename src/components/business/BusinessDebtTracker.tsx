@@ -157,10 +157,16 @@ export const BusinessDebtTracker = () => {
             </Badge>
           ))}
         </div>
-        <Button size="sm" className="h-8 gap-1 text-xs" onClick={() => setAddOpen(true)}>
-          <Plus className="w-3 h-3" />
-          {t('business.debts.new', 'Novo')}
-        </Button>
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={handleRetroactiveScan} disabled={scanning}>
+            {scanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <ScanSearch className="w-3 h-3" />}
+            {t('business.debts.scan', 'Skeniraj')}
+          </Button>
+          <Button size="sm" className="h-8 gap-1 text-xs" onClick={() => setAddOpen(true)}>
+            <Plus className="w-3 h-3" />
+            {t('business.debts.new', 'Novo')}
+          </Button>
+        </div>
       </div>
 
       {activeDebts.length > 0 && (
