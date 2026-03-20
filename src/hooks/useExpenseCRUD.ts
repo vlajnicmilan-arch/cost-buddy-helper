@@ -61,7 +61,7 @@ export const useExpenseCRUD = ({
         if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
         toast.success(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
       } else {
-        if (!user) { toast.error('Moraš biti prijavljen'); return; }
+        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
 
         const { data, error } = await supabase
           .from('expenses')
