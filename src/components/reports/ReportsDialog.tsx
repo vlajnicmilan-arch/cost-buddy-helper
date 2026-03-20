@@ -167,6 +167,7 @@ const calculateStats = (expenseList: Expense[]) => {
 
 export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const { t } = useTranslation();
+  const { hasAccess } = useFeatureAccess();
   
   const { customIncomeCategories } = useCustomIncomeCategories();
   const { customCategories } = useCustomCategories();
