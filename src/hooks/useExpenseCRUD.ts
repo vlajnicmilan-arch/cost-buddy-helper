@@ -192,7 +192,7 @@ export const useExpenseCRUD = ({
         }
         toast.success(t('feedback.updated'));
       } else {
-        if (!user) { toast.error('Moraš biti prijavljen'); return; }
+        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
 
         if (!oldExpense) {
           const { data: dbOldExpense } = await supabase
