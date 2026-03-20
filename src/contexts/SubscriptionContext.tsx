@@ -42,11 +42,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const checkSubscription = useCallback(async () => {
     if (!session?.access_token) {
+      console.log('[Subscription] No session, skipping check');
       setLoading(false);
       return;
     }
 
     try {
+      console.log('[Subscription] Checking subscription...');
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
