@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2 } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2, ScanSearch, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,14 +12,23 @@ import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
+import { LoanDetectionDialog } from './LoanDetectionDialog';
+import { useExpenses } from '@/hooks/useExpenses';
+import { toast } from 'sonner';
 
 export const BusinessDebtTracker = () => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { debts, loading, addDebt, updateDebt, deleteDebt, totalReceivable, totalPayable } = useBusinessDebts();
+  const { allExpenses } = useExpenses();
+  const { detectLoans } = useLoanDetection();
   const [addOpen, setAddOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [detectedLoans, setDetectedLoans] = useState<DetectedLoan[]>([]);
+  const [loanDialogOpen, setLoanDialogOpen] = useState(false);
 
   const [formType, setFormType] = useState<'receivable' | 'payable'>('receivable');
   const [formContact, setFormContact] = useState('');
