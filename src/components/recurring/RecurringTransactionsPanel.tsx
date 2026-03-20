@@ -10,6 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Repeat, Pencil, Trash2, Calendar, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import {
   AlertDialog,
   AlertDialogAction,
