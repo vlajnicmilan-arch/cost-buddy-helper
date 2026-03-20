@@ -79,7 +79,27 @@ const Family = () => {
     );
   }
 
-  if (selectedGroup) {
+  if (!canAccessFamily) {
+    return (
+      <div className="min-h-dvh bg-background pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8"
+        >
+          <PageHeader title={t('family.title')} />
+          <UpgradePrompt
+            feature="Obiteljske grupe i dijeljenje"
+            requiredTier={getRequiredTier('family_groups')}
+            className="mt-12"
+          />
+        </motion.div>
+        <BottomNav />
+      </div>
+    );
+  }
+
     return (
       <FamilyGroupDetailView
         group={selectedGroup}
