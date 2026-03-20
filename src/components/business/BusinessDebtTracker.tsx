@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2 } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2, ScanSearch, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,14 +12,23 @@ import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
+import { LoanDetectionDialog } from './LoanDetectionDialog';
+import { useExpenses } from '@/hooks/useExpenses';
+import { toast } from 'sonner';
 
 export const BusinessDebtTracker = () => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { debts, loading, addDebt, updateDebt, deleteDebt, totalReceivable, totalPayable } = useBusinessDebts();
+  const { allExpenses } = useExpenses();
+  const { detectLoans } = useLoanDetection();
   const [addOpen, setAddOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [detectedLoans, setDetectedLoans] = useState<DetectedLoan[]>([]);
+  const [loanDialogOpen, setLoanDialogOpen] = useState(false);
 
   const [formType, setFormType] = useState<'receivable' | 'payable'>('receivable');
   const [formContact, setFormContact] = useState('');
@@ -54,6 +63,54 @@ export const BusinessDebtTracker = () => {
   const markAsPaid = (id: string) => {
     const debt = debts.find(d => d.id === id);
     if (debt) updateDebt(id, { status: 'paid', paid_amount: debt.amount });
+  };
+
+  const handleRetroactiveScan = async () => {
+    if (!activeBusinessProfileId) return;
+    setScanning(true);
+    try {
+      // Filter business expenses for this profile
+      const businessTxs = allExpenses.filter(e => 
+        (e as any).business_profile_id === activeBusinessProfileId
+      ).map(e => ({
+        id: e.id,
+        description: e.description,
+        amount: Number(e.amount),
+        type: e.type,
+        date: e.date instanceof Date ? e.date : new Date(e.date),
+      }));
+
+      const detected = await detectLoans(businessTxs);
+      if (detected.length === 0) {
+        toast.info(t('business.debts.noLoansFound', 'Nije pronađena nijedna pozajmica u transakcijama'));
+      } else {
+        setDetectedLoans(detected);
+        setLoanDialogOpen(true);
+      }
+    } catch (e) {
+      console.error('Scan error:', e);
+      toast.error('Greška pri skeniranju');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleConfirmLoans = (loans: DetectedLoan[]) => {
+    if (!activeBusinessProfileId) return;
+    for (const loan of loans) {
+      addDebt({
+        business_profile_id: activeBusinessProfileId,
+        type: loan.type,
+        contact_name: loan.contactName,
+        description: loan.description,
+        amount: loan.amount,
+        paid_amount: 0,
+        due_date: null,
+        status: 'active',
+      });
+    }
+    toast.success(t('business.debts.loansAdded', { count: loans.length, defaultValue: `Dodano ${loans.length} pozajmica` }));
+    setDetectedLoans([]);
   };
 
   const filtered = filter ? debts.filter(d => d.type === filter) : debts;
@@ -100,10 +157,16 @@ export const BusinessDebtTracker = () => {
             </Badge>
           ))}
         </div>
-        <Button size="sm" className="h-8 gap-1 text-xs" onClick={() => setAddOpen(true)}>
-          <Plus className="w-3 h-3" />
-          {t('business.debts.new', 'Novo')}
-        </Button>
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={handleRetroactiveScan} disabled={scanning}>
+            {scanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <ScanSearch className="w-3 h-3" />}
+            {t('business.debts.scan', 'Skeniraj')}
+          </Button>
+          <Button size="sm" className="h-8 gap-1 text-xs" onClick={() => setAddOpen(true)}>
+            <Plus className="w-3 h-3" />
+            {t('business.debts.new', 'Novo')}
+          </Button>
+        </div>
       </div>
 
       {activeDebts.length > 0 && (
@@ -210,6 +273,13 @@ export const BusinessDebtTracker = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LoanDetectionDialog
+        open={loanDialogOpen}
+        onOpenChange={setLoanDialogOpen}
+        detectedLoans={detectedLoans}
+        onConfirm={handleConfirmLoans}
+      />
     </div>
   );
 };

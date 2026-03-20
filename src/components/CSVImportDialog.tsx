@@ -13,6 +13,11 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
+import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
+import { useAppState } from '@/contexts/AppStateContext';
+import { toast } from 'sonner';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -37,6 +42,11 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { customPaymentSources } = useCustomPaymentSources();
+  const { activeBusinessProfileId } = useAppState();
+  const { detectLoans } = useLoanDetection();
+  const { addDebt } = useBusinessDebts();
+  const [detectedLoans, setDetectedLoans] = useState<DetectedLoan[]>([]);
+  const [loanDialogOpen, setLoanDialogOpen] = useState(false);
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
@@ -178,10 +188,44 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
       await onImport(selectedTransactions);
       setImportedCount(selectedTransactions.length);
       setStep('complete');
+
+      // After successful import, scan for loans in business mode
+      if (activeBusinessProfileId) {
+        const txsForScan = selectedTransactions.map(tx => ({
+          description: tx.description,
+          amount: tx.amount,
+          type: tx.type,
+          date: tx.date instanceof Date ? tx.date : new Date(tx.date),
+        }));
+        detectLoans(txsForScan).then(detected => {
+          if (detected.length > 0) {
+            setDetectedLoans(detected);
+            setLoanDialogOpen(true);
+          }
+        });
+      }
     } catch (err) {
       setError(t('import.importError'));
       setStep('preview');
     }
+  };
+
+  const handleLoanConfirm = (loans: DetectedLoan[]) => {
+    if (!activeBusinessProfileId) return;
+    for (const loan of loans) {
+      addDebt({
+        business_profile_id: activeBusinessProfileId,
+        type: loan.type,
+        contact_name: loan.contactName,
+        description: loan.description,
+        amount: loan.amount,
+        paid_amount: 0,
+        due_date: null,
+        status: 'active',
+      });
+    }
+    toast.success(`Dodano ${loans.length} pozajmica u evidenciju dugovanja`);
+    setDetectedLoans([]);
   };
 
   const handleClose = () => {
@@ -206,6 +250,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   };
 
   return (
+    <>
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       {!isControlled && (
         <DialogTrigger asChild>
@@ -506,5 +551,13 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
         </AnimatePresence>
       </DialogContent>
     </Dialog>
+
+    <LoanDetectionDialog
+      open={loanDialogOpen}
+      onOpenChange={setLoanDialogOpen}
+      detectedLoans={detectedLoans}
+      onConfirm={handleLoanConfirm}
+    />
+    </>
   );
 };

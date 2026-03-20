@@ -31,6 +31,9 @@ import { useCategoryHabits } from '@/hooks/useCategoryHabits';
 import { useAICategorization } from '@/hooks/useAICategorization';
 import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
+import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   checkDuplicate?: (transaction: {
@@ -118,6 +121,10 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const { recordHabit, getSuggestedCategory } = useCategoryHabits();
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const { activeBusinessProfileId } = useAppState();
+  const { detectSingleLoan } = useLoanDetection();
+  const { addDebt } = useBusinessDebts();
+  const [loanDetected, setLoanDetected] = useState<DetectedLoan | null>(null);
+  const [loanDialogOpen, setLoanDialogOpen] = useState(false);
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
 
@@ -494,10 +501,23 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
         recordHabit(expense.merchant_name, expense.category);
       }
-      // Note: success toast is already shown by addExpense/useExpenseCRUD
+
+      // Check for loan detection in business mode
+      if (activeBusinessProfileId && expense.type !== 'transfer') {
+        const detected = detectSingleLoan(
+          expense.description,
+          Number(expense.amount),
+          expense.type,
+          expense.date instanceof Date ? expense.date : new Date(expense.date)
+        );
+        if (detected) {
+          setLoanDetected(detected);
+          setLoanDialogOpen(true);
+        }
+      }
+
       // Close dialog FIRST to prevent flash of empty form, then reset
       setOpen(false);
-      // Use setTimeout to reset form after dialog animation completes
       setTimeout(() => {
         resetForm();
       }, 150);
@@ -505,6 +525,24 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       console.error('Error saving transaction:', error);
       toast.error(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
     }
+  };
+
+  const handleLoanConfirm = (loans: DetectedLoan[]) => {
+    if (!activeBusinessProfileId) return;
+    for (const loan of loans) {
+      addDebt({
+        business_profile_id: activeBusinessProfileId,
+        type: loan.type,
+        contact_name: loan.contactName,
+        description: loan.description,
+        amount: loan.amount,
+        paid_amount: 0,
+        due_date: null,
+        status: 'active',
+      });
+    }
+    toast.success(`Pozajmica dodana u evidenciju dugovanja`);
+    setLoanDetected(null);
   };
 
   // Handle duplicate confirmation
@@ -2162,6 +2200,14 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       } : null}
       onConfirm={handleDuplicateConfirm}
       onCancel={handleDuplicateCancel}
+    />
+
+    {/* Loan Detection Dialog */}
+    <LoanDetectionDialog
+      open={loanDialogOpen}
+      onOpenChange={setLoanDialogOpen}
+      detectedLoans={loanDetected ? [loanDetected] : []}
+      onConfirm={handleLoanConfirm}
     />
   </>
   );
