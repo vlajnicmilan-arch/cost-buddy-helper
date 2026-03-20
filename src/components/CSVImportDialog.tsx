@@ -550,5 +550,13 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
         </AnimatePresence>
       </DialogContent>
     </Dialog>
+
+    <LoanDetectionDialog
+      open={loanDialogOpen}
+      onOpenChange={setLoanDialogOpen}
+      detectedLoans={detectedLoans}
+      onConfirm={handleLoanConfirm}
+    />
+    </>
   );
 };
