@@ -85,7 +85,9 @@ export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfi
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-muted-foreground truncate">{loan.description}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm font-semibold">{formatAmount(loan.amount)}</span>
+                      <span className={`text-sm font-semibold ${loan.type === 'payable' ? 'text-red-500' : 'text-green-500'}`}>
+                        {loan.type === 'payable' ? '-' : '+'}{formatAmount(loan.amount)}
+                      </span>
                       <Badge variant="outline" className="text-[9px] px-1.5 py-0">
                         {format(loan.date, 'dd.MM.yyyy')}
                       </Badge>
