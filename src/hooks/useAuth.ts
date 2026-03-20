@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { APP_VERSION } from '@/lib/version';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -25,6 +26,7 @@ export const useAuth = () => {
             screenHeight: window.screen.height,
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
+            appVersion: APP_VERSION,
           };
           supabase.from('user_login_logs').insert({
             user_id: session.user.id,

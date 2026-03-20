@@ -38,6 +38,7 @@ interface AppUser {
   last_device_info: any;
   last_login_at: string | null;
   referral_count: number;
+  app_version: string | null;
 }
 
 interface Stats {
@@ -447,7 +448,7 @@ const Admin = () => {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {format(new Date(u.created_at), 'dd.MM.yyyy.', { locale: hr })}
@@ -460,6 +461,11 @@ const Admin = () => {
                             <span>Zadnja prijava: {format(new Date(latestLoginAt), 'dd.MM. HH:mm', { locale: hr })}</span>
                           );
                         })()}
+                        {u.app_version && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                            v{u.app_version}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
@@ -470,8 +476,9 @@ const Admin = () => {
                           <p><strong>Valuta:</strong> {u.currency || 'EUR'}</p>
                           <p><strong>Email potvrđen:</strong> {u.confirmed_at ? format(new Date(u.confirmed_at), 'dd.MM.yyyy. HH:mm', { locale: hr }) : 'Ne'}</p>
                           {u.last_login_at && (
-                            <p><strong>Zadnji login (tracked):</strong> {format(new Date(u.last_login_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}</p>
+                            <p><strong>Zadnje korištenje:</strong> {format(new Date(u.last_login_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}</p>
                           )}
+                          <p><strong>Verzija aplikacije:</strong> {u.app_version || 'Nepoznato (starija verzija)'}</p>
                         </div>
 
                         {u.last_device_info && (() => {
