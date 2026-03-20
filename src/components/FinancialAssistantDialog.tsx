@@ -61,6 +61,8 @@ export const FinancialAssistantDialog = ({
   onOpenChange,
   hideTrigger = false,
 }: FinancialAssistantDialogProps) => {
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canAccessAI = hasAccess('ai_assistant');
   const [internalOpen, setInternalOpen] = useState(false);
   
   // Support both controlled and uncontrolled modes
