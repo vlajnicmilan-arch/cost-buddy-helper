@@ -121,20 +121,22 @@ const App = () => (
         <AppStateProvider>
           <AppLockProvider>
             <CurrencyProvider>
-              <TutorialProvider>
-                <OfflineBanner />
-                <Toaster />
-                <Sonner />
-                <PWAUpdatePrompt />
-                <TutorialOverlay />
-                <LockScreen />
-                <BrowserRouter>
-                  <BackButtonProvider>
-                    <AppRoutes />
-                    <CookieConsentBanner />
-                  </BackButtonProvider>
-                </BrowserRouter>
-              </TutorialProvider>
+              <SubscriptionProvider>
+                <TutorialProvider>
+                  <OfflineBanner />
+                  <Toaster />
+                  <Sonner />
+                  <PWAUpdatePrompt />
+                  <TutorialOverlay />
+                  <LockScreen />
+                  <BrowserRouter>
+                    <BackButtonProvider>
+                      <AppRoutes />
+                      <CookieConsentBanner />
+                    </BackButtonProvider>
+                  </BrowserRouter>
+                </TutorialProvider>
+              </SubscriptionProvider>
             </CurrencyProvider>
           </AppLockProvider>
         </AppStateProvider>
