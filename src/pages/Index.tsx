@@ -144,6 +144,87 @@ const Index = () => {
     }
   }, [user]);
 
+  // Helper to calculate next due date for matched recurring transactions
+  const calculateNextDueDateForMatch = useCallback((currentDate: Date, frequency: string, dayOfMonth: number | null): Date => {
+    const next = new Date(currentDate);
+    switch (frequency) {
+      case 'daily': next.setDate(next.getDate() + 1); break;
+      case 'weekly': next.setDate(next.getDate() + 7); break;
+      case 'biweekly': next.setDate(next.getDate() + 14); break;
+      case 'monthly':
+        next.setMonth(next.getMonth() + 1);
+        if (dayOfMonth) {
+          const maxDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+          next.setDate(Math.min(dayOfMonth, maxDay));
+        }
+        break;
+      case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
+    }
+    return next;
+  }, []);
+
+  // Wrapper that checks for recurring matches after adding transactions
+  const addExpenseWithRecurringCheck = useCallback(async (expense: any) => {
+    await addExpense(expense);
+    if (recurringTransactions.length > 0 && !isBusinessMode) {
+      const txForMatch = [{
+        description: expense.description || '',
+        amount: expense.amount,
+        type: expense.type || 'expense',
+        date: expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
+      }];
+      try {
+        const matches = await findMatches(txForMatch, recurringTransactions);
+        if (matches.length > 0) {
+          setRecurringMatches(matches);
+          setRecurringMatchDialogOpen(true);
+        }
+      } catch (e) {
+        console.error('Recurring match check failed:', e);
+      }
+    }
+  }, [addExpense, recurringTransactions, isBusinessMode, findMatches]);
+
+  // Bulk check after CSV/PDF import
+  const importWithRecurringCheck = useCallback(async (expenses: any[]) => {
+    await importFromCSV(expenses);
+    if (recurringTransactions.length > 0 && !isBusinessMode && expenses.length > 0) {
+      const txsForMatch = expenses.map(e => ({
+        description: e.description || '',
+        amount: e.amount,
+        type: e.type || 'expense',
+        date: e.date instanceof Date ? e.date.toISOString().split('T')[0] : (e.date || new Date().toISOString().split('T')[0]),
+      }));
+      try {
+        const matches = await findMatches(txsForMatch, recurringTransactions);
+        if (matches.length > 0) {
+          setRecurringMatches(matches);
+          setRecurringMatchDialogOpen(true);
+        }
+      } catch (e) {
+        console.error('Recurring match check after import failed:', e);
+      }
+    }
+  }, [importFromCSV, recurringTransactions, isBusinessMode, findMatches]);
+
+  // Handle confirming matched recurring transactions
+  const handleRecurringMatchConfirm = useCallback(async (selectedIds: string[]) => {
+    for (const id of selectedIds) {
+      const recurring = recurringTransactions.find(r => r.id === id);
+      if (!recurring) continue;
+      const nextDate = calculateNextDueDateForMatch(
+        new Date(recurring.next_due_date),
+        recurring.frequency,
+        recurring.day_of_month
+      );
+      await updateRecurring(id, {
+        next_due_date: nextDate.toISOString().split('T')[0],
+        last_generated_date: new Date().toISOString().split('T')[0],
+      });
+    }
+    toast.success(`${selectedIds.length} obveza označeno kao plaćeno`);
+    refetchRecurring();
+  }, [recurringTransactions, updateRecurring, refetchRecurring, calculateNextDueDateForMatch]);
 
   const { ownedPaymentSources: customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { plans: installmentPlans } = useInstallments();
