@@ -98,7 +98,6 @@ export const HomeHeader = ({
 
         {/* Navigation icons (right side) */}
         <div className="flex items-center gap-0.5 sm:gap-2 flex-shrink-0">
-          {onSelectExpense && <GlobalSearch expenses={allExpenses} onSelectExpense={onSelectExpense} />}
           <TutorialButton className="rounded-xl h-8 w-8 sm:h-9 sm:w-9" />
           {!isLocalMode && <NotificationsDropdown />}
           <TooltipProvider>
@@ -124,6 +123,7 @@ export const HomeHeader = ({
 
       {/* Bottom row: Action buttons */}
       <div className="flex flex-wrap items-center gap-2" data-tutorial="add-buttons">
+        {onSelectExpense && <GlobalSearch expenses={allExpenses} onSelectExpense={onSelectExpense} />}
         {!simpleModeEnabled && <BulkEditDropdown expenses={expenses} onUpdateExpenses={onBulkUpdateExpenses} />}
         {!simpleModeEnabled && <ReportsDialog expenses={reportsExpenses} />}
         {onImportCSV && (
