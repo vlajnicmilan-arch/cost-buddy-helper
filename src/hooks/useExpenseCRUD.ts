@@ -190,7 +190,7 @@ export const useExpenseCRUD = ({
           );
           onBalanceUpdated?.();
         }
-        toast.success('Ažurirano');
+        toast.success(t('feedback.updated'));
       } else {
         if (!user) { toast.error('Moraš biti prijavljen'); return; }
 
