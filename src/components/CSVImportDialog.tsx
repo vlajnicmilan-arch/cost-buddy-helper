@@ -42,6 +42,11 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { customPaymentSources } = useCustomPaymentSources();
+  const { activeBusinessProfileId } = useAppState();
+  const { detectLoans } = useLoanDetection();
+  const { addDebt } = useBusinessDebts();
+  const [detectedLoans, setDetectedLoans] = useState<DetectedLoan[]>([]);
+  const [loanDialogOpen, setLoanDialogOpen] = useState(false);
 
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
