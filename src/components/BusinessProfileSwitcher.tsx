@@ -39,7 +39,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
   const isBusinessMode = !!activeBusinessProfileId;
 
   return (
-    <Popover open={open} onOpenChange={setOpen} ref={ref as any}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           className={cn(
