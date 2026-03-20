@@ -58,6 +58,7 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
+import { WelcomeChecklist } from '@/components/WelcomeChecklist';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -725,6 +726,7 @@ const Index = () => {
           simpleModeEnabled={simpleModeEnabled}
           expenses={expenses}
           reportsExpenses={allExpenses}
+          allExpenses={allExpenses}
           onAddExpense={addExpenseWithRecurringCheck}
           onCheckDuplicate={checkDuplicate}
           onBulkUpdateExpenses={bulkUpdateExpenses}
@@ -732,6 +734,10 @@ const Index = () => {
           findDuplicates={findDuplicates}
           existingExpenses={allExpenses}
           onRefetch={refetch}
+          onSelectExpense={(expense) => {
+            setSelectedTransaction(expense);
+            setDetailDialogOpen(true);
+          }}
         />
 
         {/* Local Mode Banner */}
@@ -749,6 +755,20 @@ const Index = () => {
             </Button>
           </div>
         )}
+
+        {/* ── Welcome Checklist for new users ── */}
+        <WelcomeChecklist
+          hasPaymentSources={customPaymentSources.length > 0}
+          hasTransactions={expenses.length > 0}
+          hasBudgets={budgetsWithStats.length > 0}
+          onAddPaymentSource={() => navigate('/wallet')}
+          onAddTransaction={() => {
+            // Trigger add expense dialog
+            const addBtn = document.querySelector('[data-tutorial="add-buttons"] button:last-child') as HTMLButtonElement;
+            addBtn?.click();
+          }}
+          onAddBudget={() => navigate('/budgets')}
+        />
 
         {/* ── Payment Sources ── */}
         <PaymentSourcesSection

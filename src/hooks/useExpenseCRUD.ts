@@ -59,9 +59,9 @@ export const useExpenseCRUD = ({
           await updateBalance(normalizedExpense.income_source_id, normalizedExpense.amount, 'income');
         }
         if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
-        toast.success(normalizedExpense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
+        toast.success(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
       } else {
-        if (!user) { toast.error('Moraš biti prijavljen'); return; }
+        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
 
         const { data, error } = await supabase
           .from('expenses')
@@ -158,16 +158,16 @@ export const useExpenseCRUD = ({
         }
 
         if (isPendingMemberTransaction) {
-          toast.success('Transakcija poslana vlasniku na odobrenje');
+          toast.success(t('feedback.pendingSent'));
         } else {
-          toast.success(normalizedExpense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
+          toast.success(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
         }
       }
     } catch (error) {
       console.error('Error adding expense:', error);
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('description')) {
-        toast.error('Nedostaje opis transakcije. Unesi opis i pokušaj ponovno.');
+        toast.error(t('feedback.missingDescription'));
       } else {
         toast.error(t('toasts.premiseAddError'));
       }
@@ -190,9 +190,9 @@ export const useExpenseCRUD = ({
           );
           onBalanceUpdated?.();
         }
-        toast.success('Ažurirano');
+        toast.success(t('feedback.updated'));
       } else {
-        if (!user) { toast.error('Moraš biti prijavljen'); return; }
+        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
 
         if (!oldExpense) {
           const { data: dbOldExpense } = await supabase
@@ -253,7 +253,7 @@ export const useExpenseCRUD = ({
           }).catch(e => console.error('Notification error:', e));
         }
 
-        toast.success('Ažurirano');
+        toast.success(t('feedback.updated'));
       }
     } catch (error) {
       console.error('Error updating expense:', error);
@@ -269,9 +269,9 @@ export const useExpenseCRUD = ({
           const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
           return prev.map(e => updatedMap.get(e.id) || e);
         });
-        toast.success(`Ažurirano ${expensesToUpdate.length} transakcija`);
+        toast.success(t('feedback.bulkUpdated', { count: expensesToUpdate.length }));
       } else {
-        if (!user) { toast.error('Moraš biti prijavljen'); return; }
+        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
 
         await Promise.all(expensesToUpdate.map(async (expense) => {
           const { error } = await supabase
@@ -292,7 +292,7 @@ export const useExpenseCRUD = ({
       }
     } catch (error) {
       console.error('Error bulk updating expenses:', error);
-      toast.error('Greška pri grupnom ažuriranju');
+      toast.error(t('feedback.bulkUpdateError'));
       throw error;
     }
   }, [isLocalMode, user, setExpenses]);
@@ -330,7 +330,7 @@ export const useExpenseCRUD = ({
         console.warn('[deleteExpense] Could not find expense to reverse balance for id:', id);
       }
 
-      toast.success('Obrisano');
+      toast.success(t('feedback.deleted'));
     } catch (error) {
       console.error('Error deleting expense:', error);
       toast.error(t('toasts.cashRegisterDeleteError'));

@@ -12,6 +12,7 @@ import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { BusinessProfileSwitcher } from '@/components/BusinessProfileSwitcher';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import logo from '@/assets/logo.png';
 import { Expense, ReceiptItem } from '@/types/expense';
 import { ParsedTransaction } from '@/lib/csvParsers';
@@ -22,6 +23,7 @@ interface HomeHeaderProps {
   simpleModeEnabled: boolean;
   expenses: Expense[];
   reportsExpenses: Expense[];
+  allExpenses: Expense[];
   onAddExpense: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   onCheckDuplicate?: (transaction: { amount: number; description: string; date: Date; type: string; category?: string; merchant_name?: string }) => Expense | null;
   onBulkUpdateExpenses: (expenses: Expense[]) => Promise<any>;
@@ -29,6 +31,7 @@ interface HomeHeaderProps {
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] };
   existingExpenses?: Expense[];
   onRefetch: () => void;
+  onSelectExpense?: (expense: Expense) => void;
 }
 
 export const HomeHeader = ({
@@ -37,6 +40,7 @@ export const HomeHeader = ({
   simpleModeEnabled,
   expenses,
   reportsExpenses,
+  allExpenses,
   onAddExpense,
   onCheckDuplicate,
   onBulkUpdateExpenses,
@@ -44,6 +48,7 @@ export const HomeHeader = ({
   findDuplicates,
   existingExpenses,
   onRefetch,
+  onSelectExpense,
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -93,6 +98,7 @@ export const HomeHeader = ({
 
         {/* Navigation icons (right side) */}
         <div className="flex items-center gap-0.5 sm:gap-2 flex-shrink-0">
+          {onSelectExpense && <GlobalSearch expenses={allExpenses} onSelectExpense={onSelectExpense} />}
           <TutorialButton className="rounded-xl h-8 w-8 sm:h-9 sm:w-9" />
           {!isLocalMode && <NotificationsDropdown />}
           <TooltipProvider>

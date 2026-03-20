@@ -1729,5 +1729,34 @@
     "searchCategories": "Kategorien suchen...",
     "notificationTitle": "z.B. Neues App-Update",
     "yourName": "Ihr Name"
+  },
+  "checklist": {
+    "title": "Erste Schritte mit V&M Balance",
+    "allDone": "Alles bereit! 🎉",
+    "addPaymentSource": "Zahlungsquelle hinzufügen",
+    "addPaymentSourceDesc": "Bankkonto, Bargeld oder Karte",
+    "addTransaction": "Erste Transaktion eingeben",
+    "addTransactionDesc": "Einnahme, Ausgabe oder Überweisung",
+    "createBudget": "Budget einrichten",
+    "createBudgetDesc": "Ausgaben nach Kategorien kontrollieren",
+    "start": "Starten"
+  },
+  "search": {
+    "global": "Suchen",
+    "placeholder": "Transaktionen suchen...",
+    "noResults": "Keine Ergebnisse",
+    "results": "{{count}} Ergebnisse"
+  },
+  "feedback": {
+    "incomeAdded": "Einnahme hinzugefügt",
+    "expenseAdded": "Ausgabe hinzugefügt",
+    "updated": "Aktualisiert",
+    "deleted": "Gelöscht",
+    "mustBeLoggedIn": "Sie müssen angemeldet sein",
+    "pendingSent": "Transaktion zur Genehmigung gesendet",
+    "missingDescription": "Transaktionsbeschreibung fehlt. Bitte eingeben und erneut versuchen.",
+    "addError": "Fehler beim Hinzufügen",
+    "bulkUpdated": "{{count}} Transaktionen aktualisiert",
+    "bulkUpdateError": "Fehler bei der Massenaktualisierung"
   }
 }

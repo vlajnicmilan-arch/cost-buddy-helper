@@ -1752,5 +1752,34 @@
     "searchCategories": "Search categories...",
     "notificationTitle": "e.g. New app update",
     "yourName": "Your name"
+  },
+  "checklist": {
+    "title": "Get started with V&M Balance",
+    "allDone": "All set! 🎉",
+    "addPaymentSource": "Add a payment source",
+    "addPaymentSourceDesc": "Bank account, cash or card",
+    "addTransaction": "Enter your first transaction",
+    "addTransactionDesc": "Income, expense or transfer",
+    "createBudget": "Set up a budget",
+    "createBudgetDesc": "Control spending by categories",
+    "start": "Start"
+  },
+  "search": {
+    "global": "Search",
+    "placeholder": "Search transactions...",
+    "noResults": "No results",
+    "results": "{{count}} results"
+  },
+  "feedback": {
+    "incomeAdded": "Income added",
+    "expenseAdded": "Expense added",
+    "updated": "Updated",
+    "deleted": "Deleted",
+    "mustBeLoggedIn": "You must be logged in",
+    "pendingSent": "Transaction sent to owner for approval",
+    "missingDescription": "Missing transaction description. Enter a description and try again.",
+    "addError": "Error adding transaction",
+    "bulkUpdated": "Updated {{count}} transactions",
+    "bulkUpdateError": "Error updating transactions in bulk"
   }
 }
