@@ -34,6 +34,7 @@ export type RecurringTransactionInsert = Omit<RecurringTransaction, 'id' | 'user
 export const useRecurringTransactions = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
+  const { activeBusinessProfileId } = useAppState();
   const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,10 +48,18 @@ export const useRecurringTransactions = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('recurring_transactions')
         .select('*')
         .order('next_due_date', { ascending: true });
+
+      if (activeBusinessProfileId) {
+        query = query.eq('business_profile_id', activeBusinessProfileId);
+      } else {
+        query = query.is('business_profile_id', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setRecurringTransactions((data || []) as unknown as RecurringTransaction[]);
@@ -59,7 +68,7 @@ export const useRecurringTransactions = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode]);
+  }, [user, isLocalMode, activeBusinessProfileId]);
 
   useEffect(() => {
     fetchRecurring();
