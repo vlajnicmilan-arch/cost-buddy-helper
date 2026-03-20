@@ -31,24 +31,17 @@ export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPan
   const { t } = useTranslation();
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const { recurringTransactions, loading, addRecurring, updateRecurring, deleteRecurring, toggleActive } = useRecurringTransactions();
+  const { customPaymentSources } = useCustomPaymentSources();
+  const { formatAmount } = useCurrency();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<RecurringTransaction | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   if (!hasAccess('recurring_transactions')) {
     return <UpgradePrompt feature={t('recurring.title', 'Ponavljajuće transakcije')} requiredTier={getRequiredTier('recurring_transactions')} />;
   }
-  const { customPaymentSources } = useCustomPaymentSources();
-  const { formatAmount } = useCurrency();
 
   const FREQ_LABELS: Record<string, string> = {
-    daily: t('recurring.daily'),
-    weekly: t('recurring.weekly'),
-    biweekly: t('recurring.biweekly'),
-    monthly: t('recurring.monthly'),
-    yearly: t('recurring.yearly'),
-  };
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editItem, setEditItem] = useState<RecurringTransaction | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const getPaymentSourceName = (source: string | null) => {
     if (!source) return t('paymentSources.cash');

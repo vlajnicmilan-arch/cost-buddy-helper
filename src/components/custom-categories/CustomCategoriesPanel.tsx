@@ -27,6 +27,11 @@ export const CustomCategoriesPanel = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CustomCategory | null>(null);
   const { t } = useTranslation();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+
+  if (!hasAccess('custom_categories')) {
+    return <UpgradePrompt feature={t('settings.customCategories', 'Prilagođene kategorije')} requiredTier={getRequiredTier('custom_categories')} />;
+  }
 
   const handleSave = async (data: { name: string; icon: string; color: string }) => {
     if (editingCategory) {
