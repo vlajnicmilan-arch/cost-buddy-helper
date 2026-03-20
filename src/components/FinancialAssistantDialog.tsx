@@ -15,6 +15,8 @@ import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'd
 import { hr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import aiAvatarImage from '@/assets/ai-avatar.png';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface BudgetInfo {
   name: string;
