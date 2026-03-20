@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { Expense } from '@/types/expense';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DetectedLoan {
@@ -7,7 +6,7 @@ export interface DetectedLoan {
   description: string;
   amount: number;
   date: Date;
-  type: 'receivable' | 'payable'; // receivable = someone gave loan TO the business, payable = business gave loan
+  type: 'receivable' | 'payable';
   contactName: string;
   confidence: 'high' | 'medium';
   source: 'keyword' | 'ai';
@@ -16,10 +15,9 @@ export interface DetectedLoan {
 // Croatian/English loan keywords
 const LOAN_KEYWORDS = [
   'pozajmica', 'pozajmice', 'pozajmio', 'pozajmila', 'pozajmljeno',
-  'zajam', 'zajmovi', 'kredit',
+  'zajam', 'zajmovi',
   'loan', 'lend', 'borrow',
   'posudio', 'posudila', 'posudba',
-  'dug', 'dugovanje',
   'povrat pozajmice', 'povrat zajma',
   'vraćanje pozajmice', 'vraćanje zajma',
 ];
@@ -31,15 +29,8 @@ const RETURN_KEYWORDS = [
 
 /**
  * Extract contact name from a loan description.
- * Patterns like:
- *   "Pozajmica Milan Horvat" -> "Milan Horvat"
- *   "Pozajmica od firme Akrobat d.o.o." -> "Akrobat d.o.o."
- *   "Zajam tvrtki Tactura" -> "Tactura"
  */
 function extractContactFromDescription(desc: string): string | null {
-  const lower = desc.toLowerCase();
-
-  // Try pattern: "pozajmica od <name>" / "pozajmica za <name>"
   const fromPatterns = [
     /pozajmic[aeo]\s+od\s+(?:firme\s+|tvrtke\s+|poduze[cć]a\s+)?(.+)/i,
     /pozajmic[aeo]\s+za\s+(?:firmu\s+|tvrtku\s+|poduze[cć]e\s+)?(.+)/i,
@@ -75,9 +66,6 @@ export const useLoanDetection = () => {
     const isReturn = RETURN_KEYWORDS.some(kw => lower.includes(kw));
     const contactName = extractContactFromDescription(description);
 
-    // Determine type: if income transaction with loan keyword = someone lent TO us (receivable = we owe them = payable)
-    // If expense with loan keyword = we lent to someone (receivable = they owe us)
-    // If it's a return: reverse the logic
     let type: 'receivable' | 'payable';
     if (isReturn) {
       type = transactionType === 'income' ? 'receivable' : 'payable';
@@ -98,32 +86,21 @@ export const useLoanDetection = () => {
   }, []);
 
   /**
-   * AI-based detection for transactions not caught by keywords
+   * AI-based detection via dedicated edge function
    */
   const detectByAI = useCallback(async (transactions: Array<{ id?: string; description: string; amount: number; type: string; date: Date }>): Promise<DetectedLoan[]> => {
     if (transactions.length === 0) return [];
 
-    // Prepare descriptions for AI
-    const txList = transactions.map((tx, i) => 
-      `${i + 1}. "${tx.description}" | iznos: ${tx.amount} | tip: ${tx.type === 'income' ? 'uplata' : 'isplata'}`
-    ).join('\n');
-
     try {
-      const { data, error } = await supabase.functions.invoke('categorize-transaction', {
+      console.log(`AI loan detection: sending ${transactions.length} transactions`);
+      
+      const { data, error } = await supabase.functions.invoke('detect-loans', {
         body: {
-          customPrompt: true,
-          prompt: `Analiziraj sljedeće bankovne transakcije i identificiraj koje od njih su pozajmice, zajmovi ili krediti.
-Za svaku detektiranu pozajmicu vrati:
-- index (redni broj transakcije, počevši od 1)
-- contact_name (ime osobe ili tvrtke)
-- type: "receivable" ako netko duguje nama, "payable" ako mi dugujemo nekome
-- confidence: "high" ili "medium"
-
-Transakcije:
-${txList}
-
-Vrati JSON array: [{"index": 1, "contact_name": "...", "type": "receivable"|"payable", "confidence": "high"|"medium"}]
-Ako nema pozajmica, vrati prazan array: []`,
+          transactions: transactions.map(tx => ({
+            description: tx.description,
+            amount: tx.amount,
+            type: tx.type,
+          })),
         },
       });
 
@@ -132,15 +109,11 @@ Ako nema pozajmica, vrati prazan array: []`,
         return [];
       }
 
-      const responseText = typeof data === 'string' ? data : data?.result || data?.category || '';
-      
-      // Extract JSON array from response
-      const jsonMatch = responseText.match(/\[[\s\S]*?\]/);
-      if (!jsonMatch) return [];
+      console.log('AI loan detection response:', data);
 
-      const results = JSON.parse(jsonMatch[0]);
+      const loans = data?.loans || [];
       
-      return results.map((r: any) => {
+      return loans.map((r: any) => {
         const tx = transactions[r.index - 1];
         if (!tx) return null;
         return {
@@ -169,6 +142,8 @@ Ako nema pozajmica, vrati prazan array: []`,
     const results: DetectedLoan[] = [];
     const remaining: typeof transactions = [];
 
+    console.log(`Loan detection: scanning ${transactions.length} transactions`);
+
     // First pass: keyword detection
     for (const tx of transactions) {
       const detected = detectByKeywords(tx.description, tx.amount, tx.type, tx.date, tx.id);
@@ -179,18 +154,22 @@ Ako nema pozajmica, vrati prazan array: []`,
       }
     }
 
-    // Second pass: AI for remaining (batch max 20)
+    console.log(`Keyword detection found ${results.length} loans, ${remaining.length} remaining for AI`);
+
+    // Second pass: AI for remaining (batch max 30)
     if (remaining.length > 0) {
-      const batch = remaining.slice(0, 20);
+      const batch = remaining.slice(0, 30);
       const aiResults = await detectByAI(batch);
       results.push(...aiResults);
+      console.log(`AI detection found ${aiResults.length} additional loans`);
     }
 
+    console.log(`Total detected loans: ${results.length}`);
     return results;
   }, [detectByKeywords, detectByAI]);
 
   /**
-   * Detect from a single transaction (for manual entry)
+   * Detect from a single transaction (for manual entry) - keyword only
    */
   const detectSingleLoan = useCallback((description: string, amount: number, type: string, date: Date): DetectedLoan | null => {
     return detectByKeywords(description, amount, type, date);
