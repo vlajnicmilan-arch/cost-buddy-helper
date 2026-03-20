@@ -14,6 +14,11 @@ import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { Expense } from '@/types/expense';
 import { useBackButton } from '@/hooks/useBackButton';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { BottomNav } from '@/components/BottomNav';
+import { PageHeader } from '@/components/PageHeader';
+import { motion } from 'framer-motion';
 
 interface BusinessProfile {
   id: string;
