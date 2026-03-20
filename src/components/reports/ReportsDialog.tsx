@@ -62,6 +62,7 @@ import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { ItemsAnalysisTab } from './ItemsAnalysisTab';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 interface ReportsDialogProps {
   expenses: Expense[];
