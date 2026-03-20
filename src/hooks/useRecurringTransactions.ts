@@ -82,6 +82,7 @@ export const useRecurringTransactions = () => {
       .insert({
         ...recurring,
         user_id: user.id,
+        business_profile_id: activeBusinessProfileId || null,
       } as any);
 
     if (error) {
