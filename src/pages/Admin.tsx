@@ -405,7 +405,7 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-4 h-9">
+          <TabsList className="w-full grid grid-cols-5 h-9">
             <TabsTrigger value="stats" className="text-xs gap-1 px-1">
               <BarChart3 className="w-3 h-3 shrink-0" />
               <span className="hidden sm:inline">Statistika</span>
@@ -413,11 +413,18 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="users" className="text-xs gap-1 px-1">
               <Users className="w-3 h-3 shrink-0" />
-              <span>Korisnici</span>
+              <span className="hidden sm:inline">Korisnici</span>
+              <span className="sm:hidden">Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="billing" className="text-xs gap-1 px-1">
+              <CreditCard className="w-3 h-3 shrink-0" />
+              <span className="hidden sm:inline">Pretplate</span>
+              <span className="sm:hidden">Sub</span>
             </TabsTrigger>
             <TabsTrigger value="reports" className="text-xs gap-1 px-1">
               <Bug className="w-3 h-3 shrink-0" />
-              <span>Prijave</span>
+              <span className="hidden sm:inline">Prijave</span>
+              <span className="sm:hidden">Bug</span>
             </TabsTrigger>
             <TabsTrigger value="notify" className="text-xs gap-1 px-1">
               <Bell className="w-3 h-3 shrink-0" />
