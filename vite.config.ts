@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(autoVersion),
   },
+  server: {
     host: "::",
     port: 8080,
     hmr: {
