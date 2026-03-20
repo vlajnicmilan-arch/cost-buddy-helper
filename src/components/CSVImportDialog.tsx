@@ -266,6 +266,15 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
       )}
 
       <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[85vh] flex flex-col">
+        {!canImport ? (
+          <div className="flex-1 flex items-center justify-center p-6 min-h-[300px]">
+            <UpgradePrompt
+              feature="CSV/PDF uvoz podataka"
+              requiredTier={getRequiredTier('csv_import')}
+            />
+          </div>
+        ) : (
+        <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
