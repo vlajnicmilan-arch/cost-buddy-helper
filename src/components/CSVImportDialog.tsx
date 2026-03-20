@@ -13,6 +13,11 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
+import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
+import { useAppState } from '@/contexts/AppStateContext';
+import { toast } from 'sonner';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
