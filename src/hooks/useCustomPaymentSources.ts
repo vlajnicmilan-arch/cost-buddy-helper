@@ -122,6 +122,12 @@ export const useCustomPaymentSources = () => {
 
 
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    // Check free tier payment source limit
+    if (!hasAccess('unlimited_payment_sources') && customPaymentSources.length >= FREE_LIMITS.payment_sources) {
+      toast.error('Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore.');
+      return null;
+    }
+
     if (isLocalMode) {
       const maxSortOrder = customPaymentSources.reduce((max, src) => Math.max(max, src.sort_order || 0), -1);
       const newSource: CustomPaymentSource = {

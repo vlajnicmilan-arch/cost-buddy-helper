@@ -306,6 +306,12 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
   const createBudget = useCallback(async (budgetData: Partial<BudgetWithStats>) => {
     if (isLocalMode || !user) return;
 
+    // Check free tier budget limit
+    if (!hasAccess('unlimited_budgets') && budgets.length >= FREE_LIMITS.budgets) {
+      toast.error(t('limits.budgetsReached', `Dosegnuli ste limit od ${FREE_LIMITS.budgets} budžeta. Nadogradite na Pro za neograničene budžete.`));
+      return;
+    }
+
     try {
       const { data: newBudget, error: budgetError } = await supabase
         .from('budget_plans')
