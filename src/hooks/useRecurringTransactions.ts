@@ -24,6 +24,7 @@ export interface RecurringTransaction {
   next_due_date: string;
   last_generated_date: string | null;
   is_active: boolean;
+  business_profile_id: string | null;
   created_at: string;
   updated_at: string;
 }
