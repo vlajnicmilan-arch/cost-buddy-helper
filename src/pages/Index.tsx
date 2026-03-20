@@ -1,5 +1,7 @@
 import { useExpenses } from '@/hooks/useExpenses';
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
+import { useRecurringMatcher, RecurringMatch } from '@/hooks/useRecurringMatcher';
+import { RecurringMatchDialog } from '@/components/recurring/RecurringMatchDialog';
 import { RecurringTransactionsPanel } from '@/components/recurring/RecurringTransactionsPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
