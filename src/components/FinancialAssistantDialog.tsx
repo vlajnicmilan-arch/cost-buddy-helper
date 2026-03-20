@@ -15,6 +15,8 @@ import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'd
 import { hr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import aiAvatarImage from '@/assets/ai-avatar.png';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface BudgetInfo {
   name: string;
@@ -59,6 +61,8 @@ export const FinancialAssistantDialog = ({
   onOpenChange,
   hideTrigger = false,
 }: FinancialAssistantDialogProps) => {
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canAccessAI = hasAccess('ai_assistant');
   const [internalOpen, setInternalOpen] = useState(false);
   
   // Support both controlled and uncontrolled modes
@@ -331,6 +335,15 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-[500px] h-[85vh] sm:h-[600px] flex flex-col p-0">
+        {!canAccessAI ? (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <UpgradePrompt
+              feature="AI Financijski Asistent"
+              requiredTier={getRequiredTier('ai_assistant')}
+            />
+          </div>
+        ) : (
+        <>
         <DialogHeader className="p-4 pb-2 border-b">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
@@ -483,6 +496,8 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
             </Button>
           </div>
         </form>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );

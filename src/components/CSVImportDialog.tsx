@@ -18,6 +18,8 @@ import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -32,6 +34,8 @@ type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
 export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource, findDuplicates }: CSVImportDialogProps) => {
   const { t, i18n } = useTranslation();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canImport = hasAccess('csv_import');
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ImportStep>('upload');
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
@@ -262,6 +266,15 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
       )}
 
       <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[85vh] flex flex-col">
+        {!canImport ? (
+          <div className="flex-1 flex items-center justify-center p-6 min-h-[300px]">
+            <UpgradePrompt
+              feature="CSV/PDF uvoz podataka"
+              requiredTier={getRequiredTier('csv_import')}
+            />
+          </div>
+        ) : (
+        <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -549,6 +562,8 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
             </motion.div>
           )}
         </AnimatePresence>
+        </>
+        )}
       </DialogContent>
     </Dialog>
 

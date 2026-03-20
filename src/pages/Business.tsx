@@ -14,6 +14,11 @@ import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { Expense } from '@/types/expense';
 import { useBackButton } from '@/hooks/useBackButton';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { BottomNav } from '@/components/BottomNav';
+import { PageHeader } from '@/components/PageHeader';
+import { motion } from 'framer-motion';
 
 interface BusinessProfile {
   id: string;
@@ -29,6 +34,8 @@ const Business = () => {
   const { user } = useAuth();
   const { expenses: dashboardExpenses, allExpenses, loading, addExpense, updateExpense, deleteExpense, importFromCSV, findDuplicates } = useExpenses();
   const { totalReceivable, totalPayable } = useBusinessDebts();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canAccessBusiness = hasAccess('business_module');
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
@@ -48,6 +55,29 @@ const Business = () => {
       .single()
       .then(({ data }) => { if (data) setProfile(data as any); });
   }, [activeBusinessProfileId, user]);
+
+  // Gate: if user doesn't have business access, show upgrade prompt
+  if (!canAccessBusiness) {
+    return (
+      <div className="min-h-dvh bg-background pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8"
+        >
+          <PageHeader title="Poslovanje" />
+          <UpgradePrompt
+            feature="Poslovni modul"
+            requiredTier={getRequiredTier('business_module')}
+            className="mt-12"
+          />
+        </motion.div>
+        <BottomNav />
+      </div>
+    );
+  }
+
 
   const handleBackToPersonal = () => {
     setActiveBusinessProfileId(null);

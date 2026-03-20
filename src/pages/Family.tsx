@@ -13,6 +13,8 @@ import { FamilyGroupDialog } from '@/components/family/FamilyGroupDialog';
 import { FamilyGroupDetailView } from '@/components/family/FamilyGroupDetailView';
 import { FamilyGroup } from '@/types/family';
 import { useTranslation } from 'react-i18next';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 const Family = () => {
   const { t } = useTranslation();
@@ -21,6 +23,8 @@ const Family = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { groups, loading, createGroup, updateGroup, deleteGroup, refetch } = useFamilyGroups();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canAccessFamily = hasAccess('family_groups');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<FamilyGroup | null>(null);
@@ -40,13 +44,11 @@ const Family = () => {
       const group = groups.find(g => g.id === state.openGroupId);
       if (group) {
         setSelectedGroup(group);
-        if (state.openChat) {
-          setInitialOpenChat(true);
-        }
-        navigate(location.pathname, { replace: true, state: {} });
+        if (state.openChat) setInitialOpenChat(true);
+        window.history.replaceState({}, document.title);
       }
     }
-  }, [groups, location.state, selectedGroup, navigate, location.pathname]);
+  }, [location.state, groups, selectedGroup]);
 
   if (authLoading && storageMode === 'cloud') {
     return (
@@ -69,6 +71,27 @@ const Family = () => {
           <div className="text-center text-muted-foreground mt-12">
             <p>{t('family.cloudOnly')}</p>
           </div>
+        </motion.div>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  if (!canAccessFamily) {
+    return (
+      <div className="min-h-dvh bg-background pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8"
+        >
+          <PageHeader title={t('family.title')} />
+          <UpgradePrompt
+            feature="Obiteljske grupe i dijeljenje"
+            requiredTier={getRequiredTier('family_groups')}
+            className="mt-12"
+          />
         </motion.div>
         <BottomNav />
       </div>
