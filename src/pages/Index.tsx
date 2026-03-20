@@ -726,6 +726,7 @@ const Index = () => {
           simpleModeEnabled={simpleModeEnabled}
           expenses={expenses}
           reportsExpenses={allExpenses}
+          allExpenses={allExpenses}
           onAddExpense={addExpenseWithRecurringCheck}
           onCheckDuplicate={checkDuplicate}
           onBulkUpdateExpenses={bulkUpdateExpenses}
@@ -733,6 +734,10 @@ const Index = () => {
           findDuplicates={findDuplicates}
           existingExpenses={allExpenses}
           onRefetch={refetch}
+          onSelectExpense={(expense) => {
+            setSelectedTransaction(expense);
+            setDetailDialogOpen(true);
+          }}
         />
 
         {/* Local Mode Banner */}
