@@ -220,9 +220,17 @@ export const useExpenseFetch = () => {
     });
   }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, isLocalMode, user, activeBusinessProfileId]);
 
+  // Business/personal isolated expenses (no payment source filtering)
+  const contextFilteredExpenses = useMemo(() => {
+    if (activeBusinessProfileId) {
+      return expenses.filter(e => e.business_profile_id === activeBusinessProfileId);
+    }
+    return expenses.filter(e => !e.business_profile_id);
+  }, [expenses, activeBusinessProfileId]);
+
   return {
-    expenses,          // raw — all accessible expenses
-    dashboardExpenses, // filtered — for display
+    expenses: contextFilteredExpenses, // isolated by business/personal context
+    dashboardExpenses,                 // further filtered for display
     loading,
     isLocalMode,
     setExpenses,
