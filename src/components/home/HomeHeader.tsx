@@ -23,6 +23,7 @@ interface HomeHeaderProps {
   simpleModeEnabled: boolean;
   expenses: Expense[];
   reportsExpenses: Expense[];
+  allExpenses: Expense[];
   onAddExpense: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   onCheckDuplicate?: (transaction: { amount: number; description: string; date: Date; type: string; category?: string; merchant_name?: string }) => Expense | null;
   onBulkUpdateExpenses: (expenses: Expense[]) => Promise<any>;
@@ -30,6 +31,7 @@ interface HomeHeaderProps {
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] };
   existingExpenses?: Expense[];
   onRefetch: () => void;
+  onSelectExpense?: (expense: Expense) => void;
 }
 
 export const HomeHeader = ({
