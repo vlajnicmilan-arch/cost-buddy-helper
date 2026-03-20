@@ -98,7 +98,6 @@ export const HomeHeader = ({
 
         {/* Navigation icons (right side) */}
         <div className="flex items-center gap-0.5 sm:gap-2 flex-shrink-0">
-          {onSelectExpense && <GlobalSearch expenses={allExpenses} onSelectExpense={onSelectExpense} />}
           <TutorialButton className="rounded-xl h-8 w-8 sm:h-9 sm:w-9" />
           {!isLocalMode && <NotificationsDropdown />}
           <TooltipProvider>
