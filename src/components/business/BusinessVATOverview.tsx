@@ -44,24 +44,15 @@ export const BusinessVATOverview = ({ expenses }: Props) => {
         const vatAmount = expAny.vat_amount as number | null;
 
         if (vatRate && vatAmount) {
-          if (e.type === 'income') {
-            totalOutputVAT += vatAmount;
-            if (byRate[vatRate]) byRate[vatRate].output += vatAmount;
-          } else if (e.type === 'expense') {
+          if (e.type === 'expense') {
             totalInputVAT += vatAmount;
             if (byRate[vatRate]) byRate[vatRate].input += vatAmount;
           }
-        } else {
-          if (e.type === 'income') {
-            const vat = e.amount * 0.25 / 1.25;
-            totalOutputVAT += vat;
-            byRate[25].output += vat;
-          } else if (e.type === 'expense') {
-            const vat = e.amount * 0.25 / 1.25;
-            totalInputVAT += vat;
-            byRate[25].input += vat;
-          }
         }
+      });
+
+      // TODO: Output VAT from invoices will be added later
+      // For now, output VAT only from income transactions with explicit vat_rate
       });
 
       const netVAT = totalOutputVAT - totalInputVAT;
