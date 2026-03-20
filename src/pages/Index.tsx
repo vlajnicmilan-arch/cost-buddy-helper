@@ -144,6 +144,76 @@ const Index = () => {
     }
   }, [user]);
 
+  // Wrapper that checks for recurring matches after adding transactions
+  const addExpenseWithRecurringCheck = useCallback(async (expense: any) => {
+    await addExpense(expense);
+    
+    // Only check if we have active recurring transactions and not in business mode
+    if (recurringTransactions.length > 0 && !isBusinessMode) {
+      const txForMatch = [{
+        description: expense.description || '',
+        amount: expense.amount,
+        type: expense.type || 'expense',
+        date: expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
+      }];
+      
+      try {
+        const matches = await findMatches(txForMatch, recurringTransactions);
+        if (matches.length > 0) {
+          setRecurringMatches(matches);
+          setRecurringMatchDialogOpen(true);
+        }
+      } catch (e) {
+        console.error('Recurring match check failed:', e);
+      }
+    }
+  }, [addExpense, recurringTransactions, isBusinessMode, findMatches]);
+
+  // Bulk check after CSV/PDF import
+  const importWithRecurringCheck = useCallback(async (expenses: any[]) => {
+    await importFromCSV(expenses);
+    
+    if (recurringTransactions.length > 0 && !isBusinessMode && expenses.length > 0) {
+      const txsForMatch = expenses.map(e => ({
+        description: e.description || '',
+        amount: e.amount,
+        type: e.type || 'expense',
+        date: e.date instanceof Date ? e.date.toISOString().split('T')[0] : (e.date || new Date().toISOString().split('T')[0]),
+      }));
+      
+      try {
+        const matches = await findMatches(txsForMatch, recurringTransactions);
+        if (matches.length > 0) {
+          setRecurringMatches(matches);
+          setRecurringMatchDialogOpen(true);
+        }
+      } catch (e) {
+        console.error('Recurring match check after import failed:', e);
+      }
+    }
+  }, [importFromCSV, recurringTransactions, isBusinessMode, findMatches]);
+
+  // Handle confirming matched recurring transactions (advance next_due_date)
+  const handleRecurringMatchConfirm = useCallback(async (selectedIds: string[]) => {
+    for (const id of selectedIds) {
+      const recurring = recurringTransactions.find(r => r.id === id);
+      if (!recurring) continue;
+      
+      const nextDate = calculateNextDueDateForMatch(
+        new Date(recurring.next_due_date),
+        recurring.frequency,
+        recurring.day_of_month
+      );
+      
+      await updateRecurring(id, {
+        next_due_date: nextDate.toISOString().split('T')[0],
+        last_generated_date: new Date().toISOString().split('T')[0],
+      });
+    }
+    
+    toast.success(`${selectedIds.length} obveza označeno kao plaćeno`);
+    refetchRecurring();
+  }, [recurringTransactions, updateRecurring, refetchRecurring]);
 
   const { ownedPaymentSources: customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { plans: installmentPlans } = useInstallments();
