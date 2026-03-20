@@ -273,6 +273,13 @@ export const BusinessDebtTracker = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LoanDetectionDialog
+        open={loanDialogOpen}
+        onOpenChange={setLoanDialogOpen}
+        detectedLoans={detectedLoans}
+        onConfirm={handleConfirmLoans}
+      />
     </div>
   );
 };
