@@ -146,7 +146,7 @@ const Paywall: React.FC = () => {
           }`}
         >
           Godišnje
-          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-full">
+          <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
             -17%
           </span>
         </button>
