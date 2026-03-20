@@ -58,9 +58,8 @@ export const showBrowserNotification = async (title: string, body: string): Prom
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification(title, {
         ...options,
-        vibrate: [200, 100, 200],
         data: { url: window.location.origin },
-      });
+      } as any);
       return;
     } catch (swError) {
       console.warn('SW notification failed, falling back:', swError);
