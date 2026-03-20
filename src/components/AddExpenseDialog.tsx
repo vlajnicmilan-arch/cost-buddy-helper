@@ -121,6 +121,10 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const { recordHabit, getSuggestedCategory } = useCategoryHabits();
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const { activeBusinessProfileId } = useAppState();
+  const { detectSingleLoan } = useLoanDetection();
+  const { addDebt } = useBusinessDebts();
+  const [loanDetected, setLoanDetected] = useState<DetectedLoan | null>(null);
+  const [loanDialogOpen, setLoanDialogOpen] = useState(false);
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
   const [expenseCategoryDialogOpen, setExpenseCategoryDialogOpen] = useState(false);
 
