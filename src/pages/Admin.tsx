@@ -68,6 +68,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const Admin = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<BugReport[]>([]);

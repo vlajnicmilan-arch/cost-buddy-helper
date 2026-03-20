@@ -97,6 +97,7 @@ interface BulkPaymentSourceDialogControlledProps {
 }
 
 const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, onOpenChange }: BulkPaymentSourceDialogControlledProps) => {
+  const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newPaymentSource, setNewPaymentSource] = useState<PaymentSource | ''>('');
   const [searchTerm, setSearchTerm] = useState('');

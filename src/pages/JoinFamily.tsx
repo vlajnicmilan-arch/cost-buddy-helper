@@ -5,8 +5,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const JoinFamily = () => {
+  const { t } = useTranslation();
   const { token } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
