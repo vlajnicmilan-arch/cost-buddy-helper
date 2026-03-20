@@ -122,9 +122,15 @@ export const HomeHeader = ({
       </div>
 
       {/* Bottom row: Action buttons */}
+      {/* Search bar - full width */}
+      {onSelectExpense && (
+        <div className="w-full">
+          <GlobalSearch expenses={allExpenses} onSelectExpense={onSelectExpense} alwaysExpanded />
+        </div>
+      )}
+
+      {/* Bottom row: Action buttons */}
       <div className="flex flex-wrap items-center gap-2" data-tutorial="add-buttons">
-        {onSelectExpense && <GlobalSearch expenses={allExpenses} onSelectExpense={onSelectExpense} />}
-        {!simpleModeEnabled && <BulkEditDropdown expenses={expenses} onUpdateExpenses={onBulkUpdateExpenses} />}
         {!simpleModeEnabled && <ReportsDialog expenses={reportsExpenses} />}
         {onImportCSV && (
           <>
