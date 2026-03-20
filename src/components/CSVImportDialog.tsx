@@ -188,10 +188,44 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
       await onImport(selectedTransactions);
       setImportedCount(selectedTransactions.length);
       setStep('complete');
+
+      // After successful import, scan for loans in business mode
+      if (activeBusinessProfileId) {
+        const txsForScan = selectedTransactions.map(tx => ({
+          description: tx.description,
+          amount: tx.amount,
+          type: tx.type,
+          date: tx.date instanceof Date ? tx.date : new Date(tx.date),
+        }));
+        detectLoans(txsForScan).then(detected => {
+          if (detected.length > 0) {
+            setDetectedLoans(detected);
+            setLoanDialogOpen(true);
+          }
+        });
+      }
     } catch (err) {
       setError(t('import.importError'));
       setStep('preview');
     }
+  };
+
+  const handleLoanConfirm = (loans: DetectedLoan[]) => {
+    if (!activeBusinessProfileId) return;
+    for (const loan of loans) {
+      addDebt({
+        business_profile_id: activeBusinessProfileId,
+        type: loan.type,
+        contact_name: loan.contactName,
+        description: loan.description,
+        amount: loan.amount,
+        paid_amount: 0,
+        due_date: null,
+        status: 'active',
+      });
+    }
+    toast.success(`Dodano ${loans.length} pozajmica u evidenciju dugovanja`);
+    setDetectedLoans([]);
   };
 
   const handleClose = () => {
