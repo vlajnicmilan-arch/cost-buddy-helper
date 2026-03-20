@@ -119,7 +119,59 @@ const Admin = () => {
       return;
     }
 
-    await Promise.all([loadReports(), loadUsers()]);
+    await Promise.all([loadReports(), loadUsers(), loadBillingSettings(), loadSubscriptions()]);
+  };
+
+  const loadBillingSettings = async () => {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'billing_enabled')
+      .single();
+    setBillingEnabled(data?.value === true);
+  };
+
+  const toggleBilling = async (enabled: boolean) => {
+    setBillingLoading(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ key: 'billing_enabled', value: enabled as any, updated_at: new Date().toISOString() });
+    if (error) {
+      toast.error('Greška pri spremanju postavke');
+    } else {
+      setBillingEnabled(enabled);
+      toast.success(enabled ? 'Naplata aktivirana' : 'Naplata deaktivirana');
+    }
+    setBillingLoading(false);
+  };
+
+  const loadSubscriptions = async () => {
+    const { data } = await supabase
+      .from('user_subscriptions')
+      .select('user_id, tier');
+    const map: Record<string, string> = {};
+    data?.forEach((s: any) => { map[s.user_id] = s.tier; });
+    setSubscriptions(map);
+  };
+
+  const setUserTier = async (userId: string, tier: string) => {
+    setSubLoading(userId);
+    const { error } = await supabase
+      .from('user_subscriptions')
+      .upsert({
+        user_id: userId,
+        tier: tier as any,
+        assigned_by: user?.id,
+        assigned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    if (error) {
+      toast.error('Greška pri postavljanju razine');
+    } else {
+      setSubscriptions(prev => ({ ...prev, [userId]: tier }));
+      toast.success(`Razina postavljena na ${tier.charAt(0).toUpperCase() + tier.slice(1)}`);
+    }
+    setSubLoading(null);
   };
 
   const loadReports = async () => {
