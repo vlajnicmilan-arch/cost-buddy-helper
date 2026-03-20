@@ -5,6 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useExpenses } from '@/hooks/useExpenses';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { 
   Budget, 
   BudgetCategory, 
