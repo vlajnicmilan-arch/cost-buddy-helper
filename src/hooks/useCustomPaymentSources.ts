@@ -5,6 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSource';
 import { toast } from 'sonner';
+import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 
 
 export const useCustomPaymentSources = () => {
