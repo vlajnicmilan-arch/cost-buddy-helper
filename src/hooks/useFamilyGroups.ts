@@ -281,6 +281,7 @@ export const useFamilyMembers = (groupId: string | null) => {
 };
 
 export const useFamilySharedResources = (groupId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [sharedSources, setSharedSources] = useState<FamilySharedSource[]>([]);
   const [sharedBudgets, setSharedBudgets] = useState<FamilySharedBudget[]>([]);
