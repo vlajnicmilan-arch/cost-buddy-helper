@@ -5,6 +5,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getTransactionDirection(tx: { amount: number; type?: string }) {
+  const amount = Number(tx.amount);
+
+  if (Number.isFinite(amount) && amount !== 0) {
+    return amount > 0 ? "uplata" : "isplata";
+  }
+
+  if (tx.type === "income") return "uplata";
+  if (tx.type === "expense") return "isplata";
+
+  return "nepoznato";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,19 +37,27 @@ serve(async (req) => {
       });
     }
 
-    const txList = transactions.map((tx: any, i: number) =>
-      `${i + 1}. "${tx.description}" | iznos: ${tx.amount} | tip: ${tx.type === 'income' ? 'uplata' : 'isplata'}`
-    ).join('\n');
+    const txList = transactions
+      .map((tx: any, i: number) => {
+        const direction = getTransactionDirection(tx);
+        return `${i + 1}. "${tx.description}" | iznos: ${tx.amount} | smjer: ${direction} | iznos_pozitivan: ${Number(tx.amount) > 0 ? 'da' : 'ne'}`;
+      })
+      .join("\n");
 
     const prompt = `Analiziraj sljedeće bankovne transakcije i identificiraj koje od njih su pozajmice, zajmovi, krediti ili posudbe.
 
 Traži ključne riječi: pozajmica, zajam, posudba, kredit, loan, dug, pozajmio, pozajmila, vraćanje pozajmice, povrat zajma.
 Također traži transakcije koje opisuju transfer novca između osoba ili tvrtki koji impliciraju pozajmicu.
 
+VAŽNO ZA SMJER TRANSAKCIJE:
+- pozitivan iznos znači uplata na račun
+- negativan iznos znači isplata s računa
+- ako se tekstualni tip i iznos ne slažu, vjeruj PREDZNAKU iznosa
+
 Za svaku detektiranu pozajmicu vrati:
 - index (redni broj transakcije, počevši od 1)
 - contact_name (ime osobe ili tvrtke koja je uključena)
-- type: "receivable" ako netko duguje nama (primili smo pozajmicu ili netko nam vraća), "payable" ako mi dugujemo nekome (dali smo pozajmicu ili mi vraćamo)
+- type: "receivable" ako netko duguje nama, "payable" ako mi dugujemo nekome
 - confidence: "high" ako je jasno da je pozajmica, "medium" ako je nejasno
 
 Transakcije:
@@ -45,8 +66,6 @@ ${txList}
 VAŽNO: Odgovori ISKLJUČIVO s JSON arrayem. Bez dodatnog teksta.
 Ako nema pozajmica, vrati: []
 Primjer odgovora: [{"index": 1, "contact_name": "Milan Horvat", "type": "payable", "confidence": "high"}]`;
-
-    console.log(`Analyzing ${transactions.length} transactions for loans`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -72,22 +91,25 @@ Primjer odgovora: [{"index": 1, "contact_name": "Milan Horvat", "type": "payable
 
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "[]";
-    console.log("AI response:", content);
 
-    // Extract JSON array from response
     const jsonMatch = content.match(/\[[\s\S]*?\]/);
     const loans = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-
-    console.log(`Detected ${loans.length} loans`);
 
     return new Response(JSON.stringify({ loans }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Error in detect-loans:", error);
-    return new Response(JSON.stringify({ error: error.message, loans: [] }), {
-      status: 200, // Return 200 with empty loans to not break the UI
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+        loans: [],
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

@@ -70,7 +70,7 @@ export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfi
         <ScrollArea className="max-h-[50vh]">
           <div className="space-y-3 pr-2">
             {editedLoans.map((loan, idx) => {
-              const isOutflow = loan.transactionFlow === 'outflow';
+              const isPayable = loan.type === 'payable';
 
               return (
                 <div
@@ -88,11 +88,14 @@ export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfi
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground truncate">{loan.description}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-sm font-semibold ${isOutflow ? 'text-expense' : 'text-income'}`}>
-                          {isOutflow ? '-' : '+'}{formatAmount(Math.abs(loan.amount))}
+                        <span className={`text-sm font-semibold ${isPayable ? 'text-expense' : 'text-income'}`}>
+                          {isPayable ? '-' : '+'}{formatAmount(Math.abs(loan.amount))}
                         </span>
                         <Badge variant="outline" className="text-[9px] px-1.5 py-0">
                           {format(loan.date, 'dd.MM.yyyy')}
+                        </Badge>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                          {loan.transactionFlow === 'inflow' ? 'uplata' : 'isplata'}
                         </Badge>
                         <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5">
                           {loan.source === 'keyword' ? <Search className="w-2.5 h-2.5" /> : <Sparkles className="w-2.5 h-2.5" />}
@@ -115,7 +118,7 @@ export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfi
                       </div>
                       <div>
                         <Label className="text-[10px] text-muted-foreground">{t('business.debts.type', 'Vrsta')}</Label>
-                        <Select value={loan.type} onValueChange={(v: any) => updateLoan(idx, { type: v })}>
+                        <Select value={loan.type} onValueChange={(v: 'receivable' | 'payable') => updateLoan(idx, { type: v })}>
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
