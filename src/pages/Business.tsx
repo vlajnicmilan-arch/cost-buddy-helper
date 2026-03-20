@@ -34,6 +34,8 @@ const Business = () => {
   const { user } = useAuth();
   const { expenses: dashboardExpenses, allExpenses, loading, addExpense, updateExpense, deleteExpense, importFromCSV, findDuplicates } = useExpenses();
   const { totalReceivable, totalPayable } = useBusinessDebts();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canAccessBusiness = hasAccess('business_module');
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
@@ -43,6 +45,28 @@ const Business = () => {
   useEffect(() => {
     if (!activeBusinessProfileId) navigate('/', { replace: true });
   }, [activeBusinessProfileId, navigate]);
+
+  // Gate: if user doesn't have business access, show upgrade prompt
+  if (!canAccessBusiness) {
+    return (
+      <div className="min-h-dvh bg-background pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8"
+        >
+          <PageHeader title="Poslovanje" />
+          <UpgradePrompt
+            feature="Poslovni modul"
+            requiredTier={getRequiredTier('business_module')}
+            className="mt-12"
+          />
+        </motion.div>
+        <BottomNav />
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!activeBusinessProfileId || !user) return;
