@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
 
 export interface RecurringTransaction {
@@ -23,15 +24,17 @@ export interface RecurringTransaction {
   next_due_date: string;
   last_generated_date: string | null;
   is_active: boolean;
+  business_profile_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export type RecurringTransactionInsert = Omit<RecurringTransaction, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type RecurringTransactionInsert = Omit<RecurringTransaction, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'business_profile_id'>;
 
 export const useRecurringTransactions = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
+  const { activeBusinessProfileId } = useAppState();
   const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,10 +48,18 @@ export const useRecurringTransactions = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('recurring_transactions')
         .select('*')
         .order('next_due_date', { ascending: true });
+
+      if (activeBusinessProfileId) {
+        query = query.eq('business_profile_id', activeBusinessProfileId);
+      } else {
+        query = query.is('business_profile_id', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setRecurringTransactions((data || []) as unknown as RecurringTransaction[]);
@@ -57,7 +68,7 @@ export const useRecurringTransactions = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode]);
+  }, [user, isLocalMode, activeBusinessProfileId]);
 
   useEffect(() => {
     fetchRecurring();
@@ -71,6 +82,7 @@ export const useRecurringTransactions = () => {
       .insert({
         ...recurring,
         user_id: user.id,
+        business_profile_id: activeBusinessProfileId || null,
       } as any);
 
     if (error) {
