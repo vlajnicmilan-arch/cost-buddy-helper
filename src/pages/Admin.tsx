@@ -476,8 +476,9 @@ const Admin = () => {
                           <p><strong>Valuta:</strong> {u.currency || 'EUR'}</p>
                           <p><strong>Email potvrđen:</strong> {u.confirmed_at ? format(new Date(u.confirmed_at), 'dd.MM.yyyy. HH:mm', { locale: hr }) : 'Ne'}</p>
                           {u.last_login_at && (
-                            <p><strong>Zadnji login (tracked):</strong> {format(new Date(u.last_login_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}</p>
+                            <p><strong>Zadnje korištenje:</strong> {format(new Date(u.last_login_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}</p>
                           )}
+                          <p><strong>Verzija aplikacije:</strong> {u.app_version || 'Nepoznato (starija verzija)'}</p>
                         </div>
 
                         {u.last_device_info && (() => {
