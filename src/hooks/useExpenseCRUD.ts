@@ -59,7 +59,7 @@ export const useExpenseCRUD = ({
           await updateBalance(normalizedExpense.income_source_id, normalizedExpense.amount, 'income');
         }
         if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
-        toast.success(normalizedExpense.type === 'income' ? 'Prihod dodan' : 'Trošak dodan');
+        toast.success(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
       } else {
         if (!user) { toast.error('Moraš biti prijavljen'); return; }
 
