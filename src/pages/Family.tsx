@@ -100,7 +100,7 @@ const Family = () => {
     );
   }
 
-    return (
+  if (selectedGroup) {
       <FamilyGroupDetailView
         group={selectedGroup}
         initialOpenChat={initialOpenChat}
