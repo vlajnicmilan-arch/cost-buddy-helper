@@ -10,6 +10,8 @@ import { motion } from 'framer-motion';
 import { Plus, Target, Trash2, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 export const SavingsGoalsSection = () => {
   const { t } = useTranslation();
