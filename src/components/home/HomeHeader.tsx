@@ -40,6 +40,7 @@ export const HomeHeader = ({
   simpleModeEnabled,
   expenses,
   reportsExpenses,
+  allExpenses,
   onAddExpense,
   onCheckDuplicate,
   onBulkUpdateExpenses,
@@ -47,6 +48,7 @@ export const HomeHeader = ({
   findDuplicates,
   existingExpenses,
   onRefetch,
+  onSelectExpense,
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
