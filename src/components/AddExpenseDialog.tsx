@@ -2201,6 +2201,14 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       onConfirm={handleDuplicateConfirm}
       onCancel={handleDuplicateCancel}
     />
+
+    {/* Loan Detection Dialog */}
+    <LoanDetectionDialog
+      open={loanDialogOpen}
+      onOpenChange={setLoanDialogOpen}
+      detectedLoans={loanDetected ? [loanDetected] : []}
+      onConfirm={handleLoanConfirm}
+    />
   </>
   );
 };
