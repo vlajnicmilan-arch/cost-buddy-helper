@@ -10,6 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Repeat, Pencil, Trash2, Calendar, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,9 +29,17 @@ interface RecurringTransactionsPanelProps {
 
 export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPanelProps) => {
   const { t } = useTranslation();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
   const { recurringTransactions, loading, addRecurring, updateRecurring, deleteRecurring, toggleActive } = useRecurringTransactions();
   const { customPaymentSources } = useCustomPaymentSources();
   const { formatAmount } = useCurrency();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<RecurringTransaction | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  if (!hasAccess('recurring_transactions')) {
+    return <UpgradePrompt feature={t('recurring.title', 'Ponavljajuće transakcije')} requiredTier={getRequiredTier('recurring_transactions')} />;
+  }
 
   const FREQ_LABELS: Record<string, string> = {
     daily: t('recurring.daily'),
@@ -38,10 +48,6 @@ export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPan
     monthly: t('recurring.monthly'),
     yearly: t('recurring.yearly'),
   };
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editItem, setEditItem] = useState<RecurringTransaction | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const getPaymentSourceName = (source: string | null) => {
     if (!source) return t('paymentSources.cash');

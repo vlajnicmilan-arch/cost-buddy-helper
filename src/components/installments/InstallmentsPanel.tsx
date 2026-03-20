@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useInstallments } from '@/hooks/useInstallments';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { InstallmentPlanWithProgress, Installment } from '@/types/installment';
 import { getCategoryInfo } from '@/types/expense';
@@ -206,9 +208,14 @@ export const InstallmentsPanel = () => {
   const { plans, loading, markInstallmentPaid, markInstallmentUnpaid, deletePlan } = useInstallments();
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
   const [selectedPlan, setSelectedPlan] = useState<InstallmentPlanWithProgress | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!hasAccess('installments')) {
+    return <UpgradePrompt feature={t('installments.title', 'Rate')} requiredTier={getRequiredTier('installments')} compact />;
+  }
 
   // Calculate totals for collapsed view
   const totalRemaining = plans.reduce((sum, plan) => sum + plan.remainingAmount, 0);

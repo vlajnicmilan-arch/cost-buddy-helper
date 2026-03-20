@@ -5,6 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSource';
 import { toast } from 'sonner';
+import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 
 
 export const useCustomPaymentSources = () => {
@@ -13,6 +14,7 @@ export const useCustomPaymentSources = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
+  const { hasAccess } = useFeatureAccess();
 
   const isLocalMode = storageMode === 'local' && !user;
 
@@ -121,6 +123,12 @@ export const useCustomPaymentSources = () => {
 
 
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    // Check free tier payment source limit
+    if (!hasAccess('unlimited_payment_sources') && customPaymentSources.length >= FREE_LIMITS.payment_sources) {
+      toast.error('Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore.');
+      return null;
+    }
+
     if (isLocalMode) {
       const maxSortOrder = customPaymentSources.reduce((max, src) => Math.max(max, src.sort_order || 0), -1);
       const newSource: CustomPaymentSource = {

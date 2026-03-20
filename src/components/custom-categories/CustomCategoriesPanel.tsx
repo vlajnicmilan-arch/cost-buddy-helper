@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 export const CustomCategoriesPanel = () => {
   const { customCategories, loading, addCustomCategory, updateCustomCategory, deleteCustomCategory } = useCustomCategories();
@@ -25,6 +27,11 @@ export const CustomCategoriesPanel = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CustomCategory | null>(null);
   const { t } = useTranslation();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+
+  if (!hasAccess('custom_categories')) {
+    return <UpgradePrompt feature={t('settings.customCategories', 'Prilagođene kategorije')} requiredTier={getRequiredTier('custom_categories')} />;
+  }
 
   const handleSave = async (data: { name: string; icon: string; color: string }) => {
     if (editingCategory) {

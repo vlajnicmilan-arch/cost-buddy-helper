@@ -62,6 +62,7 @@ import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { ItemsAnalysisTab } from './ItemsAnalysisTab';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 interface ReportsDialogProps {
   expenses: Expense[];
@@ -166,6 +167,7 @@ const calculateStats = (expenseList: Expense[]) => {
 
 export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const { t } = useTranslation();
+  const { hasAccess } = useFeatureAccess();
   
   const { customIncomeCategories } = useCustomIncomeCategories();
   const { customCategories } = useCustomCategories();
@@ -574,7 +576,15 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700">
+        <Button 
+          className="gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700"
+          onClick={(e) => {
+            if (!hasAccess('reports')) {
+              e.preventDefault();
+              window.location.href = '/paywall';
+            }
+          }}
+        >
           <FileText className="w-4 h-4" />
           {t('bulk.reports')}
         </Button>

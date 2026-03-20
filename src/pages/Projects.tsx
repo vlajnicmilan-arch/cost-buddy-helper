@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 const Projects = () => {
   const { t } = useTranslation();
@@ -16,6 +18,7 @@ const Projects = () => {
   const { storageMode } = useStorage();
   const navigate = useNavigate();
   const { refetch } = useExpenses();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
@@ -43,7 +46,11 @@ const Projects = () => {
           title={t('nav.projects', 'Projekti')}
           onDataImported={refetch}
         />
-        <ProjectsPanel onRefreshExpenses={refetch} />
+        {hasAccess('projects') ? (
+          <ProjectsPanel onRefreshExpenses={refetch} />
+        ) : (
+          <UpgradePrompt feature={t('nav.projects', 'Projekti')} requiredTier={getRequiredTier('projects')} />
+        )}
       </motion.div>
       <BottomNav />
     </div>

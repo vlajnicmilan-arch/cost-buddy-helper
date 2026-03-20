@@ -5,6 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useExpenses } from '@/hooks/useExpenses';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { 
   Budget, 
   BudgetCategory, 
@@ -23,6 +24,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
   const { storageMode } = useStorage();
   const { expenses: internalExpenses } = useExpenses();
   const { t } = useTranslation();
+  const { hasAccess } = useFeatureAccess();
   
   // Use external expenses if provided, otherwise use internal
   const expenses = options?.externalExpenses ?? internalExpenses;
@@ -304,6 +306,12 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
   const createBudget = useCallback(async (budgetData: Partial<BudgetWithStats>) => {
     if (isLocalMode || !user) return;
 
+    // Check free tier budget limit
+    if (!hasAccess('unlimited_budgets') && budgets.length >= FREE_LIMITS.budgets) {
+      toast.error(t('limits.budgetsReached', `Dosegnuli ste limit od ${FREE_LIMITS.budgets} budžeta. Nadogradite na Pro za neograničene budžete.`));
+      return;
+    }
+
     try {
       const { data: newBudget, error: budgetError } = await supabase
         .from('budget_plans')
@@ -349,7 +357,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       console.error('Error creating budget:', error);
       toast.error(t('errors.createBudget', 'Greška pri kreiranju budžeta'));
     }
-  }, [user, isLocalMode, t, fetchBudgets]);
+  }, [user, isLocalMode, t, fetchBudgets, hasAccess, budgets.length]);
 
   // Update budget
   const updateBudget = useCallback(async (budgetData: BudgetWithStats) => {
