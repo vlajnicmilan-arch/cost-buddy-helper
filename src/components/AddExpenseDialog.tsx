@@ -66,6 +66,7 @@ interface ScannedData {
 
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
   const { t } = useTranslation();
+  const { hasAccess } = useFeatureAccess();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
