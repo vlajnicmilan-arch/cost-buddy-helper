@@ -1,5 +1,7 @@
 import { useExpenses } from '@/hooks/useExpenses';
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
+import { useRecurringMatcher, RecurringMatch } from '@/hooks/useRecurringMatcher';
+import { RecurringMatchDialog } from '@/components/recurring/RecurringMatchDialog';
 import { RecurringTransactionsPanel } from '@/components/recurring/RecurringTransactionsPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -101,6 +103,8 @@ const Index = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
   const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
+  const [recurringMatches, setRecurringMatches] = useState<RecurringMatch[]>([]);
+  const [recurringMatchDialogOpen, setRecurringMatchDialogOpen] = useState(false);
 
   // Back button support for all dialogs
   useBackButton(incomeDialogOpen, () => setIncomeDialogOpen(false));
@@ -111,8 +115,10 @@ const Index = () => {
   useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
   useBackButton(assistantDialogOpen, () => setAssistantDialogOpen(false));
   useBackButton(recurringPanelOpen, () => setRecurringPanelOpen(false));
+  useBackButton(recurringMatchDialogOpen, () => setRecurringMatchDialogOpen(false));
 
-  const { recurringTransactions, processDueTransactions } = useRecurringTransactions();
+  const { recurringTransactions, processDueTransactions, updateRecurring, refetch: refetchRecurring } = useRecurringTransactions();
+  const { findMatches } = useRecurringMatcher();
 
   // Load welcome animation flag; displayName now comes from AppStateContext
   useEffect(() => {
@@ -137,6 +143,26 @@ const Index = () => {
         });
     }
   }, [user]);
+
+  // Helper to calculate next due date for matched recurring transactions
+  const calculateNextDueDateForMatch = useCallback((currentDate: Date, frequency: string, dayOfMonth: number | null): Date => {
+    const next = new Date(currentDate);
+    switch (frequency) {
+      case 'daily': next.setDate(next.getDate() + 1); break;
+      case 'weekly': next.setDate(next.getDate() + 7); break;
+      case 'biweekly': next.setDate(next.getDate() + 14); break;
+      case 'monthly':
+        next.setMonth(next.getMonth() + 1);
+        if (dayOfMonth) {
+          const maxDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+          next.setDate(Math.min(dayOfMonth, maxDay));
+        }
+        break;
+      case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
+    }
+    return next;
+  }, []);
+
 
 
   const { ownedPaymentSources: customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
@@ -247,6 +273,59 @@ const Index = () => {
   }, [customPaymentSources, installmentPlans, multiCurrencyEnabled, currency.code, convert]);
 
   useAutoBackup();
+
+  // Wrapper: check for recurring matches after adding a transaction
+  const addExpenseWithRecurringCheck = useCallback(async (expense: any) => {
+    await addExpense(expense);
+    if (recurringTransactions.length > 0 && !isBusinessMode) {
+      try {
+        const matches = await findMatches([{
+          description: expense.description || '',
+          amount: expense.amount,
+          type: expense.type || 'expense',
+          date: expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
+        }], recurringTransactions);
+        if (matches.length > 0) {
+          setRecurringMatches(matches);
+          setRecurringMatchDialogOpen(true);
+        }
+      } catch (e) { console.error('Recurring match check failed:', e); }
+    }
+  }, [addExpense, recurringTransactions, isBusinessMode, findMatches]);
+
+  // Wrapper: check for recurring matches after bulk import
+  const importWithRecurringCheck = useCallback(async (txs: any[]) => {
+    await importFromCSV(txs);
+    if (recurringTransactions.length > 0 && !isBusinessMode && txs.length > 0) {
+      try {
+        const matches = await findMatches(txs.map(e => ({
+          description: e.description || '',
+          amount: e.amount,
+          type: e.type || 'expense',
+          date: e.date instanceof Date ? e.date.toISOString().split('T')[0] : (e.date || new Date().toISOString().split('T')[0]),
+        })), recurringTransactions);
+        if (matches.length > 0) {
+          setRecurringMatches(matches);
+          setRecurringMatchDialogOpen(true);
+        }
+      } catch (e) { console.error('Recurring match after import failed:', e); }
+    }
+  }, [importFromCSV, recurringTransactions, isBusinessMode, findMatches]);
+
+  // Confirm matched recurring → advance next_due_date
+  const handleRecurringMatchConfirm = useCallback(async (selectedIds: string[]) => {
+    for (const id of selectedIds) {
+      const rec = recurringTransactions.find(r => r.id === id);
+      if (!rec) continue;
+      const nextDate = calculateNextDueDateForMatch(new Date(rec.next_due_date), rec.frequency, rec.day_of_month);
+      await updateRecurring(id, {
+        next_due_date: nextDate.toISOString().split('T')[0],
+        last_generated_date: new Date().toISOString().split('T')[0],
+      });
+    }
+    toast.success(`${selectedIds.length} obveza označeno kao plaćeno`);
+    refetchRecurring();
+  }, [recurringTransactions, updateRecurring, refetchRecurring, calculateNextDueDateForMatch]);
 
   // Clear selection when filters change
   useEffect(() => {
@@ -390,7 +469,7 @@ const Index = () => {
                     />
                   </>
                 )}
-                <AddExpenseDialog onAdd={addExpense} checkDuplicate={checkDuplicate} />
+                <AddExpenseDialog onAdd={addExpenseWithRecurringCheck} checkDuplicate={checkDuplicate} />
               </div>
 
               {/* Payment Sources */}
@@ -646,10 +725,10 @@ const Index = () => {
           simpleModeEnabled={simpleModeEnabled}
           expenses={expenses}
           reportsExpenses={allExpenses}
-          onAddExpense={addExpense}
+          onAddExpense={addExpenseWithRecurringCheck}
           onCheckDuplicate={checkDuplicate}
           onBulkUpdateExpenses={bulkUpdateExpenses}
-          onImportCSV={importFromCSV}
+          onImportCSV={importWithRecurringCheck}
           findDuplicates={findDuplicates}
           existingExpenses={allExpenses}
           onRefetch={refetch}
@@ -911,6 +990,13 @@ const Index = () => {
       {recurringPanelOpen && (
         <RecurringTransactionsPanel onClose={() => setRecurringPanelOpen(false)} />
       )}
+
+      <RecurringMatchDialog
+        open={recurringMatchDialogOpen}
+        onOpenChange={setRecurringMatchDialogOpen}
+        matches={recurringMatches}
+        onConfirm={handleRecurringMatchConfirm}
+      />
     </div>
   );
 };
