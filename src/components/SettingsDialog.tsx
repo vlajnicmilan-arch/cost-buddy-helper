@@ -650,7 +650,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               </div>
             </div>
 
-            <Separator />
+            {/* Subscription Section */}
+            <SubscriptionSection />
 
             {/* Appearance Section */}
             <div className="space-y-4">
