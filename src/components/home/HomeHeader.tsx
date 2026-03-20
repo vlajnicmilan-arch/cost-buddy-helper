@@ -132,25 +132,6 @@ export const HomeHeader = ({
       {/* Bottom row: Action buttons */}
       <div className="flex flex-wrap items-center gap-2" data-tutorial="add-buttons">
         {!simpleModeEnabled && <ReportsDialog expenses={reportsExpenses} />}
-        {onImportCSV && (
-          <>
-            <Button 
-              variant="outline" 
-              className="gap-2 rounded-xl"
-              onClick={() => setImportOpen(true)}
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              {t('import.title', 'Uvoz izvoda')}
-            </Button>
-            <CSVImportDialog
-              onImport={onImportCSV}
-              findDuplicates={findDuplicates}
-              existingExpenses={existingExpenses}
-              externalOpen={importOpen}
-              onExternalOpenChange={setImportOpen}
-            />
-          </>
-        )}
         <AddExpenseDialog onAdd={onAddExpense} checkDuplicate={onCheckDuplicate} />
       </div>
     </header>
