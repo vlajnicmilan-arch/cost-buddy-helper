@@ -269,7 +269,7 @@ export const useExpenseCRUD = ({
           const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
           return prev.map(e => updatedMap.get(e.id) || e);
         });
-        toast.success(`Ažurirano ${expensesToUpdate.length} transakcija`);
+        toast.success(t('feedback.bulkUpdated', { count: expensesToUpdate.length }));
       } else {
         if (!user) { toast.error('Moraš biti prijavljen'); return; }
 
