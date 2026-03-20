@@ -469,7 +469,7 @@ const Index = () => {
                     />
                   </>
                 )}
-                <AddExpenseDialog onAdd={addExpense} checkDuplicate={checkDuplicate} />
+                <AddExpenseDialog onAdd={addExpenseWithRecurringCheck} checkDuplicate={checkDuplicate} />
               </div>
 
               {/* Payment Sources */}
