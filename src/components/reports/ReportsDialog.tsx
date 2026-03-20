@@ -576,7 +576,15 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700">
+        <Button 
+          className="gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700"
+          onClick={(e) => {
+            if (!hasAccess('reports')) {
+              e.preventDefault();
+              window.location.href = '/paywall';
+            }
+          }}
+        >
           <FileText className="w-4 h-4" />
           {t('bulk.reports')}
         </Button>
