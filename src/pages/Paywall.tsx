@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { TIERS, SubscriptionTier } from '@/lib/subscriptionTiers';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +14,15 @@ type BillingInterval = 'monthly' | 'yearly';
 
 const Paywall: React.FC = () => {
   const { t } = useTranslation();
-  const { tier: currentTier, subscribed } = useSubscription();
+  const navigate = useNavigate();
+  const { tier: currentTier, subscribed, loading: subLoading } = useSubscription();
+
+  // Redirect to home if subscription becomes active
+  useEffect(() => {
+    if (!subLoading && subscribed) {
+      navigate('/', { replace: true });
+    }
+  }, [subscribed, subLoading, navigate]);
   const [interval, setInterval] = useState<BillingInterval>('monthly');
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
 
