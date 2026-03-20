@@ -23,6 +23,8 @@ const Family = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { groups, loading, createGroup, updateGroup, deleteGroup, refetch } = useFamilyGroups();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canAccessFamily = hasAccess('family_groups');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<FamilyGroup | null>(null);
