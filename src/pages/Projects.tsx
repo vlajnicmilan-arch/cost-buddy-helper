@@ -18,6 +18,7 @@ const Projects = () => {
   const { storageMode } = useStorage();
   const navigate = useNavigate();
   const { refetch } = useExpenses();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
