@@ -38,6 +38,7 @@ interface AppUser {
   last_device_info: any;
   last_login_at: string | null;
   referral_count: number;
+  app_version: string | null;
 }
 
 interface Stats {

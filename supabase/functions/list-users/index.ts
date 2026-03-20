@@ -159,6 +159,7 @@ Deno.serve(async (req) => {
           last_device_info: lastLogin?.device_info || null,
           last_login_at: lastLogin?.logged_in_at || null,
           referral_count: referralCountMap.get(u.id) || 0,
+          app_version: lastLogin?.device_info?.appVersion || null,
         };
       }),
       pagination: {
