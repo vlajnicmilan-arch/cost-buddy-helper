@@ -37,6 +37,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Admin = lazy(() => import("./pages/Admin"));
+const Paywall = lazy(() => import("./pages/Paywall"));
 
 const queryClient = new QueryClient();
 
