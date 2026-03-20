@@ -90,6 +90,10 @@ const Admin = () => {
   const [hasMoreUsers, setHasMoreUsers] = useState(false);
   const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
   const [sendingReply, setSendingReply] = useState<string | null>(null);
+  const [billingEnabled, setBillingEnabled] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<Record<string, string>>({});
+  const [subLoading, setSubLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
