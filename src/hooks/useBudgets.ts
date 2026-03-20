@@ -357,7 +357,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       console.error('Error creating budget:', error);
       toast.error(t('errors.createBudget', 'Greška pri kreiranju budžeta'));
     }
-  }, [user, isLocalMode, t, fetchBudgets]);
+  }, [user, isLocalMode, t, fetchBudgets, hasAccess, budgets.length]);
 
   // Update budget
   const updateBudget = useCallback(async (budgetData: BudgetWithStats) => {
