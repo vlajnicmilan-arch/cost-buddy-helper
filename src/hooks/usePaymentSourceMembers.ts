@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export type PaymentSourceRole = 'owner' | 'member' | 'limited' | 'full';
 
@@ -35,6 +36,7 @@ export const PAYMENT_SOURCE_ROLE_LABELS: Record<PaymentSourceRole, string> = {
 };
 
 export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [members, setMembers] = useState<PaymentSourceMember[]>([]);
   const [invitations, setInvitations] = useState<PaymentSourceInvitation[]>([]);
@@ -150,7 +152,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       toast.success('Član uklonjen');
     } catch (error) {
       console.error('Error removing member:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -167,7 +169,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       toast.success('Pozivnica otkazana');
     } catch (error) {
       console.error('Error cancelling invitation:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 

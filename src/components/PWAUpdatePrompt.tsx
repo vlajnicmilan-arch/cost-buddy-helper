@@ -153,13 +153,13 @@ export const PWAUpdatePrompt = () => {
     setAutoUpdate(enabled);
     setAutoUpdatePreference(enabled);
     if (enabled) {
-      toast.success('Automatsko ažuriranje uključeno');
+      toast.success(t('toasts.autoUpdateOn'));
       // If there's a pending update, apply it now
       if (needRefresh && !isTestMode) {
         performAutoUpdate();
       }
     } else {
-      toast.info('Automatsko ažuriranje isključeno');
+      toast.info(t('toasts.autoUpdateOff'));
     }
   };
 

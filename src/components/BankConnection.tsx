@@ -76,7 +76,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
 
     const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
     if (!isHTMLFile) {
-      toast.error('Odaberi HTML datoteku (.html ili .htm)');
+      toast.error(t('toasts.selectHtmlFile'));
       return;
     }
 
@@ -86,7 +86,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     if (result && result.transactions.length > 0) {
       setPdfPreviewOpen(true);
     } else if (result && result.transactions.length === 0) {
-      toast.error('Nije pronađena nijedna transakcija u HTML datoteci.');
+      toast.error(t('toasts.noTransactionsInHtml'));
     }
 
     if (htmlInputRef.current) {
@@ -99,7 +99,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Odaberi slikovnu datoteku (JPG, PNG)');
+      toast.error(t('toasts.selectImageFile'));
       return;
     }
 
@@ -124,7 +124,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
         if (result && result.transactions.length > 0) {
           setPdfPreviewOpen(true);
         } else if (result && result.transactions.length === 0) {
-          toast.error('Nije pronađena nijedna transakcija na fotografiji. Pokušaj s boljom kvalitetom slike.');
+          toast.error(t('toasts.noTransactionsInPhoto'));
         }
       };
       img.src = base64;

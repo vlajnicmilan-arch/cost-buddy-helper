@@ -74,7 +74,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newPaymentSource) {
-      toast.error('Odaberi transakcije i novi izvor plaćanja');
+      toast.error(t('toasts.selectTransactionsAndSource'));
       return;
     }
 
@@ -96,7 +96,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
       setNewPaymentSource('');
       setOpen(false);
     } catch (error) {
-      toast.error('Greška pri ažuriranju transakcija');
+      toast.error(t('toasts.updateError'));
     } finally {
       setSaving(false);
     }

@@ -96,9 +96,9 @@ const Auth = () => {
         const { error } = await signIn(email.trim(), password);
         if (error) {
           if (error.message.includes('Invalid login')) {
-            toast.error('Pogrešan email ili lozinka');
+            toast.error(t('toasts.wrongEmailOrPassword'));
           } else if (error.message.includes('Email not confirmed')) {
-            toast.error('Email adresa nije potvrđena. Provjerite inbox.');
+            toast.error(t('toasts.emailNotConfirmed'));
             setAwaitingVerification(true);
             setRegisteredEmail(email.trim());
           } else {
@@ -106,14 +106,14 @@ const Auth = () => {
           }
           return;
         }
-        toast.success('Dobrodošli natrag!');
+        toast.success(t('toasts.welcomeBack'));
         const returnTo = (location.state as any)?.returnTo;
         navigate(returnTo || '/');
       } else {
         const { error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
         if (error) {
           if (error.message.includes('already registered')) {
-            toast.error('Korisnik s ovim emailom već postoji');
+            toast.error(t('toasts.userAlreadyExists'));
           } else {
             toast.error(error.message);
           }
@@ -123,7 +123,7 @@ const Auth = () => {
         if (needsEmailConfirmation) {
           setAwaitingVerification(true);
           setRegisteredEmail(email.trim());
-          toast.success('Registracija uspješna! Provjerite email.');
+          toast.success(t('toasts.registrationSuccess'));
           trackReferral();
         } else {
           // Use entered name or fallback to email-extracted name
@@ -153,7 +153,7 @@ const Auth = () => {
     try {
       const { error } = await resendVerificationEmail(registeredEmail);
       if (error) {
-        toast.error('Greška pri slanju emaila. Pokušajte kasnije.');
+        toast.error(t('toasts.emailSendError'));
       } else {
         toast.success('Verifikacijski email je poslan!');
       }
@@ -174,7 +174,7 @@ const Auth = () => {
     
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      setErrors({ email: 'Unesite email adresu' });
+      setErrors({ email: t('toasts.enterEmail') });
       return;
     }
     
@@ -461,7 +461,7 @@ const Auth = () => {
                 <Input
                   id="displayName"
                   type="text"
-                  placeholder="Vaše ime"
+                  placeholder={t('placeholders.yourName')}
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="pl-10 h-12 rounded-xl"

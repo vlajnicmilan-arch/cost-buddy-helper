@@ -10,6 +10,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface FormData {
   vat_obligation_type: string;
@@ -24,6 +25,7 @@ interface FormData {
 const defaultExemptionNote = 'Obveznik nije u sustavu PDV-a, PDV nije obračunat temeljem čl. 90 st.1 Zakona o PDV-u.';
 
 export const InvoiceSettingsPanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const [form, setForm] = useState<FormData>({
@@ -81,8 +83,8 @@ export const InvoiceSettingsPanel = () => {
       .eq('id', activeBusinessProfileId);
 
     setSaving(false);
-    if (error) toast.error('Greška pri spremanju');
-    else toast.success('Postavke računa spremljene');
+    if (error) toast.error(t('toasts.profileSaveError'));
+    else toast.success(t('toasts.invoiceSettingsSaved'));
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,7 +117,7 @@ export const InvoiceSettingsPanel = () => {
     const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(filePath);
     setForm(f => ({ ...f, logo_url: urlData.publicUrl }));
     setUploadingLogo(false);
-    toast.success('Logo učitan');
+    toast.success(t('toasts.logoUploaded'));
   };
 
   const update = (key: keyof FormData, value: string | number) => setForm(f => ({ ...f, [key]: value }));
@@ -168,7 +170,7 @@ export const InvoiceSettingsPanel = () => {
                 value={form.vat_exemption_note}
                 onChange={e => update('vat_exemption_note', e.target.value)}
                 className="text-sm mt-1 min-h-[60px]"
-                placeholder="Tekst napomene o oslobođenju PDV-a..."
+                placeholder={t('placeholders.vatExemptionNote')}
               />
             </div>
           )}

@@ -297,7 +297,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       
       let receiptUrl: string | undefined;
       if (saveReceipt && receiptImage) {
-        toast.info('Spremam sliku računa...');
+        toast.info(t('toasts.savingReceipt'));
         const uploadedUrl = await uploadReceiptImage(receiptImage);
         if (uploadedUrl) {
           receiptUrl = uploadedUrl;
@@ -1647,7 +1647,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     onValueChange={(value) => setTransferDestination(value === 'none' ? null : value)}
                   >
                     <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue placeholder="Odaberi odredišni račun">
+                      <SelectValue placeholder={t('placeholders.selectDestinationAccount')}>
                         {(() => {
                           if (!transferDestination) return 'Odaberi odredišni račun';
                           const customSource = customPaymentSources.find(s => s.id === transferDestination);

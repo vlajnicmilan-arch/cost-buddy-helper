@@ -12,6 +12,7 @@ import { hr } from 'date-fns/locale';
 import { Sparkles, Loader2, Check, X, ArrowRight, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTranslation } from 'react-i18next';
 
 interface RecategorizeDialogProps {
   expenses: Expense[];
@@ -29,6 +30,7 @@ interface RecategorizeSuggestion {
 }
 
 export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenChange }: RecategorizeDialogProps) => {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<'idle' | 'scanning' | 'review' | 'applying'>('idle');
   const [suggestions, setSuggestions] = useState<RecategorizeSuggestion[]>([]);
   const [progress, setProgress] = useState(0);
@@ -119,7 +121,7 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
     setPhase('review');
 
     if (newSuggestions.length === 0) {
-      toast.info('Sve transakcije su već ispravno kategorizirane! ✅');
+      toast.info(t('toasts.allCategorized'));
     }
   };
 
@@ -151,7 +153,7 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
       toast.success(`Rekategorizirano ${toApply.length} transakcija! ✨`);
       handleClose();
     } catch (error) {
-      toast.error('Greška pri ažuriranju');
+      toast.error(t('toasts.recategorizeError'));
       setPhase('review');
     }
   };

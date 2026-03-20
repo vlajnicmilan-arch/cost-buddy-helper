@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, ReceiptItem } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface ParsedReceipt {
   amount: number;
@@ -58,6 +59,7 @@ const compressImage = async (base64: string, maxWidth = 800, quality = 0.75): Pr
 };
 
 export const useReceiptScanner = () => {
+  const { t } = useTranslation();
   const [scanning, setScanning] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(null);
 
@@ -131,7 +133,7 @@ export const useReceiptScanner = () => {
       }
 
       if (!response.ok) {
-        let errorMessage = 'Greška pri skeniranju';
+        let errorMessage = t('toasts.scanError');
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;

@@ -3,8 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { FamilyGroup, FamilyMember, FamilyInvitation, FamilyRole, FamilySharedSource, FamilySharedBudget, FamilySharedProject, FamilySharedSavings } from '@/types/family';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export const useFamilyGroups = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [groups, setGroups] = useState<FamilyGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export const useFamilyGroups = () => {
       toast.success('Grupa ažurirana');
     } catch (error) {
       console.error('Error updating family group:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -93,7 +95,7 @@ export const useFamilyGroups = () => {
       toast.success('Grupa obrisana');
     } catch (error) {
       console.error('Error deleting family group:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -194,7 +196,7 @@ export const useFamilyMembers = (groupId: string | null) => {
       toast.success('Uloga ažurirana');
     } catch (error) {
       console.error('Error updating member role:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -211,7 +213,7 @@ export const useFamilyMembers = (groupId: string | null) => {
       toast.success('Član uklonjen');
     } catch (error) {
       console.error('Error removing member:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -242,7 +244,7 @@ export const useFamilyMembers = (groupId: string | null) => {
       return `${window.location.origin}/join-family/${data.token}`;
     } catch (error) {
       console.error('Error generating invite link:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
       return null;
     }
   };
@@ -260,7 +262,7 @@ export const useFamilyMembers = (groupId: string | null) => {
       toast.success('Pozivnica otkazana');
     } catch (error) {
       console.error('Error cancelling invitation:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -469,7 +471,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
         toast.error('Račun je već dodan u grupu');
       } else {
         console.error('Error adding shared source:', error);
-        toast.error('Greška');
+        toast.error(t('toasts.error'));
       }
     }
   };
@@ -487,7 +489,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       await logActivity('removed_source', 'Uklonio/la račun iz grupe');
     } catch (error) {
       console.error('Error removing shared source:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -512,7 +514,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
         toast.error('Budžet je već dodan u grupu');
       } else {
         console.error('Error adding shared budget:', error);
-        toast.error('Greška');
+        toast.error(t('toasts.error'));
       }
     }
   };
@@ -530,7 +532,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       await logActivity('removed_budget', 'Uklonio/la budžet iz grupe');
     } catch (error) {
       console.error('Error removing shared budget:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -555,7 +557,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
         toast.error('Projekt je već dodan u grupu');
       } else {
         console.error('Error adding shared project:', error);
-        toast.error('Greška');
+        toast.error(t('toasts.error'));
       }
     }
   };
@@ -573,7 +575,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       await logActivity('removed_project', 'Uklonio/la projekt iz grupe');
     } catch (error) {
       console.error('Error removing shared project:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 
@@ -598,7 +600,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
         toast.error('Cilj štednje je već dodan u grupu');
       } else {
         console.error('Error adding shared savings:', error);
-        toast.error('Greška');
+        toast.error(t('toasts.error'));
       }
     }
   };
@@ -616,7 +618,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       await logActivity('removed_savings', 'Uklonio/la cilj štednje iz grupe');
     } catch (error) {
       console.error('Error removing shared savings:', error);
-      toast.error('Greška');
+      toast.error(t('toasts.error'));
     }
   };
 

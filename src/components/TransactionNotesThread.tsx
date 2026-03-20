@@ -194,7 +194,7 @@ export const TransactionNotesThread = ({
       toast.success(t('common.deleted', 'Obrisano'));
     } catch (error) {
       console.error('Error deleting note:', error);
-      toast.error(t('common.error', 'Greška'));
+      toast.error(t('common.error', t('toasts.error')));
     }
   };
 

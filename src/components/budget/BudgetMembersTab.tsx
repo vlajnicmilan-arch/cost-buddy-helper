@@ -57,7 +57,7 @@ export const BudgetMembersTab = ({
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) {
-      toast.error(t('budget.enterEmail', 'Unesite email adresu'));
+      toast.error(t('budget.enterEmail', t('toasts.enterEmail')));
       return;
     }
 
@@ -76,18 +76,18 @@ export const BudgetMembersTab = ({
       
       if (data.error) {
         if (data.error === 'user_not_found') {
-          toast.error(t('budget.userNotFound', 'Korisnik s tim emailom nije pronađen'));
+          toast.error(t('budget.userNotFound', t('toasts.userNotFound')));
         } else if (data.error === 'already_member') {
-          toast.error(t('budget.alreadyMember', 'Korisnik je već član'));
+          toast.error(t('budget.alreadyMember', t('toasts.alreadyMember')));
         } else if (data.error === 'already_invited') {
-          toast.error(t('budget.alreadyInvited', 'Korisnik već ima aktivnu pozivnicu'));
+          toast.error(t('budget.alreadyInvited', t('toasts.alreadyInvited')));
         } else {
           toast.error(data.message || t('common.error'));
         }
         return;
       }
 
-      toast.success(t('budget.invitationSent', 'Pozivnica poslana'));
+      toast.success(t('budget.invitationSent', t('toasts.invitationSent')));
       setInviteEmail('');
       onRefetch();
     } catch (error) {

@@ -10,6 +10,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Premise {
   id: string;
@@ -23,6 +24,7 @@ interface Premise {
 }
 
 export const BusinessPremisesPanel = () => {
+  const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
   const [premises, setPremises] = useState<Premise[]>([]);
@@ -74,12 +76,12 @@ export const BusinessPremisesPanel = () => {
 
     if (editing) {
       const { error } = await supabase.from('business_premises').update(payload).eq('id', editing.id);
-      if (error) toast.error('Greška pri ažuriranju');
-      else toast.success('Poslovni prostor ažuriran');
+      if (error) toast.error(t('toasts.recategorizeError'));
+      else toast.success(t('toasts.premiseUpdated'));
     } else {
       const { error } = await supabase.from('business_premises').insert(payload);
-      if (error) toast.error('Greška pri dodavanju');
-      else toast.success('Poslovni prostor dodan');
+      if (error) toast.error(t('toasts.premiseAddError'));
+      else toast.success(t('toasts.premiseAdded'));
     }
     setSaving(false);
     setDialogOpen(false);
@@ -88,7 +90,7 @@ export const BusinessPremisesPanel = () => {
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('business_premises').delete().eq('id', id);
-    if (error) toast.error('Nije moguće obrisati (postoje povezane blagajne?)');
+    if (error) toast.error(t('toasts.premiseDeleteError'));
     else { toast.success('Obrisano'); fetchPremises(); }
   };
 
