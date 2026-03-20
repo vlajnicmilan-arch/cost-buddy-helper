@@ -13,6 +13,8 @@ import { FamilyGroupDialog } from '@/components/family/FamilyGroupDialog';
 import { FamilyGroupDetailView } from '@/components/family/FamilyGroupDetailView';
 import { FamilyGroup } from '@/types/family';
 import { useTranslation } from 'react-i18next';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 const Family = () => {
   const { t } = useTranslation();
