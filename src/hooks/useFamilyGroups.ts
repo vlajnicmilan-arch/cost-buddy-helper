@@ -656,6 +656,7 @@ export interface FamilyActivity {
 }
 
 export const useFamilyActivity = (groupId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [activities, setActivities] = useState<FamilyActivity[]>([]);
   const [loading, setLoading] = useState(true);
