@@ -34,6 +34,8 @@ type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
 export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource, findDuplicates }: CSVImportDialogProps) => {
   const { t, i18n } = useTranslation();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const canImport = hasAccess('csv_import');
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ImportStep>('upload');
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
