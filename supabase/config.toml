@@ -59,3 +59,9 @@ verify_jwt = false
 
 [functions.detect-loans]
 verify_jwt = false
+
+[functions.process-email-queue]
+verify_jwt = true
+
+[functions.trial-reminder]
+verify_jwt = false
