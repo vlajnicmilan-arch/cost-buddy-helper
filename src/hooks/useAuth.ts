@@ -27,6 +27,7 @@ export const useAuth = () => {
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
             appVersion: APP_VERSION,
+            eventType: 'sign_in',
           };
           supabase.from('user_login_logs').insert({
             user_id: session.user.id,
@@ -41,6 +42,25 @@ export const useAuth = () => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Track app open (session restore) - not a fresh sign-in
+      if (session?.user) {
+        const deviceInfo = {
+          userAgent: navigator.userAgent,
+          language: navigator.language,
+          platform: navigator.platform,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          appVersion: APP_VERSION,
+          eventType: 'app_open',
+        };
+        supabase.from('user_login_logs').insert({
+          user_id: session.user.id,
+          device_info: deviceInfo,
+        } as any).then(() => {});
+      }
     });
 
     return () => subscription.unsubscribe();
