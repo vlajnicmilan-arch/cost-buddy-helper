@@ -55,10 +55,28 @@ function extractContactFromDescription(desc: string): string | null {
 }
 
 function getTransactionFlow(amount: number, transactionType: string): 'inflow' | 'outflow' {
+  const normalizedAmount = Number(amount);
+
+  if (Number.isFinite(normalizedAmount) && normalizedAmount !== 0) {
+    return normalizedAmount > 0 ? 'inflow' : 'outflow';
+  }
+
   if (transactionType === 'income') return 'inflow';
   if (transactionType === 'expense') return 'outflow';
-  if (amount < 0) return 'outflow';
+
   return 'inflow';
+}
+
+function getLoanType(description: string, amount: number, transactionType: string): 'receivable' | 'payable' {
+  const lower = description.toLowerCase();
+  const isReturn = RETURN_KEYWORDS.some(kw => lower.includes(kw));
+  const transactionFlow = getTransactionFlow(amount, transactionType);
+
+  if (isReturn) {
+    return transactionFlow === 'inflow' ? 'receivable' : 'payable';
+  }
+
+  return transactionFlow === 'inflow' ? 'payable' : 'receivable';
 }
 
 export const useLoanDetection = () => {
@@ -71,16 +89,9 @@ export const useLoanDetection = () => {
     const hasLoanKeyword = LOAN_KEYWORDS.some(kw => lower.includes(kw));
     if (!hasLoanKeyword) return null;
 
-    const isReturn = RETURN_KEYWORDS.some(kw => lower.includes(kw));
     const contactName = extractContactFromDescription(description);
     const transactionFlow = getTransactionFlow(amount, transactionType);
-
-    let type: 'receivable' | 'payable';
-    if (isReturn) {
-      type = transactionFlow === 'inflow' ? 'receivable' : 'payable';
-    } else {
-      type = transactionFlow === 'inflow' ? 'payable' : 'receivable';
-    }
+    const type = getLoanType(description, amount, transactionType);
 
     return {
       transactionId,
@@ -126,12 +137,13 @@ export const useLoanDetection = () => {
       return loans.map((r: any) => {
         const tx = transactions[r.index - 1];
         if (!tx) return null;
+
         return {
           transactionId: tx.id,
           description: tx.description,
           amount: tx.amount,
           date: tx.date,
-          type: r.type as 'receivable' | 'payable',
+          type: getLoanType(tx.description, tx.amount, tx.type),
           transactionFlow: getTransactionFlow(tx.amount, tx.type),
           contactName: r.contact_name || 'Nepoznato',
           confidence: r.confidence as 'high' | 'medium',
