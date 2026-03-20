@@ -42,6 +42,12 @@ export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPan
   }
 
   const FREQ_LABELS: Record<string, string> = {
+    daily: t('recurring.daily'),
+    weekly: t('recurring.weekly'),
+    biweekly: t('recurring.biweekly'),
+    monthly: t('recurring.monthly'),
+    yearly: t('recurring.yearly'),
+  };
 
   const getPaymentSourceName = (source: string | null) => {
     if (!source) return t('paymentSources.cash');
