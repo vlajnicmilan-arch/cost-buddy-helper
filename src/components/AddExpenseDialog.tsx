@@ -567,6 +567,22 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     e.preventDefault();
     if (!amount) return;
 
+    // Check free tier transaction limit
+    if (!hasAccess('unlimited_transactions')) {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      const { count } = await supabase
+        .from('expenses')
+        .select('*', { count: 'exact', head: true })
+        .gte('date', monthStart)
+        .lte('date', monthEnd);
+      if (count !== null && count >= FREE_LIMITS.transactions_per_month) {
+        toast.error(t('limits.transactionsReached', `Dosegnuli ste limit od ${FREE_LIMITS.transactions_per_month} transakcija mjesečno. Nadogradite na Pro za neograničene transakcije.`));
+        return;
+      }
+    }
+
     const parsedAmount = parseFloat(amount);
 
     // Handle installment creation - also save the main expense so it appears in transactions
