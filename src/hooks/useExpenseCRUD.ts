@@ -253,7 +253,7 @@ export const useExpenseCRUD = ({
           }).catch(e => console.error('Notification error:', e));
         }
 
-        toast.success('Ažurirano');
+        toast.success(t('feedback.updated'));
       }
     } catch (error) {
       console.error('Error updating expense:', error);
