@@ -250,6 +250,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
   };
 
   return (
+    <>
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       {!isControlled && (
         <DialogTrigger asChild>
