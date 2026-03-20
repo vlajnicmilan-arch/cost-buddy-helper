@@ -4,8 +4,15 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Auto-generate version from build date: major.YY.MMDD
+const now = new Date();
+const autoVersion = `1.${now.getFullYear() % 100}.${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(autoVersion),
+  },
   server: {
     host: "::",
     port: 8080,
