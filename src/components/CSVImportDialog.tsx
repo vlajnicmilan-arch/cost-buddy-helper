@@ -562,6 +562,8 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
             </motion.div>
           )}
         </AnimatePresence>
+        </>
+        )}
       </DialogContent>
     </Dialog>
 
