@@ -16,10 +16,15 @@ import { UpgradePrompt } from '@/components/UpgradePrompt';
 export const SavingsGoalsSection = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
   const { goals, loading, addGoal, updateGoal, deleteGoal, addAmount } = useSavingsGoals();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addAmountGoal, setAddAmountGoal] = useState<SavingsGoal | null>(null);
   const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null);
+
+  if (!hasAccess('savings_goals')) {
+    return <UpgradePrompt feature={t('savings.title', 'Ciljevi štednje')} requiredTier={getRequiredTier('savings_goals')} compact />;
+  }
 
   if (loading) return null;
 

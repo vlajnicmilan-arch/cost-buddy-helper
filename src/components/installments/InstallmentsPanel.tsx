@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useInstallments } from '@/hooks/useInstallments';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { InstallmentPlanWithProgress, Installment } from '@/types/installment';
 import { getCategoryInfo } from '@/types/expense';

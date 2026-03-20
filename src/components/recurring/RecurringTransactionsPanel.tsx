@@ -29,7 +29,12 @@ interface RecurringTransactionsPanelProps {
 
 export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPanelProps) => {
   const { t } = useTranslation();
+  const { hasAccess, getRequiredTier } = useFeatureAccess();
   const { recurringTransactions, loading, addRecurring, updateRecurring, deleteRecurring, toggleActive } = useRecurringTransactions();
+
+  if (!hasAccess('recurring_transactions')) {
+    return <UpgradePrompt feature={t('recurring.title', 'Ponavljajuće transakcije')} requiredTier={getRequiredTier('recurring_transactions')} />;
+  }
   const { customPaymentSources } = useCustomPaymentSources();
   const { formatAmount } = useCurrency();
 

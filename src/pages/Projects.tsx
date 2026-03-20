@@ -46,7 +46,11 @@ const Projects = () => {
           title={t('nav.projects', 'Projekti')}
           onDataImported={refetch}
         />
-        <ProjectsPanel onRefreshExpenses={refetch} />
+        {hasAccess('projects') ? (
+          <ProjectsPanel onRefreshExpenses={refetch} />
+        ) : (
+          <UpgradePrompt feature={t('nav.projects', 'Projekti')} requiredTier={getRequiredTier('projects')} />
+        )}
       </motion.div>
       <BottomNav />
     </div>
