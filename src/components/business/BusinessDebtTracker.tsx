@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from './LoanDetectionDialog';
-import { useExpenses } from '@/hooks/useExpenses';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const BusinessDebtTracker = () => {
