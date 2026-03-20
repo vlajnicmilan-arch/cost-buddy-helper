@@ -9,6 +9,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
+import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { LockScreen } from "@/components/LockScreen";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
@@ -36,6 +37,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Admin = lazy(() => import("./pages/Admin"));
+const Paywall = lazy(() => import("./pages/Paywall"));
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,7 @@ const PageLoader = () => (
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
+  const { trialExpired, subscribed, loading: subLoading } = useSubscription();
 
   if (!isInitialized) {
     return <PageLoader />;
@@ -64,6 +67,21 @@ const AppRoutes = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<Navigate to="/setup" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // Show paywall if trial expired and not subscribed (cloud mode only)
+  if (storageMode === 'cloud' && !subLoading && trialExpired && !subscribed) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/paywall" element={<Paywall />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
       </Suspense>
     );
@@ -87,6 +105,7 @@ const AppRoutes = () => {
         <Route path="/install" element={<Install />} />
         <Route path="/join-project/:token" element={<JoinProject />} />
         <Route path="/join-budget/:token" element={<JoinBudget />} />
+        <Route path="/paywall" element={<Paywall />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
@@ -102,20 +121,22 @@ const App = () => (
         <AppStateProvider>
           <AppLockProvider>
             <CurrencyProvider>
-              <TutorialProvider>
-                <OfflineBanner />
-                <Toaster />
-                <Sonner />
-                <PWAUpdatePrompt />
-                <TutorialOverlay />
-                <LockScreen />
-                <BrowserRouter>
-                  <BackButtonProvider>
-                    <AppRoutes />
-                    <CookieConsentBanner />
-                  </BackButtonProvider>
-                </BrowserRouter>
-              </TutorialProvider>
+              <SubscriptionProvider>
+                <TutorialProvider>
+                  <OfflineBanner />
+                  <Toaster />
+                  <Sonner />
+                  <PWAUpdatePrompt />
+                  <TutorialOverlay />
+                  <LockScreen />
+                  <BrowserRouter>
+                    <BackButtonProvider>
+                      <AppRoutes />
+                      <CookieConsentBanner />
+                    </BackButtonProvider>
+                  </BrowserRouter>
+                </TutorialProvider>
+              </SubscriptionProvider>
             </CurrencyProvider>
           </AppLockProvider>
         </AppStateProvider>
