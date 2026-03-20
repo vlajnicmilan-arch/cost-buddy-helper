@@ -740,6 +740,9 @@ const Index = () => {
           }}
         />
 
+        {/* Trial Banner */}
+        <TrialBanner />
+
         {/* Local Mode Banner */}
         {isLocalMode && (
           <div className="mb-6 p-4 bg-muted/50 rounded-xl flex items-center justify-between">
