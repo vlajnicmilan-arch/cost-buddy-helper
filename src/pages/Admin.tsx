@@ -607,6 +607,79 @@ const Admin = () => {
             )}
           </TabsContent>
 
+          {/* BILLING TAB */}
+          <TabsContent value="billing" className="space-y-4 mt-4">
+            {/* Global billing toggle */}
+            <div className="bg-card border rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-primary" />
+                  <div>
+                    <h3 className="font-semibold text-sm">Globalna naplata</h3>
+                    <p className="text-xs text-muted-foreground">Uključi/isključi sustav pretplata za sve korisnike</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={billingEnabled}
+                  onCheckedChange={toggleBilling}
+                  disabled={billingLoading}
+                />
+              </div>
+              <div className={`text-xs px-3 py-2 rounded-lg ${billingEnabled ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>
+                {billingEnabled ? '✓ Naplata je aktivna — korisnici vide ograničenja prema razini' : '○ Naplata je isključena — svi korisnici imaju puni pristup'}
+              </div>
+            </div>
+
+            {/* User tier management */}
+            <div className="bg-card border rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold text-sm">Razine korisnika</h3>
+              </div>
+
+              {users.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Učitajte korisnike na tabu "Korisnici"</p>
+              ) : (
+                <div className="space-y-2">
+                  {users.map((u) => {
+                    const currentTier = subscriptions[u.id] || 'free';
+                    const tierIcon = currentTier === 'business' ? Briefcase : currentTier === 'pro' ? Star : User;
+                    const TierIcon = tierIcon;
+                    return (
+                      <div key={u.id} className="flex items-center justify-between gap-2 py-2 border-b last:border-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <TierIcon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{u.display_name || u.email}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>
+                          </div>
+                        </div>
+                        <Select
+                          value={currentTier}
+                          onValueChange={(val) => setUserTier(u.id, val)}
+                          disabled={subLoading === u.id}
+                        >
+                          <SelectTrigger className="w-[110px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">Free</SelectItem>
+                            <SelectItem value="pro">Pro</SelectItem>
+                            <SelectItem value="business">Business</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Stripe integracija još nije aktivna. Razine se trenutno dodjeljuju ručno.
+            </p>
+          </TabsContent>
+
           {/* REPORTS TAB */}
           <TabsContent value="reports" className="space-y-3 mt-4">
             <div className="flex justify-between items-center">
