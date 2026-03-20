@@ -496,6 +496,8 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
             </Button>
           </div>
         </form>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );
