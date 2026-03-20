@@ -18,6 +18,8 @@ import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
