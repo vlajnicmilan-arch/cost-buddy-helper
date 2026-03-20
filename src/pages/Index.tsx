@@ -990,6 +990,13 @@ const Index = () => {
       {recurringPanelOpen && (
         <RecurringTransactionsPanel onClose={() => setRecurringPanelOpen(false)} />
       )}
+
+      <RecurringMatchDialog
+        open={recurringMatchDialogOpen}
+        onOpenChange={setRecurringMatchDialogOpen}
+        matches={recurringMatches}
+        onConfirm={handleRecurringMatchConfirm}
+      />
     </div>
   );
 };
