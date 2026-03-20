@@ -58,6 +58,7 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
+import { WelcomeChecklist } from '@/components/WelcomeChecklist';
 
 const Index = () => {
   const { t } = useTranslation();
