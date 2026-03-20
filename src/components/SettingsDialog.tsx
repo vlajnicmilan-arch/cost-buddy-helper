@@ -36,7 +36,7 @@ import {
 import { languages } from '@/i18n';
 import { useAppLock } from '@/contexts/AppLockContext';
 import { SetPinDialog } from '@/components/SetPinDialog';
-
+import { SubscriptionSection } from '@/components/SubscriptionSection';
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
@@ -650,7 +650,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               </div>
             </div>
 
-            <Separator />
+            {/* Subscription Section */}
+            <SubscriptionSection />
 
             {/* Appearance Section */}
             <div className="space-y-4">

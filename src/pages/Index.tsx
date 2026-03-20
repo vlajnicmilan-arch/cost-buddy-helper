@@ -59,7 +59,7 @@ import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
 import { WelcomeChecklist } from '@/components/WelcomeChecklist';
-
+import { TrialBanner } from '@/components/TrialBanner';
 const Index = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -739,6 +739,9 @@ const Index = () => {
             setDetailDialogOpen(true);
           }}
         />
+
+        {/* Trial Banner */}
+        <TrialBanner />
 
         {/* Local Mode Banner */}
         {isLocalMode && (
