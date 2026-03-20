@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck, Bell, Send, MessageSquareReply } from 'lucide-react';
+import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck, Bell, Send, MessageSquareReply, CreditCard, Crown, Briefcase, Star } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -89,6 +90,10 @@ const Admin = () => {
   const [hasMoreUsers, setHasMoreUsers] = useState(false);
   const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
   const [sendingReply, setSendingReply] = useState<string | null>(null);
+  const [billingEnabled, setBillingEnabled] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<Record<string, string>>({});
+  const [subLoading, setSubLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -114,7 +119,59 @@ const Admin = () => {
       return;
     }
 
-    await Promise.all([loadReports(), loadUsers()]);
+    await Promise.all([loadReports(), loadUsers(), loadBillingSettings(), loadSubscriptions()]);
+  };
+
+  const loadBillingSettings = async () => {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'billing_enabled')
+      .single();
+    setBillingEnabled(data?.value === true);
+  };
+
+  const toggleBilling = async (enabled: boolean) => {
+    setBillingLoading(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ key: 'billing_enabled', value: enabled as any, updated_at: new Date().toISOString() });
+    if (error) {
+      toast.error('Greška pri spremanju postavke');
+    } else {
+      setBillingEnabled(enabled);
+      toast.success(enabled ? 'Naplata aktivirana' : 'Naplata deaktivirana');
+    }
+    setBillingLoading(false);
+  };
+
+  const loadSubscriptions = async () => {
+    const { data } = await supabase
+      .from('user_subscriptions')
+      .select('user_id, tier');
+    const map: Record<string, string> = {};
+    data?.forEach((s: any) => { map[s.user_id] = s.tier; });
+    setSubscriptions(map);
+  };
+
+  const setUserTier = async (userId: string, tier: string) => {
+    setSubLoading(userId);
+    const { error } = await supabase
+      .from('user_subscriptions')
+      .upsert({
+        user_id: userId,
+        tier: tier as any,
+        assigned_by: user?.id,
+        assigned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    if (error) {
+      toast.error('Greška pri postavljanju razine');
+    } else {
+      setSubscriptions(prev => ({ ...prev, [userId]: tier }));
+      toast.success(`Razina postavljena na ${tier.charAt(0).toUpperCase() + tier.slice(1)}`);
+    }
+    setSubLoading(null);
   };
 
   const loadReports = async () => {
@@ -348,7 +405,7 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-4 h-9">
+          <TabsList className="w-full grid grid-cols-5 h-9">
             <TabsTrigger value="stats" className="text-xs gap-1 px-1">
               <BarChart3 className="w-3 h-3 shrink-0" />
               <span className="hidden sm:inline">Statistika</span>
@@ -356,11 +413,18 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="users" className="text-xs gap-1 px-1">
               <Users className="w-3 h-3 shrink-0" />
-              <span>Korisnici</span>
+              <span className="hidden sm:inline">Korisnici</span>
+              <span className="sm:hidden">Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="billing" className="text-xs gap-1 px-1">
+              <CreditCard className="w-3 h-3 shrink-0" />
+              <span className="hidden sm:inline">Pretplate</span>
+              <span className="sm:hidden">Sub</span>
             </TabsTrigger>
             <TabsTrigger value="reports" className="text-xs gap-1 px-1">
               <Bug className="w-3 h-3 shrink-0" />
-              <span>Prijave</span>
+              <span className="hidden sm:inline">Prijave</span>
+              <span className="sm:hidden">Bug</span>
             </TabsTrigger>
             <TabsTrigger value="notify" className="text-xs gap-1 px-1">
               <Bell className="w-3 h-3 shrink-0" />
@@ -541,6 +605,79 @@ const Admin = () => {
                 )}
               </div>
             )}
+          </TabsContent>
+
+          {/* BILLING TAB */}
+          <TabsContent value="billing" className="space-y-4 mt-4">
+            {/* Global billing toggle */}
+            <div className="bg-card border rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-primary" />
+                  <div>
+                    <h3 className="font-semibold text-sm">Globalna naplata</h3>
+                    <p className="text-xs text-muted-foreground">Uključi/isključi sustav pretplata za sve korisnike</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={billingEnabled}
+                  onCheckedChange={toggleBilling}
+                  disabled={billingLoading}
+                />
+              </div>
+              <div className={`text-xs px-3 py-2 rounded-lg ${billingEnabled ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>
+                {billingEnabled ? '✓ Naplata je aktivna — korisnici vide ograničenja prema razini' : '○ Naplata je isključena — svi korisnici imaju puni pristup'}
+              </div>
+            </div>
+
+            {/* User tier management */}
+            <div className="bg-card border rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold text-sm">Razine korisnika</h3>
+              </div>
+
+              {users.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Učitajte korisnike na tabu "Korisnici"</p>
+              ) : (
+                <div className="space-y-2">
+                  {users.map((u) => {
+                    const currentTier = subscriptions[u.id] || 'free';
+                    const tierIcon = currentTier === 'business' ? Briefcase : currentTier === 'pro' ? Star : User;
+                    const TierIcon = tierIcon;
+                    return (
+                      <div key={u.id} className="flex items-center justify-between gap-2 py-2 border-b last:border-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <TierIcon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{u.display_name || u.email}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>
+                          </div>
+                        </div>
+                        <Select
+                          value={currentTier}
+                          onValueChange={(val) => setUserTier(u.id, val)}
+                          disabled={subLoading === u.id}
+                        >
+                          <SelectTrigger className="w-[110px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">Free</SelectItem>
+                            <SelectItem value="pro">Pro</SelectItem>
+                            <SelectItem value="business">Business</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Stripe integracija još nije aktivna. Razine se trenutno dodjeljuju ručno.
+            </p>
           </TabsContent>
 
           {/* REPORTS TAB */}
