@@ -103,6 +103,8 @@ const Index = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
   const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
+  const [recurringMatches, setRecurringMatches] = useState<RecurringMatch[]>([]);
+  const [recurringMatchDialogOpen, setRecurringMatchDialogOpen] = useState(false);
 
   // Back button support for all dialogs
   useBackButton(incomeDialogOpen, () => setIncomeDialogOpen(false));
@@ -113,8 +115,10 @@ const Index = () => {
   useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
   useBackButton(assistantDialogOpen, () => setAssistantDialogOpen(false));
   useBackButton(recurringPanelOpen, () => setRecurringPanelOpen(false));
+  useBackButton(recurringMatchDialogOpen, () => setRecurringMatchDialogOpen(false));
 
-  const { recurringTransactions, processDueTransactions } = useRecurringTransactions();
+  const { recurringTransactions, processDueTransactions, updateRecurring, refetch: refetchRecurring } = useRecurringTransactions();
+  const { findMatches } = useRecurringMatcher();
 
   // Load welcome animation flag; displayName now comes from AppStateContext
   useEffect(() => {
