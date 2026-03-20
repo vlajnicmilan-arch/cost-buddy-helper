@@ -7,6 +7,7 @@ export interface DetectedLoan {
   amount: number;
   date: Date;
   type: 'receivable' | 'payable';
+  transactionFlow: 'inflow' | 'outflow';
   contactName: string;
   confidence: 'high' | 'medium';
   source: 'keyword' | 'ai';
@@ -53,6 +54,13 @@ function extractContactFromDescription(desc: string): string | null {
   return null;
 }
 
+function getTransactionFlow(amount: number, transactionType: string): 'inflow' | 'outflow' {
+  if (transactionType === 'income') return 'inflow';
+  if (transactionType === 'expense') return 'outflow';
+  if (amount < 0) return 'outflow';
+  return 'inflow';
+}
+
 export const useLoanDetection = () => {
   /**
    * Quick keyword-based detection
@@ -65,12 +73,13 @@ export const useLoanDetection = () => {
 
     const isReturn = RETURN_KEYWORDS.some(kw => lower.includes(kw));
     const contactName = extractContactFromDescription(description);
+    const transactionFlow = getTransactionFlow(amount, transactionType);
 
     let type: 'receivable' | 'payable';
     if (isReturn) {
-      type = transactionType === 'income' ? 'receivable' : 'payable';
+      type = transactionFlow === 'inflow' ? 'receivable' : 'payable';
     } else {
-      type = transactionType === 'income' ? 'payable' : 'receivable';
+      type = transactionFlow === 'inflow' ? 'payable' : 'receivable';
     }
 
     return {
@@ -79,6 +88,7 @@ export const useLoanDetection = () => {
       amount,
       date,
       type,
+      transactionFlow,
       contactName: contactName || 'Nepoznato',
       confidence: contactName ? 'high' : 'medium',
       source: 'keyword',
@@ -122,6 +132,7 @@ export const useLoanDetection = () => {
           amount: tx.amount,
           date: tx.date,
           type: r.type as 'receivable' | 'payable',
+          transactionFlow: getTransactionFlow(tx.amount, tx.type),
           contactName: r.contact_name || 'Nepoznato',
           confidence: r.confidence as 'high' | 'medium',
           source: 'ai' as const,

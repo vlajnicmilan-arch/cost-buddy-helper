@@ -69,73 +69,77 @@ export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfi
 
         <ScrollArea className="max-h-[50vh]">
           <div className="space-y-3 pr-2">
-            {editedLoans.map((loan, idx) => (
-              <div
-                key={idx}
-                className={`rounded-lg border p-3 space-y-2 transition-opacity ${
-                  selectedIndices.has(idx) ? 'border-primary/30 bg-primary/5' : 'opacity-50'
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  <Checkbox
-                    checked={selectedIndices.has(idx)}
-                    onCheckedChange={() => toggleIndex(idx)}
-                    className="mt-1"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground truncate">{loan.description}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-sm font-semibold ${loan.type === 'payable' ? 'text-red-500' : 'text-green-500'}`}>
-                        {loan.type === 'payable' ? '-' : '+'}{formatAmount(loan.amount)}
-                      </span>
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0">
-                        {format(loan.date, 'dd.MM.yyyy')}
-                      </Badge>
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5">
-                        {loan.source === 'keyword' ? <Search className="w-2.5 h-2.5" /> : <Sparkles className="w-2.5 h-2.5" />}
-                        {loan.confidence === 'high' ? 'visoko' : 'srednje'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+            {editedLoans.map((loan, idx) => {
+              const isOutflow = loan.transactionFlow === 'outflow';
 
-                {selectedIndices.has(idx) && (
-                  <div className="ml-6 space-y-2">
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">{t('business.debts.contact', 'Kontakt / Tvrtka')}</Label>
-                      <Input
-                        value={loan.contactName}
-                        onChange={(e) => updateLoan(idx, { contactName: e.target.value })}
-                        className="h-8 text-xs"
-                        placeholder="Ime kontakta"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">{t('business.debts.type', 'Vrsta')}</Label>
-                      <Select value={loan.type} onValueChange={(v: any) => updateLoan(idx, { type: v })}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="receivable">
-                            <span className="flex items-center gap-1">
-                              <ArrowUpRight className="w-3 h-3 text-income" />
-                              {t('business.debts.receivable', 'Potraživanje (duguju meni)')}
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="payable">
-                            <span className="flex items-center gap-1">
-                              <ArrowDownRight className="w-3 h-3 text-expense" />
-                              {t('business.debts.payable', 'Dugovanje (ja dugujem)')}
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+              return (
+                <div
+                  key={idx}
+                  className={`rounded-lg border p-3 space-y-2 transition-opacity ${
+                    selectedIndices.has(idx) ? 'border-primary/30 bg-primary/5' : 'opacity-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={selectedIndices.has(idx)}
+                      onCheckedChange={() => toggleIndex(idx)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground truncate">{loan.description}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-sm font-semibold ${isOutflow ? 'text-expense' : 'text-income'}`}>
+                          {isOutflow ? '-' : '+'}{formatAmount(Math.abs(loan.amount))}
+                        </span>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                          {format(loan.date, 'dd.MM.yyyy')}
+                        </Badge>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5">
+                          {loan.source === 'keyword' ? <Search className="w-2.5 h-2.5" /> : <Sparkles className="w-2.5 h-2.5" />}
+                          {loan.confidence === 'high' ? 'visoko' : 'srednje'}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {selectedIndices.has(idx) && (
+                    <div className="ml-6 space-y-2">
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">{t('business.debts.contact', 'Kontakt / Tvrtka')}</Label>
+                        <Input
+                          value={loan.contactName}
+                          onChange={(e) => updateLoan(idx, { contactName: e.target.value })}
+                          className="h-8 text-xs"
+                          placeholder="Ime kontakta"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">{t('business.debts.type', 'Vrsta')}</Label>
+                        <Select value={loan.type} onValueChange={(v: any) => updateLoan(idx, { type: v })}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="receivable">
+                              <span className="flex items-center gap-1">
+                                <ArrowUpRight className="w-3 h-3 text-income" />
+                                {t('business.debts.receivable', 'Potraživanje (duguju meni)')}
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="payable">
+                              <span className="flex items-center gap-1">
+                                <ArrowDownRight className="w-3 h-3 text-expense" />
+                                {t('business.debts.payable', 'Dugovanje (ja dugujem)')}
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </ScrollArea>
 
