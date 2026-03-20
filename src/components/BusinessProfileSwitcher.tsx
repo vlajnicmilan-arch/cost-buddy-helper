@@ -14,7 +14,7 @@ interface BusinessProfile {
   is_active: boolean;
 }
 
-export const BusinessProfileSwitcher = () => {
+export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId, setActiveBusinessProfileId, businessModeEnabled } = useAppState();
