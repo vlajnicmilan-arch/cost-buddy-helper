@@ -1712,5 +1712,34 @@
     "searchCategories": "Pretraži kategorije...",
     "notificationTitle": "npr. Novo ažuriranje aplikacije",
     "yourName": "Vaše ime"
+  },
+  "checklist": {
+    "title": "Počnite s V&M Balance",
+    "allDone": "Sve je spremno! 🎉",
+    "addPaymentSource": "Dodaj izvor plaćanja",
+    "addPaymentSourceDesc": "Bankovni račun, gotovina ili kartica",
+    "addTransaction": "Unesi prvu transakciju",
+    "addTransactionDesc": "Prihod, rashod ili prijenos",
+    "createBudget": "Postavi budžet",
+    "createBudgetDesc": "Kontroliraj potrošnju po kategorijama",
+    "start": "Započni"
+  },
+  "search": {
+    "global": "Pretraži",
+    "placeholder": "Pretraži transakcije...",
+    "noResults": "Nema rezultata",
+    "results": "{{count}} rezultata"
+  },
+  "feedback": {
+    "incomeAdded": "Prihod dodan",
+    "expenseAdded": "Trošak dodan",
+    "updated": "Ažurirano",
+    "deleted": "Obrisano",
+    "mustBeLoggedIn": "Moraš biti prijavljen",
+    "pendingSent": "Transakcija poslana vlasniku na odobrenje",
+    "missingDescription": "Nedostaje opis transakcije. Unesi opis i pokušaj ponovno.",
+    "addError": "Greška pri dodavanju",
+    "bulkUpdated": "Ažurirano {{count}} transakcija",
+    "bulkUpdateError": "Greška pri grupnom ažuriranju"
   }
 }
