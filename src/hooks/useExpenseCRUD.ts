@@ -292,7 +292,7 @@ export const useExpenseCRUD = ({
       }
     } catch (error) {
       console.error('Error bulk updating expenses:', error);
-      toast.error('Greška pri grupnom ažuriranju');
+      toast.error(t('feedback.bulkUpdateError'));
       throw error;
     }
   }, [isLocalMode, user, setExpenses]);
