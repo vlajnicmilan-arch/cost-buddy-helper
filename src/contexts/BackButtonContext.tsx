@@ -25,7 +25,7 @@ type BackButtonContextType = {
 
 const BackButtonContext = createContext<BackButtonContextType | null>(null);
 
-const ROOT_PAGES = ['/', '/dashboard'];
+const ROOT_PAGES = ['/home', '/dashboard', '/'];
 
 export function BackButtonProvider({ children }: { children: ReactNode }) {
   const handlersRef = useRef<Map<string, BackHandler>>(new Map());
