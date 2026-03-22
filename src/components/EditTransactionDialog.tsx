@@ -13,7 +13,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, Plus, FolderKanban, PiggyBank, Milestone } from 'lucide-react';
+import { CalendarIcon, Loader2, Plus, FolderKanban, PiggyBank, Milestone, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
