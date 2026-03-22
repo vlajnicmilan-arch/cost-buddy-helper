@@ -25,7 +25,7 @@ const StorageSetup = () => {
   const handleGoBack = () => {
     // Always go back to home when changing mode from settings
     if (isChangingMode) {
-      navigate('/');
+      navigate('/home');
     } else {
       navigate(-1);
     }
@@ -40,7 +40,7 @@ const StorageSetup = () => {
       if (selectedMode === 'local') {
         await initLocalDB();
         setStorageMode('local');
-        navigate('/');
+        navigate('/home');
       } else if (selectedMode === 'cloud') {
         // Wait for auth to finish loading before deciding
         if (authLoading) {
@@ -53,14 +53,14 @@ const StorageSetup = () => {
         // Re-check session directly for most accurate state
         const { data: { session } } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
         if (session?.user) {
-          navigate('/');
+          navigate('/home');
         } else {
           navigate('/auth', { state: { from: '/setup' } });
         }
       } else {
         // Google Drive / iCloud - coming soon
         setStorageMode(selectedMode);
-        navigate('/');
+        navigate('/home');
       }
     } catch (error) {
       console.error('Error setting up storage:', error);
@@ -182,7 +182,7 @@ const StorageSetup = () => {
           <button
             onClick={() => {
               setStorageMode('local');
-              navigate('/');
+              navigate('/home');
             }}
             className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >

@@ -81,7 +81,7 @@ const Business = () => {
 
   const handleBackToPersonal = () => {
     setActiveBusinessProfileId(null);
-    navigate('/');
+    navigate('/home');
   };
 
   const handleEditExpense = async (updatedExpense: Expense) => {

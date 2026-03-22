@@ -203,7 +203,7 @@ const Install = () => {
           <p className="text-muted-foreground mb-6">
             V&M Balance je uspješno instaliran na tvoj uređaj. Možeš ga pronaći na početnom ekranu.
           </p>
-          <Button onClick={() => navigate('/')} className="rounded-xl">
+          <Button onClick={() => navigate('/home')} className="rounded-xl">
             Otvori aplikaciju
           </Button>
         </motion.div>
@@ -218,7 +218,7 @@ const Install = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           className="rounded-xl"
         >
           <ArrowLeft className="w-5 h-5" />

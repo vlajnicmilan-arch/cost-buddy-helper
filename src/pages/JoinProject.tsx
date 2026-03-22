@@ -61,7 +61,7 @@ const JoinProject = () => {
         
         // Redirect after short delay
         setTimeout(() => {
-          navigate('/');
+          navigate('/home');
         }, 2000);
       }
     } catch (err: any) {
@@ -124,7 +124,7 @@ const JoinProject = () => {
             </p>
           ) : error ? (
             <Button 
-              onClick={() => navigate('/')} 
+              onClick={() => navigate('/home')} 
               variant="outline" 
               className="w-full"
             >
@@ -153,7 +153,7 @@ const JoinProject = () => {
                 {t('projects.acceptInvitation', 'Prihvati pozivnicu')}
               </Button>
               <Button 
-                onClick={() => navigate('/')} 
+                onClick={() => navigate('/home')} 
                 variant="outline" 
                 className="w-full"
               >
