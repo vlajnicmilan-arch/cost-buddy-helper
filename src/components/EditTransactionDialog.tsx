@@ -191,6 +191,92 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
             )}
           </div>
 
+          {/* Transfer Destination */}
+          {type === 'transfer' && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">📥 {t('transactions.destinationAccount', 'Odredišni račun')}</Label>
+              <Select
+                value={transferDestination || 'none'}
+                onValueChange={(value) => setTransferDestination(value === 'none' ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('placeholders.selectDestinationAccount', 'Odaberi odredišni račun')}>
+                    {(() => {
+                      if (!transferDestination) return t('placeholders.selectDestinationAccount', 'Odaberi odredišni račun');
+                      const customSource = customPaymentSources.find(s => s.id === transferDestination);
+                      if (customSource) {
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: customSource.color }}>{customSource.icon}</span>
+                            <span>{customSource.name}</span>
+                          </span>
+                        );
+                      }
+                      const standardSource = PAYMENT_SOURCES.find(s => s.id === transferDestination);
+                      if (standardSource) {
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span>{standardSource.icon}</span>
+                            <span>{standardSource.name}</span>
+                          </span>
+                        );
+                      }
+                      return t('placeholders.selectDestinationAccount', 'Odaberi odredišni račun');
+                    })()}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">{t('transactions.noDestination', 'Bez odredišta')}</span>
+                  </SelectItem>
+                  {/* Custom payment sources (excluding current source) */}
+                  {customPaymentSources
+                    .filter(s => s.id !== normalizedPaymentSource)
+                    .map((src) => (
+                      <SelectItem key={src.id} value={src.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: src.color }}>{src.icon}</span>
+                          <span>{src.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  {/* Standard sources */}
+                  {PAYMENT_SOURCES
+                    .filter(s => s.id !== paymentSource)
+                    .map((src) => (
+                      <SelectItem key={src.id} value={src.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{src.icon}</span>
+                          <span>{src.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+
+              {/* Visual transfer flow */}
+              {paymentSource && transferDestination && (
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-center gap-3">
+                  {(() => {
+                    const fromCustom = customPaymentSources.find(s => s.id === normalizedPaymentSource);
+                    const toCustom = customPaymentSources.find(s => s.id === transferDestination);
+                    return (
+                      <>
+                        <span className="text-sm font-medium">
+                          {fromCustom ? `${fromCustom.icon} ${fromCustom.name}` : paymentSource}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium">
+                          {toCustom ? `${toCustom.icon} ${toCustom.name}` : transferDestination}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
 
           {/* Amount */}
           <div className="space-y-2">
