@@ -62,7 +62,12 @@ const Onboarding = () => {
 
   const isLocalMode = storageMode === 'local' && !user;
 
-
+  // Auto-skip step 1 if name is already known from signup
+  useEffect(() => {
+    if (displayName.trim() && step === 1) {
+      setStep(2);
+    }
+  }, []); // Only on mount
   // Check if onboarding is already completed
   useEffect(() => {
     const checkOnboarding = async () => {
