@@ -1,18 +1,18 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import {
   Wallet, PieChart, TrendingUp, Users, Shield, Smartphone,
   Zap, BarChart3, Receipt, ArrowRight, Check, Star, Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: [0, 0, 0.2, 1] as [number, number, number, number] }
+    transition: { delay: i * 0.1, duration: 0.5 }
   })
 };
 
