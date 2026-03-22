@@ -39,7 +39,7 @@ const Auth = () => {
   const { signIn, signUp, resendVerificationEmail, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { storageMode } = useStorage();
+  const { storageMode, setStorageMode } = useStorage();
   const { t } = useTranslation();
   
   // Check if user came from storage setup - allow going back
@@ -106,6 +106,9 @@ const Auth = () => {
             toast.error(error.message);
           }
           return;
+        }
+        if (!storageMode) {
+          setStorageMode('cloud');
         }
         toast.success(t('toasts.welcomeBack'));
         const returnTo = (location.state as any)?.returnTo;
