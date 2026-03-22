@@ -110,6 +110,15 @@ const Auth = () => {
         if (!storageMode) {
           setStorageMode('cloud');
         }
+        // Ensure onboarding state is synced from server
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', (await supabase.auth.getUser()).data.user!.id)
+          .single();
+        if (profile?.display_name) {
+          localStorage.setItem('onboarding_completed', 'true');
+        }
         toast.success(t('toasts.welcomeBack'));
         const returnTo = (location.state as any)?.returnTo;
         navigate(returnTo || '/home');
