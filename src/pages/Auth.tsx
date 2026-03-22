@@ -107,6 +107,9 @@ const Auth = () => {
           }
           return;
         }
+        if (!storageMode) {
+          setStorageMode('cloud');
+        }
         toast.success(t('toasts.welcomeBack'));
         const returnTo = (location.state as any)?.returnTo;
         navigate(returnTo || '/home');
