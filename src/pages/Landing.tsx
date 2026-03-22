@@ -134,7 +134,7 @@ const HeroSection = () => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
           initial="hidden" animate="visible" variants={fadeUp} custom={3}
         >
-          <Button size="lg" onClick={() => navigate('/setup')} className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
+          <Button size="lg" onClick={() => navigate('/auth', { state: { mode: 'signup' } })} className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
             {t('landing.hero.cta')}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
