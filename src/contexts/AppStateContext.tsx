@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 
 // ─── Avatar Mood ────────────────────────────────────────────────────────────
