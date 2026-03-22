@@ -298,17 +298,25 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       const expenseDate = e.date.getTime();
       const inDateRange = expenseDate >= dateRange.start.getTime() && expenseDate <= dateRange.end.getTime() + 86400000;
       
+      if (!inDateRange) return false;
+      
+      // Exclude project transactions if toggled off
+      if (!includeProjects && e.project_id) return false;
+      
+      // Exclude budget transactions if toggled off
+      if (!includeBudgets && e.budget_id) return false;
+      
       // Filter by income source if selected
       if (selectedIncomeSourceId !== 'all') {
         if (selectedIncomeSourceId === 'unassigned') {
-          return inDateRange && !e.income_source_id;
+          return !e.income_source_id;
         }
-        return inDateRange && e.income_source_id === selectedIncomeSourceId;
+        return e.income_source_id === selectedIncomeSourceId;
       }
       
-      return inDateRange;
+      return true;
     });
-  }, [expenses, dateRange, selectedIncomeSourceId]);
+  }, [expenses, dateRange, selectedIncomeSourceId, includeProjects, includeBudgets]);
 
   // Comparison filtered expenses
   const compareExpenses1 = useMemo(() => {
