@@ -341,7 +341,7 @@ const FooterSection = () => {
             <h4 className="font-semibold text-foreground mb-3">{t('landing.footer.account')}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><button onClick={() => navigate('/auth')} className="hover:text-foreground transition-colors">{t('landing.nav.login')}</button></li>
-              <li><button onClick={() => navigate('/setup')} className="hover:text-foreground transition-colors">{t('landing.nav.getStarted')}</button></li>
+              <li><button onClick={() => navigate('/auth', { state: { mode: 'signup' } })} className="hover:text-foreground transition-colors">{t('landing.nav.getStarted')}</button></li>
             </ul>
           </div>
         </div>
