@@ -65,7 +65,7 @@ const Onboarding = () => {
     const checkOnboarding = async () => {
       const completed = localStorage.getItem('onboarding_completed');
       if (completed === 'true') {
-        navigate('/', { replace: true });
+        navigate('/home', { replace: true });
         return;
       }
 
@@ -79,7 +79,7 @@ const Onboarding = () => {
         
         if (data?.display_name) {
           localStorage.setItem('onboarding_completed', 'true');
-          navigate('/', { replace: true });
+          navigate('/home', { replace: true });
         }
       }
     };
@@ -201,7 +201,7 @@ const Onboarding = () => {
       localStorage.setItem('show_welcome_animation', 'true');
       if (displayName.trim()) setContextDisplayName(displayName.trim());
       setOnboardingCompleted(true);
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     } catch (error) {
       console.error('Onboarding error:', error);
       toast.error(t('errors.generic', 'Došlo je do greške'));
@@ -431,14 +431,14 @@ const Onboarding = () => {
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
                   setOnboardingCompleted(true);
-                  navigate('/', { replace: true });
+                  navigate('/home', { replace: true });
                 } catch (error) {
                   console.error('Skip error:', error);
                   // Still complete onboarding even if save fails
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
                   setOnboardingCompleted(true);
-                  navigate('/', { replace: true });
+                  navigate('/home', { replace: true });
                 } finally {
                   setSaving(false);
                 }

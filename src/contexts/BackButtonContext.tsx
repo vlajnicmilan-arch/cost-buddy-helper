@@ -81,7 +81,7 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
     // No dialogs open — handle page-level back navigation
     const currentPath = locationRef.current;
     if (!ROOT_PAGES.includes(currentPath)) {
-      navigate('/', { replace: false });
+      navigate('/home', { replace: false });
       return;
     }
 

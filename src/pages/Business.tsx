@@ -43,7 +43,7 @@ const Business = () => {
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
   useEffect(() => {
-    if (!activeBusinessProfileId) navigate('/', { replace: true });
+    if (!activeBusinessProfileId) navigate('/home', { replace: true });
   }, [activeBusinessProfileId, navigate]);
 
   useEffect(() => {
