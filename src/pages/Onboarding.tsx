@@ -50,7 +50,10 @@ const Onboarding = () => {
   const { setOnboardingCompleted, setDisplayName: setContextDisplayName } = useAppState();
   
   const [step, setStep] = useState(1);
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState(() => {
+    // Pre-fill from context if user entered name during signup
+    return localStorage.getItem('user_display_name') || '';
+  });
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [customSources, setCustomSources] = useState<PaymentSourceSetup[]>([]);
   const [scannerOpen, setScannerOpen] = useState(false);
