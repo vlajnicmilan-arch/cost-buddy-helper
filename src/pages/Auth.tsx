@@ -39,7 +39,7 @@ const Auth = () => {
   const { signIn, signUp, resendVerificationEmail, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { storageMode } = useStorage();
+  const { storageMode, setStorageMode } = useStorage();
   const { t } = useTranslation();
   
   // Check if user came from storage setup - allow going back
