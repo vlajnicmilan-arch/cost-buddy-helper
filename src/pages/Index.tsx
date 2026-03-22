@@ -380,7 +380,7 @@ const Index = () => {
       } catch (error) {
         console.error('Sign out error:', error);
       } finally {
-        navigate('/auth');
+        navigate('/');
       }
     }
   };

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,11 @@ const Auth = () => {
   const { storageMode, setStorageMode } = useStorage();
   const { t } = useTranslation();
   
+  // Auto-switch to signup mode if navigated with mode: 'signup'
+  useEffect(() => {
+    if ((location.state as any)?.mode === 'signup') setIsLogin(false);
+  }, [location.state]);
+
   // Check if user came from storage setup - allow going back
   const cameFromSetup = (location.state as any)?.from === '/setup';
   const canGoBack = cameFromSetup || storageMode;
@@ -110,6 +115,15 @@ const Auth = () => {
         if (!storageMode) {
           setStorageMode('cloud');
         }
+        // Ensure onboarding state is synced from server
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', (await supabase.auth.getUser()).data.user!.id)
+          .single();
+        if (profile?.display_name) {
+          localStorage.setItem('onboarding_completed', 'true');
+        }
         toast.success(t('toasts.welcomeBack'));
         const returnTo = (location.state as any)?.returnTo;
         navigate(returnTo || '/home');
@@ -125,6 +139,7 @@ const Auth = () => {
         }
         
         if (needsEmailConfirmation) {
+          if (!storageMode) setStorageMode('cloud');
           setAwaitingVerification(true);
           setRegisteredEmail(email.trim());
           toast.success(t('toasts.registrationSuccess'));
@@ -219,7 +234,10 @@ const Auth = () => {
         displayName={newUserName}
         onComplete={() => {
           setShowWelcome(false);
-          navigate('/home');
+          if (!storageMode) {
+            setStorageMode('cloud');
+          }
+          navigate('/onboarding');
         }}
       />
     );

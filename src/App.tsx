@@ -68,7 +68,7 @@ const AppRoutes = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/landing" element={<Landing />} />
+          <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
@@ -95,7 +95,6 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={onboardingCompleted ? <Navigate to="/home" replace /> : <Landing />} />
         <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
-        <Route path="/landing" element={<Landing />} />
         <Route path="/business" element={<Business />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -113,7 +112,7 @@ const AppRoutes = () => {
         <Route path="/paywall" element={<Paywall />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="/landing" element={<Landing />} />
+        <Route path="/landing" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>

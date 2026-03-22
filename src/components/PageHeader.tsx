@@ -32,7 +32,7 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
       } catch (error) {
         console.error('Sign out error:', error);
       } finally {
-        navigate('/auth');
+        navigate('/');
       }
     }
   };

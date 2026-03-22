@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { motion, type Variants } from 'framer-motion';
 import {
   Wallet, PieChart, TrendingUp, Users, Shield, Smartphone,
-  Zap, BarChart3, Receipt, ArrowRight, Check, Star, Globe
+  Zap, BarChart3, Receipt, ArrowRight, Check, Star, Globe, Menu, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { useStorage } from '@/contexts/StorageContext';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -19,6 +22,11 @@ const fadeUp: Variants = {
 const LandingNav = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { storageMode } = useStorage();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isLoggedIn = !!user && !!storageMode;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
@@ -36,14 +44,51 @@ const LandingNav = () => {
         </div>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
-          <Button variant="outline" size="sm" onClick={() => navigate('/auth')}>
-            {t('landing.nav.login')}
-          </Button>
-          <Button size="sm" onClick={() => navigate('/setup')} className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
-            {t('landing.nav.getStarted')}
-          </Button>
+          {isLoggedIn ? (
+            <Button size="sm" onClick={() => navigate('/home')} className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
+              {t('landing.nav.openApp', 'Otvori aplikaciju')}
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="hidden sm:inline-flex">
+                {t('landing.nav.login')}
+              </Button>
+              <Button size="sm" onClick={() => navigate('/auth', { state: { mode: 'signup' } })} className="hidden sm:inline-flex bg-gradient-to-r from-primary to-accent text-primary-foreground">
+                {t('landing.nav.getStarted')}
+              </Button>
+            </>
+          )}
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-2 text-muted-foreground hover:text-foreground"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:hidden bg-background border-b border-border px-4 py-4 space-y-3"
+        >
+          <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.features')}</a>
+          <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.pricing')}</a>
+          <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.testimonials')}</a>
+          {!isLoggedIn && (
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => { setMobileMenuOpen(false); navigate('/auth'); }}>
+                {t('landing.nav.login')}
+              </Button>
+              <Button size="sm" className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground" onClick={() => { setMobileMenuOpen(false); navigate('/auth', { state: { mode: 'signup' } }); }}>
+                {t('landing.nav.getStarted')}
+              </Button>
+            </div>
+          )}
+        </motion.div>
+      )}
     </nav>
   );
 };
@@ -89,7 +134,7 @@ const HeroSection = () => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
           initial="hidden" animate="visible" variants={fadeUp} custom={3}
         >
-          <Button size="lg" onClick={() => navigate('/setup')} className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
+          <Button size="lg" onClick={() => navigate('/auth', { state: { mode: 'signup' } })} className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
             {t('landing.hero.cta')}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
@@ -202,7 +247,7 @@ const PricingSection = () => {
               <Button
                 className={`w-full rounded-xl ${plan.popular ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground' : ''}`}
                 variant={plan.popular ? 'default' : 'outline'}
-                onClick={() => navigate('/setup')}
+                onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
               >
                 {t('landing.pricing.cta')}
               </Button>
@@ -296,7 +341,7 @@ const FooterSection = () => {
             <h4 className="font-semibold text-foreground mb-3">{t('landing.footer.account')}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><button onClick={() => navigate('/auth')} className="hover:text-foreground transition-colors">{t('landing.nav.login')}</button></li>
-              <li><button onClick={() => navigate('/setup')} className="hover:text-foreground transition-colors">{t('landing.nav.getStarted')}</button></li>
+              <li><button onClick={() => navigate('/auth', { state: { mode: 'signup' } })} className="hover:text-foreground transition-colors">{t('landing.nav.getStarted')}</button></li>
             </ul>
           </div>
         </div>
