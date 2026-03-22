@@ -61,14 +61,15 @@ const AppRoutes = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/landing" element={<Landing />} />
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="*" element={<Navigate to="/setup" replace />} />
+          <Route path="/landing" element={<Landing />} />
+          <Route path="/setup" element={<StorageSetup />} />
+          <Route path="*" element={<Navigate to="/landing" replace />} />
         </Routes>
       </Suspense>
     );
