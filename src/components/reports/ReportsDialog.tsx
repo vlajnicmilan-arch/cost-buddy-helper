@@ -686,6 +686,34 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 )}
               </div>
 
+              {/* Include/Exclude toggles */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">
+                  {t('reports.includeInCalc', 'Uključi u obračun')}
+                </Label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="include-projects" className="text-xs text-muted-foreground cursor-pointer">
+                      {t('reports.projectTransactions', 'Projektne transakcije')}
+                    </Label>
+                    <Switch
+                      id="include-projects"
+                      checked={includeProjects}
+                      onCheckedChange={setIncludeProjects}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="include-budgets" className="text-xs text-muted-foreground cursor-pointer">
+                      {t('reports.budgetTransactions', 'Budžetske transakcije')}
+                    </Label>
+                    <Switch
+                      id="include-budgets"
+                      checked={includeBudgets}
+                      onCheckedChange={setIncludeBudgets}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <p className="text-sm text-muted-foreground">
