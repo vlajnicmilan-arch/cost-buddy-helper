@@ -117,7 +117,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
-      navigate('/auth');
+      navigate('/', { replace: true });
     }
   }, [user, authLoading, navigate, storageMode]);
 

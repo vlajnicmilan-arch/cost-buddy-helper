@@ -98,7 +98,7 @@ const Admin = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate('/auth', { state: { returnTo: '/admin' } });
+      navigate('/', { state: { returnTo: '/admin' } });
       return;
     }
     checkAdminAndLoad();

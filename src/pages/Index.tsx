@@ -380,6 +380,10 @@ const Index = () => {
       } catch (error) {
         console.error('Sign out error:', error);
       } finally {
+        // Clear all app state from localStorage
+        const theme = localStorage.getItem('theme');
+        localStorage.clear();
+        if (theme) localStorage.setItem('theme', theme);
         navigate('/');
       }
     }
