@@ -109,7 +109,7 @@ const Auth = () => {
         }
         toast.success(t('toasts.welcomeBack'));
         const returnTo = (location.state as any)?.returnTo;
-        navigate(returnTo || '/');
+        navigate(returnTo || '/home');
       } else {
         const { error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
         if (error) {
