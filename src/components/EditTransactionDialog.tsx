@@ -43,6 +43,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
+  const [transferDestination, setTransferDestination] = useState<string | null>(null);
   
   const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
