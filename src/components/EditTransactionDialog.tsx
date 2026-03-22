@@ -89,6 +89,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         setSelectedBudgetId(expense.budget_id || null);
         setExpenseNature((expense.expense_nature as 'regular' | 'extraordinary') || 'regular');
         setNote(expense.note || '');
+        setTransferDestination(expense.income_source_id || null);
       } catch (err) {
         console.error('Error initializing edit form:', err);
         // Set safe defaults
