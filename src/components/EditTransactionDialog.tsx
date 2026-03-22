@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
+import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, PAYMENT_SOURCES, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
@@ -13,7 +13,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, Plus, FolderKanban, PiggyBank, Milestone } from 'lucide-react';
+import { CalendarIcon, Loader2, Plus, FolderKanban, PiggyBank, Milestone, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
+  const [transferDestination, setTransferDestination] = useState<string | null>(null);
   
   const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -88,6 +89,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         setSelectedBudgetId(expense.budget_id || null);
         setExpenseNature((expense.expense_nature as 'regular' | 'extraordinary') || 'regular');
         setNote(expense.note || '');
+        setTransferDestination(expense.income_source_id || null);
       } catch (err) {
         console.error('Error initializing edit form:', err);
         // Set safe defaults
@@ -121,6 +123,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
         milestone_id: selectedMilestoneId,
         budget_id: selectedBudgetId,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : null,
+        income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined,
         note: note.trim() || null,
         updated_at: new Date().toISOString()
       });
@@ -187,6 +190,92 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
               </p>
             )}
           </div>
+
+          {/* Transfer Destination */}
+          {type === 'transfer' && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">📥 {t('transactions.destinationAccount', 'Odredišni račun')}</Label>
+              <Select
+                value={transferDestination || 'none'}
+                onValueChange={(value) => setTransferDestination(value === 'none' ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('placeholders.selectDestinationAccount', 'Odaberi odredišni račun')}>
+                    {(() => {
+                      if (!transferDestination) return t('placeholders.selectDestinationAccount', 'Odaberi odredišni račun');
+                      const customSource = customPaymentSources.find(s => s.id === transferDestination);
+                      if (customSource) {
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: customSource.color }}>{customSource.icon}</span>
+                            <span>{customSource.name}</span>
+                          </span>
+                        );
+                      }
+                      const standardSource = PAYMENT_SOURCES.find(s => s.id === transferDestination);
+                      if (standardSource) {
+                        return (
+                          <span className="flex items-center gap-2">
+                            <span>{standardSource.icon}</span>
+                            <span>{standardSource.name}</span>
+                          </span>
+                        );
+                      }
+                      return t('placeholders.selectDestinationAccount', 'Odaberi odredišni račun');
+                    })()}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">{t('transactions.noDestination', 'Bez odredišta')}</span>
+                  </SelectItem>
+                  {/* Custom payment sources (excluding current source) */}
+                  {customPaymentSources
+                    .filter(s => s.id !== normalizedPaymentSource)
+                    .map((src) => (
+                      <SelectItem key={src.id} value={src.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: src.color }}>{src.icon}</span>
+                          <span>{src.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  {/* Standard sources */}
+                  {PAYMENT_SOURCES
+                    .filter(s => s.id !== paymentSource)
+                    .map((src) => (
+                      <SelectItem key={src.id} value={src.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{src.icon}</span>
+                          <span>{src.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+
+              {/* Visual transfer flow */}
+              {paymentSource && transferDestination && (
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-center gap-3">
+                  {(() => {
+                    const fromCustom = customPaymentSources.find(s => s.id === normalizedPaymentSource);
+                    const toCustom = customPaymentSources.find(s => s.id === transferDestination);
+                    return (
+                      <>
+                        <span className="text-sm font-medium">
+                          {fromCustom ? `${fromCustom.icon} ${fromCustom.name}` : paymentSource}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium">
+                          {toCustom ? `${toCustom.icon} ${toCustom.name}` : transferDestination}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
 
 
           {/* Amount */}
