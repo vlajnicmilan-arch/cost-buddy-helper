@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -188,6 +189,10 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const [selectedReportCategory, setSelectedReportCategory] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   
+  // Include/exclude filters
+  const [includeProjects, setIncludeProjects] = useState(true);
+  const [includeBudgets, setIncludeBudgets] = useState(true);
+  
   // Comparison state
   const [comparePreset, setComparePreset] = useState<ComparePreset>('month-vs-month');
   const [customCompare1Start, setCustomCompare1Start] = useState('');
@@ -294,17 +299,25 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       const expenseDate = e.date.getTime();
       const inDateRange = expenseDate >= dateRange.start.getTime() && expenseDate <= dateRange.end.getTime() + 86400000;
       
+      if (!inDateRange) return false;
+      
+      // Exclude project transactions if toggled off
+      if (!includeProjects && e.project_id) return false;
+      
+      // Exclude budget transactions if toggled off
+      if (!includeBudgets && e.budget_id) return false;
+      
       // Filter by income source if selected
       if (selectedIncomeSourceId !== 'all') {
         if (selectedIncomeSourceId === 'unassigned') {
-          return inDateRange && !e.income_source_id;
+          return !e.income_source_id;
         }
-        return inDateRange && e.income_source_id === selectedIncomeSourceId;
+        return e.income_source_id === selectedIncomeSourceId;
       }
       
-      return inDateRange;
+      return true;
     });
-  }, [expenses, dateRange, selectedIncomeSourceId]);
+  }, [expenses, dateRange, selectedIncomeSourceId, includeProjects, includeBudgets]);
 
   // Comparison filtered expenses
   const compareExpenses1 = useMemo(() => {
@@ -674,6 +687,34 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 )}
               </div>
 
+              {/* Include/Exclude toggles */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">
+                  {t('reports.includeInCalc', 'Uključi u obračun')}
+                </Label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="include-projects" className="text-xs text-muted-foreground cursor-pointer">
+                      {t('reports.projectTransactions', 'Projektne transakcije')}
+                    </Label>
+                    <Switch
+                      id="include-projects"
+                      checked={includeProjects}
+                      onCheckedChange={setIncludeProjects}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="include-budgets" className="text-xs text-muted-foreground cursor-pointer">
+                      {t('reports.budgetTransactions', 'Budžetske transakcije')}
+                    </Label>
+                    <Switch
+                      id="include-budgets"
+                      checked={includeBudgets}
+                      onCheckedChange={setIncludeBudgets}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <p className="text-sm text-muted-foreground">
