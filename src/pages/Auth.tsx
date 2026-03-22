@@ -42,6 +42,12 @@ const Auth = () => {
   const { storageMode, setStorageMode } = useStorage();
   const { t } = useTranslation();
   
+  // Auto-switch to signup mode if navigated with mode: 'signup'
+  const navigatedMode = (location.state as any)?.mode;
+  useState(() => {
+    if (navigatedMode === 'signup') setIsLogin(false);
+  });
+
   // Check if user came from storage setup - allow going back
   const cameFromSetup = (location.state as any)?.from === '/setup';
   const canGoBack = cameFromSetup || storageMode;
