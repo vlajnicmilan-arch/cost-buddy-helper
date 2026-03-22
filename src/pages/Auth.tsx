@@ -43,10 +43,9 @@ const Auth = () => {
   const { t } = useTranslation();
   
   // Auto-switch to signup mode if navigated with mode: 'signup'
-  const navigatedMode = (location.state as any)?.mode;
-  useState(() => {
-    if (navigatedMode === 'signup') setIsLogin(false);
-  });
+  useEffect(() => {
+    if ((location.state as any)?.mode === 'signup') setIsLogin(false);
+  }, [location.state]);
 
   // Check if user came from storage setup - allow going back
   const cameFromSetup = (location.state as any)?.from === '/setup';
