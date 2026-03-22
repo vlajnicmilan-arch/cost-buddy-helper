@@ -56,7 +56,7 @@ const Paywall: React.FC = () => {
 
   useEffect(() => {
     if (!subLoading && subscribed) {
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     }
   }, [subscribed, subLoading, navigate]);
 

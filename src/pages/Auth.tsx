@@ -50,7 +50,7 @@ const Auth = () => {
     if (cameFromSetup) {
       navigate('/setup');
     } else if (storageMode) {
-      navigate('/');
+      navigate('/home');
     }
   };
 
@@ -216,7 +216,7 @@ const Auth = () => {
         displayName={newUserName}
         onComplete={() => {
           setShowWelcome(false);
-          navigate('/');
+          navigate('/home');
         }}
       />
     );

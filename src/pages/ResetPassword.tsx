@@ -179,7 +179,7 @@ const ResetPassword = () => {
 
             <Button
               className="w-full h-12 rounded-xl"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/home')}
             >
               Nastavi na aplikaciju
             </Button>

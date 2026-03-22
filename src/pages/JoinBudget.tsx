@@ -61,7 +61,7 @@ export default function JoinBudget() {
         
         // Redirect after short delay
         setTimeout(() => {
-          navigate('/');
+          navigate('/home');
         }, 2000);
       }
     } catch (err: any) {
@@ -123,7 +123,7 @@ export default function JoinBudget() {
             </p>
           ) : error ? (
             <Button 
-              onClick={() => navigate('/')} 
+              onClick={() => navigate('/home')} 
               variant="outline" 
               className="w-full"
             >
@@ -152,7 +152,7 @@ export default function JoinBudget() {
                 {t('budget.joinNow', 'Pridruži se')}
               </Button>
               <Button 
-                onClick={() => navigate('/')} 
+                onClick={() => navigate('/home')} 
                 variant="outline" 
                 className="w-full"
               >
