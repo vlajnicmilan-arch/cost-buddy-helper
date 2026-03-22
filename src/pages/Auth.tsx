@@ -20,8 +20,7 @@ const authSchema = z.object({
 });
 
 const Auth = () => {
-  const locationState = (typeof window !== 'undefined' && window.history.state?.usr) || {};
-  const [isLogin, setIsLogin] = useState(() => (locationState as any)?.mode !== 'signup');
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
