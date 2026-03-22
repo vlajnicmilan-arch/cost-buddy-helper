@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 
 // ─── Avatar Mood ────────────────────────────────────────────────────────────
@@ -74,6 +75,40 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
+
+  // Auto-sync state from DB when user has session but localStorage is empty (reinstall/cache clear)
+  useEffect(() => {
+    const syncFromDB = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // If localStorage has no storage config, restore cloud mode
+      const hasStorageConfig = localStorage.getItem('finmate-storage-config');
+      if (!hasStorageConfig) {
+        localStorage.setItem('finmate-storage-config', JSON.stringify({ mode: 'cloud', lastSync: new Date().toISOString() }));
+        // Trigger storage context update by dispatching storage event
+        window.dispatchEvent(new Event('storage-mode-restored'));
+      }
+
+      // If onboarding not marked complete locally, check DB
+      if (!localStorage.getItem('onboarding_completed')) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (profile?.display_name) {
+          localStorage.setItem('onboarding_completed', 'true');
+          setOnboardingCompletedState(true);
+          localStorage.setItem('user_display_name', profile.display_name);
+          setDisplayNameState(profile.display_name);
+        }
+      }
+    };
+
+    syncFromDB();
+  }, []);
 
   // Subscriber registries using refs to avoid stale closures
   const avatarHandlers = useRef<Set<AvatarEventHandler>>(new Set());
