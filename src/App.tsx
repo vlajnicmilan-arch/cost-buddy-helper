@@ -95,7 +95,6 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={onboardingCompleted ? <Navigate to="/home" replace /> : <Landing />} />
         <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
-        <Route path="/landing" element={<Landing />} />
         <Route path="/business" element={<Business />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/dashboard" element={<Dashboard />} />

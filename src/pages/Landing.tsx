@@ -247,7 +247,7 @@ const PricingSection = () => {
               <Button
                 className={`w-full rounded-xl ${plan.popular ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground' : ''}`}
                 variant={plan.popular ? 'default' : 'outline'}
-                onClick={() => navigate('/setup')}
+                onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
               >
                 {t('landing.pricing.cta')}
               </Button>
