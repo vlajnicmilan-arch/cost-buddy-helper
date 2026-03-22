@@ -228,7 +228,10 @@ const Auth = () => {
         displayName={newUserName}
         onComplete={() => {
           setShowWelcome(false);
-          navigate('/home');
+          if (!storageMode) {
+            setStorageMode('cloud');
+          }
+          navigate('/onboarding');
         }}
       />
     );
