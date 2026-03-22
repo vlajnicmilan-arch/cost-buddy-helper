@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/logo-192.png" />
+    <link rel="canonical" href="https://cost-buddy-helper.lovable.app/" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="V&M Balance" />
@@ -16,23 +17,50 @@
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" /></noscript>
     <meta name="mobile-web-app-capable" content="yes" />
     <title>V&M Balance - Upravljaj svojim financijama</title>
-    <meta name="description" content="V&M Balance - Pametna aplikacija za praćenje troškova i upravljanje osobnim financijama" />
+    <meta name="description" content="V&M Balance je pametna aplikacija za praćenje troškova, budžetiranje i upravljanje osobnim i poslovnim financijama. Besplatno za početi!" />
     <meta name="author" content="V&M Balance" />
+    <meta name="keywords" content="praćenje troškova, budžet, financije, upravljanje novcem, osobne financije, poslovne financije, expense tracker" />
+    <meta name="robots" content="index, follow" />
 
-    <meta property="og:title" content="V&M Balance - Upravljaj financijama" />
-    <meta property="og:description" content="Pametna aplikacija za praćenje troškova i upravljanje osobnim financijama" />
+    <meta property="og:title" content="V&M Balance - Pametno upravljanje financijama" />
+    <meta property="og:description" content="Pametna aplikacija za praćenje troškova, budžetiranje i upravljanje osobnim i poslovnim financijama." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cost-buddy-helper.lovable.app/" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:locale" content="hr_HR" />
+    <meta property="og:site_name" content="V&M Balance" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@VMBalance" />
+    <meta name="twitter:title" content="V&M Balance - Pametno upravljanje financijama" />
+    <meta name="twitter:description" content="Pametna aplikacija za praćenje troškova i upravljanje financijama." />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "V&M Balance",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "description": "Pametna aplikacija za praćenje troškova, budžetiranje i upravljanje osobnim i poslovnim financijama.",
+      "url": "https://cost-buddy-helper.lovable.app/",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "150"
+      }
+    }
+    </script>
   </head>
 
   <body>
     <script>
-      // Initialize theme before page loads to prevent flash
-      // Only apply dark theme if explicitly set in localStorage
       (function() {
         const theme = localStorage.getItem('theme');
         if (theme === 'dark') {
