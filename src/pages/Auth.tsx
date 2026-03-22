@@ -139,6 +139,7 @@ const Auth = () => {
         }
         
         if (needsEmailConfirmation) {
+          if (!storageMode) setStorageMode('cloud');
           setAwaitingVerification(true);
           setRegisteredEmail(email.trim());
           toast.success(t('toasts.registrationSuccess'));
