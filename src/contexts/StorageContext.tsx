@@ -18,20 +18,26 @@ export const StorageProvider = ({ children }: { children: ReactNode }) => {
   const [config, setConfig] = useState<StorageConfig | null>(null);
 
   useEffect(() => {
-    // Load storage config from localStorage
-    const savedConfig = localStorage.getItem(STORAGE_CONFIG_KEY);
-    
-    if (savedConfig) {
-      try {
-        const parsed: StorageConfig = JSON.parse(savedConfig);
-        setConfig(parsed);
-        setStorageModeState(parsed.mode);
-      } catch (e) {
-        console.error('Failed to parse storage config:', e);
+    const loadConfig = () => {
+      const savedConfig = localStorage.getItem(STORAGE_CONFIG_KEY);
+      if (savedConfig) {
+        try {
+          const parsed: StorageConfig = JSON.parse(savedConfig);
+          setConfig(parsed);
+          setStorageModeState(parsed.mode);
+        } catch (e) {
+          console.error('Failed to parse storage config:', e);
+        }
       }
-    }
-    
-    setIsInitialized(true);
+      setIsInitialized(true);
+    };
+
+    loadConfig();
+
+    // Listen for restored storage mode (e.g. after reinstall with existing session)
+    const handleRestore = () => loadConfig();
+    window.addEventListener('storage-mode-restored', handleRestore);
+    return () => window.removeEventListener('storage-mode-restored', handleRestore);
   }, []);
 
   const setStorageMode = (mode: StorageMode) => {

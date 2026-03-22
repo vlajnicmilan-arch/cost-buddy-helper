@@ -548,7 +548,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         }
         
         toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
-        window.location.href = '/auth';
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Delete account error:', error);

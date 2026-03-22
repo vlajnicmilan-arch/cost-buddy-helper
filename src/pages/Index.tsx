@@ -387,7 +387,7 @@ const Index = () => {
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
-      navigate('/auth', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [user, authLoading, navigate, storageMode]);
 
