@@ -239,19 +239,25 @@ const AppShowcaseSection = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
           <motion.div
             className="w-52 sm:w-64"
-            initial={{ opacity: 0, y: 40, rotate: -5 }}
-            whileInView={{ opacity: 1, y: 0, rotate: -3 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={popIn}
+            custom={0}
+            whileHover={{ scale: 1.08, rotate: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 300 }}
           >
             <img src={mockupDashboard} alt="V&M Balance dashboard" className="w-full h-auto drop-shadow-2xl" loading="lazy" />
           </motion.div>
           <motion.div
             className="w-52 sm:w-64"
-            initial={{ opacity: 0, y: 40, rotate: 5 }}
-            whileInView={{ opacity: 1, y: 0, rotate: 3 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={popIn}
+            custom={1}
+            whileHover={{ scale: 1.08, rotate: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 300 }}
           >
             <img src={mockupBudget} alt="V&M Balance budžeti" className="w-full h-auto drop-shadow-2xl" loading="lazy" />
           </motion.div>
@@ -259,10 +265,11 @@ const AppShowcaseSection = () => {
 
         <motion.div
           className="mt-12 flex justify-center"
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          initial={{ opacity: 0, scale: 0.6, y: 50 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.8, delay: 0.4, type: 'spring', stiffness: 150 }}
+          whileHover={{ scale: 1.05 }}
         >
           <img src={cardsImage} alt="Kartice za plaćanje" className="w-64 sm:w-80 h-auto rounded-2xl" loading="lazy" />
         </motion.div>
