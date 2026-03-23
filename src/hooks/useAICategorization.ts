@@ -4,8 +4,8 @@ import { useCustomCategories } from './useCustomCategories';
 
 export const useAICategorization = () => {
   const { customCategories } = useCustomCategories();
-  const abortControllerRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
 
   const categorize = useCallback(
     (
@@ -16,7 +16,8 @@ export const useAICategorization = () => {
     ) => {
       // Clear previous debounce
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (abortControllerRef.current) abortControllerRef.current.abort();
+      requestIdRef.current += 1;
+      const currentRequestId = requestIdRef.current;
 
       const text = (description + ' ' + merchantName).trim();
       if (text.length < 3 && (!items || items.length === 0)) return;
@@ -39,6 +40,8 @@ export const useAICategorization = () => {
             return;
           }
 
+          if (currentRequestId !== requestIdRef.current) return;
+
           if (data?.category) {
             onResult(data.category);
           }
@@ -53,7 +56,7 @@ export const useAICategorization = () => {
 
   const cancel = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (abortControllerRef.current) abortControllerRef.current.abort();
+    requestIdRef.current += 1;
   }, []);
 
   return { categorize, cancel };

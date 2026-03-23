@@ -23,6 +23,16 @@ interface ParsedReceipt {
   recipient_name: string | null;
 }
 
+const isAbortLikeError = (error: unknown) => {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    message.includes('aborterror') ||
+    message.includes('signal is aborted') ||
+    message.includes('aborted without reason') ||
+    message.includes('user aborted')
+  );
+};
+
 // Kompresija slike za mobilne uređaje - smanjuje veličinu za stabilnije slanje
 const compressImage = async (base64: string, maxWidth = 800, quality = 0.75): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -192,6 +202,12 @@ export const useReceiptScanner = () => {
       }
       return result;
     } catch (error) {
+      if (isAbortLikeError(error)) {
+        console.warn('Receipt scanning was interrupted:', error);
+        toast.error('Skeniranje je prekinuto. Pokušaj ponovno.');
+        return null;
+      }
+
       console.error('Error scanning receipt:', error);
       toast.error(error instanceof Error ? error.message : 'Greška pri skeniranju računa');
       return null;
