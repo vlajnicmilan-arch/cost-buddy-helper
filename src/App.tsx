@@ -48,52 +48,26 @@ const PageLoader = () => (
   </div>
 );
 
+const isStandaloneApp = () => {
+  if (typeof window === 'undefined') return false;
+
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
+    document.referrer.startsWith('android-app://')
+  );
+};
+
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
-
-  if (!isInitialized) {
-    return <PageLoader />;
-  }
-
-  if (!storageMode) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/setup" element={<StorageSetup />} />
-          <Route path="/install" element={<Install />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/landing" element={<Navigate to="/" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    );
-  }
-
-  // Show paywall if trial expired and not subscribed (cloud mode only)
-  if (storageMode === 'cloud' && !subLoading && trialExpired && !subscribed) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/paywall" element={<Paywall />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="*" element={<Navigate to="/paywall" replace />} />
-        </Routes>
-      </Suspense>
-    );
-  }
-
+  const shouldOpenAppFromRoot = isStandaloneApp() && !!storageMode && onboardingCompleted;
+...
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={shouldOpenAppFromRoot ? <Navigate to="/home" replace /> : <Landing />} />
         <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
         <Route path="/business" element={<Business />} />
         <Route path="/onboarding" element={<Onboarding />} />
