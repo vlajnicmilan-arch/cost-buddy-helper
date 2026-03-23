@@ -303,11 +303,17 @@ const FeaturesSection = () => {
             <motion.div
               key={f.key}
               className="group p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all"
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
+              initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={popIn} custom={i}
+              whileHover={{ y: -8, scale: 1.03 }}
+              transition={{ type: 'spring', stiffness: 300 }}
             >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.colorClass} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+              <motion.div
+                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.colorClass} flex items-center justify-center mb-4`}
+                whileHover={{ scale: 1.2, rotate: 10 }}
+                transition={{ type: 'spring', stiffness: 400 }}
+              >
                 <f.icon className="w-6 h-6 text-primary-foreground" />
-              </div>
+              </motion.div>
               <h3 className="text-lg font-semibold text-foreground mb-2">{t(`landing.features.${f.key}.title`)}</h3>
               <p className="text-muted-foreground text-sm">{t(`landing.features.${f.key}.desc`)}</p>
             </motion.div>
