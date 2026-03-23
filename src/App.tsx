@@ -48,25 +48,16 @@ const PageLoader = () => (
   </div>
 );
 
-const isStandaloneApp = () => {
-  if (typeof window === "undefined") return false;
-
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
-    document.referrer.startsWith("android-app://")
-  );
-};
-
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
   const { user, loading: authLoading } = useAuth();
-  const standaloneMode = isStandaloneApp();
-  const standaloneEntryRoute = standaloneMode ? (user ? "/home" : "/auth") : null;
+  const appEntryRoute = authLoading
+    ? null
+    : (user ? (onboardingCompleted ? "/home" : "/onboarding") : "/auth");
 
-  if (!isInitialized || (standaloneMode && authLoading)) {
+  if (!isInitialized) {
     return <PageLoader />;
   }
 
@@ -74,7 +65,8 @@ const AppRoutes = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={standaloneEntryRoute ? <Navigate to={standaloneEntryRoute} replace /> : <Landing />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/app" element={appEntryRoute ? <Navigate to={appEntryRoute} replace /> : <PageLoader />} />
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
@@ -105,7 +97,8 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={standaloneEntryRoute ? <Navigate to={standaloneEntryRoute} replace /> : <Landing />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/app" element={appEntryRoute ? <Navigate to={appEntryRoute} replace /> : <PageLoader />} />
         <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
         <Route path="/business" element={<Business />} />
         <Route path="/onboarding" element={<Onboarding />} />
