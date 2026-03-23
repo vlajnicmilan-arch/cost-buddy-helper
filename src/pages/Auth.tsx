@@ -36,7 +36,7 @@ const Auth = () => {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [gdprConsent, setGdprConsent] = useState(false);
   
-  const { signIn, signUp, resendVerificationEmail, resetPassword } = useAuth();
+  const { signIn, signUp, resendVerificationEmail, resetPassword, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { storageMode, setStorageMode } = useStorage();
@@ -46,6 +46,49 @@ const Auth = () => {
   useEffect(() => {
     if ((location.state as any)?.mode === 'signup') setIsLogin(false);
   }, [location.state]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    let isCancelled = false;
+
+    const redirectAuthenticatedUser = async () => {
+      if (!storageMode) {
+        setStorageMode('cloud');
+      }
+
+      const returnTo = (location.state as any)?.returnTo;
+      const localOnboardingDone = localStorage.getItem('onboarding_completed') === 'true';
+
+      if (localOnboardingDone) {
+        navigate(returnTo || '/home', { replace: true });
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (isCancelled) return;
+
+      const hasCompletedOnboarding = !!profile?.display_name?.trim();
+
+      if (hasCompletedOnboarding) {
+        localStorage.setItem('onboarding_completed', 'true');
+        localStorage.setItem('user_display_name', profile.display_name);
+      }
+
+      navigate(hasCompletedOnboarding ? (returnTo || '/home') : '/onboarding', { replace: true });
+    };
+
+    redirectAuthenticatedUser();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [authLoading, user, storageMode, setStorageMode, navigate, location.state]);
 
   // Check if user came from storage setup - allow going back
   const cameFromSetup = (location.state as any)?.from === '/setup';
