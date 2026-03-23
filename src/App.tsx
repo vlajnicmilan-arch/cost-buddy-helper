@@ -18,7 +18,6 @@ import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
 
-// Lazy load all page components
 const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -48,10 +47,21 @@ const PageLoader = () => (
   </div>
 );
 
+const isStandaloneApp = () => {
+  if (typeof window === "undefined") return false;
+
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
+    document.referrer.startsWith("android-app://")
+  );
+};
+
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
+  const shouldOpenAppFromRoot = isStandaloneApp() && !!storageMode && onboardingCompleted;
 
   if (!isInitialized) {
     return <PageLoader />;
@@ -75,8 +85,7 @@ const AppRoutes = () => {
     );
   }
 
-  // Show paywall if trial expired and not subscribed (cloud mode only)
-  if (storageMode === 'cloud' && !subLoading && trialExpired && !subscribed) {
+  if (storageMode === "cloud" && !subLoading && trialExpired && !subscribed) {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -93,7 +102,7 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={shouldOpenAppFromRoot ? <Navigate to="/home" replace /> : <Landing />} />
         <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
         <Route path="/business" element={<Business />} />
         <Route path="/onboarding" element={<Onboarding />} />
