@@ -179,19 +179,24 @@ const HeroSection = () => {
         {/* Hero image */}
         <motion.div
           className="relative hidden lg:block"
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
+          initial="hidden"
+          animate="visible"
+          variants={slideInRight}
         >
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20">
+          <motion.div
+            className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20"
+            whileHover={{ scale: 1.02, rotate: 1 }}
+            transition={{ type: 'spring', stiffness: 300 }}
+          >
             <img src={heroImage} alt="Skeniranje računa mobilnim telefonom" className="w-full h-auto object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
-          </div>
+          </motion.div>
           <motion.div
             className="absolute -bottom-8 -left-8 w-48 rounded-2xl overflow-hidden shadow-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
+            initial={{ opacity: 0, scale: 0.5, rotate: -15 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.7, delay: 1, type: 'spring', stiffness: 200 }}
+            whileHover={{ scale: 1.1, rotate: 3 }}
           >
             <img src={cardsImage} alt="Kartice" className="w-full h-auto" loading="lazy" />
           </motion.div>
@@ -201,9 +206,9 @@ const HeroSection = () => {
       {/* Mobile hero image */}
       <motion.div
         className="mt-10 lg:hidden flex justify-center"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
+        initial={{ opacity: 0, scale: 0.8, y: 40 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.5, type: 'spring', stiffness: 150 }}
       >
         <div className="rounded-2xl overflow-hidden shadow-xl max-w-sm">
           <img src={heroImage} alt="Skeniranje računa mobilnim telefonom" className="w-full h-auto object-cover" loading="lazy" />
