@@ -101,59 +101,147 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="pt-32 pb-20 px-4 relative overflow-hidden">
+    <section className="pt-28 pb-20 px-4 relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute top-40 right-10 w-96 h-96 bg-accent/15 rounded-full blur-3xl" />
         <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-income/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-5xl mx-auto text-center">
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <Zap className="w-4 h-4" />
-            {t('landing.hero.badge')}
-          </span>
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+              <Zap className="w-4 h-4" />
+              {t('landing.hero.badge')}
+            </span>
+          </motion.div>
+
+          <motion.h1
+            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6"
+            initial="hidden" animate="visible" variants={fadeUp} custom={1}
+          >
+            {t('landing.hero.title')}{' '}
+            <span className="bg-gradient-to-r from-primary via-accent to-income bg-clip-text text-transparent">
+              {t('landing.hero.titleHighlight')}
+            </span>
+          </motion.h1>
+
+          <motion.p
+            className="text-lg text-muted-foreground max-w-lg mb-8"
+            initial="hidden" animate="visible" variants={fadeUp} custom={2}
+          >
+            {t('landing.hero.subtitle')}
+          </motion.p>
+
+          <motion.div
+            className="flex flex-col sm:flex-row items-start gap-4"
+            initial="hidden" animate="visible" variants={fadeUp} custom={3}
+          >
+            <Button size="lg" onClick={() => navigate('/auth', { state: { mode: 'signup' } })} className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
+              {t('landing.hero.cta')}
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => navigate('/install')} className="px-8 text-lg h-14 rounded-2xl">
+              <Smartphone className="w-5 h-5 mr-2" />
+              {t('landing.hero.installApp')}
+            </Button>
+          </motion.div>
+
+          <motion.div
+            className="mt-8 flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-muted-foreground"
+            initial="hidden" animate="visible" variants={fadeUp} custom={4}
+          >
+            <span className="flex items-center gap-1"><Check className="w-4 h-4 text-income" /> {t('landing.hero.free')}</span>
+            <span className="flex items-center gap-1"><Shield className="w-4 h-4 text-primary" /> {t('landing.hero.secure')}</span>
+            <span className="flex items-center gap-1"><Globe className="w-4 h-4 text-accent" /> {t('landing.hero.multilingual')}</span>
+          </motion.div>
+        </div>
+
+        {/* Hero image */}
+        <motion.div
+          className="relative hidden lg:block"
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+        >
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20">
+            <img src={heroImage} alt="Skeniranje računa mobilnim telefonom" className="w-full h-auto object-cover" loading="lazy" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
+          </div>
+          <motion.div
+            className="absolute -bottom-8 -left-8 w-48 rounded-2xl overflow-hidden shadow-xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+          >
+            <img src={cardsImage} alt="Kartice" className="w-full h-auto" loading="lazy" />
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Mobile hero image */}
+      <motion.div
+        className="mt-10 lg:hidden flex justify-center"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <div className="rounded-2xl overflow-hidden shadow-xl max-w-sm">
+          <img src={heroImage} alt="Skeniranje računa mobilnim telefonom" className="w-full h-auto object-cover" loading="lazy" />
+        </div>
+      </motion.div>
+    </section>
+  );
+};
+
+const AppShowcaseSection = () => {
+  const { t } = useTranslation();
+
+  return (
+    <section className="py-20 px-4 relative overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl" />
+      </div>
+      <div className="max-w-6xl mx-auto">
+        <motion.div className="text-center mb-12" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+            {t('landing.showcase.title', 'Aplikacija u tvojim rukama')}
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            {t('landing.showcase.subtitle', 'Prekrasno dizajnirana, jednostavna za korištenje i dostupna na svim uređajima.')}
+          </p>
         </motion.div>
 
-        <motion.h1
-          className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-foreground leading-tight mb-6"
-          initial="hidden" animate="visible" variants={fadeUp} custom={1}
-        >
-          {t('landing.hero.title')}{' '}
-          <span className="bg-gradient-to-r from-primary via-accent to-income bg-clip-text text-transparent">
-            {t('landing.hero.titleHighlight')}
-          </span>
-        </motion.h1>
-
-        <motion.p
-          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
-          initial="hidden" animate="visible" variants={fadeUp} custom={2}
-        >
-          {t('landing.hero.subtitle')}
-        </motion.p>
-
-        <motion.div
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
-          initial="hidden" animate="visible" variants={fadeUp} custom={3}
-        >
-          <Button size="lg" onClick={() => navigate('/auth', { state: { mode: 'signup' } })} className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
-            {t('landing.hero.cta')}
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-          <Button variant="outline" size="lg" onClick={() => navigate('/install')} className="px-8 text-lg h-14 rounded-2xl">
-            <Smartphone className="w-5 h-5 mr-2" />
-            {t('landing.hero.installApp')}
-          </Button>
-        </motion.div>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
+          <motion.div
+            className="w-52 sm:w-64"
+            initial={{ opacity: 0, y: 40, rotate: -5 }}
+            whileInView={{ opacity: 1, y: 0, rotate: -3 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <img src={mockupDashboard} alt="V&M Balance dashboard" className="w-full h-auto drop-shadow-2xl" loading="lazy" />
+          </motion.div>
+          <motion.div
+            className="w-52 sm:w-64"
+            initial={{ opacity: 0, y: 40, rotate: 5 }}
+            whileInView={{ opacity: 1, y: 0, rotate: 3 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <img src={mockupBudget} alt="V&M Balance budžeti" className="w-full h-auto drop-shadow-2xl" loading="lazy" />
+          </motion.div>
+        </div>
 
         <motion.div
-          className="mt-10 flex items-center justify-center gap-6 text-sm text-muted-foreground"
-          initial="hidden" animate="visible" variants={fadeUp} custom={4}
+          className="mt-12 flex justify-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <span className="flex items-center gap-1"><Check className="w-4 h-4 text-income" /> {t('landing.hero.free')}</span>
-          <span className="flex items-center gap-1"><Shield className="w-4 h-4 text-primary" /> {t('landing.hero.secure')}</span>
-          <span className="flex items-center gap-1"><Globe className="w-4 h-4 text-accent" /> {t('landing.hero.multilingual')}</span>
+          <img src={cardsImage} alt="Kartice za plaćanje" className="w-64 sm:w-80 h-auto rounded-2xl" loading="lazy" />
         </motion.div>
       </div>
     </section>
