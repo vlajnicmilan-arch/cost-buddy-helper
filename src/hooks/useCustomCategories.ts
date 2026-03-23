@@ -30,13 +30,13 @@ export const useCustomCategories = () => {
 
     try {
       const { data, error } = await supabase
-        .from('custom_categories' as any)
+        .from('custom_categories')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCustomCategories((data || []) as unknown as CustomCategory[]);
+      setCustomCategories((data || []) as CustomCategory[]);
     } catch (error) {
       console.error('Error fetching custom categories:', error);
       toast.error('Greška pri dohvaćanju prilagođenih kategorija');
