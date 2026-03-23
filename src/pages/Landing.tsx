@@ -10,7 +10,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
-
+import heroImage from '@/assets/hero-receipt-scan.jpg';
+import cardsImage from '@/assets/cards-floating.png';
+import mockupDashboard from '@/assets/app-mockup-dashboard.png';
+import mockupBudget from '@/assets/app-mockup-budget.png';
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: (i: number) => ({
