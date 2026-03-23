@@ -449,6 +449,7 @@ const Landing = () => {
     <div className="min-h-dvh bg-background">
       <LandingNav />
       <HeroSection />
+      <AppShowcaseSection />
       <FeaturesSection />
       <PricingSection />
       <TestimonialsSection />
