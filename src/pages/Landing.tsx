@@ -15,10 +15,28 @@ import cardsImage from '@/assets/cards-floating.png';
 import mockupDashboard from '@/assets/app-mockup-dashboard.png';
 import mockupBudget from '@/assets/app-mockup-budget.png';
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 60, scale: 0.95 },
   visible: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { delay: i * 0.1, duration: 0.5 }
+    opacity: 1, y: 0, scale: 1,
+    transition: { delay: i * 0.15, duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }
+  })
+};
+
+const slideInLeft: Variants = {
+  hidden: { opacity: 0, x: -80 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] } }
+};
+
+const slideInRight: Variants = {
+  hidden: { opacity: 0, x: 80 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] } }
+};
+
+const popIn: Variants = {
+  hidden: { opacity: 0, scale: 0.7, rotate: -5 },
+  visible: (i: number) => ({
+    opacity: 1, scale: 1, rotate: 0,
+    transition: { delay: i * 0.12, duration: 0.6, type: 'spring', stiffness: 200, damping: 15 }
   })
 };
 
@@ -161,19 +179,24 @@ const HeroSection = () => {
         {/* Hero image */}
         <motion.div
           className="relative hidden lg:block"
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
+          initial="hidden"
+          animate="visible"
+          variants={slideInRight}
         >
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20">
+          <motion.div
+            className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20"
+            whileHover={{ scale: 1.02, rotate: 1 }}
+            transition={{ type: 'spring', stiffness: 300 }}
+          >
             <img src={heroImage} alt="Skeniranje računa mobilnim telefonom" className="w-full h-auto object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
-          </div>
+          </motion.div>
           <motion.div
             className="absolute -bottom-8 -left-8 w-48 rounded-2xl overflow-hidden shadow-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
+            initial={{ opacity: 0, scale: 0.5, rotate: -15 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.7, delay: 1, type: 'spring', stiffness: 200 }}
+            whileHover={{ scale: 1.1, rotate: 3 }}
           >
             <img src={cardsImage} alt="Kartice" className="w-full h-auto" loading="lazy" />
           </motion.div>
@@ -183,9 +206,9 @@ const HeroSection = () => {
       {/* Mobile hero image */}
       <motion.div
         className="mt-10 lg:hidden flex justify-center"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
+        initial={{ opacity: 0, scale: 0.8, y: 40 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.5, type: 'spring', stiffness: 150 }}
       >
         <div className="rounded-2xl overflow-hidden shadow-xl max-w-sm">
           <img src={heroImage} alt="Skeniranje računa mobilnim telefonom" className="w-full h-auto object-cover" loading="lazy" />
@@ -216,19 +239,25 @@ const AppShowcaseSection = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
           <motion.div
             className="w-52 sm:w-64"
-            initial={{ opacity: 0, y: 40, rotate: -5 }}
-            whileInView={{ opacity: 1, y: 0, rotate: -3 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={popIn}
+            custom={0}
+            whileHover={{ scale: 1.08, rotate: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 300 }}
           >
             <img src={mockupDashboard} alt="V&M Balance dashboard" className="w-full h-auto drop-shadow-2xl" loading="lazy" />
           </motion.div>
           <motion.div
             className="w-52 sm:w-64"
-            initial={{ opacity: 0, y: 40, rotate: 5 }}
-            whileInView={{ opacity: 1, y: 0, rotate: 3 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={popIn}
+            custom={1}
+            whileHover={{ scale: 1.08, rotate: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 300 }}
           >
             <img src={mockupBudget} alt="V&M Balance budžeti" className="w-full h-auto drop-shadow-2xl" loading="lazy" />
           </motion.div>
@@ -236,10 +265,11 @@ const AppShowcaseSection = () => {
 
         <motion.div
           className="mt-12 flex justify-center"
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          initial={{ opacity: 0, scale: 0.6, y: 50 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.8, delay: 0.4, type: 'spring', stiffness: 150 }}
+          whileHover={{ scale: 1.05 }}
         >
           <img src={cardsImage} alt="Kartice za plaćanje" className="w-64 sm:w-80 h-auto rounded-2xl" loading="lazy" />
         </motion.div>
@@ -273,11 +303,17 @@ const FeaturesSection = () => {
             <motion.div
               key={f.key}
               className="group p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all"
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
+              initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={popIn} custom={i}
+              whileHover={{ y: -8, scale: 1.03 }}
+              transition={{ type: 'spring', stiffness: 300 }}
             >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.colorClass} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+              <motion.div
+                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.colorClass} flex items-center justify-center mb-4`}
+                whileHover={{ scale: 1.2, rotate: 10 }}
+                transition={{ type: 'spring', stiffness: 400 }}
+              >
                 <f.icon className="w-6 h-6 text-primary-foreground" />
-              </div>
+              </motion.div>
               <h3 className="text-lg font-semibold text-foreground mb-2">{t(`landing.features.${f.key}.title`)}</h3>
               <p className="text-muted-foreground text-sm">{t(`landing.features.${f.key}.desc`)}</p>
             </motion.div>
