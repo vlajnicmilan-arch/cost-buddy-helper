@@ -131,7 +131,7 @@ export const useCustomCategories = () => {
 
     try {
       const { error } = await supabase
-        .from('custom_categories' as any)
+        .from('custom_categories')
         .delete()
         .eq('id', id);
 
