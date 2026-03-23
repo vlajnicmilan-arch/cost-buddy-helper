@@ -30,13 +30,13 @@ export const useCustomCategories = () => {
 
     try {
       const { data, error } = await supabase
-        .from('custom_categories' as any)
+        .from('custom_categories')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCustomCategories((data || []) as unknown as CustomCategory[]);
+      setCustomCategories((data || []) as CustomCategory[]);
     } catch (error) {
       console.error('Error fetching custom categories:', error);
       toast.error('Greška pri dohvaćanju prilagođenih kategorija');
@@ -72,7 +72,7 @@ export const useCustomCategories = () => {
 
     try {
       const { data, error } = await supabase
-        .from('custom_categories' as any)
+        .from('custom_categories')
         .insert({
           ...category,
           user_id: user.id,
@@ -81,7 +81,7 @@ export const useCustomCategories = () => {
         .single();
 
       if (error) throw error;
-      const newCat = data as unknown as CustomCategory;
+      const newCat = data as CustomCategory;
       setCustomCategories(prev => [newCat, ...prev]);
       toast.success('Kategorija dodana');
       return newCat;
@@ -105,7 +105,7 @@ export const useCustomCategories = () => {
 
     try {
       const { error } = await supabase
-        .from('custom_categories' as any)
+        .from('custom_categories')
         .update(updates)
         .eq('id', id);
 
@@ -131,7 +131,7 @@ export const useCustomCategories = () => {
 
     try {
       const { error } = await supabase
-        .from('custom_categories' as any)
+        .from('custom_categories')
         .delete()
         .eq('id', id);
 
