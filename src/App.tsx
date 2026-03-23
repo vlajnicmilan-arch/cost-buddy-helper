@@ -18,7 +18,6 @@ import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
 
-// Lazy load all page components
 const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -49,12 +48,12 @@ const PageLoader = () => (
 );
 
 const isStandaloneApp = () => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
 
   return (
-    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia("(display-mode: standalone)").matches ||
     (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
-    document.referrer.startsWith('android-app://')
+    document.referrer.startsWith("android-app://")
   );
 };
 
@@ -63,7 +62,43 @@ const AppRoutes = () => {
   const { onboardingCompleted } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
   const shouldOpenAppFromRoot = isStandaloneApp() && !!storageMode && onboardingCompleted;
-...
+
+  if (!isInitialized) {
+    return <PageLoader />;
+  }
+
+  if (!storageMode) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/setup" element={<StorageSetup />} />
+          <Route path="/install" element={<Install />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  if (storageMode === "cloud" && !subLoading && trialExpired && !subscribed) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/paywall" element={<Paywall />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="*" element={<Navigate to="/paywall" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
