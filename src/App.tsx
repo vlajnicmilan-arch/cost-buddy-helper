@@ -17,6 +17,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
@@ -61,9 +62,11 @@ const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
-  const shouldOpenAppFromRoot = isStandaloneApp() && !!storageMode && onboardingCompleted;
+  const { user, loading: authLoading } = useAuth();
+  const standaloneMode = isStandaloneApp();
+  const standaloneEntryRoute = standaloneMode ? (user ? "/home" : "/auth") : null;
 
-  if (!isInitialized) {
+  if (!isInitialized || (standaloneMode && authLoading)) {
     return <PageLoader />;
   }
 
@@ -71,7 +74,7 @@ const AppRoutes = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={standaloneEntryRoute ? <Navigate to={standaloneEntryRoute} replace /> : <Landing />} />
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
@@ -102,7 +105,7 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={shouldOpenAppFromRoot ? <Navigate to="/home" replace /> : <Landing />} />
+        <Route path="/" element={standaloneEntryRoute ? <Navigate to={standaloneEntryRoute} replace /> : <Landing />} />
         <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
         <Route path="/business" element={<Business />} />
         <Route path="/onboarding" element={<Onboarding />} />
