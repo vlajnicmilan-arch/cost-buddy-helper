@@ -106,6 +106,7 @@ const Index = () => {
   const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
   const [recurringMatches, setRecurringMatches] = useState<RecurringMatch[]>([]);
   const [recurringMatchDialogOpen, setRecurringMatchDialogOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(50);
 
   // Back button support for all dialogs
   useBackButton(incomeDialogOpen, () => setIncomeDialogOpen(false));
@@ -547,7 +548,7 @@ const Index = () => {
                   <CollapsibleContent className="mt-4 space-y-4">
                     <TransactionFilters
                       filters={dashboardFilters}
-                      onFiltersChange={setDashboardFilters}
+                      onFiltersChange={(f) => { setDashboardFilters(f); setVisibleCount(50); }}
                       showCardFilter={allCards.length > 0}
                       showScopeFilter={false}
                       cards={allCards}
@@ -574,7 +575,7 @@ const Index = () => {
                       />
                     ) : (
                       <div className="space-y-1">
-                        {filteredDashboardExpenses.slice(0, 50).map((expense) => (
+                        {filteredDashboardExpenses.slice(0, visibleCount).map((expense) => (
                           <div key={expense.id} className="flex items-center gap-2">
                             <Checkbox
                               checked={selectedTransactionIds.has(expense.id)}
@@ -598,6 +599,15 @@ const Index = () => {
                             </div>
                           </div>
                         ))}
+                        {visibleCount < filteredDashboardExpenses.length && (
+                          <Button
+                            variant="ghost"
+                            className="w-full mt-2 text-sm text-muted-foreground"
+                            onClick={() => setVisibleCount(prev => prev + 50)}
+                          >
+                            {t('transactions.showMore', 'Prikaži još')} ({filteredDashboardExpenses.length - visibleCount} {t('transactions.remaining', 'preostalo')})
+                          </Button>
+                        )}
                       </div>
                     )}
                   </CollapsibleContent>
@@ -856,7 +866,7 @@ const Index = () => {
               <CollapsibleContent className="mt-4 space-y-4">
                 <TransactionFilters
                   filters={dashboardFilters}
-                  onFiltersChange={setDashboardFilters}
+                  onFiltersChange={(f) => { setDashboardFilters(f); setVisibleCount(50); }}
                   showCardFilter={allCards.length > 0}
                   showScopeFilter={!isLocalMode}
                   cards={allCards}
@@ -891,7 +901,7 @@ const Index = () => {
                   />
                 ) : (
                   <div className="space-y-1">
-                    {filteredDashboardExpenses.slice(0, 50).map((expense) => (
+                    {filteredDashboardExpenses.slice(0, visibleCount).map((expense) => (
                       <div key={expense.id} className="flex items-center gap-2">
                         <Checkbox
                           checked={selectedTransactionIds.has(expense.id)}
@@ -915,6 +925,15 @@ const Index = () => {
                         </div>
                       </div>
                     ))}
+                    {visibleCount < filteredDashboardExpenses.length && (
+                      <Button
+                        variant="ghost"
+                        className="w-full mt-2 text-sm text-muted-foreground"
+                        onClick={() => setVisibleCount(prev => prev + 50)}
+                      >
+                        {t('transactions.showMore', 'Prikaži još')} ({filteredDashboardExpenses.length - visibleCount} {t('transactions.remaining', 'preostalo')})
+                      </Button>
+                    )}
                   </div>
                 )}
               </CollapsibleContent>
