@@ -548,7 +548,7 @@ const Index = () => {
                   <CollapsibleContent className="mt-4 space-y-4">
                     <TransactionFilters
                       filters={dashboardFilters}
-                      onFiltersChange={setDashboardFilters}
+                      onFiltersChange={(f) => { setDashboardFilters(f); setVisibleCount(50); }}
                       showCardFilter={allCards.length > 0}
                       showScopeFilter={false}
                       cards={allCards}
@@ -866,7 +866,7 @@ const Index = () => {
               <CollapsibleContent className="mt-4 space-y-4">
                 <TransactionFilters
                   filters={dashboardFilters}
-                  onFiltersChange={setDashboardFilters}
+                  onFiltersChange={(f) => { setDashboardFilters(f); setVisibleCount(50); }}
                   showCardFilter={allCards.length > 0}
                   showScopeFilter={!isLocalMode}
                   cards={allCards}
