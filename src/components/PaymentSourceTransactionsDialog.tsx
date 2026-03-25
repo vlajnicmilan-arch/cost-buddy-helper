@@ -766,7 +766,7 @@ export const PaymentSourceTransactionsDialog = ({
                 ) : (
                   <div className="space-y-0">
                     <AnimatePresence>
-                      {filteredSourceExpenses.map((expense, index) => {
+                      {filteredSourceExpenses.slice(0, visibleCount).map((expense, index) => {
                         const categoryInfo = resolveCategory(expense.category, customCategories);
                         const cardInfo = getCardInfo(expense);
                         const isSelected = selectedIds.has(expense.id);
