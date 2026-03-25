@@ -897,6 +897,18 @@ export const PaymentSourceTransactionsDialog = ({
                       })}
                     </AnimatePresence>
                   </div>
+                  {filteredSourceExpenses.length > visibleCount && (
+                    <div className="pt-4 pb-2 flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setVisibleCount(prev => prev + 50)}
+                        className="rounded-xl gap-2"
+                      >
+                        {t('common.showMore', 'Prikaži još')} ({filteredSourceExpenses.length - visibleCount})
+                      </Button>
+                    </div>
+                  )}
                 )}
               </div>
             </ScrollArea>
