@@ -72,8 +72,8 @@ export const SynesisExportPanel = () => {
 
     const rows = data.map((e, i) => {
       const d = e.date instanceof Date ? e.date : new Date(e.date);
-      const vatRate = e.vat_rate || 0;
-      const vatAmount = e.vat_amount || 0;
+      const vatRate = (e as any).vat_rate || 0;
+      const vatAmount = (e as any).vat_amount || 0;
       const base = vatAmount > 0 ? e.amount - vatAmount : e.amount;
 
       return [
