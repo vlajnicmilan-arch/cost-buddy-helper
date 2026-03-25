@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck, MapPin, Monitor, FileSliders } from 'lucide-react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck, MapPin, Monitor, FileSliders, FileSpreadsheet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
@@ -67,6 +67,7 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'premises') return <div>{backButton}<BusinessPremisesPanel /></div>;
   if (view === 'registers') return <div>{backButton}<CashRegistersPanel /></div>;
   if (view === 'invoice-settings') return <div>{backButton}<InvoiceSettingsPanel /></div>;
+  if (view === 'synesis-export') return <div>{backButton}<SynesisExportPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
