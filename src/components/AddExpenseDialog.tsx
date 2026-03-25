@@ -380,8 +380,13 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         income_source_id: transferDestinationId || undefined,
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
-          : (tipNote || undefined)
-      };
+          : (tipNote || undefined),
+        // VAT fields (passed through to DB even though not on TS type)
+        ...(scannedData.vat_rate != null && scannedData.vat_amount != null ? {
+          vat_rate: scannedData.vat_rate,
+          vat_amount: scannedData.vat_amount,
+        } : {}),
+      } as any;
 
       // Check for duplicates
       if (checkDuplicate) {
