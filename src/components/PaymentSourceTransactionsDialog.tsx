@@ -162,15 +162,10 @@ export const PaymentSourceTransactionsDialog = ({
     return balanceMap;
   }, [sourceExpenses, paymentSource]);
 
-  // Apply search filter
+  // Apply filters (search + date + amount + category)
   const filteredSourceExpenses = useMemo(() => {
-    if (!searchTerm.trim()) return sourceExpenses;
-    const term = searchTerm.toLowerCase();
-    return sourceExpenses.filter(e => 
-      e.description.toLowerCase().includes(term) ||
-      e.merchant_name?.toLowerCase().includes(term)
-    );
-  }, [sourceExpenses, searchTerm]);
+    return applyFilters(sourceExpenses, filters);
+  }, [sourceExpenses, filters]);
 
   // Calculate totals
   const { totalIncome, totalExpenses: totalExp, totalTransfers } = useMemo(() => {
