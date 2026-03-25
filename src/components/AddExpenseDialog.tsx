@@ -63,6 +63,10 @@ interface ScannedData {
   transaction_type?: 'expense' | 'transfer' | 'income';
   transfer_destination_name?: string | null;
   recipient_name?: string | null;
+  issuer_name?: string | null;
+  issuer_oib?: string | null;
+  vat_rate?: number | null;
+  vat_amount?: number | null;
 }
 
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
