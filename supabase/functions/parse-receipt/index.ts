@@ -251,6 +251,25 @@ KORAK 3: Ako nema podudaranja brojeva
      - Ako NIJE dopuna/transfer/bankomat → transaction_type: "expense"
 ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
 
+ 8. PDV / VAT (KRITIČNO ZA POSLOVNE KORISNIKE!)
+    - Traži: "PDV", "VAT", "POREZ", "TAX", "PDV 25%", "PDV 13%", "PDV 5%"
+    - Traži retke poput: "Osnovica: 36.40", "PDV 25%: 9.10", "Ukupno: 45.50"
+    - Traži i: "Porezna osnovica", "Iznos poreza", "Stopa PDV-a"
+    - Ako pronađeš PDV informacije:
+      - vat_rate: stopa PDV-a kao broj (25, 13, 5, 0)
+      - vat_amount: apsolutni iznos PDV-a u eurima
+    - Ako račun ima VIŠE stopa PDV-a, koristi NAJVEĆU stopu i zbroji sve PDV iznose
+    - Ako nema PDV informacija → vat_rate: null, vat_amount: null
+
+ 9. IZDAVATELJ I PRIMATELJ RAČUNA (KRITIČNO!)
+    - issuer_name: Tvrtka/obrt/osoba koja je IZDALA račun (prodavatelj, pružatelj usluge)
+      - Obično na vrhu računa: naziv firme, OIB, adresa
+      - Primjeri: "KONZUM PLUS d.o.o.", "INA d.d.", "Frizerski salon Ana"
+    - recipient_name: Tvrtka/osoba koja je PRIMILA račun (kupac)
+      - Traži: "Kupac:", "Račun za:", "Customer:", ili podatke kupca (naziv firme, OIB kupca)
+      - Ako nema podataka o kupcu → recipient_name: null
+    - VAŽNO: merchant polje = issuer_name (naziv izdavatelja, skraćeni oblik za prikaz)
+
 === FORMAT ODGOVORA (SAMO JSON) ===
 {
   "amount": 45.50,
@@ -262,11 +281,15 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
   "transaction_type": "expense",
   "transfer_destination_name": null,
   "recipient_name": null,
+  "issuer_name": "KONZUM PLUS d.o.o.",
+  "issuer_oib": "62226620908",
   "custom_payment_source_id": null,
   "payment_source_card_id": null,
   "is_installment": false,
   "installment_count": null,
   "installment_amount": null,
+  "vat_rate": 25,
+  "vat_amount": 9.10,
   "items": [
     {"name": "MLIJEKO DUKAT 1L", "quantity": 2, "unit_price": 1.29, "total_price": 2.58},
     {"name": "KRUH BIJELI", "quantity": 1, "unit_price": null, "total_price": 1.50}
