@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Expense, getCategoryInfo, Category } from '@/types/expense';
+import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { TransactionDetailDialog } from './TransactionDetailDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
