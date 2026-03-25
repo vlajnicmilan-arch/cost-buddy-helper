@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { Capacitor } from '@capacitor/core';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -7,15 +8,55 @@ import { RefreshCw, X, Sparkles, Bug, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { APP_VERSION } from '@/lib/version';
 
-// Set to false for production
 const SHOW_TEST_BUTTON = false;
-
-// LocalStorage key for auto-update preference
 const AUTO_UPDATE_KEY = 'pwa-auto-update';
+const isNativeApp = Capacitor.isNativePlatform();
 
-// Global reference for manual update check
 let checkForUpdatesRef: (() => Promise<void>) | null = null;
+
+const parseVersion = (version: string) =>
+  version
+    .split('.')
+    .map((part) => Number.parseInt(part, 10))
+    .map((part) => (Number.isNaN(part) ? 0 : part));
+
+const isRemoteVersionNewer = (currentVersion: string, remoteVersion: string) => {
+  const current = parseVersion(currentVersion);
+  const remote = parseVersion(remoteVersion);
+  const maxLength = Math.max(current.length, remote.length);
+
+  for (let i = 0; i < maxLength; i += 1) {
+    const currentPart = current[i] ?? 0;
+    const remotePart = remote[i] ?? 0;
+
+    if (remotePart > currentPart) return true;
+    if (remotePart < currentPart) return false;
+  }
+
+  return false;
+};
+
+const fetchLatestVersion = async (): Promise<string | null> => {
+  try {
+    const response = await fetch(`/version.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'cache-control': 'no-cache, no-store, must-revalidate',
+        pragma: 'no-cache',
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return typeof data?.version === 'string' ? data.version : null;
+  } catch (error) {
+    console.error('Version check failed:', error);
+    return null;
+  }
+};
 
 export const checkForUpdates = async () => {
   if (checkForUpdatesRef) {
@@ -23,7 +64,6 @@ export const checkForUpdates = async () => {
   }
 };
 
-// Helper to get auto-update preference
 export const getAutoUpdatePreference = (): boolean => {
   try {
     return localStorage.getItem(AUTO_UPDATE_KEY) === 'true';
@@ -32,7 +72,6 @@ export const getAutoUpdatePreference = (): boolean => {
   }
 };
 
-// Helper to set auto-update preference
 export const setAutoUpdatePreference = (enabled: boolean): void => {
   try {
     localStorage.setItem(AUTO_UPDATE_KEY, enabled ? 'true' : 'false');
@@ -48,19 +87,28 @@ export const PWAUpdatePrompt = () => {
   const [isChecking, setIsChecking] = useState(false);
   const [pendingUpdateCheck, setPendingUpdateCheck] = useState(false);
   const [autoUpdate, setAutoUpdate] = useState(getAutoUpdatePreference);
-  
+
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegisteredSW(swUrl, r) {
-      // Store reference for manual check
+    onRegisteredSW(_swUrl, r) {
       checkForUpdatesRef = async () => {
         setIsChecking(true);
         setPendingUpdateCheck(true);
+
         try {
+          const latestVersion = await fetchLatestVersion();
+          const hasVersionUpdate = latestVersion
+            ? isRemoteVersionNewer(APP_VERSION, latestVersion)
+            : false;
+
           await r?.update();
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
+          if (hasVersionUpdate) {
+            setNeedRefresh(true);
+          }
         } catch (error) {
           console.error('Update check failed:', error);
           toast.error(t('update.checkFailed', 'Provjera nije uspjela'));
@@ -69,60 +117,52 @@ export const PWAUpdatePrompt = () => {
           setIsChecking(false);
         }
       };
-      
-      if (r) {
-        // Check for updates every 10 minutes
-        setInterval(() => {
-          r.update();
-        }, 10 * 60 * 1000);
 
-        // Check on visibility change (user returns to app)
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            r.update();
-          }
-        });
+      const triggerCheck = () => {
+        checkForUpdatesRef?.();
+      };
 
-        // Check immediately on first load
-        setTimeout(() => {
-          r.update();
-        }, 3000);
-      }
+      setInterval(triggerCheck, 10 * 60 * 1000);
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          triggerCheck();
+        }
+      });
+
+      setTimeout(triggerCheck, 3000);
     },
     onRegisterError(error) {
       console.error('SW registration error:', error);
     },
   });
 
-  // Expose checking state globally
   useEffect(() => {
     (window as any).__pwaIsChecking = isChecking;
   }, [isChecking]);
 
-  // Handle auto-update when new version is detected
   const performAutoUpdate = useCallback(() => {
     toast.info('Ažuriranje aplikacije...', { duration: 2000 });
     setTimeout(() => {
+      if (isNativeApp) {
+        window.location.reload();
+        return;
+      }
+
       updateServiceWorker(true);
     }, 500);
   }, [updateServiceWorker]);
 
-  // Handle the result of update check after needRefresh state is updated
   useEffect(() => {
     if (pendingUpdateCheck && !isChecking) {
-      // Check finished, now we can reliably check needRefresh
       if (needRefresh) {
-        // New version found
         if (autoUpdate) {
-          // Auto-update enabled - update automatically
           performAutoUpdate();
         } else {
-          // Show update prompt
           setShowPrompt(true);
           setIsTestMode(false);
         }
       } else {
-        // No new version - safe to show "up to date" message
         toast.success(t('update.upToDate', 'Aplikacija je ažurna!'));
       }
       setPendingUpdateCheck(false);
@@ -131,9 +171,7 @@ export const PWAUpdatePrompt = () => {
 
   useEffect(() => {
     if (needRefresh && !pendingUpdateCheck) {
-      // Only auto-show if not from manual check (manual check handles it in the effect above)
       if (autoUpdate) {
-        // Auto-update enabled - update automatically
         performAutoUpdate();
       } else {
         setShowPrompt(true);
@@ -146,10 +184,16 @@ export const PWAUpdatePrompt = () => {
     if (isTestMode) {
       setShowPrompt(false);
       setIsTestMode(false);
+      return;
+    }
+
+    if (isNativeApp) {
+      window.location.reload();
     } else {
       updateServiceWorker(true);
-      setShowPrompt(false);
     }
+
+    setShowPrompt(false);
   };
 
   const handleDismiss = () => {
@@ -165,7 +209,6 @@ export const PWAUpdatePrompt = () => {
     setAutoUpdatePreference(enabled);
     if (enabled) {
       toast.success(t('toasts.autoUpdateOn'));
-      // If there's a pending update, apply it now
       if (needRefresh && !isTestMode) {
         performAutoUpdate();
       }
