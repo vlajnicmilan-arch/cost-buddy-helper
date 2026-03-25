@@ -91,6 +91,8 @@ export const PaymentSourceTransactionsDialog = ({
   const handleClose = () => {
     clearSelection();
     setSearchTerm('');
+    setFilters(defaultFilters);
+    setVisibleCount(50);
     onOpenChange(false);
   };
 
