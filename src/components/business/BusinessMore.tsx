@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck, MapPin, Monitor, FileSliders, FileSpreadsheet } from 'lucide-react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Users, FileSpreadsheet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
@@ -7,13 +7,8 @@ import { BusinessRecurring } from './BusinessRecurring';
 import { BusinessProfileView } from './BusinessProfileView';
 import { BusinessModuleSettings } from './BusinessModuleSettings';
 import { TravelOrdersPanel } from './TravelOrdersPanel';
-import { InvoicingPanel } from './InvoicingPanel';
 import { InventoryPanel } from './InventoryPanel';
 import { BusinessWorkforcePanel } from './BusinessWorkforcePanel';
-import { EracuniConnectionPanel } from './EracuniConnectionPanel';
-import { BusinessPremisesPanel } from './BusinessPremisesPanel';
-import { CashRegistersPanel } from './CashRegistersPanel';
-import { InvoiceSettingsPanel } from './InvoiceSettingsPanel';
 import { SynesisExportPanel } from './SynesisExportPanel';
 import { Expense } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -23,7 +18,7 @@ import { isModuleEnabled } from '@/lib/businessModules';
 import { useBackButton } from '@/hooks/useBackButton';
 import { useTranslation } from 'react-i18next';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni' | 'premises' | 'registers' | 'invoice-settings' | 'synesis-export';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'inventory' | 'workforce' | 'synesis-export';
 
 interface Props {
   expenses: Expense[];
@@ -60,28 +55,18 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'vat') return <div>{backButton}<BusinessVATOverview expenses={expenses} /></div>;
   if (view === 'recurring') return <div>{backButton}<BusinessRecurring /></div>;
   if (view === 'travel') return <div>{backButton}<TravelOrdersPanel /></div>;
-  if (view === 'invoicing') return <div>{backButton}<InvoicingPanel /></div>;
   if (view === 'inventory') return <div>{backButton}<InventoryPanel /></div>;
   if (view === 'workforce') return <div>{backButton}<BusinessWorkforcePanel /></div>;
-  if (view === 'eracuni') return <div>{backButton}<EracuniConnectionPanel /></div>;
-  if (view === 'premises') return <div>{backButton}<BusinessPremisesPanel /></div>;
-  if (view === 'registers') return <div>{backButton}<CashRegistersPanel /></div>;
-  if (view === 'invoice-settings') return <div>{backButton}<InvoiceSettingsPanel /></div>;
   if (view === 'synesis-export') return <div>{backButton}<SynesisExportPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
   const allMenuItems: MenuItem[] = [
     { id: 'profile', icon: Building2, label: t('business.more.companyData', 'Podaci o tvrtki'), desc: t('business.more.companyDataDesc', 'Naziv, OIB, adresa, IBAN i ostali podaci') },
-    { id: 'premises', icon: MapPin, label: t('business.more.premises', 'Poslovni prostori'), desc: t('business.more.premisesDesc', 'Oznake prostora za fiskalizaciju računa') },
-    { id: 'registers', icon: Monitor, label: t('business.more.registers', 'Blagajne'), desc: t('business.more.registersDesc', 'Naplatni uređaji po poslovnim prostorima') },
-    { id: 'invoice-settings', icon: FileSliders, label: t('business.more.invoiceSettings', 'Postavke računa'), desc: t('business.more.invoiceSettingsDesc', 'PDV obveza, logo, zaglavlje, podnožje'), module: 'invoicing' },
     { id: 'modules', icon: Settings2, label: t('business.more.modulesAndIndustry', 'Djelatnost i moduli'), desc: t('business.more.modulesAndIndustryDesc', 'Odaberite djelatnost i prilagodite module') },
     { id: 'debts', icon: Receipt, label: t('business.more.debtsAndReceivables', 'Dugovanja i potraživanja'), desc: t('business.more.debtsAndReceivablesDesc', 'Praćenje tko vam duguje i kome vi dugujete') },
     { id: 'vat', icon: FileText, label: t('business.more.vatOverview', 'PDV pregled'), desc: t('business.more.vatOverviewDesc', 'Procjena ulaznog i izlaznog PDV-a'), module: 'vat_tracking' },
     { id: 'travel', icon: Car, label: t('business.more.travelExpenses', 'Putni troškovi'), desc: t('business.more.travelExpensesDesc', 'Putni nalozi, kilometraža, dnevnice'), module: 'travel_expenses' },
-    { id: 'invoicing', icon: Banknote, label: t('business.more.invoicing', 'Fakturiranje'), desc: t('business.more.invoicingDesc', 'Klijenti i izdavanje računa'), module: 'invoicing' },
-    { id: 'eracuni', icon: FileCheck, label: t('business.more.eInvoices', 'e-Računi.hr'), desc: t('business.more.eInvoicesDesc', 'Fiskalizacija i e-Računi za obrtnike'), module: 'invoicing' },
     { id: 'inventory', icon: Package, label: t('business.more.inventory', 'Zalihe'), desc: t('business.more.inventoryDesc', 'Praćenje artikala i stanja skladišta'), module: 'inventory' },
     { id: 'workforce', icon: Users, label: t('business.more.workforce', 'Radnici & satnice'), desc: t('business.more.workforceDesc', 'Evidencija radnika, sati i troškova rada'), module: 'workforce' },
     { id: 'recurring', icon: RefreshCw, label: t('business.more.recurringObligations', 'Ponavljajuće obveze'), desc: t('business.more.recurringObligationsDesc', 'Najam, pretplate, leasing i ostalo') },

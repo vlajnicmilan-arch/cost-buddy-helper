@@ -85,7 +85,7 @@ export const useExpenseCRUD = ({
             status: isPendingMemberTransaction ? 'pending' : 'approved',
             submitted_by: isPendingMemberTransaction ? user.id : null,
             business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
-            cash_register_id: (normalizedExpense as any).cash_register_id || null,
+            
             currency: (normalizedExpense as any).currency || null,
           })
           .select()
@@ -147,15 +147,6 @@ export const useExpenseCRUD = ({
         if (normalizedExpense.type === 'expense') checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
         if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
 
-        // Update cash register balance if assigned
-        const cashRegisterId = (normalizedExpense as any).cash_register_id;
-        if (cashRegisterId) {
-          const balanceChange = normalizedExpense.type === 'income' ? normalizedExpense.amount : -normalizedExpense.amount;
-          const { data: reg } = await supabase.from('cash_registers').select('balance').eq('id', cashRegisterId).single();
-          if (reg) {
-            await supabase.from('cash_registers').update({ balance: reg.balance + balanceChange }).eq('id', cashRegisterId);
-          }
-        }
 
         if (isPendingMemberTransaction) {
           toast.success(t('feedback.pendingSent'));
@@ -216,7 +207,7 @@ export const useExpenseCRUD = ({
             budget_id: expense.budget_id || null,
             expense_nature: expense.expense_nature || null,
             note: expense.note || null,
-            cash_register_id: expense.cash_register_id || null,
+            
             currency: expense.currency || null,
             updated_at: new Date().toISOString()
           })

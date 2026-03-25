@@ -1,5 +1,5 @@
 export type IndustryType = 'construction' | 'hospitality' | 'retail' | 'manufacturing' | 'services' | 'healthcare' | 'flatrate' | 'other';
-export type ModuleId = 'flatrate_limit' | 'vat_tracking' | 'workforce' | 'projects' | 'inventory' | 'travel_expenses' | 'invoicing' | 'kpi_dashboard';
+export type ModuleId = 'flatrate_limit' | 'vat_tracking' | 'workforce' | 'projects' | 'inventory' | 'travel_expenses' | 'kpi_dashboard';
 
 export interface ModuleDefinition {
   id: ModuleId;
@@ -15,7 +15,7 @@ export const MODULES: ModuleDefinition[] = [
   { id: 'projects', label: 'Projekti / Gradilišta', description: 'Praćenje projekata, budžeta i radova', icon: '🏗️' },
   { id: 'inventory', label: 'Zalihe', description: 'Praćenje ulaza/izlaza robe i stanja skladišta', icon: '📦' },
   { id: 'travel_expenses', label: 'Putni troškovi', description: 'Putni nalozi, kilometraža, dnevnice', icon: '🚗' },
-  { id: 'invoicing', label: 'Fakturiranje', description: 'Izdavanje računa klijentima', icon: '💰' },
+  
   { id: 'kpi_dashboard', label: 'KPI Dashboard', description: 'Ključni pokazatelji poslovanja', icon: '📈' },
 ];
 
