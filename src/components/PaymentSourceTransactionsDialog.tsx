@@ -61,6 +61,7 @@ export const PaymentSourceTransactionsDialog = ({
    const [searchTerm, setSearchTerm] = useState('');
    const [filters, setFilters] = useState<FilterState>(defaultFilters);
    const [visibleCount, setVisibleCount] = useState(50);
+   const [installmentsExpanded, setInstallmentsExpanded] = useState(false);
   const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
