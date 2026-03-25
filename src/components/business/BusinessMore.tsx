@@ -14,6 +14,7 @@ import { EracuniConnectionPanel } from './EracuniConnectionPanel';
 import { BusinessPremisesPanel } from './BusinessPremisesPanel';
 import { CashRegistersPanel } from './CashRegistersPanel';
 import { InvoiceSettingsPanel } from './InvoiceSettingsPanel';
+import { SynesisExportPanel } from './SynesisExportPanel';
 import { Expense } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
