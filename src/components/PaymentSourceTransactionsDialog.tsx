@@ -743,7 +743,35 @@ export const PaymentSourceTransactionsDialog = ({
                   cards={paymentSource.cards}
                 />
 
-                {/* Bulk Actions */}
+                {/* Export filtered results */}
+                {filteredSourceExpenses.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {filteredSourceExpenses.length} {t('transactions.transactions')}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handlePrint}
+                        className="h-7 text-xs gap-1.5"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        {t('common.print', 'Ispis')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleExportPDF}
+                        className="h-7 text-xs gap-1.5"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        PDF
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <BulkActionsToolbar
                   selectedCount={selectedIds.size}
                   totalCount={filteredSourceExpenses.length}
