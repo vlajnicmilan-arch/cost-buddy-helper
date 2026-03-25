@@ -850,6 +850,28 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   </div>
                 )}
                 
+                {/* Issuer / Recipient info from AI */}
+                {(scannedData.issuer_name || scannedData.issuer_oib) && (
+                  <div className="p-2 rounded-lg bg-muted/30 border border-border/50 space-y-0.5">
+                    <p className="text-xs text-muted-foreground">
+                      Izdavatelj: <span className="font-medium text-foreground">{scannedData.issuer_name || scannedData.merchant}</span>
+                      {scannedData.issuer_oib && <span className="ml-1 text-muted-foreground">(OIB: {scannedData.issuer_oib})</span>}
+                    </p>
+                  </div>
+                )}
+
+                {/* VAT info from AI */}
+                {scannedData.vat_rate != null && scannedData.vat_amount != null && (
+                  <div className="p-2 rounded-lg bg-accent/30 border border-accent/50">
+                    <p className="text-xs text-muted-foreground">
+                      PDV {scannedData.vat_rate}%: <span className="font-medium text-foreground">€{scannedData.vat_amount.toFixed(2)}</span>
+                      <span className="ml-2">
+                        Osnovica: <span className="font-medium text-foreground">€{(scannedData.amount - scannedData.vat_amount).toFixed(2)}</span>
+                      </span>
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-muted-foreground">{t('common.amount')}:</span>
