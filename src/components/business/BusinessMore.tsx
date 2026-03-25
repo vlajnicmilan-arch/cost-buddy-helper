@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck, MapPin, Monitor, FileSliders } from 'lucide-react';
+import { Receipt, RefreshCw, FileText, Building2, ChevronRight, Settings2, Car, Package, Banknote, Users, FileCheck, MapPin, Monitor, FileSliders, FileSpreadsheet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessVATOverview } from './BusinessVATOverview';
@@ -14,6 +14,7 @@ import { EracuniConnectionPanel } from './EracuniConnectionPanel';
 import { BusinessPremisesPanel } from './BusinessPremisesPanel';
 import { CashRegistersPanel } from './CashRegistersPanel';
 import { InvoiceSettingsPanel } from './InvoiceSettingsPanel';
+import { SynesisExportPanel } from './SynesisExportPanel';
 import { Expense } from '@/types/expense';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,7 +23,7 @@ import { isModuleEnabled } from '@/lib/businessModules';
 import { useBackButton } from '@/hooks/useBackButton';
 import { useTranslation } from 'react-i18next';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni' | 'premises' | 'registers' | 'invoice-settings';
+type SubView = 'menu' | 'profile' | 'debts' | 'vat' | 'recurring' | 'modules' | 'travel' | 'invoicing' | 'inventory' | 'workforce' | 'eracuni' | 'premises' | 'registers' | 'invoice-settings' | 'synesis-export';
 
 interface Props {
   expenses: Expense[];
@@ -66,6 +67,7 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'premises') return <div>{backButton}<BusinessPremisesPanel /></div>;
   if (view === 'registers') return <div>{backButton}<CashRegistersPanel /></div>;
   if (view === 'invoice-settings') return <div>{backButton}<InvoiceSettingsPanel /></div>;
+  if (view === 'synesis-export') return <div>{backButton}<SynesisExportPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string; module?: string };
 
@@ -83,6 +85,7 @@ export const BusinessMore = ({ expenses }: Props) => {
     { id: 'inventory', icon: Package, label: t('business.more.inventory', 'Zalihe'), desc: t('business.more.inventoryDesc', 'Praćenje artikala i stanja skladišta'), module: 'inventory' },
     { id: 'workforce', icon: Users, label: t('business.more.workforce', 'Radnici & satnice'), desc: t('business.more.workforceDesc', 'Evidencija radnika, sati i troškova rada'), module: 'workforce' },
     { id: 'recurring', icon: RefreshCw, label: t('business.more.recurringObligations', 'Ponavljajuće obveze'), desc: t('business.more.recurringObligationsDesc', 'Najam, pretplate, leasing i ostalo') },
+    { id: 'synesis-export', icon: FileSpreadsheet, label: 'Izvoz za Synesis', desc: 'Izvezi transakcije u CSV za knjigovodstvo' },
   ];
 
   const menuItems = allMenuItems.filter(item => !item.module || isModuleEnabled(enabledModules, item.module as any));
