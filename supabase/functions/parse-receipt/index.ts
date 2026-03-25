@@ -481,11 +481,15 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         transaction_type: receiptData.transaction_type || 'expense',
         transfer_destination_name: receiptData.transfer_destination_name || null,
         recipient_name: receiptData.recipient_name || null,
+        issuer_name: receiptData.issuer_name || receiptData.merchant || null,
+        issuer_oib: receiptData.issuer_oib || null,
         custom_payment_source_id: receiptData.custom_payment_source_id || null,
         payment_source_card_id: receiptData.payment_source_card_id || null,
         is_installment: receiptData.is_installment || false,
         installment_count: receiptData.installment_count || null,
         installment_amount: receiptData.installment_amount || null,
+        vat_rate: receiptData.vat_rate ?? null,
+        vat_amount: receiptData.vat_amount ?? null,
         items: receiptData.items || []
       }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
