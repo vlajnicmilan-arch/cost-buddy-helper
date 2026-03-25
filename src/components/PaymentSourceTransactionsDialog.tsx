@@ -731,24 +731,17 @@ export const PaymentSourceTransactionsDialog = ({
                   </div>
                 )}
 
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t('transactions.searchByName')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 pr-9 h-9 text-sm"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <XIcon className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                {/* Filters */}
+                <TransactionFilters
+                  filters={filters}
+                  onFiltersChange={(f) => {
+                    setFilters(f);
+                    setVisibleCount(50);
+                  }}
+                  showAmountFilter={true}
+                  showCardFilter={!!paymentSource.cards?.length}
+                  cards={paymentSource.cards}
+                />
 
                 {/* Bulk Actions */}
                 <BulkActionsToolbar
