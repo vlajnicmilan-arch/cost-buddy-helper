@@ -96,8 +96,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
-  const [selectedCashRegisterId, setSelectedCashRegisterId] = useState<string | null>(null);
-  const [cashRegisters, setCashRegisters] = useState<{ id: string; name: string; label: string | null; balance: number; premise_id: string }[]>([]);
   // Installment state
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(12);
@@ -195,22 +193,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     }
   }, [open, customPaymentSources]);
 
-  // Fetch cash registers when in business mode
-  useEffect(() => {
-    if (open && activeBusinessProfileId) {
-      supabase.from('cash_registers')
-        .select('id, name, label, balance, premise_id')
-        .eq('business_profile_id', activeBusinessProfileId)
-        .eq('is_active', true)
-        .order('created_at')
-        .then(({ data }) => {
-          setCashRegisters(data || []);
-        });
-    } else {
-      setCashRegisters([]);
-      setSelectedCashRegisterId(null);
-    }
-  }, [open, activeBusinessProfileId]);
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
@@ -374,7 +356,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         business_profile_id: activeBusinessProfileId || null,
-        cash_register_id: selectedCashRegisterId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         // For transfers, store destination in income_source_id field
         income_source_id: transferDestinationId || undefined,
@@ -503,7 +484,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setSelectedProjectId(null);
     setSelectedBudgetId(null);
     setExpenseNature('regular');
-    setSelectedCashRegisterId(null);
+    
     // Reset installment state
     setIsInstallment(false);
     setInstallmentCount(12);
@@ -644,7 +625,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         business_profile_id: activeBusinessProfileId || null,
-        cash_register_id: selectedCashRegisterId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       };
 
@@ -682,7 +662,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       budget_id: selectedBudgetId || undefined,
       expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
       business_profile_id: activeBusinessProfileId || null,
-      cash_register_id: selectedCashRegisterId || null,
+      
       currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
     };
@@ -1215,31 +1195,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   </Select>
                 </div>
 
-                {/* Cash Register - Business mode scanned preview */}
-                {activeBusinessProfileId && cashRegisters.length > 0 && (
-                  <div className="space-y-2">
-                    <span className="text-muted-foreground text-sm">🏪 Blagajna:</span>
-                    <Select
-                      value={selectedCashRegisterId || 'none'}
-                      onValueChange={(value) => setSelectedCashRegisterId(value === 'none' ? null : value)}
-                    >
-                      <SelectTrigger className="w-full rounded-lg">
-                        <SelectValue placeholder="Bez blagajne" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Bez blagajne</SelectItem>
-                        {cashRegisters.map((reg) => (
-                          <SelectItem key={reg.id} value={reg.id}>
-                            <div className="flex items-center justify-between gap-3">
-                              <span>{reg.label || reg.name}</span>
-                              <span className="text-xs text-muted-foreground">€{reg.balance.toFixed(2)}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
 
                 {(selectedProjectId || selectedBudgetId) && (
                   <div className="space-y-2">
@@ -1698,39 +1653,6 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 />
               </div>
 
-              {/* Cash Register Selector - Business mode only */}
-              {activeBusinessProfileId && cashRegisters.length > 0 && (
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">🏪 Blagajna</Label>
-                  <Select
-                    value={selectedCashRegisterId || 'none'}
-                    onValueChange={(value) => setSelectedCashRegisterId(value === 'none' ? null : value)}
-                  >
-                    <SelectTrigger className="h-12 rounded-xl bg-background">
-                      <SelectValue placeholder="Bez blagajne">
-                        {(() => {
-                          if (!selectedCashRegisterId) return 'Bez blagajne';
-                          const reg = cashRegisters.find(r => r.id === selectedCashRegisterId);
-                          return reg ? `${reg.label || reg.name} (€${reg.balance.toFixed(2)})` : 'Bez blagajne';
-                        })()}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      <SelectItem value="none">
-                        <span className="text-muted-foreground">Bez blagajne</span>
-                      </SelectItem>
-                      {cashRegisters.map((reg) => (
-                        <SelectItem key={reg.id} value={reg.id}>
-                          <div className="flex items-center justify-between gap-3">
-                            <span>{reg.label || reg.name}</span>
-                            <span className="text-xs text-muted-foreground">€{reg.balance.toFixed(2)}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
 
               {/* Transfer Destination */}
               {type === 'transfer' && (
