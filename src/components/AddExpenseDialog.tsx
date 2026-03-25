@@ -63,6 +63,10 @@ interface ScannedData {
   transaction_type?: 'expense' | 'transfer' | 'income';
   transfer_destination_name?: string | null;
   recipient_name?: string | null;
+  issuer_name?: string | null;
+  issuer_oib?: string | null;
+  vat_rate?: number | null;
+  vat_amount?: number | null;
 }
 
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
@@ -291,6 +295,17 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving) return;
+
+    // Business mode validation: require merchant/date
+    if (activeBusinessProfileId) {
+      const missing: string[] = [];
+      if (!scannedData.merchant?.trim()) missing.push('partner/trgovac');
+      if (!scannedData.date) missing.push('datum');
+      if (missing.length > 0) {
+        toast.error(`Obavezna polja za poslovni mod: ${missing.join(', ')}. Uredi podatke prije spremanja.`);
+        return;
+      }
+    }
     
     setIsSaving(true);
     
@@ -365,8 +380,13 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         income_source_id: transferDestinationId || undefined,
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
-          : (tipNote || undefined)
-      };
+          : (tipNote || undefined),
+        // VAT fields (passed through to DB even though not on TS type)
+        ...(scannedData.vat_rate != null && scannedData.vat_amount != null ? {
+          vat_rate: scannedData.vat_rate,
+          vat_amount: scannedData.vat_amount,
+        } : {}),
+      } as any;
 
       // Check for duplicates
       if (checkDuplicate) {
@@ -846,6 +866,62 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   </div>
                 )}
                 
+                {/* Issuer / Recipient info from AI */}
+                {(scannedData.issuer_name || scannedData.issuer_oib) && (
+                  <div className="p-2 rounded-lg bg-muted/30 border border-border/50 space-y-0.5">
+                    <p className="text-xs text-muted-foreground">
+                      Izdavatelj: <span className="font-medium text-foreground">{scannedData.issuer_name || scannedData.merchant}</span>
+                      {scannedData.issuer_oib && <span className="ml-1 text-muted-foreground">(OIB: {scannedData.issuer_oib})</span>}
+                    </p>
+                  </div>
+                )}
+
+                {/* VAT info - editable */}
+                {activeBusinessProfileId && (
+                  <div className="p-2 rounded-lg bg-accent/30 border border-accent/50 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">PDV:</span>
+                      <div className="flex gap-1">
+                        {[0, 5, 13, 25].map(rate => (
+                          <button
+                            key={rate}
+                            type="button"
+                            onClick={() => {
+                              const vatAmount = rate > 0 ? parseFloat((scannedData.amount * rate / (100 + rate)).toFixed(2)) : 0;
+                              setScannedData({ ...scannedData, vat_rate: rate, vat_amount: vatAmount });
+                            }}
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                              scannedData.vat_rate === rate
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                            }`}
+                          >
+                            {rate}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {scannedData.vat_rate != null && scannedData.vat_rate > 0 && scannedData.vat_amount != null && (
+                      <p className="text-xs text-muted-foreground">
+                        PDV: <span className="font-medium text-foreground">€{scannedData.vat_amount.toFixed(2)}</span>
+                        <span className="ml-2">
+                          Osnovica: <span className="font-medium text-foreground">€{(scannedData.amount - scannedData.vat_amount).toFixed(2)}</span>
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                )}
+                {!activeBusinessProfileId && scannedData.vat_rate != null && scannedData.vat_amount != null && scannedData.vat_rate > 0 && (
+                  <div className="p-2 rounded-lg bg-accent/30 border border-accent/50">
+                    <p className="text-xs text-muted-foreground">
+                      PDV {scannedData.vat_rate}%: <span className="font-medium text-foreground">€{scannedData.vat_amount.toFixed(2)}</span>
+                      <span className="ml-2">
+                        Osnovica: <span className="font-medium text-foreground">€{(scannedData.amount - scannedData.vat_amount).toFixed(2)}</span>
+                      </span>
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-muted-foreground">{t('common.amount')}:</span>
