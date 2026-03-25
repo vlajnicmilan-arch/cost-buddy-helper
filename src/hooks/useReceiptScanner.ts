@@ -186,6 +186,10 @@ export const useReceiptScanner = () => {
         transaction_type: data.transaction_type || 'expense',
         transfer_destination_name: data.transfer_destination_name || null,
         recipient_name: data.recipient_name || null,
+        issuer_name: data.issuer_name || data.merchant || null,
+        issuer_oib: data.issuer_oib || null,
+        vat_rate: data.vat_rate ?? null,
+        vat_amount: data.vat_amount ?? null,
         items: (data.items || []).map((item: any) => ({
           name: item.name || '',
           quantity: item.quantity || 1,
