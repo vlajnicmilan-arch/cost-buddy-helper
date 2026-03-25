@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Expense, getCategoryInfo, Category } from '@/types/expense';
+import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { TransactionDetailDialog } from './TransactionDetailDialog';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
@@ -57,8 +58,10 @@ export const PaymentSourceTransactionsDialog = ({
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState('');
-  const [installmentsExpanded, setInstallmentsExpanded] = useState(false);
+   const [searchTerm, setSearchTerm] = useState('');
+   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+   const [visibleCount, setVisibleCount] = useState(50);
+   const [installmentsExpanded, setInstallmentsExpanded] = useState(false);
   const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
@@ -88,6 +91,8 @@ export const PaymentSourceTransactionsDialog = ({
   const handleClose = () => {
     clearSelection();
     setSearchTerm('');
+    setFilters(defaultFilters);
+    setVisibleCount(50);
     onOpenChange(false);
   };
 
@@ -157,15 +162,10 @@ export const PaymentSourceTransactionsDialog = ({
     return balanceMap;
   }, [sourceExpenses, paymentSource]);
 
-  // Apply search filter
+  // Apply filters (search + date + amount + category)
   const filteredSourceExpenses = useMemo(() => {
-    if (!searchTerm.trim()) return sourceExpenses;
-    const term = searchTerm.toLowerCase();
-    return sourceExpenses.filter(e => 
-      e.description.toLowerCase().includes(term) ||
-      e.merchant_name?.toLowerCase().includes(term)
-    );
-  }, [sourceExpenses, searchTerm]);
+    return applyFilters(sourceExpenses, filters);
+  }, [sourceExpenses, filters]);
 
   // Calculate totals
   const { totalIncome, totalExpenses: totalExp, totalTransfers } = useMemo(() => {
@@ -731,24 +731,17 @@ export const PaymentSourceTransactionsDialog = ({
                   </div>
                 )}
 
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t('transactions.searchByName')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 pr-9 h-9 text-sm"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <XIcon className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                {/* Filters */}
+                <TransactionFilters
+                  filters={filters}
+                  onFiltersChange={(f) => {
+                    setFilters(f);
+                    setVisibleCount(50);
+                  }}
+                  showAmountFilter={true}
+                  showCardFilter={!!paymentSource.cards?.length}
+                  cards={paymentSource.cards}
+                />
 
                 {/* Bulk Actions */}
                 <BulkActionsToolbar
@@ -771,58 +764,57 @@ export const PaymentSourceTransactionsDialog = ({
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-0">
-                    <AnimatePresence>
-                      {filteredSourceExpenses.map((expense, index) => {
-                        const categoryInfo = resolveCategory(expense.category, customCategories);
-                        const cardInfo = getCardInfo(expense);
-                        const isSelected = selectedIds.has(expense.id);
-                        const balanceAfter = runningBalances.get(expense.id);
+                  <>
+                    <div className="space-y-0">
+                      <AnimatePresence>
+                        {filteredSourceExpenses.slice(0, visibleCount).map((expense, index) => {
+                          const categoryInfo = resolveCategory(expense.category, customCategories);
+                          const cardInfo = getCardInfo(expense);
+                          const isSelected = selectedIds.has(expense.id);
+                          const balanceAfter = runningBalances.get(expense.id);
 
-                        // Show import batch separator when batch changes
-                        const prevExpense = index > 0 ? filteredSourceExpenses[index - 1] : null;
-                        const showBatchStart = expense.import_batch_id && 
-                          (!prevExpense || prevExpense.import_batch_id !== expense.import_batch_id);
-                        const batchExpenseCount = showBatchStart 
-                          ? filteredSourceExpenses.filter(e => e.import_batch_id === expense.import_batch_id).length 
-                          : 0;
-                        
-                        return (
-                          <div key={expense.id}>
-                            {showBatchStart && (
-                              <div 
-                                className="flex items-center gap-2 my-2 px-2 cursor-pointer group"
-                                onClick={() => {
-                                  setSelectedBatchId(expense.import_batch_id!);
-                                  setImportBatchDialogOpen(true);
-                                }}
-                              >
-                                <div className="flex-1 h-px bg-destructive/40" />
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/10 border border-destructive/20 group-hover:bg-destructive/20 transition-colors">
-                                  <FileText className="w-3 h-3 text-destructive" />
-                                  <span className="text-[11px] font-medium text-destructive">
-                                    Uvoz • {batchExpenseCount} tr.
-                                  </span>
+                          const prevExpense = index > 0 ? filteredSourceExpenses[index - 1] : null;
+                          const showBatchStart = expense.import_batch_id && 
+                            (!prevExpense || prevExpense.import_batch_id !== expense.import_batch_id);
+                          const batchExpenseCount = showBatchStart 
+                            ? filteredSourceExpenses.filter(e => e.import_batch_id === expense.import_batch_id).length 
+                            : 0;
+                          
+                          return (
+                            <div key={expense.id}>
+                              {showBatchStart && (
+                                <div 
+                                  className="flex items-center gap-2 my-2 px-2 cursor-pointer group"
+                                  onClick={() => {
+                                    setSelectedBatchId(expense.import_batch_id!);
+                                    setImportBatchDialogOpen(true);
+                                  }}
+                                >
+                                  <div className="flex-1 h-px bg-destructive/40" />
+                                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/10 border border-destructive/20 group-hover:bg-destructive/20 transition-colors">
+                                    <FileText className="w-3 h-3 text-destructive" />
+                                    <span className="text-[11px] font-medium text-destructive">
+                                      Uvoz • {batchExpenseCount} tr.
+                                    </span>
+                                  </div>
+                                  <div className="flex-1 h-px bg-destructive/40" />
                                 </div>
-                                <div className="flex-1 h-px bg-destructive/40" />
-                              </div>
-                            )}
-                            <motion.div
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 20 }}
-                              onClick={() => {
-                                if (selectedIds.size === 0) {
-                                  setDetailExpense(expense);
-                                  setDetailDialogOpen(true);
-                                }
-                               }}
+                              )}
+                              <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                onClick={() => {
+                                  if (selectedIds.size === 0) {
+                                    setDetailExpense(expense);
+                                    setDetailDialogOpen(true);
+                                  }
+                                }}
                                 className={cn(
                                   "group py-2.5 px-3 rounded-lg transition-colors cursor-pointer active:bg-muted/70",
                                   isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                                 )}
                               >
-                                {/* Mobile-robust transaction row */}
                                 <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-1.5 gap-y-1">
                                   <div onClick={(e) => e.stopPropagation()} className="shrink-0 row-span-2 self-start pt-0.5">
                                     <Checkbox
@@ -898,12 +890,25 @@ export const PaymentSourceTransactionsDialog = ({
                                     </span>
                                   )}
                                 </div>
-                            </motion.div>
-                          </div>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
+                              </motion.div>
+                            </div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </div>
+                    {filteredSourceExpenses.length > visibleCount && (
+                      <div className="pt-4 pb-2 flex justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setVisibleCount(prev => prev + 50)}
+                          className="rounded-xl gap-2"
+                        >
+                          {t('common.showMore', 'Prikaži još')} ({filteredSourceExpenses.length - visibleCount})
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </ScrollArea>
