@@ -60,8 +60,7 @@ export const PWAUpdatePrompt = () => {
         setPendingUpdateCheck(true);
         try {
           await r?.update();
-          // Wait a bit for needRefresh to potentially update
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         } catch (error) {
           console.error('Update check failed:', error);
           toast.error(t('update.checkFailed', 'Provjera nije uspjela'));
@@ -71,11 +70,23 @@ export const PWAUpdatePrompt = () => {
         }
       };
       
-      // Check for updates every 60 minutes
       if (r) {
+        // Check for updates every 10 minutes
         setInterval(() => {
           r.update();
-        }, 60 * 60 * 1000);
+        }, 10 * 60 * 1000);
+
+        // Check on visibility change (user returns to app)
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            r.update();
+          }
+        });
+
+        // Check immediately on first load
+        setTimeout(() => {
+          r.update();
+        }, 3000);
       }
     },
     onRegisterError(error) {
