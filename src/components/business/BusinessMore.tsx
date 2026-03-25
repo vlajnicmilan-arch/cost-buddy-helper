@@ -85,6 +85,7 @@ export const BusinessMore = ({ expenses }: Props) => {
     { id: 'inventory', icon: Package, label: t('business.more.inventory', 'Zalihe'), desc: t('business.more.inventoryDesc', 'Praćenje artikala i stanja skladišta'), module: 'inventory' },
     { id: 'workforce', icon: Users, label: t('business.more.workforce', 'Radnici & satnice'), desc: t('business.more.workforceDesc', 'Evidencija radnika, sati i troškova rada'), module: 'workforce' },
     { id: 'recurring', icon: RefreshCw, label: t('business.more.recurringObligations', 'Ponavljajuće obveze'), desc: t('business.more.recurringObligationsDesc', 'Najam, pretplate, leasing i ostalo') },
+    { id: 'synesis-export', icon: FileSpreadsheet, label: 'Izvoz za Synesis', desc: 'Izvezi transakcije u CSV za knjigovodstvo' },
   ];
 
   const menuItems = allMenuItems.filter(item => !item.module || isModuleEnabled(enabledModules, item.module as any));
