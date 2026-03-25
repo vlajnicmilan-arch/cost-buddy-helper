@@ -295,6 +295,17 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving) return;
+
+    // Business mode validation: require merchant/date
+    if (activeBusinessProfileId) {
+      const missing: string[] = [];
+      if (!scannedData.merchant?.trim()) missing.push('partner/trgovac');
+      if (!scannedData.date) missing.push('datum');
+      if (missing.length > 0) {
+        toast.error(`Obavezna polja za poslovni mod: ${missing.join(', ')}. Uredi podatke prije spremanja.`);
+        return;
+      }
+    }
     
     setIsSaving(true);
     
