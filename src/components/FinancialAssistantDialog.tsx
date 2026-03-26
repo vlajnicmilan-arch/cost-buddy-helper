@@ -514,44 +514,154 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
   );
 };
 
+// Extract markdown table data from content
+function extractTableData(content: string): { headers: string[]; rows: string[][] } | null {
+  const lines = content.split('\n');
+  const tableLines: string[] = [];
+  let inTable = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      inTable = true;
+      tableLines.push(trimmed);
+    } else if (inTable) {
+      break;
+    }
+  }
+
+  if (tableLines.length < 3) return null; // header + separator + at least 1 row
+
+  const parseLine = (line: string) =>
+    line.split('|').slice(1, -1).map(c => c.trim());
+
+  const headers = parseLine(tableLines[0]);
+  // Skip separator line (index 1)
+  const rows = tableLines.slice(2).map(parseLine);
+
+  return { headers, rows };
+}
+
+function exportToCSV(headers: string[], rows: string[][]) {
+  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `izvoz_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportToPDF(headers: string[], rows: string[][]) {
+  const doc = new jsPDF({ orientation: rows[0]?.length > 5 ? 'landscape' : 'portrait' });
+  doc.setFont('helvetica');
+  doc.setFontSize(14);
+  doc.text('V&M Balance - Izvoz podataka', 14, 15);
+  doc.setFontSize(9);
+  doc.text(`Datum: ${new Date().toLocaleDateString('hr-HR')}`, 14, 22);
+
+  autoTable(doc, {
+    head: [headers],
+    body: rows,
+    startY: 28,
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+  });
+
+  doc.save(`izvoz_${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+function printTable(headers: string[], rows: string[][]) {
+  const html = `
+    <html><head><title>V&M Balance - Ispis</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      h2 { margin-bottom: 4px; }
+      .date { color: #666; font-size: 12px; margin-bottom: 16px; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th { background: #3b82f6; color: white; padding: 8px; text-align: left; }
+      td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+      tr:nth-child(even) { background: #f5f7fa; }
+    </style></head><body>
+    <h2>V&M Balance - Izvoz podataka</h2>
+    <div class="date">Datum: ${new Date().toLocaleDateString('hr-HR')}</div>
+    <table>
+      <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>
+    </body></html>`;
+  const w = window.open('', '_blank');
+  if (w) {
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { w.print(); }, 300);
+  }
+}
+
 const MessageBubble = ({ message }: { message: ChatMessage }) => {
   const isUser = message.role === 'user';
+  const tableData = !isUser ? extractTableData(message.content) : null;
 
   return (
     <div className={cn('flex gap-2', isUser ? 'justify-end' : 'justify-start')}>
       {!isUser && (
         <motion.div 
           className="flex-shrink-0 w-8 h-8 mt-1"
-          animate={{
-            y: [0, -2, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          animate={{ y: [0, -2, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
-          <img
-            src={aiAvatarImage}
-            alt="AI"
-            className="w-full h-full object-contain"
-          />
+          <img src={aiAvatarImage} alt="AI" className="w-full h-full object-contain" />
         </motion.div>
       )}
       <div
         className={cn(
           'max-w-[80%] rounded-2xl px-4 py-2',
-          isUser
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-muted'
+          isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
         )}
       >
         {isUser ? (
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
-          </div>
+          <>
+            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{message.content}</ReactMarkdown>
+            </div>
+            {tableData && (
+              <div className="flex gap-2 mt-2 pt-2 border-t border-border/50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => exportToCSV(tableData.headers, tableData.rows)}
+                >
+                  <Download className="w-3 h-3" />
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => exportToPDF(tableData.headers, tableData.rows)}
+                >
+                  <FileText className="w-3 h-3" />
+                  PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => printTable(tableData.headers, tableData.rows)}
+                >
+                  <Printer className="w-3 h-3" />
+                  Ispis
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
