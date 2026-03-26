@@ -401,9 +401,6 @@ export type Database = {
           activity_description: string | null
           address: string | null
           bank_name: string | null
-          certificate_password: string | null
-          certificate_path: string | null
-          certificate_uploaded_at: string | null
           city: string | null
           company_name: string
           country: string | null
@@ -411,11 +408,6 @@ export type Database = {
           created_at: string
           email: string | null
           enabled_modules: string[] | null
-          eracuni_connected: boolean | null
-          eracuni_secret_key: string | null
-          eracuni_token: string | null
-          eracuni_username: string | null
-          fiscalization_enabled: boolean | null
           iban: string | null
           id: string
           industry_type: string | null
@@ -444,9 +436,6 @@ export type Database = {
           activity_description?: string | null
           address?: string | null
           bank_name?: string | null
-          certificate_password?: string | null
-          certificate_path?: string | null
-          certificate_uploaded_at?: string | null
           city?: string | null
           company_name: string
           country?: string | null
@@ -454,11 +443,6 @@ export type Database = {
           created_at?: string
           email?: string | null
           enabled_modules?: string[] | null
-          eracuni_connected?: boolean | null
-          eracuni_secret_key?: string | null
-          eracuni_token?: string | null
-          eracuni_username?: string | null
-          fiscalization_enabled?: boolean | null
           iban?: string | null
           id?: string
           industry_type?: string | null
@@ -487,9 +471,6 @@ export type Database = {
           activity_description?: string | null
           address?: string | null
           bank_name?: string | null
-          certificate_password?: string | null
-          certificate_path?: string | null
-          certificate_uploaded_at?: string | null
           city?: string | null
           company_name?: string
           country?: string | null
@@ -497,11 +478,6 @@ export type Database = {
           created_at?: string
           email?: string | null
           enabled_modules?: string[] | null
-          eracuni_connected?: boolean | null
-          eracuni_secret_key?: string | null
-          eracuni_token?: string | null
-          eracuni_username?: string | null
-          fiscalization_enabled?: boolean | null
           iban?: string | null
           id?: string
           industry_type?: string | null
