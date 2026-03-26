@@ -108,10 +108,19 @@ export const FinancialAssistantDialog = ({
       )
     ).join('\n') || 'Nema povezanih kartica';
 
-    // Recent transactions (last 10)
+    // Build payment source name map
+    const sourceMap = new Map(paymentSources.map(ps => [ps.id, ps.name]));
+
+    // Recent transactions (last 30) with enriched metadata
     const recentTx = expenses
-      .slice(0, 10)
-      .map(e => `- ${e.date.toLocaleDateString('hr-HR')}: ${e.description} (${e.type === 'income' ? '+' : '-'}${formatAmount(e.amount)})`)
+      .slice(0, 30)
+      .map(e => {
+        const sourceName = e.payment_source ? (sourceMap.get(e.payment_source) || '') : '';
+        const sourceLabel = sourceName ? ` na ${sourceName}` : '';
+        const correctionTag = (e as any).expense_nature === 'correction' ? ' [KOREKCIJA]' : '';
+        const merchantLabel = e.merchant_name ? ` (${e.merchant_name})` : '';
+        return `- ${e.date.toLocaleDateString('hr-HR')}: ${e.description}${merchantLabel}${correctionTag}${sourceLabel} (${e.type === 'income' ? '+' : '-'}${formatAmount(e.amount)}) [${e.type}]`;
+      })
       .join('\n') || 'Nema transakcija';
 
     // Budgets - detailed info
