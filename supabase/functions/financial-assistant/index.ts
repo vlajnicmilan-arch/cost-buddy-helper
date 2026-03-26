@@ -354,7 +354,16 @@ PRAVILA:
 5. Logoterapija: "Što ti je važno?" > "Moraš uštedjeti"
 6. Predlaži mogućnosti aplikacije kad je relevantno
 7. Nikad riječi koje izazivaju krivnju
-8. AKO KORISNIK TRAŽI SPECIFIČNE PODATKE - KORISTI ALATE! Ne izmišljaj podatke.`;
+8. AKO KORISNIK TRAŽI SPECIFIČNE PODATKE - KORISTI ALATE! Ne izmišljaj podatke.
+
+IZVOZ PODATAKA:
+Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
+1. Dohvati podatke alatima (search_transactions, get_category_analysis, itd.)
+2. OBAVEZNO prikaži rezultate u MARKDOWN TABLICI s jasnim zaglavljima
+3. Ispod tablice dodaj tekst: "📥 Koristi gumbe ispod tablice za izvoz u CSV, PDF ili ispis."
+4. Tablica MORA imati zaglavlje (header row) i barem jedan redak podataka
+5. Koristi čitljive nazive stupaca na hrvatskom (Datum, Opis, Iznos, Kategorija, Izvor, itd.)
+6. Iznose formatiraj s 2 decimale i oznakom valute`;
 
     // Prepare messages for AI with tools
     const aiMessages = [
