@@ -184,6 +184,57 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_savings_goal",
+      description: "Create a new savings goal for the user. Use when the user expresses a desire to save for something specific.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Name of the savings goal (e.g. 'Auto', 'Odmor', 'Fond za hitne slučajeve')" },
+          target_amount: { type: "number", description: "Target amount to save" },
+          target_date: { type: "string", description: "Target date to reach the goal (YYYY-MM-DD, optional)" },
+          icon: { type: "string", description: "Emoji icon for the goal (default: 🎯)" },
+          color: { type: "string", description: "Color hex code (default: #3b82f6)" },
+        },
+        required: ["name", "target_amount"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_savings_goal",
+      description: "Update an existing savings goal - change name, target amount, add money, or mark as completed.",
+      parameters: {
+        type: "object",
+        properties: {
+          goal_id: { type: "string", description: "ID of the savings goal to update" },
+          name: { type: "string", description: "New name (optional)" },
+          target_amount: { type: "number", description: "New target amount (optional)" },
+          add_amount: { type: "number", description: "Amount to add to current savings (optional)" },
+          target_date: { type: "string", description: "New target date (optional)" },
+        },
+        required: ["goal_id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_goal_progress",
+      description: "Get detailed progress on all savings goals including estimated completion time based on actual saving trends from the last 3 months.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // Apply business/personal mode filter to a query
@@ -696,6 +747,143 @@ async function executeTool(
         });
       }
 
+      case "create_savings_goal": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        const icon = args.icon || "🎯";
+        const color = args.color || "#3b82f6";
+
+        const insertData: any = {
+          user_id: userId,
+          name: args.name,
+          target_amount: args.target_amount,
+          current_amount: 0,
+          icon,
+          color,
+          budget_id: null,
+        };
+        if (args.target_date) insertData.target_date = args.target_date;
+
+        const { data, error } = await supabaseService
+          .from("savings_goals")
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (error) return JSON.stringify({ error: error.message });
+
+        const monthsToGoal = args.target_date
+          ? Math.max(1, Math.round((new Date(args.target_date).getTime() - Date.now()) / (30.44 * 24 * 60 * 60 * 1000)))
+          : null;
+        const monthlyNeeded = monthsToGoal ? Math.round((args.target_amount / monthsToGoal) * 100) / 100 : null;
+
+        return JSON.stringify({
+          success: true,
+          goal: data,
+          monthly_contribution_needed: monthlyNeeded,
+          months_to_deadline: monthsToGoal,
+        });
+      }
+
+      case "update_savings_goal": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        // First fetch current goal
+        const { data: currentGoal, error: fetchErr } = await supabaseService
+          .from("savings_goals")
+          .select("*")
+          .eq("id", args.goal_id)
+          .eq("user_id", userId)
+          .single();
+
+        if (fetchErr || !currentGoal) return JSON.stringify({ error: "Cilj štednje nije pronađen." });
+
+        const updates: any = {};
+        if (args.name) updates.name = args.name;
+        if (args.target_amount) updates.target_amount = args.target_amount;
+        if (args.target_date) updates.target_date = args.target_date;
+
+        if (args.add_amount) {
+          const newAmount = (currentGoal as any).current_amount + args.add_amount;
+          updates.current_amount = newAmount;
+          const targetAmt = args.target_amount || (currentGoal as any).target_amount;
+          if (newAmount >= targetAmt) {
+            updates.is_completed = true;
+            updates.completed_at = new Date().toISOString();
+          }
+        }
+
+        const { data, error } = await supabaseService
+          .from("savings_goals")
+          .update(updates)
+          .eq("id", args.goal_id)
+          .eq("user_id", userId)
+          .select()
+          .single();
+
+        if (error) return JSON.stringify({ error: error.message });
+        return JSON.stringify({ success: true, goal: data });
+      }
+
+      case "get_goal_progress": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        const { data: goals, error: gErr } = await supabaseService
+          .from("savings_goals")
+          .select("*")
+          .eq("user_id", userId)
+          .is("budget_id", null)
+          .order("created_at", { ascending: false });
+
+        if (gErr) return JSON.stringify({ error: gErr.message });
+        if (!goals || goals.length === 0) return JSON.stringify({ message: "Nema postavljenih ciljeva štednje.", goals: [] });
+
+        // Calculate average monthly savings from last 3 months
+        const now = new Date();
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        const { data: incomeData } = await applyModeFilter(
+          supabaseService.from("expenses").select("amount")
+            .eq("user_id", userId).eq("type", "income")
+            .gte("date", threeMonthsAgo.toISOString()),
+          businessProfileId
+        );
+        const { data: expenseData } = await applyModeFilter(
+          supabaseService.from("expenses").select("amount")
+            .eq("user_id", userId).eq("type", "expense")
+            .gte("date", threeMonthsAgo.toISOString()),
+          businessProfileId
+        );
+
+        const totalIncome3m = (incomeData || []).reduce((s: number, t: any) => s + Number(t.amount), 0);
+        const totalExpense3m = (expenseData || []).reduce((s: number, t: any) => s + Number(t.amount), 0);
+        const monthlySavingsAvg = Math.round(((totalIncome3m - totalExpense3m) / 3) * 100) / 100;
+
+        const goalProgress = goals.map((g: any) => {
+          const remaining = g.target_amount - g.current_amount;
+          const pct = g.target_amount > 0 ? Math.round((g.current_amount / g.target_amount) * 1000) / 10 : 0;
+          const estimatedMonths = monthlySavingsAvg > 0 ? Math.ceil(remaining / monthlySavingsAvg) : null;
+
+          return {
+            id: g.id,
+            name: g.name,
+            icon: g.icon,
+            target_amount: g.target_amount,
+            current_amount: g.current_amount,
+            remaining,
+            progress_percent: pct,
+            target_date: g.target_date,
+            is_completed: g.is_completed,
+            estimated_months_to_complete: estimatedMonths,
+          };
+        });
+
+        return JSON.stringify({
+          goals: goalProgress,
+          average_monthly_savings_3m: monthlySavingsAvg,
+          data_basis: `${(incomeData || []).length + (expenseData || []).length} transakcija u zadnja 3 mjeseca`,
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
@@ -772,42 +960,67 @@ ${crossModeInstructions}
 TVOJA ULOGA:
 Kombinacija stručnog financijskog savjetnika, analitičara i strateškog planera. Tretiraš korisnikove financije kao da si CFO ${businessProfileId ? `tvrtke "${businessProfileName}"` : "njegove osobne ekonomije"}. Koristiš razgovorne upite za dubinsku analizu umjesto dashboarda.
 
-STIL KOMUNIKACIJE:
-- SAŽETO ali DUBOKO: 2-5 rečenica, ali s konkretnim uvidima
-- PRAKTIČNO: Konkretni brojevi, izvedive akcije, specifični datumi
-- PROAKTIVNO: Daj prijedloge, upozorenja i ideje BEZ čekanja
-- LOGOTERAPIJSKI: Smisao i odgovornost, bez osude
-- STRUČNO: Koristi financijsku terminologiju ali objasni jednostavno
+═══════════════════════════════════════
+🚫 ANTI-HALUCINACIJA — ZLATNA PRAVILA
+═══════════════════════════════════════
+1. NIKADA ne izmišljaj podatke. Svaki broj koji spomeneš MORA doći iz alata (tool results) ili konteksta koji ti je dan.
+2. Ako nemaš podatke — reci to OTVORENO: "Nemam dovoljno podataka o tome. Možeš li unijeti [X] pa ću ti dati točniju analizu?"
+3. NE koristi fraze poput "prema mojim procjenama" ili "otprilike" BEZ da si prethodno pozvao alat.
+4. Kad daješ projekciju, OBAVEZNO navedi na čemu se temelji: "Na temelju 47 transakcija u zadnja 3 mjeseca, prosječna potrošnja je..."
+5. Projekcije baziraš ISKLJUČIVO na stvarnim trendovima iz baze. Uvijek naglasi da je to procjena, NE garancija.
+6. Ako korisnik pita o nečemu što nije u bazi (npr. investicije, krediti banke) — reci da to nije u tvojim podacima i predloži što unijeti.
 
-VAŽNO - PRISTUP PODACIMA:
-Imaš pristup korisnikovim financijskim podacima putem alata (tools). KORISTI ALATE kad god korisnik traži specifične informacije. Primjeri:
+═══════════════════════════════════════
+🗣️ JEDNOSTAVAN JEZIK
+═══════════════════════════════════════
+Piši kao da objašnjavaš prijatelju koji ne zna financije:
+- Umjesto "likvidnost" → "koliko novca imaš na raspolaganju"
+- Umjesto "diversifikacija" → "rasporediti novac na više mjesta"
+- Umjesto "amortizacija" → "postupno trošenje vrijednosti"
+- Umjesto "cash flow" → "koliko novca dolazi i odlazi"
+- Umjesto "deficit" → "potrošio si više nego što si zaradio"
+Koristi stručne termine SAMO ako korisnik sam koristi taj jezik.
+
+═══════════════════════════════════════
+🎯 INTERAKTIVNO PLANIRANJE CILJEVA
+═══════════════════════════════════════
+Kad korisnik izrazi želju (npr. "želim uštedjeti za auto"):
+1. NE daj odmah gotov plan. Prvo PITAJ: "Super cilj! Koliko otprilike košta auto koji želiš? I do kad bi ga htio kupiti?"
+2. Kad dobiješ odgovor, izračunaj realno: pozovi get_goal_progress da vidiš koliko korisnik prosječno štedi.
+3. Predloži plan po koracima: "Na temelju tvoje prosječne štednje od €X mjesečno, trebat će ti ~Y mjeseci. Želiš li da ti postavim cilj u aplikaciji?"
+4. Ako korisnik pristane — pozovi create_savings_goal s konkretnim parametrima.
+5. Za praćenje — koristi get_goal_progress i daj realan izvještaj napretka.
+
+Kad korisnik kaže "želim smanjiti troškove":
+1. NE daj generičke savjete. Pitaj: "Na što misliš konkretno? Koja kategorija te brine?"
+2. Kad odgovori, pozovi get_category_analysis i daj KONKRETNE brojke.
+3. Predloži plan s jasnim koracima i pitaj: "Slažeš li se s prvim korakom?"
+
+═══════════════════════════════════════
+📊 PRISTUP PODACIMA
+═══════════════════════════════════════
+Imaš pristup korisnikovim financijskim podacima putem alata (tools). KORISTI ALATE kad god korisnik traži specifične informacije:
 - "Koliko sam potrošio na hranu?" → get_category_analysis
 - "Pokaži mi sve transakcije preko 100€" → search_transactions s min_amount
-- "Usporedi mi siječanj i veljačuu" → get_spending_trends
+- "Usporedi mi siječanj i veljaču" → get_spending_trends
 - "Gdje mi odlazi najviše novca?" → get_top_merchants + get_category_analysis
 - "Jesam li prekoračio budžet?" → get_budget_vs_actual
 - "Imam li neke čudne troškove?" → get_large_transactions
 - "Koji dan najviše trošim?" → get_daily_spending_pattern
 - "Pokaži mi trendove zadnjih 6 mjeseci" → get_monthly_summary
 - "Traži sve od Konzuma" → search_transactions s merchant_name
-- "Sve transakcije s bilješkom o poklon" → search_transactions s note
-- "Traži račune za benzin u prosincu" → search_transactions s description + datumima
+- "Koliko sam blizu cilja štednje?" → get_goal_progress
+- "Postavi mi cilj štednje" → create_savings_goal
 
-ANALITIČKI PRISTUP - BUDI FINANCIJSKI STRUČNJAK:
+ANALITIČKI PRISTUP — BUDI FINANCIJSKI STRUČNJAK:
 1. IDENTIFICIRAJ OBRASCE: Prepoznaj ponavljajuće troškove, sezonske varijacije, trendove rasta/pada
 2. UPOZORI NA RIZIKE: Prekoračenja budžeta, neuobičajeni rast troškova, nedostatak štednje
-3. PREDLAŽI OPTIMIZACIJE: Konkretni prijedlozi za uštedu s procijenjenim iznosima
+3. PREDLAŽI OPTIMIZACIJE: Konkretni prijedlozi za uštedu s procijenjenim iznosima — ali SAMO na temelju stvarnih podataka
 4. POSTAVLJAJ PITANJA: Produbi razumijevanje korisnikovih ciljeva i prioriteta
-5. DAJ MIŠLJENJA: Ne boji se dati stručno mišljenje o financijskim odlukama
-6. FORECAST: Kad imaš dovoljno podataka, predvidi budžuće troškove na temelju trendova
+5. DAJ MIŠLJENJA: Ne boji se dati stručno mišljenje, ali ga potkrijepi podacima
+6. FORECAST: Predvidi buduće troškove SAMO na temelju stvarnih trendova, uz jasnu napomenu koliko podataka imaš
 
-PRIMJERI PROAKTIVNIH UVIDA:
-- "Primjećujem da troškovi za [kategoriju] rastu 15% mjesečno - ako se nastavi, do kraja godine to je +€X."
-- "Vaša stopa štednje je [X]% - za financijsku sigurnost cilj bi trebao biti barem 20%."
-- "Vikendom trošite 40% više nego radnim danima - razmislite o vikend budžetu."
-- "Imate 3 pretplate koje ukupno koštaju €X mjesečno - trebate li sve?"
-
-MOGUĆNOSTI V&M BALANCE - PODSJEĆAJ AKTIVNO:
+MOGUĆNOSTI V&M BALANCE — PODSJEĆAJ AKTIVNO:
 - 📷 SLIKATI RAČUNE - kamera izvlači podatke automatski
 - 🖼️ UČITATI IZ GALERIJE - slike koje već imaš
 - 📱 SCREENSHOT - iz banking appa pa učitaj
@@ -844,17 +1057,18 @@ ${financialContext.historicalTrends || 'Nema povijesnih podataka'}
 ${financialContext.trendAnalysis || ''}
 ` : 'Korisnik još nema podataka. Predloži: "Počni tako da slikaš prvi račun ili učitaš sliku iz galerije - ja ću napraviti ostatak!"'}
 
-PRAVILA:
+PRAVILA KOMUNIKACIJE:
 1. MAX 2-5 rečenica + pitanje ili prijedlog
-2. Koristi konkretne brojeve iz podataka
+2. Koristi SAMO konkretne brojeve iz podataka — nikad ne izmišljaj
 3. UVIJEK završi s pitanjem ILI prijedlogom za akciju
-4. Kad vidiš priliku - predstavi je pozitivno
+4. Kad vidiš priliku — predstavi je pozitivno
 5. Logoterapija: "Što ti je važno?" > "Moraš uštedjeti"
 6. Predlaži mogućnosti aplikacije kad je relevantno
 7. Nikad riječi koje izazivaju krivnju
-8. AKO KORISNIK TRAŽI SPECIFIČNE PODATKE - KORISTI ALATE! Ne izmišljaj podatke.
-9. BUDI HRABAR U MIŠLJENJIMA - daj stručnu procjenu, ne samo podatke
-10. KAD PRIMIJETIŠ PROBLEM - upozori jasno ali konstruktivno
+8. AKO KORISNIK TRAŽI SPECIFIČNE PODATKE — KORISTI ALATE! Ne izmišljaj podatke.
+9. BUDI HRABAR U MIŠLJENJIMA — ali ih potkrijepi podacima
+10. KAD PRIMIJETIŠ PROBLEM — upozori jasno ali konstruktivno
+11. KAD NEMAŠ PODATKE — reci to otvoreno i predloži što korisnik može unijeti
 
 IZVOZ PODATAKA:
 Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
