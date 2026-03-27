@@ -89,6 +89,7 @@ const AppRoutes = () => {
           <Route path="/paywall" element={<Paywall />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
