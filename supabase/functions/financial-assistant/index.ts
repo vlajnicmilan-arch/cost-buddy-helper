@@ -186,12 +186,22 @@ const tools = [
   },
 ];
 
+// Apply business/personal mode filter to a query
+function applyModeFilter(query: any, businessProfileId: string | null, table = "expenses") {
+  if (businessProfileId) {
+    return query.eq("business_profile_id", businessProfileId);
+  } else {
+    return query.is("business_profile_id", null);
+  }
+}
+
 // Execute a tool call against the database
 async function executeTool(
   toolName: string,
   args: Record<string, any>,
   userId: string,
-  supabase: any
+  supabase: any,
+  businessProfileId: string | null
 ): Promise<string> {
   try {
     switch (toolName) {
@@ -200,12 +210,13 @@ async function executeTool(
         const sortBy = args.sort_by || "date";
         const sortOrder = args.sort_order !== "asc";
 
-        let query = supabase
-          .from("expenses")
-          .select("id, description, amount, type, category, date, merchant_name, payment_source, expense_nature, note, currency, created_at")
-          .eq("user_id", userId)
-          .order(sortBy, { ascending: !sortOrder })
-          .limit(limit);
+        let query = applyModeFilter(
+          supabase
+            .from("expenses")
+            .select("id, description, amount, type, category, date, merchant_name, payment_source, expense_nature, note, currency, created_at")
+            .eq("user_id", userId),
+          businessProfileId
+        ).order(sortBy, { ascending: !sortOrder }).limit(limit);
 
         if (args.description) query = query.ilike("description", `%${args.description}%`);
         if (args.category) query = query.ilike("category", `%${args.category}%`);
@@ -267,11 +278,14 @@ async function executeTool(
       }
 
       case "get_payment_source_details": {
-        const { data: sources, error } = await supabase
-          .from("custom_payment_sources")
-          .select("id, name, balance, color, icon, currency, description")
-          .eq("user_id", userId)
-          .ilike("name", `%${args.source_name}%`);
+        const { data: sources, error } = await applyModeFilter(
+          supabase
+            .from("custom_payment_sources")
+            .select("id, name, balance, color, icon, currency, description")
+            .eq("user_id", userId)
+            .ilike("name", `%${args.source_name}%`),
+          businessProfileId
+        );
 
         if (error) return JSON.stringify({ error: error.message });
         if (!sources || sources.length === 0) return JSON.stringify({ message: "Nije pronađen izvor plaćanja s tim imenom." });
@@ -282,14 +296,15 @@ async function executeTool(
           .select("id, card_name, card_type, last_four_digits, payment_source_id")
           .in("payment_source_id", sourceIds);
 
-        const { data: corrections } = await supabase
-          .from("expenses")
-          .select("id, description, amount, type, date, created_at")
-          .eq("user_id", userId)
-          .eq("expense_nature", "correction")
-          .in("payment_source", sourceIds)
-          .order("date", { ascending: false })
-          .limit(10);
+        const { data: corrections } = await applyModeFilter(
+          supabase
+            .from("expenses")
+            .select("id, description, amount, type, date, created_at")
+            .eq("user_id", userId)
+            .eq("expense_nature", "correction")
+            .in("payment_source", sourceIds),
+          businessProfileId
+        ).order("date", { ascending: false }).limit(10);
 
         return JSON.stringify({
           sources,
@@ -322,11 +337,14 @@ async function executeTool(
 
       case "get_category_analysis": {
         const txType = args.type || "expense";
-        let query = supabase
-          .from("expenses")
-          .select("category, amount, type, date, merchant_name")
-          .eq("user_id", userId)
-          .eq("type", txType);
+        let query = applyModeFilter(
+          supabase
+            .from("expenses")
+            .select("category, amount, type, date, merchant_name")
+            .eq("user_id", userId)
+            .eq("type", txType),
+          businessProfileId
+        );
 
         if (args.date_from) query = query.gte("date", args.date_from);
         if (args.date_to) query = query.lte("date", args.date_to);
@@ -374,12 +392,18 @@ async function executeTool(
         const txType = args.type || "expense";
 
         const [p1Res, p2Res] = await Promise.all([
-          supabase.from("expenses").select("category, amount, date")
-            .eq("user_id", userId).eq("type", txType)
-            .gte("date", args.period1_from).lte("date", args.period1_to),
-          supabase.from("expenses").select("category, amount, date")
-            .eq("user_id", userId).eq("type", txType)
-            .gte("date", args.period2_from).lte("date", args.period2_to),
+          applyModeFilter(
+            supabase.from("expenses").select("category, amount, date")
+              .eq("user_id", userId).eq("type", txType)
+              .gte("date", args.period1_from).lte("date", args.period1_to),
+            businessProfileId
+          ),
+          applyModeFilter(
+            supabase.from("expenses").select("category, amount, date")
+              .eq("user_id", userId).eq("type", txType)
+              .gte("date", args.period2_from).lte("date", args.period2_to),
+            businessProfileId
+          ),
         ]);
 
         if (p1Res.error) return JSON.stringify({ error: p1Res.error.message });
@@ -428,13 +452,16 @@ async function executeTool(
           const fromStr = monthStart.toISOString().split("T")[0];
           const toStr = monthEnd.toISOString().split("T")[0];
 
-          const { data } = await supabase
-            .from("expenses")
-            .select("amount, type, category")
-            .eq("user_id", userId)
-            .gte("date", fromStr)
-            .lte("date", toStr)
-            .in("type", ["expense", "income"]);
+          const { data } = await applyModeFilter(
+            supabase
+              .from("expenses")
+              .select("amount, type, category")
+              .eq("user_id", userId)
+              .gte("date", fromStr)
+              .lte("date", toStr)
+              .in("type", ["expense", "income"]),
+            businessProfileId
+          );
 
           let income = 0, expense = 0;
           const catTotals: Record<string, number> = {};
@@ -467,12 +494,15 @@ async function executeTool(
       }
 
       case "get_top_merchants": {
-        let query = supabase
-          .from("expenses")
-          .select("merchant_name, amount, category")
-          .eq("user_id", userId)
-          .eq("type", "expense")
-          .not("merchant_name", "is", null);
+        let query = applyModeFilter(
+          supabase
+            .from("expenses")
+            .select("merchant_name, amount, category")
+            .eq("user_id", userId)
+            .eq("type", "expense")
+            .not("merchant_name", "is", null),
+          businessProfileId
+        );
 
         if (args.date_from) query = query.gte("date", args.date_from);
         if (args.date_to) query = query.lte("date", args.date_to);
@@ -505,11 +535,15 @@ async function executeTool(
       }
 
       case "get_budget_vs_actual": {
-        let budgetQuery = supabase
-          .from("budget_plans")
-          .select("id, name, total_amount, period_type, start_date, end_date, is_active")
-          .eq("user_id", userId)
-          .eq("is_active", true);
+        let budgetQuery = applyModeFilter(
+          supabase
+            .from("budget_plans")
+            .select("id, name, total_amount, period_type, start_date, end_date, is_active")
+            .eq("user_id", userId)
+            .eq("is_active", true),
+          businessProfileId,
+          "budget_plans"
+        );
 
         if (args.budget_name) budgetQuery = budgetQuery.ilike("name", `%${args.budget_name}%`);
 
@@ -528,12 +562,15 @@ async function executeTool(
           const now = new Date();
           const startDate = budget.start_date || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
           
-          let expenseQuery = supabase
-            .from("expenses")
-            .select("category, amount")
-            .eq("user_id", userId)
-            .eq("type", "expense")
-            .gte("date", startDate);
+          let expenseQuery = applyModeFilter(
+            supabase
+              .from("expenses")
+              .select("category, amount")
+              .eq("user_id", userId)
+              .eq("type", "expense")
+              .gte("date", startDate),
+            businessProfileId
+          );
 
           if (budget.end_date) expenseQuery = expenseQuery.lte("date", budget.end_date);
 
@@ -568,11 +605,14 @@ async function executeTool(
       case "get_large_transactions": {
         const multiplier = args.threshold_multiplier || 2.0;
 
-        let query = supabase
-          .from("expenses")
-          .select("id, description, amount, type, category, date, merchant_name, payment_source")
-          .eq("user_id", userId)
-          .eq("type", "expense");
+        let query = applyModeFilter(
+          supabase
+            .from("expenses")
+            .select("id, description, amount, type, category, date, merchant_name, payment_source")
+            .eq("user_id", userId)
+            .eq("type", "expense"),
+          businessProfileId
+        );
 
         if (args.date_from) query = query.gte("date", args.date_from);
         if (args.date_to) query = query.lte("date", args.date_to);
@@ -612,11 +652,14 @@ async function executeTool(
       }
 
       case "get_daily_spending_pattern": {
-        let query = supabase
-          .from("expenses")
-          .select("amount, date")
-          .eq("user_id", userId)
-          .eq("type", "expense");
+        let query = applyModeFilter(
+          supabase
+            .from("expenses")
+            .select("amount, date")
+            .eq("user_id", userId)
+            .eq("type", "expense"),
+          businessProfileId
+        );
 
         if (args.date_from) query = query.gte("date", args.date_from);
         if (args.date_to) query = query.lte("date", args.date_to);
@@ -668,7 +711,8 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, financialContext } = await req.json();
+    const { messages, financialContext, activeBusinessProfileId, businessProfileName } = await req.json();
+    const businessProfileId: string | null = activeBusinessProfileId || null;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -701,10 +745,32 @@ serve(async (req) => {
     );
 
     // Build system prompt
-    const systemPrompt = `Ti si osobni financijski AI stručnjak u aplikaciji V&M Balance.
+    const modeLabel = businessProfileId
+      ? `POSLOVNI NAČIN: ${businessProfileName || "Nepoznata tvrtka"}`
+      : "OSOBNI NAČIN";
+
+    const crossModeInstructions = businessProfileId
+      ? `
+TRENUTNI NAČIN RADA: 🏢 POSLOVNI (${businessProfileName || "Tvrtka"})
+- Svi tvoji upiti i alati pretražuju ISKLJUČIVO poslovne transakcije ove tvrtke.
+- Ako korisnik pita o osobnim financijama (npr. plaća, kućni budžet, osobna štednja, privatni računi), UPOZORI ga:
+  "⚠️ Trenutno radim u poslovnom načinu za ${businessProfileName || "tvrtku"}. Vaše pitanje se čini da se odnosi na osobne financije. Za pregled osobnih podataka, prebacite se na osobni način rada."
+- NE pretražuj osobne podatke bez eksplicitnog odobrenja.
+- Koristi poslovnu terminologiju: troškovi poslovanja, poslovni prihodi, PDV, klijenti, fakture.`
+      : `
+TRENUTNI NAČIN RADA: 👤 OSOBNI
+- Svi tvoji upiti i alati pretražuju ISKLJUČIVO osobne transakcije (nisu vezane uz nijednu tvrtku).
+- Ako korisnik pita o poslovnim financijama (npr. faktura, PDV, klijent, tvrtka, obrt, firma, inventura, ponuda), UPOZORI ga:
+  "⚠️ Trenutno radim u osobnom načinu. Vaše pitanje se čini da se odnosi na poslovne financije. Za pregled poslovnih podataka, prebacite se na poslovni način rada u postavkama."
+- NE pretražuj poslovne podatke bez eksplicitnog odobrenja.
+- Koristi osobnu terminologiju: kućni budžet, osobna potrošnja, štednja, plaća.`;
+
+    const systemPrompt = `Ti si financijski AI stručnjak u aplikaciji V&M Balance.
+
+${crossModeInstructions}
 
 TVOJA ULOGA:
-Kombinacija stručnog financijskog savjetnika, analitičara i strateškog planera. Tretiraš korisnikove financije kao da si CFO njegove osobne ekonomije. Koristiš razgovorne upite za dubinsku analizu umjesto dashboarda.
+Kombinacija stručnog financijskog savjetnika, analitičara i strateškog planera. Tretiraš korisnikove financije kao da si CFO ${businessProfileId ? `tvrtke "${businessProfileName}"` : "njegove osobne ekonomije"}. Koristiš razgovorne upite za dubinsku analizu umjesto dashboarda.
 
 STIL KOMUNIKACIJE:
 - SAŽETO ali DUBOKO: 2-5 rečenica, ali s konkretnim uvidima
@@ -877,7 +943,7 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           }
 
           console.log(`Executing tool: ${fnName}`, fnArgs);
-          const toolResult = await executeTool(fnName, fnArgs, userId!, supabaseService);
+          const toolResult = await executeTool(fnName, fnArgs, userId!, supabaseService, businessProfileId);
           
           currentMessages.push({
             role: "tool",
