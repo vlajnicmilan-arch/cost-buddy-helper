@@ -1,9 +1,17 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAppState } from '@/contexts/AppStateContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+export interface UserMemory {
+  id: string;
+  content: string;
+  category: string;
+  created_at: string;
 }
 
 interface FinancialContext {
@@ -27,18 +35,95 @@ interface UseFinancialAssistantProps {
   businessProfileName?: string;
 }
 
+function generateUUID(): string {
+  return crypto.randomUUID?.() || 
+    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+}
+
 export const useFinancialAssistant = ({ financialContext, activeBusinessProfileId, businessProfileName }: UseFinancialAssistantProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [memories, setMemories] = useState<UserMemory[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { onFinancialReset } = useAppState();
+  const sessionIdRef = useRef<string>(generateUUID());
+  const historyLoadedRef = useRef(false);
 
   // Listen for data reset event via Context
   useEffect(() => {
     const unsubscribe = onFinancialReset(() => {
       setMessages([]);
+      sessionIdRef.current = generateUUID();
+      historyLoadedRef.current = false;
     });
     return unsubscribe;
   }, [onFinancialReset]);
+
+  // Load previous chat history and memories on first mount
+  const loadHistory = useCallback(async () => {
+    if (historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
+    setIsLoadingHistory(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setIsLoadingHistory(false);
+        return;
+      }
+
+      // Load last session's messages (find the latest session_id)
+      const { data: latestMsg } = await supabase
+        .from('chat_messages')
+        .select('session_id')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1) as any;
+
+      if (latestMsg && latestMsg.length > 0) {
+        const lastSessionId = latestMsg[0].session_id;
+        sessionIdRef.current = lastSessionId;
+
+        const { data: historyData } = await supabase
+          .from('chat_messages')
+          .select('role, content')
+          .eq('user_id', session.user.id)
+          .eq('session_id', lastSessionId)
+          .order('created_at', { ascending: true })
+          .limit(30) as any;
+
+        if (historyData && historyData.length > 0) {
+          setMessages(historyData.map((m: any) => ({ role: m.role, content: m.content })));
+        }
+      }
+
+      // Load memories
+      const bpId = activeBusinessProfileId || null;
+      let memQuery = supabase
+        .from('user_memories')
+        .select('id, content, category, created_at')
+        .eq('user_id', session.user.id)
+        .order('updated_at', { ascending: false }) as any;
+
+      if (bpId) {
+        memQuery = memQuery.eq('business_profile_id', bpId);
+      } else {
+        memQuery = memQuery.is('business_profile_id', null);
+      }
+
+      const { data: memData } = await memQuery;
+      if (memData) {
+        setMemories(memData);
+      }
+    } catch (e) {
+      console.error('Error loading chat history:', e);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, [activeBusinessProfileId]);
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: ChatMessage = { role: 'user', content: input };
@@ -61,8 +146,6 @@ export const useFinancialAssistant = ({ financialContext, activeBusinessProfileI
     };
 
     try {
-      // Get user's auth token for DB access in tool calls
-      const { supabase } = await import('@/integrations/supabase/client');
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -79,6 +162,7 @@ export const useFinancialAssistant = ({ financialContext, activeBusinessProfileI
             financialContext,
             activeBusinessProfileId: activeBusinessProfileId || null,
             businessProfileName: businessProfileName || null,
+            sessionId: sessionIdRef.current,
           }),
         }
       );
@@ -153,12 +237,79 @@ export const useFinancialAssistant = ({ financialContext, activeBusinessProfileI
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    // Start a new session
+    sessionIdRef.current = generateUUID();
+    historyLoadedRef.current = true; // Don't reload old history
   }, []);
+
+  const deleteMemory = useCallback(async (memoryId: string) => {
+    try {
+      await supabase.from('user_memories').delete().eq('id', memoryId) as any;
+      setMemories(prev => prev.filter(m => m.id !== memoryId));
+    } catch (e) {
+      console.error('Error deleting memory:', e);
+    }
+  }, []);
+
+  const deleteAllMemories = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      let query = supabase
+        .from('user_memories')
+        .delete()
+        .eq('user_id', session.user.id) as any;
+
+      const bpId = activeBusinessProfileId || null;
+      if (bpId) {
+        query = query.eq('business_profile_id', bpId);
+      } else {
+        query = query.is('business_profile_id', null);
+      }
+
+      await query;
+      setMemories([]);
+    } catch (e) {
+      console.error('Error deleting all memories:', e);
+    }
+  }, [activeBusinessProfileId]);
+
+  const refreshMemories = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const bpId = activeBusinessProfileId || null;
+      let memQuery = supabase
+        .from('user_memories')
+        .select('id, content, category, created_at')
+        .eq('user_id', session.user.id)
+        .order('updated_at', { ascending: false }) as any;
+
+      if (bpId) {
+        memQuery = memQuery.eq('business_profile_id', bpId);
+      } else {
+        memQuery = memQuery.is('business_profile_id', null);
+      }
+
+      const { data } = await memQuery;
+      if (data) setMemories(data);
+    } catch (e) {
+      console.error('Error refreshing memories:', e);
+    }
+  }, [activeBusinessProfileId]);
 
   return {
     messages,
     isLoading,
+    isLoadingHistory,
+    memories,
     sendMessage,
     clearMessages,
+    loadHistory,
+    deleteMemory,
+    deleteAllMemories,
+    refreshMemories,
   };
 };
