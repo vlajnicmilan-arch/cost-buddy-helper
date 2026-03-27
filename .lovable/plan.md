@@ -1,86 +1,95 @@
 
 
-# AI Asistent: Podsjetnici i Kalendar Integracija
+# AI Asistent: Pamćenje razgovora (Opcija 3 — Sažeci + kratka povijest)
 
 ## Pregled
-Dodati sustav podsjetnika koji AI asistent može kreirati iz razgovora. Korisnik dobiva obavijesti kad podsjetnik dođe na red, a može i exportirati događaje kao `.ics` datoteku za Google/Apple/Outlook kalendar.
+Dodati sustav pamćenja razgovora koji kombinira kratku povijest poruka (zadnjih 30) i dugotrajne "memorije" — ključne činjenice o korisniku koje AI sam ekstrahira iz razgovora. Trošak ostaje nizak jer se u AI kontekst šalje samo sažetak, a ne cijela povijest.
+
+## Kako radi
+
+```text
+Korisnik piše → Edge funkcija:
+  1. Dohvati zadnjih 30 poruka iz chat_messages
+  2. Dohvati sve user_memories (ključne činjenice)
+  3. Pošalji AI-ju: system prompt + memorije + zadnjih 30 poruka + nova poruka
+  4. AI odgovori
+  5. Spremi poruke (user + assistant) u chat_messages
+  6. AI ekstrahira nove memorije → spremi u user_memories
+```
 
 ## Promjene
 
-### 1. Nova tablica `reminders` (migracija)
-```sql
-CREATE TABLE public.reminders (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  business_profile_id uuid,
-  title text NOT NULL,
-  description text,
-  remind_at timestamptz NOT NULL,
-  type text DEFAULT 'custom',
-  is_completed boolean DEFAULT false,
-  notified boolean DEFAULT false,
-  related_entity_id uuid,
-  created_at timestamptz DEFAULT now()
-);
+### 1. Dvije nove tablice (migracija)
 
-ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
--- RLS: korisnici upravljaju samo svojim podsjetnicima
--- Realtime enabled za live update
-```
+**`chat_messages`** — zadnjih 30 poruka po sesiji
+- `id`, `user_id`, `session_id` (uuid), `role` (user/assistant), `content`, `business_profile_id`, `created_at`
+- RLS: korisnik vidi samo svoje poruke
 
-### 2. Tri nova AI alata u edge funkciji
+**`user_memories`** — ključne činjenice ekstrahirane iz razgovora
+- `id`, `user_id`, `content` (tekst činjenice, npr. "Štedi 500€/mj za auto"), `category` (goal/preference/fact/habit), `business_profile_id`, `created_at`, `updated_at`
+- RLS: korisnik vidi samo svoje memorije
+- Max ~50 memorija po korisniku (stare se zamjenjuju)
+
+### 2. Edge funkcija — pamćenje u `financial-assistant`
 **Datoteka: `supabase/functions/financial-assistant/index.ts`**
 
-- **`create_reminder`** — parametri: `title`, `remind_at`, `description`, `type` (payment/goal/review/custom). AI kreira podsjetnik i potvrdi korisniku.
-- **`get_reminders`** — dohvaća aktivne podsjetnike sortirane po datumu. AI ih može prikazati i komentirati.
-- **`complete_reminder`** — označava podsjetnik kao završen po `reminder_id`.
+- Na početku obrade: dohvati zadnjih 30 poruka iz `chat_messages` za korisnikov `session_id`
+- Dohvati sve `user_memories` za korisnika (filtrirano po business_profile_id)
+- Ubaci memorije u system prompt kao sekciju "ŠTO ZNAM O KORISNIKU"
+- Nakon što AI odgovori: spremi user + assistant poruku u `chat_messages`
+- Novi alat **`extract_memories`** — AI ga poziva kad prepozna novu ključnu činjenicu (cilj, navika, preferencija)
+- Novi alat **`get_memories`** — dohvaća postojeće memorije
+- Novi alat **`delete_memory`** — briše memoriju kad korisnik to zatraži
 
-System prompt se proširuje sekcijom za podsjetnike — AI nudi podsjetnik kad se dogovore rokovi ili plaćanja.
+### 3. Hook — upravljanje sesijama
+**Datoteka: `src/hooks/useFinancialAssistant.ts`**
 
-### 3. Cron edge funkcija `check-reminders`
-**Nova datoteka: `supabase/functions/check-reminders/index.ts`**
+- Generiraj `session_id` (uuid) kad korisnik otvori chat; spremi u `useState`
+- Šalji `session_id` u request body edge funkciji
+- Pri prvom otvaranju: dohvati zadnje poruke iz `chat_messages` za prikaz prethodnog razgovora
+- `clearMessages` briše i lokalno stanje i bazu (ili samo započne novu sesiju)
 
-- Svakih 15 min (poziva se putem pg_cron ili externog schedulera)
-- Pronalazi podsjetnike gdje je `remind_at <= now()` i `notified = false` i `is_completed = false`
-- Kreira zapis u `notifications` tablici (postojeći sustav)
-- Označava podsjetnik kao `notified = true`
+### 4. Privatnost — brisanje memorija
+**Datoteka: `src/components/FinancialAssistantDialog.tsx`**
 
-### 4. ICS export na klijentu
-**Nova datoteka: `src/lib/icsExport.ts`**
+- Dodati gumb "Obriši memorije" u settings/header dijalogu
+- Korisnik može vidjeti što AI "pamti" i obrisati pojedine stavke ili sve
 
-Utility funkcija koja iz reminder podataka generira `.ics` string i nudi download. Koristi se kad AI predloži "Dodaj u kalendar".
+## Utjecaj na troškove
 
-### 5. Prikaz podsjetnika u NotificationsDropdown
-**Datoteka: `src/components/NotificationsDropdown.tsx`**
-
-Dodati ikonu za tip `reminder` u `getNotificationIcon`. Ništa više — postojeći sustav obavijesti automatski prikazuje reminder notifikacije.
+- **Baza**: Zanemarivo (~1KB po poruci, max 30 poruka = ~30KB po korisniku)
+- **AI tokeni**: Memorije dodaju ~200-500 tokena po zahtjevu (minimalan utjecaj)
+- **Čišćenje**: Automatski trigger briše poruke starije od 90 dana
 
 ## Tehnički detalji
 
 ```text
-Tablica: reminders
-  id, user_id, business_profile_id, title, description,
-  remind_at, type, is_completed, notified, related_entity_id, created_at
+chat_messages:
+  id uuid PK, user_id uuid FK, session_id uuid,
+  role text, content text, business_profile_id uuid nullable,
+  created_at timestamptz
 
-AI toolovi (u executeTool):
-  create_reminder  → INSERT INTO reminders (s mode filterom)
-  get_reminders    → SELECT WHERE is_completed=false, sortirano po remind_at
-  complete_reminder → UPDATE SET is_completed=true
+user_memories:
+  id uuid PK, user_id uuid FK, content text,
+  category text (goal/preference/fact/habit),
+  business_profile_id uuid nullable,
+  created_at timestamptz, updated_at timestamptz
 
-check-reminders edge fn:
-  SELECT reminders WHERE remind_at <= now() AND notified=false AND is_completed=false
-  → INSERT INTO notifications (user_id, title, message, type='reminder')
-  → UPDATE reminders SET notified=true
+AI toolovi:
+  extract_memories → INSERT/UPSERT user_memories (max 50)
+  get_memories → SELECT user_memories
+  delete_memory → DELETE user_memories WHERE id = X
 
-ICS format:
-  VCALENDAR → VEVENT s DTSTART, SUMMARY, DESCRIPTION
-  Download kao blob
+System prompt nova sekcija:
+  "ŠTO ZNAM O KORISNIKU: [lista memorija]"
+
+Cleanup trigger:
+  DELETE FROM chat_messages WHERE created_at < now() - interval '90 days'
 ```
 
 Datoteke za promjenu:
-- Nova migracija za `reminders` tablicu + RLS
-- `supabase/functions/financial-assistant/index.ts` — 3 nova toola + system prompt
-- `supabase/functions/check-reminders/index.ts` — nova edge funkcija
-- `src/lib/icsExport.ts` — ICS generator
-- `src/components/NotificationsDropdown.tsx` — ikona za reminder tip
+- Nova migracija: `chat_messages` + `user_memories` tablice + RLS + cleanup
+- `supabase/functions/financial-assistant/index.ts` — dohvat poruka, memorije u prompt, 3 nova alata, spremanje poruka
+- `src/hooks/useFinancialAssistant.ts` — session_id, učitavanje prethodnih poruka
+- `src/components/FinancialAssistantDialog.tsx` — gumb za brisanje memorija
 
