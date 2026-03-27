@@ -747,6 +747,143 @@ async function executeTool(
         });
       }
 
+      case "create_savings_goal": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        const icon = args.icon || "🎯";
+        const color = args.color || "#3b82f6";
+
+        const insertData: any = {
+          user_id: userId,
+          name: args.name,
+          target_amount: args.target_amount,
+          current_amount: 0,
+          icon,
+          color,
+          budget_id: null,
+        };
+        if (args.target_date) insertData.target_date = args.target_date;
+
+        const { data, error } = await supabaseService
+          .from("savings_goals")
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (error) return JSON.stringify({ error: error.message });
+
+        const monthsToGoal = args.target_date
+          ? Math.max(1, Math.round((new Date(args.target_date).getTime() - Date.now()) / (30.44 * 24 * 60 * 60 * 1000)))
+          : null;
+        const monthlyNeeded = monthsToGoal ? Math.round((args.target_amount / monthsToGoal) * 100) / 100 : null;
+
+        return JSON.stringify({
+          success: true,
+          goal: data,
+          monthly_contribution_needed: monthlyNeeded,
+          months_to_deadline: monthsToGoal,
+        });
+      }
+
+      case "update_savings_goal": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        // First fetch current goal
+        const { data: currentGoal, error: fetchErr } = await supabaseService
+          .from("savings_goals")
+          .select("*")
+          .eq("id", args.goal_id)
+          .eq("user_id", userId)
+          .single();
+
+        if (fetchErr || !currentGoal) return JSON.stringify({ error: "Cilj štednje nije pronađen." });
+
+        const updates: any = {};
+        if (args.name) updates.name = args.name;
+        if (args.target_amount) updates.target_amount = args.target_amount;
+        if (args.target_date) updates.target_date = args.target_date;
+
+        if (args.add_amount) {
+          const newAmount = (currentGoal as any).current_amount + args.add_amount;
+          updates.current_amount = newAmount;
+          const targetAmt = args.target_amount || (currentGoal as any).target_amount;
+          if (newAmount >= targetAmt) {
+            updates.is_completed = true;
+            updates.completed_at = new Date().toISOString();
+          }
+        }
+
+        const { data, error } = await supabaseService
+          .from("savings_goals")
+          .update(updates)
+          .eq("id", args.goal_id)
+          .eq("user_id", userId)
+          .select()
+          .single();
+
+        if (error) return JSON.stringify({ error: error.message });
+        return JSON.stringify({ success: true, goal: data });
+      }
+
+      case "get_goal_progress": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        const { data: goals, error: gErr } = await supabaseService
+          .from("savings_goals")
+          .select("*")
+          .eq("user_id", userId)
+          .is("budget_id", null)
+          .order("created_at", { ascending: false });
+
+        if (gErr) return JSON.stringify({ error: gErr.message });
+        if (!goals || goals.length === 0) return JSON.stringify({ message: "Nema postavljenih ciljeva štednje.", goals: [] });
+
+        // Calculate average monthly savings from last 3 months
+        const now = new Date();
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        const { data: incomeData } = await applyModeFilter(
+          supabaseService.from("expenses").select("amount")
+            .eq("user_id", userId).eq("type", "income")
+            .gte("date", threeMonthsAgo.toISOString()),
+          businessProfileId
+        );
+        const { data: expenseData } = await applyModeFilter(
+          supabaseService.from("expenses").select("amount")
+            .eq("user_id", userId).eq("type", "expense")
+            .gte("date", threeMonthsAgo.toISOString()),
+          businessProfileId
+        );
+
+        const totalIncome3m = (incomeData || []).reduce((s: number, t: any) => s + Number(t.amount), 0);
+        const totalExpense3m = (expenseData || []).reduce((s: number, t: any) => s + Number(t.amount), 0);
+        const monthlySavingsAvg = Math.round(((totalIncome3m - totalExpense3m) / 3) * 100) / 100;
+
+        const goalProgress = goals.map((g: any) => {
+          const remaining = g.target_amount - g.current_amount;
+          const pct = g.target_amount > 0 ? Math.round((g.current_amount / g.target_amount) * 1000) / 10 : 0;
+          const estimatedMonths = monthlySavingsAvg > 0 ? Math.ceil(remaining / monthlySavingsAvg) : null;
+
+          return {
+            id: g.id,
+            name: g.name,
+            icon: g.icon,
+            target_amount: g.target_amount,
+            current_amount: g.current_amount,
+            remaining,
+            progress_percent: pct,
+            target_date: g.target_date,
+            is_completed: g.is_completed,
+            estimated_months_to_complete: estimatedMonths,
+          };
+        });
+
+        return JSON.stringify({
+          goals: goalProgress,
+          average_monthly_savings_3m: monthlySavingsAvg,
+          data_basis: `${(incomeData || []).length + (expenseData || []).length} transakcija u zadnja 3 mjeseca`,
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
