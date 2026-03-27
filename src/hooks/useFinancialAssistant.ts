@@ -23,9 +23,11 @@ interface FinancialContext {
 
 interface UseFinancialAssistantProps {
   financialContext: FinancialContext;
+  activeBusinessProfileId?: string | null;
+  businessProfileName?: string;
 }
 
-export const useFinancialAssistant = ({ financialContext }: UseFinancialAssistantProps) => {
+export const useFinancialAssistant = ({ financialContext, activeBusinessProfileId, businessProfileName }: UseFinancialAssistantProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { onFinancialReset } = useAppState();
@@ -75,6 +77,8 @@ export const useFinancialAssistant = ({ financialContext }: UseFinancialAssistan
           body: JSON.stringify({
             messages: [...messages, userMsg],
             financialContext,
+            activeBusinessProfileId: activeBusinessProfileId || null,
+            businessProfileName: businessProfileName || null,
           }),
         }
       );
@@ -145,7 +149,7 @@ export const useFinancialAssistant = ({ financialContext }: UseFinancialAssistan
     } finally {
       setIsLoading(false);
     }
-  }, [messages, financialContext]);
+  }, [messages, financialContext, activeBusinessProfileId, businessProfileName]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
