@@ -1,76 +1,62 @@
 
 
-# AI Asistent → Financijski Agent s pristupom podacima
+# AI Assistant: Business/Personal Mode Awareness
 
-## Problem
-Trenutni AI asistent prima **statičan sažetak** (10 zadnjih transakcija, ukupni iznosi) i ne može:
-- Pretraživati sve transakcije po kriteriju (npr. "korekcije salda na OTP kartici")
-- Filtrirati po datumu, izvoru plaćanja, kategoriji, trgovcu
-- Pristupiti specifičnim detaljima o štednim ciljevima, recurring transakcijama, itd.
+## Overview
+The AI financial assistant currently queries all user transactions without distinguishing between personal and business modes. This upgrade will make the AI context-aware, filtering data based on the active mode and warning users when their questions cross boundaries.
 
-## Rješenje: Tool-calling pristup
-Umjesto da šaljemo sve podatke u prompt (nemoguće za stotine transakcija), dajemo AI-ju **alate (tools)** koje može pozvati da dohvati točno one podatke koji su mu potrebni.
+## Changes
 
-### Kako to radi za korisnika
-Korisnik pita: *"Kad sam zadnji put radio korekciju salda na OTP kartici?"*
-1. AI prepozna da treba pretražiti transakcije
-2. AI pozove alat `search_transactions` s filterom `expense_nature=correction, payment_source=OTP`
-3. Edge funkcija izvrši upit na bazu i vrati rezultate
-4. AI odgovori s konkretnim podacima
+### 1. Client Side — Pass Business Context
+**File: `src/components/FinancialAssistantDialog.tsx`**
+- Accept `activeBusinessProfileId` and `businessProfileName` as props (from `useAppState`)
+- Include `activeBusinessProfileId` and `businessProfileName` in the request body sent to the edge function
 
-### Alati koje AI dobiva
+**File: Where `FinancialAssistantDialog` is rendered** (need to check, likely `Index.tsx` or `Dashboard.tsx`)
+- Pass `activeBusinessProfileId` and the active profile name from `useAppState`
 
-| Alat | Što radi |
-|------|----------|
-| `search_transactions` | Pretražuje transakcije po opisu, kategoriji, trgovcu, datumu, izvoru, tipu, expense_nature |
-| `get_payment_source_details` | Dohvaća detalje izvora plaćanja (saldo, kartice, povijest korekcija) |
-| `get_savings_goals` | Dohvaća štedne ciljeve i napredak |
-| `get_recurring_transactions` | Dohvaća ponavljajuće transakcije |
-| `get_category_analysis` | Analiza potrošnje po kategoriji za proizvoljni period |
+### 2. Edge Function — Mode-Aware Queries
+**File: `supabase/functions/financial-assistant/index.ts`**
 
-### Što se mijenja
+**a) Accept new parameter:**
+- Extract `activeBusinessProfileId` from the request body
 
-**1. Edge funkcija `financial-assistant/index.ts`**
-- Dodati `tools` definicije u poziv prema AI gateway-u
-- Implementirati **tool execution loop**: kad AI odgovori s `tool_calls`, izvršiti upite na bazu (koristeći Supabase service role) i vratiti rezultate AI-ju
-- AI tada generira konačni odgovor s pravim podacima
-- Streaming ostaje za krajnji odgovor korisniku
+**b) Pass business context to `executeTool`:**
+- Add `businessProfileId: string | null` parameter to `executeTool`
+- In every tool's query, add filter:
+  - If `businessProfileId` is set → `.eq("business_profile_id", businessProfileId)`
+  - If `businessProfileId` is null → `.is("business_profile_id", null)` (personal mode only)
+- Apply same logic to `custom_payment_sources`, `savings_goals`, `recurring_transactions`, `budget_plans` queries
 
-**2. Klijentska strana (`FinancialAssistantDialog.tsx` i `useFinancialAssistant.ts`)**
-- Slati `user_id` (iz auth sesije) uz poruku kako bi edge funkcija mogla upitivati bazu za tog korisnika
-- Zadržati postojeći statičan kontekst kao "brzi pregled" — alati služe za dublje upite
-- Proširiti `recentTransactions` na 30 i dodati `payment_source` ime i `expense_nature`
+**c) Update system prompt:**
+- Add mode context section: "TRENUTNI NAČIN RADA: [Osobni / Poslovni: CompanyName]"
+- Add cross-mode instruction: When user asks about data from the other mode, the AI should:
+  1. Warn: "Trenutno radim u [osobnom/poslovnom] načinu. Pitanje se čini da se odnosi na [poslovne/osobne] financije."
+  2. Ask for confirmation: "Želite li da pretražim [poslovne/osobne] podatke? Morat ćete prebaciti način rada."
+  3. Do NOT query data from the other mode without explicit confirmation
 
-**3. Bez promjena za korisnika u UI-ju**
-- Korisnik i dalje tipka pitanja na isti način
-- Razlika je samo u tome što AI sada može dohvatiti bilo koji podatak iz baze
+**d) Add a new tool `detect_cross_mode_query`:**
+- Not needed as a DB tool — instead, handle via system prompt instructions that teach the AI to recognize business keywords (faktura, PDV, klijent, tvrtka) vs personal keywords (osobni, kućanstvo, plaća) and warn accordingly
 
-### Tijek poziva (dijagram)
+### 3. Technical Details
 
 ```text
-Korisnik: "Kad sam korigirao saldo na OTP?"
-     │
-     ▼
-[Edge Function] → AI Gateway (s tools definicijama)
-     │
-     ▼
-AI odgovara: tool_call("search_transactions", {expense_nature: "correction", payment_source: "OTP"})
-     │
-     ▼
-[Edge Function] → Supabase query (expenses WHERE expense_nature='correction' AND payment_source LIKE '%OTP%')
-     │
-     ▼
-Rezultati → AI Gateway (nastavak razgovora)
-     │
-     ▼
-AI odgovara korisniku: "Zadnja korekcija na OTP Tekućem bila je 20.03. za +150€"
-     │
-     ▼
-[Stream prema klijentu]
+Request flow:
+  Client                    Edge Function
+  ──────                    ─────────────
+  {                         
+    messages,               
+    financialContext,        
+    activeBusinessProfileId  → determines query filter
+    businessProfileName      → injected into system prompt
+  }                         
+
+Query filter logic:
+  if businessProfileId:
+    .eq('business_profile_id', businessProfileId)  // business mode
+  else:
+    .is('business_profile_id', null)               // personal mode
 ```
 
-### Datoteke koje se mijenjaju
-1. **`supabase/functions/financial-assistant/index.ts`** — tool definicije + execution loop + DB upiti
-2. **`src/hooks/useFinancialAssistant.ts`** — slanje auth tokena
-3. **`src/components/FinancialAssistantDialog.tsx`** — proširiti kontekst (30 transakcija, payment_source ime, expense_nature)
+All 11 tool functions in `executeTool` will be updated with this filter pattern. The system prompt will include clear instructions about mode boundaries and when to warn users.
 
