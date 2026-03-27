@@ -1,62 +1,65 @@
 
 
-# AI Assistant: Business/Personal Mode Awareness
+# AI Asistent: Strogo na podacima, realni savjeti, praćenje ciljeva
 
-## Overview
-The AI financial assistant currently queries all user transactions without distinguishing between personal and business modes. This upgrade will make the AI context-aware, filtering data based on the active mode and warning users when their questions cross boundaries.
+## Pregled
+Nadogradnja AI asistenta da bude **strogo vezan uz stvarne podatke**, koristi **jednostavan jezik**, daje **realne projekcije** i pomaže korisniku **kreirati i pratiti financijske ciljeve** kroz razgovor.
 
-## Changes
+## Promjene
 
-### 1. Client Side — Pass Business Context
-**File: `src/components/FinancialAssistantDialog.tsx`**
-- Accept `activeBusinessProfileId` and `businessProfileName` as props (from `useAppState`)
-- Include `activeBusinessProfileId` and `businessProfileName` in the request body sent to the edge function
+### 1. Ojačan System Prompt — Anti-halucinacija i jednostavnost
+**Datoteka: `supabase/functions/financial-assistant/index.ts`**
 
-**File: Where `FinancialAssistantDialog` is rendered** (need to check, likely `Index.tsx` or `Dashboard.tsx`)
-- Pass `activeBusinessProfileId` and the active profile name from `useAppState`
+Prepisati ključne sekcije system prompta:
 
-### 2. Edge Function — Mode-Aware Queries
-**File: `supabase/functions/financial-assistant/index.ts`**
+- **ZLATNO PRAVILO**: "NIKADA ne izmišljaj podatke. Ako nemaš informaciju — reci to. Svaki broj koji kažeš MORA doći iz alata ili konteksta."
+- **Predviđanja**: "Projekcije baziraš ISKLJUČIVO na stvarnim trendovima iz baze. Uvijek naglasi da je to procjena temeljena na X mjeseci podataka, ne garancija."
+- **Jednostavan jezik**: "Piši kao da objašnjavaš prijatelju. Bez financijskog žargona osim ako korisnik ne traži. Umjesto 'likvidnost' reci 'koliko novca imaš na raspolaganju'. Umjesto 'diversifikacija' reci 'rasporediti novac na više mjesta'."
+- **Razrada planova**: "Kad korisnik želi plan (npr. 'želim uštedjeti za auto'), predloži konkretne korake: koliko mjesečno trebaju štedjeti, koliko dugo, i ponudi da se postavi cilj štednje u aplikaciji."
 
-**a) Accept new parameter:**
-- Extract `activeBusinessProfileId` from the request body
+### 2. Novi alat: `create_savings_goal`
+**Datoteka: `supabase/functions/financial-assistant/index.ts`**
 
-**b) Pass business context to `executeTool`:**
-- Add `businessProfileId: string | null` parameter to `executeTool`
-- In every tool's query, add filter:
-  - If `businessProfileId` is set → `.eq("business_profile_id", businessProfileId)`
-  - If `businessProfileId` is null → `.is("business_profile_id", null)` (personal mode only)
-- Apply same logic to `custom_payment_sources`, `savings_goals`, `recurring_transactions`, `budget_plans` queries
+Dodati tool koji AI može pozvati iz razgovora:
+- Parametri: `name`, `target_amount`, `deadline` (opcionalno), `monthly_contribution` (opcionalno)
+- Kreira zapis u `savings_goals` tablici za korisnika
+- AI može reći: "Postavio sam ti cilj 'Auto' — 10.000€ s mjesečnom uplatom od 500€. Želiš li nešto promijeniti?"
 
-**c) Update system prompt:**
-- Add mode context section: "TRENUTNI NAČIN RADA: [Osobni / Poslovni: CompanyName]"
-- Add cross-mode instruction: When user asks about data from the other mode, the AI should:
-  1. Warn: "Trenutno radim u [osobnom/poslovnom] načinu. Pitanje se čini da se odnosi na [poslovne/osobne] financije."
-  2. Ask for confirmation: "Želite li da pretražim [poslovne/osobne] podatke? Morat ćete prebaciti način rada."
-  3. Do NOT query data from the other mode without explicit confirmation
+### 3. Novi alat: `update_savings_goal`
+**Datoteka: `supabase/functions/financial-assistant/index.ts`**
 
-**d) Add a new tool `detect_cross_mode_query`:**
-- Not needed as a DB tool — instead, handle via system prompt instructions that teach the AI to recognize business keywords (faktura, PDV, klijent, tvrtka) vs personal keywords (osobni, kućanstvo, plaća) and warn accordingly
+- Parametri: `goal_id`, `current_amount` (dodaj iznos), `target_amount`, `name`
+- Omogućuje AI-u da ažurira ciljeve kroz razgovor
 
-### 3. Technical Details
+### 4. Novi alat: `get_goal_progress`
+**Datoteka: `supabase/functions/financial-assistant/index.ts`**
 
+- Dohvaća sve ciljeve s izračunom: postotak ostvarenosti, koliko još treba, procjena vremena do cilja na temelju prosjeka štednje zadnja 3 mjeseca
+- AI koristi ovo za realne izvještaje: "Do sada si uštedio 2.500€ od 10.000€ (25%). Zadnja 3 mjeseca štediš prosječno 450€/mj — po tom tempu trebat će ti još ~17 mjeseci."
+
+### 5. Zaštita od halucinacija u kodu
+**Datoteka: `supabase/functions/financial-assistant/index.ts`**
+
+- U system prompt dodati eksplicitne zabrane:
+  - "NE koristi fraze poput 'prema mojim procjenama' bez pozivanja alata"
+  - "Kad daješ projekciju, OBAVEZNO navedi na koliko podataka se temeljš (npr. 'Na temelju 47 transakcija u zadnja 3 mjeseca')"
+  - "Ako korisnik pita nešto za što nemaš podatke u bazi, reci: 'Nemam dovoljno podataka o tome. Možeš li unijeti [X] pa ću ti dati točniju analizu?'"
+
+### 6. Razgovorni pristup ciljevima
+U system promptu dodati sekciju za interaktivno planiranje:
+- "Kad korisnik izrazi želju (npr. 'želim smanjiti troškove'), NE daj odmah savjet. Prvo pitaj: 'Na što misliš konkretno? Koja kategorija te brine?' pa tek onda analiziraj."
+- "Kad predlažeš plan, podijeli ga u korake i pitaj korisnika slaže li se s korakom 1 prije nego nastaviš."
+
+## Tehnički detalji
+
+Novi toolovi u `tools` nizu:
 ```text
-Request flow:
-  Client                    Edge Function
-  ──────                    ─────────────
-  {                         
-    messages,               
-    financialContext,        
-    activeBusinessProfileId  → determines query filter
-    businessProfileName      → injected into system prompt
-  }                         
-
-Query filter logic:
-  if businessProfileId:
-    .eq('business_profile_id', businessProfileId)  // business mode
-  else:
-    .is('business_profile_id', null)               // personal mode
+create_savings_goal  → INSERT u savings_goals (user_id, name, target_amount, deadline)
+update_savings_goal  → UPDATE savings_goals SET ... WHERE id = goal_id AND user_id = userId  
+get_goal_progress    → SELECT iz savings_goals + izračun tempa štednje iz expenses
 ```
 
-All 11 tool functions in `executeTool` will be updated with this filter pattern. The system prompt will include clear instructions about mode boundaries and when to warn users.
+Promjene u system promptu (~30 linija zamjene/dodavanja u sekcijama TVOJA ULOGA, PRAVILA, i nova sekcija ANTI-HALUCINACIJA).
+
+Sve promjene su u jednoj datoteci: `supabase/functions/financial-assistant/index.ts`
 
