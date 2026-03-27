@@ -184,6 +184,57 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_savings_goal",
+      description: "Create a new savings goal for the user. Use when the user expresses a desire to save for something specific.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Name of the savings goal (e.g. 'Auto', 'Odmor', 'Fond za hitne slučajeve')" },
+          target_amount: { type: "number", description: "Target amount to save" },
+          target_date: { type: "string", description: "Target date to reach the goal (YYYY-MM-DD, optional)" },
+          icon: { type: "string", description: "Emoji icon for the goal (default: 🎯)" },
+          color: { type: "string", description: "Color hex code (default: #3b82f6)" },
+        },
+        required: ["name", "target_amount"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_savings_goal",
+      description: "Update an existing savings goal - change name, target amount, add money, or mark as completed.",
+      parameters: {
+        type: "object",
+        properties: {
+          goal_id: { type: "string", description: "ID of the savings goal to update" },
+          name: { type: "string", description: "New name (optional)" },
+          target_amount: { type: "number", description: "New target amount (optional)" },
+          add_amount: { type: "number", description: "Amount to add to current savings (optional)" },
+          target_date: { type: "string", description: "New target date (optional)" },
+        },
+        required: ["goal_id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_goal_progress",
+      description: "Get detailed progress on all savings goals including estimated completion time based on actual saving trends from the last 3 months.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // Apply business/personal mode filter to a query
