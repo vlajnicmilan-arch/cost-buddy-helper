@@ -74,6 +74,7 @@ const AppRoutes = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -88,6 +89,7 @@ const AppRoutes = () => {
           <Route path="/paywall" element={<Paywall />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
