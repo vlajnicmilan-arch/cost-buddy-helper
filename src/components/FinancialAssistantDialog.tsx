@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, Loader2, Trash2, Sparkles, FileText, TrendingUp, TrendingDown, PiggyBank, Download, Printer } from 'lucide-react';
+import { Bot, Send, Loader2, Trash2, Sparkles, FileText, TrendingUp, TrendingDown, PiggyBank, Download, Printer, Brain, X } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useFinancialAssistant, ChatMessage } from '@/hooks/useFinancialAssistant';
+import { useFinancialAssistant, ChatMessage, UserMemory } from '@/hooks/useFinancialAssistant';
+import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
@@ -278,11 +279,27 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
 
   const resolvedBusinessProfileName = propBusinessProfileName;
 
-  const { messages, isLoading, sendMessage, clearMessages } = useFinancialAssistant({
+  const [showMemories, setShowMemories] = useState(false);
+
+  const { messages, isLoading, isLoadingHistory, memories, sendMessage, clearMessages, loadHistory, deleteMemory, deleteAllMemories, refreshMemories } = useFinancialAssistant({
     financialContext,
     activeBusinessProfileId: businessModeEnabled ? activeBusinessProfileId : undefined,
     businessProfileName: resolvedBusinessProfileName,
   });
+
+  // Load chat history when dialog opens
+  useEffect(() => {
+    if (open && canAccessAI) {
+      loadHistory();
+    }
+  }, [open, canAccessAI, loadHistory]);
+
+  // Refresh memories when opening memory view
+  useEffect(() => {
+    if (showMemories) {
+      refreshMemories();
+    }
+  }, [showMemories, refreshMemories]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -371,21 +388,79 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
               </div>
               Financijski Asistent
             </DialogTitle>
-            {messages.length > 0 && (
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={clearMessages}
+                onClick={() => setShowMemories(!showMemories)}
                 className="h-8 w-8"
+                title="Memorije asistenta"
               >
-                <Trash2 className="w-4 h-4" />
+                <Brain className="w-4 h-4" />
               </Button>
-            )}
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearMessages}
+                  className="h-8 w-8"
+                  title="Novi razgovor"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-          {messages.length === 0 ? (
+          {showMemories ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">🧠 Što asistent pamti o tebi</h3>
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowMemories(false)}>
+                  <X className="w-3 h-3 mr-1" /> Zatvori
+                </Button>
+              </div>
+              {memories.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Asistent još nema spremljenih memorija. Razgovaraj s njim i on će zapamtiti važne stvari o tvojim financijama.
+                </p>
+              ) : (
+                <>
+                  {memories.map((mem) => (
+                    <div key={mem.id} className="flex items-start gap-2 p-2 rounded-lg bg-muted/50">
+                      <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
+                        {mem.category === 'goal' ? '🎯' : mem.category === 'habit' ? '🔄' : mem.category === 'preference' ? '⭐' : '📌'} {mem.category}
+                      </Badge>
+                      <p className="text-sm flex-1">{mem.content}</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => deleteMemory(mem.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs text-destructive hover:text-destructive"
+                    onClick={deleteAllMemories}
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" /> Obriši sve memorije
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : isLoadingHistory ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Učitavam razgovor...</span>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="space-y-4">
               <div className="text-center py-4">
                 {/* Animated AI Avatar - 20% larger (24 -> 28) */}

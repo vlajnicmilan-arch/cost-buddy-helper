@@ -560,6 +560,36 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          business_profile_id: string | null
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          business_profile_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string | null
@@ -2766,6 +2796,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_memories: {
+        Row: {
+          business_profile_id: string | null
+          category: string
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_profile_id?: string | null
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -2828,6 +2888,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_chat_messages: { Args: never; Returns: undefined }
       cleanup_old_login_logs: { Args: never; Returns: undefined }
       consume_invitation_token: {
         Args: { _invitation_type: string; _token: string }

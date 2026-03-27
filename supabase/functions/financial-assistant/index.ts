@@ -281,6 +281,55 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "extract_memories",
+      description: "Save important facts about the user that should be remembered across conversations. Use when you learn something new about the user's financial goals, habits, preferences, or key facts. Examples: 'Štedi 500€/mj za auto', 'Preferira gotovinu za manje kupnje', 'Živi u Zagrebu s obitelji'. Do NOT save trivial or temporary info.",
+      parameters: {
+        type: "object",
+        properties: {
+          memories: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                content: { type: "string", description: "The fact to remember" },
+                category: { type: "string", enum: ["goal", "preference", "fact", "habit"], description: "Category of memory" },
+              },
+              required: ["content", "category"],
+            },
+            description: "Array of memories to save",
+          },
+        },
+        required: ["memories"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_memories",
+      description: "Get all saved memories/facts about the user.",
+      parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_memory",
+      description: "Delete a specific saved memory when the user asks to forget something.",
+      parameters: {
+        type: "object",
+        properties: {
+          memory_id: { type: "string", description: "ID of the memory to delete" },
+        },
+        required: ["memory_id"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // Apply business/personal mode filter to a query
@@ -326,7 +375,6 @@ async function executeTool(
         if (args.max_amount) query = query.lte("amount", args.max_amount);
         if (args.note) query = query.ilike("note", `%${args.note}%`);
 
-        // Handle payment_source filter by looking up source IDs by name
         if (args.payment_source) {
           const { data: sources } = await supabase
             .from("custom_payment_sources")
@@ -345,7 +393,6 @@ async function executeTool(
         const { data, error } = await query;
         if (error) return JSON.stringify({ error: error.message });
 
-        // Enrich with payment source names
         if (data && data.length > 0) {
           const sourceIds = [...new Set(data.filter((t: any) => t.payment_source).map((t: any) => t.payment_source))];
           if (sourceIds.length > 0) {
@@ -362,7 +409,6 @@ async function executeTool(
           }
         }
 
-        // Calculate summary stats
         const totalAmount = (data || []).reduce((sum: number, t: any) => sum + Number(t.amount), 0);
         const avgAmount = data && data.length > 0 ? totalAmount / data.length : 0;
 
@@ -450,7 +496,6 @@ async function executeTool(
         const { data, error } = await query;
         if (error) return JSON.stringify({ error: error.message });
 
-        // Aggregate by category
         const categoryTotals: Record<string, { total: number; count: number; min: number; max: number }> = {};
         (data || []).forEach((t: any) => {
           const amt = Number(t.amount);
@@ -655,7 +700,6 @@ async function executeTool(
             .select("category, limit_amount")
             .eq("budget_id", budget.id);
 
-          // Get actual spending for budget period
           const now = new Date();
           const startDate = budget.start_date || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
           
@@ -727,7 +771,6 @@ async function executeTool(
           .sort((a: any, b: any) => Number(b.amount) - Number(a.amount))
           .slice(0, 20);
 
-        // Enrich with source names
         if (outliers.length > 0) {
           const sourceIds = [...new Set(outliers.filter((t: any) => t.payment_source).map((t: any) => t.payment_source))];
           if (sourceIds.length > 0) {
@@ -810,7 +853,7 @@ async function executeTool(
         };
         if (args.target_date) insertData.target_date = args.target_date;
 
-        const { data, error } = await supabaseService
+        const { data, error } = await supabase
           .from("savings_goals")
           .insert(insertData)
           .select()
@@ -834,8 +877,7 @@ async function executeTool(
       case "update_savings_goal": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
 
-        // First fetch current goal
-        const { data: currentGoal, error: fetchErr } = await supabaseService
+        const { data: currentGoal, error: fetchErr } = await supabase
           .from("savings_goals")
           .select("*")
           .eq("id", args.goal_id)
@@ -859,7 +901,7 @@ async function executeTool(
           }
         }
 
-        const { data, error } = await supabaseService
+        const { data, error } = await supabase
           .from("savings_goals")
           .update(updates)
           .eq("id", args.goal_id)
@@ -874,7 +916,7 @@ async function executeTool(
       case "get_goal_progress": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
 
-        const { data: goals, error: gErr } = await supabaseService
+        const { data: goals, error: gErr } = await supabase
           .from("savings_goals")
           .select("*")
           .eq("user_id", userId)
@@ -884,17 +926,16 @@ async function executeTool(
         if (gErr) return JSON.stringify({ error: gErr.message });
         if (!goals || goals.length === 0) return JSON.stringify({ message: "Nema postavljenih ciljeva štednje.", goals: [] });
 
-        // Calculate average monthly savings from last 3 months
         const now = new Date();
         const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
         const { data: incomeData } = await applyModeFilter(
-          supabaseService.from("expenses").select("amount")
+          supabase.from("expenses").select("amount")
             .eq("user_id", userId).eq("type", "income")
             .gte("date", threeMonthsAgo.toISOString()),
           businessProfileId
         );
         const { data: expenseData } = await applyModeFilter(
-          supabaseService.from("expenses").select("amount")
+          supabase.from("expenses").select("amount")
             .eq("user_id", userId).eq("type", "expense")
             .gte("date", threeMonthsAgo.toISOString()),
           businessProfileId
@@ -942,7 +983,7 @@ async function executeTool(
         };
         if (businessProfileId) reminderData.business_profile_id = businessProfileId;
 
-        const { data, error } = await supabaseService
+        const { data, error } = await supabase
           .from("reminders")
           .insert(reminderData)
           .select()
@@ -960,7 +1001,7 @@ async function executeTool(
       case "get_reminders": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
 
-        let query = supabaseService
+        let query = supabase
           .from("reminders")
           .select("*")
           .eq("user_id", userId)
@@ -991,7 +1032,7 @@ async function executeTool(
       case "complete_reminder": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
 
-        const { data, error } = await supabaseService
+        const { data, error } = await supabase
           .from("reminders")
           .update({ is_completed: true })
           .eq("id", args.reminder_id)
@@ -1003,6 +1044,98 @@ async function executeTool(
         if (!data) return JSON.stringify({ error: "Podsjetnik nije pronađen." });
 
         return JSON.stringify({ success: true, message: `Podsjetnik "${(data as any).title}" označen kao završen.` });
+      }
+
+      case "extract_memories": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        const memories = args.memories || [];
+        if (memories.length === 0) return JSON.stringify({ message: "Nema memorija za spremanje." });
+
+        // Check current count - max 50 per user per mode
+        let countQuery = supabase
+          .from("user_memories")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId);
+        
+        if (businessProfileId) {
+          countQuery = countQuery.eq("business_profile_id", businessProfileId);
+        } else {
+          countQuery = countQuery.is("business_profile_id", null);
+        }
+
+        const { count: currentCount } = await countQuery;
+        const slotsAvailable = Math.max(0, 50 - (currentCount || 0));
+
+        if (slotsAvailable === 0) {
+          // Delete oldest memories to make room
+          const { data: oldest } = await supabase
+            .from("user_memories")
+            .select("id")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: true })
+            .limit(memories.length);
+          
+          if (oldest && oldest.length > 0) {
+            await supabase
+              .from("user_memories")
+              .delete()
+              .in("id", oldest.map((m: any) => m.id));
+          }
+        }
+
+        const toInsert = memories.slice(0, 10).map((m: any) => ({
+          user_id: userId,
+          content: m.content,
+          category: m.category || "fact",
+          business_profile_id: businessProfileId || null,
+        }));
+
+        const { data, error } = await supabase
+          .from("user_memories")
+          .insert(toInsert)
+          .select();
+
+        if (error) return JSON.stringify({ error: error.message });
+        return JSON.stringify({ success: true, saved_count: (data || []).length, message: "Memorije spremljene." });
+      }
+
+      case "get_memories": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        let query = supabase
+          .from("user_memories")
+          .select("*")
+          .eq("user_id", userId)
+          .order("updated_at", { ascending: false });
+
+        if (businessProfileId) {
+          query = query.eq("business_profile_id", businessProfileId);
+        } else {
+          query = query.is("business_profile_id", null);
+        }
+
+        const { data, error } = await query;
+        if (error) return JSON.stringify({ error: error.message });
+
+        return JSON.stringify({ memories: data || [], count: (data || []).length });
+      }
+
+      case "delete_memory": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        const { data, error } = await supabase
+          .from("user_memories")
+          .delete()
+          .eq("id", args.memory_id)
+          .eq("user_id", userId)
+          .select()
+          .single();
+
+        if (error) return JSON.stringify({ error: error.message });
+        if (!data) return JSON.stringify({ error: "Memorija nije pronađena." });
+
+        return JSON.stringify({ success: true, message: `Memorija obrisana.` });
       }
 
       default:
@@ -1020,7 +1153,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, financialContext, activeBusinessProfileId, businessProfileName } = await req.json();
+    const { messages, financialContext, activeBusinessProfileId, businessProfileName, sessionId } = await req.json();
     const businessProfileId: string | null = activeBusinessProfileId || null;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -1053,6 +1186,54 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ===== LOAD CHAT HISTORY & MEMORIES =====
+    let chatHistory: any[] = [];
+    let userMemories: any[] = [];
+
+    if (userId && sessionId) {
+      // Load last 30 messages from this session
+      const { data: historyData } = await supabaseService
+        .from("chat_messages")
+        .select("role, content")
+        .eq("user_id", userId)
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true })
+        .limit(30);
+
+      chatHistory = historyData || [];
+    }
+
+    if (userId) {
+      // Load user memories
+      let memQuery = supabaseService
+        .from("user_memories")
+        .select("id, content, category")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false })
+        .limit(50);
+
+      if (businessProfileId) {
+        memQuery = memQuery.eq("business_profile_id", businessProfileId);
+      } else {
+        memQuery = memQuery.is("business_profile_id", null);
+      }
+
+      const { data: memData } = await memQuery;
+      userMemories = memData || [];
+    }
+
+    // Build memories section for system prompt
+    const memoriesSection = userMemories.length > 0
+      ? `\n═══════════════════════════════════════
+🧠 ŠTO ZNAM O KORISNIKU (memorije iz prethodnih razgovora)
+═══════════════════════════════════════
+${userMemories.map((m: any) => `- [${m.category}] ${m.content}`).join("\n")}
+
+Koristi ove informacije za personalizaciju savjeta. Ako primijetiš novu važnu činjenicu o korisniku (cilj, navika, preferencija), koristi extract_memories alat da je spremiš.
+Ako korisnik kaže da nešto više nije točno ili traži brisanje — koristi delete_memory s odgovarajućim ID-om.
+`
+      : `\nNemaš još spremljenih memorija o korisniku. Kad naučiš nešto važno (financijski cilj, navika, preferencija), koristi extract_memories alat da to zapamtiš za buduće razgovore.\n`;
+
     // Build system prompt
     const modeLabel = businessProfileId
       ? `POSLOVNI NAČIN: ${businessProfileName || "Nepoznata tvrtka"}`
@@ -1077,6 +1258,7 @@ TRENUTNI NAČIN RADA: 👤 OSOBNI
     const systemPrompt = `Ti si financijski AI stručnjak u aplikaciji V&M Balance.
 
 ${crossModeInstructions}
+${memoriesSection}
 
 TVOJA ULOGA:
 Kombinacija stručnog financijskog savjetnika, analitičara i strateškog planera. Tretiraš korisnikove financije kao da si CFO ${businessProfileId ? `tvrtke "${businessProfileName}"` : "njegove osobne ekonomije"}. Koristiš razgovorne upite za dubinsku analizu umjesto dashboarda.
@@ -1111,6 +1293,17 @@ Možeš postavljati podsjetnike za korisnika:
 - Tipovi: payment (plaćanje), goal (cilj), review (pregled financija), custom (ostalo).
 - Kad korisnik pita "Što imam na rasporedu?" ili "Koji su mi podsjetnici?" → pozovi get_reminders.
 - Za dodavanje u kalendar: nakon kreiranja podsjetnika, reci korisniku da može koristiti gumb "Dodaj u kalendar" u obavijestima.
+
+═══════════════════════════════════════
+🧠 PAMĆENJE — KAKO KORISTITI MEMORIJE
+═══════════════════════════════════════
+Imaš mogućnost pamtiti važne činjenice o korisniku između razgovora:
+- Kad korisnik kaže nešto važno (financijski cilj, životna situacija, preferencija) → koristi extract_memories
+- Primjeri memorija: "Štedi za auto do ljeta 2027", "Preferira gotovinu za male kupnje", "Ima dvoje djece"
+- NE pamti trivijalne stvari ili podatke koji se stalno mijenjaju (npr. trenutni saldo)
+- Kad korisnik pita "Što znaš o meni?" → koristi get_memories
+- Kad korisnik kaže "Zaboravi to" ili "To više nije točno" → koristi delete_memory
+- NIKAD ne spremaj osjetljive podatke (lozinke, PIN-ove, brojeve kartica)
 
 ═══════════════════════════════════════
 🎯 INTERAKTIVNO PLANIRANJE CILJEVA
@@ -1210,15 +1403,33 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
 5. Koristi čitljive nazive stupaca na hrvatskom (Datum, Opis, Iznos, Kategorija, Izvor, itd.)
 6. Iznose formatiraj s 2 decimale i oznakom valute`;
 
-    // Prepare messages for AI with tools
+    // Build messages: system + history from DB + current messages from client
+    // Use DB history if available, otherwise fall back to client messages
+    const userMessages = chatHistory.length > 0
+      ? [...chatHistory, ...messages.filter((m: any) => !chatHistory.some((h: any) => h.content === m.content && h.role === m.role))]
+      : messages;
+
     const aiMessages = [
       { role: "system", content: systemPrompt },
-      ...messages,
+      ...userMessages,
     ];
+
+    // ===== SAVE USER MESSAGE TO DB =====
+    const lastUserMsg = messages[messages.length - 1];
+    if (userId && sessionId && lastUserMsg?.role === "user") {
+      await supabaseService.from("chat_messages").insert({
+        user_id: userId,
+        session_id: sessionId,
+        role: "user",
+        content: lastUserMsg.content,
+        business_profile_id: businessProfileId,
+      });
+    }
 
     // Tool-calling loop
     const MAX_TOOL_ROUNDS = 8;
     let currentMessages = aiMessages;
+    let finalAssistantContent = "";
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const aiBody: any = {
@@ -1261,7 +1472,47 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
       }
 
       if (isLastPossibleRound) {
-        return new Response(response.body, {
+        // For streaming responses, we need to tee the stream to capture content for DB save
+        const [streamForClient, streamForCapture] = response.body!.tee();
+
+        // Save assistant response in background
+        if (userId && sessionId) {
+          (async () => {
+            try {
+              const reader = streamForCapture.getReader();
+              const decoder = new TextDecoder();
+              let fullContent = "";
+              
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const text = decoder.decode(value, { stream: true });
+                for (const line of text.split("\n")) {
+                  if (!line.startsWith("data: ") || line.includes("[DONE]")) continue;
+                  try {
+                    const parsed = JSON.parse(line.slice(6));
+                    const content = parsed.choices?.[0]?.delta?.content;
+                    if (content) fullContent += content;
+                  } catch { /* ignore */ }
+                }
+              }
+              
+              if (fullContent) {
+                await supabaseService.from("chat_messages").insert({
+                  user_id: userId,
+                  session_id: sessionId,
+                  role: "assistant",
+                  content: fullContent,
+                  business_profile_id: businessProfileId,
+                });
+              }
+            } catch (e) {
+              console.error("Error saving assistant message:", e);
+            }
+          })();
+        }
+
+        return new Response(streamForClient, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
       }
@@ -1299,9 +1550,21 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
         continue;
       }
 
-      // AI responded with text - wrap as SSE or stream
+      // AI responded with text - save to DB and wrap as SSE
       if (choice.message?.content) {
         const content = choice.message.content;
+        
+        // Save assistant message to DB
+        if (userId && sessionId) {
+          supabaseService.from("chat_messages").insert({
+            user_id: userId,
+            session_id: sessionId,
+            role: "assistant",
+            content,
+            business_profile_id: businessProfileId,
+          }).then(() => {});
+        }
+
         const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
         return new Response(sseData, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
@@ -1320,6 +1583,49 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           stream: true,
         }),
       });
+
+      // Tee for saving
+      if (userId && sessionId && finalResponse.body) {
+        const [streamForClient, streamForCapture] = finalResponse.body.tee();
+        
+        (async () => {
+          try {
+            const reader = streamForCapture.getReader();
+            const decoder = new TextDecoder();
+            let fullContent = "";
+            
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const text = decoder.decode(value, { stream: true });
+              for (const line of text.split("\n")) {
+                if (!line.startsWith("data: ") || line.includes("[DONE]")) continue;
+                try {
+                  const parsed = JSON.parse(line.slice(6));
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  if (content) fullContent += content;
+                } catch { /* ignore */ }
+              }
+            }
+            
+            if (fullContent) {
+              await supabaseService.from("chat_messages").insert({
+                user_id: userId,
+                session_id: sessionId,
+                role: "assistant",
+                content: fullContent,
+                business_profile_id: businessProfileId,
+              });
+            }
+          } catch (e) {
+            console.error("Error saving assistant message:", e);
+          }
+        })();
+
+        return new Response(streamForClient, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
 
       return new Response(finalResponse.body, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
