@@ -2491,6 +2491,48 @@ export type Database = {
         }
         Relationships: []
       }
+      reminders: {
+        Row: {
+          business_profile_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          notified: boolean | null
+          related_entity_id: string | null
+          remind_at: string
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          business_profile_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          notified?: boolean | null
+          related_entity_id?: string | null
+          remind_at: string
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          notified?: boolean | null
+          related_entity_id?: string | null
+          remind_at?: string
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       savings_goals: {
         Row: {
           budget_id: string | null
