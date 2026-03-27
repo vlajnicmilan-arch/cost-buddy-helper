@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import aiAvatarImage from '@/assets/ai-avatar.png';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface BudgetInfo {
   name: string;
@@ -49,6 +50,7 @@ interface FinancialAssistantDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  businessProfileName?: string;
 }
 
 export const FinancialAssistantDialog = ({
@@ -62,9 +64,11 @@ export const FinancialAssistantDialog = ({
   open: controlledOpen,
   onOpenChange,
   hideTrigger = false,
+  businessProfileName: propBusinessProfileName,
 }: FinancialAssistantDialogProps) => {
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canAccessAI = hasAccess('ai_assistant');
+  const { activeBusinessProfileId, businessModeEnabled } = useAppState();
   const [internalOpen, setInternalOpen] = useState(false);
   
   // Support both controlled and uncontrolled modes
@@ -272,8 +276,12 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
     };
   }, [expenses, totalIncome, totalExpenses, balance, paymentSources, budgets, projects, formatAmount]);
 
+  const resolvedBusinessProfileName = propBusinessProfileName;
+
   const { messages, isLoading, sendMessage, clearMessages } = useFinancialAssistant({
     financialContext,
+    activeBusinessProfileId: businessModeEnabled ? activeBusinessProfileId : undefined,
+    businessProfileName: resolvedBusinessProfileName,
   });
 
   // Scroll to bottom when messages change

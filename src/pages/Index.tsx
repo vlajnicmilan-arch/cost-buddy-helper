@@ -730,6 +730,7 @@ const Index = () => {
             open={assistantDialogOpen}
             onOpenChange={setAssistantDialogOpen}
             hideTrigger
+            businessProfileName={businessProfile?.company_name}
           />
         )}
 
