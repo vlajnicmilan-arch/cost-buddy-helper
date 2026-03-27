@@ -235,6 +235,52 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_reminder",
+      description: "Create a reminder/notification for the user. Use when user wants to be reminded about a payment, deadline, financial review, or any scheduled task.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Short reminder title (e.g. 'Plati račun za struju')" },
+          remind_at: { type: "string", description: "When to remind (ISO 8601 datetime, e.g. '2026-04-01T09:00:00Z')" },
+          description: { type: "string", description: "Detailed description (optional)" },
+          type: { type: "string", enum: ["payment", "goal", "review", "custom"], description: "Type of reminder (default: custom)" },
+        },
+        required: ["title", "remind_at"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_reminders",
+      description: "Get all active (not completed) reminders for the user, sorted by date.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "complete_reminder",
+      description: "Mark a reminder as completed.",
+      parameters: {
+        type: "object",
+        properties: {
+          reminder_id: { type: "string", description: "ID of the reminder to complete" },
+        },
+        required: ["reminder_id"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // Apply business/personal mode filter to a query
@@ -884,6 +930,81 @@ async function executeTool(
         });
       }
 
+      case "create_reminder": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        const reminderData: any = {
+          user_id: userId,
+          title: args.title,
+          remind_at: args.remind_at,
+          description: args.description || null,
+          type: args.type || "custom",
+        };
+        if (businessProfileId) reminderData.business_profile_id = businessProfileId;
+
+        const { data, error } = await supabaseService
+          .from("reminders")
+          .insert(reminderData)
+          .select()
+          .single();
+
+        if (error) return JSON.stringify({ error: error.message });
+
+        return JSON.stringify({
+          success: true,
+          reminder: data,
+          message: `Podsjetnik "${args.title}" postavljen za ${new Date(args.remind_at).toLocaleString("hr-HR")}.`,
+        });
+      }
+
+      case "get_reminders": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        let query = supabaseService
+          .from("reminders")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("is_completed", false)
+          .order("remind_at", { ascending: true });
+
+        if (businessProfileId) {
+          query = query.eq("business_profile_id", businessProfileId);
+        } else {
+          query = query.is("business_profile_id", null);
+        }
+
+        const { data, error } = await query;
+        if (error) return JSON.stringify({ error: error.message });
+
+        const now = new Date();
+        const reminders = (data || []).map((r: any) => ({
+          ...r,
+          is_overdue: new Date(r.remind_at) < now,
+          time_until: new Date(r.remind_at) > now
+            ? `${Math.round((new Date(r.remind_at).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))} dana`
+            : `Prošlo ${Math.round((now.getTime() - new Date(r.remind_at).getTime()) / (1000 * 60 * 60 * 24))} dana`,
+        }));
+
+        return JSON.stringify({ reminders, count: reminders.length });
+      }
+
+      case "complete_reminder": {
+        if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
+
+        const { data, error } = await supabaseService
+          .from("reminders")
+          .update({ is_completed: true })
+          .eq("id", args.reminder_id)
+          .eq("user_id", userId)
+          .select()
+          .single();
+
+        if (error) return JSON.stringify({ error: error.message });
+        if (!data) return JSON.stringify({ error: "Podsjetnik nije pronađen." });
+
+        return JSON.stringify({ success: true, message: `Podsjetnik "${(data as any).title}" označen kao završen.` });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
@@ -980,6 +1101,16 @@ Piši kao da objašnjavaš prijatelju koji ne zna financije:
 - Umjesto "cash flow" → "koliko novca dolazi i odlazi"
 - Umjesto "deficit" → "potrošio si više nego što si zaradio"
 Koristi stručne termine SAMO ako korisnik sam koristi taj jezik.
+
+═══════════════════════════════════════
+⏰ PODSJETNICI I KALENDAR
+═══════════════════════════════════════
+Možeš postavljati podsjetnike za korisnika:
+- Kad korisnik spomene rok, plaćanje, ili datum → PONUDI podsjetnik: "Želiš li da te podsjetim na to?"
+- Koristi create_reminder za kreiranje, get_reminders za pregled, complete_reminder za označavanje gotovih.
+- Tipovi: payment (plaćanje), goal (cilj), review (pregled financija), custom (ostalo).
+- Kad korisnik pita "Što imam na rasporedu?" ili "Koji su mi podsjetnici?" → pozovi get_reminders.
+- Za dodavanje u kalendar: nakon kreiranja podsjetnika, reci korisniku da može koristiti gumb "Dodaj u kalendar" u obavijestima.
 
 ═══════════════════════════════════════
 🎯 INTERAKTIVNO PLANIRANJE CILJEVA

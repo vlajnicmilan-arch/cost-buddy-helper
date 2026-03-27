@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -46,6 +46,8 @@ const getNotificationIcon = (type: string) => {
       return <UserPlus className="w-4 h-4 text-primary" />;
     case 'family_message':
       return <Bell className="w-4 h-4 text-primary" />;
+    case 'reminder':
+      return <Clock className="w-4 h-4 text-orange-500" />;
     default:
       return <Bell className="w-4 h-4 text-muted-foreground" />;
   }
