@@ -50,6 +50,7 @@ interface FinancialAssistantDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  businessProfileName?: string;
 }
 
 export const FinancialAssistantDialog = ({
@@ -63,6 +64,7 @@ export const FinancialAssistantDialog = ({
   open: controlledOpen,
   onOpenChange,
   hideTrigger = false,
+  businessProfileName: propBusinessProfileName,
 }: FinancialAssistantDialogProps) => {
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canAccessAI = hasAccess('ai_assistant');
@@ -274,17 +276,12 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
     };
   }, [expenses, totalIncome, totalExpenses, balance, paymentSources, budgets, projects, formatAmount]);
 
-  // Resolve business profile name for AI context
-  const businessProfileName = useMemo(() => {
-    if (!activeBusinessProfileId || !businessModeEnabled) return undefined;
-    // Try to extract from payment sources or budgets context - the name is in the UI context
-    return undefined; // Will be resolved from Index.tsx prop
-  }, [activeBusinessProfileId, businessModeEnabled]);
+  const resolvedBusinessProfileName = propBusinessProfileName;
 
   const { messages, isLoading, sendMessage, clearMessages } = useFinancialAssistant({
     financialContext,
     activeBusinessProfileId: businessModeEnabled ? activeBusinessProfileId : undefined,
-    businessProfileName,
+    businessProfileName: resolvedBusinessProfileName,
   });
 
   // Scroll to bottom when messages change
