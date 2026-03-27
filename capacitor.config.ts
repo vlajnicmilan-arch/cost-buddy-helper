@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.8a8fc6120ac24902a82e29b5b800bc32',
+  appId: 'app.lovable.costbuddy',
   appName: 'Trošak',
   webDir: 'dist',
   server: {
