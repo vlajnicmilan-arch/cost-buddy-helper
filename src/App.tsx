@@ -39,6 +39,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Paywall = lazy(() => import("./pages/Paywall"));
 const Landing = lazy(() => import("./pages/Landing"));
+const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 
 const queryClient = new QueryClient();
 
@@ -117,6 +118,7 @@ const AppRoutes = () => {
         <Route path="/paywall" element={<Paywall />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/avatar-demo" element={<AvatarDemo />} />
         <Route path="/landing" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
