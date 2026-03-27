@@ -1,65 +1,86 @@
 
 
-# AI Asistent: Strogo na podacima, realni savjeti, praćenje ciljeva
+# AI Asistent: Podsjetnici i Kalendar Integracija
 
 ## Pregled
-Nadogradnja AI asistenta da bude **strogo vezan uz stvarne podatke**, koristi **jednostavan jezik**, daje **realne projekcije** i pomaže korisniku **kreirati i pratiti financijske ciljeve** kroz razgovor.
+Dodati sustav podsjetnika koji AI asistent može kreirati iz razgovora. Korisnik dobiva obavijesti kad podsjetnik dođe na red, a može i exportirati događaje kao `.ics` datoteku za Google/Apple/Outlook kalendar.
 
 ## Promjene
 
-### 1. Ojačan System Prompt — Anti-halucinacija i jednostavnost
+### 1. Nova tablica `reminders` (migracija)
+```sql
+CREATE TABLE public.reminders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  business_profile_id uuid,
+  title text NOT NULL,
+  description text,
+  remind_at timestamptz NOT NULL,
+  type text DEFAULT 'custom',
+  is_completed boolean DEFAULT false,
+  notified boolean DEFAULT false,
+  related_entity_id uuid,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
+-- RLS: korisnici upravljaju samo svojim podsjetnicima
+-- Realtime enabled za live update
+```
+
+### 2. Tri nova AI alata u edge funkciji
 **Datoteka: `supabase/functions/financial-assistant/index.ts`**
 
-Prepisati ključne sekcije system prompta:
+- **`create_reminder`** — parametri: `title`, `remind_at`, `description`, `type` (payment/goal/review/custom). AI kreira podsjetnik i potvrdi korisniku.
+- **`get_reminders`** — dohvaća aktivne podsjetnike sortirane po datumu. AI ih može prikazati i komentirati.
+- **`complete_reminder`** — označava podsjetnik kao završen po `reminder_id`.
 
-- **ZLATNO PRAVILO**: "NIKADA ne izmišljaj podatke. Ako nemaš informaciju — reci to. Svaki broj koji kažeš MORA doći iz alata ili konteksta."
-- **Predviđanja**: "Projekcije baziraš ISKLJUČIVO na stvarnim trendovima iz baze. Uvijek naglasi da je to procjena temeljena na X mjeseci podataka, ne garancija."
-- **Jednostavan jezik**: "Piši kao da objašnjavaš prijatelju. Bez financijskog žargona osim ako korisnik ne traži. Umjesto 'likvidnost' reci 'koliko novca imaš na raspolaganju'. Umjesto 'diversifikacija' reci 'rasporediti novac na više mjesta'."
-- **Razrada planova**: "Kad korisnik želi plan (npr. 'želim uštedjeti za auto'), predloži konkretne korake: koliko mjesečno trebaju štedjeti, koliko dugo, i ponudi da se postavi cilj štednje u aplikaciji."
+System prompt se proširuje sekcijom za podsjetnike — AI nudi podsjetnik kad se dogovore rokovi ili plaćanja.
 
-### 2. Novi alat: `create_savings_goal`
-**Datoteka: `supabase/functions/financial-assistant/index.ts`**
+### 3. Cron edge funkcija `check-reminders`
+**Nova datoteka: `supabase/functions/check-reminders/index.ts`**
 
-Dodati tool koji AI može pozvati iz razgovora:
-- Parametri: `name`, `target_amount`, `deadline` (opcionalno), `monthly_contribution` (opcionalno)
-- Kreira zapis u `savings_goals` tablici za korisnika
-- AI može reći: "Postavio sam ti cilj 'Auto' — 10.000€ s mjesečnom uplatom od 500€. Želiš li nešto promijeniti?"
+- Svakih 15 min (poziva se putem pg_cron ili externog schedulera)
+- Pronalazi podsjetnike gdje je `remind_at <= now()` i `notified = false` i `is_completed = false`
+- Kreira zapis u `notifications` tablici (postojeći sustav)
+- Označava podsjetnik kao `notified = true`
 
-### 3. Novi alat: `update_savings_goal`
-**Datoteka: `supabase/functions/financial-assistant/index.ts`**
+### 4. ICS export na klijentu
+**Nova datoteka: `src/lib/icsExport.ts`**
 
-- Parametri: `goal_id`, `current_amount` (dodaj iznos), `target_amount`, `name`
-- Omogućuje AI-u da ažurira ciljeve kroz razgovor
+Utility funkcija koja iz reminder podataka generira `.ics` string i nudi download. Koristi se kad AI predloži "Dodaj u kalendar".
 
-### 4. Novi alat: `get_goal_progress`
-**Datoteka: `supabase/functions/financial-assistant/index.ts`**
+### 5. Prikaz podsjetnika u NotificationsDropdown
+**Datoteka: `src/components/NotificationsDropdown.tsx`**
 
-- Dohvaća sve ciljeve s izračunom: postotak ostvarenosti, koliko još treba, procjena vremena do cilja na temelju prosjeka štednje zadnja 3 mjeseca
-- AI koristi ovo za realne izvještaje: "Do sada si uštedio 2.500€ od 10.000€ (25%). Zadnja 3 mjeseca štediš prosječno 450€/mj — po tom tempu trebat će ti još ~17 mjeseci."
-
-### 5. Zaštita od halucinacija u kodu
-**Datoteka: `supabase/functions/financial-assistant/index.ts`**
-
-- U system prompt dodati eksplicitne zabrane:
-  - "NE koristi fraze poput 'prema mojim procjenama' bez pozivanja alata"
-  - "Kad daješ projekciju, OBAVEZNO navedi na koliko podataka se temeljš (npr. 'Na temelju 47 transakcija u zadnja 3 mjeseca')"
-  - "Ako korisnik pita nešto za što nemaš podatke u bazi, reci: 'Nemam dovoljno podataka o tome. Možeš li unijeti [X] pa ću ti dati točniju analizu?'"
-
-### 6. Razgovorni pristup ciljevima
-U system promptu dodati sekciju za interaktivno planiranje:
-- "Kad korisnik izrazi želju (npr. 'želim smanjiti troškove'), NE daj odmah savjet. Prvo pitaj: 'Na što misliš konkretno? Koja kategorija te brine?' pa tek onda analiziraj."
-- "Kad predlažeš plan, podijeli ga u korake i pitaj korisnika slaže li se s korakom 1 prije nego nastaviš."
+Dodati ikonu za tip `reminder` u `getNotificationIcon`. Ništa više — postojeći sustav obavijesti automatski prikazuje reminder notifikacije.
 
 ## Tehnički detalji
 
-Novi toolovi u `tools` nizu:
 ```text
-create_savings_goal  → INSERT u savings_goals (user_id, name, target_amount, deadline)
-update_savings_goal  → UPDATE savings_goals SET ... WHERE id = goal_id AND user_id = userId  
-get_goal_progress    → SELECT iz savings_goals + izračun tempa štednje iz expenses
+Tablica: reminders
+  id, user_id, business_profile_id, title, description,
+  remind_at, type, is_completed, notified, related_entity_id, created_at
+
+AI toolovi (u executeTool):
+  create_reminder  → INSERT INTO reminders (s mode filterom)
+  get_reminders    → SELECT WHERE is_completed=false, sortirano po remind_at
+  complete_reminder → UPDATE SET is_completed=true
+
+check-reminders edge fn:
+  SELECT reminders WHERE remind_at <= now() AND notified=false AND is_completed=false
+  → INSERT INTO notifications (user_id, title, message, type='reminder')
+  → UPDATE reminders SET notified=true
+
+ICS format:
+  VCALENDAR → VEVENT s DTSTART, SUMMARY, DESCRIPTION
+  Download kao blob
 ```
 
-Promjene u system promptu (~30 linija zamjene/dodavanja u sekcijama TVOJA ULOGA, PRAVILA, i nova sekcija ANTI-HALUCINACIJA).
-
-Sve promjene su u jednoj datoteci: `supabase/functions/financial-assistant/index.ts`
+Datoteke za promjenu:
+- Nova migracija za `reminders` tablicu + RLS
+- `supabase/functions/financial-assistant/index.ts` — 3 nova toola + system prompt
+- `supabase/functions/check-reminders/index.ts` — nova edge funkcija
+- `src/lib/icsExport.ts` — ICS generator
+- `src/components/NotificationsDropdown.tsx` — ikona za reminder tip
 
