@@ -5,8 +5,9 @@ const config: CapacitorConfig = {
   appName: 'V&M Balance',
   webDir: 'dist',
   server: {
-    url: 'https://cost-buddy-helper.lovable.app?forceHideBadge=true',
+    url: 'https://vmbalance.com?forceHideBadge=true',
     cleartext: true,
+    allowNavigation: ['vmbalance.com', 'www.vmbalance.com', 'cost-buddy-helper.lovable.app'],
   },
   plugins: {
     SplashScreen: {
