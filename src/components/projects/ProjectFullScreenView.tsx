@@ -468,6 +468,13 @@ export const ProjectFullScreenView = ({
                 )}
               </Tabs>
             </div>
+
+            {/* Budget History Dialog */}
+            <ProjectBudgetHistoryDialog
+              open={budgetHistoryOpen}
+              onOpenChange={setBudgetHistoryOpen}
+              projectId={project.id}
+            />
           </motion.div>
 
         </>
