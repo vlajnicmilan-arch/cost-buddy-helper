@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -8,7 +8,7 @@ import { format, differenceInDays, isAfter, isBefore, startOfDay, addDays } from
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { 
-  Loader2, Target, Calendar, AlertTriangle, CheckCircle2, Clock, PlayCircle 
+  Loader2, Target, Calendar, AlertTriangle, CheckCircle2, Clock, PlayCircle, ArrowRight
 } from 'lucide-react';
 
 interface ProjectTimelineTabProps {
