@@ -175,7 +175,9 @@ const Index = () => {
   const contextLookup = useMemo(() => ({
     budgets: budgetsWithStats.map(b => ({ id: b.id, name: b.name, icon: b.icon, color: b.color })),
     projects: projects.map(p => ({ id: p.id, name: p.name, icon: p.icon, color: p.color })),
-  }), [budgetsWithStats, projects]);
+    customPaymentSources: customPaymentSources.map(s => ({ id: s.id, name: s.name, icon: s.icon, color: s.color, cards: s.cards?.map(c => ({ id: c.id, last_four_digits: c.last_four_digits })) })),
+    customCategories: customPaymentSources.length >= 0 ? undefined : undefined, // placeholder — loaded below
+  }), [budgetsWithStats, projects, customPaymentSources]);
 
   const {
     expenses,

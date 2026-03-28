@@ -1,3 +1,4 @@
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Wallet, TrendingUp, TrendingDown, ArrowLeftRight, PiggyBank, Repeat } from 'lucide-react';
@@ -22,7 +23,7 @@ interface SummarySectionProps {
   onRecurringClick: () => void;
 }
 
-export const SummarySection = ({
+export const SummarySection = React.memo(({
   balance,
   netWorth,
   totalIncome,
