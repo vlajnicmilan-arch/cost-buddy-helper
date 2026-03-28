@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +10,7 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useProjectFunding } from '@/hooks/useProjectFunding';
 import { useProjectCollaborators } from '@/hooks/useProjectCollaborators';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
+import { useProjectMemberPermissions } from '@/hooks/useProjectMemberPermissions';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -62,8 +63,12 @@ export const ProjectFullScreenView = ({
   const { funding, incomeSources, totalAllocated, totalSourcesCount, loading: fundingLoading, refetch: refetchFunding } = useProjectFunding(project?.id || null);
   const { members, invitations, isManager, loading: membersLoading, refetch: refetchMembers } = useProjectMembers(project?.id || null);
   const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
+  const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
   
   const currentUserRole = project?.role || 'viewer';
+
+  // Determine if current user can see a tab
+  const canSeeTab = (tabKey: string) => isManager || isTabVisible(tabKey);
 
   // Reset tab when project changes or closes
   useEffect(() => {
