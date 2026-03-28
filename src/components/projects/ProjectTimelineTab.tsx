@@ -65,6 +65,7 @@ export const ProjectTimelineTab = ({
 }: ProjectTimelineTabProps) => {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
+  const ganttRef = useRef<HTMLDivElement>(null);
 
   const locale = i18n.language === 'hr' ? hr : i18n.language === 'de' ? de : enUS;
 
