@@ -80,7 +80,7 @@ export const setAutoUpdatePreference = (enabled: boolean): void => {
   }
 };
 
-export const PWAUpdatePrompt = () => {
+const PWAUpdatePromptInner = () => {
   const { t } = useTranslation();
   const [showPrompt, setShowPrompt] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
@@ -308,4 +308,9 @@ export const PWAUpdatePrompt = () => {
       </AnimatePresence>
     </>
   );
+};
+
+export const PWAUpdatePrompt = () => {
+  if (isNativeApp) return null;
+  return <PWAUpdatePromptInner />;
 };
