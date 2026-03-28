@@ -1,3 +1,4 @@
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -17,7 +18,7 @@ interface QuickLinksSectionProps {
   onDeleteExpense: (id: string) => Promise<any>;
 }
 
-export const QuickLinksSection = ({
+export const QuickLinksSection = React.memo(({
   simpleModeEnabled,
   isLocalMode,
   expensesByCategory,
@@ -126,4 +127,4 @@ export const QuickLinksSection = ({
       </Accordion>
     </div>
   );
-};
+});

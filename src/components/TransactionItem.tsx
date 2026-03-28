@@ -5,7 +5,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
 import { Trash2, Sparkles, MessageCircle, CreditCard } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
-import { useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
   projects?: { id: string; name: string; icon?: string | null; color?: string | null }[];
+  customPaymentSources?: Array<{ id: string; name: string; icon: string; color: string; cards?: Array<{ id: string; last_four_digits: string }> }>;
+  customCategories?: Array<{ id: string; name: string; icon: string; color: string }>;
 }
 
 interface TransactionItemProps {
@@ -25,9 +27,12 @@ interface TransactionItemProps {
 const SWIPE_THRESHOLD = -72;
 const DELETE_ZONE = -120;
 
-export const TransactionItem = ({ expense, onDelete, onClick, contextLookup }: TransactionItemProps) => {
-  const { customPaymentSources } = useCustomPaymentSources();
-  const { customCategories } = useCustomCategories();
+const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: TransactionItemProps) => {
+  // Use contextLookup data if provided, otherwise fall back to hooks (backward compat)
+  const hookPaymentSources = useCustomPaymentSources();
+  const hookCategories = useCustomCategories();
+  const customPaymentSources = contextLookup?.customPaymentSources ?? hookPaymentSources.customPaymentSources;
+  const customCategories = contextLookup?.customCategories ?? hookCategories.customCategories;
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
 
@@ -323,4 +328,27 @@ export const TransactionItem = ({ expense, onDelete, onClick, contextLookup }: T
     </div>
   );
 };
+
+export const TransactionItem = React.memo(TransactionItemInner, (prev, next) => {
+  return (
+    prev.expense.id === next.expense.id &&
+    prev.expense.amount === next.expense.amount &&
+    prev.expense.description === next.expense.description &&
+    prev.expense.category === next.expense.category &&
+    prev.expense.type === next.expense.type &&
+    prev.expense.payment_source === next.expense.payment_source &&
+    prev.expense.payment_source_card_id === next.expense.payment_source_card_id &&
+    prev.expense.note === next.expense.note &&
+    prev.expense.merchant_name === next.expense.merchant_name &&
+    prev.expense.budget_id === next.expense.budget_id &&
+    prev.expense.project_id === next.expense.project_id &&
+    prev.expense.ai_extracted === next.expense.ai_extracted &&
+    prev.expense.expense_nature === next.expense.expense_nature &&
+    prev.expense.currency === next.expense.currency &&
+    prev.expense.date.getTime() === next.expense.date.getTime() &&
+    prev.contextLookup === next.contextLookup &&
+    prev.onDelete === next.onDelete &&
+    prev.onClick === next.onClick
+  );
+});
 

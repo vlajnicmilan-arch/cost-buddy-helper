@@ -1,3 +1,4 @@
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -11,7 +12,7 @@ interface PaymentSourcesSectionProps {
   onSourceClick: (source: CustomPaymentSource) => void;
 }
 
-export const PaymentSourcesSection = ({ customPaymentSources, onSourceClick }: PaymentSourcesSectionProps) => {
+export const PaymentSourcesSection = React.memo(({ customPaymentSources, onSourceClick }: PaymentSourcesSectionProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
@@ -132,4 +133,4 @@ export const PaymentSourcesSection = ({ customPaymentSources, onSourceClick }: P
       </CollapsibleContent>
     </Collapsible>
   );
-};
+});

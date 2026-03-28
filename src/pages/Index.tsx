@@ -9,6 +9,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useInstallments } from '@/hooks/useInstallments';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
@@ -168,6 +169,7 @@ const Index = () => {
 
 
   const { ownedPaymentSources: customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
+  const { customCategories } = useCustomCategories();
   const { plans: installmentPlans } = useInstallments();
   const { budgets: budgetsWithStats } = useBudgets();
   const { projects } = useProjects();
@@ -175,7 +177,9 @@ const Index = () => {
   const contextLookup = useMemo(() => ({
     budgets: budgetsWithStats.map(b => ({ id: b.id, name: b.name, icon: b.icon, color: b.color })),
     projects: projects.map(p => ({ id: p.id, name: p.name, icon: p.icon, color: p.color })),
-  }), [budgetsWithStats, projects]);
+    customPaymentSources: customPaymentSources.map(s => ({ id: s.id, name: s.name, icon: s.icon, color: s.color, cards: s.cards?.map(c => ({ id: c.id, last_four_digits: c.last_four_digits })) })),
+    customCategories: customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color })),
+  }), [budgetsWithStats, projects, customPaymentSources, customCategories]);
 
   const {
     expenses,
