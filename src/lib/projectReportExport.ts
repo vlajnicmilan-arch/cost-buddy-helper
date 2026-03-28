@@ -173,6 +173,55 @@ export const generateProjectPDFReport = (data: ProjectReportData): void => {
     });
   }
 
+  // Workers
+  if (data.workers && data.workers.length > 0) {
+    const workerY = (doc as any).lastAutoTable?.finalY + 15 || 120;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Radnici', 14, workerY);
+
+    const workerData = data.workers.map(w => [
+      toAscii(w.name),
+      `${w.hours.toFixed(1)}h`,
+      formatCurrency(w.rate, data.currency) + '/h',
+      formatCurrency(w.cost, data.currency),
+    ]);
+
+    autoTable(doc, {
+      startY: workerY + 4,
+      head: [['Ime', 'Sati', 'Satnica', 'Ukupno']],
+      body: workerData,
+      theme: 'striped',
+      headStyles: { fillColor: [14, 165, 233] },
+      margin: { left: 14 },
+      tableWidth: 140,
+    });
+  }
+
+  // Collaborators
+  if (data.collaborators && data.collaborators.length > 0) {
+    const collabY = (doc as any).lastAutoTable?.finalY + 15 || 120;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Suradnici', 14, collabY);
+
+    const collabData = data.collaborators.map(c => [
+      toAscii(c.name),
+      toAscii(c.service),
+      formatCurrency(c.totalPrice, data.currency),
+      formatCurrency(c.paidAmount, data.currency),
+    ]);
+
+    autoTable(doc, {
+      startY: collabY + 4,
+      head: [['Ime', 'Usluga', 'Ugovoreno', toAscii('Placeno')]],
+      body: collabData,
+      theme: 'striped',
+      headStyles: { fillColor: [168, 85, 247] },
+      margin: { left: 14 },
+    });
+  }
+
   // Transactions (new page)
   if (data.transactions.length > 0) {
     doc.addPage();
