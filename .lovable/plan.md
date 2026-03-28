@@ -1,52 +1,21 @@
 
-Cilj: pomoći ti da dođeš do APK fajla bez lutanja po Android Studiju.
 
-1. Ono što se već vidi na screenshotu
-- Build je zapravo prošao uspješno.
-- U dnu piše `BUILD SUCCESSFUL` i `assembleDebug UP-TO-DATE`.
-- To vrlo često znači da je APK već napravljen.
+## Problem
 
-2. Gdje prvo da ga tražiš
-- U lijevom panelu otvori redom:
-  - `app`
-  - `build`
-  - `outputs`
-  - `apk`
-  - `debug`
-- Tamo bi trebao biti fajl:
-  - `app-debug.apk`
+Fajl `version.json` se nalazi u korijenu projekta umjesto u `public/` folderu. Vite samo servira fajlove iz `public/` kao statičke resurse. Zato `/version.json` ne postoji na produkciji i provjera ažuriranja uvijek javlja "Provjera nije uspjela".
 
-3. Zašto ne vidiš “Build Bundle / APK”
-- Kod tebe je uključen novi Android Studio izgled gdje gornji klasični meni nije stalno prikazan.
-- Kad klikneš obični “Build”, on samo pokrene build procesa, ne otvara dodatni izbor.
+## Rješenje
 
-4. Kako doći do te opcije u tvom interfejsu
-- Klikni gore lijevo na ikonu s tri crtice / hamburger meni.
-- Zatim idi:
-  - `Build`
-  - `Build Bundle(s) / APK(s)`
-  - `Build APK(s)`
+1. **Premjestiti `version.json` u `public/` folder** -- tako će Vite automatski uključiti taj fajl u build i bit će dostupan na `https://cost-buddy-helper.lovable.app/version.json`.
 
-5. Ako ni to ne vidiš
-- Pritisni `Ctrl + Shift + A`
-- Upiši:
-  - `Build APK`
-  ili
-  - `Generate Signed Bundle or APK`
-- Klikni ponuđenu opciju iz pretrage.
+2. **Objaviti (Publish) izmjenu** -- nakon premještanja, kliknuti Update u publish dijalogu da nova verzija ode na produkciju.
 
-6. Najjednostavniji plan za tebe sada
-- Prvo provjeri da li već postoji:
-  - `android/app/build/outputs/apk/debug/app-debug.apk`
-- Ako postoji: to je tvoj APK i možeš ga prebaciti na mobitel.
-- Ako ne postoji: idi na hamburger meni gore lijevo i odatle pokreni `Build APK(s)`.
+3. **Testirati na mobitelu** -- otvoriti nativnu aplikaciju i provjeriti da "Provjera ažuriranja" više ne javlja grešku.
 
-Tehnički detalj
-- Obični build često pokreće `assembleDebug`.
-- To može napraviti APK i bez iskačućeg prozora.
-- Zato je najvažnije gledati folder `app/build/outputs/apk/debug`, a ne čekati poseban popup.
+## Tehnički detalj
 
-Ako budemo radili sljedeći korak, plan je:
-1. pronaći tačan `app-debug.apk`
-2. pokazati kako da ga prebaciš na telefon
-3. po želji napraviti i “release” verziju za dijeljenje
+- Fajl `version.json` sadrži `{ "version": "1.3.3" }`
+- `PWAUpdatePrompt.tsx` na nativnoj platformi dohvaća `/version.json` s produkcijskog URL-a
+- Kada fajl ne postoji (404), `fetchLatestVersion()` vraća `null` i prikazuje se toast greška
+- Premještanje u `public/` folder rješava problem bez ikakvih drugih promjena u kodu
+
