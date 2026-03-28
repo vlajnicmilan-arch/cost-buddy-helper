@@ -181,7 +181,8 @@ export const ProjectFullScreenView = ({
 
             {/* Main content */}
             <div className="max-w-6xl mx-auto p-4 pb-24">
-              {/* Budget Overview - Unified logic based on completed milestones */}
+              {/* Budget Overview - only show if user can see funding */}
+              {canSeeTab('funding') && (
               <div className="p-4 rounded-lg bg-muted/50 space-y-3 mb-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -227,6 +228,7 @@ export const ProjectFullScreenView = ({
                   <p className="text-center text-muted-foreground py-2">{t('projects.noFundingYet', 'Nema primljenih sredstava')}</p>
                 )}
               </div>
+              )}
 
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -237,10 +239,13 @@ export const ProjectFullScreenView = ({
                         <TrendingUp className="w-3.5 h-3.5" />
                         {t('projects.overview', 'Pregled')}
                       </TabsTrigger>
+                      {canSeeTab('timeline') && (
                       <TabsTrigger value="timeline" className="gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground">
                         <GanttChart className="w-3.5 h-3.5" />
                         {t('projects.timeline', 'Timeline')}
                       </TabsTrigger>
+                      )}
+                      {canSeeTab('milestones') && (
                       <TabsTrigger value="milestones" className="gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground">
                         <Target className="w-3.5 h-3.5" />
                         {t('projects.milestones', 'Faze')}
@@ -248,27 +253,36 @@ export const ProjectFullScreenView = ({
                           <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
                         )}
                       </TabsTrigger>
+                      )}
+                      {canSeeTab('workers') && (
                       <TabsTrigger value="workers" className="gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground">
                         <ClipboardList className="w-3.5 h-3.5" />
                         {t('workers.tab', 'Radnici')}
                       </TabsTrigger>
+                      )}
+                      {canSeeTab('collaborators') && (
                       <TabsTrigger value="collaborators" className="gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground">
                         <Handshake className="w-3.5 h-3.5" />
                         {t('collaborators.tab', 'Suradnici')}
                       </TabsTrigger>
+                      )}
+                      {canSeeTab('funding') && (
                       <TabsTrigger value="funding" className="gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground">
                         <Wallet className="w-3.5 h-3.5" />
                         {t('projects.funding', 'Financiranje')}
                       </TabsTrigger>
+                      )}
                       <TabsTrigger value="members" className="gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground">
                         <Users className="w-3.5 h-3.5" />
                         {t('projects.team', 'Tim')}
                         <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{members.length}</Badge>
                       </TabsTrigger>
+                      {canSeeTab('transactions') && (
                       <TabsTrigger value="transactions" className="gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground">
                         <FileText className="w-3.5 h-3.5" />
                         {t('projects.transactions', 'Transakcije')}
                       </TabsTrigger>
+                      )}
                     </TabsList>
                   </div>
                   {/* Fade hint za scroll */}
