@@ -41,7 +41,7 @@ export const ProjectDetailDialog = ({
 }: ProjectDetailDialogProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('timeline');
   const [reportsOpen, setReportsOpen] = useState(false);
 
   const { stats, expenses, loading: statsLoading, refetch: refetchStats } = useProjectStats(
