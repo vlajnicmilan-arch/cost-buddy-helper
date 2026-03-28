@@ -45,11 +45,13 @@ export const useProjectMilestones = (projectId: string | null) => {
         }
       });
 
-      setMilestones((data || []).map(m => ({
+      setMilestones((data || []).map((m: any) => ({
         ...m,
         status: m.status as MilestoneStatus,
         budget: Number(m.budget) || 0,
-        spent: spentByMilestone.get(m.id) || 0
+        spent: spentByMilestone.get(m.id) || 0,
+        depends_on_milestone_id: m.depends_on_milestone_id || null,
+        reminder_days_before: m.reminder_days_before ?? 3,
       })));
     } catch (error) {
       console.error('Error fetching milestones:', error);
@@ -79,7 +81,9 @@ export const useProjectMilestones = (projectId: string | null) => {
           start_date: milestone.start_date,
           due_date: milestone.due_date,
           sort_order: milestone.sort_order,
-          color: milestone.color || '#3b82f6'
+          color: milestone.color || '#3b82f6',
+          depends_on_milestone_id: milestone.depends_on_milestone_id || null,
+          reminder_days_before: milestone.reminder_days_before ?? 3,
         })
         .select()
         .single();
@@ -116,7 +120,9 @@ export const useProjectMilestones = (projectId: string | null) => {
           due_date: milestone.due_date,
           completed_at: milestone.status === 'completed' ? new Date().toISOString() : null,
           sort_order: milestone.sort_order,
-          color: milestone.color || '#3b82f6'
+          color: milestone.color || '#3b82f6',
+          depends_on_milestone_id: milestone.depends_on_milestone_id || null,
+          reminder_days_before: milestone.reminder_days_before ?? 3,
         })
         .eq('id', milestone.id);
 

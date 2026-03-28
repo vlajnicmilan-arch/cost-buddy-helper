@@ -44,6 +44,8 @@ export interface ProjectMilestone {
   completed_at?: string | null;
   sort_order: number;
   color?: string | null;
+  depends_on_milestone_id?: string | null;
+  reminder_days_before?: number;
   created_at?: string;
   updated_at?: string;
   // Computed
