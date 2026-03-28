@@ -330,6 +330,37 @@ export const ProjectMilestonesTab = ({
               </div>
             </div>
 
+            {/* Dependency */}
+            <div className="space-y-2">
+              <Label>{t('projects.dependsOn', 'Ovisi o fazi')}</Label>
+              <Select value={dependsOn} onValueChange={setDependsOn}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('projects.noDependency', 'Nema ovisnosti')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('projects.noDependency', 'Nema ovisnosti')}</SelectItem>
+                  {milestones
+                    .filter(m => m.id !== editingMilestone?.id)
+                    .map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Reminder days */}
+            <div className="space-y-2">
+              <Label>{t('projects.reminderDays', 'Podsjetnik (dana prije roka)')}</Label>
+              <Input 
+                type="number" 
+                value={reminderDays} 
+                onChange={(e) => setReminderDays(e.target.value)} 
+                min="0" 
+                max="30"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>{t('projects.color', 'Boja')}</Label>
               <div className="flex flex-wrap gap-2">
