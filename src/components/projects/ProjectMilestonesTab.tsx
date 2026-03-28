@@ -111,7 +111,7 @@ export const ProjectMilestonesTab = ({
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
         sort_order: editingMilestone?.sort_order ?? milestones.length,
-        depends_on_milestone_id: dependsOn || null,
+        depends_on_milestone_id: dependsOn && dependsOn !== 'none' ? dependsOn : null,
         reminder_days_before: parseInt(reminderDays) || 3,
       };
 
