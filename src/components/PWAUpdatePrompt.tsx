@@ -307,5 +307,9 @@ const PWAUpdatePromptInner = () => {
         )}
       </AnimatePresence>
     </>
-  );
+};
+
+export const PWAUpdatePrompt = () => {
+  if (isNativeApp) return null;
+  return <PWAUpdatePromptInner />;
 };
