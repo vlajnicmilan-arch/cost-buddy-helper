@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-export const OPTIONAL_TABS = ['timeline', 'milestones', 'workers', 'collaborators', 'funding', 'transactions'] as const;
-export const MANDATORY_TABS = ['overview', 'members'] as const;
+export const OPTIONAL_TABS = ['overview', 'milestones', 'workers', 'collaborators', 'funding', 'transactions'] as const;
+export const MANDATORY_TABS = ['timeline', 'members'] as const;
 
 export type OptionalTab = typeof OPTIONAL_TABS[number];
 
