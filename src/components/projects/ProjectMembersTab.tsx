@@ -45,6 +45,7 @@ export const ProjectMembersTab = ({
   const [inviteRole, setInviteRole] = useState<ProjectRole>('member');
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [permDialog, setPermDialog] = useState<PermDialogState>({ open: false, userId: '', memberName: '' });
 
   const handleGenerateLink = async () => {
     setGeneratingLink(true);
