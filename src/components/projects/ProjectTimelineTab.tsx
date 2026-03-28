@@ -165,6 +165,47 @@ export const ProjectTimelineTab = ({
     return percent >= 0 && percent <= 100 ? percent : null;
   }, [timelineBounds]);
 
+  // Calculate dependency arrows between milestones
+  const ROW_HEIGHT = 52; // info row (~20px) + bar (32px) + gap
+  const BAR_OFFSET_Y = 20; // vertical offset to center of bar within each row
+
+  const dependencyArrows = useMemo(() => {
+    const arrows: { path: string }[] = [];
+    
+    milestones.forEach((milestone, targetIdx) => {
+      if (!milestone.depends_on_milestone_id) return;
+      
+      const sourceIdx = milestones.findIndex(m => m.id === milestone.depends_on_milestone_id);
+      if (sourceIdx === -1) return;
+      
+      const sourceMilestone = milestones[sourceIdx];
+      const sourceStatus = getEffectiveStatus(sourceMilestone);
+      const targetStatus = getEffectiveStatus(milestone);
+      
+      const sourceBar = getMilestoneBarStyle(sourceMilestone, sourceStatus);
+      const targetBar = getMilestoneBarStyle(milestone, targetStatus);
+      
+      // Parse percentages
+      const sourceLeft = parseFloat(sourceBar.left);
+      const sourceWidth = parseFloat(sourceBar.width);
+      const targetLeft = parseFloat(targetBar.left);
+      
+      // Convert to percentage-based coordinates
+      const x1 = sourceLeft + sourceWidth; // right edge of source
+      const x2 = targetLeft; // left edge of target
+      const y1 = sourceIdx * ROW_HEIGHT + BAR_OFFSET_Y + 16; // center of source bar
+      const y2 = targetIdx * ROW_HEIGHT + BAR_OFFSET_Y + 16; // center of target bar
+      
+      // Bézier control points for smooth curve
+      const midX = (x1 + x2) / 2;
+      const path = `M ${x1}% ${y1} C ${midX + 5}% ${y1}, ${midX - 5}% ${y2}, ${x2}% ${y2}`;
+      
+      arrows.push({ path });
+    });
+    
+    return arrows;
+  }, [milestones, timelineBounds]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
