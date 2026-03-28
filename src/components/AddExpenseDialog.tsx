@@ -16,6 +16,7 @@ import { useInstallments } from '@/hooks/useInstallments';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
