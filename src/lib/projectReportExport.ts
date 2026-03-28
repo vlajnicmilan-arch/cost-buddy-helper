@@ -286,6 +286,22 @@ export const generateProjectCSVReport = (data: ProjectReportData): void => {
     summaryRows.push(`"${m.display_name || 'Nepoznato'}","${role}","${m.spent || 0}"`);
   });
 
+  // Workers
+  if (data.workers && data.workers.length > 0) {
+    summaryRows.push('', '"--- RADNICI ---"', '"Ime","Sati","Satnica","Ukupno"');
+    data.workers.forEach(w => {
+      summaryRows.push(`"${w.name}","${w.hours.toFixed(1)}","${w.rate}","${w.cost.toFixed(2)}"`);
+    });
+  }
+
+  // Collaborators
+  if (data.collaborators && data.collaborators.length > 0) {
+    summaryRows.push('', '"--- SURADNICI ---"', '"Ime","Usluga","Ugovoreno","Plaćeno"');
+    data.collaborators.forEach(c => {
+      summaryRows.push(`"${c.name}","${c.service}","${c.totalPrice}","${c.paidAmount}"`);
+    });
+  }
+
   summaryRows.push('', '"--- TRANSAKCIJE ---"', '"Datum","Opis","Faza","Tip","Iznos"');
 
   data.transactions
@@ -342,6 +358,18 @@ export const generateProjectJSONExport = (data: ProjectReportData): void => {
       type: t.type,
       milestone: t.milestone_name,
     })),
+    workers: data.workers?.map(w => ({
+      name: w.name,
+      hours: w.hours,
+      hourlyRate: w.rate,
+      totalCost: w.cost,
+    })) || [],
+    collaborators: data.collaborators?.map(c => ({
+      name: c.name,
+      service: c.service,
+      agreedPrice: c.totalPrice,
+      paidAmount: c.paidAmount,
+    })) || [],
   };
 
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
