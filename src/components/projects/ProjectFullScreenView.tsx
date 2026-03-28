@@ -47,7 +47,7 @@ export const ProjectFullScreenView = ({
 }: ProjectFullScreenViewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const [activeTab, setActiveTab] = useState(initialTab || 'overview');
+  const [activeTab, setActiveTab] = useState(initialTab || 'timeline');
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
 
@@ -73,7 +73,7 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      setActiveTab('overview');
+      setActiveTab('timeline');
     }
   }, [open, project?.id]);
 
