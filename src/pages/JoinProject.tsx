@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { OPTIONAL_TABS } from '@/hooks/useProjectMemberPermissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
@@ -57,7 +58,24 @@ const JoinProject = () => {
       } else if (data?.success) {
         setSuccess(true);
         // Use 'target' from unified response, fallback to 'project' for backward compat
-        setProjectData(data.target || data.project);
+        const target = data.target || data.project;
+        setProjectData(target);
+
+        // Init default permissions (all optional tabs hidden) - client-side fallback
+        if (target?.id && user) {
+          const permRows = OPTIONAL_TABS.map(tab_key => ({
+            project_id: target.id,
+            user_id: user.id,
+            tab_key,
+            visible: false,
+          }));
+          await supabase
+            .from('project_member_permissions')
+            .upsert(permRows, { onConflict: 'project_id,user_id,tab_key' })
+            .then(({ error: permErr }) => {
+              if (permErr) console.log('Permissions init fallback error:', permErr.message);
+            });
+        }
         
         // Redirect after short delay
         setTimeout(() => {

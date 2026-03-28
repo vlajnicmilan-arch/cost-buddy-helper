@@ -2094,6 +2094,44 @@ export type Database = {
           },
         ]
       }
+      project_member_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          tab_key: string
+          updated_at: string
+          user_id: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          tab_key: string
+          updated_at?: string
+          user_id: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          tab_key?: string
+          updated_at?: string
+          user_id?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_member_permissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           created_at: string

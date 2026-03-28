@@ -9,6 +9,7 @@ import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useProjectFunding } from '@/hooks/useProjectFunding';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
+import { useProjectMemberPermissions } from '@/hooks/useProjectMemberPermissions';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,8 @@ export const ProjectDetailDialog = ({
   
   // Get current user's role in the project
   const currentUserRole = project?.role || 'viewer';
+  const { isTabVisible } = useProjectMemberPermissions(project?.id || null);
+  const canSeeTab = (tabKey: string) => isManager || isTabVisible(tabKey);
 
   if (!project) return null;
 
@@ -116,7 +119,8 @@ export const ProjectDetailDialog = ({
           totalAllocated={totalAllocated}
         />
 
-        {/* Budget Overview - Unified logic based on completed milestones */}
+        {/* Budget Overview - only show if user can see funding */}
+        {canSeeTab('funding') && (
         <div className="shrink-0 p-4 rounded-lg bg-muted/50 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -162,19 +166,23 @@ export const ProjectDetailDialog = ({
             <p className="text-center text-muted-foreground py-2">{t('projects.noFundingYet', 'Nema primljenih sredstava')}</p>
           )}
         </div>
+        )}
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="shrink-0 grid grid-cols-6 w-full">
-            <TabsTrigger value="overview" className="gap-1">
+          <TabsList className="shrink-0 flex w-full">
+            <TabsTrigger value="overview" className="gap-1 flex-1">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">{t('projects.overview')}</span>
             </TabsTrigger>
-            <TabsTrigger value="timeline" className="gap-1">
+            {canSeeTab('timeline') && (
+            <TabsTrigger value="timeline" className="gap-1 flex-1">
               <GanttChart className="w-4 h-4" />
               <span className="hidden sm:inline">{t('projects.timeline')}</span>
             </TabsTrigger>
-            <TabsTrigger value="milestones" className="gap-1">
+            )}
+            {canSeeTab('milestones') && (
+            <TabsTrigger value="milestones" className="gap-1 flex-1">
               <Target className="w-4 h-4" />
               <span className="hidden sm:inline">{t('projects.milestones')}</span>
               {milestones.length > 0 && (
@@ -183,19 +191,24 @@ export const ProjectDetailDialog = ({
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="funding" className="gap-1">
+            )}
+            {canSeeTab('funding') && (
+            <TabsTrigger value="funding" className="gap-1 flex-1">
               <Wallet className="w-4 h-4" />
               <span className="hidden sm:inline">{t('projects.funding')}</span>
             </TabsTrigger>
-            <TabsTrigger value="members" className="gap-1">
+            )}
+            <TabsTrigger value="members" className="gap-1 flex-1">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">{t('projects.team')}</span>
               <Badge variant="secondary" className="ml-1 h-5 px-1">{members.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="transactions" className="gap-1">
+            {canSeeTab('transactions') && (
+            <TabsTrigger value="transactions" className="gap-1 flex-1">
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">{t('projects.transactions')}</span>
             </TabsTrigger>
+            )}
           </TabsList>
 
           <div className="flex-1 overflow-y-auto mt-4">
@@ -267,6 +280,7 @@ export const ProjectDetailDialog = ({
               )}
             </TabsContent>
 
+            {canSeeTab('timeline') && (
             <TabsContent value="timeline" className="m-0">
               <ProjectTimelineTab
                 projectId={project.id}
@@ -276,7 +290,9 @@ export const ProjectDetailDialog = ({
                 loading={milestonesLoading}
               />
             </TabsContent>
+            )}
 
+            {canSeeTab('milestones') && (
             <TabsContent value="milestones" className="m-0">
               <ProjectMilestonesTab 
                 projectId={project.id}
@@ -286,7 +302,9 @@ export const ProjectDetailDialog = ({
                 onRefetch={refetchMilestones}
               />
             </TabsContent>
+            )}
 
+            {canSeeTab('funding') && (
             <TabsContent value="funding" className="m-0">
               <ProjectFundingTab
                 projectId={project.id}
@@ -300,6 +318,7 @@ export const ProjectDetailDialog = ({
                 onRefetch={refetchFunding}
               />
             </TabsContent>
+            )}
 
             <TabsContent value="members" className="m-0">
               <ProjectMembersTab
@@ -312,6 +331,7 @@ export const ProjectDetailDialog = ({
               />
             </TabsContent>
 
+            {canSeeTab('transactions') && (
             <TabsContent value="transactions" className="m-0">
               <ProjectTransactionsTab
                 projectId={project.id}
@@ -328,6 +348,7 @@ export const ProjectDetailDialog = ({
                 }}
               />
             </TabsContent>
+            )}
           </div>
         </Tabs>
       </DialogContent>

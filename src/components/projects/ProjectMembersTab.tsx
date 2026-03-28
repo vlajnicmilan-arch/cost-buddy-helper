@@ -7,8 +7,9 @@ import { ProjectMember, ProjectInvitation, ProjectRole, PROJECT_ROLE_LABELS } fr
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus } from 'lucide-react';
+import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectMembersTabProps {
@@ -19,6 +20,14 @@ interface ProjectMembersTabProps {
   loading: boolean;
   onRefetch: () => void;
 }
+
+interface PermDialogState {
+  open: boolean;
+  userId: string;
+  memberName: string;
+}
+
+
 
 export const ProjectMembersTab = ({
   projectId,
@@ -36,6 +45,7 @@ export const ProjectMembersTab = ({
   const [inviteRole, setInviteRole] = useState<ProjectRole>('member');
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [permDialog, setPermDialog] = useState<PermDialogState>({ open: false, userId: '', memberName: '' });
 
   const handleGenerateLink = async () => {
     setGeneratingLink(true);
@@ -251,6 +261,16 @@ export const ProjectMembersTab = ({
                     <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => setPermDialog({ open: true, userId: member.user_id, memberName: member.display_name || '?' })}
+                  title={t('projects.permissions', 'Dozvole')}
+                >
+                  <Shield className="w-4 h-4" />
+                </Button>
                 
                 <Button 
                   variant="ghost" 
@@ -304,6 +324,15 @@ export const ProjectMembersTab = ({
           ))}
         </div>
       )}
+
+      {/* Permissions Dialog */}
+      <ProjectMemberPermissionsDialog
+        open={permDialog.open}
+        onOpenChange={(open) => setPermDialog(prev => ({ ...prev, open }))}
+        projectId={projectId}
+        userId={permDialog.userId}
+        memberName={permDialog.memberName}
+      />
     </div>
   );
 };
