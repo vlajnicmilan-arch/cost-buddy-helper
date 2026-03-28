@@ -1,50 +1,40 @@
 
 
-# Plan: Popravak provjere ažuriranja za nativnu aplikaciju
+# Plan: Popravak provjere ažuriranja na nativnoj aplikaciji
 
 ## Problem
 
-`PWAUpdatePrompt` komponenta vraća `null` za nativne aplikacije (linija 314: `if (isNativeApp) return null`). To znači da se `PWAUpdatePromptInner` nikad ne renderira, `checkForUpdatesRef` ostaje `null`, i kada klikneš "Provjeri ažuriranja" u Postavkama — ili se ništa ne dogodi, ili Service Worker registracija padne u WebView kontekstu i prikaže grešku.
+Dva problema sprečavaju rad "Provjeri ažuriranja" na nativnoj app:
+
+1. **`capacitor.config.ts` nema `server` blok** — aplikacija učitava lokalni `dist` folder umjesto produkcijskog URL-a. Bez Live Sync-a, `version.json` se čita iz bundlea i uvijek vraća istu verziju.
+
+2. **`fetchLatestVersion` koristi relativni path** (`/version.json`) — čak i s Live Sync-om, trebamo osigurati da se dohvaća s produkcijskog servera.
 
 ## Rješenje
 
-Napraviti zasebnu logiku provjere ažuriranja za nativnu aplikaciju koja ne ovisi o Service Workeru:
+### 1. Vratiti Live Sync u `capacitor.config.ts`
 
-### Izmjene u `PWAUpdatePrompt.tsx`
-
-1. Dodati novu funkciju `nativeCheckForUpdates` koja:
-   - Dohvaća `/version.json` s produkcijskog URL-a (no-cache)
-   - Uspoređuje s `APP_VERSION`
-   - Ako je nova verzija dostupna → prikazuje toast s opcijom reload (`window.location.reload()`)
-   - Ako je aplikacija ažurna → prikazuje "Aplikacija je ažurna!" toast
-
-2. Postaviti `checkForUpdatesRef` na tu funkciju odmah pri importu (izvan komponente), tako da Settings može pozvati `checkForUpdates()` bez da PWAUpdatePromptInner bude renderiran.
-
-3. `PWAUpdatePrompt` komponenta i dalje vraća `null` za native — nema potrebe za Service Worker UI-jem.
-
-### Kod (konceptualno)
+Dodati `server` blok koji usmjerava nativnu app na produkcijski URL:
 
 ```typescript
-// Na vrhu datoteke, odmah postavi ref za native
-if (isNativeApp) {
-  checkForUpdatesRef = async () => {
-    const latestVersion = await fetchLatestVersion();
-    if (latestVersion && isRemoteVersionNewer(APP_VERSION, latestVersion)) {
-      toast.info('Nova verzija dostupna!', {
-        action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
-        duration: 10000,
-      });
-    } else {
-      toast.success('Aplikacija je ažurna!');
-    }
-  };
-}
+const config: CapacitorConfig = {
+  appId: 'app.lovable.costbuddy',
+  appName: 'V&M Balance',
+  webDir: 'dist',
+  server: {
+    url: 'https://cost-buddy-helper.lovable.app?forceHideBadge=true',
+    cleartext: true,
+  },
+};
 ```
 
-### Što se mijenja
-- **`PWAUpdatePrompt.tsx`**: Dodaje se native update check logika (~15 linija)
-- Ništa drugo se ne mijenja
+Ovo osigurava da nativna app uvijek učitava najnoviju verziju s produkcije i da `/version.json` dolazi s pravog servera.
 
-### Rezultat
-Gumb "Provjeri ažuriranja" u Postavkama će na nativnoj aplikaciji ispravno provjeriti verziju i ponuditi reload ako postoji novija verzija, bez ikakve ovisnosti o Service Workeru.
+### 2. Rebuild APK
+
+Nakon ove promjene, trebat će:
+- Publishati promjenu
+- Na računalu: `git pull` → `npm run build` → `npx cap sync android` → buildati novi APK
+
+**Napomena**: Ovo je jednokratna promjena. Nakon što Live Sync radi, sve buduće promjene (uključujući "Provjeri ažuriranja") će raditi automatski bez ponovnog builda APK-a.
 
