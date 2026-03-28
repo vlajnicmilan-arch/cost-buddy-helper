@@ -20,7 +20,9 @@ let checkForUpdatesRef: (() => Promise<void>) | null = null;
 if (isNativeApp) {
   checkForUpdatesRef = async () => {
     try {
+      console.log('[NativeUpdate] Starting version check, current:', APP_VERSION);
       const latestVersion = await fetchLatestVersion();
+      console.log('[NativeUpdate] Remote version:', latestVersion);
       if (latestVersion && isRemoteVersionNewer(APP_VERSION, latestVersion)) {
         toast.info(`Nova verzija ${latestVersion} dostupna!`, {
           action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
@@ -29,7 +31,8 @@ if (isNativeApp) {
       } else {
         toast.success('Aplikacija je ažurna!');
       }
-    } catch {
+    } catch (err) {
+      console.error('[NativeUpdate] Error:', err);
       toast.error('Provjera nije uspjela');
     }
   };
