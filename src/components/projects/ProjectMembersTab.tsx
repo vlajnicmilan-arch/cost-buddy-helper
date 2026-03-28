@@ -11,10 +11,22 @@ import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, 
 import { cn } from '@/lib/utils';
 import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectMembersTabProps {
   projectId: string;
   members: ProjectMember[];
+  invitations: ProjectInvitation[];
+  isManager: boolean;
+  loading: boolean;
+  onRefetch: () => void;
+}
+
+interface PermDialogState {
+  open: boolean;
+  userId: string;
+  memberName: string;
+}
   invitations: ProjectInvitation[];
   isManager: boolean;
   loading: boolean;
