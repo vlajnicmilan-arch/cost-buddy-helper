@@ -12,28 +12,55 @@ import { APP_VERSION } from '@/lib/version';
 
 const SHOW_TEST_BUTTON = false;
 const AUTO_UPDATE_KEY = 'pwa-auto-update';
-const isNativeApp = Capacitor.isNativePlatform();
+const LIVE_APP_ORIGIN = 'https://cost-buddy-helper.lovable.app';
+
+const getIsNativeApp = () => {
+  if (typeof window === 'undefined') return false;
+
+  const globalCapacitor = (window as Window & {
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+      getPlatform?: () => string;
+    };
+  }).Capacitor;
+
+  const platform = globalCapacitor?.getPlatform?.() ?? Capacitor.getPlatform();
+
+  return Boolean(
+    globalCapacitor?.isNativePlatform?.() ||
+    Capacitor.isNativePlatform() ||
+    platform === 'android' ||
+    platform === 'ios'
+  );
+};
+
+const isNativeApp = getIsNativeApp();
 
 let checkForUpdatesRef: (() => Promise<void>) | null = null;
+
+const getVersionCheckUrl = () => {
+  const url = new URL('/version.json', isNativeApp ? LIVE_APP_ORIGIN : window.location.origin);
+  url.searchParams.set('t', Date.now().toString());
+  return url.toString();
+};
 
 // Initialize native update check immediately (outside component)
 if (isNativeApp) {
   checkForUpdatesRef = async () => {
-    try {
-      console.log('[NativeUpdate] Starting version check, current:', APP_VERSION);
-      const latestVersion = await fetchLatestVersion();
-      console.log('[NativeUpdate] Remote version:', latestVersion);
-      if (latestVersion && isRemoteVersionNewer(APP_VERSION, latestVersion)) {
-        toast.info(`Nova verzija ${latestVersion} dostupna!`, {
-          action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
-          duration: 10000,
-        });
-      } else {
-        toast.success('Aplikacija je ažurna!');
-      }
-    } catch (err) {
-      console.error('[NativeUpdate] Error:', err);
+    const latestVersion = await fetchLatestVersion();
+
+    if (!latestVersion) {
       toast.error('Provjera nije uspjela');
+      return;
+    }
+
+    if (isRemoteVersionNewer(APP_VERSION, latestVersion)) {
+      toast.info(`Nova verzija ${latestVersion} dostupna!`, {
+        action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
+        duration: 10000,
+      });
+    } else {
+      toast.success('Aplikacija je ažurna!');
     }
   };
 }
@@ -61,8 +88,10 @@ const isRemoteVersionNewer = (currentVersion: string, remoteVersion: string) => 
 };
 
 const fetchLatestVersion = async (): Promise<string | null> => {
+  const requestUrl = getVersionCheckUrl();
+
   try {
-    const response = await fetch(`/version.json?t=${Date.now()}`, {
+    const response = await fetch(requestUrl, {
       cache: 'no-store',
       headers: {
         'cache-control': 'no-cache, no-store, must-revalidate',
@@ -70,12 +99,22 @@ const fetchLatestVersion = async (): Promise<string | null> => {
       },
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error('[UpdateCheck] Version request failed:', response.status, requestUrl);
+      return null;
+    }
 
     const data = await response.json();
-    return typeof data?.version === 'string' ? data.version : null;
+    const version = typeof data?.version === 'string' ? data.version : null;
+
+    if (!version) {
+      console.error('[UpdateCheck] Invalid version payload:', data);
+      return null;
+    }
+
+    return version;
   } catch (error) {
-    console.error('Version check failed:', error);
+    console.error('[UpdateCheck] Version check failed:', error, requestUrl);
     return null;
   }
 };
