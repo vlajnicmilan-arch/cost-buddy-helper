@@ -1,40 +1,52 @@
 
+Cilj: pomoći ti da dođeš do APK fajla bez lutanja po Android Studiju.
 
-# Plan: Popravak provjere ažuriranja na nativnoj aplikaciji
+1. Ono što se već vidi na screenshotu
+- Build je zapravo prošao uspješno.
+- U dnu piše `BUILD SUCCESSFUL` i `assembleDebug UP-TO-DATE`.
+- To vrlo često znači da je APK već napravljen.
 
-## Problem
+2. Gdje prvo da ga tražiš
+- U lijevom panelu otvori redom:
+  - `app`
+  - `build`
+  - `outputs`
+  - `apk`
+  - `debug`
+- Tamo bi trebao biti fajl:
+  - `app-debug.apk`
 
-Dva problema sprečavaju rad "Provjeri ažuriranja" na nativnoj app:
+3. Zašto ne vidiš “Build Bundle / APK”
+- Kod tebe je uključen novi Android Studio izgled gdje gornji klasični meni nije stalno prikazan.
+- Kad klikneš obični “Build”, on samo pokrene build procesa, ne otvara dodatni izbor.
 
-1. **`capacitor.config.ts` nema `server` blok** — aplikacija učitava lokalni `dist` folder umjesto produkcijskog URL-a. Bez Live Sync-a, `version.json` se čita iz bundlea i uvijek vraća istu verziju.
+4. Kako doći do te opcije u tvom interfejsu
+- Klikni gore lijevo na ikonu s tri crtice / hamburger meni.
+- Zatim idi:
+  - `Build`
+  - `Build Bundle(s) / APK(s)`
+  - `Build APK(s)`
 
-2. **`fetchLatestVersion` koristi relativni path** (`/version.json`) — čak i s Live Sync-om, trebamo osigurati da se dohvaća s produkcijskog servera.
+5. Ako ni to ne vidiš
+- Pritisni `Ctrl + Shift + A`
+- Upiši:
+  - `Build APK`
+  ili
+  - `Generate Signed Bundle or APK`
+- Klikni ponuđenu opciju iz pretrage.
 
-## Rješenje
+6. Najjednostavniji plan za tebe sada
+- Prvo provjeri da li već postoji:
+  - `android/app/build/outputs/apk/debug/app-debug.apk`
+- Ako postoji: to je tvoj APK i možeš ga prebaciti na mobitel.
+- Ako ne postoji: idi na hamburger meni gore lijevo i odatle pokreni `Build APK(s)`.
 
-### 1. Vratiti Live Sync u `capacitor.config.ts`
+Tehnički detalj
+- Obični build često pokreće `assembleDebug`.
+- To može napraviti APK i bez iskačućeg prozora.
+- Zato je najvažnije gledati folder `app/build/outputs/apk/debug`, a ne čekati poseban popup.
 
-Dodati `server` blok koji usmjerava nativnu app na produkcijski URL:
-
-```typescript
-const config: CapacitorConfig = {
-  appId: 'app.lovable.costbuddy',
-  appName: 'V&M Balance',
-  webDir: 'dist',
-  server: {
-    url: 'https://cost-buddy-helper.lovable.app?forceHideBadge=true',
-    cleartext: true,
-  },
-};
-```
-
-Ovo osigurava da nativna app uvijek učitava najnoviju verziju s produkcije i da `/version.json` dolazi s pravog servera.
-
-### 2. Rebuild APK
-
-Nakon ove promjene, trebat će:
-- Publishati promjenu
-- Na računalu: `git pull` → `npm run build` → `npx cap sync android` → buildati novi APK
-
-**Napomena**: Ovo je jednokratna promjena. Nakon što Live Sync radi, sve buduće promjene (uključujući "Provjeri ažuriranja") će raditi automatski bez ponovnog builda APK-a.
-
+Ako budemo radili sljedeći korak, plan je:
+1. pronaći tačan `app-debug.apk`
+2. pokazati kako da ga prebaciš na telefon
+3. po želji napraviti i “release” verziju za dijeljenje
