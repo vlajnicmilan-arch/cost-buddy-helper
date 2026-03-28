@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '@/integrations/supabase/client';
 import { ProjectWithOwnership, ProjectMilestone, PROJECT_STATUS_LABELS, MILESTONE_STATUS_LABELS } from '@/types/project';
 import { 
   generateProjectPDFReport, 
@@ -66,6 +67,48 @@ export const ProjectReportsDialog = ({
   const { t, i18n } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Fetch workers and collaborators for exports
+  const [reportWorkers, setReportWorkers] = useState<{ name: string; hours: number; rate: number; cost: number }[]>([]);
+  const [reportCollaborators, setReportCollaborators] = useState<{ name: string; totalPrice: number; paidAmount: number; service: string }[]>([]);
+
+  useEffect(() => {
+    if (!open || !project.id) return;
+
+    const fetchWorkersAndCollaborators = async () => {
+      const [workersRes, entriesRes, collabRes] = await Promise.all([
+        supabase.from('project_workers').select('id, first_name, last_name, hourly_rate').eq('project_id', project.id),
+        supabase.from('project_work_entries').select('actual_hours, worker_id').eq('project_id', project.id),
+        (supabase.from('project_collaborators') as any).select('first_name, last_name, service_description, total_price, paid_amount').eq('project_id', project.id),
+      ]);
+
+      // Workers
+      const workerMap = new Map<string, { name: string; rate: number; hours: number }>();
+      workersRes.data?.forEach((w: any) => {
+        workerMap.set(w.id, { name: `${w.first_name} ${w.last_name}`, rate: Number(w.hourly_rate) || 0, hours: 0 });
+      });
+      entriesRes.data?.forEach((e: any) => {
+        const w = workerMap.get(e.worker_id);
+        if (w) w.hours += Number(e.actual_hours) || 0;
+      });
+      const workers: { name: string; hours: number; rate: number; cost: number }[] = [];
+      workerMap.forEach(w => {
+        if (w.hours > 0) workers.push({ name: w.name, hours: w.hours, rate: w.rate, cost: w.hours * w.rate });
+      });
+      setReportWorkers(workers);
+
+      // Collaborators
+      const collabs = (collabRes.data || []).map((c: any) => ({
+        name: `${c.first_name} ${c.last_name}`,
+        service: c.service_description || '',
+        totalPrice: Number(c.total_price) || 0,
+        paidAmount: Number(c.paid_amount) || 0,
+      }));
+      setReportCollaborators(collabs);
+    };
+
+    fetchWorkersAndCollaborators();
+  }, [open, project.id]);
 
   // Calculate completed milestones budget as "spent" (unified logic)
   const completedMilestones = milestones.filter(m => m.status === 'completed');
@@ -175,6 +218,8 @@ export const ProjectReportsDialog = ({
         symbol: currency.symbol,
         locale: i18n.language === 'hr' ? 'hr-HR' : i18n.language === 'de' ? 'de-DE' : 'en-US',
       } : undefined,
+      workers: reportWorkers,
+      collaborators: reportCollaborators,
     };
 
     try {
