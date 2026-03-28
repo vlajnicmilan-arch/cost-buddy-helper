@@ -169,6 +169,7 @@ const Index = () => {
 
 
   const { ownedPaymentSources: customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
+  const { customCategories } = useCustomCategories();
   const { plans: installmentPlans } = useInstallments();
   const { budgets: budgetsWithStats } = useBudgets();
   const { projects } = useProjects();
