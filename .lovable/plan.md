@@ -1,21 +1,55 @@
 
 
-## Problem
+# Plan: Poboljšanja nativne Android aplikacije
 
-Fajl `version.json` se nalazi u korijenu projekta umjesto u `public/` folderu. Vite samo servira fajlove iz `public/` kao statičke resurse. Zato `/version.json` ne postoji na produkciji i provjera ažuriranja uvijek javlja "Provjera nije uspjela".
+Imaš već @capacitor/camera instaliran ali ne koristiš ga u kodu. Evo plana po prioritetima:
 
-## Rješenje
+---
 
-1. **Premjestiti `version.json` u `public/` folder** -- tako će Vite automatski uključiti taj fajl u build i bit će dostupan na `https://cost-buddy-helper.lovable.app/version.json`.
+## 1. Nativna kamera za skeniranje računa
 
-2. **Objaviti (Publish) izmjenu** -- nakon premještanja, kliknuti Update u publish dijalogu da nova verzija ode na produkciju.
+**Trenutno stanje**: Skeniranje koristi HTML `<input type="file">` — radi, ali nema pristup nativnoj kameri direktno.
 
-3. **Testirati na mobitelu** -- otvoriti nativnu aplikaciju i provjeriti da "Provjera ažuriranja" više ne javlja grešku.
+**Promjene**:
+- Kreirati `src/hooks/useNativeCamera.ts` hook koji detektira Capacitor platformu i koristi `@capacitor/camera` za fotografiranje, a fallback na web `<input>` za PWA/browser
+- Integrirati u `useReceiptScanner.ts` — kad je nativna platforma, pozvati `Camera.getPhoto()` umjesto file input-a
+- Prednosti: brže pokretanje kamere, bolji autofokus, flash kontrola
 
-## Tehnički detalj
+## 2. Splash screen i ikona
 
-- Fajl `version.json` sadrži `{ "version": "1.3.3" }`
-- `PWAUpdatePrompt.tsx` na nativnoj platformi dohvaća `/version.json` s produkcijskog URL-a
-- Kada fajl ne postoji (404), `fetchLatestVersion()` vraća `null` i prikazuje se toast greška
-- Premještanje u `public/` folder rješava problem bez ikakvih drugih promjena u kodu
+**Promjene**:
+- Instalirati `@capacitor/splash-screen` paket
+- Dodati splash screen konfiguraciju u `capacitor.config.ts` (boja pozadine, trajanje)
+- Korisnik će trebati: pokrenuti `npx cap sync android` i u Android Studiju koristiti Image Asset tool za ikonu + splash resurse
+
+## 3. Offline podrška za nativnu app
+
+**Trenutno stanje**: Live Sync znači da app ovisi o internetu.
+
+**Promjene**:
+- Dodati detekciju mrežne veze (`navigator.onLine` + `@capacitor/network`)
+- Kreirati lokalni queue za transakcije — kad nema neta, spremaj u IndexedDB
+- Kad se veza vrati, automatski sync s bazom
+- Prikazati offline banner u nativnoj verziji
+
+## 4. Push notifikacije
+
+**Promjene**:
+- Instalirati `@capacitor/push-notifications`
+- Kreirati `src/hooks/useNativePush.ts` za registraciju i primanje notifikacija
+- Integrirati s backend-om — spremiti device token u bazu, slati notifikacije za podsjetnike, budget alerte, family poruke
+- Potreban Firebase Cloud Messaging (FCM) setup — korisnik mora kreirati Firebase projekt i dodati `google-services.json`
+
+---
+
+## Redoslijed implementacije
+
+| Korak | Što | Složenost |
+|-------|-----|-----------|
+| 1 | Nativna kamera | Niska — plugin već instaliran |
+| 2 | Splash screen + ikona | Niska — config + native resursi |
+| 3 | Offline podrška | Srednja — IndexedDB queue + sync |
+| 4 | Push notifikacije | Visoka — Firebase setup + backend |
+
+Predlažem da krenemo s **nativnom kamerom** jer je plugin već instaliran i zahtijeva najmanje promjena. Poslije toga splash screen, pa offline, pa push.
 
