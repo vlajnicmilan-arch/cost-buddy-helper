@@ -14,7 +14,7 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 
