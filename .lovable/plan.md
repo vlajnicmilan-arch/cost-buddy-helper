@@ -1,70 +1,43 @@
 
 
-# Plan: 3 preostala poboljšanja sustava projekata
+# Plan: Gantt strelice ovisnosti na Timeline tabu
 
-## 1. Objedinjeni prikaz troškova rada
+## Što se gradi
 
-Nova kartica na **Overview** tabu koja prikazuje konsolidirani pregled svih troškova ljudskih resursa (radnici + suradnici) na jednom mjestu.
+Dodavanje SVG strelica između Gantt barova na Timeline tabu koje vizualno prikazuju ovisnosti (`depends_on_milestone_id`). Strelica ide od kraja preduvjetne faze do početka ovisne faze.
 
-### Što se gradi
-- Sekcija na Overview tabu ispod P&L kartice
-- Prikazuje ukupne troškove radnika (sati × satnica), ukupne troškove suradnika (plaćeni iznosi), i zbirni total
-- Koristi podatke iz postojećeg `useProjectProfitLoss` hooka (laborCost + collaboratorCost)
+## Implementacija
 
-### Zahvaćene datoteke
-| Datoteka | Promjena |
-|---|---|
-| `src/components/projects/ProjectProfitLossCard.tsx` | Proširiti s detaljnim prikazom rada — lista radnika s satima i troškovima, lista suradnika s plaćenim iznosima |
-| `src/hooks/useProjectProfitLoss.ts` | Dodati detaljne podatke: lista radnika (ime, sati, trošak) i lista suradnika (ime, plaćeno, ugovoreno) |
+### Datoteka: `src/components/projects/ProjectTimelineTab.tsx`
 
----
+1. **Izračun pozicija za strelice** — novi `useMemo` koji za svaki milestone s `depends_on_milestone_id` izračunava:
+   - Kraj (desni rub) bara preduvjetne faze → početna točka strelice
+   - Početak (lijevi rub) bara ovisne faze → krajnja točka strelice
+   - Vertikalna pozicija bazirana na indeksu milestona u listi (svaki red je ~44px visok: info row + bar)
 
-## 2. Prošireni izvještaji (radnici + suradnici u exportima)
+2. **SVG overlay** — apsolutno pozicionirani `<svg>` element preko Gantt barova sekcije koji crta strelice:
+   - Svaka strelica je `<path>` s Bézier krivuljom za glatki prijelaz
+   - Koristi `marker-end` za vrh strelice (arrow marker definiran u `<defs>`)
+   - Boja strelice: `text-muted-foreground` (siva), s opcijom da se poklopi s bojom preduvjetne faze
 
-Dodavanje podataka o radnicima i suradnicima u PDF, CSV i JSON exporte projekta.
+3. **Legenda** — dodati stavku "Ovisnost" u legend s ikonom strelice
 
-### Što se gradi
-- `ProjectReportData` tip proširiti s `workers` i `collaborators` nizovima
-- PDF: nova tablica "Radnici" (ime, sati, satnica, ukupno) i "Suradnici" (ime, ugovoreno, plaćeno)
-- CSV: nove sekcije "--- RADNICI ---" i "--- SURADNICI ---"
-- JSON: novi `workers` i `collaborators` objekti
-- `ProjectReportsDialog` dohvaća podatke o radnicima/suradnicima i prosljeđuje ih u export
+4. **Labela** — tooltip ili mali tekst pored strelice koji kaže "ovisi o: [ime faze]" (već postoji u info redu kao opcija)
 
-### Zahvaćene datoteke
-| Datoteka | Promjena |
-|---|---|
-| `src/lib/projectReportExport.ts` | Proširiti `ProjectReportData` tip + PDF/CSV/JSON generatore |
-| `src/components/projects/ProjectReportsDialog.tsx` | Dohvatiti radnike/suradnike i proslijediti u report data |
-| `src/components/projects/ProjectFullScreenView.tsx` | Proslijediti dodatne podatke u ReportsDialog |
+### Tehnika crtanja
 
----
+```text
+  [Faza A bar ======]
+                      ╲
+                       ╲  (SVG Bézier path)
+                        ↘
+                         [Faza B bar ======]
+```
 
-## 3. Kontrola budžeta po fazama
+- Wrappati Gantt barove sekciju u `relative` kontejner
+- SVG pokriva cijeli kontejner, `pointer-events: none`
+- Koristiti `useRef` za mjerenje stvarnih visina redova, ili računati fiksne pozicije (svaki milestone row ~ 52px)
 
-Upozorenje kad transakcije vezane uz fazu premašuju budžet te faze.
-
-### Što se gradi
-- Na `ProjectMilestonesTab` — kartica faze prikazuje upozorenje ako je `spent > budget`
-- Na `ProjectTransactionsTab` — pri dodavanju transakcije s `milestone_id`, provjera ukupnog troška faze i prikaz upozorenja ako premašuje budžet
-- Na `ProjectReportsDialog` — vizualno označavanje faza koje su premašile budžet
-
-### Nema promjena baze
-Svi podaci već postoje — `expenses.milestone_id` + `project_milestones.budget`.
-
-### Zahvaćene datoteke
-| Datoteka | Promjena |
-|---|---|
-| `src/components/projects/ProjectMilestonesTab.tsx` | Badge/upozorenje na kartici faze kad spent > budget |
-| `src/components/projects/ProjectTransactionsTab.tsx` | Upozorenje pri dodavanju transakcije koja premašuje budžet faze |
-| `src/components/projects/ProjectReportsDialog.tsx` | Vizualno označavanje prekoračenih faza |
-
----
-
-## Redoslijed implementacije
-
-1. **Prošireni izvještaji** — dodavanje radnika/suradnika u exporte
-2. **Objedinjeni troškovi rada** — proširenje P&L kartice s detaljima
-3. **Kontrola budžeta po fazama** — upozorenja na prekoračenje
-
-Ukupno: 0 migracija, 0 novih komponenti, izmjene u ~6 postojećih datoteka.
+### Bez promjena baze
+Sve koristi postojeći `depends_on_milestone_id` field.
 
