@@ -307,6 +307,7 @@ const PWAUpdatePromptInner = () => {
         )}
       </AnimatePresence>
     </>
+  );
 };
 
 export const PWAUpdatePrompt = () => {
