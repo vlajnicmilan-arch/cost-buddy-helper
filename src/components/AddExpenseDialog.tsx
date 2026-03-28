@@ -1314,7 +1314,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     type="button"
                     variant="outline"
                     className="flex-1 gap-2 rounded-xl border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                    onClick={() => cameraInputRef.current?.click()}
+                    onClick={() => isNative ? handleNativeCapture('camera') : cameraInputRef.current?.click()}
                     disabled={scanning || showMultiImageCollector}
                   >
                     {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -1324,7 +1324,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     type="button"
                     variant="outline"
                     className="flex-1 gap-2 rounded-xl border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-400 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
-                    onClick={() => galleryInputRef.current?.click()}
+                    onClick={() => isNative ? handleNativeCapture('gallery') : galleryInputRef.current?.click()}
                     disabled={scanning || showMultiImageCollector}
                   >
                     {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
@@ -1392,7 +1392,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                         variant="outline"
                         size="sm"
                         className="flex-1 gap-1 text-xs"
-                        onClick={() => multiCameraInputRef.current?.click()}
+                        onClick={() => isNative ? handleNativeCapture('camera', true) : multiCameraInputRef.current?.click()}
                         disabled={scanning || receiptImages.length >= 5}
                       >
                         <Camera className="w-3 h-3" />
@@ -1403,7 +1403,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                         variant="outline"
                         size="sm"
                         className="flex-1 gap-1 text-xs"
-                        onClick={() => multiGalleryInputRef.current?.click()}
+                        onClick={() => isNative ? handleNativeCapture('gallery', true) : multiGalleryInputRef.current?.click()}
                         disabled={scanning || receiptImages.length >= 5}
                       >
                         <Image className="w-3 h-3" />
