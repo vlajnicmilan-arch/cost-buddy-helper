@@ -1,51 +1,50 @@
 
 
-# Plan: Optimizacija performansi aplikacije
+# Plan: Popravak provjere ažuriranja za nativnu aplikaciju
 
-## Pregled problema
+## Problem
 
-Index.tsx ima **1051 linija** i mnogo je "težak" — učitava sve hookove, dijaloške prozore i logiku odjednom. `TransactionItem` poziva `useCustomPaymentSources()` i `useCustomCategories()` **unutar svake instance**, što znači N poziva za N transakcija.
+`PWAUpdatePrompt` komponenta vraća `null` za nativne aplikacije (linija 314: `if (isNativeApp) return null`). To znači da se `PWAUpdatePromptInner` nikad ne renderira, `checkForUpdatesRef` ostaje `null`, i kada klikneš "Provjeri ažuriranja" u Postavkama — ili se ništa ne dogodi, ili Service Worker registracija padne u WebView kontekstu i prikaže grešku.
 
-## Optimizacije (po prioritetu)
+## Rješenje
 
-### 1. Memoizacija TransactionItem komponente
-- Omotaj `TransactionItem` u `React.memo` s custom comparatorom
-- Trenutno se **svaka transakcija** re-renderira kad se bilo koji state promijeni (npr. selekcija jednog checkboxa re-renderira svih 50 vidljivih)
+Napraviti zasebnu logiku provjere ažuriranja za nativnu aplikaciju koja ne ovisi o Service Workeru:
 
-### 2. Izvlačenje hook podataka iz TransactionItem
-- `TransactionItem` poziva `useCustomPaymentSources()` i `useCustomCategories()` — ovi hookovi se izvršavaju za **svaku** instancu komponente
-- Prebaciti te podatke u `contextLookup` prop koji se već koristi, tako da se dohvaćaju jednom u roditelju i prosljeđuju kao prop
+### Izmjene u `PWAUpdatePrompt.tsx`
 
-### 3. Smanjenje re-renderiranja na Index stranici
-- Dodaj `React.memo` na `SummaryCard`, `SummarySection`, `PaymentSourcesSection`, `QuickLinksSection`
-- Ove sekcije se nepotrebno re-renderiraju kad se npr. otvori/zatvori dijalog
+1. Dodati novu funkciju `nativeCheckForUpdates` koja:
+   - Dohvaća `/version.json` s produkcijskog URL-a (no-cache)
+   - Uspoređuje s `APP_VERSION`
+   - Ako je nova verzija dostupna → prikazuje toast s opcijom reload (`window.location.reload()`)
+   - Ako je aplikacija ažurna → prikazuje "Aplikacija je ažurna!" toast
 
-### 4. Optimizacija framer-motion u TransactionItem
-- Svaka transakcija kreira `useMotionValue`, `useTransform`, `useAnimation` — to su 3 hooka × 50 vidljivih stavki = 150 motion instanci
-- Opcija: koristiti CSS swipe umjesto framer-motion, ili lazy-inicijalizirati motion samo kad korisnik počne swipeat
+2. Postaviti `checkForUpdatesRef` na tu funkciju odmah pri importu (izvan komponente), tako da Settings može pozvati `checkForUpdates()` bez da PWAUpdatePromptInner bude renderiran.
 
-### 5. Razdvajanje Index.tsx na manje dijelove
-- Izvuci "Business mode" renderiranje (~300 linija) u zasebnu komponentu `BusinessHomePage`
-- Izvuci "Personal mode" transaction list sekciju u zasebnu komponentu
-- Ovo smanjuje kognitivno opterećenje i pomaže React-u s granularnijim re-renderiranjem
+3. `PWAUpdatePrompt` komponenta i dalje vraća `null` za native — nema potrebe za Service Worker UI-jem.
 
-## Tehnički detalji
+### Kod (konceptualno)
 
-**Faza 1** (najveći utjecaj):
-- `TransactionItem`: dodaj `React.memo`, prebaci `customPaymentSources` i `customCategories` u `contextLookup` prop
-- Procjena: smanjenje re-renderiranja za ~80% na transaction listi
+```typescript
+// Na vrhu datoteke, odmah postavi ref za native
+if (isNativeApp) {
+  checkForUpdatesRef = async () => {
+    const latestVersion = await fetchLatestVersion();
+    if (latestVersion && isRemoteVersionNewer(APP_VERSION, latestVersion)) {
+      toast.info('Nova verzija dostupna!', {
+        action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
+        duration: 10000,
+      });
+    } else {
+      toast.success('Aplikacija je ažurna!');
+    }
+  };
+}
+```
 
-**Faza 2** (srednji utjecaj):
-- `React.memo` na `SummaryCard`, sekcijske komponente
-- Izvuci business mode u `BusinessHomePage.tsx`
+### Što se mijenja
+- **`PWAUpdatePrompt.tsx`**: Dodaje se native update check logika (~15 linija)
+- Ništa drugo se ne mijenja
 
-**Faza 3** (polish):
-- Lazy-load framer-motion animacija za swipe
-- Razmotri zamjenu `motion.div` s običnim `div` + CSS transitions za transaction items
-
-## Što se NE mijenja
-- Postojeća paginacija (50 stavki) — dobro radi
-- Lazy loading ruta — već implementiran
-- Virtualizacija u `VirtualTransactionList` — već postoji za specifične slučajeve
-- Realtime subscription — već optimiziran
+### Rezultat
+Gumb "Provjeri ažuriranja" u Postavkama će na nativnoj aplikaciji ispravno provjeriti verziju i ponuditi reload ako postoji novija verzija, bez ikakve ovisnosti o Service Workeru.
 
