@@ -234,87 +234,126 @@ export const ProjectTimelineTab = ({
         )}
       </div>
 
-      {/* Gantt bars */}
-      <div className="space-y-3">
-        {milestones.map((milestone) => {
-          const effectiveStatus = getEffectiveStatus(milestone);
-          const barStyle = getMilestoneBarStyle(milestone, effectiveStatus);
-          
-          return (
-            <div key={milestone.id} className="space-y-1">
-              {/* Milestone info row */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="shrink-0" style={{ color: milestone.color || '#3b82f6' }}>
-                    {getStatusIcon(effectiveStatus)}
-                  </span>
-                  <span className="font-medium truncate">{milestone.name}</span>
-                  <Badge variant="outline" className="shrink-0 text-xs">
-                    {effectiveStatus === 'overdue' ? MILESTONE_STATUS_LABELS['overdue'] : MILESTONE_STATUS_LABELS[milestone.status]}
-                  </Badge>
-                </div>
-                <div className="text-sm text-muted-foreground shrink-0">
-                  {milestone.budget > 0 && (
-                    <span className="font-medium text-primary">
-                      {formatAmount(milestone.budget)}
+      {/* Gantt bars with dependency arrows */}
+      <div className="relative">
+        <div className="space-y-3" ref={ganttRef}>
+          {milestones.map((milestone) => {
+            const effectiveStatus = getEffectiveStatus(milestone);
+            const barStyle = getMilestoneBarStyle(milestone, effectiveStatus);
+            
+            return (
+              <div key={milestone.id} className="space-y-1">
+                {/* Milestone info row */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="shrink-0" style={{ color: milestone.color || '#3b82f6' }}>
+                      {getStatusIcon(effectiveStatus)}
                     </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Timeline bar */}
-              <div className="relative h-8 bg-muted/30 rounded overflow-hidden">
-                {/* Milestone duration bar - on-time portion */}
-                <div
-                  className={cn(
-                    "absolute top-0 h-full rounded-l transition-all",
-                    effectiveStatus === 'overdue' ? 'opacity-80' : 'opacity-80'
-                  )}
-                  style={{
-                    left: barStyle.left,
-                    width: barStyle.width,
-                    backgroundColor: effectiveStatus === 'overdue' ? undefined : (milestone.color || '#3b82f6'),
-                    ...(effectiveStatus === 'overdue' ? {} : {})
-                  }}
-                >
-                  {/* On-time portion with milestone color */}
-                  {effectiveStatus === 'overdue' ? (
-                    <div 
-                      className="absolute top-0 left-0 h-full rounded-l"
-                      style={{ 
-                        width: `${barStyle.onTimePercent}%`,
-                        backgroundColor: milestone.color || '#3b82f6'
-                      }}
-                    />
-                  ) : null}
-                  {/* Overrun overlay (striped pattern) */}
-                  {barStyle.onTimePercent < 100 && (
-                    <div
-                      className="absolute top-0 right-0 h-full bg-destructive opacity-90 rounded-r"
-                      style={{
-                        width: `${100 - barStyle.onTimePercent}%`,
-                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)',
-                      }}
-                    />
-                  )}
+                    <span className="font-medium truncate">{milestone.name}</span>
+                    <Badge variant="outline" className="shrink-0 text-xs">
+                      {effectiveStatus === 'overdue' ? MILESTONE_STATUS_LABELS['overdue'] : MILESTONE_STATUS_LABELS[milestone.status]}
+                    </Badge>
+                    {milestone.depends_on_milestone_id && (
+                      <span className="text-[10px] text-muted-foreground italic truncate">
+                        ← {t('projects.dependsOn', 'ovisi o')}: {milestones.find(m => m.id === milestone.depends_on_milestone_id)?.name || '?'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground shrink-0">
+                    {milestone.budget > 0 && (
+                      <span className="font-medium text-primary">
+                        {formatAmount(milestone.budget)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Date labels inside the bar */}
-                <div
-                  className="absolute top-0 h-full flex items-center px-2 text-xs text-white font-medium overflow-hidden"
-                  style={{ left: barStyle.left, width: barStyle.width }}
-                >
-                  {milestone.start_date && milestone.due_date && (
-                    <span className="truncate">
-                      {format(new Date(milestone.start_date), 'd. MMM', { locale })} - {format(new Date(milestone.due_date), 'd. MMM', { locale })}
-                      {effectiveStatus === 'overdue' && ' ⚠️'}
-                    </span>
-                  )}
+                {/* Timeline bar */}
+                <div className="relative h-8 bg-muted/30 rounded overflow-hidden">
+                  {/* Milestone duration bar - on-time portion */}
+                  <div
+                    className={cn(
+                      "absolute top-0 h-full rounded-l transition-all",
+                      effectiveStatus === 'overdue' ? 'opacity-80' : 'opacity-80'
+                    )}
+                    style={{
+                      left: barStyle.left,
+                      width: barStyle.width,
+                      backgroundColor: effectiveStatus === 'overdue' ? undefined : (milestone.color || '#3b82f6'),
+                    }}
+                  >
+                    {/* On-time portion with milestone color */}
+                    {effectiveStatus === 'overdue' ? (
+                      <div 
+                        className="absolute top-0 left-0 h-full rounded-l"
+                        style={{ 
+                          width: `${barStyle.onTimePercent}%`,
+                          backgroundColor: milestone.color || '#3b82f6'
+                        }}
+                      />
+                    ) : null}
+                    {/* Overrun overlay (striped pattern) */}
+                    {barStyle.onTimePercent < 100 && (
+                      <div
+                        className="absolute top-0 right-0 h-full bg-destructive opacity-90 rounded-r"
+                        style={{
+                          width: `${100 - barStyle.onTimePercent}%`,
+                          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)',
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Date labels inside the bar */}
+                  <div
+                    className="absolute top-0 h-full flex items-center px-2 text-xs text-white font-medium overflow-hidden"
+                    style={{ left: barStyle.left, width: barStyle.width }}
+                  >
+                    {milestone.start_date && milestone.due_date && (
+                      <span className="truncate">
+                        {format(new Date(milestone.start_date), 'd. MMM', { locale })} - {format(new Date(milestone.due_date), 'd. MMM', { locale })}
+                        {effectiveStatus === 'overdue' && ' ⚠️'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        {/* Dependency arrows SVG overlay */}
+        {dependencyArrows.length > 0 && (
+          <svg
+            className="absolute top-0 left-0 w-full h-full pointer-events-none"
+            style={{ zIndex: 5 }}
+          >
+            <defs>
+              <marker
+                id="arrowhead"
+                markerWidth="8"
+                markerHeight="6"
+                refX="7"
+                refY="3"
+                orient="auto"
+              >
+                <polygon points="0 0, 8 3, 0 6" className="fill-muted-foreground" />
+              </marker>
+            </defs>
+            {dependencyArrows.map((arrow, i) => (
+              <path
+                key={i}
+                d={arrow.path}
+                className="stroke-muted-foreground"
+                fill="none"
+                strokeWidth="1.5"
+                strokeDasharray="4 2"
+                markerEnd="url(#arrowhead)"
+                opacity="0.7"
+              />
+            ))}
+          </svg>
+        )}
       </div>
 
       {/* Summary stats */}
