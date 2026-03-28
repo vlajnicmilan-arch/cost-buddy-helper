@@ -360,6 +360,7 @@ export const ProjectFullScreenView = ({
                   )}
                 </TabsContent>
 
+                {canSeeTab('timeline') && (
                 <TabsContent value="timeline" className="m-0">
                   <ProjectTimelineTab
                     projectId={project.id}
@@ -369,7 +370,9 @@ export const ProjectFullScreenView = ({
                     loading={milestonesLoading}
                   />
                 </TabsContent>
+                )}
 
+                {canSeeTab('milestones') && (
                 <TabsContent value="milestones" className="m-0">
                   <ProjectMilestonesTab 
                     projectId={project.id}
@@ -379,7 +382,9 @@ export const ProjectFullScreenView = ({
                     onRefetch={refetchMilestones}
                   />
                 </TabsContent>
+                )}
 
+                {canSeeTab('workers') && (
                 <TabsContent value="workers" className="m-0">
                   <ProjectWorkersTab
                     projectId={project.id}
@@ -388,7 +393,9 @@ export const ProjectFullScreenView = ({
                     onRefetch={() => {}}
                   />
                 </TabsContent>
+                )}
 
+                {canSeeTab('collaborators') && (
                 <TabsContent value="collaborators" className="m-0">
                   <ProjectCollaboratorsTab
                     projectId={project.id}
@@ -396,7 +403,9 @@ export const ProjectFullScreenView = ({
                     isManager={isManager}
                   />
                 </TabsContent>
+                )}
 
+                {canSeeTab('funding') && (
                 <TabsContent value="funding" className="m-0">
                   <ProjectFundingTab
                     projectId={project.id}
@@ -410,6 +419,7 @@ export const ProjectFullScreenView = ({
                     onRefetch={refetchFunding}
                   />
                 </TabsContent>
+                )}
 
                 <TabsContent value="members" className="m-0">
                   <ProjectMembersTab
