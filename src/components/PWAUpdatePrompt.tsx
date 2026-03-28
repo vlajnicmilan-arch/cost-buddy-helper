@@ -16,6 +16,25 @@ const isNativeApp = Capacitor.isNativePlatform();
 
 let checkForUpdatesRef: (() => Promise<void>) | null = null;
 
+// Initialize native update check immediately (outside component)
+if (isNativeApp) {
+  checkForUpdatesRef = async () => {
+    try {
+      const latestVersion = await fetchLatestVersion();
+      if (latestVersion && isRemoteVersionNewer(APP_VERSION, latestVersion)) {
+        toast.info(`Nova verzija ${latestVersion} dostupna!`, {
+          action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
+          duration: 10000,
+        });
+      } else {
+        toast.success('Aplikacija je ažurna!');
+      }
+    } catch {
+      toast.error('Provjera nije uspjela');
+    }
+  };
+}
+
 const parseVersion = (version: string) =>
   version
     .split('.')
