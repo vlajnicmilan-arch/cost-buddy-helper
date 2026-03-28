@@ -16,6 +16,7 @@ import { useInstallments } from '@/hooks/useInstallments';
 import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -115,6 +116,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const multiGalleryInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
+  const { takePhoto: nativeTakePhoto, pickFromGallery: nativePickFromGallery, isNative } = useNativeCamera();
   const { formatAmount, currency: primaryCurrency, multiCurrencyEnabled } = useCurrency();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
@@ -194,6 +196,29 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   }, [open, customPaymentSources]);
 
 
+  const processImageBase64 = async (base64: string, multiMode: boolean) => {
+    if (multiMode || showMultiImageCollector) {
+      setReceiptImages(prev => [...prev, base64]);
+      setReceiptImage(base64);
+      if (!showMultiImageCollector) setShowMultiImageCollector(true);
+    } else {
+      setReceiptImage(base64);
+      const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
+      if (result) {
+        applyScannedResult(result);
+      } else {
+        console.warn('Receipt scan returned no result');
+      }
+    }
+  };
+
+  const handleNativeCapture = async (source: 'camera' | 'gallery', multiMode = false) => {
+    const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
+    if (base64) {
+      await processImageBase64(base64, multiMode);
+    }
+  };
+
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -201,25 +226,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
-      
-      if (multiMode || showMultiImageCollector) {
-        // Multi-image mode: collect images
-        setReceiptImages(prev => [...prev, base64]);
-        setReceiptImage(base64); // Show last image as thumbnail
-        if (!showMultiImageCollector) setShowMultiImageCollector(true);
-      } else {
-        // Single image mode: scan immediately
-        setReceiptImage(base64);
-        
-        const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
-        
-        if (result) {
-          applyScannedResult(result);
-        } else {
-          // Scan failed or returned no data - clear the image so user can retry
-          console.warn('Receipt scan returned no result');
-        }
-      }
+      await processImageBase64(base64, multiMode);
     };
     reader.readAsDataURL(file);
     
@@ -1307,7 +1314,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     type="button"
                     variant="outline"
                     className="flex-1 gap-2 rounded-xl border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                    onClick={() => cameraInputRef.current?.click()}
+                    onClick={() => isNative ? handleNativeCapture('camera') : cameraInputRef.current?.click()}
                     disabled={scanning || showMultiImageCollector}
                   >
                     {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -1317,7 +1324,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                     type="button"
                     variant="outline"
                     className="flex-1 gap-2 rounded-xl border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-400 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
-                    onClick={() => galleryInputRef.current?.click()}
+                    onClick={() => isNative ? handleNativeCapture('gallery') : galleryInputRef.current?.click()}
                     disabled={scanning || showMultiImageCollector}
                   >
                     {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
@@ -1385,7 +1392,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                         variant="outline"
                         size="sm"
                         className="flex-1 gap-1 text-xs"
-                        onClick={() => multiCameraInputRef.current?.click()}
+                        onClick={() => isNative ? handleNativeCapture('camera', true) : multiCameraInputRef.current?.click()}
                         disabled={scanning || receiptImages.length >= 5}
                       >
                         <Camera className="w-3 h-3" />
@@ -1396,7 +1403,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                         variant="outline"
                         size="sm"
                         className="flex-1 gap-1 text-xs"
-                        onClick={() => multiGalleryInputRef.current?.click()}
+                        onClick={() => isNative ? handleNativeCapture('gallery', true) : multiGalleryInputRef.current?.click()}
                         disabled={scanning || receiptImages.length >= 5}
                       >
                         <Image className="w-3 h-3" />
