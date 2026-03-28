@@ -372,6 +372,9 @@ export const ProjectFullScreenView = ({
                       )}
                     </div>
                   )}
+
+                  {/* P&L Card */}
+                  <ProjectProfitLossCard projectId={project.id} />
                 </TabsContent>
 
                 {canSeeTab('timeline') && (
