@@ -6,7 +6,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import fs from "fs";
 
 // Read version from version.json
-const versionData = JSON.parse(fs.readFileSync('./version.json', 'utf-8'));
+const versionData = JSON.parse(fs.readFileSync('./public/version.json', 'utf-8'));
 const appVersion = versionData.version;
 
 // https://vitejs.dev/config/
