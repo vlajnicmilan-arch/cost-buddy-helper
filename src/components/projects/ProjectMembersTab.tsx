@@ -27,11 +27,8 @@ interface PermDialogState {
   userId: string;
   memberName: string;
 }
-  invitations: ProjectInvitation[];
-  isManager: boolean;
-  loading: boolean;
-  onRefetch: () => void;
-}
+
+
 
 export const ProjectMembersTab = ({
   projectId,
