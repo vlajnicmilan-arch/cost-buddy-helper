@@ -9,6 +9,7 @@ import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useProjectFunding } from '@/hooks/useProjectFunding';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
+import { useProjectMemberPermissions } from '@/hooks/useProjectMemberPermissions';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,8 @@ export const ProjectDetailDialog = ({
   
   // Get current user's role in the project
   const currentUserRole = project?.role || 'viewer';
+  const { isTabVisible } = useProjectMemberPermissions(project?.id || null);
+  const canSeeTab = (tabKey: string) => isManager || isTabVisible(tabKey);
 
   if (!project) return null;
 
@@ -116,7 +119,8 @@ export const ProjectDetailDialog = ({
           totalAllocated={totalAllocated}
         />
 
-        {/* Budget Overview - Unified logic based on completed milestones */}
+        {/* Budget Overview - only show if user can see funding */}
+        {canSeeTab('funding') && (
         <div className="shrink-0 p-4 rounded-lg bg-muted/50 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -162,6 +166,7 @@ export const ProjectDetailDialog = ({
             <p className="text-center text-muted-foreground py-2">{t('projects.noFundingYet', 'Nema primljenih sredstava')}</p>
           )}
         </div>
+        )}
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
