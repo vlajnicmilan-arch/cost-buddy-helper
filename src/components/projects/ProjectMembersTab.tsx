@@ -261,6 +261,16 @@ export const ProjectMembersTab = ({
                     <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => setPermDialog({ open: true, userId: member.user_id, memberName: member.display_name || '?' })}
+                  title={t('projects.permissions', 'Dozvole')}
+                >
+                  <Shield className="w-4 h-4" />
+                </Button>
                 
                 <Button 
                   variant="ghost" 
@@ -269,6 +279,7 @@ export const ProjectMembersTab = ({
                   onClick={() => handleRemoveMember(member.id)}
                 >
                   <UserMinus className="w-4 h-4" />
+                </Button>
                 </Button>
               </div>
             )}
@@ -314,6 +325,15 @@ export const ProjectMembersTab = ({
           ))}
         </div>
       )}
+
+      {/* Permissions Dialog */}
+      <ProjectMemberPermissionsDialog
+        open={permDialog.open}
+        onOpenChange={(open) => setPermDialog(prev => ({ ...prev, open }))}
+        projectId={projectId}
+        userId={permDialog.userId}
+        memberName={permDialog.memberName}
+      />
     </div>
   );
 };
