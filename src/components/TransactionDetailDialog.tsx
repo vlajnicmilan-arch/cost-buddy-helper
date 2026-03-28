@@ -6,7 +6,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink, Briefcase, FolderOpen } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink, Briefcase, FolderOpen, Share2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,7 @@ import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useTranslation } from 'react-i18next';
 import { TransactionNotesThread } from './TransactionNotesThread';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useNativeShare } from '@/hooks/useNativeShare';
 
 interface TransactionDetailDialogProps {
   expense: Expense | null;
@@ -47,6 +48,7 @@ export const TransactionDetailDialog = ({
   const { customPaymentSources } = useCustomPaymentSources();
   const { customCategories } = useCustomCategories();
   const { t, i18n } = useTranslation();
+  const { shareTransaction } = useNativeShare();
   const isLocalMode = storageMode === 'local' && !user;
   
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
@@ -564,6 +566,21 @@ export const TransactionDetailDialog = ({
           >
             <Pencil className="w-4 h-4 mr-2" />
             {t('common.edit')}
+          </Button>
+          <Button 
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              if (expense) {
+                shareTransaction(
+                  expense.description,
+                  formatAmount(expense.amount),
+                  format(new Date(expense.date), 'dd.MM.yyyy')
+                );
+              }
+            }}
+          >
+            <Share2 className="w-4 h-4" />
           </Button>
           <Button 
             variant="destructive" 

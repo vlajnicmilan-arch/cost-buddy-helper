@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Notification } from '@/types/notification';
 import { useNotificationSound, showBrowserNotification } from '@/hooks/useNotificationSound';
+import { useAppBadge } from '@/hooks/useAppBadge';
 
 export const useNotifications = () => {
   const { user } = useAuth();
@@ -10,6 +11,7 @@ export const useNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { playNotificationSound } = useNotificationSound();
+  const { setBadge } = useAppBadge();
 
   const fetchNotifications = useCallback(async () => {
     if (!user) {
@@ -31,7 +33,9 @@ export const useNotifications = () => {
 
       const typedData = (data || []) as Notification[];
       setNotifications(typedData);
-      setUnreadCount(typedData.filter(n => !n.read).length);
+      const unread = typedData.filter(n => !n.read).length;
+      setUnreadCount(unread);
+      setBadge(unread);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {

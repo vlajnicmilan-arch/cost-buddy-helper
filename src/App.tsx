@@ -14,6 +14,7 @@ import { LockScreen } from "@/components/LockScreen";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { useStatusBar } from "@/hooks/useStatusBar";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -42,6 +43,11 @@ const Landing = lazy(() => import("./pages/Landing"));
 const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 
 const queryClient = new QueryClient();
+
+const NativeInit = () => {
+  useStatusBar();
+  return null;
+};
 
 const PageLoader = () => (
   <div className="min-h-dvh bg-background flex items-center justify-center">
@@ -137,6 +143,7 @@ const App = () => (
             <CurrencyProvider>
               <SubscriptionProvider>
                 <TutorialProvider>
+                  <NativeInit />
                   <OfflineBanner />
                   <Toaster />
                   <Sonner />
