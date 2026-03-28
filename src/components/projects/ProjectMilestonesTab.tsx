@@ -201,12 +201,24 @@ export const ProjectMilestonesTab = ({
                       </p>
                     )}
 
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                       {milestone.start_date && (
                         <span>{t('projects.start')}: {format(new Date(milestone.start_date), 'd. MMM', { locale: hr })}</span>
                       )}
                       {milestone.due_date && (
                         <span>{t('projects.due')}: {format(new Date(milestone.due_date), 'd. MMM', { locale: hr })}</span>
+                      )}
+                      {milestone.depends_on_milestone_id && (
+                        <span className="flex items-center gap-1 text-primary">
+                          <Link2 className="w-3 h-3" />
+                          {milestones.find(m => m.id === milestone.depends_on_milestone_id)?.name || '?'}
+                        </span>
+                      )}
+                      {milestone.reminder_days_before && milestone.due_date && (
+                        <span className="flex items-center gap-1">
+                          <Bell className="w-3 h-3" />
+                          {milestone.reminder_days_before}d
+                        </span>
                       )}
                     </div>
                   </div>
