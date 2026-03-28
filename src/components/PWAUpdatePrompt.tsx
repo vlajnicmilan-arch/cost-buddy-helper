@@ -80,11 +80,8 @@ export const setAutoUpdatePreference = (enabled: boolean): void => {
   }
 };
 
-export const PWAUpdatePrompt = () => {
+const PWAUpdatePromptInner = () => {
   const { t } = useTranslation();
-
-  // Skip entire PWA update logic on native platforms (Capacitor)
-  if (isNativeApp) return null;
   const [showPrompt, setShowPrompt] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
