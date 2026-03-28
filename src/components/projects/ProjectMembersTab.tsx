@@ -11,7 +11,6 @@ import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, 
 import { cn } from '@/lib/utils';
 import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog';
 import { supabase } from '@/integrations/supabase/client';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectMembersTabProps {
   projectId: string;
