@@ -14,7 +14,7 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 
@@ -49,6 +49,8 @@ export const ProjectMilestonesTab = ({
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [color, setColor] = useState('#3b82f6');
+  const [dependsOn, setDependsOn] = useState<string>('');
+  const [reminderDays, setReminderDays] = useState('3');
 
   const MILESTONE_COLORS = [
     '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', 
@@ -67,6 +69,8 @@ export const ProjectMilestonesTab = ({
       setColor(milestone.color || '#3b82f6');
       setStartDate(milestone.start_date ? new Date(milestone.start_date) : undefined);
       setDueDate(milestone.due_date ? new Date(milestone.due_date) : undefined);
+      setDependsOn(milestone.depends_on_milestone_id || '');
+      setReminderDays((milestone.reminder_days_before ?? 3).toString());
     } else {
       setEditingMilestone(null);
       setName('');
@@ -76,12 +80,24 @@ export const ProjectMilestonesTab = ({
       setColor('#3b82f6');
       setStartDate(undefined);
       setDueDate(undefined);
+      setDependsOn('');
+      setReminderDays('3');
     }
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!name.trim()) return;
+
+    // Validate dependency: can't start if dependency not completed
+    if (status === 'in_progress' && dependsOn) {
+      const depMilestone = milestones.find(m => m.id === dependsOn);
+      if (depMilestone && depMilestone.status !== 'completed') {
+        const { toast } = await import('sonner');
+        toast.error(t('projects.dependencyNotCompleted', 'Prethodna faza mora biti završena prije pokretanja ove faze'));
+        return;
+      }
+    }
     
     setSaving(true);
     try {
@@ -94,7 +110,9 @@ export const ProjectMilestonesTab = ({
         color,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-        sort_order: editingMilestone?.sort_order ?? milestones.length
+        sort_order: editingMilestone?.sort_order ?? milestones.length,
+        depends_on_milestone_id: dependsOn || null,
+        reminder_days_before: parseInt(reminderDays) || 3,
       };
 
       if (editingMilestone) {
@@ -183,12 +201,24 @@ export const ProjectMilestonesTab = ({
                       </p>
                     )}
 
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                       {milestone.start_date && (
                         <span>{t('projects.start')}: {format(new Date(milestone.start_date), 'd. MMM', { locale: hr })}</span>
                       )}
                       {milestone.due_date && (
                         <span>{t('projects.due')}: {format(new Date(milestone.due_date), 'd. MMM', { locale: hr })}</span>
+                      )}
+                      {milestone.depends_on_milestone_id && (
+                        <span className="flex items-center gap-1 text-primary">
+                          <Link2 className="w-3 h-3" />
+                          {milestones.find(m => m.id === milestone.depends_on_milestone_id)?.name || '?'}
+                        </span>
+                      )}
+                      {milestone.reminder_days_before && milestone.due_date && (
+                        <span className="flex items-center gap-1">
+                          <Bell className="w-3 h-3" />
+                          {milestone.reminder_days_before}d
+                        </span>
                       )}
                     </div>
                   </div>
@@ -298,6 +328,37 @@ export const ProjectMilestonesTab = ({
                   </PopoverContent>
                 </Popover>
               </div>
+            </div>
+
+            {/* Dependency */}
+            <div className="space-y-2">
+              <Label>{t('projects.dependsOn', 'Ovisi o fazi')}</Label>
+              <Select value={dependsOn} onValueChange={setDependsOn}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('projects.noDependency', 'Nema ovisnosti')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('projects.noDependency', 'Nema ovisnosti')}</SelectItem>
+                  {milestones
+                    .filter(m => m.id !== editingMilestone?.id)
+                    .map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Reminder days */}
+            <div className="space-y-2">
+              <Label>{t('projects.reminderDays', 'Podsjetnik (dana prije roka)')}</Label>
+              <Input 
+                type="number" 
+                value={reminderDays} 
+                onChange={(e) => setReminderDays(e.target.value)} 
+                min="0" 
+                max="30"
+              />
             </div>
 
             <div className="space-y-2">

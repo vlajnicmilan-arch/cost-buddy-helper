@@ -16,8 +16,10 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
-  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight
+  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History
 } from 'lucide-react';
+import { ProjectProfitLossCard } from './ProjectProfitLossCard';
+import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { ProjectMilestonesTab } from './ProjectMilestonesTab';
@@ -50,6 +52,7 @@ export const ProjectFullScreenView = ({
   const [activeTab, setActiveTab] = useState(initialTab || 'timeline');
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -185,9 +188,20 @@ export const ProjectFullScreenView = ({
               {canSeeTab('funding') && (
               <div className="p-4 rounded-lg bg-muted/50 space-y-3 mb-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Wallet className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">{t('projects.budgetOverview')}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">{t('projects.budgetOverview')}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setBudgetHistoryOpen(true)}
+                      title={t('projects.budgetHistory', 'Povijest budžeta')}
+                    >
+                      <History className="w-4 h-4 text-muted-foreground" />
+                    </Button>
                   </div>
                   {budgetWarning && (
                     <Badge variant="destructive" className="gap-1">
@@ -358,6 +372,9 @@ export const ProjectFullScreenView = ({
                       )}
                     </div>
                   )}
+
+                  {/* P&L Card */}
+                  <ProjectProfitLossCard projectId={project.id} />
                 </TabsContent>
 
                 {canSeeTab('timeline') && (
@@ -451,6 +468,13 @@ export const ProjectFullScreenView = ({
                 )}
               </Tabs>
             </div>
+
+            {/* Budget History Dialog */}
+            <ProjectBudgetHistoryDialog
+              open={budgetHistoryOpen}
+              onOpenChange={setBudgetHistoryOpen}
+              projectId={project.id}
+            />
           </motion.div>
 
         </>

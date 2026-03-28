@@ -1933,6 +1933,44 @@ export type Database = {
         }
         Relationships: []
       }
+      project_budget_revisions: {
+        Row: {
+          created_at: string
+          id: string
+          new_amount: number
+          previous_amount: number
+          project_id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_amount: number
+          previous_amount: number
+          project_id: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_amount?: number
+          previous_amount?: number
+          project_id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_budget_revisions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_collaborators: {
         Row: {
           company_name: string | null
@@ -2176,11 +2214,13 @@ export type Database = {
           color: string | null
           completed_at: string | null
           created_at: string
+          depends_on_milestone_id: string | null
           description: string | null
           due_date: string | null
           id: string
           name: string
           project_id: string
+          reminder_days_before: number | null
           sort_order: number
           start_date: string | null
           status: string
@@ -2191,11 +2231,13 @@ export type Database = {
           color?: string | null
           completed_at?: string | null
           created_at?: string
+          depends_on_milestone_id?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           name: string
           project_id: string
+          reminder_days_before?: number | null
           sort_order?: number
           start_date?: string | null
           status?: string
@@ -2206,17 +2248,26 @@ export type Database = {
           color?: string | null
           completed_at?: string | null
           created_at?: string
+          depends_on_milestone_id?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           name?: string
           project_id?: string
+          reminder_days_before?: number | null
           sort_order?: number
           start_date?: string | null
           status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_milestones_depends_on_milestone_id_fkey"
+            columns: ["depends_on_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_milestones_project_id_fkey"
             columns: ["project_id"]

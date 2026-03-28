@@ -176,6 +176,10 @@ export const useProjects = () => {
         return;
       }
 
+      // Check if budget changed for revision log
+      const currentProject = projects.find(p => p.id === project.id);
+      const budgetChanged = currentProject && Number(currentProject.total_budget) !== Number(project.total_budget);
+
       const { error } = await supabase
         .from('projects')
         .update({
@@ -191,6 +195,18 @@ export const useProjects = () => {
         .eq('id', project.id);
 
       if (error) throw error;
+
+      // Log budget revision if budget changed
+      if (budgetChanged && currentProject) {
+        await (supabase.from('project_budget_revisions') as any)
+          .insert({
+            project_id: project.id,
+            user_id: user!.id,
+            previous_amount: Number(currentProject.total_budget),
+            new_amount: Number(project.total_budget),
+            reason: null,
+          });
+      }
 
       setProjects(prev => prev.map(p => 
         p.id === project.id 
