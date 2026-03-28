@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { useProjectProfitLoss } from '@/hooks/useProjectProfitLoss';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Users, Handshake, Package, Loader2 } from 'lucide-react';
+import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ProjectProfitLossCardProps {
   projectId: string;
@@ -12,6 +13,7 @@ export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps)
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const pl = useProjectProfitLoss(projectId);
+  const [expanded, setExpanded] = useState(false);
 
   if (pl.loading) {
     return (
@@ -100,6 +102,73 @@ export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps)
           </span>
         </div>
       </div>
+
+      {/* Expandable worker/collaborator details */}
+      {(pl.workers.length > 0 || pl.collaborators.length > 0) && (
+        <>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors pt-1"
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="w-3 h-3" />
+                {t('common.showLess', 'Prikaži manje')}
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-3 h-3" />
+                {t('projects.showResourceDetails', 'Prikaži detalje resursa')}
+              </>
+            )}
+          </button>
+
+          {expanded && (
+            <div className="space-y-3 pt-2 border-t">
+              {/* Workers detail */}
+              {pl.workers.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Users className="w-3.5 h-3.5" />
+                    {t('projects.workersDetail', 'Radnici')}
+                  </div>
+                  <div className="space-y-1">
+                    {pl.workers.map(w => (
+                      <div key={w.id} className="flex items-center justify-between text-xs p-2 rounded bg-muted/50">
+                        <span className="font-medium">{w.name}</span>
+                        <div className="flex items-center gap-3 text-muted-foreground">
+                          <span>{w.hours.toFixed(1)}h × {formatAmount(w.rate)}/h</span>
+                          <span className="font-medium text-foreground">{formatAmount(w.cost)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Collaborators detail */}
+              {pl.collaborators.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Handshake className="w-3.5 h-3.5" />
+                    {t('projects.collaboratorsDetail', 'Suradnici')}
+                  </div>
+                  <div className="space-y-1">
+                    {pl.collaborators.map(c => (
+                      <div key={c.id} className="flex items-center justify-between text-xs p-2 rounded bg-muted/50">
+                        <span className="font-medium">{c.name}</span>
+                        <div className="flex items-center gap-3 text-muted-foreground">
+                          <span>{formatAmount(c.paidAmount)} / {formatAmount(c.totalPrice)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

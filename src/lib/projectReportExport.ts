@@ -8,6 +8,20 @@ export interface CurrencyConfig {
   locale: string;
 }
 
+export interface ReportWorker {
+  name: string;
+  hours: number;
+  rate: number;
+  cost: number;
+}
+
+export interface ReportCollaborator {
+  name: string;
+  totalPrice: number;
+  paidAmount: number;
+  service: string;
+}
+
 export interface ProjectReportData {
   projectName: string;
   projectDescription?: string | null;
@@ -27,6 +41,8 @@ export interface ProjectReportData {
     member_name?: string;
   }[];
   currency?: CurrencyConfig;
+  workers?: ReportWorker[];
+  collaborators?: ReportCollaborator[];
 }
 
 const formatDate = (date: Date): string => {
