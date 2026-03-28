@@ -174,21 +174,32 @@ export const ProjectMilestonesTab = ({
             const budgetUsed = milestone.budget > 0 
               ? ((milestone.spent || 0) / milestone.budget) * 100 
               : 0;
+            const isOverBudget = milestone.budget > 0 && (milestone.spent || 0) > milestone.budget;
+            const overAmount = isOverBudget ? (milestone.spent || 0) - milestone.budget : 0;
 
             return (
               <div 
                 key={milestone.id}
-                className="p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow"
+                className={cn(
+                  "p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow",
+                  isOverBudget && "border-destructive/40 bg-destructive/5"
+                )}
               >
                 <div className="flex items-start gap-3">
                   <div className="w-3 h-3 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: milestone.color || '#3b82f6' }} />
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h4 className="font-medium truncate">{milestone.name}</h4>
                       <Badge variant="outline" className="text-xs">
                         {MILESTONE_STATUS_LABELS[milestone.status]}
                       </Badge>
+                      {isOverBudget && (
+                        <Badge variant="destructive" className="text-xs gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          +{formatAmount(overAmount)}
+                        </Badge>
+                      )}
                     </div>
                     
                     {milestone.description && (
@@ -196,9 +207,24 @@ export const ProjectMilestonesTab = ({
                     )}
 
                     {milestone.budget > 0 && (
-                      <p className="text-sm font-medium text-primary mb-2">
-                        {formatAmount(milestone.budget)}
-                      </p>
+                      <div className="mb-2">
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="font-medium text-primary">
+                            {formatAmount(milestone.budget)}
+                          </span>
+                          {(milestone.spent || 0) > 0 && (
+                            <span className={cn("text-xs", isOverBudget ? "text-destructive" : "text-muted-foreground")}>
+                              {formatAmount(milestone.spent || 0)} ({budgetUsed.toFixed(0)}%)
+                            </span>
+                          )}
+                        </div>
+                        {(milestone.spent || 0) > 0 && (
+                          <Progress 
+                            value={Math.min(budgetUsed, 100)} 
+                            className={cn("h-1.5", isOverBudget && "[&>div]:bg-destructive")} 
+                          />
+                        )}
+                      </div>
                     )}
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
