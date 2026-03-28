@@ -364,7 +364,7 @@ export const ProjectMilestonesTab = ({
                   <SelectValue placeholder={t('projects.noDependency', 'Nema ovisnosti')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('projects.noDependency', 'Nema ovisnosti')}</SelectItem>
+                  <SelectItem value="none">{t('projects.noDependency', 'Nema ovisnosti')}</SelectItem>
                   {milestones
                     .filter(m => m.id !== editingMilestone?.id)
                     .map(m => (
