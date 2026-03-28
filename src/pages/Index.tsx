@@ -178,8 +178,8 @@ const Index = () => {
     budgets: budgetsWithStats.map(b => ({ id: b.id, name: b.name, icon: b.icon, color: b.color })),
     projects: projects.map(p => ({ id: p.id, name: p.name, icon: p.icon, color: p.color })),
     customPaymentSources: customPaymentSources.map(s => ({ id: s.id, name: s.name, icon: s.icon, color: s.color, cards: s.cards?.map(c => ({ id: c.id, last_four_digits: c.last_four_digits })) })),
-    customCategories: customPaymentSources.length >= 0 ? undefined : undefined, // placeholder — loaded below
-  }), [budgetsWithStats, projects, customPaymentSources]);
+    customCategories: customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color })),
+  }), [budgetsWithStats, projects, customPaymentSources, customCategories]);
 
   const {
     expenses,
