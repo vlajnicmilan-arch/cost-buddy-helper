@@ -91,10 +91,10 @@ export const useOfflineQueue = () => {
           continue;
         }
 
-        const { error } = await supabase.from('expenses').insert({
+        const { error } = await supabase.from('expenses').insert([{
           ...item.expense,
           user_id: session.session.user.id,
-        });
+        }] as any);
 
         if (error) {
           console.error('Failed to sync queued transaction:', error);
