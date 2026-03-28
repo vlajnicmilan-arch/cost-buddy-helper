@@ -1,3 +1,4 @@
+import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -11,7 +12,7 @@ interface SummaryCardProps {
   onClick?: () => void;
 }
 
-export const SummaryCard = ({ title, amount, variant, icon, isActive, onClick }: SummaryCardProps) => {
+export const SummaryCard = React.memo(({ title, amount, variant, icon, isActive, onClick }: SummaryCardProps) => {
   const { formatAmount } = useCurrency();
 
   return (
@@ -46,4 +47,4 @@ export const SummaryCard = ({ title, amount, variant, icon, isActive, onClick }:
       </p>
     </motion.div>
   );
-};
+});
