@@ -7,8 +7,9 @@ import { ProjectMember, ProjectInvitation, ProjectRole, PROJECT_ROLE_LABELS } fr
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus } from 'lucide-react';
+import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectMembersTabProps {
