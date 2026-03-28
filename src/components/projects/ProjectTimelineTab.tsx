@@ -202,6 +202,10 @@ export const ProjectTimelineTab = ({
           <div className="w-3 h-3 rounded-full bg-destructive" />
           <span>{t('projects.overdue', 'Zakašnjelo')}</span>
         </div>
+        <div className="flex items-center gap-1">
+          <ArrowRight className="w-3 h-3 text-muted-foreground" />
+          <span>{t('projects.dependency', 'Ovisnost')}</span>
+        </div>
       </div>
 
       {/* Timeline header with months */}
