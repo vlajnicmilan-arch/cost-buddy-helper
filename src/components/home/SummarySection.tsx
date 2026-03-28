@@ -211,4 +211,4 @@ export const SummarySection = React.memo(({
       )}
     </>
   );
-};
+});
