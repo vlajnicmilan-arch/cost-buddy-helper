@@ -163,6 +163,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     console.log('Member added successfully');
 
+    // Initialize default permissions (all optional tabs hidden)
+    if (type === 'project') {
+      const optionalTabs = ['timeline', 'milestones', 'workers', 'collaborators', 'funding', 'transactions'];
+      const permRows = optionalTabs.map(tab_key => ({
+        project_id: invitation.target_id,
+        user_id: user.id,
+        tab_key,
+        visible: false,
+      }));
+
+      const { error: permError } = await supabaseAdmin
+        .from('project_member_permissions')
+        .upsert(permRows, { onConflict: 'project_id,user_id,tab_key' });
+
+      if (permError) {
+        console.log('Error initializing permissions:', permError.message);
+      } else {
+        console.log('Default permissions initialized');
+      }
+    }
+
     // Update invitation status to accepted
     const { error: updateError } = await supabaseAdmin
       .from(invitationTable)
