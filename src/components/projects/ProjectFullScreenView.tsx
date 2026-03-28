@@ -432,6 +432,7 @@ export const ProjectFullScreenView = ({
                   />
                 </TabsContent>
 
+                {canSeeTab('transactions') && (
                 <TabsContent value="transactions" className="m-0">
                   <ProjectTransactionsTab
                     projectId={project.id}
@@ -447,6 +448,7 @@ export const ProjectFullScreenView = ({
                     }}
                   />
                 </TabsContent>
+                )}
               </Tabs>
             </div>
           </motion.div>
