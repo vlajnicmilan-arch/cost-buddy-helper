@@ -127,4 +127,4 @@ export const QuickLinksSection = React.memo(({
       </Accordion>
     </div>
   );
-};
+});

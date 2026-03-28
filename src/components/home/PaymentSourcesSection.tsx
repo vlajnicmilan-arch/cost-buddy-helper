@@ -133,4 +133,4 @@ export const PaymentSourcesSection = React.memo(({ customPaymentSources, onSourc
       </CollapsibleContent>
     </Collapsible>
   );
-};
+});
