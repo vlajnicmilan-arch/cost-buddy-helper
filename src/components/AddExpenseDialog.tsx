@@ -115,6 +115,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   const multiGalleryInputRef = useRef<HTMLInputElement>(null);
   
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
+  const { takePhoto: nativeTakePhoto, pickFromGallery: nativePickFromGallery, isNative } = useNativeCamera();
   const { formatAmount, currency: primaryCurrency, multiCurrencyEnabled } = useCurrency();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
@@ -194,6 +195,29 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
   }, [open, customPaymentSources]);
 
 
+  const processImageBase64 = async (base64: string, multiMode: boolean) => {
+    if (multiMode || showMultiImageCollector) {
+      setReceiptImages(prev => [...prev, base64]);
+      setReceiptImage(base64);
+      if (!showMultiImageCollector) setShowMultiImageCollector(true);
+    } else {
+      setReceiptImage(base64);
+      const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
+      if (result) {
+        applyScannedResult(result);
+      } else {
+        console.warn('Receipt scan returned no result');
+      }
+    }
+  };
+
+  const handleNativeCapture = async (source: 'camera' | 'gallery', multiMode = false) => {
+    const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
+    if (base64) {
+      await processImageBase64(base64, multiMode);
+    }
+  };
+
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -201,25 +225,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
-      
-      if (multiMode || showMultiImageCollector) {
-        // Multi-image mode: collect images
-        setReceiptImages(prev => [...prev, base64]);
-        setReceiptImage(base64); // Show last image as thumbnail
-        if (!showMultiImageCollector) setShowMultiImageCollector(true);
-      } else {
-        // Single image mode: scan immediately
-        setReceiptImage(base64);
-        
-        const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
-        
-        if (result) {
-          applyScannedResult(result);
-        } else {
-          // Scan failed or returned no data - clear the image so user can retry
-          console.warn('Receipt scan returned no result');
-        }
-      }
+      await processImageBase64(base64, multiMode);
     };
     reader.readAsDataURL(file);
     
