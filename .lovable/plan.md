@@ -1,33 +1,26 @@
 
 
-## Plan: Debug i popravak filtriranja izvora plaćanja u izvješćima
+## Plan: Popravak filtriranja izvora plaćanja u izvješćima
 
-### Analiza
+### Problem
 
-Pregledao sam cijeli tok podataka u `ReportsDialog.tsx`:
-- `excludedPaymentSources` (Set) → `filteredExpenses` (useMemo) → `stats` (useMemo) → UI kartice
-
-Logika je ispravno napisana — **ali** mogući problem je **neslaganje ID-ova**. Konkretno:
-
-1. `uniquePaymentSources` gradi listu iz `customPaymentSources` (hook) koristeći `cs.id` (npr. UUID iz baze)
-2. Ali transakcije (`expenses`) možda imaju `payment_source` postavljenu na drugi format (npr. `custom_ps_...` iz localStorage ili čak samo ime izvora)
+Transakcije pohranjuju izvor plaćanja u formatu `custom:UUID` (npr. `custom:abc-123`), ali lista izvora u izvješćima koristi samo `UUID` (`abc-123`). Kada korisnik isključi izvor, filter uspoređuje `custom:abc-123` s `abc-123` — nikad se ne poklapaju, pa se troškovi ne mijenjaju.
 
 ### Rješenje
 
-Dodati debug log u `togglePaymentSource` i `filteredExpenses` da se potvrdi hipoteza, te popraviti logiku ako se pokaže da je ID mismatch problem.
+**Datoteka:** `src/components/reports/ReportsDialog.tsx`
 
-| Datoteka | Promjena |
-|---|---|
-| `src/components/reports/ReportsDialog.tsx` | 1) Dodati privremeni `console.log` u `filteredExpenses` useMemo koji ispisuje koliko je transakcija filtrirano i koji su excluded IDs vs. stvarni payment_source vrijednosti na transakcijama. 2) Ako se potvrdi mismatch, normalizirati ID-ove tako da `uniquePaymentSources` koristi iste ključeve kao `expense.payment_source`. |
+Dva moguća pristupa — koristit ću najjednostavniji:
 
-### Alternativna hipoteza
+1. **U `uniquePaymentSources`** — dodati `custom:` prefix na ID svake custom stavke, tako da odgovara formatu u transakcijama:
+   ```
+   id: `custom:${cs.id}`
+   ```
 
-Ako ID-ovi odgovaraju, problem bi mogao biti da korisnik ima transakcije s `payment_source = undefined` ili `null`, koje padaju na default `'cash'`, a `'cash'` izvor se ne prikazuje u listi (jer nema transakcija pod tim ključem ako korisnik koristi custom izvore).
+2. **U `txCountMap`** — isti ključevi se koriste za brojanje transakcija pa se automatski poklapaju.
 
-### Pristup implementacije
+3. **U `filteredExpenses`** — `excludedPaymentSources.has(e.payment_source || 'cash')` — sad će raditi jer su ID-ovi usklađeni.
 
-1. Dodati console.log za debug (privremeno)
-2. Identificirati stvarni uzrok
-3. Popraviti logiku mapiranja ID-ova
-4. Ukloniti debug logove
+### Promjena je minimalna
+- Samo jedna linija u `uniquePaymentSources` useMemo: `id: cs.id` → `id: \`custom:${cs.id}\``
 
