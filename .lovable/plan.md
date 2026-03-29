@@ -1,14 +1,15 @@
 
 
-## Plan: Zamjena loga na stari
+## Plan: Add spacing between Cashflow and Recent Transactions cards
 
-Korisnik je uploadao sliku starog loga (`user-uploads://logo.png`). Treba zamijeniti trenutni `src/assets/logo.png` s ovom slikom.
+The Cashflow Forecast card (line 830-847) sits directly above the main content grid (line 851) with no margin/gap between them, making them appear visually merged.
 
-### Koraci
+### Change
 
-1. **Kopiraj uploadani logo** u `src/assets/logo.png` (prepiše postojeći)
-2. **Ažuriraj favicon** — kopiraj isti logo u `public/favicon.png` i ažuriraj `index.html` da koristi novi favicon
-3. **Ažuriraj Apple touch icon** u `index.html` ako postoji
+In `src/pages/Index.tsx`, add a bottom margin to the Cashflow `Collapsible` wrapper or a top margin to the grid. Simplest approach: add `mb-4` or `mb-6` class to the Cashflow Collapsible (line 830).
 
-Nikakve promjene u komponentama nisu potrebne jer sve već importaju `@/assets/logo.png`.
+**File:** `src/pages/Index.tsx`
+- Line 830: Change `<Collapsible className="group">` to `<Collapsible className="group mb-4">`
+
+This adds consistent spacing (1rem) between the two cards without affecting the rest of the layout.
 
