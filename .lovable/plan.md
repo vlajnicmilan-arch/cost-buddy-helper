@@ -1,24 +1,33 @@
 
 
-## Plan: Filtriranje izvora plaćanja — samo korisnikovi izvori
+## Plan: Debug i popravak filtriranja izvora plaćanja u izvješćima
 
-### Problem
-Trenutno se lista izvora plaćanja u izvješćima gradi iz svih transakcija (`expenses`), što može prikazati izvore koje korisnik ne posjeduje ili ne koristi. Treba prikazati samo izvore koje korisnik stvarno ima.
+### Analiza
+
+Pregledao sam cijeli tok podataka u `ReportsDialog.tsx`:
+- `excludedPaymentSources` (Set) → `filteredExpenses` (useMemo) → `stats` (useMemo) → UI kartice
+
+Logika je ispravno napisana — **ali** mogući problem je **neslaganje ID-ova**. Konkretno:
+
+1. `uniquePaymentSources` gradi listu iz `customPaymentSources` (hook) koristeći `cs.id` (npr. UUID iz baze)
+2. Ali transakcije (`expenses`) možda imaju `payment_source` postavljenu na drugi format (npr. `custom_ps_...` iz localStorage ili čak samo ime izvora)
 
 ### Rješenje
 
-**Datoteka:** `src/components/reports/ReportsDialog.tsx`
+Dodati debug log u `togglePaymentSource` i `filteredExpenses` da se potvrdi hipoteza, te popraviti logiku ako se pokaže da je ID mismatch problem.
 
-Promijeniti `uniquePaymentSources` useMemo da:
+| Datoteka | Promjena |
+|---|---|
+| `src/components/reports/ReportsDialog.tsx` | 1) Dodati privremeni `console.log` u `filteredExpenses` useMemo koji ispisuje koliko je transakcija filtrirano i koji su excluded IDs vs. stvarni payment_source vrijednosti na transakcijama. 2) Ako se potvrdi mismatch, normalizirati ID-ove tako da `uniquePaymentSources` koristi iste ključeve kao `expense.payment_source`. |
 
-1. **Custom izvori** — uzeti iz `customPaymentSources` (hook već dohvaća samo korisnikove vlastite + dijeljene). Za svaki prikazati broj transakcija iz `expenses` (može biti 0).
-2. **Ugrađeni izvori (cash, bank, card)** — prikazati samo one koji se pojavljuju u korisnikovim transakcijama (bar 1 transakcija).
-3. **Sortirati** — custom izvori prvi (po sort_order), zatim ugrađeni po broju transakcija.
+### Alternativna hipoteza
 
-Ovime korisnik vidi samo svoje izvore plaćanja, a ne "tuđe" ili nekorištene ugrađene izvore.
+Ako ID-ovi odgovaraju, problem bi mogao biti da korisnik ima transakcije s `payment_source = undefined` ili `null`, koje padaju na default `'cash'`, a `'cash'` izvor se ne prikazuje u listi (jer nema transakcija pod tim ključem ako korisnik koristi custom izvore).
 
-### Tehnički detalji
-- `customPaymentSources` već postoji u komponenti (line 22, hook poziv)
-- Mijenja se samo `uniquePaymentSources` useMemo (linije 354-370)
-- Logika: iterirati `customPaymentSources` za custom izvore, zatim skenirati `expenses` za ugrađene izvore koji nisu custom
+### Pristup implementacije
+
+1. Dodati console.log za debug (privremeno)
+2. Identificirati stvarni uzrok
+3. Popraviti logiku mapiranja ID-ova
+4. Ukloniti debug logove
 
