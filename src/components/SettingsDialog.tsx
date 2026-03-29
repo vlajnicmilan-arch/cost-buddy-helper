@@ -1438,6 +1438,48 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
           <Separator />
 
+          {/* Share App */}
+          {user && (
+            <div className="space-y-2">
+              <button
+                onClick={async () => {
+                  const { shareApp } = await import('@/hooks/useNativeShare').then(m => {
+                    const hook = m.useNativeShare;
+                    return { shareApp: async (id: string) => {
+                      try {
+                        const text = 'Isprobaj V&M Balance - aplikaciju za praćenje financija!';
+                        const url = `https://vmbalance.com?ref=${id}`;
+                        if (navigator.share) {
+                          await navigator.share({ title: 'V&M Balance', text, url });
+                        } else {
+                          await navigator.clipboard.writeText(`${text}\n${url}`);
+                          toast.success(t('common.copied', 'Link kopiran!'));
+                        }
+                      } catch (e: any) {
+                        if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
+                          console.error('Share error:', e);
+                        }
+                      }
+                    }};
+                  });
+                  shareApp(user.id);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Share2 className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{t('settings.shareApp', 'Podijeli aplikaciju')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settings.shareAppDesc', 'Pozovi prijatelje na V&M Balance')}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+          )}
+
+          <Separator />
+
           {/* App Info */}
           <div className="text-center text-xs text-muted-foreground space-y-1">
             <p>V&M Balance</p>
