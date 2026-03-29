@@ -1,70 +1,67 @@
 
 
-## Plan: Animirani Ghost Avatar s ekspresijama i okretanjem
+## Plan: Sustav ponašanja AI Ghost Avatara
 
-Zamjena trenutnog statičnog PNG avatara s novim animiranim SVG ghost avatarom baziranim na priloženoj slici. Ghost će se okretati lijevo-desno, izražavati emocije licem i mijenjati glow po raspoloženju.
+Trenutno avatar reagira samo na jedan event — dodavanje prihoda (`happy` + poruka). Cilj je definirati kompletnu mapu ponašanja i implementirati triggere po cijeloj aplikaciji.
 
-### Što se gradi
+### Mapa ponašanja po akcijama korisnika
 
-Potpuno novi `GhostAvatar` SVG komponent koji replicira izgled uploadanog duha (bijelo-plavi ghost s velikim plavim očima, srcolikim ticalom na glavi, prozirnim eterealnim tijelom) — ali kao animirani SVG s:
-
-1. **Okretanje tijela/pogleda** — ghost se polako okreće lijevo-desno (rotacija + blagi perspektivni pomak očiju) koristeći postojeći `useEyeMovement` hook
-2. **Ekspresije lica po moodu** — oči, usta i obrve se mijenjaju ovisno o raspoloženju (happy/thinking/worried/proud/neutral)
-3. **Dinamički glow** — `filter: drop-shadow()` animacija na cijelom SVG-u mijenja boju i intenzitet po moodu (cijan, narančasta, zlatna)
-4. **Treptanje** — koristi postojeći `useBlinking` hook
+```text
+AKCIJA KORISNIKA              → MOOD      PORUKA (primjer)
+─────────────────────────────────────────────────────────────────
+Dodavanje rashoda              → neutral   "Zapisano! 📝"
+Dodavanje prihoda              → happy     "Super! Novi prihod! 💰"
+Veliki rashod (>50% budžeta)   → worried   "Hmm, to je velik izdatak... 😰"
+Probijen budžet                → worried   "Budžet je premašen! ⚠️"
+Cilj štednje dostignut         → proud     "Bravo! Cilj ostvaren! 🎉"
+Dodavanje u štednju            → happy     "Sjajno, štedeš! 🐷"
+CSV import završen             → happy     "Uvezeno! Sve je tu 📊"
+Brisanje transakcije           → thinking  "Uklonjeno... 🗑️"
+Prazna lista (nema troškova)   → thinking  "Hmm, mirno je ovdje... 🤔"
+Otvaranje AI asistenta         → thinking  "Razmišljam... 🧠"
+Primljen odgovor asistenta     → happy     "Evo, pogledaj! 💡"
+Greška (API/save fail)         → worried   "Ups, nešto nije u redu 😟"
+Uspješan backup/restore        → proud     "Podatci su sigurni! 🔒"
+Pokretanje aplikacije (jutro)  → happy     "Dobro jutro! ☀️"
+Pokretanje (večer)             → neutral   "Dobra večer! 🌙"
+Neaktivnost >30s               → neutral   (bez poruke, vraća se u idle)
+Postavljanje PIN-a             → proud     "Zaštićeno! 🛡️"
+Kreiranje projekta             → happy     "Novi projekt, nove prilike! 🚀"
+Dodavanje člana obitelji       → happy     "Obitelj raste! 👨‍👩‍👧"
+```
 
 ### Promjene datoteka
 
 | Datoteka | Promjena |
 |---|---|
-| `src/assets/vm_balance_ghost_avatar_enhanced_224.png` | Kopirati uploadanu sliku (referenca, neće se koristiti u kodu) |
-| `src/components/ai-avatar/GhostAvatar.tsx` | **NOVI** — SVG ghost avatar komponenta s animacijama lica, okretanjem tijela, treptanjem |
-| `src/components/ai-avatar/FloatingAIAvatar.tsx` | Zamijeniti `<img>` tag s `<GhostAvatar>`, vratiti `useBlinking` i `useEyeMovement` hookove, prilagoditi glow da koristi `filter: drop-shadow` umjesto `boxShadow` |
+| `src/hooks/useExpenseCRUD.ts` | Dodati `emitAvatarEvent` za rashode, velike rashode, brisanje |
+| `src/hooks/useBudgetAlerts.ts` | Emitirati `worried` kad je budžet probijen |
+| `src/hooks/useSavingsGoals.ts` | Emitirati `happy` za dodavanje, `proud` za dostignut cilj |
+| `src/components/CSVImportDialog.tsx` | Emitirati `happy` nakon uspješnog importa |
+| `src/components/FinancialAssistantDialog.tsx` | Emitirati `thinking` pri otvaranju, `happy` pri odgovoru |
+| `src/components/BackupRestore.tsx` | Emitirati `proud` nakon uspješnog backup/restore |
+| `src/components/SetPinDialog.tsx` | Emitirati `proud` kad se PIN postavi |
+| `src/hooks/useProjects.ts` | Emitirati `happy` pri kreiranju projekta |
+| `src/hooks/useFamilyGroups.ts` | Emitirati `happy` pri dodavanju člana |
+| `src/components/ai-avatar/FloatingAIAvatar.tsx` | Dodati greeting logiku (jutro/večer) pri prvom renderiranju |
+| `src/components/ErrorBoundary.tsx` | Emitirati `worried` kad se uhvati greška |
 
-### GhostAvatar SVG dizajn (baziran na slici)
-
-```text
-Elementi:
-- Okrugla glava (bijelo-plava, radijalni gradijent)
-- Veliko srcoliko/kristalno ticalo na vrhu glave
-- Velike plave oči (kawaii stil) s highlightima
-- Mali slatki osmijeh
-- Eterično tijelo koje se sužava prema dolje (valoviti rub)
-- Sparkle/čestice oko tijela
-- Cijanozeleni glow oko cijelog lika
-```
-
-### Animacije
+### Greeting logika (FloatingAIAvatar ili hook)
 
 ```text
-Okretanje:
-- Cijelo tijelo: rotateY simulacija putem scaleX [1, 0.95, 1, 1.05, 1] + translateX
-- Oči: pupile prate useEyeMovement pozicije (lijevo/desno/gore/dolje)
-
-Ekspresije po moodu:
-- neutral: normalne oči, mali osmijeh
-- happy: oči se sužavaju (sretan squint), širi osmijeh, bouncy pokret
-- thinking: oči gledaju gore-desno, usta ravna crta, blago nagnut
-- worried: oči veće, obrve spuštene, usta u ∪ oblik (tužno)
-- proud: oči zatvorene (self-satisfied), širi osmijeh, scale up
-
-Glow po moodu:
-- neutral: blagi cijan drop-shadow
-- happy: jači cijan, pulsirajući
-- thinking: sporiji pulse, tamnije plavi
-- worried: narančasto-crvenkasti glow
-- proud: zlatni intenzivni glow
-
-Stalno prisutne:
-- Floating (y: [0, -4, 0])
-- Treptanje (useBlinking)
-- Sparkle čestice oko tijela
+Sat 5-12  → happy  + "Dobro jutro! ☀️"
+Sat 12-18 → neutral + "Dobar dan! 👋"
+Sat 18-22 → neutral + "Dobra večer! 🌙"
+Sat 22-5  → thinking + "Kasno je... 🌜"
 ```
+
+Pokreće se jednom pri mount-u s 2s odgodom (da se avatar prvo renderira).
 
 ### Tehnički detalji
-- SVG viewBox: `0 0 120 160` (vertikalno orijentiran ghost)
-- Koristi framer-motion `<motion.path>`, `<motion.ellipse>` za animirane SVG elemente
-- Glow se postiže putem animiranog `filter: drop-shadow()` na root SVG elementu — ne boxShadow (jer ghost nije krug)
-- Ponovno se aktiviraju `useBlinking` i `useEyeMovement` hookovi u FloatingAIAvatar
-- Veličina kontejnera ostaje 112x112px
+
+- Svi triggeri koriste postojeći `emitAvatarEvent(mood, message)` iz `useAppState()`
+- Poruke su na hrvatskom (lokalizirane)
+- Mood se automatski vraća na `neutral` nakon 3s (već implementirano u `useAvatarMood`)
+- Za detekciju "velikog rashoda" — usporedba s dnevnim budžetom ili fiksni prag (npr. >500 kn ili >50% budžeta)
+- Nema novih komponenti, samo pozivi `emitAvatarEvent` na pravim mjestima
 
