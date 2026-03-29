@@ -49,5 +49,14 @@ export const useNativeShare = () => {
     });
   }, [share]);
 
-  return { share, shareTransaction, shareInviteLink, isNative };
+  const shareApp = useCallback(async (userId: string) => {
+    return share({
+      title: 'V&M Balance',
+      text: 'Isprobaj V&M Balance - aplikaciju za praćenje financija!',
+      url: `https://vmbalance.com?ref=${userId}`,
+      dialogTitle: 'Podijeli aplikaciju',
+    });
+  }, [share]);
+
+  return { share, shareTransaction, shareInviteLink, shareApp, isNative };
 };

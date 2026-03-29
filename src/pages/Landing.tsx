@@ -481,6 +481,15 @@ const FooterSection = () => {
 };
 
 const Landing = () => {
+  // Capture referral param from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('referrer_id', ref);
+    }
+  }, []);
+
   return (
     <div className="min-h-dvh bg-background">
       <LandingNav />
