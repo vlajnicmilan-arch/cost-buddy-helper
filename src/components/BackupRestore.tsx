@@ -24,6 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface BackupRestoreProps {
   onDataImported?: () => void;
@@ -44,6 +45,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { storageMode } = useStorage();
   const { user } = useAuth();
+  const { emitAvatarEvent } = useAppState();
 
   const isLocalMode = storageMode === 'local';
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
@@ -165,6 +167,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      emitAvatarEvent('proud', 'Podatci su sigurni! 🔒');
       toast.success(t('backup.exportSuccess'));
     } catch (err) {
       console.error('Export error:', err);
@@ -244,6 +247,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
         setImportResult({ expenses: expenseCount, items: itemCount });
       }
 
+      emitAvatarEvent('proud', 'Podatci su sigurni! 🔒');
       toast.success(t('backup.importSuccess'));
       onDataImported?.();
     } catch (err) {

@@ -17,6 +17,7 @@ import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
+
 import { toast } from 'sonner';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
@@ -192,6 +193,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
       await onImport(selectedTransactions);
       setImportedCount(selectedTransactions.length);
       setStep('complete');
+      emitAvatarEvent('happy', 'Uvezeno! Sve je tu 📊');
 
       // After successful import, scan for loans in business mode
       if (activeBusinessProfileId) {

@@ -69,7 +69,7 @@ export const FinancialAssistantDialog = ({
 }: FinancialAssistantDialogProps) => {
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canAccessAI = hasAccess('ai_assistant');
-  const { activeBusinessProfileId, businessModeEnabled } = useAppState();
+  const { activeBusinessProfileId, businessModeEnabled, emitAvatarEvent } = useAppState();
   const [internalOpen, setInternalOpen] = useState(false);
   
   // Support both controlled and uncontrolled modes

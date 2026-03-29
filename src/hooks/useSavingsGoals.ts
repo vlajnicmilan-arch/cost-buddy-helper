@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useAppState } from '@/contexts/AppStateContext';
 
 export interface SavingsGoal {
   id: string;
@@ -24,6 +25,7 @@ export function useSavingsGoals() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { storageMode } = useStorage();
+  const { emitAvatarEvent } = useAppState();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -122,9 +124,12 @@ export function useSavingsGoals() {
     });
 
     if (isCompleted) {
+      emitAvatarEvent('proud', 'Bravo! Cilj ostvaren! 🎉');
       toast.success(t('savingsGoals.goalCompleted', { name: goal.name }));
+    } else {
+      emitAvatarEvent('happy', 'Sjajno, štedeš! 🐷');
     }
-  }, [goals, updateGoal, t]);
+  }, [goals, updateGoal, t, emitAvatarEvent]);
 
   return { goals, loading, addGoal, updateGoal, deleteGoal, addAmount, refetch: fetchGoals };
 }

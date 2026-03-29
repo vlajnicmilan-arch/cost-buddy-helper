@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Lock, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface SetPinDialogProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface SetPinDialogProps {
 export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
   const { setPin, enableLock } = useAppLock();
   const { t } = useTranslation();
+  const { emitAvatarEvent } = useAppState();
   const [step, setStep] = useState<'enter' | 'confirm'>('enter');
   const [firstPin, setFirstPin] = useState('');
   const [currentPin, setCurrentPin] = useState('');
@@ -36,6 +38,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
           if (newPin === firstPin) {
             setPin(newPin);
             enableLock(true);
+            emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
             toast.success(t('lock.pinSet', 'PIN je postavljen'));
             resetAndClose();
           } else if (newPin.length === firstPin.length) {

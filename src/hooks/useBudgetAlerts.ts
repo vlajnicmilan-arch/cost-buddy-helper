@@ -2,10 +2,12 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { useAppState } from '@/contexts/AppStateContext';
 
 export const useBudgetAlerts = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
+  const { emitAvatarEvent } = useAppState();
 
   const checkBudgetAlerts = useCallback(async (category: string, amount: number, expenseDate?: Date) => {
     // Only check alerts in cloud mode
@@ -45,6 +47,14 @@ export const useBudgetAlerts = () => {
       }
 
       const data = await response.json();
+      if (data.alerts && data.alerts.length > 0) {
+        const hasExceeded = data.alerts.some((a: any) => a.percentage >= 100);
+        if (hasExceeded) {
+          emitAvatarEvent('worried', 'Budžet je premašen! ⚠️');
+        } else {
+          emitAvatarEvent('worried', 'Hmm, to je velik izdatak... 😰');
+        }
+      }
       return data;
     } catch (error) {
       console.error('Error checking budget alerts:', error);
