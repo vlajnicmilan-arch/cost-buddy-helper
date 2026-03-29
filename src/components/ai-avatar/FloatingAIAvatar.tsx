@@ -2,7 +2,9 @@ import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AvatarMood } from './useAvatarMood';
-import avatarImg from '@/assets/vm_balance_avatar.png';
+import { GhostAvatar } from './GhostAvatar';
+import { useBlinking } from './useBlinking';
+import { useEyeMovement } from './useEyeMovement';
 
 interface FloatingAIAvatarProps {
   mood?: AvatarMood;
@@ -13,46 +15,46 @@ interface FloatingAIAvatarProps {
   className?: string;
 }
 
-const getMoodGlow = (mood: AvatarMood) => {
+const getMoodDropShadow = (mood: AvatarMood) => {
   switch (mood) {
     case 'happy':
       return {
-        boxShadow: [
-          '0 0 20px 8px rgba(0, 210, 255, 0.4)',
-          '0 0 40px 15px rgba(0, 210, 255, 0.6)',
-          '0 0 20px 8px rgba(0, 210, 255, 0.4)',
+        filter: [
+          'drop-shadow(0 0 12px rgba(0, 210, 255, 0.5))',
+          'drop-shadow(0 0 25px rgba(0, 210, 255, 0.8))',
+          'drop-shadow(0 0 12px rgba(0, 210, 255, 0.5))',
         ],
       };
     case 'thinking':
       return {
-        boxShadow: [
-          '0 0 15px 5px rgba(0, 180, 255, 0.3)',
-          '0 0 30px 12px rgba(0, 180, 255, 0.5)',
-          '0 0 15px 5px rgba(0, 180, 255, 0.3)',
+        filter: [
+          'drop-shadow(0 0 10px rgba(0, 150, 255, 0.3))',
+          'drop-shadow(0 0 20px rgba(0, 150, 255, 0.6))',
+          'drop-shadow(0 0 10px rgba(0, 150, 255, 0.3))',
         ],
       };
     case 'worried':
       return {
-        boxShadow: [
-          '0 0 20px 8px rgba(255, 160, 50, 0.4)',
-          '0 0 25px 10px rgba(255, 140, 30, 0.5)',
-          '0 0 20px 8px rgba(255, 160, 50, 0.4)',
+        filter: [
+          'drop-shadow(0 0 12px rgba(255, 140, 50, 0.4))',
+          'drop-shadow(0 0 18px rgba(255, 120, 30, 0.6))',
+          'drop-shadow(0 0 12px rgba(255, 140, 50, 0.4))',
         ],
       };
     case 'proud':
       return {
-        boxShadow: [
-          '0 0 25px 10px rgba(255, 215, 0, 0.4)',
-          '0 0 45px 18px rgba(255, 215, 0, 0.6)',
-          '0 0 25px 10px rgba(255, 215, 0, 0.4)',
+        filter: [
+          'drop-shadow(0 0 15px rgba(255, 215, 0, 0.5))',
+          'drop-shadow(0 0 30px rgba(255, 215, 0, 0.8))',
+          'drop-shadow(0 0 15px rgba(255, 215, 0, 0.5))',
         ],
       };
     default:
       return {
-        boxShadow: [
-          '0 0 15px 5px rgba(0, 200, 255, 0.25)',
-          '0 0 20px 8px rgba(0, 200, 255, 0.35)',
-          '0 0 15px 5px rgba(0, 200, 255, 0.25)',
+        filter: [
+          'drop-shadow(0 0 8px rgba(0, 200, 255, 0.25))',
+          'drop-shadow(0 0 14px rgba(0, 200, 255, 0.4))',
+          'drop-shadow(0 0 8px rgba(0, 200, 255, 0.25))',
         ],
       };
   }
@@ -63,7 +65,7 @@ const getMoodGlowTransition = (mood: AvatarMood) => {
     case 'happy':
       return { duration: 1.2, repeat: Infinity, ease: "easeInOut" as const };
     case 'thinking':
-      return { duration: 2, repeat: Infinity, ease: "easeInOut" as const };
+      return { duration: 2.5, repeat: Infinity, ease: "easeInOut" as const };
     case 'worried':
       return { duration: 0.8, repeat: Infinity, ease: "easeInOut" as const };
     case 'proud':
@@ -73,17 +75,16 @@ const getMoodGlowTransition = (mood: AvatarMood) => {
   }
 };
 
-// Mood expression animations (kept from original)
 const getMoodAnimation = (mood: AvatarMood) => {
   switch (mood) {
     case 'happy':
       return { scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] };
     case 'thinking':
-      return { rotate: [0, -8, 8, -5, 5, 0], y: [0, -2, 0] };
+      return { rotate: [0, -5, 5, -3, 3, 0], y: [0, -2, 0] };
     case 'worried':
-      return { scale: [1, 0.95, 1], x: [-1, 1, -1, 0] };
+      return { scale: [1, 0.97, 1], x: [-1, 1, -1, 0] };
     case 'proud':
-      return { scale: [1, 1.1, 1.05, 1.1, 1], y: [0, -5, 0] };
+      return { scale: [1, 1.08, 1.04, 1.08, 1], y: [0, -4, 0] };
     default:
       return { scale: 1, rotate: 0 };
   }
@@ -115,6 +116,8 @@ export const FloatingAIAvatar = ({
   const [isPressed, setIsPressed] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const wasLongPress = useRef(false);
+  const isBlinking = useBlinking();
+  const eyePosition = useEyeMovement(mood);
 
   const handlePressStart = useCallback(() => {
     setIsPressed(true);
@@ -191,17 +194,17 @@ export const FloatingAIAvatar = ({
             animate={getMoodAnimation(mood)}
             transition={getMoodTransition(mood)}
           >
-            {/* Glow wrapper */}
+            {/* Glow wrapper with drop-shadow */}
             <motion.div
-              className="w-full h-full rounded-full overflow-hidden"
-              animate={getMoodGlow(mood)}
+              className="w-full h-full flex items-center justify-center"
+              animate={getMoodDropShadow(mood)}
               transition={getMoodGlowTransition(mood)}
             >
-              <img
-                src={avatarImg}
-                alt="AI Avatar"
-                className="w-full h-full object-cover rounded-full"
-                draggable={false}
+              <GhostAvatar
+                mood={mood}
+                size={112}
+                isBlinking={isBlinking}
+                eyePosition={eyePosition}
               />
             </motion.div>
           </motion.div>
