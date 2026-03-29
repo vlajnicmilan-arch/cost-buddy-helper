@@ -1,41 +1,38 @@
 
 
-## Plan: Dodaj opciju "Podijeli aplikaciju" u Postavke
+## Plan: Referral link vodi na preuzimanje APK-a
 
-### Sto se radi
+### Trenutno stanje
+Dijeljeni link (`vmbalance.com?ref=userId`) vodi na Landing stranicu koja nema opciju preuzimanja APK datoteke. Korisnik samo vidi web stranicu s opcijom prijave.
 
-Dodaje se nova sekcija u SettingsDialog s gumbom "Podijeli aplikaciju" koji koristi postojeci `useNativeShare` hook za dijeljenje linka na vmbalance.com s referral parametrom (user ID). Kada primatelj otvori link i registrira se, automatski se preusmjerava na Paywall stranicu za odabir pretplate.
+### Što se mijenja
 
-### Promjene
+**1. Landing stranica — APK download sekcija**
+- Kada Landing detektira `ref` parametar u URL-u, prikazuje istaknutu sekciju za preuzimanje Android aplikacije
+- Gumb "Preuzmi V&M Balance" koji pokreće preuzimanje APK datoteke
+- APK datoteka se hosta u backend storage-u (bucket `public-assets`) ili na vanjskom linku
 
-**1. `src/components/SettingsDialog.tsx`**
-- Dodati novu sekciju "Podijeli" (izmedju Privacy i App Info sekcija, oko linije 1439)
-- Gumb "Podijeli aplikaciju" koji poziva `useNativeShare` s linkom `https://vmbalance.com?ref={userId}`
-- Tekst: "Pozovi prijatelje na V&M Balance"
-- Ikona: Share2 (vec importana)
+**2. APK hosting**
+- Kreirati storage bucket `public-assets` s javnim pristupom
+- APK datoteka se ručno uploada u bucket (ili se koristi direktan URL koji vi definirate)
+- Alternativno: koristiti Google Drive link ili drugi hosting za APK
 
-**2. `src/hooks/useNativeShare.ts`**
-- Dodati novu metodu `shareApp(userId: string)` koja dijeli:
-  - title: "V&M Balance"
-  - text: "Isprobaj V&M Balance - aplikaciju za pracenje financija!"
-  - url: `https://vmbalance.com?ref={userId}`
+**3. Tok nakon instalacije**
+- Korisnik preuzme i instalira APK
+- Otvori aplikaciju → dolazi na Auth stranicu
+- Referral ID se ne prenosi automatski u nativnu aplikaciju (jer APK ne čuva URL parametre)
+- **Rješenje**: Na Landing stranici, uz APK download, prikazati i referral kod koji korisnik unosi prilikom registracije, ILI se referral sprema na server po IP/device fingerprint
 
-**3. `src/pages/Landing.tsx`**
-- Citati `ref` query parametar iz URL-a
-- Spremiti ga u `localStorage` kao `referrer_id` za kasniju upotrebu
+### Pitanje za odluku
+APK preuzimanje ne prenosi `ref` parametar u nativnu aplikaciju. Dvije opcije:
+1. **Referral kod** — prikazati kod na stranici koji korisnik unese pri registraciji
+2. **Deep link** — koristiti custom URL scheme (`vmbalance://ref=userId`) koji nativna app čita pri pokretanju
 
-**4. `src/pages/Auth.tsx`** (ili post-signup logika)
-- Nakon uspjesne registracije, provjeriti `localStorage` za `referrer_id`
-- Ako postoji, pozvati `track-referral` edge funkciju
-- Preusmjeriti novog korisnika na `/paywall` umjesto standardnog onboarding toka (samo ako dolazi preko referral linka)
+### Predložene promjene
 
-### Tok korisnika
-
-```text
-Korisnik A -> Postavke -> "Podijeli aplikaciju"
-  -> Native share dialog s linkom vmbalance.com?ref=USER_ID
-  
-Korisnik B otvori link -> Landing page (ref se spremi)
-  -> Registracija -> track-referral -> Paywall (odabir pretplate)
-```
+| Datoteka | Promjena |
+|---|---|
+| `src/pages/Landing.tsx` | Dodati APK download sekciju kada je `ref` prisutan |
+| `supabase` storage | Kreirati `public-assets` bucket za APK hosting |
+| `src/pages/Auth.tsx` | Dodati polje za unos referral koda (ako se ide s opcijom 1) |
 
