@@ -12,7 +12,11 @@ import { APP_VERSION } from '@/lib/version';
 
 const SHOW_TEST_BUTTON = false;
 const AUTO_UPDATE_KEY = 'pwa-auto-update';
-const LIVE_APP_ORIGIN = 'https://vmbalance.com';
+
+const FALLBACK_ORIGINS = [
+  'https://vmbalance.com',
+  'https://cost-buddy-helper.lovable.app',
+];
 
 const getIsNativeApp = () => {
   if (typeof window === 'undefined') return false;
@@ -38,33 +42,6 @@ const isNativeApp = getIsNativeApp();
 
 let checkForUpdatesRef: (() => Promise<void>) | null = null;
 
-const getVersionCheckUrl = () => {
-  const url = new URL('/version.json', isNativeApp ? LIVE_APP_ORIGIN : window.location.origin);
-  url.searchParams.set('t', Date.now().toString());
-  return url.toString();
-};
-
-// Initialize native update check immediately (outside component)
-if (isNativeApp) {
-  checkForUpdatesRef = async () => {
-    const latestVersion = await fetchLatestVersion();
-
-    if (!latestVersion) {
-      toast.error('Provjera nije uspjela');
-      return;
-    }
-
-    if (isRemoteVersionNewer(APP_VERSION, latestVersion)) {
-      toast.info(`Nova verzija ${latestVersion} dostupna!`, {
-        action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
-        duration: 10000,
-      });
-    } else {
-      toast.success('Aplikacija je ažurna!');
-    }
-  };
-}
-
 const parseVersion = (version: string) =>
   version
     .split('.')
@@ -87,8 +64,34 @@ const isRemoteVersionNewer = (currentVersion: string, remoteVersion: string) => 
   return false;
 };
 
-const fetchLatestVersion = async (): Promise<string | null> => {
-  const requestUrl = getVersionCheckUrl();
+/**
+ * Build a list of candidate origins to try, in priority order:
+ * 1. Current window origin (if http/https)
+ * 2. Hardcoded fallbacks
+ */
+const getCandidateOrigins = (): string[] => {
+  const candidates: string[] = [];
+
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    if (origin && /^https?:\/\//.test(origin) && !candidates.includes(origin)) {
+      candidates.push(origin);
+    }
+  }
+
+  for (const fb of FALLBACK_ORIGINS) {
+    if (!candidates.includes(fb)) {
+      candidates.push(fb);
+    }
+  }
+
+  return candidates;
+};
+
+const fetchVersionFromUrl = async (baseUrl: string): Promise<string | null> => {
+  const url = new URL('/version.json', baseUrl);
+  url.searchParams.set('t', Date.now().toString());
+  const requestUrl = url.toString();
 
   try {
     const response = await fetch(requestUrl, {
@@ -100,7 +103,7 @@ const fetchLatestVersion = async (): Promise<string | null> => {
     });
 
     if (!response.ok) {
-      console.error('[UpdateCheck] Version request failed:', response.status, requestUrl);
+      console.warn(`[UpdateCheck] ${requestUrl} → HTTP ${response.status}`);
       return null;
     }
 
@@ -108,16 +111,54 @@ const fetchLatestVersion = async (): Promise<string | null> => {
     const version = typeof data?.version === 'string' ? data.version : null;
 
     if (!version) {
-      console.error('[UpdateCheck] Invalid version payload:', data);
+      console.warn(`[UpdateCheck] ${requestUrl} → invalid payload`, data);
       return null;
     }
 
+    console.info(`[UpdateCheck] ✓ ${requestUrl} → v${version}`);
     return version;
   } catch (error) {
-    console.error('[UpdateCheck] Version check failed:', error, requestUrl);
+    console.warn(`[UpdateCheck] ${requestUrl} → network error`, error);
     return null;
   }
 };
+
+/**
+ * Try all candidate origins in order, return first valid version.
+ */
+const fetchLatestVersion = async (): Promise<string | null> => {
+  const candidates = getCandidateOrigins();
+  console.info('[UpdateCheck] Trying origins:', candidates);
+
+  for (const origin of candidates) {
+    const version = await fetchVersionFromUrl(origin);
+    if (version) return version;
+  }
+
+  console.error('[UpdateCheck] All origins failed');
+  return null;
+};
+
+// Initialize native update check immediately (outside component)
+if (isNativeApp) {
+  checkForUpdatesRef = async () => {
+    const latestVersion = await fetchLatestVersion();
+
+    if (!latestVersion) {
+      toast.error('Provjera nije uspjela. Server nije odgovorio.');
+      return;
+    }
+
+    if (isRemoteVersionNewer(APP_VERSION, latestVersion)) {
+      toast.info(`Nova verzija ${latestVersion} dostupna!`, {
+        action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
+        duration: 10000,
+      });
+    } else {
+      toast.success('Aplikacija je ažurna!');
+    }
+  };
+}
 
 export const checkForUpdates = async () => {
   if (checkForUpdatesRef) {
@@ -285,7 +326,6 @@ const PWAUpdatePromptInner = () => {
 
   return (
     <>
-      {/* Test button - only visible when enabled */}
       {SHOW_TEST_BUTTON && (
         <button
           onClick={handleTestClick}
@@ -330,7 +370,6 @@ const PWAUpdatePromptInner = () => {
                 </button>
               </div>
 
-              {/* Auto-update toggle */}
               <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-primary" />
