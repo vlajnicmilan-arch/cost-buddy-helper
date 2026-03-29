@@ -55,7 +55,7 @@ export const HomeHeader = ({
   const [importOpen, setImportOpen] = useState(false);
 
   return (
-    <header className="flex flex-col gap-4 mb-6 sm:mb-8" data-tutorial="header">
+    <header className="flex flex-col gap-4 mb-6 sm:mb-8 pt-[env(safe-area-inset-top)]" data-tutorial="header">
       {/* Top row: Logo, title, and navigation icons */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">

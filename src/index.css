@@ -300,6 +300,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   .font-mono {
