@@ -350,23 +350,41 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     });
   }, [expenses, compareDateRanges.period2, excludedPaymentSources]);
 
-  // Unique payment sources from all expenses (for filter UI)
+  // Unique payment sources: user's own custom sources + built-in sources that appear in transactions
   const uniquePaymentSources = useMemo(() => {
-    const sourceMap = new Map<string, number>();
+    // Count transactions per payment source
+    const txCountMap = new Map<string, number>();
     expenses.forEach(e => {
       const src = e.payment_source || 'cash';
-      sourceMap.set(src, (sourceMap.get(src) || 0) + 1);
+      txCountMap.set(src, (txCountMap.get(src) || 0) + 1);
     });
-    return Array.from(sourceMap.entries())
-      .map(([sourceId, count]) => {
-        const customSource = customPaymentSources.find(cs => cs.id === sourceId);
-        if (customSource) {
-          return { id: sourceId, name: customSource.name, icon: customSource.icon, count };
-        }
-        const builtIn = getPaymentSourceInfo(sourceId as any);
-        return { id: sourceId, name: builtIn.name, icon: builtIn.icon, count };
-      })
-      .sort((a, b) => b.count - a.count);
+
+    const result: { id: string; name: string; icon: string; count: number }[] = [];
+    const addedIds = new Set<string>();
+
+    // 1. Custom sources from the user's own list (always show, even if 0 transactions)
+    customPaymentSources.forEach(cs => {
+      result.push({
+        id: cs.id,
+        name: cs.name,
+        icon: cs.icon,
+        count: txCountMap.get(cs.id) || 0,
+      });
+      addedIds.add(cs.id);
+    });
+
+    // 2. Built-in sources (cash, bank, card) — only if they have transactions
+    const builtInKeys = ['cash', 'bank', 'card'];
+    builtInKeys.forEach(key => {
+      if (!addedIds.has(key) && (txCountMap.get(key) || 0) > 0) {
+        const info = getPaymentSourceInfo(key as any);
+        result.push({ id: key, name: info.name, icon: info.icon, count: txCountMap.get(key)! });
+        addedIds.add(key);
+      }
+    });
+
+    // Sort: custom sources by sort_order first, then built-in by count
+    return result;
   }, [expenses, customPaymentSources]);
 
   const togglePaymentSource = useCallback((sourceId: string) => {
