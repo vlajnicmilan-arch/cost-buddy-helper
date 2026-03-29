@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { Capacitor } from '@capacitor/core';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -9,205 +8,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { APP_VERSION } from '@/lib/version';
+import {
+  isNativeApp,
+  fetchLatestVersion,
+  isRemoteVersionNewer,
+  getAutoUpdatePreference,
+  setAutoUpdatePreference,
+} from '@/components/update/updateUtils';
+import { NativeUpdateInitializer } from '@/components/update/NativeUpdateChecker';
+
+// Re-export for backward compatibility with SettingsDialog
+export { getAutoUpdatePreference, setAutoUpdatePreference } from '@/components/update/updateUtils';
+export { checkForNativeUpdates as checkForUpdates } from '@/components/update/NativeUpdateChecker';
 
 const SHOW_TEST_BUTTON = false;
-const AUTO_UPDATE_KEY = 'pwa-auto-update';
 
-const FALLBACK_ORIGINS = [
-  'https://vmbalance.com',
-  'https://cost-buddy-helper.lovable.app',
-] as const;
-
-const getIsNativeApp = () => {
-  if (typeof window === 'undefined') return false;
-
-  const globalCapacitor = (window as Window & {
-    Capacitor?: {
-      isNativePlatform?: () => boolean;
-      getPlatform?: () => string;
-    };
-  }).Capacitor;
-
-  const platform = globalCapacitor?.getPlatform?.() ?? Capacitor.getPlatform();
-
-  return Boolean(
-    globalCapacitor?.isNativePlatform?.() ||
-      Capacitor.isNativePlatform() ||
-      platform === 'android' ||
-      platform === 'ios'
-  );
-};
-
-const isNativeApp = getIsNativeApp();
-
-let checkForUpdatesRef: (() => Promise<void>) | null = null;
-
-const parseVersion = (version: string) =>
-  version
-    .split('.')
-    .map((part) => Number.parseInt(part, 10))
-    .map((part) => (Number.isNaN(part) ? 0 : part));
-
-const isRemoteVersionNewer = (currentVersion: string, remoteVersion: string) => {
-  const current = parseVersion(currentVersion);
-  const remote = parseVersion(remoteVersion);
-  const maxLength = Math.max(current.length, remote.length);
-
-  for (let i = 0; i < maxLength; i += 1) {
-    const currentPart = current[i] ?? 0;
-    const remotePart = remote[i] ?? 0;
-
-    if (remotePart > currentPart) return true;
-    if (remotePart < currentPart) return false;
-  }
-
-  return false;
-};
-
-const getCandidateOrigins = (): string[] => {
-  const candidates: string[] = [];
-
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin;
-    if (origin && /^https?:\/\//.test(origin) && !candidates.includes(origin)) {
-      candidates.push(origin);
-    }
-  }
-
-  for (const fallbackOrigin of FALLBACK_ORIGINS) {
-    if (!candidates.includes(fallbackOrigin)) {
-      candidates.push(fallbackOrigin);
-    }
-  }
-
-  return candidates;
-};
-
-const fetchVersionFromOrigin = async (origin: string): Promise<string | null> => {
-  const url = new URL('/version.json', origin);
-  url.searchParams.set('t', Date.now().toString());
-  const requestUrl = url.toString();
-
-  try {
-    const response = await fetch(requestUrl, {
-      cache: 'no-store',
-      headers: {
-        'cache-control': 'no-cache, no-store, must-revalidate',
-        pragma: 'no-cache',
-      },
-    });
-
-    if (!response.ok) {
-      console.warn(`[UpdateCheck] ${requestUrl} -> HTTP ${response.status}`);
-      return null;
-    }
-
-    const data = await response.json();
-    const version = typeof data?.version === 'string' ? data.version : null;
-
-    if (!version) {
-      console.warn(`[UpdateCheck] ${requestUrl} -> invalid payload`, data);
-      return null;
-    }
-
-    console.info(`[UpdateCheck] Success from ${requestUrl} -> ${version}`);
-    return version;
-  } catch (error) {
-    console.warn(`[UpdateCheck] ${requestUrl} -> network error`, error);
-    return null;
-  }
-};
-
-const fetchLatestVersion = async (): Promise<string | null> => {
-  const candidateOrigins = getCandidateOrigins();
-  console.info('[UpdateCheck] Candidate origins:', candidateOrigins);
-
-  for (const origin of candidateOrigins) {
-    const version = await fetchVersionFromOrigin(origin);
-    if (version) {
-      return version;
-    }
-  }
-
-  console.error('[UpdateCheck] All candidate origins failed');
-  return null;
-};
-
-const createNativeUpdateChecker = () => {
-  return async () => {
-    const latestVersion = await fetchLatestVersion();
-
-    if (!latestVersion) {
-      toast.error('Provjera nije uspjela. Server nije odgovorio.');
-      return;
-    }
-
-    if (isRemoteVersionNewer(APP_VERSION, latestVersion)) {
-      toast.info(`Nova verzija ${latestVersion} dostupna!`, {
-        action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
-        duration: 10000,
-      });
-      return;
-    }
-
-    toast.success('Aplikacija je ažurna!');
-  };
-};
-
-const initializeNativeUpdateChecker = () => {
-  if (!isNativeApp) return null;
-
-  const nativeChecker = createNativeUpdateChecker();
-  checkForUpdatesRef = nativeChecker;
-  return nativeChecker;
-};
-
-if (isNativeApp) {
-  initializeNativeUpdateChecker();
-}
-
-export const checkForUpdates = async () => {
-  if (!checkForUpdatesRef && isNativeApp) {
-    initializeNativeUpdateChecker();
-  }
-
-  if (checkForUpdatesRef) {
-    await checkForUpdatesRef();
-    return;
-  }
-
-  toast.error('Provjera ažuriranja nije dostupna.');
-};
-
-export const getAutoUpdatePreference = (): boolean => {
-  try {
-    return localStorage.getItem(AUTO_UPDATE_KEY) === 'true';
-  } catch {
-    return false;
-  }
-};
-
-export const setAutoUpdatePreference = (enabled: boolean): void => {
-  try {
-    localStorage.setItem(AUTO_UPDATE_KEY, enabled ? 'true' : 'false');
-  } catch {
-    // Ignore localStorage errors
-  }
-};
-
-const NativeUpdateInitializer = () => {
-  useEffect(() => {
-    const nativeChecker = initializeNativeUpdateChecker();
-
-    return () => {
-      if (checkForUpdatesRef === nativeChecker) {
-        checkForUpdatesRef = null;
-      }
-    };
-  }, []);
-
-  return null;
-};
+let webCheckForUpdatesRef: (() => Promise<void>) | null = null;
 
 const PWAUpdatePromptInner = () => {
   const { t } = useTranslation();
@@ -222,14 +38,14 @@ const PWAUpdatePromptInner = () => {
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
-      checkForUpdatesRef = async () => {
+      webCheckForUpdatesRef = async () => {
         setIsChecking(true);
         setPendingUpdateCheck(true);
 
         try {
-          const latestVersion = await fetchLatestVersion();
-          const hasVersionUpdate = latestVersion
-            ? isRemoteVersionNewer(APP_VERSION, latestVersion)
+          const result = await fetchLatestVersion();
+          const hasVersionUpdate = result.version
+            ? isRemoteVersionNewer(APP_VERSION, result.version)
             : false;
 
           await registration?.update();
@@ -248,7 +64,7 @@ const PWAUpdatePromptInner = () => {
       };
 
       const triggerCheck = () => {
-        checkForUpdatesRef?.();
+        webCheckForUpdatesRef?.();
       };
 
       setInterval(triggerCheck, 10 * 60 * 1000);
@@ -273,11 +89,6 @@ const PWAUpdatePromptInner = () => {
   const performAutoUpdate = useCallback(() => {
     toast.info('Ažuriranje aplikacije...', { duration: 2000 });
     setTimeout(() => {
-      if (isNativeApp) {
-        window.location.reload();
-        return;
-      }
-
       updateServiceWorker(true);
     }, 500);
   }, [updateServiceWorker]);
@@ -315,13 +126,7 @@ const PWAUpdatePromptInner = () => {
       setIsTestMode(false);
       return;
     }
-
-    if (isNativeApp) {
-      window.location.reload();
-    } else {
-      updateServiceWorker(true);
-    }
-
+    updateServiceWorker(true);
     setShowPrompt(false);
   };
 

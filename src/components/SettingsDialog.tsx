@@ -20,6 +20,7 @@ import {
   setAutoUpdatePreference,
   checkForUpdates 
 } from '@/components/PWAUpdatePrompt';
+import { RuntimeDiagnostics } from '@/components/update/RuntimeDiagnostics';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
@@ -1057,6 +1058,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 )}
               {t('settings.checkForUpdates', 'Provjeri ažuriranja')}
             </Button>
+
+              <RuntimeDiagnostics />
           </div>
 
           <Separator />
