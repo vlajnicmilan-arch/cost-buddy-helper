@@ -1,32 +1,70 @@
 
 
-## Plan: Zamjena AI avatara s uploadanom slikom + glow efekti
+## Plan: Animirani Ghost Avatar s ekspresijama i okretanjem
 
-### Što se radi
-Zamjena trenutnog SVG avatara s uploadanom slikom plavog orba, uz dinamičke glow/pulse CSS animacije ovisno o raspoloženju (mood).
+Zamjena trenutnog statičnog PNG avatara s novim animiranim SVG ghost avatarom baziranim na priloženoj slici. Ghost će se okretati lijevo-desno, izražavati emocije licem i mijenjati glow po raspoloženju.
 
-### Promjene
+### Što se gradi
+
+Potpuno novi `GhostAvatar` SVG komponent koji replicira izgled uploadanog duha (bijelo-plavi ghost s velikim plavim očima, srcolikim ticalom na glavi, prozirnim eterealnim tijelom) — ali kao animirani SVG s:
+
+1. **Okretanje tijela/pogleda** — ghost se polako okreće lijevo-desno (rotacija + blagi perspektivni pomak očiju) koristeći postojeći `useEyeMovement` hook
+2. **Ekspresije lica po moodu** — oči, usta i obrve se mijenjaju ovisno o raspoloženju (happy/thinking/worried/proud/neutral)
+3. **Dinamički glow** — `filter: drop-shadow()` animacija na cijelom SVG-u mijenja boju i intenzitet po moodu (cijan, narančasta, zlatna)
+4. **Treptanje** — koristi postojeći `useBlinking` hook
+
+### Promjene datoteka
 
 | Datoteka | Promjena |
 |---|---|
-| `src/assets/vm_balance_avatar.png` | Kopirati uploadanu sliku u assets |
-| `src/components/ai-avatar/FloatingAIAvatar.tsx` | Zamijeniti `<SVGAvatar>` s `<img>` tagom koji koristi importanu sliku. Ukloniti `useBlinking`/`useEyeMovement` importove. Dodati mood-ovisne glow efekte putem framer-motion `boxShadow` animacija |
+| `src/assets/vm_balance_ghost_avatar_enhanced_224.png` | Kopirati uploadanu sliku (referenca, neće se koristiti u kodu) |
+| `src/components/ai-avatar/GhostAvatar.tsx` | **NOVI** — SVG ghost avatar komponenta s animacijama lica, okretanjem tijela, treptanjem |
+| `src/components/ai-avatar/FloatingAIAvatar.tsx` | Zamijeniti `<img>` tag s `<GhostAvatar>`, vratiti `useBlinking` i `useEyeMovement` hookove, prilagoditi glow da koristi `filter: drop-shadow` umjesto `boxShadow` |
 
-### Glow efekti po raspoloženju
+### GhostAvatar SVG dizajn (baziran na slici)
 
 ```text
-neutral  → blagi plavi glow (0 0 20px cyan)
-happy    → jači plavi glow + pulse (0 0 40px cyan)
-thinking → pulsirajući glow (animira intenzitet gore-dolje)
-worried  → crvenkasto-narančasti glow (0 0 25px orange)
-proud    → zlatni intenzivni glow (0 0 45px gold)
+Elementi:
+- Okrugla glava (bijelo-plava, radijalni gradijent)
+- Veliko srcoliko/kristalno ticalo na vrhu glave
+- Velike plave oči (kawaii stil) s highlightima
+- Mali slatki osmijeh
+- Eterično tijelo koje se sužava prema dolje (valoviti rub)
+- Sparkle/čestice oko tijela
+- Cijanozeleni glow oko cijelog lika
+```
+
+### Animacije
+
+```text
+Okretanje:
+- Cijelo tijelo: rotateY simulacija putem scaleX [1, 0.95, 1, 1.05, 1] + translateX
+- Oči: pupile prate useEyeMovement pozicije (lijevo/desno/gore/dolje)
+
+Ekspresije po moodu:
+- neutral: normalne oči, mali osmijeh
+- happy: oči se sužavaju (sretan squint), širi osmijeh, bouncy pokret
+- thinking: oči gledaju gore-desno, usta ravna crta, blago nagnut
+- worried: oči veće, obrve spuštene, usta u ∪ oblik (tužno)
+- proud: oči zatvorene (self-satisfied), širi osmijeh, scale up
+
+Glow po moodu:
+- neutral: blagi cijan drop-shadow
+- happy: jači cijan, pulsirajući
+- thinking: sporiji pulse, tamnije plavi
+- worried: narančasto-crvenkasti glow
+- proud: zlatni intenzivni glow
+
+Stalno prisutne:
+- Floating (y: [0, -4, 0])
+- Treptanje (useBlinking)
+- Sparkle čestice oko tijela
 ```
 
 ### Tehnički detalji
-- Slika se importa kao ES6 modul: `import avatarImg from "@/assets/vm_balance_avatar.png"`
-- Glow se postiže putem framer-motion `animate={{ boxShadow: ... }}` na `<motion.div>` wrapperu oko `<img>`
-- `<img>` tag dobiva `rounded-full` klasu za kružni oblik
-- Postojeće floating animacije (y: [0, -4, 0]) i mood animacije (scale/rotate) ostaju nepromijenjene
-- Pulse ring na dnu ostaje kao interaction hint
-- Ne treba novi APK build — ovo je web-only promjena
+- SVG viewBox: `0 0 120 160` (vertikalno orijentiran ghost)
+- Koristi framer-motion `<motion.path>`, `<motion.ellipse>` za animirane SVG elemente
+- Glow se postiže putem animiranog `filter: drop-shadow()` na root SVG elementu — ne boxShadow (jer ghost nije krug)
+- Ponovno se aktiviraju `useBlinking` i `useEyeMovement` hookovi u FloatingAIAvatar
+- Veličina kontejnera ostaje 112x112px
 
