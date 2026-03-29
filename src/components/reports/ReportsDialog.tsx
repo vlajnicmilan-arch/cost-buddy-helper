@@ -350,7 +350,45 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     });
   }, [expenses, compareDateRanges.period2, excludedPaymentSources]);
 
-  const stats = useMemo(() => calculateStats(filteredExpenses), [filteredExpenses]);
+  // Unique payment sources from all expenses (for filter UI)
+  const uniquePaymentSources = useMemo(() => {
+    const sourceMap = new Map<string, number>();
+    expenses.forEach(e => {
+      const src = e.payment_source || 'cash';
+      sourceMap.set(src, (sourceMap.get(src) || 0) + 1);
+    });
+    return Array.from(sourceMap.entries())
+      .map(([sourceId, count]) => {
+        const customSource = customPaymentSources.find(cs => cs.id === sourceId);
+        if (customSource) {
+          return { id: sourceId, name: customSource.name, icon: customSource.icon, count };
+        }
+        const builtIn = getPaymentSourceInfo(sourceId as any);
+        return { id: sourceId, name: builtIn.name, icon: builtIn.icon, count };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [expenses, customPaymentSources]);
+
+  const togglePaymentSource = useCallback((sourceId: string) => {
+    setExcludedPaymentSources(prev => {
+      const next = new Set(prev);
+      if (next.has(sourceId)) {
+        next.delete(sourceId);
+      } else {
+        next.add(sourceId);
+      }
+      return next;
+    });
+  }, []);
+
+  const selectAllPaymentSources = useCallback(() => {
+    setExcludedPaymentSources(new Set());
+  }, []);
+
+  const deselectAllPaymentSources = useCallback(() => {
+    setExcludedPaymentSources(new Set(uniquePaymentSources.map(s => s.id)));
+  }, [uniquePaymentSources]);
+
   const compareStats1 = useMemo(() => calculateStats(compareExpenses1), [compareExpenses1]);
   const compareStats2 = useMemo(() => calculateStats(compareExpenses2), [compareExpenses2]);
 
@@ -728,6 +766,57 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                     />
                   </div>
                 </div>
+
+                {/* Payment Source Filter */}
+                {uniquePaymentSources.length > 0 && (
+                  <div className="border-t pt-2 mt-2">
+                    <Collapsible open={paymentSourcesOpen} onOpenChange={setPaymentSourcesOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        <span className="flex items-center gap-1.5">
+                          <Wallet className="w-3.5 h-3.5" />
+                          Izvori plaćanja
+                          {excludedPaymentSources.size > 0 && (
+                            <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 rounded-full">
+                              {excludedPaymentSources.size} isključeno
+                            </span>
+                          )}
+                        </span>
+                        {paymentSourcesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2 space-y-1">
+                        <div className="flex gap-2 mb-1">
+                          <button
+                            onClick={selectAllPaymentSources}
+                            className="text-[10px] text-primary hover:underline"
+                          >
+                            Odaberi sve
+                          </button>
+                          <span className="text-[10px] text-muted-foreground">|</span>
+                          <button
+                            onClick={deselectAllPaymentSources}
+                            className="text-[10px] text-primary hover:underline"
+                          >
+                            Poništi sve
+                          </button>
+                        </div>
+                        {uniquePaymentSources.map(source => (
+                          <label
+                            key={source.id}
+                            className="flex items-center gap-2 py-1 px-1 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                          >
+                            <Checkbox
+                              checked={!excludedPaymentSources.has(source.id)}
+                              onCheckedChange={() => togglePaymentSource(source.id)}
+                            />
+                            <span>{source.icon}</span>
+                            <span className="flex-1 truncate">{source.name}</span>
+                            <span className="text-muted-foreground text-[10px]">{source.count}</span>
+                          </label>
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                )}
               </div>
             </div>
 
