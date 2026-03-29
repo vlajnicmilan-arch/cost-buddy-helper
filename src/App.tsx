@@ -89,7 +89,7 @@ const AppRoutes = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/app" element={appEntryRoute ? <Navigate to={appEntryRoute} replace /> : <PageLoader />} />
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
@@ -123,7 +123,7 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<RootRoute />} />
         <Route path="/app" element={appEntryRoute ? <Navigate to={appEntryRoute} replace /> : <PageLoader />} />
         <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
         <Route path="/business" element={<Business />} />
