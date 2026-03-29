@@ -55,6 +55,23 @@ const PageLoader = () => (
   </div>
 );
 
+const isInstalledApp = () => {
+  // Capacitor native app
+  if (typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform?.()) return true;
+  // PWA standalone mode
+  if (window.matchMedia('(display-mode: standalone)').matches) return true;
+  // iOS PWA
+  if ((navigator as any).standalone === true) return true;
+  return false;
+};
+
+const RootRoute = () => {
+  if (isInstalledApp()) {
+    return <Navigate to="/app" replace />;
+  }
+  return <Landing />;
+};
+
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
@@ -72,7 +89,7 @@ const AppRoutes = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/app" element={appEntryRoute ? <Navigate to={appEntryRoute} replace /> : <PageLoader />} />
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
@@ -106,7 +123,7 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<RootRoute />} />
         <Route path="/app" element={appEntryRoute ? <Navigate to={appEntryRoute} replace /> : <PageLoader />} />
         <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
         <Route path="/business" element={<Business />} />
