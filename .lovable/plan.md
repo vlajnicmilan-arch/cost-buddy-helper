@@ -1,26 +1,29 @@
 
 
-## Plan: Popravak filtriranja izvora plaćanja u izvješćima
+## Plan: Potrošnja iz stvarnih transakcija umjesto budžeta faza
 
 ### Problem
+`ProjectDetailDialog` i `ProjectFullScreenView` računaju "potrošeno" kao zbroj budžeta završenih faza (`spentFromMilestones`), umjesto iz stvarnih transakcija. Hook `useProjectStats` već ima ispravnu kalkulaciju iz expenses tablice (`stats.totalSpent`), ali se ne koristi.
 
-Transakcije pohranjuju izvor plaćanja u formatu `custom:UUID` (npr. `custom:abc-123`), ali lista izvora u izvješćima koristi samo `UUID` (`abc-123`). Kada korisnik isključi izvor, filter uspoređuje `custom:abc-123` s `abc-123` — nikad se ne poklapaju, pa se troškovi ne mijenjaju.
+### Promjene
 
-### Rješenje
+**3 datoteke, ista logika:**
 
-**Datoteka:** `src/components/reports/ReportsDialog.tsx`
+#### 1. `src/components/projects/ProjectDetailDialog.tsx`
+- Zamijeniti `spentFromMilestones` s `stats.totalSpent` za izračun `remaining`, `budgetUsedPercentage`, i prikaz potrošnje
+- Label promijeniti iz "Završene faze" u "Potrošeno" (iz transakcija)
 
-Dva moguća pristupa — koristit ću najjednostavniji:
+#### 2. `src/components/projects/ProjectFullScreenView.tsx`
+- Zamijeniti `spentFromMilestones + collaboratorsPaid` s `stats.totalSpent` za `totalSpent`, `remaining`, `budgetUsedPercentage`
+- Isti label update
 
-1. **U `uniquePaymentSources`** — dodati `custom:` prefix na ID svake custom stavke, tako da odgovara formatu u transakcijama:
-   ```
-   id: `custom:${cs.id}`
-   ```
+#### 3. `src/components/projects/ProjectFundingTab.tsx`
+- Koristiti `totalSpent` prop (iz stats) umjesto lokalnog izračuna iz milestone budžeta
+- Dodati prop `totalSpent` u komponentu
 
-2. **U `txCountMap`** — isti ključevi se koriste za brojanje transakcija pa se automatski poklapaju.
+#### 4. `src/components/business/BusinessProjects.tsx`
+- U `fetchAllStats` zamijeniti logiku koja računa `spent` iz milestone budžeta — umjesto toga koristiti sumu approved expense transakcija iz expenses tablice
 
-3. **U `filteredExpenses`** — `excludedPaymentSources.has(e.payment_source || 'cash')` — sad će raditi jer su ID-ovi usklađeni.
-
-### Promjena je minimalna
-- Samo jedna linija u `uniquePaymentSources` useMemo: `id: cs.id` → `id: \`custom:${cs.id}\``
+### Rezultat
+"Potrošeno" će svugdje odražavati stvarne transakcije, a upozorenje o budžetu će se paliti samo kad stvarni troškovi prijeđu 90% primljenih sredstava.
 
