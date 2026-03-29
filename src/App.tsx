@@ -55,6 +55,23 @@ const PageLoader = () => (
   </div>
 );
 
+const isInstalledApp = () => {
+  // Capacitor native app
+  if (typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform?.()) return true;
+  // PWA standalone mode
+  if (window.matchMedia('(display-mode: standalone)').matches) return true;
+  // iOS PWA
+  if ((navigator as any).standalone === true) return true;
+  return false;
+};
+
+const RootRoute = () => {
+  if (isInstalledApp()) {
+    return <Navigate to="/app" replace />;
+  }
+  return <Landing />;
+};
+
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted } = useAppState();
