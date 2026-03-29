@@ -58,7 +58,11 @@ export const useExpenseCRUD = ({
         if (normalizedExpense.type === 'transfer' && normalizedExpense.income_source_id) {
           await updateBalance(normalizedExpense.income_source_id, normalizedExpense.amount, 'income');
         }
-        if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
+        if (normalizedExpense.type === 'income') {
+          emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
+        } else if (normalizedExpense.type === 'expense') {
+          emitAvatarEvent('neutral', 'Zapisano! 📝');
+        }
         toast.success(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
       } else {
         if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
@@ -144,9 +148,11 @@ export const useExpenseCRUD = ({
             console.error('Destination balance update failed:', e)
           );
         }
-        if (normalizedExpense.type === 'expense') checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
+        if (normalizedExpense.type === 'expense') {
+          checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
+          emitAvatarEvent('neutral', 'Zapisano! 📝');
+        }
         if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
-
 
         if (isPendingMemberTransaction) {
           toast.success(t('feedback.pendingSent'));
@@ -321,6 +327,7 @@ export const useExpenseCRUD = ({
         console.warn('[deleteExpense] Could not find expense to reverse balance for id:', id);
       }
 
+      emitAvatarEvent('thinking', 'Uklonjeno... 🗑️');
       toast.success(t('feedback.deleted'));
     } catch (error) {
       console.error('Error deleting expense:', error);

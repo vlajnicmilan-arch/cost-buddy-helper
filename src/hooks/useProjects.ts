@@ -4,12 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { Project, ProjectWithOwnership, ProjectRole, ProjectStatus } from '@/types/project';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useAppState } from '@/contexts/AppStateContext';
 
 const LOCAL_PROJECTS_KEY = 'finmate.projects';
 
 export const useProjects = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { emitAvatarEvent } = useAppState();
   const [projects, setProjects] = useState<ProjectWithOwnership[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -121,6 +123,7 @@ export const useProjects = () => {
         const updated = [newProject, ...projects];
         localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
         setProjects(updated);
+        emitAvatarEvent('happy', 'Novi projekt, nove prilike! 🚀');
         toast.success(t('projects.created'));
         return newProject;
       }
@@ -153,6 +156,7 @@ export const useProjects = () => {
       };
       
       setProjects(prev => [newProject, ...prev]);
+      emitAvatarEvent('happy', 'Novi projekt, nove prilike! 🚀');
       toast.success(t('projects.created'));
       return newProject;
     } catch (error) {

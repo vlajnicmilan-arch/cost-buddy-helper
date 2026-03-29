@@ -4,10 +4,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { FamilyGroup, FamilyMember, FamilyInvitation, FamilyRole, FamilySharedSource, FamilySharedBudget, FamilySharedProject, FamilySharedSavings } from '@/types/family';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useAppState } from '@/contexts/AppStateContext';
 
 export const useFamilyGroups = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { emitAvatarEvent } = useAppState();
   const [groups, setGroups] = useState<FamilyGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,6 +58,7 @@ export const useFamilyGroups = () => {
       if (error) throw error;
       
       setGroups(prev => [created, ...prev]);
+      emitAvatarEvent('happy', 'Obitelj raste! 👨‍👩‍👧');
       toast.success('Grupa kreirana!');
       return created;
     } catch (error) {

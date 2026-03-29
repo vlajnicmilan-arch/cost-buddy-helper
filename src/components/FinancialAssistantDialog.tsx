@@ -69,7 +69,7 @@ export const FinancialAssistantDialog = ({
 }: FinancialAssistantDialogProps) => {
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canAccessAI = hasAccess('ai_assistant');
-  const { activeBusinessProfileId, businessModeEnabled } = useAppState();
+  const { activeBusinessProfileId, businessModeEnabled, emitAvatarEvent } = useAppState();
   const [internalOpen, setInternalOpen] = useState(false);
   
   // Support both controlled and uncontrolled modes
@@ -286,6 +286,14 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
     activeBusinessProfileId: businessModeEnabled ? activeBusinessProfileId : undefined,
     businessProfileName: resolvedBusinessProfileName,
   });
+  // Emit happy when assistant finishes responding
+  const prevLoading = useRef(false);
+  useEffect(() => {
+    if (prevLoading.current && !isLoading) {
+      emitAvatarEvent('happy', 'Evo, pogledaj! 💡');
+    }
+    prevLoading.current = isLoading;
+  }, [isLoading, emitAvatarEvent]);
 
   // Load chat history when dialog opens
   useEffect(() => {
@@ -323,6 +331,7 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+    emitAvatarEvent('thinking', 'Razmišljam... 🧠');
     sendMessage(input.trim());
     setInput('');
   };

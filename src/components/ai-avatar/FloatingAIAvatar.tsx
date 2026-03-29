@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AvatarMood } from './useAvatarMood';
@@ -112,12 +112,30 @@ export const FloatingAIAvatar = ({
   showTooltip = false,
   tooltipMessage,
   className,
-}: FloatingAIAvatarProps) => {
+  onGreeting,
+}: FloatingAIAvatarProps & { onGreeting?: (mood: AvatarMood, message: string) => void }) => {
   const [isPressed, setIsPressed] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const wasLongPress = useRef(false);
   const isBlinking = useBlinking();
   const eyePosition = useEyeMovement(mood);
+
+  // Greeting on first mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 12) {
+        onGreeting?.('happy', 'Dobro jutro! ☀️');
+      } else if (hour >= 12 && hour < 18) {
+        onGreeting?.('neutral', 'Dobar dan! 👋');
+      } else if (hour >= 18 && hour < 22) {
+        onGreeting?.('neutral', 'Dobra večer! 🌙');
+      } else {
+        onGreeting?.('thinking', 'Kasno je... 🌜');
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePressStart = useCallback(() => {
     setIsPressed(true);
