@@ -350,40 +350,23 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     });
   }, [expenses, compareDateRanges.period2, excludedPaymentSources]);
 
-  // Unique payment sources: user's own custom sources + built-in sources that appear in transactions
+  // Unique payment sources: only the user's own custom/shared sources
   const uniquePaymentSources = useMemo(() => {
-    // Count transactions per payment source
     const txCountMap = new Map<string, number>();
     expenses.forEach(e => {
-      const src = e.payment_source || 'cash';
-      txCountMap.set(src, (txCountMap.get(src) || 0) + 1);
+      if (e.payment_source) {
+        txCountMap.set(e.payment_source, (txCountMap.get(e.payment_source) || 0) + 1);
+      }
     });
 
-    const result: { id: string; name: string; icon: string; count: number }[] = [];
-    const addedIds = new Set<string>();
-
-    // 1. Custom sources from the user's own list (always show, even if 0 transactions)
-    customPaymentSources.forEach(cs => {
-      result.push({
+    return [...customPaymentSources]
+      .sort((a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER))
+      .map(cs => ({
         id: cs.id,
         name: cs.name,
         icon: cs.icon,
         count: txCountMap.get(cs.id) || 0,
-      });
-      addedIds.add(cs.id);
-    });
-
-    // 2. Built-in sources — only if they have transactions (iterate all sources seen in expenses)
-    txCountMap.forEach((count, key) => {
-      if (!addedIds.has(key) && count > 0) {
-        const info = getPaymentSourceInfo(key as any);
-        result.push({ id: key, name: info.name, icon: info.icon, count });
-        addedIds.add(key);
-      }
-    });
-
-    // Sort: custom sources by sort_order first, then built-in by count
-    return result;
+      }));
   }, [expenses, customPaymentSources]);
 
   const togglePaymentSource = useCallback((sourceId: string) => {
