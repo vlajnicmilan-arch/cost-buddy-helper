@@ -38,6 +38,7 @@ export const AIInsightBubble = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const isMobile = useIsMobile();
+  const { mood: eventMood, showTooltip: eventShowTooltip, tooltipMessage: eventTooltipMessage, showMood } = useAvatarMood();
   const [isVisible, setIsVisible] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
@@ -217,7 +218,9 @@ export const AIInsightBubble = ({
     }
   }, [balance]);
 
-  const avatarMood = getAvatarMood(currentInsight.type);
+  const insightMood = getAvatarMood(currentInsight.type);
+  // Event mood (from emitAvatarEvent) takes priority over insight-based mood
+  const avatarMood = eventMood !== 'neutral' ? eventMood : insightMood;
 
   return (
     <div className="fixed bottom-[84px] right-3 sm:right-4 z-40 flex flex-col items-end gap-2">
@@ -308,8 +311,11 @@ export const AIInsightBubble = ({
       {/* Floating AI Avatar - always visible */}
       <FloatingAIAvatar
         mood={avatarMood}
+        showTooltip={eventShowTooltip}
+        tooltipMessage={eventTooltipMessage || undefined}
         onQuickTap={() => setIsVisible(prev => !prev)}
         onLongPress={onOpenAssistant}
+        onGreeting={(greetMood, greetMsg) => showMood(greetMood, greetMsg)}
       />
     </div>
   );
