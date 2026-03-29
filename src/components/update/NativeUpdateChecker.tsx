@@ -1,0 +1,87 @@
+import { useEffect } from 'react';
+import { toast } from 'sonner';
+import { APP_VERSION } from '@/lib/version';
+import {
+  fetchLatestVersion,
+  isRemoteVersionNewer,
+  isNativeApp,
+  getPlatformName,
+} from './updateUtils';
+
+let checkForUpdatesRef: (() => Promise<void>) | null = null;
+
+const createNativeUpdateChecker = () => {
+  return async () => {
+    console.info('[NativeUpdate] Starting check...', {
+      platform: getPlatformName(),
+      isNative: isNativeApp,
+      appVersion: APP_VERSION,
+      href: window.location.href,
+    });
+
+    const result = await fetchLatestVersion();
+
+    if (!result.version) {
+      toast.error(
+        `Provjera web verzije nije uspjela. Nijedan server nije odgovorio.`,
+        { duration: 5000 }
+      );
+      console.error('[NativeUpdate] All origins failed');
+      return;
+    }
+
+    console.info('[NativeUpdate] Remote version:', result.version, 'from', result.origin);
+    console.info('[NativeUpdate] Local APP_VERSION:', APP_VERSION);
+
+    if (isRemoteVersionNewer(APP_VERSION, result.version)) {
+      toast.info(
+        `Nova web verzija ${result.version} dostupna! (Trenutna: ${APP_VERSION})`,
+        {
+          action: { label: 'Osvježi', onClick: () => window.location.reload() },
+          duration: 10000,
+        }
+      );
+    } else {
+      toast.success(
+        `Web verzija je ažurna (${APP_VERSION}).`,
+        { duration: 3000 }
+      );
+    }
+  };
+};
+
+export const initializeNativeUpdateChecker = () => {
+  if (!isNativeApp) return null;
+  const checker = createNativeUpdateChecker();
+  checkForUpdatesRef = checker;
+  return checker;
+};
+
+// Initialize immediately at module load
+if (isNativeApp) {
+  initializeNativeUpdateChecker();
+}
+
+export const checkForNativeUpdates = async () => {
+  if (!checkForUpdatesRef && isNativeApp) {
+    initializeNativeUpdateChecker();
+  }
+  if (checkForUpdatesRef) {
+    await checkForUpdatesRef();
+    return;
+  }
+  toast.error('Provjera ažuriranja nije dostupna na ovoj platformi.');
+};
+
+export const NativeUpdateInitializer = () => {
+  useEffect(() => {
+    const checker = initializeNativeUpdateChecker();
+    return () => {
+      if (checkForUpdatesRef === checker) {
+        checkForUpdatesRef = null;
+      }
+    };
+  }, []);
+
+  return null;
+};
