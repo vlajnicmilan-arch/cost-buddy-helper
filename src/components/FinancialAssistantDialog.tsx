@@ -323,6 +323,7 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+    emitAvatarEvent('thinking', 'Razmišljam... 🧠');
     sendMessage(input.trim());
     setInput('');
   };
