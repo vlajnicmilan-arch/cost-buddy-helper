@@ -286,6 +286,14 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
     activeBusinessProfileId: businessModeEnabled ? activeBusinessProfileId : undefined,
     businessProfileName: resolvedBusinessProfileName,
   });
+  // Emit happy when assistant finishes responding
+  const prevLoading = useRef(false);
+  useEffect(() => {
+    if (prevLoading.current && !isLoading) {
+      emitAvatarEvent('happy', 'Evo, pogledaj! 💡');
+    }
+    prevLoading.current = isLoading;
+  }, [isLoading, emitAvatarEvent]);
 
   // Load chat history when dialog opens
   useEffect(() => {
