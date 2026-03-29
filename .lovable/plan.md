@@ -1,17 +1,18 @@
 
 
-## Plan: Referral link vodi na preuzimanje APK-a
+## Plan: Ispraviti ime APK datoteke u kodu
 
-### Trenutno stanje
-Dijeljeni link (`vmbalance.com?ref=userId`) vodi na Landing stranicu koja nema opciju preuzimanja APK datoteke. Korisnik samo vidi web stranicu s opcijom prijave.
+### Problem
+APK datoteka je uspješno uploadana u `public-assets` bucket, ali pod imenom **`app-debug.apk`** (12.8 MB). Kod u `Landing.tsx` trenutno traži **`vm-balance.apk`**, pa download link neće raditi.
 
-### Što se mijenja
+### Rješenje
+Ažurirati URL u `src/pages/Landing.tsx` da koristi ispravno ime datoteke `app-debug.apk`.
 
-**1. Landing stranica — APK download sekcija**
-- Kada Landing detektira `ref` parametar u URL-u, prikazuje istaknutu sekciju za preuzimanje Android aplikacije
-- Gumb "Preuzmi V&M Balance" koji pokreće preuzimanje APK datoteke
-- APK datoteka se hosta u backend storage-u (bucket `public-assets`) ili na vanjskom linku
+### Promjena
 
-**2. APK hosting**
-- Kreirati storage bucket `public-assets` s javnim pristupom
-- APK datoteka se ručno uploada u bucket (ili se koristi direkt
+| Datoteka | Promjena |
+|---|---|
+| `src/pages/Landing.tsx` | Promijeniti `vm-balance.apk` → `app-debug.apk` u APK URL-u |
+
+Jedna linija koda za promijeniti.
+
