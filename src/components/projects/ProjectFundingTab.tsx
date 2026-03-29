@@ -14,6 +14,7 @@ interface ProjectFundingTabProps {
   incomeSources: ProjectIncomeSource[];
   milestones: ProjectMilestone[];
   totalAllocated: number;
+  totalSpent?: number;
   projectBudget: number;
   isManager: boolean;
   loading: boolean;
@@ -26,6 +27,7 @@ export const ProjectFundingTab = ({
   incomeSources,
   milestones,
   totalAllocated,
+  totalSpent = 0,
   projectBudget,
   isManager,
   loading,
@@ -34,18 +36,11 @@ export const ProjectFundingTab = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
 
-  // Calculate spent from completed milestones
   const completedMilestones = milestones.filter(m => m.status === 'completed');
-  const spentFromMilestones = completedMilestones.reduce((sum, m) => sum + (m.budget || 0), 0);
   
   // Pending milestones (in progress or pending)
   const pendingMilestones = milestones.filter(m => m.status === 'in_progress' || m.status === 'pending');
   const reservedForPending = pendingMilestones.reduce((sum, m) => sum + (m.budget || 0), 0);
-
-  const remaining = totalAllocated - spentFromMilestones;
-  const usagePercentage = totalAllocated > 0 
-    ? (spentFromMilestones / totalAllocated) * 100 
-    : 0;
 
   const hasAnySource = funding.length > 0 || incomeSources.length > 0;
 
