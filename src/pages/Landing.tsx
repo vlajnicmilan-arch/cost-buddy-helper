@@ -5,7 +5,8 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { motion, type Variants } from 'framer-motion';
 import {
   Wallet, PieChart, TrendingUp, Users, Shield, Smartphone,
-  Zap, BarChart3, Receipt, ArrowRight, Check, Star, Globe, Menu, X
+  Zap, BarChart3, Receipt, ArrowRight, Check, Star, Globe, Menu, X,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -480,15 +481,120 @@ const FooterSection = () => {
   );
 };
 
+const APKDownloadSection = ({ referralCode }: { referralCode: string }) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk`;
+
+  return (
+    <section className="pt-28 pb-16 px-4 relative overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute top-40 right-10 w-96 h-96 bg-accent/15 rounded-full blur-3xl" />
+      </div>
+
+      <div className="max-w-lg mx-auto text-center">
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/25">
+            <Wallet className="w-10 h-10 text-primary-foreground" />
+          </div>
+        </motion.div>
+
+        <motion.h1
+          className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight mb-4"
+          initial="hidden" animate="visible" variants={fadeUp} custom={1}
+        >
+          {t('landing.apk.title', 'Preuzmi V&M Balance')}
+        </motion.h1>
+
+        <motion.p
+          className="text-lg text-muted-foreground mb-8"
+          initial="hidden" animate="visible" variants={fadeUp} custom={2}
+        >
+          {t('landing.apk.subtitle', 'Tvoj prijatelj ti preporučuje aplikaciju za praćenje financija. Preuzmi, instaliraj i započni!')}
+        </motion.p>
+
+        <motion.div
+          className="space-y-4"
+          initial="hidden" animate="visible" variants={fadeUp} custom={3}
+        >
+          <a
+            href={apkUrl}
+            download
+            className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all font-semibold"
+          >
+            <Download className="w-6 h-6" />
+            {t('landing.apk.download', 'Preuzmi APK za Android')}
+          </a>
+
+          <div className="bg-muted/50 rounded-xl p-4 text-left space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              {t('landing.apk.instructions', 'Kako instalirati:')}
+            </p>
+            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>{t('landing.apk.step1', 'Preuzmi APK datoteku')}</li>
+              <li>{t('landing.apk.step2', 'Otvori datoteku na mobitelu')}</li>
+              <li>{t('landing.apk.step3', 'Dozvoli instalaciju iz nepoznatih izvora')}</li>
+              <li>{t('landing.apk.step4', 'Instaliraj i otvori aplikaciju')}</li>
+            </ol>
+          </div>
+
+          <div className="bg-accent/10 rounded-xl p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('landing.apk.referralLabel', 'Tvoj referral kod:')}
+            </p>
+            <p className="text-2xl font-mono font-bold text-foreground tracking-wider select-all">
+              {referralCode.slice(0, 8).toUpperCase()}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('landing.apk.referralHint', 'Unesi ovaj kod pri registraciji u aplikaciji')}
+            </p>
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="mt-8 pt-6 border-t border-border"
+          initial="hidden" animate="visible" variants={fadeUp} custom={4}
+        >
+          <p className="text-sm text-muted-foreground mb-3">
+            {t('landing.apk.webOption', 'Ili se registriraj putem weba:')}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
+          >
+            {t('landing.nav.getStarted')}
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
 const Landing = () => {
+  const [referralId, setReferralId] = useState<string | null>(null);
+
   // Capture referral param from URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
     if (ref) {
       localStorage.setItem('referrer_id', ref);
+      setReferralId(ref);
     }
   }, []);
+
+  // If referral link, show APK download page
+  if (referralId) {
+    return (
+      <div className="min-h-dvh bg-background">
+        <LandingNav />
+        <APKDownloadSection referralCode={referralId} />
+        <FooterSection />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-background">
