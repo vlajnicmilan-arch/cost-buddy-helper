@@ -16,7 +16,7 @@ const AUTO_UPDATE_KEY = 'pwa-auto-update';
 const FALLBACK_ORIGINS = [
   'https://vmbalance.com',
   'https://cost-buddy-helper.lovable.app',
-];
+] as const;
 
 const getIsNativeApp = () => {
   if (typeof window === 'undefined') return false;
@@ -32,9 +32,9 @@ const getIsNativeApp = () => {
 
   return Boolean(
     globalCapacitor?.isNativePlatform?.() ||
-    Capacitor.isNativePlatform() ||
-    platform === 'android' ||
-    platform === 'ios'
+      Capacitor.isNativePlatform() ||
+      platform === 'android' ||
+      platform === 'ios'
   );
 };
 
@@ -64,11 +64,6 @@ const isRemoteVersionNewer = (currentVersion: string, remoteVersion: string) => 
   return false;
 };
 
-/**
- * Build a list of candidate origins to try, in priority order:
- * 1. Current window origin (if http/https)
- * 2. Hardcoded fallbacks
- */
 const getCandidateOrigins = (): string[] => {
   const candidates: string[] = [];
 
@@ -79,17 +74,17 @@ const getCandidateOrigins = (): string[] => {
     }
   }
 
-  for (const fb of FALLBACK_ORIGINS) {
-    if (!candidates.includes(fb)) {
-      candidates.push(fb);
+  for (const fallbackOrigin of FALLBACK_ORIGINS) {
+    if (!candidates.includes(fallbackOrigin)) {
+      candidates.push(fallbackOrigin);
     }
   }
 
   return candidates;
 };
 
-const fetchVersionFromUrl = async (baseUrl: string): Promise<string | null> => {
-  const url = new URL('/version.json', baseUrl);
+const fetchVersionFromOrigin = async (origin: string): Promise<string | null> => {
+  const url = new URL('/version.json', origin);
   url.searchParams.set('t', Date.now().toString());
   const requestUrl = url.toString();
 
@@ -103,7 +98,7 @@ const fetchVersionFromUrl = async (baseUrl: string): Promise<string | null> => {
     });
 
     if (!response.ok) {
-      console.warn(`[UpdateCheck] ${requestUrl} → HTTP ${response.status}`);
+      console.warn(`[UpdateCheck] ${requestUrl} -> HTTP ${response.status}`);
       return null;
     }
 
@@ -111,37 +106,35 @@ const fetchVersionFromUrl = async (baseUrl: string): Promise<string | null> => {
     const version = typeof data?.version === 'string' ? data.version : null;
 
     if (!version) {
-      console.warn(`[UpdateCheck] ${requestUrl} → invalid payload`, data);
+      console.warn(`[UpdateCheck] ${requestUrl} -> invalid payload`, data);
       return null;
     }
 
-    console.info(`[UpdateCheck] ✓ ${requestUrl} → v${version}`);
+    console.info(`[UpdateCheck] Success from ${requestUrl} -> ${version}`);
     return version;
   } catch (error) {
-    console.warn(`[UpdateCheck] ${requestUrl} → network error`, error);
+    console.warn(`[UpdateCheck] ${requestUrl} -> network error`, error);
     return null;
   }
 };
 
-/**
- * Try all candidate origins in order, return first valid version.
- */
 const fetchLatestVersion = async (): Promise<string | null> => {
-  const candidates = getCandidateOrigins();
-  console.info('[UpdateCheck] Trying origins:', candidates);
+  const candidateOrigins = getCandidateOrigins();
+  console.info('[UpdateCheck] Candidate origins:', candidateOrigins);
 
-  for (const origin of candidates) {
-    const version = await fetchVersionFromUrl(origin);
-    if (version) return version;
+  for (const origin of candidateOrigins) {
+    const version = await fetchVersionFromOrigin(origin);
+    if (version) {
+      return version;
+    }
   }
 
-  console.error('[UpdateCheck] All origins failed');
+  console.error('[UpdateCheck] All candidate origins failed');
   return null;
 };
 
-// Initialize native update check immediately (outside component)
-if (isNativeApp) {
-  checkForUpdatesRef = async () => {
+const createNativeUpdateChecker = () => {
+  return async () => {
     const latestVersion = await fetchLatestVersion();
 
     if (!latestVersion) {
@@ -154,16 +147,36 @@ if (isNativeApp) {
         action: { label: 'Ažuriraj', onClick: () => window.location.reload() },
         duration: 10000,
       });
-    } else {
-      toast.success('Aplikacija je ažurna!');
+      return;
     }
+
+    toast.success('Aplikacija je ažurna!');
   };
+};
+
+const initializeNativeUpdateChecker = () => {
+  if (!isNativeApp) return null;
+
+  const nativeChecker = createNativeUpdateChecker();
+  checkForUpdatesRef = nativeChecker;
+  return nativeChecker;
+};
+
+if (isNativeApp) {
+  initializeNativeUpdateChecker();
 }
 
 export const checkForUpdates = async () => {
+  if (!checkForUpdatesRef && isNativeApp) {
+    initializeNativeUpdateChecker();
+  }
+
   if (checkForUpdatesRef) {
     await checkForUpdatesRef();
+    return;
   }
+
+  toast.error('Provjera ažuriranja nije dostupna.');
 };
 
 export const getAutoUpdatePreference = (): boolean => {
@@ -182,6 +195,20 @@ export const setAutoUpdatePreference = (enabled: boolean): void => {
   }
 };
 
+const NativeUpdateInitializer = () => {
+  useEffect(() => {
+    const nativeChecker = initializeNativeUpdateChecker();
+
+    return () => {
+      if (checkForUpdatesRef === nativeChecker) {
+        checkForUpdatesRef = null;
+      }
+    };
+  }, []);
+
+  return null;
+};
+
 const PWAUpdatePromptInner = () => {
   const { t } = useTranslation();
   const [showPrompt, setShowPrompt] = useState(false);
@@ -194,7 +221,7 @@ const PWAUpdatePromptInner = () => {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegisteredSW(_swUrl, r) {
+    onRegisteredSW(_swUrl, registration) {
       checkForUpdatesRef = async () => {
         setIsChecking(true);
         setPendingUpdateCheck(true);
@@ -205,14 +232,14 @@ const PWAUpdatePromptInner = () => {
             ? isRemoteVersionNewer(APP_VERSION, latestVersion)
             : false;
 
-          await r?.update();
+          await registration?.update();
           await new Promise((resolve) => setTimeout(resolve, 1500));
 
           if (hasVersionUpdate) {
             setNeedRefresh(true);
           }
         } catch (error) {
-          console.error('Update check failed:', error);
+          console.error('[UpdateCheck] Web update check failed:', error);
           toast.error(t('update.checkFailed', 'Provjera nije uspjela'));
           setPendingUpdateCheck(false);
         } finally {
@@ -240,7 +267,7 @@ const PWAUpdatePromptInner = () => {
   });
 
   useEffect(() => {
-    (window as any).__pwaIsChecking = isChecking;
+    (window as Window & { __pwaIsChecking?: boolean }).__pwaIsChecking = isChecking;
   }, [isChecking]);
 
   const performAutoUpdate = useCallback(() => {
@@ -357,9 +384,7 @@ const PWAUpdatePromptInner = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground">{t('update.available')}</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {t('update.description')}
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{t('update.description')}</p>
                 </div>
                 <button
                   onClick={handleDismiss}
@@ -377,13 +402,9 @@ const PWAUpdatePromptInner = () => {
                     Automatsko ažuriranje
                   </Label>
                 </div>
-                <Switch
-                  id="auto-update"
-                  checked={autoUpdate}
-                  onCheckedChange={handleAutoUpdateToggle}
-                />
+                <Switch id="auto-update" checked={autoUpdate} onCheckedChange={handleAutoUpdateToggle} />
               </div>
-              
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -393,11 +414,7 @@ const PWAUpdatePromptInner = () => {
                 >
                   {t('update.later')}
                 </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 rounded-xl gap-2"
-                  onClick={handleUpdate}
-                >
+                <Button size="sm" className="flex-1 rounded-xl gap-2" onClick={handleUpdate}>
                   <RefreshCw className="w-4 h-4" />
                   {t('update.updateNow')}
                 </Button>
@@ -411,6 +428,9 @@ const PWAUpdatePromptInner = () => {
 };
 
 export const PWAUpdatePrompt = () => {
-  if (isNativeApp) return null;
+  if (isNativeApp) {
+    return <NativeUpdateInitializer />;
+  }
+
   return <PWAUpdatePromptInner />;
 };
