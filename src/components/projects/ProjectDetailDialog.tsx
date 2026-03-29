@@ -61,15 +61,14 @@ export const ProjectDetailDialog = ({
 
   const budget = project.total_budget || 0;
   
-  // Calculate spent from completed milestones (unified logic)
-  const completedMilestonesList = milestones.filter(m => m.status === 'completed');
-  const spentFromMilestones = completedMilestonesList.reduce((sum, m) => sum + (m.budget || 0), 0);
-  const completedMilestones = completedMilestonesList.length;
+  // Use actual transaction-based spending from useProjectStats
+  const totalSpent = stats.totalSpent;
+  const completedMilestones = milestones.filter(m => m.status === 'completed').length;
   
-  // Remaining = Allocated (received funds) - Spent (completed milestones)
-  const remaining = totalAllocated - spentFromMilestones;
+  // Remaining = Allocated (received funds) - Spent (from real transactions)
+  const remaining = totalAllocated - totalSpent;
   const budgetUsedPercentage = totalAllocated > 0 
-    ? (spentFromMilestones / totalAllocated) * 100 
+    ? (totalSpent / totalAllocated) * 100 
     : 0;
   const budgetWarning = budgetUsedPercentage >= 90;
   
@@ -115,7 +114,7 @@ export const ProjectDetailDialog = ({
           milestones={milestones}
           members={members}
           expenses={expenses}
-          totalSpent={spentFromMilestones}
+          totalSpent={totalSpent}
           totalAllocated={totalAllocated}
         />
 
@@ -151,8 +150,8 @@ export const ProjectDetailDialog = ({
                   <p className="text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-expense">{formatAmount(spentFromMilestones)}</p>
-                  <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
+                  <p className="text-2xl font-bold text-expense">{formatAmount(totalSpent)}</p>
+                  <p className="text-xs text-muted-foreground">{t('projects.spent', 'Potrošeno')}</p>
                 </div>
                 <div>
                   <p className={cn("text-2xl font-bold", remaining >= 0 ? "text-income" : "text-destructive")}>
@@ -312,6 +311,7 @@ export const ProjectDetailDialog = ({
                 incomeSources={incomeSources}
                 milestones={milestones}
                 totalAllocated={totalAllocated}
+                totalSpent={totalSpent}
                 projectBudget={budget}
                 isManager={isManager}
                 loading={fundingLoading}

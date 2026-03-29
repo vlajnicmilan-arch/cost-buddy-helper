@@ -101,13 +101,11 @@ export const ProjectFullScreenView = ({
 
   const budget = project.total_budget || 0;
   
-  // Calculate spent from completed milestones + paid collaborator amounts (unified logic)
-  const completedMilestonesList = milestones.filter(m => m.status === 'completed');
-  const spentFromMilestones = completedMilestonesList.reduce((sum, m) => sum + (m.budget || 0), 0);
-  const totalSpent = spentFromMilestones + collaboratorsPaid;
-  const completedMilestones = completedMilestonesList.length;
+  // Use actual transaction-based spending from useProjectStats
+  const totalSpent = stats.totalSpent;
+  const completedMilestones = milestones.filter(m => m.status === 'completed').length;
   
-  // Remaining = Allocated (received funds) - Spent (milestones + collaborators paid)
+  // Remaining = Allocated (received funds) - Spent (from real transactions)
   const remaining = totalAllocated - totalSpent;
   const budgetUsedPercentage = totalAllocated > 0 
     ? (totalSpent / totalAllocated) * 100 
@@ -430,6 +428,7 @@ export const ProjectFullScreenView = ({
                     incomeSources={incomeSources}
                     milestones={milestones}
                     totalAllocated={totalAllocated}
+                    totalSpent={totalSpent}
                     projectBudget={budget}
                     isManager={isManager}
                     loading={fundingLoading}
