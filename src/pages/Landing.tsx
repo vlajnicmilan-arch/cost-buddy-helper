@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -481,6 +481,15 @@ const FooterSection = () => {
 };
 
 const Landing = () => {
+  // Capture referral param from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('referrer_id', ref);
+    }
+  }, []);
+
   return (
     <div className="min-h-dvh bg-background">
       <LandingNav />
