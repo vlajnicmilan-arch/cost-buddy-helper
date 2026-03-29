@@ -207,6 +207,7 @@ const Onboarding = () => {
 
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('show_welcome_animation', 'true');
+      localStorage.setItem('pwa-auto-update', 'true');
       if (displayName.trim()) setContextDisplayName(displayName.trim());
       setOnboardingCompleted(true);
       navigate('/home', { replace: true });
@@ -438,6 +439,7 @@ const Onboarding = () => {
                   }
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
+                  localStorage.setItem('pwa-auto-update', 'true');
                   setOnboardingCompleted(true);
                   navigate('/home', { replace: true });
                 } catch (error) {
@@ -445,6 +447,7 @@ const Onboarding = () => {
                   // Still complete onboarding even if save fails
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
+                  localStorage.setItem('pwa-auto-update', 'true');
                   setOnboardingCompleted(true);
                   navigate('/home', { replace: true });
                 } finally {
