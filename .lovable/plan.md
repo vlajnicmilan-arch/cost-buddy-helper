@@ -1,33 +1,24 @@
 
 
-## Plan: Filtriranje izvora plaćanja u izvješćima
+## Plan: Filtriranje izvora plaćanja — samo korisnikovi izvori
 
-Dodati u ReportsDialog opciju za uključivanje/isključivanje pojedinačnih izvora plaćanja, slično postojećim preklopnicima za projekte i budžete.
+### Problem
+Trenutno se lista izvora plaćanja u izvješćima gradi iz svih transakcija (`expenses`), što može prikazati izvore koje korisnik ne posjeduje ili ne koristi. Treba prikazati samo izvore koje korisnik stvarno ima.
 
-### Kako radi
+### Rješenje
 
-U sekciji "Uključi u obračun" (pored postojećih toggleova za projekte/budžete) dodaje se nova sekcija s listom svih izvora plaćanja koji se pojavljuju u transakcijama za odabrani period. Svaki izvor ima checkbox/switch. Isključivanje izvora uklanja sve njegove transakcije iz izvješća — utječe na sve kalkulacije, grafove i exportove.
+**Datoteka:** `src/components/reports/ReportsDialog.tsx`
 
-### Promjene
+Promijeniti `uniquePaymentSources` useMemo da:
 
-| Datoteka | Promjena |
-|---|---|
-| `src/components/reports/ReportsDialog.tsx` | 1) Novi state: `excludedPaymentSources: Set<string>` (prazno = svi uključeni). 2) Izračunati listu svih unikatnih payment source-ova iz expenses. 3) Dodati UI sekciju s checkboxovima za svaki izvor plaćanja (ime + ikona). 4) Dodati filter u `filteredExpenses` useMemo — isključiti transakcije čiji je `payment_source` u excluded setu. 5) Isti filter primijeniti i na comparison expenses (`compareExpenses1`, `compareExpenses2`). |
+1. **Custom izvori** — uzeti iz `customPaymentSources` (hook već dohvaća samo korisnikove vlastite + dijeljene). Za svaki prikazati broj transakcija iz `expenses` (može biti 0).
+2. **Ugrađeni izvori (cash, bank, card)** — prikazati samo one koji se pojavljuju u korisnikovim transakcijama (bar 1 transakcija).
+3. **Sortirati** — custom izvori prvi (po sort_order), zatim ugrađeni po broju transakcija.
 
-### UI dizajn
-
-Ispod postojećih toggleova "Projektne transakcije" i "Budžetske transakcije" dodaje se:
-- Separator
-- Label "Izvori plaćanja"
-- Collapsible lista s checkboxovima (default: svi uključeni)
-- "Odaberi sve / Poništi sve" link
-- Prikazuje ikonu + ime izvora + broj transakcija
-
-Za custom payment source-ove koristi se `useCustomPaymentSources` hook za dohvat imena i ikona. Za ugrađene izvore koristi se `getPaymentSourceInfo()`.
+Ovime korisnik vidi samo svoje izvore plaćanja, a ne "tuđe" ili nekorištene ugrađene izvore.
 
 ### Tehnički detalji
-- Filter se dodaje u postojeći `filteredExpenses` useMemo (linija 297-320) s uvjetom: `if (excludedPaymentSources.has(e.payment_source || 'cash')) return false`
-- Isti uvjet se dodaje u `compareExpenses1` i `compareExpenses2` useMemo blokove
-- Budući da `filteredExpenses` utječe na `stats`, `chartData`, `incomeTransactions` i export funkcije — sve se automatski ažurira
-- Collapsible se koristi za kompaktnost (ne zauzima previše prostora kad je zatvoreno)
+- `customPaymentSources` već postoji u komponenti (line 22, hook poziv)
+- Mijenja se samo `uniquePaymentSources` useMemo (linije 354-370)
+- Logika: iterirati `customPaymentSources` za custom izvore, zatim skenirati `expenses` za ugrađene izvore koji nisu custom
 
