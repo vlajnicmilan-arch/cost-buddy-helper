@@ -1,15 +1,23 @@
 
 
-## Plan: Add spacing between Cashflow and Recent Transactions cards
+## Plan: Enable auto-update by default on first registration
 
-The Cashflow Forecast card (line 830-847) sits directly above the main content grid (line 851) with no margin/gap between them, making them appear visually merged.
+### Analysis
+
+After reviewing all the default values:
+- **Sound notifications** — already default ON (no change needed)
+- **Push notifications** — already default ON (no change needed)  
+- **AI assistant** — already default ON (no change needed)
+- **Auto-update** — defaults to OFF → **needs to be set to ON**
 
 ### Change
 
-In `src/pages/Index.tsx`, add a bottom margin to the Cashflow `Collapsible` wrapper or a top margin to the grid. Simplest approach: add `mb-4` or `mb-6` class to the Cashflow Collapsible (line 830).
+**File:** `src/pages/Onboarding.tsx`
 
-**File:** `src/pages/Index.tsx`
-- Line 830: Change `<Collapsible className="group">` to `<Collapsible className="group mb-4">`
+At each point where onboarding completes (lines ~209-212, ~439-442, ~446-449), add:
+```typescript
+localStorage.setItem('pwa-auto-update', 'true');
+```
 
-This adds consistent spacing (1rem) between the two cards without affecting the rest of the layout.
+This ensures that when a user finishes onboarding for the first time, automatic updates are enabled by default alongside the already-enabled sound notifications, push notifications, and AI assistant.
 
