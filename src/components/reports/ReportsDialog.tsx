@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Expense, getCategoryInfo, getIncomeCategoryInfo, CATEGORIES, INCOME_CATEGORIES, IncomeCategory } from '@/types/expense';
+import { Expense, getCategoryInfo, getIncomeCategoryInfo, CATEGORIES, INCOME_CATEGORIES, IncomeCategory, getPaymentSourceInfo } from '@/types/expense';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
@@ -192,6 +195,10 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   // Include/exclude filters
   const [includeProjects, setIncludeProjects] = useState(true);
   const [includeBudgets, setIncludeBudgets] = useState(true);
+  const [excludedPaymentSources, setExcludedPaymentSources] = useState<Set<string>>(new Set());
+  const [paymentSourcesOpen, setPaymentSourcesOpen] = useState(false);
+  
+  const { customPaymentSources } = useCustomPaymentSources();
   
   // Comparison state
   const [comparePreset, setComparePreset] = useState<ComparePreset>('month-vs-month');
@@ -307,6 +314,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       // Exclude budget transactions if toggled off
       if (!includeBudgets && e.budget_id) return false;
       
+      // Exclude payment sources if toggled off
+      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(e.payment_source || 'cash')) return false;
+      
       // Filter by income source if selected
       if (selectedIncomeSourceId !== 'all') {
         if (selectedIncomeSourceId === 'unassigned') {
@@ -317,24 +327,28 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       
       return true;
     });
-  }, [expenses, dateRange, selectedIncomeSourceId, includeProjects, includeBudgets]);
+  }, [expenses, dateRange, selectedIncomeSourceId, includeProjects, includeBudgets, excludedPaymentSources]);
 
   // Comparison filtered expenses
   const compareExpenses1 = useMemo(() => {
     return expenses.filter(e => {
       const expenseDate = e.date.getTime();
-      return expenseDate >= compareDateRanges.period1.start.getTime() && 
-             expenseDate <= compareDateRanges.period1.end.getTime() + 86400000;
+      if (!(expenseDate >= compareDateRanges.period1.start.getTime() && 
+             expenseDate <= compareDateRanges.period1.end.getTime() + 86400000)) return false;
+      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(e.payment_source || 'cash')) return false;
+      return true;
     });
-  }, [expenses, compareDateRanges.period1]);
+  }, [expenses, compareDateRanges.period1, excludedPaymentSources]);
 
   const compareExpenses2 = useMemo(() => {
     return expenses.filter(e => {
       const expenseDate = e.date.getTime();
-      return expenseDate >= compareDateRanges.period2.start.getTime() && 
-             expenseDate <= compareDateRanges.period2.end.getTime() + 86400000;
+      if (!(expenseDate >= compareDateRanges.period2.start.getTime() && 
+             expenseDate <= compareDateRanges.period2.end.getTime() + 86400000)) return false;
+      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(e.payment_source || 'cash')) return false;
+      return true;
     });
-  }, [expenses, compareDateRanges.period2]);
+  }, [expenses, compareDateRanges.period2, excludedPaymentSources]);
 
   const stats = useMemo(() => calculateStats(filteredExpenses), [filteredExpenses]);
   const compareStats1 = useMemo(() => calculateStats(compareExpenses1), [compareExpenses1]);
