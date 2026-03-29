@@ -389,6 +389,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     setExcludedPaymentSources(new Set(uniquePaymentSources.map(s => s.id)));
   }, [uniquePaymentSources]);
 
+  const stats = useMemo(() => calculateStats(filteredExpenses), [filteredExpenses]);
   const compareStats1 = useMemo(() => calculateStats(compareExpenses1), [compareExpenses1]);
   const compareStats2 = useMemo(() => calculateStats(compareExpenses2), [compareExpenses2]);
 
