@@ -5,7 +5,8 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { motion, type Variants } from 'framer-motion';
 import {
   Wallet, PieChart, TrendingUp, Users, Shield, Smartphone,
-  Zap, BarChart3, Receipt, ArrowRight, Check, Star, Globe, Menu, X
+  Zap, BarChart3, Receipt, ArrowRight, Check, Star, Globe, Menu, X,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
