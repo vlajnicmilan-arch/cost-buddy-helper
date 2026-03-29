@@ -373,12 +373,11 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
       addedIds.add(cs.id);
     });
 
-    // 2. Built-in sources (cash, bank, card) — only if they have transactions
-    const builtInKeys = ['cash', 'bank', 'card'];
-    builtInKeys.forEach(key => {
-      if (!addedIds.has(key) && (txCountMap.get(key) || 0) > 0) {
+    // 2. Built-in sources — only if they have transactions (iterate all sources seen in expenses)
+    txCountMap.forEach((count, key) => {
+      if (!addedIds.has(key) && count > 0) {
         const info = getPaymentSourceInfo(key as any);
-        result.push({ id: key, name: info.name, icon: info.icon, count: txCountMap.get(key)! });
+        result.push({ id: key, name: info.name, icon: info.icon, count });
         addedIds.add(key);
       }
     });
