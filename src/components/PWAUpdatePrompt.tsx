@@ -12,7 +12,7 @@ import { APP_VERSION } from '@/lib/version';
 
 const SHOW_TEST_BUTTON = false;
 const AUTO_UPDATE_KEY = 'pwa-auto-update';
-const LIVE_APP_ORIGIN = 'https://cost-buddy-helper.lovable.app';
+const LIVE_APP_ORIGIN = 'https://vmbalance.com';
 
 const getIsNativeApp = () => {
   if (typeof window === 'undefined') return false;
