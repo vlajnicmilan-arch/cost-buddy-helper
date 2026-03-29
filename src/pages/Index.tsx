@@ -827,7 +827,7 @@ const Index = () => {
         />
 
         {/* ── Cashflow Forecast (collapsible, always visible) ── */}
-        <Collapsible className="group mb-6">
+        <Collapsible className="group mb-8">
           <div className="glass-card rounded-2xl animate-fade-in p-4">
             <CollapsibleTrigger asChild>
               <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
