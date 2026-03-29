@@ -362,7 +362,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     return [...customPaymentSources]
       .sort((a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER))
       .map(cs => ({
-        id: cs.id,
+        id: `custom:${cs.id}`,
         name: cs.name,
         icon: cs.icon,
         count: txCountMap.get(cs.id) || 0,
