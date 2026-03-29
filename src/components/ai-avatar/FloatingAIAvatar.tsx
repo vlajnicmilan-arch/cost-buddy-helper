@@ -1,10 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { SVGAvatar } from './SVGAvatar';
-import { useBlinking } from './useBlinking';
-import { useEyeMovement } from './useEyeMovement';
 import { AvatarMood } from './useAvatarMood';
+import avatarImg from '@/assets/vm_balance_avatar.png';
 
 interface FloatingAIAvatarProps {
   mood?: AvatarMood;
@@ -15,34 +13,79 @@ interface FloatingAIAvatarProps {
   className?: string;
 }
 
-// Mood expression animations
-const getMoodAnimation = (mood: AvatarMood) => {
+const getMoodGlow = (mood: AvatarMood) => {
   switch (mood) {
     case 'happy':
       return {
-        scale: [1, 1.05, 1],
-        rotate: [0, 2, -2, 0],
+        boxShadow: [
+          '0 0 20px 8px rgba(0, 210, 255, 0.4)',
+          '0 0 40px 15px rgba(0, 210, 255, 0.6)',
+          '0 0 20px 8px rgba(0, 210, 255, 0.4)',
+        ],
       };
     case 'thinking':
       return {
-        rotate: [0, -8, 8, -5, 5, 0],
-        y: [0, -2, 0],
+        boxShadow: [
+          '0 0 15px 5px rgba(0, 180, 255, 0.3)',
+          '0 0 30px 12px rgba(0, 180, 255, 0.5)',
+          '0 0 15px 5px rgba(0, 180, 255, 0.3)',
+        ],
       };
     case 'worried':
       return {
-        scale: [1, 0.95, 1],
-        x: [-1, 1, -1, 0],
+        boxShadow: [
+          '0 0 20px 8px rgba(255, 160, 50, 0.4)',
+          '0 0 25px 10px rgba(255, 140, 30, 0.5)',
+          '0 0 20px 8px rgba(255, 160, 50, 0.4)',
+        ],
       };
     case 'proud':
       return {
-        scale: [1, 1.1, 1.05, 1.1, 1],
-        y: [0, -5, 0],
+        boxShadow: [
+          '0 0 25px 10px rgba(255, 215, 0, 0.4)',
+          '0 0 45px 18px rgba(255, 215, 0, 0.6)',
+          '0 0 25px 10px rgba(255, 215, 0, 0.4)',
+        ],
       };
     default:
       return {
-        scale: 1,
-        rotate: 0,
+        boxShadow: [
+          '0 0 15px 5px rgba(0, 200, 255, 0.25)',
+          '0 0 20px 8px rgba(0, 200, 255, 0.35)',
+          '0 0 15px 5px rgba(0, 200, 255, 0.25)',
+        ],
       };
+  }
+};
+
+const getMoodGlowTransition = (mood: AvatarMood) => {
+  switch (mood) {
+    case 'happy':
+      return { duration: 1.2, repeat: Infinity, ease: "easeInOut" as const };
+    case 'thinking':
+      return { duration: 2, repeat: Infinity, ease: "easeInOut" as const };
+    case 'worried':
+      return { duration: 0.8, repeat: Infinity, ease: "easeInOut" as const };
+    case 'proud':
+      return { duration: 1.5, repeat: Infinity, ease: "easeInOut" as const };
+    default:
+      return { duration: 3, repeat: Infinity, ease: "easeInOut" as const };
+  }
+};
+
+// Mood expression animations (kept from original)
+const getMoodAnimation = (mood: AvatarMood) => {
+  switch (mood) {
+    case 'happy':
+      return { scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] };
+    case 'thinking':
+      return { rotate: [0, -8, 8, -5, 5, 0], y: [0, -2, 0] };
+    case 'worried':
+      return { scale: [1, 0.95, 1], x: [-1, 1, -1, 0] };
+    case 'proud':
+      return { scale: [1, 1.1, 1.05, 1.1, 1], y: [0, -5, 0] };
+    default:
+      return { scale: 1, rotate: 0 };
   }
 };
 
@@ -72,13 +115,10 @@ export const FloatingAIAvatar = ({
   const [isPressed, setIsPressed] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const wasLongPress = useRef(false);
-  const isBlinking = useBlinking();
-  const eyePosition = useEyeMovement(mood);
 
   const handlePressStart = useCallback(() => {
     setIsPressed(true);
     wasLongPress.current = false;
-    
     longPressTimer.current = setTimeout(() => {
       wasLongPress.current = true;
       setIsPressed(false);
@@ -88,12 +128,10 @@ export const FloatingAIAvatar = ({
 
   const handlePressEnd = useCallback(() => {
     setIsPressed(false);
-    
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-    
     if (!wasLongPress.current) {
       onQuickTap?.();
     }
@@ -137,51 +175,43 @@ export const FloatingAIAvatar = ({
         onTouchStart={handlePressStart}
         onTouchEnd={handlePressEnd}
         onTouchCancel={handlePressCancel}
-        animate={{
-          scale: isPressed ? 0.9 : 1,
-        }}
+        animate={{ scale: isPressed ? 0.9 : 1 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
         aria-label="AI Asistent"
       >
-        {/* Avatar with floating animation */}
+        {/* Floating animation */}
         <motion.div
           className="relative w-full h-full"
-          animate={{
-            y: [0, -4, 0],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          {/* Avatar with mood expressions */}
+          {/* Mood expression animation */}
           <motion.div
             className="relative w-full h-full"
             animate={getMoodAnimation(mood)}
             transition={getMoodTransition(mood)}
           >
-            <SVGAvatar 
-              isBlinking={isBlinking}
-              mood={mood}
-              eyePosition={eyePosition}
-              className="w-full h-full"
-            />
+            {/* Glow wrapper */}
+            <motion.div
+              className="w-full h-full rounded-full overflow-hidden"
+              animate={getMoodGlow(mood)}
+              transition={getMoodGlowTransition(mood)}
+            >
+              <img
+                src={avatarImg}
+                alt="AI Avatar"
+                className="w-full h-full object-cover rounded-full"
+                draggable={false}
+              />
+            </motion.div>
           </motion.div>
         </motion.div>
 
         {/* Pulse ring for interaction hint */}
         <motion.div
           className="absolute inset-0 rounded-full border-2 border-primary/30"
-          animate={{
-            scale: [1, 1.3],
-            opacity: [0.5, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeOut",
-          }}
+          animate={{ scale: [1, 1.3], opacity: [0.5, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
         />
       </motion.button>
     </div>
