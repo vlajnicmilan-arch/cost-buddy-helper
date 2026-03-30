@@ -7,8 +7,11 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
+    let initialSessionChecked = false;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -16,7 +19,12 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Track login device info
+        // Only mark authReady after initial session is also checked
+        if (initialSessionChecked) {
+          setAuthReady(true);
+        }
+
+        // Track login device info (fire and forget)
         if (event === 'SIGNED_IN' && session?.user) {
           const deviceInfo = {
             userAgent: navigator.userAgent,
@@ -42,8 +50,10 @@ export const useAuth = () => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      initialSessionChecked = true;
+      setAuthReady(true);
 
-      // Track app open (session restore) - not a fresh sign-in
+      // Track app open (session restore)
       if (session?.user) {
         const deviceInfo = {
           userAgent: navigator.userAgent,
@@ -76,10 +86,8 @@ export const useAuth = () => {
       }
     });
     
-    // Check if user needs email confirmation
     const needsEmailConfirmation = data?.user && !data?.session;
     
-    // If registration successful and we have a session (auto-confirm enabled), update profile with display name
     if (data?.user && data?.session && displayName?.trim()) {
       setTimeout(async () => {
         await supabase
@@ -136,6 +144,7 @@ export const useAuth = () => {
     user,
     session,
     loading,
+    authReady,
     signUp,
     signIn,
     signOut,

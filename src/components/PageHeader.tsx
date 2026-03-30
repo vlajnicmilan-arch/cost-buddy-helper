@@ -32,9 +32,12 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
       } catch (error) {
         console.error('Sign out error:', error);
       } finally {
+        // Preserve non-user-specific settings
         const theme = localStorage.getItem('theme');
+        const storageConfig = localStorage.getItem('finmate-storage-config');
         localStorage.clear();
         if (theme) localStorage.setItem('theme', theme);
+        if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
         navigate('/');
       }
     }

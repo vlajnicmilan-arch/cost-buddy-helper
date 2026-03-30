@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Check, Lock, Loader2 } from 'lucide-react';
 import { useStorage } from '@/contexts/StorageContext';
-import { useAuth } from '@/hooks/useAuth';
+// useAuth no longer needed here — routing is centralized
 import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
 import { cn } from '@/lib/utils';
 import { initLocalDB } from '@/lib/storage/indexedDB';
@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 const StorageSetup = () => {
   const navigate = useNavigate();
   const { storageMode: currentMode, setStorageMode } = useStorage();
-  const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation();
   const [selectedMode, setSelectedMode] = useState<StorageMode | null>(currentMode);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,21 +41,9 @@ const StorageSetup = () => {
         setStorageMode('local');
         navigate('/home');
       } else if (selectedMode === 'cloud') {
-        // Wait for auth to finish loading before deciding
-        if (authLoading) {
-          // Wait a bit for auth to settle
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
         setStorageMode('cloud');
-        // If user is already logged in, go to dashboard, otherwise go to auth
-        // Re-check session directly for most accurate state
-        const { data: { session } } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
-        if (session?.user) {
-          navigate('/home');
-        } else {
-          navigate('/auth', { state: { from: '/setup' } });
-        }
+        // Routing to /auth or /home is handled by App.tsx centrally
+        navigate('/auth');
       } else {
         // Google Drive / iCloud - coming soon
         setStorageMode(selectedMode);

@@ -68,31 +68,9 @@ const Onboarding = () => {
       setStep(2);
     }
   }, []); // Only on mount
-  // Check if onboarding is already completed
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      const completed = localStorage.getItem('onboarding_completed');
-      if (completed === 'true') {
-        navigate('/home', { replace: true });
-        return;
-      }
 
-      // For cloud mode, check if profile has display_name
-      if (!isLocalMode && user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (data?.display_name) {
-          localStorage.setItem('onboarding_completed', 'true');
-          navigate('/home', { replace: true });
-        }
-      }
-    };
-    checkOnboarding();
-  }, [user, isLocalMode, navigate]);
+  // Onboarding gate is now handled centrally by App.tsx.
+  // If onboardingCompleted is true, App.tsx will redirect to /home before rendering this page.
 
   const handleNext = () => {
     if (step === 1 && !displayName.trim()) {
