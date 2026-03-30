@@ -16,7 +16,11 @@ export type Feature =
   | 'projects'
   | 'business_module'
   | 'installments'
-  | 'custom_categories';
+  | 'custom_categories'
+  | 'team_access'
+  | 'collaborators'
+  | 'advanced_projects'
+  | 'workforce';
 
 // Which tier is required for each feature
 const FEATURE_TIERS: Record<Feature, SubscriptionTier> = {
@@ -32,9 +36,14 @@ const FEATURE_TIERS: Record<Feature, SubscriptionTier> = {
   recurring_transactions: 'pro',
   savings_goals: 'pro',
   projects: 'pro',
+  business_module: 'pro',
   installments: 'pro',
   custom_categories: 'pro',
-  business_module: 'business',
+  // Business-tier features
+  team_access: 'business',
+  collaborators: 'business',
+  advanced_projects: 'business',
+  workforce: 'business',
 };
 
 // Free tier limits

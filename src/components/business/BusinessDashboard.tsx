@@ -5,22 +5,17 @@ import { Expense } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { FlatrateLimitWidget } from './FlatrateLimitWidget';
-import { KPIDashboardWidget } from './KPIDashboardWidget';
-import { isModuleEnabled, type ModuleId, type IndustryType } from '@/lib/businessModules';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
   expenses: Expense[];
   totalReceivable: number;
   totalPayable: number;
-  enabledModules?: string[];
-  industryType?: string;
 }
 
 const COLORS = ['hsl(172,66%,40%)', 'hsl(0,72%,55%)', 'hsl(43,96%,56%)', 'hsl(199,89%,48%)', 'hsl(280,60%,55%)', 'hsl(24,95%,53%)'];
 
-export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable, enabledModules = [], industryType = 'other' }: Props) => {
+export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable }: Props) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const now = new Date();
@@ -67,12 +62,6 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable, ena
 
   return (
     <div className="space-y-4">
-      {isModuleEnabled(enabledModules, 'flatrate_limit') && (
-        <FlatrateLimitWidget expenses={expenses} />
-      )}
-      {isModuleEnabled(enabledModules, 'kpi_dashboard') && (
-        <KPIDashboardWidget expenses={expenses} industryType={industryType as IndustryType} />
-      )}
       <div className="grid grid-cols-2 gap-3">
         <Card className="border-none shadow-sm">
           <CardContent className="p-3">

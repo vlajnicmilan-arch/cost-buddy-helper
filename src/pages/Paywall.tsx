@@ -21,33 +21,31 @@ const FREE_FEATURES: PlanFeature[] = [
   { text: 'Do 30 transakcija/mj', included: true },
   { text: '1 izvor plaćanja', included: true },
   { text: '1 budžet', included: true },
-  { text: 'Osnovni pregled troškova', included: true },
-  { text: 'Uvoz/izvoz podataka', included: false },
+  { text: 'Skeniranje računa (5/mj)', included: true },
+  { text: 'Projekti i budžeti', included: false },
   { text: 'AI asistent', included: false },
-  { text: 'Dijeljenje i obitelj', included: false },
-  { text: 'Poslovni modul', included: false },
+  { text: 'Poslovno praćenje', included: false },
+  { text: 'Timski pristup', included: false },
 ];
 
 const PRO_FEATURES: PlanFeature[] = [
   { text: 'Neograničene transakcije', included: true },
-  { text: 'Neograničeni izvori plaćanja', included: true },
-  { text: 'Neograničeni budžeti', included: true },
-  { text: 'CSV/PDF uvoz i izvoz', included: true },
-  { text: 'Detaljni izvještaji i grafovi', included: true },
+  { text: 'Neograničeni projekti i budžeti', included: true },
+  { text: 'Više novčanika i kartica', included: true },
   { text: 'AI financijski asistent', included: true },
+  { text: 'CSV/PDF uvoz i izvoz', included: true },
+  { text: 'Detaljni izvještaji', included: true },
   { text: 'Dijeljenje i obiteljske grupe', included: true },
-  { text: 'Poslovni modul', included: false },
+  { text: 'Osobno + poslovno praćenje', included: true },
 ];
 
 const BUSINESS_FEATURES: PlanFeature[] = [
   { text: 'Sve iz Pro plana', included: true },
-  { text: 'Poslovni profili', included: true },
-  { text: 'Fakturiranje i klijenti', included: true },
-  { text: 'PDV evidencija', included: true },
-  { text: 'Upravljanje zalihama', included: true },
-  { text: 'Radnici i evidencija rada', included: true },
-  { text: 'Poslovni projekti', included: true },
-  { text: 'Putni nalozi', included: true },
+  { text: 'Radnici i satnice', included: true },
+  { text: 'Timski pristup', included: true },
+  { text: 'Suradnici na projektima', included: true },
+  { text: 'Napredni projekti', included: true },
+  { text: 'Višekorisnički pristup', included: true },
 ];
 
 const Paywall: React.FC = () => {
@@ -63,7 +61,6 @@ const Paywall: React.FC = () => {
   const [interval, setInterval] = useState<BillingInterval>('monthly');
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
 
-  // Poll for subscription changes after checkout opens
   useEffect(() => {
     if (loadingTier) return;
     const handle = window.setInterval(() => {
@@ -102,7 +99,6 @@ const Paywall: React.FC = () => {
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background via-background to-muted/30 flex flex-col items-center px-4 py-8 overflow-y-auto">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -120,7 +116,6 @@ const Paywall: React.FC = () => {
         </p>
       </motion.div>
 
-      {/* Billing toggle */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -193,7 +188,6 @@ const Paywall: React.FC = () => {
             variant="outline"
             className="w-full rounded-xl h-10 text-sm"
             onClick={() => {
-              // TODO: implement free tier access
               toast.info('Free plan dolazi uskoro');
             }}
           >
@@ -201,13 +195,16 @@ const Paywall: React.FC = () => {
           </Button>
         </motion.div>
 
-        {/* Pro Plan */}
+        {/* Pro Plan — Najpopularniji */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-2xl border-2 border-primary/30 bg-card p-5 relative"
+          className="rounded-2xl border-2 border-primary bg-card p-5 relative shadow-lg shadow-primary/5"
         >
+          <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-semibold px-3 py-0.5 bg-primary text-primary-foreground">
+            Najpopularniji
+          </Badge>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -215,7 +212,7 @@ const Paywall: React.FC = () => {
               </div>
               <div>
                 <h2 className="font-semibold text-base">Pro</h2>
-                <p className="text-xs text-muted-foreground">Za osobne financije</p>
+                <p className="text-xs text-muted-foreground">Za većinu ljudi</p>
               </div>
             </div>
             <div className="text-right">
@@ -231,19 +228,13 @@ const Paywall: React.FC = () => {
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-4">
             {PRO_FEATURES.map((f) => (
               <div key={f.text} className="flex items-center gap-1.5">
-                {f.included ? (
-                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                ) : (
-                  <X className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
-                )}
-                <span className={`text-xs ${f.included ? 'text-foreground' : 'text-muted-foreground/50 line-through'}`}>
-                  {f.text}
-                </span>
+                <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="text-xs text-foreground">{f.text}</span>
               </div>
             ))}
           </div>
           <Button
-            className="w-full rounded-xl h-10 text-sm"
+            className="w-full rounded-xl h-10 text-sm bg-primary hover:bg-primary/90"
             onClick={() => handleCheckout('pro')}
             disabled={loadingTier !== null}
           >
@@ -257,11 +248,8 @@ const Paywall: React.FC = () => {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-2xl border-2 border-primary bg-card p-5 relative shadow-lg shadow-primary/5"
+          className="rounded-2xl border-2 border-primary/30 bg-card p-5 relative"
         >
-          <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-semibold px-3 py-0.5 bg-primary text-primary-foreground">
-            Najpopularniji
-          </Badge>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -269,7 +257,7 @@ const Paywall: React.FC = () => {
               </div>
               <div>
                 <h2 className="font-semibold text-base">Business</h2>
-                <p className="text-xs text-muted-foreground">Za poduzetnike</p>
+                <p className="text-xs text-muted-foreground">Za ozbiljne korisnike</p>
               </div>
             </div>
             <div className="text-right">
@@ -291,7 +279,8 @@ const Paywall: React.FC = () => {
             ))}
           </div>
           <Button
-            className="w-full rounded-xl h-10 text-sm bg-primary hover:bg-primary/90"
+            className="w-full rounded-xl h-10 text-sm"
+            variant="outline"
             onClick={() => handleCheckout('business')}
             disabled={loadingTier !== null}
           >
@@ -300,7 +289,6 @@ const Paywall: React.FC = () => {
           </Button>
         </motion.div>
 
-        {/* Footer */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
