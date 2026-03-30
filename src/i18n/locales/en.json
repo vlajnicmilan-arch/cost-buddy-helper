@@ -1791,10 +1791,10 @@
       "getStarted": "Get Started"
     },
     "hero": {
-      "badge": "Smart Finance Management",
+      "badge": "Your Financial Control Center",
       "title": "Take Control of Your",
       "titleHighlight": "Financial Life",
-      "subtitle": "Track expenses, manage budgets, collaborate with family — all in one beautiful app. Personal and business finances, simplified.",
+      "subtitle": "Track expenses in real-time, control projects, generate reports for your accountant — all in one app.",
       "cta": "Start Free",
       "installApp": "Install App",
       "free": "Free to start",
@@ -1804,12 +1804,30 @@
     "features": {
       "title": "Everything You Need",
       "subtitle": "Powerful tools to manage every aspect of your finances",
-      "tracking": { "title": "Expense Tracking", "desc": "Automatically categorize and track every transaction with AI-powered insights and receipt scanning." },
-      "reports": { "title": "Smart Reports", "desc": "Visual charts and detailed breakdowns by category, period, and payment source." },
-      "family": { "title": "Family Sharing", "desc": "Share budgets, wallets and savings goals with your family. Real-time collaboration." },
-      "wallet": { "title": "Multi-Wallet", "desc": "Manage multiple accounts, cards, and payment sources in one place with live balances." },
-      "receipts": { "title": "Receipt Scanner", "desc": "Snap a photo of your receipt and let AI extract all items, amounts and categories." },
-      "budgets": { "title": "Budget Planning", "desc": "Set spending limits by category, track progress, and get alerts before overspending." }
+      "tracking": {
+        "title": "Expense Tracking",
+        "desc": "Automatically categorize and track every transaction with AI-powered insights and receipt scanning."
+      },
+      "reports": {
+        "title": "Smart Reports",
+        "desc": "Visual charts and detailed breakdowns by category, period, and payment source."
+      },
+      "family": {
+        "title": "Business Projects",
+        "desc": "Track projects with budgets, milestones and reports. Personal and business in one place."
+      },
+      "wallet": {
+        "title": "Multi-Wallet",
+        "desc": "Manage multiple accounts, cards, and payment sources in one place with live balances."
+      },
+      "receipts": {
+        "title": "Receipt Scanner",
+        "desc": "Snap a photo of your receipt and let AI extract all items, amounts and categories."
+      },
+      "budgets": {
+        "title": "Budget Planning",
+        "desc": "Set spending limits by category, track progress, and get alerts before overspending."
+      }
     },
     "pricing": {
       "title": "Simple, Transparent Pricing",
@@ -1817,19 +1835,52 @@
       "month": "mo",
       "popular": "Most Popular",
       "cta": "Get Started",
-      "free": { "name": "Free", "price": "€0", "f1": "Unlimited transactions", "f2": "Basic reports", "f3": "1 payment source", "f4": "Receipt scanning (5/mo)" },
-      "pro": { "name": "Pro", "price": "€4.99", "f1": "Everything in Free", "f2": "Unlimited wallets & cards", "f3": "Family sharing", "f4": "AI insights & budgets" },
-      "business": { "name": "Business", "price": "€9.99", "f1": "Everything in Pro", "f2": "Invoicing & VAT", "f3": "Project management", "f4": "Multi-user access" }
+      "free": {
+        "name": "Free",
+        "price": "€0",
+        "f1": "Up to 30 transactions/mo",
+        "f2": "1 payment source",
+        "f3": "1 budget",
+        "f4": "Receipt scanning (5/mo)"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "€4.99",
+        "f1": "Everything in Free",
+        "f2": "Unlimited projects & budgets",
+        "f3": "AI insights & reports",
+        "f4": "Personal + business tracking"
+      },
+      "business": {
+        "name": "Business",
+        "price": "€9.99",
+        "f1": "Everything in Pro",
+        "f2": "Workers & timesheets",
+        "f3": "Team & multi-user access",
+        "f4": "Advanced projects with collaborators"
+      }
     },
     "testimonials": {
       "title": "Loved by Users",
       "subtitle": "See what our users are saying",
-      "t1": { "name": "Ana M.", "role": "Freelancer", "text": "Finally an app that handles both personal and business finances! The receipt scanner saves me hours every month." },
-      "t2": { "name": "Marko K.", "role": "Family Dad", "text": "We share a family budget and everyone can see where money goes. Game changer for our household." },
-      "t3": { "name": "Ivan P.", "role": "Small Business Owner", "text": "The invoicing and project tracking features are incredibly useful. Worth every cent." }
+      "t1": {
+        "name": "Ana M.",
+        "role": "Freelancer",
+        "text": "Finally an app that handles both personal and business finances! The receipt scanner saves me hours every month."
+      },
+      "t2": {
+        "name": "Marko K.",
+        "role": "Family Dad",
+        "text": "We share a family budget and everyone can see where money goes. Game changer for our household."
+      },
+      "t3": {
+        "name": "Ivan P.",
+        "role": "Small Business Owner",
+        "text": "Project tracking and expense control are incredibly useful. I finally see where money goes on every project."
+      }
     },
     "footer": {
-      "desc": "Your complete personal and business finance companion.",
+      "desc": "Your financial control center for personal and business finances.",
       "product": "Product",
       "legal": "Legal",
       "privacy": "Privacy Policy",
