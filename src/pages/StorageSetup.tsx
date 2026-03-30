@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Check, Lock, Loader2 } from 'lucide-react';
 import { useStorage } from '@/contexts/StorageContext';
-import { useAuth } from '@/hooks/useAuth';
+// useAuth no longer needed here — routing is centralized
 import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
 import { cn } from '@/lib/utils';
 import { initLocalDB } from '@/lib/storage/indexedDB';
