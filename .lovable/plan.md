@@ -1,29 +1,61 @@
 
 
-## Plan: Potrošnja iz stvarnih transakcija umjesto budžeta faza
+## Plan: Ukloni PDV pregled + Redefiniraj tier strukturu
 
-### Problem
-`ProjectDetailDialog` i `ProjectFullScreenView` računaju "potrošeno" kao zbroj budžeta završenih faza (`spentFromMilestones`), umjesto iz stvarnih transakcija. Hook `useProjectStats` već ima ispravnu kalkulaciju iz expenses tablice (`stats.totalSpent`), ali se ne koristi.
+### Dio 1: Ukloni PDV modul
 
-### Promjene
+**Obrisati datoteke:**
+- `src/components/business/BusinessVATOverview.tsx`
 
-**3 datoteke, ista logika:**
+**Ažurirati `BusinessMore.tsx`:**
+- Ukloniti import `BusinessVATOverview`
+- Ukloniti `'vat'` iz `SubView` tipa
+- Ukloniti `if (view === 'vat')` renderiranje
+- Ukloniti menu stavku za PDV pregled (id: `'vat'`)
+- Ukloniti import `FileText` ikone (ako se više ne koristi)
 
-#### 1. `src/components/projects/ProjectDetailDialog.tsx`
-- Zamijeniti `spentFromMilestones` s `stats.totalSpent` za izračun `remaining`, `budgetUsedPercentage`, i prikaz potrošnje
-- Label promijeniti iz "Završene faze" u "Potrošeno" (iz transakcija)
+**Ažurirati `businessModules.ts`:**
+- Ukloniti `'vat_tracking'` iz `ModuleId` tipa i `MODULES` niza
+- Ukloniti `'vat_tracking'` iz svih `INDUSTRIES` recommended/optional lista
 
-#### 2. `src/components/projects/ProjectFullScreenView.tsx`
-- Zamijeniti `spentFromMilestones + collaboratorsPaid` s `stats.totalSpent` za `totalSpent`, `remaining`, `budgetUsedPercentage`
-- Isti label update
+### Dio 2: Redefiniraj tier strukturu (Paywall + Landing + Feature access)
 
-#### 3. `src/components/projects/ProjectFundingTab.tsx`
-- Koristiti `totalSpent` prop (iz stats) umjesto lokalnog izračuna iz milestone budžeta
-- Dodati prop `totalSpent` u komponentu
+Nova struktura:
 
-#### 4. `src/components/business/BusinessProjects.tsx`
-- U `fetchAllStats` zamijeniti logiku koja računa `spent` iz milestone budžeta — umjesto toga koristiti sumu approved expense transakcija iz expenses tablice
+| Free | Pro (ključni) | Business/Advanced |
+|------|---------------|-------------------|
+| Osnovno praćenje | Neograničeni projekti | Radnici i satnice |
+| Transakcije (30/mj) | Budžeti | Timski pristup |
+| Limit OCR (5/mj) | AI uvidi | Suradnici na projektima |
+| 1 novčanik | Više novčanika | Napredni projekti |
+| 1 budžet | Osobno + jednostavno poslovno | Višekorisnički pristup |
 
-### Rezultat
-"Potrošeno" će svugdje odražavati stvarne transakcije, a upozorenje o budžetu će se paliti samo kad stvarni troškovi prijeđu 90% primljenih sredstava.
+**`src/pages/Paywall.tsx`:**
+- Ažurirati `PRO_FEATURES` listu:
+  - Neograničene transakcije, Neograničeni projekti, Neograničeni budžeti, AI financijski asistent, Više novčanika, CSV/PDF uvoz i izvoz, Detaljni izvještaji, Jednostavno poslovno praćenje
+- Ažurirati `BUSINESS_FEATURES` listu:
+  - Sve iz Pro, Radnici i satnice, Timski pristup, Suradnici na projektima, Napredni projekti, Višekorisnički pristup
+- Pro subtitle: "Za većinu ljudi" umjesto "Za osobne financije"
+- Business subtitle: "Za ozbiljne korisnike" umjesto "Za poduzetnike"
+- Premjestiti "Najpopularniji" badge na Pro plan (umjesto Business)
+
+**`src/hooks/useFeatureAccess.ts`:**
+- Premjestiti `projects` i `business_module` na `'pro'` tier (osnovni poslovni pristup)
+- Dodati nove feature-e za business tier: `'team_access'`, `'collaborators'`, `'advanced_projects'`, `'workforce'`
+
+**i18n (`hr.json`, `en.json`, `de.json`) — landing pricing sekcija:**
+- Free: "Do 30 transakcija/mj", "1 izvor plaćanja", "1 budžet", "Skeniranje računa (5/mj)"
+- Pro: "Sve iz Besplatnog", "Neograničeni projekti i budžeti", "AI uvidi i izvještaji", "Osobno + poslovno praćenje"
+- Business: "Sve iz Pro", "Radnici i satnice", "Timski i višekorisnički pristup", "Napredni projekti sa suradnicima"
+- Pro postaje "popular" umjesto Business
+
+**Landing testimonials:**
+- Ivan P. recenzija: zamijeniti "Funkcije fakturiranja..." s nečim relevantnim za praćenje projekata
+
+**Landing footer desc:**
+- "Vaš financijski kontrolni centar" umjesto "pratitelj financija"
+
+---
+
+### Ukupno: ~8 datoteka za izmjenu, 1 datoteka za brisanje
 
