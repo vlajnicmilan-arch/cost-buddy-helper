@@ -47,48 +47,14 @@ const Auth = () => {
     if ((location.state as any)?.mode === 'signup') setIsLogin(false);
   }, [location.state]);
 
+  // Redirect is now handled centrally by App.tsx routing.
+  // Auth page only handles authentication actions.
+  // When user becomes available, ensure cloud storage mode is set.
   useEffect(() => {
-    if (authLoading || !user) return;
-
-    let isCancelled = false;
-
-    const redirectAuthenticatedUser = async () => {
-      if (!storageMode) {
-        setStorageMode('cloud');
-      }
-
-      const returnTo = (location.state as any)?.returnTo;
-      const localOnboardingDone = localStorage.getItem('onboarding_completed') === 'true';
-
-      if (localOnboardingDone) {
-        navigate(returnTo || '/home', { replace: true });
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (isCancelled) return;
-
-      const hasCompletedOnboarding = !!profile?.display_name?.trim();
-
-      if (hasCompletedOnboarding) {
-        localStorage.setItem('onboarding_completed', 'true');
-        localStorage.setItem('user_display_name', profile.display_name);
-      }
-
-      navigate(hasCompletedOnboarding ? (returnTo || '/home') : '/onboarding', { replace: true });
-    };
-
-    redirectAuthenticatedUser();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [authLoading, user, storageMode, setStorageMode, navigate, location.state]);
+    if (user && !storageMode) {
+      setStorageMode('cloud');
+    }
+  }, [user, storageMode, setStorageMode]);
 
   // Check if user came from storage setup - allow going back
   const cameFromSetup = (location.state as any)?.from === '/setup';
