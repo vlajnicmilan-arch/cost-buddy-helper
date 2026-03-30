@@ -124,29 +124,8 @@ const Auth = () => {
         if (!storageMode) {
           setStorageMode('cloud');
         }
-        const returnTo = (location.state as any)?.returnTo;
-        const currentUser = (await supabase.auth.getUser()).data.user;
-        let hasCompletedOnboarding = localStorage.getItem('onboarding_completed') === 'true';
-
-        if (currentUser) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('user_id', currentUser.id)
-            .maybeSingle();
-
-          if (profile?.display_name?.trim()) {
-            hasCompletedOnboarding = true;
-            localStorage.setItem('user_display_name', profile.display_name);
-          }
-        }
-
-        if (hasCompletedOnboarding) {
-          localStorage.setItem('onboarding_completed', 'true');
-        }
-
         toast.success(t('toasts.welcomeBack'));
-        navigate(returnTo || (hasCompletedOnboarding ? '/home' : '/onboarding'));
+        // Routing is handled centrally by App.tsx — no navigate needed here
       } else {
         const { error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
         if (error) {
