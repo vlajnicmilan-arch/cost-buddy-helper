@@ -1751,10 +1751,10 @@
       "getStarted": "Započni"
     },
     "hero": {
-      "badge": "Pametno upravljanje financijama",
+      "badge": "Vaš financijski kontrolni centar",
       "title": "Preuzmite kontrolu nad",
       "titleHighlight": "Vašim financijama",
-      "subtitle": "Pratite troškove, upravljajte budžetima, surađujte s obitelji — sve u jednoj prekrasnoj aplikaciji. Osobne i poslovne financije, pojednostavljene.",
+      "subtitle": "Pratite troškove u realnom vremenu, kontrolirajte projekte, generirajte izvještaje za računovođu — sve u jednoj aplikaciji.",
       "cta": "Započni besplatno",
       "installApp": "Instaliraj aplikaciju",
       "free": "Besplatno za početak",
@@ -1764,12 +1764,30 @@
     "features": {
       "title": "Sve što trebate",
       "subtitle": "Moćni alati za upravljanje svakim aspektom vaših financija",
-      "tracking": { "title": "Praćenje troškova", "desc": "Automatski kategorizirajte i pratite svaku transakciju uz AI uvide i skeniranje računa." },
-      "reports": { "title": "Pametna izvješća", "desc": "Vizualni grafikoni i detaljni pregledi po kategoriji, razdoblju i izvoru plaćanja." },
-      "family": { "title": "Obiteljsko dijeljenje", "desc": "Dijelite budžete, novčanike i ciljeve štednje s obitelji. Suradnja u stvarnom vremenu." },
-      "wallet": { "title": "Više novčanika", "desc": "Upravljajte s više računa, kartica i izvora plaćanja na jednom mjestu s ažurnim saldima." },
-      "receipts": { "title": "Skener računa", "desc": "Slikajte račun i pustite AI da izvuče sve artikle, iznose i kategorije." },
-      "budgets": { "title": "Planiranje budžeta", "desc": "Postavite limite potrošnje po kategoriji, pratite napredak i dobijte upozorenja prije prekoračenja." }
+      "tracking": {
+        "title": "Praćenje troškova",
+        "desc": "Automatski kategorizirajte i pratite svaku transakciju uz AI uvide i skeniranje računa."
+      },
+      "reports": {
+        "title": "Pametna izvješća",
+        "desc": "Vizualni grafikoni i detaljni pregledi po kategoriji, razdoblju i izvoru plaćanja."
+      },
+      "family": {
+        "title": "Poslovni projekti",
+        "desc": "Pratite projekte s budžetima, fazama i izvještajima. Osobno i poslovno na jednom mjestu."
+      },
+      "wallet": {
+        "title": "Više novčanika",
+        "desc": "Upravljajte s više računa, kartica i izvora plaćanja na jednom mjestu s ažurnim saldima."
+      },
+      "receipts": {
+        "title": "Skener računa",
+        "desc": "Slikajte račun i pustite AI da izvuče sve artikle, iznose i kategorije."
+      },
+      "budgets": {
+        "title": "Planiranje budžeta",
+        "desc": "Postavite limite potrošnje po kategoriji, pratite napredak i dobijte upozorenja prije prekoračenja."
+      }
     },
     "pricing": {
       "title": "Jednostavne, transparentne cijene",
@@ -1777,19 +1795,52 @@
       "month": "mj",
       "popular": "Najpopularnije",
       "cta": "Započni",
-      "free": { "name": "Besplatno", "price": "€0", "f1": "Neograničene transakcije", "f2": "Osnovna izvješća", "f3": "1 izvor plaćanja", "f4": "Skeniranje računa (5/mj)" },
-      "pro": { "name": "Pro", "price": "€4,99", "f1": "Sve iz Besplatnog", "f2": "Neograničeni novčanici i kartice", "f3": "Obiteljsko dijeljenje", "f4": "AI uvidi i budžeti" },
-      "business": { "name": "Poslovno", "price": "€9,99", "f1": "Sve iz Pro", "f2": "Fakturiranje i PDV", "f3": "Upravljanje projektima", "f4": "Višekorisnički pristup" }
+      "free": {
+        "name": "Besplatno",
+        "price": "€0",
+        "f1": "Do 30 transakcija/mj",
+        "f2": "1 izvor plaćanja",
+        "f3": "1 budžet",
+        "f4": "Skeniranje računa (5/mj)"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "€4,99",
+        "f1": "Sve iz Besplatnog",
+        "f2": "Neograničeni projekti i budžeti",
+        "f3": "AI uvidi i izvještaji",
+        "f4": "Osobno + poslovno praćenje"
+      },
+      "business": {
+        "name": "Poslovno",
+        "price": "€9,99",
+        "f1": "Sve iz Pro",
+        "f2": "Radnici i satnice",
+        "f3": "Timski i višekorisnički pristup",
+        "f4": "Napredni projekti sa suradnicima"
+      }
     },
     "testimonials": {
       "title": "Korisnici nas vole",
       "subtitle": "Pogledajte što kažu naši korisnici",
-      "t1": { "name": "Ana M.", "role": "Freelancer", "text": "Konačno aplikacija koja upravlja i osobnim i poslovnim financijama! Skener računa mi štedi sate svaki mjesec." },
-      "t2": { "name": "Marko K.", "role": "Tata obitelji", "text": "Dijelimo obiteljski budžet i svi mogu vidjeti kamo novac odlazi. Promijenilo je igru za naše kućanstvo." },
-      "t3": { "name": "Ivan P.", "role": "Vlasnik malog poduzeća", "text": "Funkcije fakturiranja i praćenja projekata su nevjerojatno korisne. Vrijedi svakog centa." }
+      "t1": {
+        "name": "Ana M.",
+        "role": "Freelancer",
+        "text": "Konačno aplikacija koja upravlja i osobnim i poslovnim financijama! Skener računa mi štedi sate svaki mjesec."
+      },
+      "t2": {
+        "name": "Marko K.",
+        "role": "Tata obitelji",
+        "text": "Dijelimo obiteljski budžet i svi mogu vidjeti kamo novac odlazi. Promijenilo je igru za naše kućanstvo."
+      },
+      "t3": {
+        "name": "Ivan P.",
+        "role": "Vlasnik malog poduzeća",
+        "text": "Praćenje projekata i kontrola troškova su nevjerojatno korisni. Konačno vidim kamo novac odlazi na svakom projektu."
+      }
     },
     "footer": {
-      "desc": "Vaš kompletni pratitelj osobnih i poslovnih financija.",
+      "desc": "Vaš financijski kontrolni centar za osobne i poslovne financije.",
       "product": "Proizvod",
       "legal": "Pravno",
       "privacy": "Pravila privatnosti",

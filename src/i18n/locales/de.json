@@ -1768,10 +1768,10 @@
       "getStarted": "Loslegen"
     },
     "hero": {
-      "badge": "Intelligentes Finanzmanagement",
+      "badge": "Ihr Finanzkontrollzentrum",
       "title": "Übernehmen Sie die Kontrolle über",
       "titleHighlight": "Ihr Finanzleben",
-      "subtitle": "Verfolgen Sie Ausgaben, verwalten Sie Budgets, arbeiten Sie mit der Familie zusammen — alles in einer schönen App. Persönliche und geschäftliche Finanzen, vereinfacht.",
+      "subtitle": "Verfolgen Sie Ausgaben in Echtzeit, kontrollieren Sie Projekte, erstellen Sie Berichte für Ihren Buchhalter — alles in einer App.",
       "cta": "Kostenlos starten",
       "installApp": "App installieren",
       "free": "Kostenlos starten",
@@ -1781,12 +1781,30 @@
     "features": {
       "title": "Alles was Sie brauchen",
       "subtitle": "Leistungsstarke Tools zur Verwaltung aller Aspekte Ihrer Finanzen",
-      "tracking": { "title": "Ausgabenverfolgung", "desc": "Kategorisieren und verfolgen Sie jede Transaktion automatisch mit KI-gestützten Einblicken und Belegscanning." },
-      "reports": { "title": "Intelligente Berichte", "desc": "Visuelle Diagramme und detaillierte Aufschlüsselungen nach Kategorie, Zeitraum und Zahlungsquelle." },
-      "family": { "title": "Familienfreigabe", "desc": "Teilen Sie Budgets, Wallets und Sparziele mit Ihrer Familie. Echtzeit-Zusammenarbeit." },
-      "wallet": { "title": "Multi-Wallet", "desc": "Verwalten Sie mehrere Konten, Karten und Zahlungsquellen an einem Ort mit Live-Salden." },
-      "receipts": { "title": "Belegscanner", "desc": "Fotografieren Sie Ihren Beleg und lassen Sie KI alle Artikel, Beträge und Kategorien extrahieren." },
-      "budgets": { "title": "Budgetplanung", "desc": "Setzen Sie Ausgabenlimits nach Kategorie, verfolgen Sie den Fortschritt und erhalten Sie Warnungen." }
+      "tracking": {
+        "title": "Ausgabenverfolgung",
+        "desc": "Kategorisieren und verfolgen Sie jede Transaktion automatisch mit KI-gestützten Einblicken und Belegscanning."
+      },
+      "reports": {
+        "title": "Intelligente Berichte",
+        "desc": "Visuelle Diagramme und detaillierte Aufschlüsselungen nach Kategorie, Zeitraum und Zahlungsquelle."
+      },
+      "family": {
+        "title": "Geschäftsprojekte",
+        "desc": "Verfolgen Sie Projekte mit Budgets, Meilensteinen und Berichten. Privat und geschäftlich an einem Ort."
+      },
+      "wallet": {
+        "title": "Multi-Wallet",
+        "desc": "Verwalten Sie mehrere Konten, Karten und Zahlungsquellen an einem Ort mit Live-Salden."
+      },
+      "receipts": {
+        "title": "Belegscanner",
+        "desc": "Fotografieren Sie Ihren Beleg und lassen Sie KI alle Artikel, Beträge und Kategorien extrahieren."
+      },
+      "budgets": {
+        "title": "Budgetplanung",
+        "desc": "Setzen Sie Ausgabenlimits nach Kategorie, verfolgen Sie den Fortschritt und erhalten Sie Warnungen."
+      }
     },
     "pricing": {
       "title": "Einfache, transparente Preise",
@@ -1794,19 +1812,52 @@
       "month": "Mo",
       "popular": "Am beliebtesten",
       "cta": "Loslegen",
-      "free": { "name": "Kostenlos", "price": "€0", "f1": "Unbegrenzte Transaktionen", "f2": "Grundlegende Berichte", "f3": "1 Zahlungsquelle", "f4": "Belegscanning (5/Mo)" },
-      "pro": { "name": "Pro", "price": "€4,99", "f1": "Alles in Kostenlos", "f2": "Unbegrenzte Wallets & Karten", "f3": "Familienfreigabe", "f4": "KI-Einblicke & Budgets" },
-      "business": { "name": "Business", "price": "€9,99", "f1": "Alles in Pro", "f2": "Rechnungsstellung & MwSt", "f3": "Projektmanagement", "f4": "Mehrbenutzerzugang" }
+      "free": {
+        "name": "Kostenlos",
+        "price": "€0",
+        "f1": "Bis zu 30 Transaktionen/Mo",
+        "f2": "1 Zahlungsquelle",
+        "f3": "1 Budget",
+        "f4": "Quittungsscan (5/Mo)"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "€4,99",
+        "f1": "Alles aus Kostenlos",
+        "f2": "Unbegrenzte Projekte & Budgets",
+        "f3": "KI-Einblicke & Berichte",
+        "f4": "Privat + geschäftlich"
+      },
+      "business": {
+        "name": "Business",
+        "price": "€9,99",
+        "f1": "Alles aus Pro",
+        "f2": "Mitarbeiter & Zeiterfassung",
+        "f3": "Team- & Mehrbenutzerzugang",
+        "f4": "Erweiterte Projekte mit Mitarbeitern"
+      }
     },
     "testimonials": {
       "title": "Von Nutzern geliebt",
       "subtitle": "Sehen Sie, was unsere Nutzer sagen",
-      "t1": { "name": "Ana M.", "role": "Freiberuflerin", "text": "Endlich eine App, die sowohl persönliche als auch geschäftliche Finanzen verwaltet! Der Belegscanner spart mir jeden Monat Stunden." },
-      "t2": { "name": "Marko K.", "role": "Familienvater", "text": "Wir teilen ein Familienbudget und jeder kann sehen, wohin das Geld fließt. Ein Gamechanger für unseren Haushalt." },
-      "t3": { "name": "Ivan P.", "role": "Kleinunternehmer", "text": "Die Rechnungsstellung und Projektverfolgung sind unglaublich nützlich. Jeden Cent wert." }
+      "t1": {
+        "name": "Ana M.",
+        "role": "Freiberuflerin",
+        "text": "Endlich eine App, die sowohl persönliche als auch geschäftliche Finanzen verwaltet! Der Belegscanner spart mir jeden Monat Stunden."
+      },
+      "t2": {
+        "name": "Marko K.",
+        "role": "Familienvater",
+        "text": "Wir teilen ein Familienbudget und jeder kann sehen, wohin das Geld fließt. Ein Gamechanger für unseren Haushalt."
+      },
+      "t3": {
+        "name": "Ivan P.",
+        "role": "Kleinunternehmer",
+        "text": "Projektverfolgung und Kostenkontrolle sind unglaublich nützlich. Ich sehe endlich, wohin das Geld bei jedem Projekt geht."
+      }
     },
     "footer": {
-      "desc": "Ihr kompletter Begleiter für persönliche und geschäftliche Finanzen.",
+      "desc": "Ihr Finanzkontrollzentrum für private und geschäftliche Finanzen.",
       "product": "Produkt",
       "legal": "Rechtliches",
       "privacy": "Datenschutz",
