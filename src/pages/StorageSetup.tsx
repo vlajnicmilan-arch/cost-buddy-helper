@@ -42,21 +42,9 @@ const StorageSetup = () => {
         setStorageMode('local');
         navigate('/home');
       } else if (selectedMode === 'cloud') {
-        // Wait for auth to finish loading before deciding
-        if (authLoading) {
-          // Wait a bit for auth to settle
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
         setStorageMode('cloud');
-        // If user is already logged in, go to dashboard, otherwise go to auth
-        // Re-check session directly for most accurate state
-        const { data: { session } } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
-        if (session?.user) {
-          navigate('/home');
-        } else {
-          navigate('/auth', { state: { from: '/setup' } });
-        }
+        // Routing to /auth or /home is handled by App.tsx centrally
+        navigate('/auth');
       } else {
         // Google Drive / iCloud - coming soon
         setStorageMode(selectedMode);
