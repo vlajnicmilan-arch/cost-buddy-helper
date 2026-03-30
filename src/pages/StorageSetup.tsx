@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 const StorageSetup = () => {
   const navigate = useNavigate();
   const { storageMode: currentMode, setStorageMode } = useStorage();
-  const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation();
   const [selectedMode, setSelectedMode] = useState<StorageMode | null>(currentMode);
   const [isLoading, setIsLoading] = useState(false);
