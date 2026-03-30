@@ -10,43 +10,25 @@ type FinancialResetHandler = () => void;
 type PaymentSourcesHandler = (sources: CustomPaymentSource[]) => void;
 
 interface AppStateContextValue {
-  // Display name
   displayName: string;
   setDisplayName: (name: string) => void;
-
-  // AI assistant toggle
   aiAssistantEnabled: boolean;
   setAiAssistantEnabled: (enabled: boolean) => void;
-
-  // Simple mode toggle
   simpleModeEnabled: boolean;
   setSimpleModeEnabled: (enabled: boolean) => void;
-
-  // Family mode toggle
   familyModeEnabled: boolean;
   setFamilyModeEnabled: (enabled: boolean) => void;
-
-  // Business mode toggle
   businessModeEnabled: boolean;
   setBusinessModeEnabled: (enabled: boolean) => void;
-
-  // Active business profile
   activeBusinessProfileId: string | null;
   setActiveBusinessProfileId: (id: string | null) => void;
-
-  // Onboarding
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
-
-  // Avatar mood events (pub/sub via callbacks)
+  appStateReady: boolean;
   onAvatarEvent: (handler: AvatarEventHandler) => () => void;
   emitAvatarEvent: (mood: AvatarMood, message?: string) => void;
-
-  // Financial data reset
   onFinancialReset: (handler: FinancialResetHandler) => () => void;
   emitFinancialReset: () => void;
-
-  // Payment sources reorder sync
   onPaymentSourcesReordered: (handler: PaymentSourcesHandler) => () => void;
   emitPaymentSourcesReordered: (sources: CustomPaymentSource[]) => void;
 }
@@ -75,42 +57,90 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
+  const [appStateReady, setAppStateReady] = useState(false);
 
-  // Auto-sync state from DB when user has session but localStorage is empty (reinstall/cache clear)
+  // Resolve onboarding state from backend when auth state changes
   useEffect(() => {
-    const syncFromDB = async () => {
+    const resolveOnboarding = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      
+      if (!session?.user) {
+        // No user — ready immediately, onboarding state from localStorage is fine
+        setAppStateReady(true);
+        return;
+      }
 
-      // If localStorage has no storage config, restore cloud mode
+      // User exists — restore cloud storage config if missing
       const hasStorageConfig = localStorage.getItem('finmate-storage-config');
       if (!hasStorageConfig) {
         localStorage.setItem('finmate-storage-config', JSON.stringify({ mode: 'cloud', lastSync: new Date().toISOString() }));
-        // Trigger storage context update by dispatching storage event
         window.dispatchEvent(new Event('storage-mode-restored'));
       }
 
-      // If onboarding not marked complete locally, check DB
-      if (!localStorage.getItem('onboarding_completed')) {
+      // If localStorage already says onboarding is done, trust it and finish
+      if (localStorage.getItem('onboarding_completed') === 'true') {
+        setOnboardingCompletedState(true);
+        setAppStateReady(true);
+        return;
+      }
+
+      // Otherwise, check backend profile to determine onboarding status
+      try {
         const { data: profile } = await supabase
           .from('profiles')
           .select('display_name')
           .eq('user_id', session.user.id)
-          .single();
+          .maybeSingle();
 
-        if (profile?.display_name) {
+        // Also check if user has any payment sources (indicates completed onboarding)
+        const { count } = await supabase
+          .from('custom_payment_sources')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', session.user.id);
+
+        const hasProfile = !!profile?.display_name?.trim();
+        const hasSources = (count ?? 0) > 0;
+
+        if (hasProfile && hasSources) {
+          // Existing user — mark onboarding as completed
           localStorage.setItem('onboarding_completed', 'true');
+          localStorage.setItem('user_display_name', profile!.display_name!);
           setOnboardingCompletedState(true);
-          localStorage.setItem('user_display_name', profile.display_name);
-          setDisplayNameState(profile.display_name);
+          setDisplayNameState(profile!.display_name!);
+        } else if (hasProfile && !hasSources) {
+          // Has profile but no sources — still mark as completed (they may have skipped)
+          localStorage.setItem('onboarding_completed', 'true');
+          localStorage.setItem('user_display_name', profile!.display_name!);
+          setOnboardingCompletedState(true);
+          setDisplayNameState(profile!.display_name!);
         }
+        // else: truly new user, onboardingCompleted stays false
+      } catch (e) {
+        console.error('Failed to resolve onboarding state:', e);
       }
+
+      setAppStateReady(true);
     };
 
-    syncFromDB();
+    resolveOnboarding();
+
+    // Also listen for auth changes (e.g., sign in after page load)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        // Re-resolve when user signs in
+        setAppStateReady(false);
+        resolveOnboarding();
+      } else if (event === 'SIGNED_OUT') {
+        setOnboardingCompletedState(false);
+        setDisplayNameState('');
+        setAppStateReady(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Subscriber registries using refs to avoid stale closures
+  // Subscriber registries
   const avatarHandlers = useRef<Set<AvatarEventHandler>>(new Set());
   const resetHandlers = useRef<Set<FinancialResetHandler>>(new Set());
   const paymentHandlers = useRef<Set<PaymentSourcesHandler>>(new Set());
@@ -158,7 +188,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     if (completed) localStorage.setItem('onboarding_completed', 'true');
   }, []);
 
-  // Avatar pub/sub
   const onAvatarEvent = useCallback((handler: AvatarEventHandler) => {
     avatarHandlers.current.add(handler);
     return () => { avatarHandlers.current.delete(handler); };
@@ -168,7 +197,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     avatarHandlers.current.forEach(h => h(mood, message));
   }, []);
 
-  // Financial reset pub/sub
   const onFinancialReset = useCallback((handler: FinancialResetHandler) => {
     resetHandlers.current.add(handler);
     return () => { resetHandlers.current.delete(handler); };
@@ -178,7 +206,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     resetHandlers.current.forEach(h => h());
   }, []);
 
-  // Payment sources reorder pub/sub
   const onPaymentSourcesReordered = useCallback((handler: PaymentSourcesHandler) => {
     paymentHandlers.current.add(handler);
     return () => { paymentHandlers.current.delete(handler); };
@@ -204,6 +231,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       setActiveBusinessProfileId,
       onboardingCompleted,
       setOnboardingCompleted,
+      appStateReady,
       onAvatarEvent,
       emitAvatarEvent,
       onFinancialReset,

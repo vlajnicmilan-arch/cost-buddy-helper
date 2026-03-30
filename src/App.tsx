@@ -56,11 +56,8 @@ const PageLoader = () => (
 );
 
 const isInstalledApp = () => {
-  // Capacitor native app
   if (typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform?.()) return true;
-  // PWA standalone mode
   if (window.matchMedia('(display-mode: standalone)').matches) return true;
-  // iOS PWA
   if ((navigator as any).standalone === true) return true;
   return false;
 };
@@ -74,23 +71,37 @@ const RootRoute = () => {
 
 const AppRoutes = () => {
   const { storageMode, isInitialized } = useStorage();
-  const { onboardingCompleted } = useAppState();
+  const { onboardingCompleted, appStateReady } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
-  const { user, loading: authLoading } = useAuth();
-  const appEntryRoute = authLoading
-    ? null
-    : (user ? (onboardingCompleted ? "/home" : "/onboarding") : "/auth");
+  const { user, authReady } = useAuth();
 
+  // Wait for all readiness signals before making routing decisions
+  const allReady = isInitialized && authReady && appStateReady;
+
+  // Determine where /app should redirect
+  const getAppEntryRoute = () => {
+    if (!allReady) return null;
+    if (!storageMode) return "/setup";
+    if (storageMode === 'local') return onboardingCompleted ? "/home" : "/onboarding";
+    // cloud mode
+    if (!user) return "/auth";
+    return onboardingCompleted ? "/home" : "/onboarding";
+  };
+
+  const appEntryRoute = getAppEntryRoute();
+
+  // Phase 1: Wait for initialization
   if (!isInitialized) {
     return <PageLoader />;
   }
 
+  // No storage mode selected yet — show setup and public routes
   if (!storageMode) {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<RootRoute />} />
-          <Route path="/app" element={appEntryRoute ? <Navigate to={appEntryRoute} replace /> : <PageLoader />} />
+          <Route path="/app" element={allReady ? <Navigate to={appEntryRoute!} replace /> : <PageLoader />} />
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
@@ -105,6 +116,12 @@ const AppRoutes = () => {
     );
   }
 
+  // Phase 2: Storage mode is set but auth/appState not ready yet — show loader
+  if (!allReady) {
+    return <PageLoader />;
+  }
+
+  // Phase 3: Trial expired paywall
   if (storageMode === "cloud" && !subLoading && trialExpired && !subscribed) {
     return (
       <Suspense fallback={<PageLoader />}>
@@ -120,21 +137,46 @@ const AppRoutes = () => {
     );
   }
 
+  // Phase 4: Cloud mode — redirect unauthenticated users to /auth
+  if (storageMode === 'cloud' && !user) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<RootRoute />} />
+          <Route path="/app" element={<Navigate to="/auth" replace />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/setup" element={<StorageSetup />} />
+          <Route path="/install" element={<Install />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/avatar-demo" element={<AvatarDemo />} />
+          <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/auth" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // Phase 5: Fully authenticated (or local mode) — main app routes
+  const requireOnboarding = (element: React.ReactNode) =>
+    onboardingCompleted ? element : <Navigate to="/onboarding" replace />;
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<RootRoute />} />
-        <Route path="/app" element={appEntryRoute ? <Navigate to={appEntryRoute} replace /> : <PageLoader />} />
-        <Route path="/home" element={onboardingCompleted ? <Index /> : <Navigate to="/onboarding" replace />} />
+        <Route path="/app" element={<Navigate to={appEntryRoute!} replace />} />
+        <Route path="/home" element={requireOnboarding(<Index />)} />
         <Route path="/business" element={<Business />} />
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/onboarding" element={onboardingCompleted ? <Navigate to="/home" replace /> : <Onboarding />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={onboardingCompleted ? <Projects /> : <Navigate to="/onboarding" replace />} />
-        <Route path="/budgets" element={onboardingCompleted ? <Budgets /> : <Navigate to="/onboarding" replace />} />
-        <Route path="/wallet" element={onboardingCompleted ? <Wallet /> : <Navigate to="/onboarding" replace />} />
-        <Route path="/family" element={onboardingCompleted ? <Family /> : <Navigate to="/onboarding" replace />} />
+        <Route path="/projects" element={requireOnboarding(<Projects />)} />
+        <Route path="/budgets" element={requireOnboarding(<Budgets />)} />
+        <Route path="/wallet" element={requireOnboarding(<Wallet />)} />
+        <Route path="/family" element={requireOnboarding(<Family />)} />
         <Route path="/join-family/:token" element={<JoinFamily />} />
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/auth" element={user ? <Navigate to="/home" replace /> : <Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/setup" element={<StorageSetup />} />
         <Route path="/install" element={<Install />} />
