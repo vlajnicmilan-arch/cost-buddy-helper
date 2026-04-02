@@ -190,6 +190,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     }
   };
 
+  const handleProjectClick = (project: ProjectWithOwnership) => {
     setSelectedProject(project);
     setDetailDialogOpen(true);
   };
