@@ -41,6 +41,8 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null);
+  const [migrateConfirmOpen, setMigrateConfirmOpen] = useState(false);
+  const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
 
   // Handle navigation from notification click
   useEffect(() => {
