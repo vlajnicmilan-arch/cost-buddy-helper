@@ -108,7 +108,7 @@ export const useProjects = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode, t]);
+  }, [user, isLocalMode, t, activeBusinessProfileId]);
 
   useEffect(() => {
     fetchProjects();
