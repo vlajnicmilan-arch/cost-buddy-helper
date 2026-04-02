@@ -31,12 +31,20 @@ export const useProjects = () => {
         }
       } else {
         // Cloud mode - fetch from Supabase
-        // 1. Fetch owned projects
-        const { data: ownedProjects, error: ownedError } = await supabase
+        // 1. Fetch owned projects with business context filter
+        let ownedQuery = supabase
           .from('projects')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
+
+        if (activeBusinessProfileId) {
+          ownedQuery = ownedQuery.eq('business_profile_id', activeBusinessProfileId);
+        } else {
+          ownedQuery = ownedQuery.is('business_profile_id', null);
+        }
+
+        const { data: ownedProjects, error: ownedError } = await ownedQuery;
 
         if (ownedError) throw ownedError;
 
