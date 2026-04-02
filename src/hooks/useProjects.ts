@@ -257,6 +257,46 @@ export const useProjects = () => {
     }
   };
 
+  const migrateToBusinessMode = async (projectId: string, businessProfileId: string): Promise<boolean> => {
+    try {
+      if (isLocalMode) {
+        const updated = projects.map(p =>
+          p.id === projectId
+            ? { ...p, business_profile_id: businessProfileId, updated_at: new Date().toISOString() }
+            : p
+        );
+        localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
+        setProjects(updated);
+        toast.success(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
+        return true;
+      }
+
+      // Update project
+      const { error } = await supabase
+        .from('projects')
+        .update({ business_profile_id: businessProfileId })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      // Also update all related transactions
+      await (supabase
+        .from('expenses') as any)
+        .update({ business_profile_id: businessProfileId })
+        .eq('project_id', projectId)
+        .is('business_profile_id', null);
+
+      // Refresh projects
+      await fetchProjects();
+      toast.success(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
+      return true;
+    } catch (error) {
+      console.error('Error migrating project:', error);
+      toast.error(t('common.error'));
+      return false;
+    }
+  };
+
   const getProjectById = (id: string): ProjectWithOwnership | undefined => {
     return projects.find(p => p.id === id);
   };
@@ -267,8 +307,10 @@ export const useProjects = () => {
     addProject,
     updateProject,
     deleteProject,
+    migrateToBusinessMode,
     getProjectById,
     refetch: fetchProjects,
-    isLocalMode
+    isLocalMode,
+    activeBusinessProfileId
   };
 };
