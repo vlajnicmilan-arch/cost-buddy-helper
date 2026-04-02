@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionTier, isTrialExpired, getTrialDaysRemaining } from '@/lib/subscriptionTiers';
+import { getFreshAccessToken } from '@/lib/supabaseRetry';
 
 interface SubscriptionState {
   tier: SubscriptionTier;
