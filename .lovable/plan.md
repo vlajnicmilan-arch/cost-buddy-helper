@@ -1,77 +1,48 @@
 
 
-## Plan: Dva pogleda istog projekta + migracija
+## Problem: Duplikacija projekta i gubitak podataka pri migraciji
 
-### Koncept
+### Bug 1: Projekt se duplicira u osobnom modu
 
-Jedan projekt u bazi, ali UI prikazuje različite tabove ovisno o kontekstu (osobni vs poslovni mod). Projekt s `business_profile_id` vidljiv je u **oba** moda — osobni vidi osnovne tabove, poslovni vidi sve. Osobni projekt (bez `business_profile_id`) može se "unaprijediti" u poslovni dodavanjem `business_profile_id`.
+**Uzrok**: U `fetchProjects` (linija 64-76), dohvat "dijeljenih projekata" (gdje je korisnik član putem `project_members` tablice) **ne filtrira po `business_profile_id`**.
 
-### Arhitektura
+Tok problema:
+1. Korisnik migrira projekt → `business_profile_id` se postavi
+2. `fetchProjects()` se pozove
+3. Osobni mod filtrira vlastite projekte po `business_profile_id IS NULL` → migrirani projekt nestaje iz te liste (OK)
+4. ALI: korisnik je automatski dodan u `project_members` putem triggera `add_project_owner_as_member` → projekt se pojavljuje kao "dijeljeni" projekt jer ta druga query nema filter po `business_profile_id`
+5. Rezultat: projekt se pojavljuje kao "shared" projekt u osobnom modu = duplikat
 
-```text
-┌──────────────────────────────────────────┐
-│  PROJEKT (jedan zapis u bazi)            │
-│  business_profile_id: NULL ili UUID      │
-├──────────────────────────────────────────┤
-│                                          │
-│  OSOBNI POGLED (osobni mod):             │
-│  Pregled | Timeline | Faze |             │
-│  Financiranje | Tim | Transakcije        │
-│                                          │
-│  POSLOVNI POGLED (poslovni mod):         │
-│  Sve gore + Radnici | Suradnici |        │
-│  P&L kartica | Povijest budžeta          │
-│                                          │
-└──────────────────────────────────────────┘
+### Bug 2: Projekt u poslovnom modu prikazuje samo budžet
+
+**Uzrok**: Migracija se pokreće dok je korisnik u **osobnom modu** (`activeBusinessProfileId` je null). Nakon poziva `migrateToBusinessMode`, `fetchProjects()` se pozove, ali i dalje koristi `activeBusinessProfileId = null` iz konteksta. Projekt sada ima `business_profile_id` i ne prolazi kroz osobni filter, pa se ne učitava potpuno. Kad korisnik prebaci na poslovni mod, podaci su krnji jer se nisu pravilno refreshali.
+
+### Popravak
+
+#### 1. `useProjects.ts` — filtrirati dijeljene projekte po business kontekstu
+U dijelu koji dohvaća shared projekte (linija 64-76), dodati isti `business_profile_id` filter:
+
+```typescript
+// Kad dohvaćamo shared projekte, filtrirati po istom business kontekstu
+let sharedQuery = supabase.from('projects').select('*').in('id', memberProjectIds);
+
+if (activeBusinessProfileId) {
+  sharedQuery = sharedQuery.eq('business_profile_id', activeBusinessProfileId);
+} else {
+  sharedQuery = sharedQuery.is('business_profile_id', null);
+}
 ```
 
-### Promjene
+#### 2. `useProjects.ts` — migracija treba ukloniti projekt iz lokalnog stanja
+Nakon uspješne migracije, umjesto `fetchProjects()` (koji koristi stari kontekst), direktno ukloniti projekt iz stanja:
 
-#### 1. `src/types/project.ts`
-- Dodati `business_profile_id?: string | null` u `Project` interface
+```typescript
+// Umjesto fetchProjects(), ručno ukloniti iz trenutnog prikaza
+setProjects(prev => prev.filter(p => p.id !== projectId));
+```
 
-#### 2. `src/hooks/useProjects.ts`
-- Uvesti `activeBusinessProfileId` iz `AppStateContext`
-- Filtriranje:
-  - **Osobni mod** (`!activeBusinessProfileId`): prikaži projekte gdje `business_profile_id IS NULL` **ILI** je `NULL` (osobni) — svi projekti korisnika bez poslovnog filtera
-  - **Poslovni mod** (`activeBusinessProfileId` aktivan): prikaži samo projekte s tim `business_profile_id`
-- Kreiranje: automatski postavi `business_profile_id` ako je poslovni mod aktivan
-
-#### 3. `src/components/projects/ProjectFullScreenView.tsx`
-- Uvesti `useFeatureAccess` i `useAppState`
-- Izračunati `isBusinessView` = `!!activeBusinessProfileId && project.business_profile_id === activeBusinessProfileId`
-- Sakriti tabove Radnici, Suradnici, P&L karticu i Povijest budžeta kad `!isBusinessView` ili `!hasAccess('workforce')`
-- Osobni pogled: Pregled, Timeline, Faze, Financiranje, Tim, Transakcije
-- Poslovni pogled: sve gore + Radnici, Suradnici, P&L, Povijest budžeta
-
-#### 4. `src/components/projects/ProjectDialog.tsx`
-- Dodati opciju "Poveži s poslovnim profilom" — prikazuje se samo kad korisnik ima poslovni profil i Business tier
-- Kod novog projekta u poslovnom modu, automatski popuniti `business_profile_id`
-
-#### 5. `src/components/projects/ProjectsPanel.tsx`
-- Dodati akciju "Premjesti u poslovni mod" na projektne kartice (kontekst menu ili dugme)
-- Ova akcija samo postavi `business_profile_id` na aktivni profil, zadrži sve podatke
-- Prikazuje se samo za osobne projekte (`!project.business_profile_id`) kad korisnik ima aktivan poslovni profil
-
-#### 6. `src/components/projects/ProjectDetailDialog.tsx`
-- Ista logika uvjetnih tabova kao u FullScreenView
-
-### Migracija osobnog u poslovni
-
-Akcija "Premjesti u poslovni mod":
-1. Ažurira `business_profile_id` na projektu
-2. Sve transakcije vezane uz taj `project_id` automatski dobivaju `business_profile_id` (batch update)
-3. Projekt sada postaje vidljiv i u poslovnom modu s naprednim tabovima
-4. U osobnom modu i dalje ostaje vidljiv, ali s osnovnim tabovima
+Korisnik će vidjeti projekt kad prebaci na poslovni mod.
 
 ### Datoteke za izmjenu
-- `src/types/project.ts`
-- `src/hooks/useProjects.ts`
-- `src/components/projects/ProjectFullScreenView.tsx`
-- `src/components/projects/ProjectDetailDialog.tsx`
-- `src/components/projects/ProjectDialog.tsx`
-- `src/components/projects/ProjectsPanel.tsx`
-
-### Bez migracije baze
-Stupac `business_profile_id` već postoji na tablici `projects`. Samo treba dodati logiku u frontend kod.
+- `src/hooks/useProjects.ts` — 2 promjene (filter shared projekata + migracija stanja)
 
