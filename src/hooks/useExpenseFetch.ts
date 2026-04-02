@@ -6,6 +6,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
+import { withAuthRetry } from '@/lib/supabaseRetry';
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
@@ -91,6 +92,36 @@ export const useExpenseFetch = () => {
         })) || []);
       }
     } catch (error) {
+      const errMsg = String((error as any)?.message || error);
+      if (/jwt|token.*expir|unauthorized/i.test(errMsg) || (error as any)?.status === 401) {
+        console.log('[Expenses] Auth error, refreshing session and retrying...');
+        try {
+          await supabase.auth.refreshSession();
+          // Retry once
+          const { data, error: retryError } = await supabase
+            .from('expenses')
+            .select('*')
+            .order('date', { ascending: false });
+          if (!retryError && data) {
+            setExpenses(data.map(e => ({
+              ...e,
+              date: new Date(e.date),
+              category: e.category as Category,
+              type: e.type as TransactionType,
+              payment_source: (e.payment_source || 'cash') as PaymentSource,
+              income_source_id: e.income_source_id,
+              payment_source_card_id: e.payment_source_card_id,
+              expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined,
+              business_profile_id: (e as any).business_profile_id || null,
+              currency: (e as any).currency || null,
+            })));
+            setLoading(false);
+            return;
+          }
+        } catch (retryErr) {
+          console.error('Retry also failed:', retryErr);
+        }
+      }
       console.error('Error fetching expenses:', error);
       toast.error('Greška pri učitavanju troškova');
     } finally {

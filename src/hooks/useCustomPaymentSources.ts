@@ -102,6 +102,18 @@ export const useCustomPaymentSources = () => {
 
       setCustomPaymentSources(sourcesWithCards as CustomPaymentSource[]);
     } catch (error) {
+      const errMsg = String((error as any)?.message || error);
+      if (/jwt|token.*expir|unauthorized/i.test(errMsg) || (error as any)?.status === 401) {
+        console.log('[PaymentSources] Auth error, refreshing session and retrying...');
+        try {
+          await supabase.auth.refreshSession();
+          // Retry by re-calling self on next tick
+          setTimeout(() => fetchCustomPaymentSources(), 500);
+          return;
+        } catch (retryErr) {
+          console.error('Session refresh failed:', retryErr);
+        }
+      }
       console.error('Error fetching custom payment sources:', error);
       toast.error('Greška pri dohvaćanju prilagođenih izvora plaćanja');
     } finally {

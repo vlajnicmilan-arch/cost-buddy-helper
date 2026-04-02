@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionTier, isTrialExpired, getTrialDaysRemaining } from '@/lib/subscriptionTiers';
+import { getFreshAccessToken } from '@/lib/supabaseRetry';
 
 interface SubscriptionState {
   tier: SubscriptionTier;
@@ -49,8 +50,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       console.log('[Subscription] Checking subscription...');
+      // Get fresh token to avoid stale JWT issues
+      const freshToken = await getFreshAccessToken();
+      if (!freshToken) {
+        console.log('[Subscription] No fresh token available, skipping');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${freshToken}` },
       });
 
       if (error) throw error;
@@ -73,7 +82,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setTrialDaysRemaining(0);
       }
     } catch (err) {
-      console.error('Error checking subscription:', err);
+      // Silently handle auth/JWT errors — they'll resolve on next cycle
+      const errMsg = String((err as any)?.message || err);
+      if (/jwt|token.*expir|unauthorized/i.test(errMsg)) {
+        console.log('[Subscription] Transient auth error, will retry next cycle');
+      } else {
+        console.error('Error checking subscription:', err);
+      }
     } finally {
       setLoading(false);
     }
