@@ -62,10 +62,18 @@ export const useProjects = () => {
 
         let sharedProjects: Project[] = [];
         if (memberProjectIds.length > 0) {
-          const { data: shared, error: sharedError } = await supabase
+          let sharedQuery = supabase
             .from('projects')
             .select('*')
             .in('id', memberProjectIds);
+
+          if (activeBusinessProfileId) {
+            sharedQuery = sharedQuery.eq('business_profile_id', activeBusinessProfileId);
+          } else {
+            sharedQuery = sharedQuery.is('business_profile_id', null);
+          }
+
+          const { data: shared, error: sharedError } = await sharedQuery;
 
           if (!sharedError && shared) {
             sharedProjects = shared.map(p => ({
@@ -286,8 +294,8 @@ export const useProjects = () => {
         .eq('project_id', projectId)
         .is('business_profile_id', null);
 
-      // Refresh projects
-      await fetchProjects();
+      // Remove from current view (user will see it when switching to business mode)
+      setProjects(prev => prev.filter(p => p.id !== projectId));
       toast.success(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
       return true;
     } catch (error) {
