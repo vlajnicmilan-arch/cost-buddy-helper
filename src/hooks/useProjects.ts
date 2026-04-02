@@ -68,9 +68,8 @@ export const useProjects = () => {
 
           if (activeBusinessProfileId) {
             sharedQuery = sharedQuery.eq('business_profile_id', activeBusinessProfileId);
-          } else {
-            sharedQuery = sharedQuery.is('business_profile_id', null);
           }
+          // Personal mode: show ALL shared projects too
 
           const { data: shared, error: sharedError } = await sharedQuery;
 
