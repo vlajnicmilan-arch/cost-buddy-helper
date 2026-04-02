@@ -57,7 +57,16 @@ export const ProjectDetailDialog = ({
   // Get current user's role in the project
   const currentUserRole = project?.role || 'viewer';
   const { isTabVisible } = useProjectMemberPermissions(project?.id || null);
-  const canSeeTab = (tabKey: string) => isManager || isTabVisible(tabKey);
+  const { activeBusinessProfileId } = useAppState();
+  const { hasAccess } = useFeatureAccess();
+  
+  const isBusinessView = !!activeBusinessProfileId && project?.business_profile_id === activeBusinessProfileId;
+  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce');
+  
+  const canSeeTab = (tabKey: string) => {
+    if ((tabKey === 'workers' || tabKey === 'collaborators') && !canAccessBusinessTabs) return false;
+    return isManager || isTabVisible(tabKey);
+  };
 
   if (!project) return null;
 
