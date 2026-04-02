@@ -40,9 +40,8 @@ export const useProjects = () => {
 
         if (activeBusinessProfileId) {
           ownedQuery = ownedQuery.eq('business_profile_id', activeBusinessProfileId);
-        } else {
-          ownedQuery = ownedQuery.is('business_profile_id', null);
         }
+        // Personal mode: show ALL projects (including migrated ones with basic tabs)
 
         const { data: ownedProjects, error: ownedError } = await ownedQuery;
 
@@ -69,9 +68,8 @@ export const useProjects = () => {
 
           if (activeBusinessProfileId) {
             sharedQuery = sharedQuery.eq('business_profile_id', activeBusinessProfileId);
-          } else {
-            sharedQuery = sharedQuery.is('business_profile_id', null);
           }
+          // Personal mode: show ALL shared projects too
 
           const { data: shared, error: sharedError } = await sharedQuery;
 
