@@ -203,6 +203,7 @@ export const ProjectFullScreenView = ({
                       <Wallet className="w-5 h-5 text-muted-foreground" />
                       <span className="font-medium">{t('projects.budgetOverview')}</span>
                     </div>
+                    {canAccessBusinessTabs && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -212,6 +213,7 @@ export const ProjectFullScreenView = ({
                     >
                       <History className="w-4 h-4 text-muted-foreground" />
                     </Button>
+                    )}
                   </div>
                   {budgetWarning && (
                     <Badge variant="destructive" className="gap-1">
