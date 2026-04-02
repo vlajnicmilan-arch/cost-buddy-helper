@@ -294,8 +294,8 @@ export const useProjects = () => {
         .eq('project_id', projectId)
         .is('business_profile_id', null);
 
-      // Refresh projects
-      await fetchProjects();
+      // Remove from current view (user will see it when switching to business mode)
+      setProjects(prev => prev.filter(p => p.id !== projectId));
       toast.success(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
       return true;
     } catch (error) {
