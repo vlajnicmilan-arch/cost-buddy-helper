@@ -282,6 +282,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onClick={handleProjectClick}
+                  onMigrateToBusiness={canMigrateToBusiness ? handleMigrateToBusiness : undefined}
                 />
               </motion.div>
             ))}
