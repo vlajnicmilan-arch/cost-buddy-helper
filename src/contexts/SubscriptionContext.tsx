@@ -50,8 +50,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       console.log('[Subscription] Checking subscription...');
+      // Get fresh token to avoid stale JWT issues
+      const freshToken = await getFreshAccessToken();
+      if (!freshToken) {
+        console.log('[Subscription] No fresh token available, skipping');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${freshToken}` },
       });
 
       if (error) throw error;
