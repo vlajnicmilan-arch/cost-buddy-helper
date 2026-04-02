@@ -1,41 +1,77 @@
 
 
-## Plan: Otpornost na istekle tokene
+## Plan: Dva pogleda istog projekta + migracija
 
-### Problem
-JWT token može isteći između dva auto-refresh ciklusa (Supabase refresh interval). U tom kratkom prozoru, svi API pozivi failaju i korisnik vidi toast greške za izvore plaćanja i troškove.
+### Koncept
 
-### Rješenje
+Jedan projekt u bazi, ali UI prikazuje različite tabove ovisno o kontekstu (osobni vs poslovni mod). Projekt s `business_profile_id` vidljiv je u **oba** moda — osobni vidi osnovne tabove, poslovni vidi sve. Osobni projekt (bez `business_profile_id`) može se "unaprijediti" u poslovni dodavanjem `business_profile_id`.
 
-#### 1. SubscriptionContext — koristiti svjež token
-**`src/contexts/SubscriptionContext.tsx`**
-- Umjesto `session.access_token` (koji može biti stale), pozvati `supabase.auth.getSession()` neposredno prije invoke-a da se dobije najsvježiji token
-- Dodati graceful error handling: ako edge funkcija vrati 500 s "expired", ne prikazivati grešku korisniku, samo retry na sljedećem ciklusu
-- Smanjiti retry interval na razumnu vrijednost ili dodati exponential backoff
+### Arhitektura
 
-#### 2. useExpenseFetch — dodati retry na auth error
-**`src/hooks/useExpenseFetch.ts`**
-- U `fetchExpenses` catch bloku: ako je greška vezana uz auth (401/JWT), pokušati `supabase.auth.refreshSession()` pa retry jednom
-- Ne prikazivati toast za auth-related greške (prolazne su)
+```text
+┌──────────────────────────────────────────┐
+│  PROJEKT (jedan zapis u bazi)            │
+│  business_profile_id: NULL ili UUID      │
+├──────────────────────────────────────────┤
+│                                          │
+│  OSOBNI POGLED (osobni mod):             │
+│  Pregled | Timeline | Faze |             │
+│  Financiranje | Tim | Transakcije        │
+│                                          │
+│  POSLOVNI POGLED (poslovni mod):         │
+│  Sve gore + Radnici | Suradnici |        │
+│  P&L kartica | Povijest budžeta          │
+│                                          │
+└──────────────────────────────────────────┘
+```
 
-#### 3. useCustomPaymentSources — isti retry pattern
-**`src/hooks/useCustomPaymentSources.ts`**
-- Isti pristup: retry jednom nakon auth greške prije prikazivanja toasta korisniku
+### Promjene
 
-#### 4. Pomoćna funkcija za retry
-**`src/lib/utils.ts`** (ili nova datoteka `src/lib/supabaseRetry.ts`)
-- Kreirati zajedničku `withAuthRetry(fn)` wrapper funkciju koja:
-  1. Izvršava fn()
-  2. Ako dobije auth grešku, pozove `supabase.auth.refreshSession()`
-  3. Retry fn() jednom
-  4. Ako opet padne, tek tada throwaj
+#### 1. `src/types/project.ts`
+- Dodati `business_profile_id?: string | null` u `Project` interface
+
+#### 2. `src/hooks/useProjects.ts`
+- Uvesti `activeBusinessProfileId` iz `AppStateContext`
+- Filtriranje:
+  - **Osobni mod** (`!activeBusinessProfileId`): prikaži projekte gdje `business_profile_id IS NULL` **ILI** je `NULL` (osobni) — svi projekti korisnika bez poslovnog filtera
+  - **Poslovni mod** (`activeBusinessProfileId` aktivan): prikaži samo projekte s tim `business_profile_id`
+- Kreiranje: automatski postavi `business_profile_id` ako je poslovni mod aktivan
+
+#### 3. `src/components/projects/ProjectFullScreenView.tsx`
+- Uvesti `useFeatureAccess` i `useAppState`
+- Izračunati `isBusinessView` = `!!activeBusinessProfileId && project.business_profile_id === activeBusinessProfileId`
+- Sakriti tabove Radnici, Suradnici, P&L karticu i Povijest budžeta kad `!isBusinessView` ili `!hasAccess('workforce')`
+- Osobni pogled: Pregled, Timeline, Faze, Financiranje, Tim, Transakcije
+- Poslovni pogled: sve gore + Radnici, Suradnici, P&L, Povijest budžeta
+
+#### 4. `src/components/projects/ProjectDialog.tsx`
+- Dodati opciju "Poveži s poslovnim profilom" — prikazuje se samo kad korisnik ima poslovni profil i Business tier
+- Kod novog projekta u poslovnom modu, automatski popuniti `business_profile_id`
+
+#### 5. `src/components/projects/ProjectsPanel.tsx`
+- Dodati akciju "Premjesti u poslovni mod" na projektne kartice (kontekst menu ili dugme)
+- Ova akcija samo postavi `business_profile_id` na aktivni profil, zadrži sve podatke
+- Prikazuje se samo za osobne projekte (`!project.business_profile_id`) kad korisnik ima aktivan poslovni profil
+
+#### 6. `src/components/projects/ProjectDetailDialog.tsx`
+- Ista logika uvjetnih tabova kao u FullScreenView
+
+### Migracija osobnog u poslovni
+
+Akcija "Premjesti u poslovni mod":
+1. Ažurira `business_profile_id` na projektu
+2. Sve transakcije vezane uz taj `project_id` automatski dobivaju `business_profile_id` (batch update)
+3. Projekt sada postaje vidljiv i u poslovnom modu s naprednim tabovima
+4. U osobnom modu i dalje ostaje vidljiv, ali s osnovnim tabovima
 
 ### Datoteke za izmjenu
-- `src/contexts/SubscriptionContext.tsx`
-- `src/hooks/useExpenseFetch.ts`
-- `src/hooks/useCustomPaymentSources.ts`
-- `src/lib/utils.ts` (ili nova pomoćna datoteka)
+- `src/types/project.ts`
+- `src/hooks/useProjects.ts`
+- `src/components/projects/ProjectFullScreenView.tsx`
+- `src/components/projects/ProjectDetailDialog.tsx`
+- `src/components/projects/ProjectDialog.tsx`
+- `src/components/projects/ProjectsPanel.tsx`
 
-### Rezultat
-Povremene greške pri isteku tokena više neće biti vidljive korisniku — sustav ih tiho rješava retry-em.
+### Bez migracije baze
+Stupac `business_profile_id` već postoji na tablici `projects`. Samo treba dodati logiku u frontend kod.
 
