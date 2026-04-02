@@ -329,6 +329,25 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Migrate to Business Confirmation */}
+      <AlertDialog open={migrateConfirmOpen} onOpenChange={setMigrateConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('projects.migrateConfirmTitle', 'Premjesti u poslovni mod?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('projects.migrateConfirmMessage', 'Projekt će postati vidljiv u poslovnom modu s naprednim funkcijama (radnici, suradnici, P&L). Svi postojeći podaci će biti sačuvani.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmMigrate}>
+              <Briefcase className="w-4 h-4 mr-2" />
+              {t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
