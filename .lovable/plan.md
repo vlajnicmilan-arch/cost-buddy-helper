@@ -1,48 +1,60 @@
 
 
-## Problem: Duplikacija projekta i gubitak podataka pri migraciji
+## Plan: Popravak podataka i migracije projekata
 
-### Bug 1: Projekt se duplicira u osobnom modu
+### Problem
 
-**Uzrok**: U `fetchProjects` (linija 64-76), dohvat "dijeljenih projekata" (gdje je korisnik član putem `project_members` tablice) **ne filtrira po `business_profile_id`**.
+Dva "Duje Grčić" projekta u bazi:
+- Originalni (`01574b03`) — 166 transakcija, `business_profile_id: NULL`
+- Duplikat (`32432484`) — 0 transakcija, ima `business_profile_id`
 
-Tok problema:
-1. Korisnik migrira projekt → `business_profile_id` se postavi
-2. `fetchProjects()` se pozove
-3. Osobni mod filtrira vlastite projekte po `business_profile_id IS NULL` → migrirani projekt nestaje iz te liste (OK)
-4. ALI: korisnik je automatski dodan u `project_members` putem triggera `add_project_owner_as_member` → projekt se pojavljuje kao "dijeljeni" projekt jer ta druga query nema filter po `business_profile_id`
-5. Rezultat: projekt se pojavljuje kao "shared" projekt u osobnom modu = duplikat
-
-### Bug 2: Projekt u poslovnom modu prikazuje samo budžet
-
-**Uzrok**: Migracija se pokreće dok je korisnik u **osobnom modu** (`activeBusinessProfileId` je null). Nakon poziva `migrateToBusinessMode`, `fetchProjects()` se pozove, ali i dalje koristi `activeBusinessProfileId = null` iz konteksta. Projekt sada ima `business_profile_id` i ne prolazi kroz osobni filter, pa se ne učitava potpuno. Kad korisnik prebaci na poslovni mod, podaci su krnji jer se nisu pravilno refreshali.
+Migracija nije radila na originalu — umjesto toga stvoren je novi prazan projekt.
 
 ### Popravak
 
-#### 1. `useProjects.ts` — filtrirati dijeljene projekte po business kontekstu
-U dijelu koji dohvaća shared projekte (linija 64-76), dodati isti `business_profile_id` filter:
+#### 1. SQL migracija — popraviti podatke
+- Postaviti `business_profile_id` na originalni projekt (`01574b03`)
+- Obrisati duplikat (`32432484`) koji nema podataka
+- Ažurirati `business_profile_id` na svim expenses tog projekta
+
+```sql
+-- Migrate original project to business
+UPDATE projects 
+SET business_profile_id = '556acbc2-93a2-428c-9b93-7b147ad3b088'
+WHERE id = '01574b03-61b4-4b8d-ad28-4a907d6a52ac';
+
+-- Update related expenses
+UPDATE expenses 
+SET business_profile_id = '556acbc2-93a2-428c-9b93-7b147ad3b088'
+WHERE project_id = '01574b03-61b4-4b8d-ad28-4a907d6a52ac'
+AND business_profile_id IS NULL;
+
+-- Delete empty duplicate
+DELETE FROM projects 
+WHERE id = '32432484-71ef-4c0a-997c-e55c723775ec';
+```
+
+#### 2. `useProjects.ts` — popraviti filtriranje osobnog moda
+Osobni mod trenutno prikazuje **samo** projekte gdje `business_profile_id IS NULL`. Migrirani projekti nestaju iz osobnog pogleda.
+
+Promjena: u osobnom modu prikazati **sve** projekte korisnika (uključujući migrirane), ali s osnovnim tabovima.
 
 ```typescript
-// Kad dohvaćamo shared projekte, filtrirati po istom business kontekstu
-let sharedQuery = supabase.from('projects').select('*').in('id', memberProjectIds);
-
-if (activeBusinessProfileId) {
-  sharedQuery = sharedQuery.eq('business_profile_id', activeBusinessProfileId);
-} else {
-  sharedQuery = sharedQuery.is('business_profile_id', null);
+// Osobni mod - prikaži SVE korisnikove projekte
+if (!activeBusinessProfileId) {
+  // Ne filtrirati po business_profile_id — prikaži sve
+  // (business tabovi su ionako skriveni u osobnom modu)
 }
 ```
 
-#### 2. `useProjects.ts` — migracija treba ukloniti projekt iz lokalnog stanja
-Nakon uspješne migracije, umjesto `fetchProjects()` (koji koristi stari kontekst), direktno ukloniti projekt iz stanja:
-
-```typescript
-// Umjesto fetchProjects(), ručno ukloniti iz trenutnog prikaza
-setProjects(prev => prev.filter(p => p.id !== projectId));
-```
-
-Korisnik će vidjeti projekt kad prebaci na poslovni mod.
+Ovim korisnik uvijek vidi svoje projekte u osobnom modu, bez obzira jesu li migrirani ili ne. Razlika je samo u tabovima koji se prikazuju.
 
 ### Datoteke za izmjenu
-- `src/hooks/useProjects.ts` — 2 promjene (filter shared projekata + migracija stanja)
+- Nova SQL migracija (popravak podataka)
+- `src/hooks/useProjects.ts` (filtriranje u osobnom modu)
+
+### Rezultat
+- Projekt "Duje Grčić" prikazuje svih 166 transakcija u poslovnom modu
+- Nema duplikata
+- Osobni mod i dalje vidi projekt, ali s osnovnim tabovima
 
