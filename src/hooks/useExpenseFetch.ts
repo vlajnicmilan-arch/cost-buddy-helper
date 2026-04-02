@@ -6,6 +6,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
+import { withAuthRetry } from '@/lib/supabaseRetry';
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
