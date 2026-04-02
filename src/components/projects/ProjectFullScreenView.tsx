@@ -71,9 +71,19 @@ export const ProjectFullScreenView = ({
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
   
   const currentUserRole = project?.role || 'viewer';
+  const { activeBusinessProfileId } = useAppState();
+  const { hasAccess } = useFeatureAccess();
 
-  // Determine if current user can see a tab
-  const canSeeTab = (tabKey: string) => isManager || isTabVisible(tabKey);
+  // Business view = project has business_profile_id AND we're viewing in business mode
+  const isBusinessView = !!activeBusinessProfileId && project?.business_profile_id === activeBusinessProfileId;
+  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce');
+
+  // Determine if current user can see a tab (with business-level filtering)
+  const canSeeTab = (tabKey: string) => {
+    // Workers and collaborators only visible in business view
+    if ((tabKey === 'workers' || tabKey === 'collaborators') && !canAccessBusinessTabs) return false;
+    return isManager || isTabVisible(tabKey);
+  };
 
   // Reset tab when project changes or closes
   useEffect(() => {
