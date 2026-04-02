@@ -62,10 +62,18 @@ export const useProjects = () => {
 
         let sharedProjects: Project[] = [];
         if (memberProjectIds.length > 0) {
-          const { data: shared, error: sharedError } = await supabase
+          let sharedQuery = supabase
             .from('projects')
             .select('*')
             .in('id', memberProjectIds);
+
+          if (activeBusinessProfileId) {
+            sharedQuery = sharedQuery.eq('business_profile_id', activeBusinessProfileId);
+          } else {
+            sharedQuery = sharedQuery.is('business_profile_id', null);
+          }
+
+          const { data: shared, error: sharedError } = await sharedQuery;
 
           if (!sharedError && shared) {
             sharedProjects = shared.map(p => ({
