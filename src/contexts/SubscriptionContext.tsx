@@ -82,7 +82,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setTrialDaysRemaining(0);
       }
     } catch (err) {
-      console.error('Error checking subscription:', err);
+      // Silently handle auth/JWT errors — they'll resolve on next cycle
+      const errMsg = String((err as any)?.message || err);
+      if (/jwt|token.*expir|unauthorized/i.test(errMsg)) {
+        console.log('[Subscription] Transient auth error, will retry next cycle');
+      } else {
+        console.error('Error checking subscription:', err);
+      }
     } finally {
       setLoading(false);
     }
