@@ -40,9 +40,8 @@ export const useProjects = () => {
 
         if (activeBusinessProfileId) {
           ownedQuery = ownedQuery.eq('business_profile_id', activeBusinessProfileId);
-        } else {
-          ownedQuery = ownedQuery.is('business_profile_id', null);
         }
+        // Personal mode: show ALL projects (including migrated ones with basic tabs)
 
         const { data: ownedProjects, error: ownedError } = await ownedQuery;
 
