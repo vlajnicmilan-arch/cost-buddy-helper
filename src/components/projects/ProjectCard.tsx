@@ -184,6 +184,20 @@ export const ProjectCard = ({
             "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
             "absolute top-2 right-2"
           )}>
+            {onMigrateToBusiness && !project.business_profile_id && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary hover:text-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMigrateToBusiness(project);
+                }}
+                title={t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
+              >
+                <Briefcase className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
