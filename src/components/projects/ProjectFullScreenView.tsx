@@ -383,8 +383,10 @@ export const ProjectFullScreenView = ({
                     </div>
                   )}
 
-                  {/* P&L Card */}
-                  <ProjectProfitLossCard projectId={project.id} />
+                  {/* P&L Card - only in business view */}
+                  {canAccessBusinessTabs && (
+                    <ProjectProfitLossCard projectId={project.id} />
+                  )}
                 </TabsContent>
 
                 {canSeeTab('timeline') && (
