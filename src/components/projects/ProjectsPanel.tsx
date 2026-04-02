@@ -12,11 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTranslation } from 'react-i18next';
-import { Plus, FolderKanban, Loader2, Search, X } from 'lucide-react';
+import { Plus, FolderKanban, Loader2, Search, X, Briefcase } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
