@@ -26,8 +26,12 @@ interface ProjectsPanelProps {
 export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { projects, loading, addProject, updateProject, deleteProject, refetch } = useProjects();
+  const { projects, loading, addProject, updateProject, deleteProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
   const { formatAmount } = useCurrency();
+  const { businessModeEnabled } = useAppState();
+  
+  // Show migrate button only in personal mode when user has business mode enabled
+  const canMigrateToBusiness = !activeBusinessProfileId && businessModeEnabled;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
