@@ -14,6 +14,8 @@ import { useProjectMemberPermissions } from '@/hooks/useProjectMemberPermissions
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useAppState } from '@/contexts/AppStateContext';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History
