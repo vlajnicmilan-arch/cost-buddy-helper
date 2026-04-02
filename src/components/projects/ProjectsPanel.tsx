@@ -153,7 +153,43 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     }
   };
 
-  const handleProjectClick = (project: ProjectWithOwnership) => {
+  const handleMigrateToBusiness = (project: ProjectWithOwnership) => {
+    setProjectToMigrate(project);
+    setMigrateConfirmOpen(true);
+  };
+
+  const confirmMigrate = async () => {
+    if (projectToMigrate) {
+      // Get the first active business profile id from localStorage
+      const storedProfiles = localStorage.getItem('finmate.businessProfiles');
+      let targetProfileId: string | null = null;
+      
+      if (storedProfiles) {
+        try {
+          const profiles = JSON.parse(storedProfiles);
+          if (profiles.length > 0) targetProfileId = profiles[0].id;
+        } catch {}
+      }
+      
+      // If not in localStorage, try fetching from DB
+      if (!targetProfileId) {
+        const { data } = await supabase
+          .from('business_profiles')
+          .select('id')
+          .eq('is_active', true)
+          .limit(1)
+          .single();
+        if (data) targetProfileId = data.id;
+      }
+      
+      if (targetProfileId) {
+        await migrateToBusinessMode(projectToMigrate.id, targetProfileId);
+      }
+      setMigrateConfirmOpen(false);
+      setProjectToMigrate(null);
+    }
+  };
+
     setSelectedProject(project);
     setDetailDialogOpen(true);
   };
