@@ -14,6 +14,8 @@ import { useProjectMemberPermissions } from '@/hooks/useProjectMemberPermissions
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useAppState } from '@/contexts/AppStateContext';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History
@@ -69,9 +71,19 @@ export const ProjectFullScreenView = ({
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
   
   const currentUserRole = project?.role || 'viewer';
+  const { activeBusinessProfileId } = useAppState();
+  const { hasAccess } = useFeatureAccess();
 
-  // Determine if current user can see a tab
-  const canSeeTab = (tabKey: string) => isManager || isTabVisible(tabKey);
+  // Business view = project has business_profile_id AND we're viewing in business mode
+  const isBusinessView = !!activeBusinessProfileId && project?.business_profile_id === activeBusinessProfileId;
+  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce');
+
+  // Determine if current user can see a tab (with business-level filtering)
+  const canSeeTab = (tabKey: string) => {
+    // Workers and collaborators only visible in business view
+    if ((tabKey === 'workers' || tabKey === 'collaborators') && !canAccessBusinessTabs) return false;
+    return isManager || isTabVisible(tabKey);
+  };
 
   // Reset tab when project changes or closes
   useEffect(() => {
@@ -191,6 +203,7 @@ export const ProjectFullScreenView = ({
                       <Wallet className="w-5 h-5 text-muted-foreground" />
                       <span className="font-medium">{t('projects.budgetOverview')}</span>
                     </div>
+                    {canAccessBusinessTabs && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -200,6 +213,7 @@ export const ProjectFullScreenView = ({
                     >
                       <History className="w-4 h-4 text-muted-foreground" />
                     </Button>
+                    )}
                   </div>
                   {budgetWarning && (
                     <Badge variant="destructive" className="gap-1">
@@ -371,8 +385,10 @@ export const ProjectFullScreenView = ({
                     </div>
                   )}
 
-                  {/* P&L Card */}
-                  <ProjectProfitLossCard projectId={project.id} />
+                  {/* P&L Card - only in business view */}
+                  {canAccessBusinessTabs && (
+                    <ProjectProfitLossCard projectId={project.id} />
+                  )}
                 </TabsContent>
 
                 {canSeeTab('timeline') && (

@@ -12,11 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTranslation } from 'react-i18next';
-import { Plus, FolderKanban, Loader2, Search, X } from 'lucide-react';
+import { Plus, FolderKanban, Loader2, Search, X, Briefcase } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
@@ -25,8 +26,12 @@ interface ProjectsPanelProps {
 export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { projects, loading, addProject, updateProject, deleteProject, refetch } = useProjects();
+  const { projects, loading, addProject, updateProject, deleteProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
   const { formatAmount } = useCurrency();
+  const { businessModeEnabled } = useAppState();
+  
+  // Show migrate button only in personal mode when user has business mode enabled
+  const canMigrateToBusiness = !activeBusinessProfileId && businessModeEnabled;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -36,6 +41,8 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null);
+  const [migrateConfirmOpen, setMigrateConfirmOpen] = useState(false);
+  const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
 
   // Handle navigation from notification click
   useEffect(() => {
@@ -146,6 +153,43 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     }
   };
 
+  const handleMigrateToBusiness = (project: ProjectWithOwnership) => {
+    setProjectToMigrate(project);
+    setMigrateConfirmOpen(true);
+  };
+
+  const confirmMigrate = async () => {
+    if (projectToMigrate) {
+      // Get the first active business profile id from localStorage
+      const storedProfiles = localStorage.getItem('finmate.businessProfiles');
+      let targetProfileId: string | null = null;
+      
+      if (storedProfiles) {
+        try {
+          const profiles = JSON.parse(storedProfiles);
+          if (profiles.length > 0) targetProfileId = profiles[0].id;
+        } catch {}
+      }
+      
+      // If not in localStorage, try fetching from DB
+      if (!targetProfileId) {
+        const { data } = await supabase
+          .from('business_profiles')
+          .select('id')
+          .eq('is_active', true)
+          .limit(1)
+          .single();
+        if (data) targetProfileId = data.id;
+      }
+      
+      if (targetProfileId) {
+        await migrateToBusinessMode(projectToMigrate.id, targetProfileId);
+      }
+      setMigrateConfirmOpen(false);
+      setProjectToMigrate(null);
+    }
+  };
+
   const handleProjectClick = (project: ProjectWithOwnership) => {
     setSelectedProject(project);
     setDetailDialogOpen(true);
@@ -238,6 +282,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onClick={handleProjectClick}
+                  onMigrateToBusiness={canMigrateToBusiness ? handleMigrateToBusiness : undefined}
                 />
               </motion.div>
             ))}
@@ -280,6 +325,25 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
               {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Migrate to Business Confirmation */}
+      <AlertDialog open={migrateConfirmOpen} onOpenChange={setMigrateConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('projects.migrateConfirmTitle', 'Premjesti u poslovni mod?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('projects.migrateConfirmMessage', 'Projekt će postati vidljiv u poslovnom modu s naprednim funkcijama (radnici, suradnici, P&L). Svi postojeći podaci će biti sačuvani.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmMigrate}>
+              <Briefcase className="w-4 h-4 mr-2" />
+              {t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

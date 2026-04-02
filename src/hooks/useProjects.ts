@@ -11,7 +11,7 @@ const LOCAL_PROJECTS_KEY = 'finmate.projects';
 export const useProjects = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const { emitAvatarEvent } = useAppState();
+  const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
   const [projects, setProjects] = useState<ProjectWithOwnership[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,12 +31,20 @@ export const useProjects = () => {
         }
       } else {
         // Cloud mode - fetch from Supabase
-        // 1. Fetch owned projects
-        const { data: ownedProjects, error: ownedError } = await supabase
+        // 1. Fetch owned projects with business context filter
+        let ownedQuery = supabase
           .from('projects')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
+
+        if (activeBusinessProfileId) {
+          ownedQuery = ownedQuery.eq('business_profile_id', activeBusinessProfileId);
+        } else {
+          ownedQuery = ownedQuery.is('business_profile_id', null);
+        }
+
+        const { data: ownedProjects, error: ownedError } = await ownedQuery;
 
         if (ownedError) throw ownedError;
 
@@ -100,7 +108,7 @@ export const useProjects = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode, t]);
+  }, [user, isLocalMode, t, activeBusinessProfileId]);
 
   useEffect(() => {
     fetchProjects();
@@ -140,7 +148,7 @@ export const useProjects = () => {
           total_budget: project.total_budget,
           start_date: project.start_date,
           end_date: project.end_date,
-          ...((project as any).business_profile_id ? { business_profile_id: (project as any).business_profile_id } : {}),
+          business_profile_id: (project as any).business_profile_id || activeBusinessProfileId || null,
         })
         .select()
         .single();
@@ -249,6 +257,46 @@ export const useProjects = () => {
     }
   };
 
+  const migrateToBusinessMode = async (projectId: string, businessProfileId: string): Promise<boolean> => {
+    try {
+      if (isLocalMode) {
+        const updated = projects.map(p =>
+          p.id === projectId
+            ? { ...p, business_profile_id: businessProfileId, updated_at: new Date().toISOString() }
+            : p
+        );
+        localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
+        setProjects(updated);
+        toast.success(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
+        return true;
+      }
+
+      // Update project
+      const { error } = await supabase
+        .from('projects')
+        .update({ business_profile_id: businessProfileId })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      // Also update all related transactions
+      await (supabase
+        .from('expenses') as any)
+        .update({ business_profile_id: businessProfileId })
+        .eq('project_id', projectId)
+        .is('business_profile_id', null);
+
+      // Refresh projects
+      await fetchProjects();
+      toast.success(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
+      return true;
+    } catch (error) {
+      console.error('Error migrating project:', error);
+      toast.error(t('common.error'));
+      return false;
+    }
+  };
+
   const getProjectById = (id: string): ProjectWithOwnership | undefined => {
     return projects.find(p => p.id === id);
   };
@@ -259,8 +307,10 @@ export const useProjects = () => {
     addProject,
     updateProject,
     deleteProject,
+    migrateToBusinessMode,
     getProjectById,
     refetch: fetchProjects,
-    isLocalMode
+    isLocalMode,
+    activeBusinessProfileId
   };
 };

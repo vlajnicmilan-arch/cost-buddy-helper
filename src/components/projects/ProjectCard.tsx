@@ -1,5 +1,5 @@
 import { Project, ProjectWithOwnership, PROJECT_STATUS_LABELS, PROJECT_ROLE_LABELS } from '@/types/project';
-import { Pencil, Trash2, Users, Calendar, Target } from 'lucide-react';
+import { Pencil, Trash2, Users, Calendar, Target, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -19,6 +19,7 @@ interface ProjectCardProps {
   onEdit: (project: Project) => void;
   onDelete: (id: string) => void;
   onClick: (project: ProjectWithOwnership) => void;
+  onMigrateToBusiness?: (project: ProjectWithOwnership) => void;
 }
 
 export const ProjectCard = ({
@@ -29,7 +30,8 @@ export const ProjectCard = ({
   milestoneCount,
   onEdit,
   onDelete,
-  onClick
+  onClick,
+  onMigrateToBusiness
 }: ProjectCardProps) => {
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
@@ -182,6 +184,20 @@ export const ProjectCard = ({
             "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
             "absolute top-2 right-2"
           )}>
+            {onMigrateToBusiness && !project.business_profile_id && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary hover:text-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMigrateToBusiness(project);
+                }}
+                title={t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
+              >
+                <Briefcase className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
