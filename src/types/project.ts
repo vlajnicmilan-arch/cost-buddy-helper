@@ -13,6 +13,7 @@ export interface Project {
   total_budget: number;
   start_date?: string | null;
   end_date?: string | null;
+  business_profile_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }
