@@ -90,9 +90,10 @@ export const BudgetMembersTab = ({
       toast.success(t('budget.invitationSent', t('toasts.invitationSent')));
       setInviteEmail('');
       onRefetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending invitation:', error);
-      toast.error(t('common.error'));
+      const msg = error?.message || error?.context?.body?.message || t('common.error');
+      toast.error(msg);
     } finally {
       setSendingInvite(false);
     }

@@ -51,7 +51,12 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Find user by email
-    const { data: usersData } = await adminClient.auth.admin.listUsers();
+    console.log("[SEND-MEMBER-INVITATION] Looking up user by email...");
+    const { data: usersData, error: listUsersError } = await adminClient.auth.admin.listUsers();
+    if (listUsersError) {
+      console.error("[SEND-MEMBER-INVITATION] listUsers error:", listUsersError);
+    }
+    console.log("[SEND-MEMBER-INVITATION] Found", usersData?.users?.length || 0, "users");
     const invitedUser = usersData?.users.find(u => u.email?.toLowerCase() === invitedEmail.toLowerCase());
 
     if (!invitedUser) {
