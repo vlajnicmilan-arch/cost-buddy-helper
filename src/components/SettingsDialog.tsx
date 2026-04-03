@@ -470,12 +470,17 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         const { clearLocalData } = await import('@/lib/storage/indexedDB');
         await clearLocalData();
         
-        // Keep storage config, clear user data only
         const storageConfig = localStorage.getItem('finmate-storage-config');
+        const aiAssistant = localStorage.getItem('ai_assistant_enabled');
+        const simpleMode = localStorage.getItem('simple_mode_enabled');
+        const familyMode = localStorage.getItem('family_mode_enabled');
+        const businessMode = localStorage.getItem('business_mode_enabled');
         localStorage.clear();
-        if (storageConfig) {
-          localStorage.setItem('finmate-storage-config', storageConfig);
-        }
+        if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
+        if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
+        if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
+        if (familyMode) localStorage.setItem('family_mode_enabled', familyMode);
+        if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         
         toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/onboarding';
@@ -543,10 +548,16 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         // 12. Sign out and clear local storage but keep storage config
         await supabase.auth.signOut();
         const storageConfig = localStorage.getItem('finmate-storage-config');
+        const aiAssistant = localStorage.getItem('ai_assistant_enabled');
+        const simpleMode = localStorage.getItem('simple_mode_enabled');
+        const familyMode = localStorage.getItem('family_mode_enabled');
+        const businessMode = localStorage.getItem('business_mode_enabled');
         localStorage.clear();
-        if (storageConfig) {
-          localStorage.setItem('finmate-storage-config', storageConfig);
-        }
+        if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
+        if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
+        if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
+        if (familyMode) localStorage.setItem('family_mode_enabled', familyMode);
+        if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         
         toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/';
