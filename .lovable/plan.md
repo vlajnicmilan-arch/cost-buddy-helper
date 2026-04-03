@@ -1,38 +1,31 @@
 
 
-## Plan: Popravak Install stranice — prikaz samo relevantne platforme s jasnim uputama
+## Plan: Popravak slanja pozivnice za budžet putem emaila
 
-### Problem
-Kad korisnik klikne "Instaliraj aplikaciju" na landing pageu, otvori se /install stranica koja prikazuje:
-- Verziju aplikacije i pomoćne upute (tabovi)
-- Kartice za SVE platforme (iOS, Android, Windows, macOS) — zbunjujuće
-- "Instaliraj sada" gumb samo ako preglednik podržava `beforeinstallprompt` (Chrome na Androidu) — Samsung Internet, Firefox i mnogi drugi preglednici to NE podržavaju
+### Dijagnoza
 
-Rezultat: korisnik vidi samo tekstualne upute bez funkcionalnog gumba.
+Pregledom edge function logova vidljivo je da se `send-member-invitation` funkcija pokreće (boot), ali nema logova o obradi zahtjeva — što ukazuje na to da funkcija nije ispravno deployana ili da postoji tihi crash.
 
-### Rješenje
+Kod same funkcije je ispravan — logika za budget pozivnice radi s pravilnim tablicama i kolonama.
 
-Redizajnirati Install stranicu tako da:
+### Popravak
 
-1. **Automatski prikaže samo detektiranu platformu** (Android/iOS/desktop) umjesto svih kartica
-2. **Na Androidu bez `beforeinstallprompt`**: prikazati vizualne upute specifične za Samsung Internet (⋮ → Dodaj stranicu na → Početni zaslon) i za Chrome (⋮ → Instaliraj aplikaciju) s prepoznavanjem preglednika
-3. **Na iOS-u**: prikazati Safari-specifične upute s ikonama (Share → Dodaj na početni zaslon)
-4. **Dodati link na APK download** kao alternativu za Android korisnike koji žele nativnu verziju
-5. **Ukloniti tab "Upute"** — premjestiti samo najbitnije info u install tab, smanjiti vizualni šum
-6. **Prikazati ostale platforme** u sklopivoj sekciji "Ostale platforme" na dnu
+#### 1. Redeploy `send-member-invitation` edge funkcije
+Funkcija treba biti ponovo deployana kako bi se osiguralo da najnovija verzija koda bude aktivna.
 
-### Izmjene
+#### 2. Poboljšanje error handlinga u funkciji
+Dodati detaljnije logiranje na početku obrade zahtjeva kako bi se budući problemi lakše dijagnosticirali:
+- Log na početku `try` bloka: "Processing request..."
+- Log prije i poslije `listUsers` poziva
+- Log tijela zahtjeva (bez osjetljivih podataka)
 
-**`src/pages/Install.tsx`**:
-- Detektirati preglednik (Samsung Internet, Chrome, Firefox, Safari) uz platformu
-- Prikazati primarne upute samo za detektiranu kombinaciju platforma+preglednik
-- Dodati vizualne korake sa screenshotima/ikonama preglednika
-- Samsung Internet: "⋮ → Dodaj stranicu na → Početni zaslon"
-- Chrome Android: Ako nema `deferredPrompt`, "⋮ → Instaliraj aplikaciju"
-- Opcionalni APK link na dnu za nativnu verziju
-- Ukloniti Tabs komponentu — sve na jednoj čistoj stranici
-- Ostale platforme u Collapsible sekciji
+#### 3. Poboljšanje klijentskog error handlinga
+U `BudgetMembersTab.tsx`, prikazati detaljniju poruku greške korisniku umjesto generičkog "Greška":
+- Logirati cijeli error objekt
+- Prikazati `error.message` ako postoji
 
-### Rezultat
-Korisnik odmah vidi jasne, specifične upute za svoj uređaj i preglednik, bez zbunjujućih opcija za druge platforme.
+### Datoteke za izmjenu
+- `supabase/functions/send-member-invitation/index.ts` — poboljšano logiranje
+- `src/components/budget/BudgetMembersTab.tsx` — bolji error handling
+- Redeploy edge funkcije
 
