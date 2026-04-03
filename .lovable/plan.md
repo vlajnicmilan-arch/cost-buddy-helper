@@ -1,60 +1,37 @@
 
 
-## Plan: Popravak podataka i migracije projekata
+## Plan: Lokalno spremanje podataka na nativnoj aplikaciji
 
-### Problem
+### Trenutno stanje
+- Aplikacija koristi Capacitor s `@capacitor/camera` za skeniranje
+- Svi podaci idu u cloud (Supabase)
+- `localStorage` koristi se za offline queue i postavke
 
-Dva "Duje Grčić" projekta u bazi:
-- Originalni (`01574b03`) — 166 transakcija, `business_profile_id: NULL`
-- Duplikat (`32432484`) — 0 transakcija, ima `business_profile_id`
+### Što dodati
 
-Migracija nije radila na originalu — umjesto toga stvoren je novi prazan projekt.
+#### 1. `@capacitor/preferences` — Lokalne postavke
+Lagani key-value store za korisničke preferencije, cache kategorija, zadnje korištene postavke. Radi na svim platformama (native + web fallback na localStorage).
 
-### Popravak
+#### 2. `@capacitor/filesystem` — Lokalno spremanje slika
+Skenirane slike računa mogu se spremiti lokalno na uređaj prije/umjesto uploada u cloud. Korisno za offline scenarije.
 
-#### 1. SQL migracija — popraviti podatke
-- Postaviti `business_profile_id` na originalni projekt (`01574b03`)
-- Obrisati duplikat (`32432484`) koji nema podataka
-- Ažurirati `business_profile_id` na svim expenses tog projekta
+#### 3. Hybrid strategija (preporučeno)
+- **Scan** → slika se spremi lokalno (`Filesystem`)
+- **AI analiza** → kad ima internet, pošalje se na cloud
+- **Rezultat** → spremi se lokalno (`Preferences`) + sync u cloud kad je dostupan
+- Korisnik može pregledavati skenirane račune i offline
 
-```sql
--- Migrate original project to business
-UPDATE projects 
-SET business_profile_id = '556acbc2-93a2-428c-9b93-7b147ad3b088'
-WHERE id = '01574b03-61b4-4b8d-ad28-4a907d6a52ac';
+### Implementacija
 
--- Update related expenses
-UPDATE expenses 
-SET business_profile_id = '556acbc2-93a2-428c-9b93-7b147ad3b088'
-WHERE project_id = '01574b03-61b4-4b8d-ad28-4a907d6a52ac'
-AND business_profile_id IS NULL;
+**Nove datoteke:**
+- `src/hooks/useLocalStorage.ts` — wrapper oko `@capacitor/preferences` s web fallbackom
+- `src/hooks/useLocalFileCache.ts` — spremanje/čitanje slika lokalno putem `@capacitor/filesystem`
 
--- Delete empty duplicate
-DELETE FROM projects 
-WHERE id = '32432484-71ef-4c0a-997c-e55c723775ec';
-```
+**Izmjene:**
+- `src/hooks/useReceiptScanner.ts` — dodati opciju lokalnog cacheiranja skeniranih slika
+- `src/components/AddExpenseDialog.tsx` — koristiti lokalni cache za prikaz slika offline
+- `package.json` — dodati `@capacitor/preferences` i `@capacitor/filesystem`
 
-#### 2. `useProjects.ts` — popraviti filtriranje osobnog moda
-Osobni mod trenutno prikazuje **samo** projekte gdje `business_profile_id IS NULL`. Migrirani projekti nestaju iz osobnog pogleda.
-
-Promjena: u osobnom modu prikazati **sve** projekte korisnika (uključujući migrirane), ali s osnovnim tabovima.
-
-```typescript
-// Osobni mod - prikaži SVE korisnikove projekte
-if (!activeBusinessProfileId) {
-  // Ne filtrirati po business_profile_id — prikaži sve
-  // (business tabovi su ionako skriveni u osobnom modu)
-}
-```
-
-Ovim korisnik uvijek vidi svoje projekte u osobnom modu, bez obzira jesu li migrirani ili ne. Razlika je samo u tabovima koji se prikazuju.
-
-### Datoteke za izmjenu
-- Nova SQL migracija (popravak podataka)
-- `src/hooks/useProjects.ts` (filtriranje u osobnom modu)
-
-### Rezultat
-- Projekt "Duje Grčić" prikazuje svih 166 transakcija u poslovnom modu
-- Nema duplikata
-- Osobni mod i dalje vidi projekt, ali s osnovnim tabovima
+### Napomena
+Nakon dodavanja novih pluginova, korisnik mora pokrenuti `npx cap sync android` i napraviti novi build u Android Studiju.
 
