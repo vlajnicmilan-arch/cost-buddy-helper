@@ -201,6 +201,17 @@ export const useReceiptScanner = () => {
       };
 
       setParsedData(result);
+
+      // Cache result locally for offline access
+      try {
+        await LocalStorage.setJSON(`receipt_cache_${Date.now()}`, result);
+        // Save first image locally
+        if (compressedImages[0]) {
+          await LocalFileCache.saveReceiptImage(compressedImages[0]);
+        }
+      } catch (cacheErr) {
+        console.warn('Failed to cache receipt locally:', cacheErr);
+      }
       
       // Show different message if custom source was matched
       if (data.custom_payment_source_id) {
