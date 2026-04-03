@@ -12,6 +12,7 @@ serve(async (req) => {
   }
 
   try {
+    console.log("[SEND-MEMBER-INVITATION] Processing request...");
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
