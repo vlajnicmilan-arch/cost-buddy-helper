@@ -1,31 +1,32 @@
 
 
-## Plan: Popravak slanja pozivnice za budžet putem emaila
+## Plan: Popravak trajnosti AI asistent postavke
 
-### Dijagnoza
+### Problem
+Kad korisnik isključi AI asistenta u postavkama, postavka se gubi jer:
+1. Logout poziva `localStorage.clear()` na 4 mjesta u kodu (Index.tsx, PageHeader.tsx, SettingsDialog.tsx ×2)
+2. Samo `theme` i `finmate-storage-config` se čuvaju nakon clear-a
+3. `ai_assistant_enabled` se briše → pri ponovnoj prijavi defaultira na `true`
 
-Pregledom edge function logova vidljivo je da se `send-member-invitation` funkcija pokreće (boot), ali nema logova o obradi zahtjeva — što ukazuje na to da funkcija nije ispravno deployana ili da postoji tihi crash.
+### Rješenje
+Sačuvati korisničke postavke (AI asistent, simple mode, family mode, business mode) tijekom logout-a, isto kao što se čuva `theme`.
 
-Kod same funkcije je ispravan — logika za budget pozivnice radi s pravilnim tablicama i kolonama.
+### Izmjene
 
-### Popravak
+**4 lokacije u 3 datoteke** — svaka `localStorage.clear()` treba sačuvati korisničke postavke:
 
-#### 1. Redeploy `send-member-invitation` edge funkcije
-Funkcija treba biti ponovo deployana kako bi se osiguralo da najnovija verzija koda bude aktivna.
+1. **`src/pages/Index.tsx`** (linija ~388-391)
+2. **`src/components/PageHeader.tsx`** (linija ~36-40)
+3. **`src/components/SettingsDialog.tsx`** (linija ~473-477 i ~544-548)
 
-#### 2. Poboljšanje error handlinga u funkciji
-Dodati detaljnije logiranje na početku obrade zahtjeva kako bi se budući problemi lakše dijagnosticirali:
-- Log na početku `try` bloka: "Processing request..."
-- Log prije i poslije `listUsers` poziva
-- Log tijela zahtjeva (bez osjetljivih podataka)
+Na svakoj lokaciji, prije `localStorage.clear()`, sačuvati ključeve:
+- `ai_assistant_enabled`
+- `simple_mode_enabled`
+- `family_mode_enabled`
+- `business_mode_enabled`
 
-#### 3. Poboljšanje klijentskog error handlinga
-U `BudgetMembersTab.tsx`, prikazati detaljniju poruku greške korisniku umjesto generičkog "Greška":
-- Logirati cijeli error objekt
-- Prikazati `error.message` ako postoji
+I vratiti ih nakon clear-a, zajedno s `theme` i `finmate-storage-config`.
 
-### Datoteke za izmjenu
-- `supabase/functions/send-member-invitation/index.ts` — poboljšano logiranje
-- `src/components/budget/BudgetMembersTab.tsx` — bolji error handling
-- Redeploy edge funkcije
+### Rezultat
+Korisničke postavke preživljavaju logout/login ciklus i restart aplikacije.
 
