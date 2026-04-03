@@ -1,37 +1,38 @@
 
 
-## Plan: Lokalno spremanje podataka na nativnoj aplikaciji
+## Plan: Popravak Install stranice — prikaz samo relevantne platforme s jasnim uputama
 
-### Trenutno stanje
-- Aplikacija koristi Capacitor s `@capacitor/camera` za skeniranje
-- Svi podaci idu u cloud (Supabase)
-- `localStorage` koristi se za offline queue i postavke
+### Problem
+Kad korisnik klikne "Instaliraj aplikaciju" na landing pageu, otvori se /install stranica koja prikazuje:
+- Verziju aplikacije i pomoćne upute (tabovi)
+- Kartice za SVE platforme (iOS, Android, Windows, macOS) — zbunjujuće
+- "Instaliraj sada" gumb samo ako preglednik podržava `beforeinstallprompt` (Chrome na Androidu) — Samsung Internet, Firefox i mnogi drugi preglednici to NE podržavaju
 
-### Što dodati
+Rezultat: korisnik vidi samo tekstualne upute bez funkcionalnog gumba.
 
-#### 1. `@capacitor/preferences` — Lokalne postavke
-Lagani key-value store za korisničke preferencije, cache kategorija, zadnje korištene postavke. Radi na svim platformama (native + web fallback na localStorage).
+### Rješenje
 
-#### 2. `@capacitor/filesystem` — Lokalno spremanje slika
-Skenirane slike računa mogu se spremiti lokalno na uređaj prije/umjesto uploada u cloud. Korisno za offline scenarije.
+Redizajnirati Install stranicu tako da:
 
-#### 3. Hybrid strategija (preporučeno)
-- **Scan** → slika se spremi lokalno (`Filesystem`)
-- **AI analiza** → kad ima internet, pošalje se na cloud
-- **Rezultat** → spremi se lokalno (`Preferences`) + sync u cloud kad je dostupan
-- Korisnik može pregledavati skenirane račune i offline
+1. **Automatski prikaže samo detektiranu platformu** (Android/iOS/desktop) umjesto svih kartica
+2. **Na Androidu bez `beforeinstallprompt`**: prikazati vizualne upute specifične za Samsung Internet (⋮ → Dodaj stranicu na → Početni zaslon) i za Chrome (⋮ → Instaliraj aplikaciju) s prepoznavanjem preglednika
+3. **Na iOS-u**: prikazati Safari-specifične upute s ikonama (Share → Dodaj na početni zaslon)
+4. **Dodati link na APK download** kao alternativu za Android korisnike koji žele nativnu verziju
+5. **Ukloniti tab "Upute"** — premjestiti samo najbitnije info u install tab, smanjiti vizualni šum
+6. **Prikazati ostale platforme** u sklopivoj sekciji "Ostale platforme" na dnu
 
-### Implementacija
+### Izmjene
 
-**Nove datoteke:**
-- `src/hooks/useLocalStorage.ts` — wrapper oko `@capacitor/preferences` s web fallbackom
-- `src/hooks/useLocalFileCache.ts` — spremanje/čitanje slika lokalno putem `@capacitor/filesystem`
+**`src/pages/Install.tsx`**:
+- Detektirati preglednik (Samsung Internet, Chrome, Firefox, Safari) uz platformu
+- Prikazati primarne upute samo za detektiranu kombinaciju platforma+preglednik
+- Dodati vizualne korake sa screenshotima/ikonama preglednika
+- Samsung Internet: "⋮ → Dodaj stranicu na → Početni zaslon"
+- Chrome Android: Ako nema `deferredPrompt`, "⋮ → Instaliraj aplikaciju"
+- Opcionalni APK link na dnu za nativnu verziju
+- Ukloniti Tabs komponentu — sve na jednoj čistoj stranici
+- Ostale platforme u Collapsible sekciji
 
-**Izmjene:**
-- `src/hooks/useReceiptScanner.ts` — dodati opciju lokalnog cacheiranja skeniranih slika
-- `src/components/AddExpenseDialog.tsx` — koristiti lokalni cache za prikaz slika offline
-- `package.json` — dodati `@capacitor/preferences` i `@capacitor/filesystem`
-
-### Napomena
-Nakon dodavanja novih pluginova, korisnik mora pokrenuti `npx cap sync android` i napraviti novi build u Android Studiju.
+### Rezultat
+Korisnik odmah vidi jasne, specifične upute za svoj uređaj i preglednik, bez zbunjujućih opcija za druge platforme.
 
