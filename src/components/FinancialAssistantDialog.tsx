@@ -606,18 +606,23 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
   );
 };
 
-// Extract markdown table data from content
+// Extract markdown table data from content — robust parser
 function extractTableData(content: string): { headers: string[]; rows: string[][] } | null {
-  const lines = content.split('\n');
+  // Strip code fences
+  const cleaned = content.replace(/```[a-z]*\n?/gi, '');
+  const lines = cleaned.split('\n');
   const tableLines: string[] = [];
-  let inTable = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-      inTable = true;
-      tableLines.push(trimmed);
-    } else if (inTable) {
+    // Skip empty lines and non-table lines but don't break collection
+    if (!trimmed) continue;
+    if (trimmed.startsWith('|') && trimmed.includes('|', 1)) {
+      // Ensure line ends with | (allow trailing whitespace)
+      const normalized = trimmed.endsWith('|') ? trimmed : trimmed + '|';
+      tableLines.push(normalized);
+    } else if (tableLines.length > 0) {
+      // Non-table line after we started collecting — stop
       break;
     }
   }
@@ -627,10 +632,20 @@ function extractTableData(content: string): { headers: string[]; rows: string[][
   const parseLine = (line: string) =>
     line.split('|').slice(1, -1).map(c => c.trim());
 
-  const headers = parseLine(tableLines[0]);
-  // Skip separator line (index 1)
-  const rows = tableLines.slice(2).map(parseLine);
+  // Find separator line (contains only -, :, |, spaces)
+  let separatorIdx = -1;
+  for (let i = 0; i < tableLines.length; i++) {
+    if (/^\|[\s\-:|]+\|$/.test(tableLines[i])) {
+      separatorIdx = i;
+      break;
+    }
+  }
+  if (separatorIdx < 1) return null;
 
+  const headers = parseLine(tableLines[separatorIdx - 1]);
+  const rows = tableLines.slice(separatorIdx + 1).map(parseLine).filter(r => r.length === headers.length);
+
+  if (rows.length === 0) return null;
   return { headers, rows };
 }
 
