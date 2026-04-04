@@ -13,7 +13,7 @@ import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useInstallments } from '@/hooks/useInstallments';
-import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank } from 'lucide-react';
+import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
