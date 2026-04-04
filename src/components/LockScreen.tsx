@@ -7,12 +7,13 @@ import { useTranslation } from 'react-i18next';
 import { useHaptics } from '@/hooks/useHaptics';
 
 export const LockScreen = () => {
-  const { isLocked, unlock, unlockBiometric, biometricEnabled } = useAppLock();
+  const { isLocked, unlock, unlockBiometric, biometricEnabled, biometricType, loading } = useAppLock();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
   const { t } = useTranslation();
   const biometricAttempted = useRef(false);
+  const { lightTap, errorVibration } = useHaptics();
 
   // Try biometric on mount
   useEffect(() => {
