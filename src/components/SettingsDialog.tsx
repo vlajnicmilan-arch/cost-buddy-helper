@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { exportTextFile } from '@/lib/fileExport';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -274,15 +275,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         }, null, 2);
       }
 
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await exportTextFile(jsonData, `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
 
       toast.success(t('settings.exportSuccess', 'Backup uspješno izvezen'));
     } catch (err) {

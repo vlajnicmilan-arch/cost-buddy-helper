@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { getCategoryInfo } from '@/types/expense';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportPDFDoc } from '@/lib/fileExport';
 
 interface Expense {
   id: string;
@@ -91,7 +92,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
       .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
   };
 
-  const exportDayPDF = () => {
+  const exportDayPDF = async () => {
     if (!selectedDay || !selectedDayData || selectedDayData.transactions.length === 0) return;
 
     const dateStr = `${selectedDay}. ${monthName}`;
@@ -149,7 +150,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
     doc.setFont('helvetica', 'bold');
     doc.text(`${toAscii(t('dashboard.calendar.net', 'Neto'))}: ${net >= 0 ? '+' : ''}${formatAmount(net)}`, 196, y, { align: 'right' });
 
-    doc.save(`${toAscii(t('dashboard.calendar.title', 'Kalendar'))}_${selectedDay}_${month + 1}_${year}.pdf`);
+    await exportPDFDoc(doc, `${toAscii(t('dashboard.calendar.title', 'Kalendar'))}_${selectedDay}_${month + 1}_${year}.pdf`);
   };
 
   return (
