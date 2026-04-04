@@ -514,7 +514,14 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     validItems?: ReceiptItem[]
   ) => {
     try {
-      await onAdd(expense, validItems);
+      // Attach location if set
+      const expenseWithLocation = {
+        ...expense,
+        ...(locationName ? { location_name: locationName, location_coords: locationCoords } : {}),
+      };
+      await onAdd(expenseWithLocation, validItems);
+      successVibration();
+      maybeRequestReview();
       // Record merchant→category habit for auto-categorization
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
         recordHabit(expense.merchant_name, expense.category);
