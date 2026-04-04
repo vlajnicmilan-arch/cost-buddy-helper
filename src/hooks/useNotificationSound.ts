@@ -41,6 +41,10 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 
 export const showBrowserNotification = async (title: string, body: string): Promise<void> => {
   if (!getPushNotificationsEnabled()) return;
+
+  // On native Capacitor, local notifications are handled by the OS push system
+  // For local alerts on native, we could use LocalNotifications plugin in the future
+
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const options: NotificationOptions = {
