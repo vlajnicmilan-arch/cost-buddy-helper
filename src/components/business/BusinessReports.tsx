@@ -9,6 +9,7 @@ import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, en
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportPDFDoc } from '@/lib/fileExport';
 import { useTranslation } from 'react-i18next';
 
 type Period = 'monthly' | 'quarterly' | 'yearly';
