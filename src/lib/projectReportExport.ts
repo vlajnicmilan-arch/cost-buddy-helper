@@ -74,7 +74,7 @@ const toAscii = (text: string): string => {
     .replace(/Ž/g, 'Z');
 };
 
-export const generateProjectPDFReport = (data: ProjectReportData): void => {
+export const generateProjectPDFReport = async (data: ProjectReportData): Promise<void> => {
   const doc = new jsPDF();
   
   // Title
