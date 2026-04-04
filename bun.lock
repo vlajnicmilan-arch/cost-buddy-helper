@@ -54,6 +54,7 @@
         "@supabase/supabase-js": "^2.91.0",
         "@tanstack/react-query": "^5.83.0",
         "@tanstack/react-virtual": "^3.13.18",
+        "capacitor-rate-app": "^4.0.3",
         "capacitor-secure-storage-plugin": "^0.13.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -886,6 +887,8 @@
     "caniuse-lite": ["caniuse-lite@1.0.30001765", "", {}, "sha512-LWcNtSyZrakjECqmpP4qdg0MMGdN368D7X8XvvAqOcqMv0RxnlqVKZl2V6/mBR68oYMxOZPLw/gO7DuisMHUvQ=="],
 
     "canvg": ["canvg@3.0.11", "", { "dependencies": { "@babel/runtime": "^7.12.5", "@types/raf": "^3.4.0", "core-js": "^3.8.3", "raf": "^3.4.1", "regenerator-runtime": "^0.13.7", "rgbcolor": "^1.0.1", "stackblur-canvas": "^2.0.0", "svg-pathdata": "^6.0.3" } }, "sha512-5ON+q7jCTgMp9cjpu4Jo6XbvfYwSB2Ow3kzHKfIyJfaCAOHLbdKPQqGKgfED/R5B+3TFFfe8pegYA+b423SRyA=="],
+
+    "capacitor-rate-app": ["capacitor-rate-app@4.0.3", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/capacitor-rate-app/-/capacitor-rate-app-4.0.3.tgz", { "peerDependencies": { "@capacitor/core": "^5.0.0" } }, "sha512-HdTftIzBSfcNfbjQFCtvdvFU83MPCt11H/QXV4t7jctLelA8jXu3qee9MiZ4dqDc+kwNoufcQ95ncoCvn5viig=="],
 
     "capacitor-secure-storage-plugin": ["capacitor-secure-storage-plugin@0.13.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/capacitor-secure-storage-plugin/-/capacitor-secure-storage-plugin-0.13.0.tgz", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-+rLC/9Z0LTaRRt6L6HjBwcDh5gqgI3NPmDSwo4hk41XQOy3EBrRo81VleIqFsowsMA3oMT+E59Bl8/HiWk0nhQ=="],
 
