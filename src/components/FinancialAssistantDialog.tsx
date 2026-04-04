@@ -679,7 +679,47 @@ function exportToPDF(headers: string[], rows: string[][]) {
     alternateRowStyles: { fillColor: [245, 247, 250] },
   });
 
-  doc.save(`izvoz_${new Date().toISOString().slice(0, 10)}.pdf`);
+  // Use Blob for better mobile compatibility
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `izvoz_${new Date().toISOString().slice(0, 10)}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportResponseAsPDF(content: string) {
+  const doc = new jsPDF();
+  doc.setFont('helvetica');
+  doc.setFontSize(14);
+  doc.text('V&M Balance - AI Odgovor', 14, 15);
+  doc.setFontSize(9);
+  doc.text(`Datum: ${new Date().toLocaleDateString('hr-HR')}`, 14, 22);
+
+  // Clean markdown syntax for plain text
+  const cleanText = content
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/```[a-z]*\n?/gi, '')
+    .replace(/`(.*?)`/g, '$1');
+
+  const lines = doc.splitTextToSize(cleanText, 180);
+  doc.setFontSize(10);
+  doc.text(lines, 14, 30);
+
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `odgovor_${new Date().toISOString().slice(0, 10)}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function printTable(headers: string[], rows: string[][]) {
@@ -706,6 +746,17 @@ function printTable(headers: string[], rows: string[][]) {
     w.document.write(html);
     w.document.close();
     setTimeout(() => { w.print(); }, 300);
+  } else {
+    // Fallback if popup blocked — download as HTML
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ispis_${new Date().toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 }
 
