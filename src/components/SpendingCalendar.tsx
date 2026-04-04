@@ -150,7 +150,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
     doc.setFont('helvetica', 'bold');
     doc.text(`${toAscii(t('dashboard.calendar.net', 'Neto'))}: ${net >= 0 ? '+' : ''}${formatAmount(net)}`, 196, y, { align: 'right' });
 
-    doc.save(`${toAscii(t('dashboard.calendar.title', 'Kalendar'))}_${selectedDay}_${month + 1}_${year}.pdf`);
+    await exportPDFDoc(doc, `${toAscii(t('dashboard.calendar.title', 'Kalendar'))}_${selectedDay}_${month + 1}_${year}.pdf`);
   };
 
   return (

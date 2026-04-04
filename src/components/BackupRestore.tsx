@@ -158,15 +158,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
         }, null, 2);
       }
 
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await exportTextFile(jsonData, `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
 
       emitAvatarEvent('proud', 'Podatci su sigurni! 🔒');
       toast.success(t('backup.exportSuccess'));
