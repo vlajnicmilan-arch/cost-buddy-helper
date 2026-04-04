@@ -213,7 +213,8 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       doc.setFont('helvetica', 'bold');
       doc.text(`UKUPNO: ${formatAmount(totalItemsAmount)}`, 14, finalY + 10);
 
-      doc.save(`artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`);
+      const pdfFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`;
+      await exportPDFDoc(doc, pdfFileName);
       toast.success('PDF izvjesce generirano!');
     } catch {
       toast.error('Greska pri generiranju PDF-a');
