@@ -270,13 +270,8 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
           })),
         })),
       };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const jsonFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.json`;
+      await exportTextFile(JSON.stringify(data, null, 2), jsonFileName, 'application/json');
       toast.success('JSON datoteka generirana!');
     } catch {
       toast.error('Greska pri generiranju JSON-a');
