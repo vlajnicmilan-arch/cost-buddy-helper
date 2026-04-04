@@ -138,7 +138,7 @@ export const LockScreen = () => {
             }`}
             disabled={!biometricEnabled}
           >
-            <Fingerprint className="w-7 h-7" />
+            <BiometricIcon className="w-7 h-7" />
           </button>
           
           <button
