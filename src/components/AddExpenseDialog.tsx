@@ -1927,8 +1927,47 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 </div>
               )}
 
+              {/* Location toggle */}
+              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (locationName) {
+                      setLocationName(null);
+                      setLocationCoords(null);
+                    } else {
+                      const loc = await getCurrentLocation();
+                      if (loc) {
+                        setLocationName(loc.name);
+                        setLocationCoords(loc.coords);
+                        toast.success(t('transactions.locationAdded', 'Lokacija dodana'));
+                      } else {
+                        toast.error(t('transactions.locationError', 'Nije moguće dohvatiti lokaciju'));
+                      }
+                    }
+                  }}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <MapPin className={cn("w-4 h-4", locationName ? "text-primary" : "text-muted-foreground")} />
+                  {locationLoading ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : locationName ? (
+                    <span className="text-primary text-xs truncate max-w-[200px]">{locationName}</span>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">{t('transactions.addLocation', 'Dodaj lokaciju')}</span>
+                  )}
+                </button>
+                {locationName && (
+                  <button
+                    type="button"
+                    onClick={() => { setLocationName(null); setLocationCoords(null); }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
 
-              {/* Items Section - Only for expenses */}
               {type === 'expense' && (
                 <Collapsible open={showItems} onOpenChange={setShowItems}>
                   <div className="flex items-center justify-between">
