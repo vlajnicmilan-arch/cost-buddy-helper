@@ -62,7 +62,7 @@ const getMilestoneNames = (ids: string[] | null | undefined, milestones: { id: s
 
 // ============= PDF =============
 
-export const generateWorkRecordsPDF = (data: WorkExportConfig): void => {
+export const generateWorkRecordsPDF = async (data: WorkExportConfig): Promise<void> => {
   const doc = new jsPDF();
 
   doc.setFontSize(18);
