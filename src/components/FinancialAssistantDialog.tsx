@@ -606,18 +606,23 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
   );
 };
 
-// Extract markdown table data from content
+// Extract markdown table data from content — robust parser
 function extractTableData(content: string): { headers: string[]; rows: string[][] } | null {
-  const lines = content.split('\n');
+  // Strip code fences
+  const cleaned = content.replace(/```[a-z]*\n?/gi, '');
+  const lines = cleaned.split('\n');
   const tableLines: string[] = [];
-  let inTable = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-      inTable = true;
-      tableLines.push(trimmed);
-    } else if (inTable) {
+    // Skip empty lines and non-table lines but don't break collection
+    if (!trimmed) continue;
+    if (trimmed.startsWith('|') && trimmed.includes('|', 1)) {
+      // Ensure line ends with | (allow trailing whitespace)
+      const normalized = trimmed.endsWith('|') ? trimmed : trimmed + '|';
+      tableLines.push(normalized);
+    } else if (tableLines.length > 0) {
+      // Non-table line after we started collecting — stop
       break;
     }
   }
@@ -627,10 +632,20 @@ function extractTableData(content: string): { headers: string[]; rows: string[][
   const parseLine = (line: string) =>
     line.split('|').slice(1, -1).map(c => c.trim());
 
-  const headers = parseLine(tableLines[0]);
-  // Skip separator line (index 1)
-  const rows = tableLines.slice(2).map(parseLine);
+  // Find separator line (contains only -, :, |, spaces)
+  let separatorIdx = -1;
+  for (let i = 0; i < tableLines.length; i++) {
+    if (/^\|[\s\-:|]+\|$/.test(tableLines[i])) {
+      separatorIdx = i;
+      break;
+    }
+  }
+  if (separatorIdx < 1) return null;
 
+  const headers = parseLine(tableLines[separatorIdx - 1]);
+  const rows = tableLines.slice(separatorIdx + 1).map(parseLine).filter(r => r.length === headers.length);
+
+  if (rows.length === 0) return null;
   return { headers, rows };
 }
 
@@ -664,7 +679,47 @@ function exportToPDF(headers: string[], rows: string[][]) {
     alternateRowStyles: { fillColor: [245, 247, 250] },
   });
 
-  doc.save(`izvoz_${new Date().toISOString().slice(0, 10)}.pdf`);
+  // Use Blob for better mobile compatibility
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `izvoz_${new Date().toISOString().slice(0, 10)}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportResponseAsPDF(content: string) {
+  const doc = new jsPDF();
+  doc.setFont('helvetica');
+  doc.setFontSize(14);
+  doc.text('V&M Balance - AI Odgovor', 14, 15);
+  doc.setFontSize(9);
+  doc.text(`Datum: ${new Date().toLocaleDateString('hr-HR')}`, 14, 22);
+
+  // Clean markdown syntax for plain text
+  const cleanText = content
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/```[a-z]*\n?/gi, '')
+    .replace(/`(.*?)`/g, '$1');
+
+  const lines = doc.splitTextToSize(cleanText, 180);
+  doc.setFontSize(10);
+  doc.text(lines, 14, 30);
+
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `odgovor_${new Date().toISOString().slice(0, 10)}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function printTable(headers: string[], rows: string[][]) {
@@ -691,6 +746,17 @@ function printTable(headers: string[], rows: string[][]) {
     w.document.write(html);
     w.document.close();
     setTimeout(() => { w.print(); }, 300);
+  } else {
+    // Fallback if popup blocked — download as HTML
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ispis_${new Date().toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 }
 
@@ -722,8 +788,8 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown>{message.content}</ReactMarkdown>
             </div>
-            {tableData && (
-              <div className="flex gap-2 mt-2 pt-2 border-t border-border/50">
+            {tableData ? (
+              <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
                 <Button
                   variant="outline"
                   size="sm"
@@ -750,6 +816,18 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
                 >
                   <Printer className="w-3 h-3" />
                   Ispis
+                </Button>
+              </div>
+            ) : message.content.length > 100 && (
+              <div className="flex gap-2 mt-2 pt-2 border-t border-border/50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => exportResponseAsPDF(message.content)}
+                >
+                  <FileText className="w-3 h-3" />
+                  Izvezi PDF
                 </Button>
               </div>
             )}
