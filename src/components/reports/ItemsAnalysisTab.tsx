@@ -168,7 +168,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
     }));
   }, [categoryGroups]);
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
       const doc = new jsPDF();
       doc.setFont('helvetica');
