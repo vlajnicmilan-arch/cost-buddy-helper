@@ -71,7 +71,16 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
       ]),
     });
 
-    doc.save(`${companyName.replace(/\s+/g, '_')}_report_${format(now, 'yyyyMMdd')}.pdf`);
+    const fileName = `${companyName.replace(/\s+/g, '_')}_report_${format(now, 'yyyyMMdd')}.pdf`;
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
