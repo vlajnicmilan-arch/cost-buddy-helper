@@ -92,7 +92,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
       .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
   };
 
-  const exportDayPDF = () => {
+  const exportDayPDF = async () => {
     if (!selectedDay || !selectedDayData || selectedDayData.transactions.length === 0) return;
 
     const dateStr = `${selectedDay}. ${monthName}`;
