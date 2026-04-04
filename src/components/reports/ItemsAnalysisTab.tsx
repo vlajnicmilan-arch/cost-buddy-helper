@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
 
 interface ItemWithCategory extends ReceiptItem {
   category: string;
@@ -167,7 +168,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
     }));
   }, [categoryGroups]);
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
       const doc = new jsPDF();
       doc.setFont('helvetica');
@@ -212,14 +213,15 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       doc.setFont('helvetica', 'bold');
       doc.text(`UKUPNO: ${formatAmount(totalItemsAmount)}`, 14, finalY + 10);
 
-      doc.save(`artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`);
+      const pdfFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`;
+      await exportPDFDoc(doc, pdfFileName);
       toast.success('PDF izvjesce generirano!');
     } catch {
       toast.error('Greska pri generiranju PDF-a');
     }
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
       const header = 'Kategorija,Artikl,Kolicina,Jedinicna cijena,Ukupno,Datum,Opis transakcije\n';
       const rows: string[] = [];
@@ -234,21 +236,16 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       });
       // Grand total
       rows.push(`"SVEUKUPNO","",${allItems.length},,${totalItemsAmount},"",""`);
-      const bom = '\uFEFF';
-      const blob = new Blob([bom + header + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const csvContent = header + rows.join('\n');
+      const csvFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.csv`;
+      await exportTextFile(csvContent, csvFileName, 'text/csv', true);
       toast.success('CSV datoteka generirana!');
     } catch {
       toast.error('Greska pri generiranju CSV-a');
     }
   };
 
-  const handleExportJSON = () => {
+  const handleExportJSON = async () => {
     try {
       const data = {
         period: {
@@ -273,13 +270,8 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
           })),
         })),
       };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const jsonFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.json`;
+      await exportTextFile(JSON.stringify(data, null, 2), jsonFileName, 'application/json');
       toast.success('JSON datoteka generirana!');
     } catch {
       toast.error('Greska pri generiranju JSON-a');

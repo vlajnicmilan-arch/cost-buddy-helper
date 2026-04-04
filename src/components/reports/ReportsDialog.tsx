@@ -568,9 +568,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     };
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
-      generatePDFReport(getReportData());
+      await generatePDFReport(getReportData());
       toast.success(t('toasts.pdfReportGenerated'));
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -578,9 +578,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     }
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
-      generateCSVReport(getReportData());
+      await generateCSVReport(getReportData());
       toast.success('CSV datoteka generirana!');
     } catch (error) {
       console.error('Error generating CSV:', error);
@@ -588,9 +588,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     }
   };
 
-  const handleExportJSON = () => {
+  const handleExportJSON = async () => {
     try {
-      generateJSONExport(getReportData());
+      await generateJSONExport(getReportData());
       toast.success('JSON datoteka generirana!');
     } catch (error) {
       console.error('Error generating JSON:', error);
@@ -609,9 +609,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     };
   };
 
-  const handleExportIncomePDF = () => {
+  const handleExportIncomePDF = async () => {
     try {
-      generateIncomePDFReport(getIncomeReportData());
+      await generateIncomePDFReport(getIncomeReportData());
       toast.success(t('reports.incomeReportGenerated', 'PDF izvješće prihoda generirano!'));
     } catch (error) {
       console.error('Error generating income PDF:', error);
@@ -619,9 +619,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     }
   };
 
-  const handleExportIncomeCSV = () => {
+  const handleExportIncomeCSV = async () => {
     try {
-      generateIncomeCSVReport(getIncomeReportData());
+      await generateIncomeCSVReport(getIncomeReportData());
       toast.success(t('reports.incomeCSVGenerated', 'CSV datoteka prihoda generirana!'));
     } catch (error) {
       console.error('Error generating income CSV:', error);
@@ -629,9 +629,9 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     }
   };
 
-  const handleExportIncomeJSON = () => {
+  const handleExportIncomeJSON = async () => {
     try {
-      generateIncomeJSONExport(getIncomeReportData());
+      await generateIncomeJSONExport(getIncomeReportData());
       toast.success(t('reports.incomeJSONGenerated', 'JSON datoteka prihoda generirana!'));
     } catch (error) {
       console.error('Error generating income JSON:', error);

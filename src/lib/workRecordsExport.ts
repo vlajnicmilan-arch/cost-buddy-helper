@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
 
 export interface WorkerExportData {
   id: string;
@@ -61,7 +62,7 @@ const getMilestoneNames = (ids: string[] | null | undefined, milestones: { id: s
 
 // ============= PDF =============
 
-export const generateWorkRecordsPDF = (data: WorkExportConfig): void => {
+export const generateWorkRecordsPDF = async (data: WorkExportConfig): Promise<void> => {
   const doc = new jsPDF();
 
   doc.setFontSize(18);
@@ -193,12 +194,13 @@ export const generateWorkRecordsPDF = (data: WorkExportConfig): void => {
   }
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  doc.save(`evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`);
+  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
+  await exportPDFDoc(doc, fileName);
 };
 
 // ============= CSV =============
 
-export const generateWorkRecordsCSV = (data: WorkExportConfig): void => {
+export const generateWorkRecordsCSV = async (data: WorkExportConfig): Promise<void> => {
   const rows: string[] = [];
 
   // Workers summary
@@ -229,18 +231,15 @@ export const generateWorkRecordsCSV = (data: WorkExportConfig): void => {
       ].join(','));
     });
 
-  const blob = new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
+  const csvContent = rows.join('\n');
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
+  await exportTextFile(csvContent, fileName, 'text/csv', true);
 };
 
 // ============= JSON =============
 
-export const generateWorkRecordsJSON = (data: WorkExportConfig): void => {
+export const generateWorkRecordsJSON = async (data: WorkExportConfig): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     project: data.projectName,
@@ -281,11 +280,7 @@ export const generateWorkRecordsJSON = (data: WorkExportConfig): void => {
       })),
   };
 
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
 };

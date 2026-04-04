@@ -2,6 +2,8 @@
  * Generate an ICS (iCalendar) file from reminder data and trigger download.
  */
 
+import { exportTextFile } from '@/lib/fileExport';
+
 interface ReminderEvent {
   id: string;
   title: string;
@@ -52,15 +54,7 @@ export function generateICS(events: ReminderEvent[]): string {
   return lines.join('\r\n');
 }
 
-export function downloadICS(events: ReminderEvent[], filename = 'reminders.ics'): void {
+export async function downloadICS(events: ReminderEvent[], filename = 'reminders.ics'): Promise<void> {
   const icsContent = generateICS(events);
-  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await exportTextFile(icsContent, filename, 'text/calendar');
 }

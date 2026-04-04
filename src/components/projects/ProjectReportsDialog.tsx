@@ -186,7 +186,7 @@ export const ProjectReportsDialog = ({
     });
   }, [milestones]);
 
-  const handleExport = (format: 'pdf' | 'csv' | 'json') => {
+  const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
     const reportData: ProjectReportData = {
       projectName: project.name,
       projectDescription: project.description,
@@ -225,15 +225,15 @@ export const ProjectReportsDialog = ({
     try {
       switch (format) {
         case 'pdf':
-          generateProjectPDFReport(reportData);
+          await generateProjectPDFReport(reportData);
           toast.success(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
           break;
         case 'csv':
-          generateProjectCSVReport(reportData);
+          await generateProjectCSVReport(reportData);
           toast.success(t('reports.csvGenerated', 'CSV izvještaj generiran'));
           break;
         case 'json':
-          generateProjectJSONExport(reportData);
+          await generateProjectJSONExport(reportData);
           toast.success(t('reports.jsonGenerated', 'JSON izvoz generiran'));
           break;
       }

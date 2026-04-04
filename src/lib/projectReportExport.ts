@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ProjectMilestone, MILESTONE_STATUS_LABELS } from '@/types/project';
+import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
 
 export interface CurrencyConfig {
   code: string;
@@ -73,7 +74,7 @@ const toAscii = (text: string): string => {
     .replace(/Ž/g, 'Z');
 };
 
-export const generateProjectPDFReport = (data: ProjectReportData): void => {
+export const generateProjectPDFReport = async (data: ProjectReportData): Promise<void> => {
   const doc = new jsPDF();
   
   // Title
@@ -257,12 +258,12 @@ export const generateProjectPDFReport = (data: ProjectReportData): void => {
     });
   }
 
-  // Save the PDF
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  doc.save(`projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`);
+  const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
+  await exportPDFDoc(doc, fileName);
 };
 
-export const generateProjectCSVReport = (data: ProjectReportData): void => {
+export const generateProjectCSVReport = async (data: ProjectReportData): Promise<void> => {
   // Summary section
   const summaryRows = [
     `"Projekt","${data.projectName}"`,
@@ -313,17 +314,12 @@ export const generateProjectCSVReport = (data: ProjectReportData): void => {
 
   const csvContent = summaryRows.join('\n');
   
-  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
+  await exportTextFile(csvContent, fileName, 'text/csv', true);
 };
 
-export const generateProjectJSONExport = (data: ProjectReportData): void => {
+export const generateProjectJSONExport = async (data: ProjectReportData): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     project: {
@@ -372,12 +368,7 @@ export const generateProjectJSONExport = (data: ProjectReportData): void => {
     })) || [],
   };
 
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
 };

@@ -92,9 +92,9 @@ export const ProjectWorkersTab = ({
         currency: currency ? { code: currency.code, symbol: currency.symbol, locale: currency.locale } : undefined,
       };
 
-      if (format === 'pdf') generateWorkRecordsPDF(config);
-      else if (format === 'csv') generateWorkRecordsCSV(config);
-      else generateWorkRecordsJSON(config);
+      if (format === 'pdf') await generateWorkRecordsPDF(config);
+      else if (format === 'csv') await generateWorkRecordsCSV(config);
+      else await generateWorkRecordsJSON(config);
 
       toast.success(t('common.exported', 'Izvoz uspješan'));
     } catch (error) {

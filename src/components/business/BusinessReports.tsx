@@ -9,6 +9,7 @@ import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, en
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportPDFDoc } from '@/lib/fileExport';
 import { useTranslation } from 'react-i18next';
 
 type Period = 'monthly' | 'quarterly' | 'yearly';
@@ -51,7 +52,7 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
   const current = periodData[periodData.length - 1];
   const previous = periodData.length > 1 ? periodData[periodData.length - 2] : null;
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
     doc.text(`${companyName} — ${t('business.reports.businessReport', 'Poslovni izvještaj')}`, 14, 20);
@@ -72,15 +73,7 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
     });
 
     const fileName = `${companyName.replace(/\s+/g, '_')}_report_${format(now, 'yyyyMMdd')}.pdf`;
-    const blob = doc.output('blob');
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    await exportPDFDoc(doc, fileName);
   };
 
   return (
