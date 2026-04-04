@@ -3,6 +3,7 @@ import { LayoutDashboard, FolderKanban, Target, Wallet, Users } from 'lucide-rea
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const allNavItems = [
   { path: '/home', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/home', '/dashboard'] },
