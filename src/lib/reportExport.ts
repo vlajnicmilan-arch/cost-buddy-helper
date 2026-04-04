@@ -338,8 +338,16 @@ export const generateIncomePDFReport = (data: IncomeReportData, reportTitle: str
   });
 
   // Save the PDF
-  const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`;
-  doc.save(fileName.replace(/\./g, '-'));
+  const fileName2 = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`.replace(/\./g, '-') + '.pdf';
+  const blob2 = doc.output('blob');
+  const url2 = URL.createObjectURL(blob2);
+  const a2 = document.createElement('a');
+  a2.href = url2;
+  a2.download = fileName2;
+  document.body.appendChild(a2);
+  a2.click();
+  document.body.removeChild(a2);
+  URL.revokeObjectURL(url2);
 };
 
 export const generateIncomeCSVReport = (data: IncomeReportData): void => {
