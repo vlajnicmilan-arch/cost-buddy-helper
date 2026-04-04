@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { SecureStorage } from '@/lib/secureStorage';
+import { Capacitor } from '@capacitor/core';
 
 const LOCK_PIN_KEY = 'app_lock_pin';
 const LOCK_ENABLED_KEY = 'app_lock_enabled';
@@ -6,7 +8,7 @@ const LOCK_TIMEOUT_KEY = 'app_lock_timeout';
 const LOCK_BIOMETRIC_KEY = 'app_lock_biometric';
 const LAST_ACTIVITY_KEY = 'app_last_activity';
 
-export type LockTimeout = 0 | 30 | 60 | 120 | 300; // seconds, 0 = immediately
+export type LockTimeout = 0 | 30 | 60 | 120 | 300;
 
 interface AppLockContextType {
   isLocked: boolean;
@@ -14,44 +16,18 @@ interface AppLockContextType {
   hasPinSet: boolean;
   lockTimeout: LockTimeout;
   biometricEnabled: boolean;
-  unlock: (pin: string) => boolean;
+  biometricAvailable: boolean;
+  biometricType: 'fingerprint' | 'face' | 'none';
+  unlock: (pin: string) => Promise<boolean>;
   unlockBiometric: () => Promise<boolean>;
-  setPin: (pin: string) => void;
-  removePin: () => void;
+  setPin: (pin: string) => Promise<void>;
+  removePin: () => Promise<void>;
   enableLock: (enabled: boolean) => void;
   setLockTimeout: (timeout: LockTimeout) => void;
   setBiometricEnabled: (enabled: boolean) => void;
   lock: () => void;
+  loading: boolean;
 }
-
-const AppLockContext = createContext<AppLockContextType | null>(null);
-
-export const useAppLock = () => {
-  const ctx = useContext(AppLockContext);
-  if (!ctx) throw new Error('useAppLock must be used within AppLockProvider');
-  return ctx;
-};
-
-// Hash PIN for storage (simple hash, not crypto-grade but sufficient for local PIN)
-const hashPin = (pin: string): string => {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i++) {
-    const char = pin.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return 'pin_' + Math.abs(hash).toString(36);
-};
-
-const getBiometricPlugin = async () => {
-  try {
-    // Dynamic require only works in native Capacitor builds
-    const mod = (window as any).__capacitorBiometricAuth;
-    return mod || null;
-  } catch {
-    return null;
-  }
-};
 
 export const AppLockProvider = ({ children }: { children: ReactNode }) => {
   const [isLocked, setIsLocked] = useState(false);
