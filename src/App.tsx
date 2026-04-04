@@ -217,6 +217,7 @@ const App = () => (
                   <LockScreen />
                   <BrowserRouter>
                     <BackButtonProvider>
+                      <DeepLinkInit />
                       <AppRoutes />
                       <CookieConsentBanner />
                     </BackButtonProvider>
