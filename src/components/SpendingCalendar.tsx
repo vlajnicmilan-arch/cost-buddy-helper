@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { getCategoryInfo } from '@/types/expense';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportPDFDoc } from '@/lib/fileExport';
 
 interface Expense {
   id: string;
