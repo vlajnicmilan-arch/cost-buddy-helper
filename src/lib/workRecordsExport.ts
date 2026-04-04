@@ -194,7 +194,8 @@ export const generateWorkRecordsPDF = (data: WorkExportConfig): void => {
   }
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  doc.save(`evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`);
+  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
+  await exportPDFDoc(doc, fileName);
 };
 
 // ============= CSV =============
