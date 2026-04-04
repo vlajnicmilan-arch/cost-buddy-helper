@@ -32,24 +32,22 @@ export const LockScreen = () => {
 
   const handleDigit = (digit: string) => {
     if (pin.length >= 6) return;
+    lightTap();
     const newPin = pin + digit;
     setPin(newPin);
     setError(false);
 
     if (newPin.length === 4 || newPin.length === 6) {
-      // Try unlock after short delay for visual feedback
-      setTimeout(() => {
-        const success = unlock(newPin);
+      setTimeout(async () => {
+        const success = await unlock(newPin);
         if (!success && newPin.length === 6) {
           setError(true);
           setShake(true);
+          errorVibration();
           setTimeout(() => {
             setPin('');
             setShake(false);
           }, 600);
-        } else if (!success && newPin.length === 4) {
-          // Could be 4-digit PIN, try — if fail, let user continue to 6
-          // Already tried, PIN might be 6 digits
         }
       }, 100);
     }
