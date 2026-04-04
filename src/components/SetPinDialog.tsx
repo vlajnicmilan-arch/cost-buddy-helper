@@ -18,6 +18,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
   const { setPin, enableLock } = useAppLock();
   const { t } = useTranslation();
   const { emitAvatarEvent } = useAppState();
+  const { lightTap, errorVibration, successVibration } = useHaptics();
   const [step, setStep] = useState<'enter' | 'confirm'>('enter');
   const [firstPin, setFirstPin] = useState('');
   const [currentPin, setCurrentPin] = useState('');
