@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppLock } from '@/contexts/AppLockContext';
-import { Fingerprint, Delete, Lock } from 'lucide-react';
+import { Fingerprint, Delete, Lock, ScanFace } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { useTranslation } from 'react-i18next';
+import { useHaptics } from '@/hooks/useHaptics';
 
 export const LockScreen = () => {
   const { isLocked, unlock, unlockBiometric, biometricEnabled } = useAppLock();
