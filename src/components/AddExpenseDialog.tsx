@@ -76,11 +76,16 @@ interface ScannedData {
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
+  const { successVibration } = useHaptics();
+  const { maybeRequestReview } = useInAppReview();
+  const { getCurrentLocation, loading: locationLoading } = useLocation();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category | IncomeCategory>('food');
+  const [locationName, setLocationName] = useState<string | null>(null);
+  const [locationCoords, setLocationCoords] = useState<string | null>(null);
   const [merchantName, setMerchantName] = useState('');
   const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
