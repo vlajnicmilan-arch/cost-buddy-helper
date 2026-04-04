@@ -463,17 +463,17 @@ export const PaymentSourceTransactionsDialog = ({
     };
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
     const data = buildReportData();
-    generatePDFReport(data, `${paymentSource.name} - ${t('transactions.transactions')}`);
+    await generatePDFReport(data, `${paymentSource.name} - ${t('transactions.transactions')}`);
     toast.success(t('reports.pdfExported', 'PDF izvoz završen'));
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
     const data = buildReportData();
-    generateCSVReport(data);
+    await generateCSVReport(data);
     toast.success(t('reports.csvExported', 'CSV izvoz završen'));
   };
 
