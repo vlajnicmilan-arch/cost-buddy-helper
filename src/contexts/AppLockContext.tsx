@@ -172,10 +172,13 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       if (Capacitor.isNativePlatform()) {
-        const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+        const BiometricAuth = (window as any).BiometricAuth;
+        if (!BiometricAuth) return false;
         await BiometricAuth.authenticate({
           reason: 'Otključajte V&M Balance',
-          cancelTitle: 'Koristi PIN',
+          title: 'Biometrijska provjera',
+          subtitle: 'Koristite otisak prsta ili prepoznavanje lica',
+          negativeButtonText: 'Koristi PIN',
         });
         setIsLocked(false);
         localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
