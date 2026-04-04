@@ -141,8 +141,11 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
     onClick?.(expense);
   };
 
+  const { mediumTap } = useHaptics();
+
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    mediumTap();
     onDelete(expense.id);
   };
 
