@@ -162,8 +162,16 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
   });
 
   // Save the PDF
-  const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`;
-  doc.save(fileName.replace(/\./g, '-'));
+  const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`.replace(/\./g, '-') + '.pdf';
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 export const generateCSVReport = (data: ReportData): void => {
@@ -330,8 +338,16 @@ export const generateIncomePDFReport = (data: IncomeReportData, reportTitle: str
   });
 
   // Save the PDF
-  const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`;
-  doc.save(fileName.replace(/\./g, '-'));
+  const fileName2 = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`.replace(/\./g, '-') + '.pdf';
+  const blob2 = doc.output('blob');
+  const url2 = URL.createObjectURL(blob2);
+  const a2 = document.createElement('a');
+  a2.href = url2;
+  a2.download = fileName2;
+  document.body.appendChild(a2);
+  a2.click();
+  document.body.removeChild(a2);
+  URL.revokeObjectURL(url2);
 };
 
 export const generateIncomeCSVReport = (data: IncomeReportData): void => {
