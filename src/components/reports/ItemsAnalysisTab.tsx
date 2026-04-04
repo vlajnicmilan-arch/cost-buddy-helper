@@ -221,7 +221,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
     }
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
       const header = 'Kategorija,Artikl,Kolicina,Jedinicna cijena,Ukupno,Datum,Opis transakcije\n';
       const rows: string[] = [];
