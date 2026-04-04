@@ -314,14 +314,9 @@ export const generateProjectCSVReport = (data: ProjectReportData): void => {
 
   const csvContent = summaryRows.join('\n');
   
-  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
+  await exportTextFile(csvContent, fileName, 'text/csv', true);
 };
 
 export const generateProjectJSONExport = (data: ProjectReportData): void => {
