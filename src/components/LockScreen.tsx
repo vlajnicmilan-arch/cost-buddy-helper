@@ -58,7 +58,9 @@ export const LockScreen = () => {
     setError(false);
   };
 
-  if (!isLocked) return null;
+  if (!isLocked || loading) return null;
+
+  const BiometricIcon = biometricType === 'face' ? ScanFace : Fingerprint;
 
   const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
