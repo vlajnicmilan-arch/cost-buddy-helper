@@ -186,7 +186,7 @@ export const ProjectReportsDialog = ({
     });
   }, [milestones]);
 
-  const handleExport = (format: 'pdf' | 'csv' | 'json') => {
+  const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
     const reportData: ProjectReportData = {
       projectName: project.name,
       projectDescription: project.description,
