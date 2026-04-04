@@ -406,7 +406,17 @@ export const TransactionDetailDialog = ({
               </p>
             </div>
 
-            {/* Category */}
+            {/* Location */}
+            {(expense as any).location_name && (
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-xs">{t('transactions.location', 'Lokacija')}</span>
+                </div>
+                <p className="font-medium text-sm">{(expense as any).location_name}</p>
+              </div>
+            )}
+
             <div className="p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Tag className="w-4 h-4" />
