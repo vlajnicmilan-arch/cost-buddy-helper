@@ -36,6 +36,9 @@ import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useInAppReview } from '@/hooks/useInAppReview';
+import { useLocation } from '@/hooks/useLocation';
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   checkDuplicate?: (transaction: {
