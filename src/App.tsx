@@ -51,8 +51,6 @@ const NativeInit = () => {
 };
 
 const DeepLinkInit = () => {
-  // Must be inside BrowserRouter for useNavigate
-  const { useDeepLinks } = require('@/hooks/useDeepLinks');
   useDeepLinks();
   return null;
 };
