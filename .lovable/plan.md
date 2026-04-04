@@ -1,32 +1,41 @@
 
 
-## Plan: Popravak trajnosti AI asistent postavke
+## Plan: Popravak izvoznih gumba u AI asistentu
 
-### Problem
-Kad korisnik isključi AI asistenta u postavkama, postavka se gubi jer:
-1. Logout poziva `localStorage.clear()` na 4 mjesta u kodu (Index.tsx, PageHeader.tsx, SettingsDialog.tsx ×2)
-2. Samo `theme` i `finmate-storage-config` se čuvaju nakon clear-a
-3. `ai_assistant_enabled` se briše → pri ponovnoj prijavi defaultira na `true`
+### Dijagnoza
+
+Pregledao sam kod u `FinancialAssistantDialog.tsx`. Gumbi za izvoz (CSV, PDF, Ispis) pojavljuju se **samo** ako `extractTableData()` pronađe validnu markdown tablicu u odgovoru AI-a. Funkcija traži linije koje počinju i završavaju s `|` — ali AI odgovor često sadrži:
+- Tablice unutar code blokova (```)
+- Linije s trailing razmacima koje ne završavaju točno s `|`
+- Tekst pomješan između redaka tablice (prazan red prekida detekciju)
+- Podatke formatirane kao liste umjesto tablica
+
+Rezultat: gumbi se nikad ne prikažu jer parser ne prepoznaje tablicu.
+
+Dodatno, `doc.save()` na mobilnim preglednicima može ne raditi — treba koristiti `blob` pristup za pouzdanije preuzimanje.
 
 ### Rješenje
-Sačuvati korisničke postavke (AI asistent, simple mode, family mode, business mode) tijekom logout-a, isto kao što se čuva `theme`.
 
-### Izmjene
+#### 1. Robusniji parser tablica (`extractTableData`)
+- Ignorirati code fence oznake (```)
+- Dopustiti praznine između redaka tablice
+- Trim trailing whitespace prije provjere `|`
+- Podržati više tablica u jednom odgovoru (koristiti prvu pronađenu)
 
-**4 lokacije u 3 datoteke** — svaka `localStorage.clear()` treba sačuvati korisničke postavke:
+#### 2. Fallback izvoz kad nema tablice
+- Kad AI odgovor sadrži strukturirane podatke (bullet liste s iznosima), ponuditi "Izvezi cijeli odgovor" gumb koji generira PDF od teksta poruke
+- Uvijek prikazati barem gumb za PDF/print za svaki AI odgovor koji nije prazan
 
-1. **`src/pages/Index.tsx`** (linija ~388-391)
-2. **`src/components/PageHeader.tsx`** (linija ~36-40)
-3. **`src/components/SettingsDialog.tsx`** (linija ~473-477 i ~544-548)
+#### 3. Pouzdaniji PDF download na mobilnim uređajima
+- U `exportToPDF` koristiti `Blob` + `URL.createObjectURL` umjesto `doc.save()` za bolju kompatibilnost
+- Za `printTable`, dodati fallback ako `window.open` vrati null (popup blokiran)
 
-Na svakoj lokaciji, prije `localStorage.clear()`, sačuvati ključeve:
-- `ai_assistant_enabled`
-- `simple_mode_enabled`
-- `family_mode_enabled`
-- `business_mode_enabled`
+### Datoteke za izmjenu
 
-I vratiti ih nakon clear-a, zajedno s `theme` i `finmate-storage-config`.
-
-### Rezultat
-Korisničke postavke preživljavaju logout/login ciklus i restart aplikacije.
+- **`src/components/FinancialAssistantDialog.tsx`**:
+  - Popraviti `extractTableData()` — robusniji parsing
+  - Dodati `exportResponseAsPDF()` — izvoz cijelog odgovora kao PDF teksta (fallback)
+  - Popraviti `exportToPDF()` — Blob pristup za mobile
+  - Popraviti `printTable()` — fallback za blokirane popupe
+  - U `MessageBubble` — prikazati izvozne gumbe i kad nema tablice (fallback na tekst izvoz)
 
