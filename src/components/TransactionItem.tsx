@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Trash2, Sparkles, MessageCircle, CreditCard } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import React, { useMemo, useRef } from 'react';
+import { useHaptics } from '@/hooks/useHaptics';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -140,8 +141,11 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
     onClick?.(expense);
   };
 
+  const { mediumTap } = useHaptics();
+
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    mediumTap();
     onDelete(expense.id);
   };
 

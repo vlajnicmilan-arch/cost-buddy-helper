@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppLock } from '@/contexts/AppLockContext';
-import { Fingerprint, Delete, Lock } from 'lucide-react';
+import { Fingerprint, Delete, Lock, ScanFace } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { useTranslation } from 'react-i18next';
+import { useHaptics } from '@/hooks/useHaptics';
 
 export const LockScreen = () => {
-  const { isLocked, unlock, unlockBiometric, biometricEnabled } = useAppLock();
+  const { isLocked, unlock, unlockBiometric, biometricEnabled, biometricType, loading } = useAppLock();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
   const { t } = useTranslation();
   const biometricAttempted = useRef(false);
+  const { lightTap, errorVibration } = useHaptics();
 
   // Try biometric on mount
   useEffect(() => {
@@ -30,24 +32,22 @@ export const LockScreen = () => {
 
   const handleDigit = (digit: string) => {
     if (pin.length >= 6) return;
+    lightTap();
     const newPin = pin + digit;
     setPin(newPin);
     setError(false);
 
     if (newPin.length === 4 || newPin.length === 6) {
-      // Try unlock after short delay for visual feedback
-      setTimeout(() => {
-        const success = unlock(newPin);
+      setTimeout(async () => {
+        const success = await unlock(newPin);
         if (!success && newPin.length === 6) {
           setError(true);
           setShake(true);
+          errorVibration();
           setTimeout(() => {
             setPin('');
             setShake(false);
           }, 600);
-        } else if (!success && newPin.length === 4) {
-          // Could be 4-digit PIN, try — if fail, let user continue to 6
-          // Already tried, PIN might be 6 digits
         }
       }, 100);
     }
@@ -58,7 +58,9 @@ export const LockScreen = () => {
     setError(false);
   };
 
-  if (!isLocked) return null;
+  if (!isLocked || loading) return null;
+
+  const BiometricIcon = biometricType === 'face' ? ScanFace : Fingerprint;
 
   const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
@@ -136,7 +138,7 @@ export const LockScreen = () => {
             }`}
             disabled={!biometricEnabled}
           >
-            <Fingerprint className="w-7 h-7" />
+            <BiometricIcon className="w-7 h-7" />
           </button>
           
           <button

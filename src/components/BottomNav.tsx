@@ -3,6 +3,7 @@ import { LayoutDashboard, FolderKanban, Target, Wallet, Users } from 'lucide-rea
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const allNavItems = [
   { path: '/home', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/home', '/dashboard'] },
@@ -17,6 +18,7 @@ export const BottomNav = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { familyModeEnabled, activeBusinessProfileId } = useAppState();
+  const { lightTap } = useHaptics();
 
   const navItems = allNavItems.filter(item => {
     if (item.path === '/family') return familyModeEnabled && !activeBusinessProfileId;
@@ -32,7 +34,7 @@ export const BottomNav = () => {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => { lightTap(); navigate(item.path); }}
               className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 relative"
             >
               {isActive && (

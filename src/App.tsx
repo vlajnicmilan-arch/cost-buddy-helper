@@ -15,6 +15,7 @@ import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useStatusBar } from "@/hooks/useStatusBar";
+import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -46,6 +47,11 @@ const queryClient = new QueryClient();
 
 const NativeInit = () => {
   useStatusBar();
+  return null;
+};
+
+const DeepLinkInit = () => {
+  useDeepLinks();
   return null;
 };
 
@@ -211,6 +217,7 @@ const App = () => (
                   <LockScreen />
                   <BrowserRouter>
                     <BackButtonProvider>
+                      <DeepLinkInit />
                       <AppRoutes />
                       <CookieConsentBanner />
                     </BackButtonProvider>

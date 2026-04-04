@@ -23,6 +23,9 @@ const config: CapacitorConfig = {
     Camera: {
       presentationStyle: 'fullscreen',
     },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
   },
 };
 

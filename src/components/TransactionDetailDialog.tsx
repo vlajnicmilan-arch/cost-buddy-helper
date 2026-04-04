@@ -6,7 +6,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink, Briefcase, FolderOpen, Share2 } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink, Briefcase, FolderOpen, Share2, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -406,7 +406,17 @@ export const TransactionDetailDialog = ({
               </p>
             </div>
 
-            {/* Category */}
+            {/* Location */}
+            {(expense as any).location_name && (
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-xs">{t('transactions.location', 'Lokacija')}</span>
+                </div>
+                <p className="font-medium text-sm">{(expense as any).location_name}</p>
+              </div>
+            )}
+
             <div className="p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Tag className="w-4 h-4" />

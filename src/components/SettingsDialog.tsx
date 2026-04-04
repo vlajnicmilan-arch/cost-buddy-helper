@@ -793,6 +793,31 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                     </Select>
                   </div>
 
+                  {/* Biometric toggle */}
+                  {appLock.biometricAvailable && (
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Fingerprint className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">
+                            {appLock.biometricType === 'face'
+                              ? t('lock.faceId', 'Prepoznavanje lica')
+                              : t('lock.fingerprint', 'Otisak prsta')}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            {t('lock.biometricDesc', 'Otključaj biometrijom')}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={appLock.biometricEnabled}
+                        onCheckedChange={(checked) => appLock.setBiometricEnabled(checked)}
+                      />
+                    </div>
+                  )}
+
                   {/* Change PIN */}
                   <Button
                     variant="outline"
@@ -807,8 +832,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   <Button
                     variant="ghost"
                     className="w-full gap-2 rounded-xl text-destructive hover:text-destructive"
-                    onClick={() => {
-                      appLock.removePin();
+                    onClick={async () => {
+                      await appLock.removePin();
                       toast.success(t('lock.pinRemoved', 'PIN je uklonjen'));
                     }}
                   >

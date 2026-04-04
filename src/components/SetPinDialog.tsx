@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Lock, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface SetPinDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
   const { setPin, enableLock } = useAppLock();
   const { t } = useTranslation();
   const { emitAvatarEvent } = useAppState();
+  const { lightTap, errorVibration, successVibration } = useHaptics();
   const [step, setStep] = useState<'enter' | 'confirm'>('enter');
   const [firstPin, setFirstPin] = useState('');
   const [currentPin, setCurrentPin] = useState('');
@@ -24,25 +26,28 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
 
   const handleDigit = (digit: string) => {
     if (currentPin.length >= 6) return;
+    lightTap();
     const newPin = currentPin + digit;
     setCurrentPin(newPin);
     setError(false);
 
     if (newPin.length === 4 || newPin.length === 6) {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (step === 'enter') {
           setFirstPin(newPin);
           setCurrentPin('');
           setStep('confirm');
         } else {
           if (newPin === firstPin) {
-            setPin(newPin);
+            await setPin(newPin);
             enableLock(true);
+            successVibration();
             emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
             toast.success(t('lock.pinSet', 'PIN je postavljen'));
             resetAndClose();
           } else if (newPin.length === firstPin.length) {
             setError(true);
+            errorVibration();
             setTimeout(() => setCurrentPin(''), 600);
           }
         }

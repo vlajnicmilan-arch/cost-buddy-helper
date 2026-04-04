@@ -13,7 +13,7 @@ import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useInstallments } from '@/hooks/useInstallments';
-import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank } from 'lucide-react';
+import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
@@ -36,6 +36,9 @@ import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useInAppReview } from '@/hooks/useInAppReview';
+import { useLocation } from '@/hooks/useLocation';
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
   checkDuplicate?: (transaction: {
@@ -73,11 +76,16 @@ interface ScannedData {
 export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
+  const { successVibration } = useHaptics();
+  const { maybeRequestReview } = useInAppReview();
+  const { getCurrentLocation, loading: locationLoading } = useLocation();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category | IncomeCategory>('food');
+  const [locationName, setLocationName] = useState<string | null>(null);
+  const [locationCoords, setLocationCoords] = useState<string | null>(null);
   const [merchantName, setMerchantName] = useState('');
   const [paymentSource, setPaymentSource] = useState<PaymentSource>('cash');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -498,6 +506,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setFirstPaymentDate(new Date().toISOString().split('T')[0]);
     setTransferDestination(null);
     setTotalWithTip('');
+    setLocationName(null);
+    setLocationCoords(null);
   };
 
   // Helper to actually add the transaction (after duplicate check passes)
@@ -506,7 +516,14 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     validItems?: ReceiptItem[]
   ) => {
     try {
-      await onAdd(expense, validItems);
+      // Attach location if set
+      const expenseWithLocation = {
+        ...expense,
+        ...(locationName ? { location_name: locationName, location_coords: locationCoords } : {}),
+      };
+      await onAdd(expenseWithLocation, validItems);
+      successVibration();
+      maybeRequestReview();
       // Record merchant→category habit for auto-categorization
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
         recordHabit(expense.merchant_name, expense.category);
@@ -1910,8 +1927,47 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                 </div>
               )}
 
+              {/* Location toggle */}
+              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (locationName) {
+                      setLocationName(null);
+                      setLocationCoords(null);
+                    } else {
+                      const loc = await getCurrentLocation();
+                      if (loc) {
+                        setLocationName(loc.name);
+                        setLocationCoords(loc.coords);
+                        toast.success(t('transactions.locationAdded', 'Lokacija dodana'));
+                      } else {
+                        toast.error(t('transactions.locationError', 'Nije moguće dohvatiti lokaciju'));
+                      }
+                    }
+                  }}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <MapPin className={cn("w-4 h-4", locationName ? "text-primary" : "text-muted-foreground")} />
+                  {locationLoading ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : locationName ? (
+                    <span className="text-primary text-xs truncate max-w-[200px]">{locationName}</span>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">{t('transactions.addLocation', 'Dodaj lokaciju')}</span>
+                  )}
+                </button>
+                {locationName && (
+                  <button
+                    type="button"
+                    onClick={() => { setLocationName(null); setLocationCoords(null); }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
 
-              {/* Items Section - Only for expenses */}
               {type === 'expense' && (
                 <Collapsible open={showItems} onOpenChange={setShowItems}>
                   <div className="flex items-center justify-between">
