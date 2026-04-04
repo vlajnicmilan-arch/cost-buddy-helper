@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Lock, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface SetPinDialogProps {
   open: boolean;
