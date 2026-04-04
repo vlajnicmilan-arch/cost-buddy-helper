@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
 
 export interface WorkerExportData {
   id: string;
