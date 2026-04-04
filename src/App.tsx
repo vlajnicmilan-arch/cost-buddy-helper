@@ -49,6 +49,13 @@ const NativeInit = () => {
   return null;
 };
 
+const DeepLinkInit = () => {
+  // Must be inside BrowserRouter for useNavigate
+  const { useDeepLinks } = require('@/hooks/useDeepLinks');
+  useDeepLinks();
+  return null;
+};
+
 const PageLoader = () => (
   <div className="min-h-dvh bg-background flex items-center justify-center">
     <Loader2 className="w-8 h-8 animate-spin text-primary" />

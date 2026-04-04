@@ -506,6 +506,8 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
     setFirstPaymentDate(new Date().toISOString().split('T')[0]);
     setTransferDestination(null);
     setTotalWithTip('');
+    setLocationName(null);
+    setLocationCoords(null);
   };
 
   // Helper to actually add the transaction (after duplicate check passes)
