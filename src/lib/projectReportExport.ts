@@ -263,7 +263,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData): Promise
   await exportPDFDoc(doc, fileName);
 };
 
-export const generateProjectCSVReport = (data: ProjectReportData): void => {
+export const generateProjectCSVReport = async (data: ProjectReportData): Promise<void> => {
   // Summary section
   const summaryRows = [
     `"Projekt","${data.projectName}"`,
