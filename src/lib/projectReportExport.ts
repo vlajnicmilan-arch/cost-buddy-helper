@@ -258,9 +258,9 @@ export const generateProjectPDFReport = (data: ProjectReportData): void => {
     });
   }
 
-  // Save the PDF
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  doc.save(`projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`);
+  const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
+  await exportPDFDoc(doc, fileName);
 };
 
 export const generateProjectCSVReport = (data: ProjectReportData): void => {
