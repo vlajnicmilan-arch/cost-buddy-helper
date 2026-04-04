@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
 
 interface ItemWithCategory extends ReceiptItem {
   category: string;
