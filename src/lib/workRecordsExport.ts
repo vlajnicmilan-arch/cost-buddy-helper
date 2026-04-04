@@ -231,13 +231,10 @@ export const generateWorkRecordsCSV = (data: WorkExportConfig): void => {
       ].join(','));
     });
 
-  const blob = new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
+  const csvContent = rows.join('\n');
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
+  await exportTextFile(csvContent, fileName, 'text/csv', true);
 };
 
 // ============= JSON =============
