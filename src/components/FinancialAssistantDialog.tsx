@@ -788,8 +788,8 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown>{message.content}</ReactMarkdown>
             </div>
-            {tableData && (
-              <div className="flex gap-2 mt-2 pt-2 border-t border-border/50">
+            {tableData ? (
+              <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
                 <Button
                   variant="outline"
                   size="sm"
@@ -816,6 +816,18 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
                 >
                   <Printer className="w-3 h-3" />
                   Ispis
+                </Button>
+              </div>
+            ) : message.content.length > 100 && (
+              <div className="flex gap-2 mt-2 pt-2 border-t border-border/50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => exportResponseAsPDF(message.content)}
+                >
+                  <FileText className="w-3 h-3" />
+                  Izvezi PDF
                 </Button>
               </div>
             )}
