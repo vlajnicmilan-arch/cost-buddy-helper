@@ -368,12 +368,7 @@ export const generateProjectJSONExport = (data: ProjectReportData): void => {
     })) || [],
   };
 
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
 };

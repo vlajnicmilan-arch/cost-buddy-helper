@@ -280,11 +280,7 @@ export const generateWorkRecordsJSON = (data: WorkExportConfig): void => {
       })),
   };
 
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
 };
