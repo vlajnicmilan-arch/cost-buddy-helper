@@ -649,20 +649,14 @@ function extractTableData(content: string): { headers: string[]; rows: string[][
   return { headers, rows };
 }
 
-function exportToCSV(headers: string[], rows: string[][]) {
+async function exportToCSV(headers: string[], rows: string[][]) {
   const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
-  const bom = '\uFEFF';
-  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `izvoz_${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const fileName = `izvoz_${new Date().toISOString().slice(0, 10)}.csv`;
+  await exportTextFile(csv, fileName, 'text/csv', true);
 }
 
-function exportToPDF(headers: string[], rows: string[][]) {
+async function exportToPDF(headers: string[], rows: string[][]) {
   const doc = new jsPDF({ orientation: rows[0]?.length > 5 ? 'landscape' : 'portrait' });
   doc.setFont('helvetica');
   doc.setFontSize(14);
@@ -679,19 +673,11 @@ function exportToPDF(headers: string[], rows: string[][]) {
     alternateRowStyles: { fillColor: [245, 247, 250] },
   });
 
-  // Use Blob for better mobile compatibility
-  const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `izvoz_${new Date().toISOString().slice(0, 10)}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const fileName = `izvoz_${new Date().toISOString().slice(0, 10)}.pdf`;
+  await exportPDFDoc(doc, fileName);
 }
 
-function exportResponseAsPDF(content: string) {
+async function exportResponseAsPDF(content: string) {
   const doc = new jsPDF();
   doc.setFont('helvetica');
   doc.setFontSize(14);
@@ -711,18 +697,11 @@ function exportResponseAsPDF(content: string) {
   doc.setFontSize(10);
   doc.text(lines, 14, 30);
 
-  const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `odgovor_${new Date().toISOString().slice(0, 10)}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const fileName = `odgovor_${new Date().toISOString().slice(0, 10)}.pdf`;
+  await exportPDFDoc(doc, fileName);
 }
 
-function printTable(headers: string[], rows: string[][]) {
+async function printTable(headers: string[], rows: string[][]) {
   const html = `
     <html><head><title>V&M Balance - Ispis</title>
     <style>
@@ -748,15 +727,8 @@ function printTable(headers: string[], rows: string[][]) {
     setTimeout(() => { w.print(); }, 300);
   } else {
     // Fallback if popup blocked — download as HTML
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ispis_${new Date().toISOString().slice(0, 10)}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const fileName = `ispis_${new Date().toISOString().slice(0, 10)}.html`;
+    await exportTextFile(html, fileName, 'text/html');
   }
 }
 
