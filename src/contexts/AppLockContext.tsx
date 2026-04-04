@@ -29,30 +29,83 @@ interface AppLockContextType {
   loading: boolean;
 }
 
+const AppLockContext = createContext<AppLockContextType | null>(null);
+
+export const useAppLock = () => {
+  const ctx = useContext(AppLockContext);
+  if (!ctx) throw new Error('useAppLock must be used within AppLockProvider');
+  return ctx;
+};
+
+// Hash PIN for storage
+const hashPin = (pin: string): string => {
+  let hash = 0;
+  for (let i = 0; i < pin.length; i++) {
+    const char = pin.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return 'pin_' + Math.abs(hash).toString(36);
+};
+
 export const AppLockProvider = ({ children }: { children: ReactNode }) => {
   const [isLocked, setIsLocked] = useState(false);
-  const [isLockEnabled, setIsLockEnabled] = useState(() => localStorage.getItem(LOCK_ENABLED_KEY) === 'true');
-  const [hasPinSet, setHasPinSet] = useState(() => !!localStorage.getItem(LOCK_PIN_KEY));
-  const [lockTimeout, setLockTimeoutState] = useState<LockTimeout>(() => {
-    const saved = localStorage.getItem(LOCK_TIMEOUT_KEY);
-    return saved ? (Number(saved) as LockTimeout) : 60;
-  });
-  const [biometricEnabled, setBiometricEnabledState] = useState(() => localStorage.getItem(LOCK_BIOMETRIC_KEY) === 'true');
+  const [isLockEnabled, setIsLockEnabled] = useState(false);
+  const [hasPinSet, setHasPinSet] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [lockTimeout, setLockTimeoutState] = useState<LockTimeout>(60);
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricType, setBiometricType] = useState<'fingerprint' | 'face' | 'none'>('none');
 
-  // Check lock on mount
+  // Initialize from secure storage
   useEffect(() => {
-    if (!isLockEnabled || !hasPinSet) return;
+    const init = async () => {
+      const [pinHash, enabled, timeout, bioEnabled] = await Promise.all([
+        SecureStorage.get(LOCK_PIN_KEY),
+        SecureStorage.get(LOCK_ENABLED_KEY),
+        SecureStorage.get(LOCK_TIMEOUT_KEY),
+        SecureStorage.get(LOCK_BIOMETRIC_KEY),
+      ]);
 
-    const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
-    if (!lastActivity) {
-      setIsLocked(true);
-      return;
-    }
+      const hasPIN = !!pinHash;
+      const isEnabled = enabled === 'true';
+      setHasPinSet(hasPIN);
+      setIsLockEnabled(isEnabled);
+      setLockTimeoutState(timeout ? (Number(timeout) as LockTimeout) : 60);
+      setBiometricEnabledState(bioEnabled === 'true');
 
-    const elapsed = (Date.now() - Number(lastActivity)) / 1000;
-    if (elapsed > lockTimeout) {
-      setIsLocked(true);
-    }
+      // Check if should be locked
+      if (isEnabled && hasPIN) {
+        const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+        const timeoutVal = timeout ? Number(timeout) : 60;
+        if (!lastActivity || (Date.now() - Number(lastActivity)) / 1000 > timeoutVal) {
+          setIsLocked(true);
+        }
+      }
+
+      // Check biometric availability
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { BiometricAuth, BiometryType } = await import('@aparajita/capacitor-biometric-auth');
+          const result = await BiometricAuth.checkBiometry();
+          if (result.isAvailable) {
+            setBiometricAvailable(true);
+            setBiometricType(
+              result.biometryType === BiometryType.faceAuthentication || 
+              result.biometryType === BiometryType.faceId 
+                ? 'face' 
+                : 'fingerprint'
+            );
+          }
+        } catch {
+          // Plugin not available
+        }
+      }
+
+      setLoading(false);
+    };
+    init();
   }, []);
 
   // Track activity
@@ -84,7 +137,7 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [isLockEnabled, hasPinSet, isLocked, lockTimeout, updateActivity]);
 
-  // Visibility change — lock when app goes to background
+  // Visibility change
   useEffect(() => {
     if (!isLockEnabled || !hasPinSet) return;
 
@@ -106,8 +159,8 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [isLockEnabled, hasPinSet, lockTimeout]);
 
-  const unlock = (pin: string): boolean => {
-    const storedHash = localStorage.getItem(LOCK_PIN_KEY);
+  const unlock = async (pin: string): Promise<boolean> => {
+    const storedHash = await SecureStorage.get(LOCK_PIN_KEY);
     if (storedHash && hashPin(pin) === storedHash) {
       setIsLocked(false);
       localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
@@ -117,23 +170,18 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const unlockBiometric = async (): Promise<boolean> => {
-    if (!biometricEnabled) return false;
+    if (!biometricEnabled || !biometricAvailable) return false;
 
     try {
-      if ((window as any).Capacitor?.isNativePlatform?.()) {
-        // Biometric plugin must be registered globally in native builds
-        const BiometricAuth = (window as any).BiometricAuth;
-        if (BiometricAuth) {
-          await BiometricAuth.authenticate({
-            reason: 'Otključajte V&M Balance',
-            title: 'Biometrijska provjera',
-            subtitle: 'Koristite otisak prsta ili prepoznavanje lica',
-            negativeButtonText: 'Koristi PIN',
-          });
-          setIsLocked(false);
-          localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-          return true;
-        }
+      if (Capacitor.isNativePlatform()) {
+        const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+        await BiometricAuth.authenticate({
+          reason: 'Otključajte V&M Balance',
+          cancelTitle: 'Koristi PIN',
+        });
+        setIsLocked(false);
+        localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+        return true;
       }
     } catch {
       return false;
@@ -141,16 +189,18 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
-  const setPin = (pin: string) => {
-    localStorage.setItem(LOCK_PIN_KEY, hashPin(pin));
+  const setPin = async (pin: string) => {
+    await SecureStorage.set(LOCK_PIN_KEY, hashPin(pin));
     setHasPinSet(true);
     localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
   };
 
-  const removePin = () => {
-    localStorage.removeItem(LOCK_PIN_KEY);
-    localStorage.removeItem(LOCK_ENABLED_KEY);
-    localStorage.removeItem(LOCK_BIOMETRIC_KEY);
+  const removePin = async () => {
+    await Promise.all([
+      SecureStorage.remove(LOCK_PIN_KEY),
+      SecureStorage.remove(LOCK_ENABLED_KEY),
+      SecureStorage.remove(LOCK_BIOMETRIC_KEY),
+    ]);
     setHasPinSet(false);
     setIsLockEnabled(false);
     setBiometricEnabledState(false);
@@ -159,7 +209,7 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
   const enableLock = (enabled: boolean) => {
     setIsLockEnabled(enabled);
-    localStorage.setItem(LOCK_ENABLED_KEY, String(enabled));
+    SecureStorage.set(LOCK_ENABLED_KEY, String(enabled));
     if (enabled) {
       localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
     }
@@ -167,12 +217,12 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
   const setLockTimeoutFn = (timeout: LockTimeout) => {
     setLockTimeoutState(timeout);
-    localStorage.setItem(LOCK_TIMEOUT_KEY, String(timeout));
+    SecureStorage.set(LOCK_TIMEOUT_KEY, String(timeout));
   };
 
   const setBiometricEnabled = (enabled: boolean) => {
     setBiometricEnabledState(enabled);
-    localStorage.setItem(LOCK_BIOMETRIC_KEY, String(enabled));
+    SecureStorage.set(LOCK_BIOMETRIC_KEY, String(enabled));
   };
 
   const lock = () => {
@@ -188,6 +238,8 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
       hasPinSet,
       lockTimeout,
       biometricEnabled,
+      biometricAvailable,
+      biometricType,
       unlock,
       unlockBiometric,
       setPin,
@@ -196,6 +248,7 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
       setLockTimeout: setLockTimeoutFn,
       setBiometricEnabled,
       lock,
+      loading,
     }}>
       {children}
     </AppLockContext.Provider>
