@@ -236,14 +236,9 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       });
       // Grand total
       rows.push(`"SVEUKUPNO","",${allItems.length},,${totalItemsAmount},"",""`);
-      const bom = '\uFEFF';
-      const blob = new Blob([bom + header + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const csvContent = header + rows.join('\n');
+      const csvFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.csv`;
+      await exportTextFile(csvContent, csvFileName, 'text/csv', true);
       toast.success('CSV datoteka generirana!');
     } catch {
       toast.error('Greska pri generiranju CSV-a');
