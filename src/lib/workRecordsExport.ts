@@ -200,7 +200,7 @@ export const generateWorkRecordsPDF = async (data: WorkExportConfig): Promise<vo
 
 // ============= CSV =============
 
-export const generateWorkRecordsCSV = (data: WorkExportConfig): void => {
+export const generateWorkRecordsCSV = async (data: WorkExportConfig): Promise<void> => {
   const rows: string[] = [];
 
   // Workers summary
