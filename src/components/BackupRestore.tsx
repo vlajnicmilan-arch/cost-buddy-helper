@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { exportTextFile } from '@/lib/fileExport';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Download, Upload, FileJson, Check, AlertCircle, Loader2, HardDrive, Clock, History, Settings2, RotateCcw } from 'lucide-react';
