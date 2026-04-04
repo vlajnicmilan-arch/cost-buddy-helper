@@ -6,7 +6,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink, Briefcase, FolderOpen, Share2 } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink, Briefcase, FolderOpen, Share2, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
