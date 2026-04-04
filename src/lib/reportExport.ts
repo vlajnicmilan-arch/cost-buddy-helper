@@ -162,8 +162,16 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
   });
 
   // Save the PDF
-  const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`;
-  doc.save(fileName.replace(/\./g, '-'));
+  const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`.replace(/\./g, '-') + '.pdf';
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 export const generateCSVReport = (data: ReportData): void => {
