@@ -835,6 +835,8 @@ export type Database = {
           id: string
           import_batch_id: string | null
           income_source_id: string | null
+          location_coords: string | null
+          location_name: string | null
           merchant_name: string | null
           milestone_id: string | null
           note: string | null
@@ -865,6 +867,8 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
+          location_coords?: string | null
+          location_name?: string | null
           merchant_name?: string | null
           milestone_id?: string | null
           note?: string | null
@@ -895,6 +899,8 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
+          location_coords?: string | null
+          location_name?: string | null
           merchant_name?: string | null
           milestone_id?: string | null
           note?: string | null
@@ -2456,6 +2462,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       receipt_items: {
         Row: {
