@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo } from '@/types/expense';
-
+import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
 
 export interface CurrencyConfig {
   code: string;
@@ -39,42 +39,28 @@ const formatCurrency = (amount: number, currency?: CurrencyConfig): string => {
 // Convert Croatian characters to ASCII for PDF compatibility
 const toAscii = (text: string): string => {
   return text
-    .replace(/č/g, 'c')
-    .replace(/Č/g, 'C')
-    .replace(/ć/g, 'c')
-    .replace(/Ć/g, 'C')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .replace(/š/g, 's')
-    .replace(/Š/g, 'S')
-    .replace(/ž/g, 'z')
-    .replace(/Ž/g, 'Z');
+    .replace(/č/g, 'c').replace(/Č/g, 'C')
+    .replace(/ć/g, 'c').replace(/Ć/g, 'C')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .replace(/š/g, 's').replace(/Š/g, 'S')
+    .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
 };
 
-export const generatePDFReport = (data: ReportData, reportTitle: string = 'Financijsko izvjesce'): void => {
+export const generatePDFReport = async (data: ReportData, reportTitle: string = 'Financijsko izvjesce'): Promise<void> => {
   const doc = new jsPDF();
   
-  // Title
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.text(toAscii(reportTitle), 14, 20);
   
-  // Date range
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(
-    `Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`,
-    14,
-    28
-  );
+  doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
   doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
-  // Summary section
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text(toAscii('Sazetak'), 14, 46);
-
-  const summaryStartY = 50;
 
   const summaryData = [
     [toAscii('Ukupni prihodi'), formatCurrency(data.totals.income, data.currency)],
@@ -84,7 +70,7 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
   ];
 
   autoTable(doc, {
-    startY: summaryStartY,
+    startY: 50,
     head: [['Stavka', 'Iznos']],
     body: summaryData,
     theme: 'striped',
@@ -93,7 +79,6 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
     tableWidth: 80,
   });
 
-  // Category breakdown
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -122,7 +107,6 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
     });
   }
 
-  // Transaction list (new page)
   doc.addPage();
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -161,20 +145,11 @@ export const generatePDFReport = (data: ReportData, reportTitle: string = 'Finan
     },
   });
 
-  // Save the PDF
-  const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`.replace(/\./g, '-') + '.pdf';
-  const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
+  await exportPDFDoc(doc, fileName);
 };
 
-export const generateCSVReport = (data: ReportData): void => {
+export const generateCSVReport = async (data: ReportData): Promise<void> => {
   const headers = ['Datum', 'Tip', 'Opis', 'Kategorija', 'Način plaćanja', 'Iznos'];
   
   const rows = data.expenses
@@ -195,16 +170,11 @@ export const generateCSVReport = (data: ReportData): void => {
     });
 
   const csvContent = [headers.join(','), ...rows].join('\n');
-  
-  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `transakcije_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `transakcije_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.csv`;
+  await exportTextFile(csvContent, fileName, 'text/csv', true);
 };
 
-export const generateJSONExport = (data: ReportData): void => {
+export const generateJSONExport = async (data: ReportData): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     dateRange: {
@@ -220,12 +190,8 @@ export const generateJSONExport = (data: ReportData): void => {
     })),
   };
 
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `financije_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `financije_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.json`;
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
 };
 
 // ============= INCOME REPORT EXPORTS =============
@@ -238,25 +204,18 @@ export interface IncomeReportData {
   currency?: CurrencyConfig;
 }
 
-export const generateIncomePDFReport = (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima'): void => {
+export const generateIncomePDFReport = async (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima'): Promise<void> => {
   const doc = new jsPDF();
   
-  // Title
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.text(toAscii(reportTitle), 14, 20);
   
-  // Date range
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(
-    `Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`,
-    14,
-    28
-  );
+  doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
   doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
-  // Summary section
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text(toAscii('Sazetak prihoda'), 14, 46);
@@ -276,7 +235,6 @@ export const generateIncomePDFReport = (data: IncomeReportData, reportTitle: str
     tableWidth: 80,
   });
 
-  // Category breakdown
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -304,7 +262,6 @@ export const generateIncomePDFReport = (data: IncomeReportData, reportTitle: str
     });
   }
 
-  // Transaction list (new page)
   doc.addPage();
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -337,20 +294,11 @@ export const generateIncomePDFReport = (data: IncomeReportData, reportTitle: str
     },
   });
 
-  // Save the PDF
-  const fileName2 = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.pdf`.replace(/\./g, '-') + '.pdf';
-  const blob2 = doc.output('blob');
-  const url2 = URL.createObjectURL(blob2);
-  const a2 = document.createElement('a');
-  a2.href = url2;
-  a2.download = fileName2;
-  document.body.appendChild(a2);
-  a2.click();
-  document.body.removeChild(a2);
-  URL.revokeObjectURL(url2);
+  const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
+  await exportPDFDoc(doc, fileName);
 };
 
-export const generateIncomeCSVReport = (data: IncomeReportData): void => {
+export const generateIncomeCSVReport = async (data: IncomeReportData): Promise<void> => {
   const headers = ['Datum', 'Opis', 'Kategorija', 'Iznos'];
   
   const rows = data.incomeTransactions
@@ -365,16 +313,11 @@ export const generateIncomeCSVReport = (data: IncomeReportData): void => {
     });
 
   const csvContent = [headers.join(','), ...rows].join('\n');
-  
-  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.csv`;
+  await exportTextFile(csvContent, fileName, 'text/csv', true);
 };
 
-export const generateIncomeJSONExport = (data: IncomeReportData): void => {
+export const generateIncomeJSONExport = async (data: IncomeReportData): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     dateRange: {
@@ -389,10 +332,6 @@ export const generateIncomeJSONExport = (data: IncomeReportData): void => {
     })),
   };
 
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.json`;
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
 };
