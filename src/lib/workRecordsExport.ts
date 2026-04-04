@@ -239,7 +239,7 @@ export const generateWorkRecordsCSV = async (data: WorkExportConfig): Promise<vo
 
 // ============= JSON =============
 
-export const generateWorkRecordsJSON = (data: WorkExportConfig): void => {
+export const generateWorkRecordsJSON = async (data: WorkExportConfig): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     project: data.projectName,

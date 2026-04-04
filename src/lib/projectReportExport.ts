@@ -319,7 +319,7 @@ export const generateProjectCSVReport = async (data: ProjectReportData): Promise
   await exportTextFile(csvContent, fileName, 'text/csv', true);
 };
 
-export const generateProjectJSONExport = (data: ProjectReportData): void => {
+export const generateProjectJSONExport = async (data: ProjectReportData): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     project: {
