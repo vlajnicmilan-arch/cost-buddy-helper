@@ -84,19 +84,17 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Check biometric availability
+      // Check biometric availability via native plugin (dynamic)
       if (Capacitor.isNativePlatform()) {
         try {
-          const { BiometricAuth, BiometryType } = await import('@aparajita/capacitor-biometric-auth');
-          const result = await BiometricAuth.checkBiometry();
-          if (result.isAvailable) {
-            setBiometricAvailable(true);
-            setBiometricType(
-              result.biometryType === BiometryType.faceAuthentication || 
-              result.biometryType === BiometryType.faceId 
-                ? 'face' 
-                : 'fingerprint'
-            );
+          const BiometricAuth = (window as any).BiometricAuth;
+          if (BiometricAuth?.checkBiometry) {
+            const result = await BiometricAuth.checkBiometry();
+            if (result?.isAvailable) {
+              setBiometricAvailable(true);
+              // biometryType: 1=touchId/fingerprint, 2=faceId/face
+              setBiometricType(result.biometryType === 2 ? 'face' : 'fingerprint');
+            }
           }
         } catch {
           // Plugin not available
