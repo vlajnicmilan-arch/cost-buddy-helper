@@ -18,6 +18,7 @@ export const BottomNav = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { familyModeEnabled, activeBusinessProfileId } = useAppState();
+  const { lightTap } = useHaptics();
 
   const navItems = allNavItems.filter(item => {
     if (item.path === '/family') return familyModeEnabled && !activeBusinessProfileId;
