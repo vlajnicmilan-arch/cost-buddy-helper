@@ -61,27 +61,31 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
   // Initialize from secure storage
   useEffect(() => {
     const init = async () => {
-      const [pinHash, enabled, timeout, bioEnabled] = await Promise.all([
-        SecureStorage.get(LOCK_PIN_KEY),
-        SecureStorage.get(LOCK_ENABLED_KEY),
-        SecureStorage.get(LOCK_TIMEOUT_KEY),
-        SecureStorage.get(LOCK_BIOMETRIC_KEY),
-      ]);
+      try {
+        const [pinHash, enabled, timeout, bioEnabled] = await Promise.all([
+          SecureStorage.get(LOCK_PIN_KEY),
+          SecureStorage.get(LOCK_ENABLED_KEY),
+          SecureStorage.get(LOCK_TIMEOUT_KEY),
+          SecureStorage.get(LOCK_BIOMETRIC_KEY),
+        ]);
 
-      const hasPIN = !!pinHash;
-      const isEnabled = enabled === 'true';
-      setHasPinSet(hasPIN);
-      setIsLockEnabled(isEnabled);
-      setLockTimeoutState(timeout ? (Number(timeout) as LockTimeout) : 60);
-      setBiometricEnabledState(bioEnabled === 'true');
+        const hasPIN = !!pinHash;
+        const isEnabled = enabled === 'true';
+        setHasPinSet(hasPIN);
+        setIsLockEnabled(isEnabled);
+        setLockTimeoutState(timeout ? (Number(timeout) as LockTimeout) : 60);
+        setBiometricEnabledState(bioEnabled === 'true');
 
-      // Check if should be locked
-      if (isEnabled && hasPIN) {
-        const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
-        const timeoutVal = timeout ? Number(timeout) : 60;
-        if (!lastActivity || (Date.now() - Number(lastActivity)) / 1000 > timeoutVal) {
-          setIsLocked(true);
+        // Check if should be locked
+        if (isEnabled && hasPIN) {
+          const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+          const timeoutVal = timeout ? Number(timeout) : 60;
+          if (!lastActivity || (Date.now() - Number(lastActivity)) / 1000 > timeoutVal) {
+            setIsLocked(true);
+          }
         }
+      } catch (err) {
+        console.error('AppLock init failed:', err);
       }
 
       // Check biometric availability via native plugin (dynamic)
@@ -191,7 +195,13 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const setPin = async (pin: string) => {
-    await SecureStorage.set(LOCK_PIN_KEY, hashPin(pin));
+    const hashed = hashPin(pin);
+    await SecureStorage.set(LOCK_PIN_KEY, hashed);
+    // Verify write succeeded
+    const readBack = await SecureStorage.get(LOCK_PIN_KEY);
+    if (readBack !== hashed) {
+      throw new Error('PIN verification failed after save');
+    }
     setHasPinSet(true);
     localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
   };
