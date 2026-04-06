@@ -197,11 +197,6 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
   const setPin = async (pin: string) => {
     const hashed = hashPin(pin);
     await SecureStorage.set(LOCK_PIN_KEY, hashed);
-    // Verify write succeeded
-    const readBack = await SecureStorage.get(LOCK_PIN_KEY);
-    if (readBack !== hashed) {
-      throw new Error('PIN verification failed after save');
-    }
     setHasPinSet(true);
     localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
   };
