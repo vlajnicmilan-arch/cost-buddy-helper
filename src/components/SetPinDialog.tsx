@@ -48,14 +48,17 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
             try {
               await setPin(newPin);
               enableLock(true);
-              successVibration();
-              emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
-              toast.success(t('lock.pinSet', 'PIN je postavljen'));
-              resetAndClose();
             } catch (err) {
               console.error('Failed to save PIN:', err);
               toast.error('Greška pri spremanju PIN-a');
+              return;
             }
+            try {
+              successVibration();
+              emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
+            } catch { /* non-critical */ }
+            toast.success(t('lock.pinSet', 'PIN je postavljen'));
+            resetAndClose();
           } else if (newPin.length === firstPinRef.current.length) {
             setError(true);
             errorVibration();
