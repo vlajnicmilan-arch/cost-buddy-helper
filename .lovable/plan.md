@@ -1,97 +1,68 @@
 
 
-## Plan: 7 nativnih značajki (bez OTA)
+## Plan: Fix PIN Save Issue
 
-### 1. Push obavijesti (FCM)
-- Instalirati `@capacitor/push-notifications`
-- Novi hook `src/hooks/usePushNotifications.ts` — registracija tokena, slušanje notifikacija, spremanje tokena u bazu
-- DB migracija: nova tablica `push_tokens` (id, user_id, token, platform, created_at)
-- Nova edge funkcija `supabase/functions/send-push/index.ts` — šalje FCM prema tokenima
-- Nadograditi `src/hooks/useNotificationSound.ts` — na native koristiti push umjesto browser Notification API
-- Nadograditi `src/components/SettingsDialog.tsx` — push toggle poziva native registraciju
-- **Korisnik mora**: dodati `google-services.json` u `android/app/` iz Firebase Console
+### Problem
+User enters PIN and confirms it, but it doesn't persist — after closing the dialog, Settings still shows "Postavi PIN" instead of the toggle switch.
 
-### 2. Biometrija (pravi plugin)
-- Instalirati `@aparajita/capacitor-biometric-auth`
-- Nadograditi `src/contexts/AppLockContext.tsx` — zamijeniti `(window as any).BiometricAuth` s pravim importom, dodati `checkBiometry()` za detekciju hardvera
-- Nadograditi `src/components/LockScreen.tsx` — dinamička ikona (Fingerprint vs ScanFace)
-- Nadograditi `src/components/SettingsDialog.tsx` — biometric toggle s provjerom dostupnosti
+### Root Cause Analysis
+The `handleDigit` function auto-submits when PIN reaches 4 or 6 digits inside a `setTimeout(150ms)`. The `step` state captured in the closure may be stale due to React's batching, causing the confirm step to misidentify the current phase. Additionally, `lightTap()` is async but not awaited — if it throws before the try/catch wraps it, it could silently break the flow.
 
-### 3. Haptic feedback
-- Instalirati `@capacitor/haptics`
-- Novi hook `src/hooks/useHaptics.ts` — `lightTap()`, `mediumTap()`, `successVibration()`, `errorVibration()` (web: no-op)
-- Integrirati u:
-  - `AddExpenseDialog.tsx` — nakon dodavanja troška
-  - `TransactionItem.tsx` — na swipe delete
-  - `BottomNav.tsx` — tap na navigaciju
-  - `LockScreen.tsx` / `SetPinDialog.tsx` — PIN feedback
+### Fix (1 file)
 
-### 4. Secure Storage
-- Instalirati `capacitor-secure-storage-plugin`
-- Novi helper `src/lib/secureStorage.ts` — Keychain/Keystore za PIN i tokene, web fallback na localStorage
-- Nadograditi `src/contexts/AppLockContext.tsx` — koristiti secure storage za PIN hash (async API, dodati loading state)
+**`src/components/SetPinDialog.tsx`**
+- Use a `useRef` for `step` and `firstPin` to avoid stale closure issues inside `setTimeout`
+- Add try/catch around the entire save flow (`setPin` + `enableLock`) to surface any hidden errors
+- Add a `toast.error` fallback if save fails
+- Ensure `lightTap()` doesn't block digit handling (already fire-and-forget, but add safety)
 
-### 5. Deep Linking
-- Instalirati `@capacitor/app` (možda već dostupan s core)
-- Novi hook `src/hooks/useDeepLinks.ts` — sluša `appUrlOpen`, parsira path, navigira React Routerom
-- Integrirati u `src/App.tsx`
-- Podržane rute: `/join-family/:id`, `/join-budget/:id`, `/join-project/:id`
-- **Korisnik mora**: dodati intent filter u `AndroidManifest.xml` + `assetlinks.json` na vmbalance.com
+### Changes
 
-### 6. In-App Review
-- Instalirati `capacitor-rate-app`
-- Novi hook `src/hooks/useInAppReview.ts` — prati broj transakcija, nakon 20. poziva native review dijalog (max 1x/60 dana)
-- Integrirati u `AddExpenseDialog.tsx`
+```tsx
+// Use refs to avoid stale closures in setTimeout
+const stepRef = useRef(step);
+const firstPinRef = useRef(firstPin);
 
-### 7. GPS lokacija na transakcijama
-- Instalirati `@capacitor/geolocation`
-- Novi hook `src/hooks/useLocation.ts` — `getCurrentLocation()` + reverse geocoding (Nominatim API)
-- DB migracija: dodati `location_name` (text, nullable) i `location_coords` (text, nullable) na `expenses` tablicu
-- Nadograditi `AddExpenseDialog.tsx` — toggle "Dodaj lokaciju"
-- Nadograditi `TransactionDetailDialog.tsx` — prikaz lokacije
+// Keep refs in sync
+useEffect(() => { stepRef.current = step; }, [step]);
+useEffect(() => { firstPinRef.current = firstPin; }, [firstPin]);
 
----
+const handleDigit = (digit: string) => {
+  if (currentPin.length >= 6) return;
+  lightTap(); // fire-and-forget
+  const newPin = currentPin + digit;
+  setCurrentPin(newPin);
+  setError(false);
 
-### Datoteke za izmjenu/kreiranje
-
-| Akcija | Datoteka |
-|--------|----------|
-| Novi | `src/hooks/usePushNotifications.ts` |
-| Novi | `src/hooks/useHaptics.ts` |
-| Novi | `src/hooks/useInAppReview.ts` |
-| Novi | `src/hooks/useDeepLinks.ts` |
-| Novi | `src/hooks/useLocation.ts` |
-| Novi | `src/lib/secureStorage.ts` |
-| Novi | `supabase/functions/send-push/index.ts` |
-| Migracija | `push_tokens` tablica |
-| Migracija | `expenses` — location stupci |
-| Izmjena | `src/contexts/AppLockContext.tsx` |
-| Izmjena | `src/components/LockScreen.tsx` |
-| Izmjena | `src/components/SetPinDialog.tsx` |
-| Izmjena | `src/hooks/useNotificationSound.ts` |
-| Izmjena | `src/components/SettingsDialog.tsx` |
-| Izmjena | `src/components/AddExpenseDialog.tsx` |
-| Izmjena | `src/components/TransactionItem.tsx` |
-| Izmjena | `src/components/BottomNav.tsx` |
-| Izmjena | `src/components/TransactionDetailDialog.tsx` |
-| Izmjena | `src/App.tsx` |
-| Izmjena | `capacitor.config.ts` |
-| Izmjena | `package.json` |
-
-### Novi npm paketi
-```
-@capacitor/push-notifications
-@aparajita/capacitor-biometric-auth
-@capacitor/haptics
-capacitor-rate-app
-capacitor-secure-storage-plugin
-@capacitor/app
-@capacitor/geolocation
+  if (newPin.length === 4 || newPin.length === 6) {
+    setTimeout(async () => {
+      if (stepRef.current === 'enter') {
+        setFirstPin(newPin);
+        setCurrentPin('');
+        setStep('confirm');
+      } else {
+        if (newPin === firstPinRef.current) {
+          try {
+            await setPin(newPin);
+            enableLock(true);
+            successVibration();
+            emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
+            toast.success(t('lock.pinSet', 'PIN je postavljen'));
+            resetAndClose();
+          } catch (err) {
+            console.error('Failed to save PIN:', err);
+            toast.error('Greška pri spremanju PIN-a');
+          }
+        } else if (newPin.length === firstPinRef.current.length) {
+          setError(true);
+          errorVibration();
+          setTimeout(() => setCurrentPin(''), 600);
+        }
+      }
+    }, 150);
+  }
+};
 ```
 
-### Nakon implementacije
-1. `git pull` + `npm install`
-2. Za push: dodati `google-services.json` u `android/app/`
-3. Za deep linking: intent filter u `AndroidManifest.xml` + `assetlinks.json` na hosting
-4. `npx cap sync android` + novi APK build
+This ensures the `step` and `firstPin` values read inside the `setTimeout` are always current, not stale from a previous render closure.
 
