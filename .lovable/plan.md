@@ -1,68 +1,55 @@
 
+Problem koji sada vidim:
+- Screenshot pokazuje da unos dolazi do koraka “Potvrdite PIN” i da se nakon 4 znamenke aktivira spremanje.
+- Dakle, prethodni problem s korakom potvrde je vrlo vjerojatno riješen.
+- Trenutni kvar je u samom spremanju PIN-a na uređaj.
 
-## Plan: Fix PIN Save Issue
+Do I know what the issue is?
+- Da.
+- `SetPinDialog` prikazuje toast “Greška pri spremanju PIN-a” samo ako `await setPin(newPin)` baci grešku.
+- `setPin()` u `AppLockContext` samo zove `SecureStorage.set(...)`.
+- A `SecureStorage` trenutno na native platformi koristi `@capacitor/preferences`, iako projekt već ima instaliran `capacitor-secure-storage-plugin`.
+- Zato je najvjerojatniji stvarni uzrok: PIN se i dalje sprema kroz pogrešan native storage sloj, pa zapis pada na Androidu.
 
-### Problem
-User enters PIN and confirms it, but it doesn't persist — after closing the dialog, Settings still shows "Postavi PIN" instead of the toggle switch.
+Datoteke koje treba doraditi:
+1. `src/lib/secureStorage.ts`
+2. `src/contexts/AppLockContext.tsx`
+3. `src/components/SetPinDialog.tsx`
 
-### Root Cause Analysis
-The `handleDigit` function auto-submits when PIN reaches 4 or 6 digits inside a `setTimeout(150ms)`. The `step` state captured in the closure may be stale due to React's batching, causing the confirm step to misidentify the current phase. Additionally, `lightTap()` is async but not awaited — if it throws before the try/catch wraps it, it could silently break the flow.
+Plan implementacije:
+1. Zamijeniti native backend za PIN spremanje
+   - U `secureStorage.ts` koristiti `SecureStoragePlugin` na native platformi.
+   - Na webu zadržati fallback na `localStorage`.
+   - `get()` neka vrati `null` ako ključ ne postoji, umjesto da ruši flow.
+   - Ukloniti zastarjeli komentar da secure storage plugin “nije bio dostupan”.
 
-### Fix (1 file)
+2. Ojačati `AppLockContext`
+   - Oko inicijalnog čitanja PIN postavki dodati `try/catch`, da lock sustav ne ostane u polu-ispravnom stanju ako native storage baci grešku.
+   - U `setPin()` zadržati throw ako spremanje stvarno ne uspije.
+   - Po mogućnosti odmah nakon spremanja napraviti read-back provjeru da je hash stvarno zapisan.
 
-**`src/components/SetPinDialog.tsx`**
-- Use a `useRef` for `step` and `firstPin` to avoid stale closure issues inside `setTimeout`
-- Add try/catch around the entire save flow (`setPin` + `enableLock`) to surface any hidden errors
-- Add a `toast.error` fallback if save fails
-- Ensure `lightTap()` doesn't block digit handling (already fire-and-forget, but add safety)
+3. Ispraviti poruku greške u dijalogu
+   - U `SetPinDialog` zadržati postojeći ref-based flow za `step` i `firstPin`.
+   - Suziti `try/catch` tako da “Greška pri spremanju PIN-a” pokriva samo stvarni storage save.
+   - Haptics / avatar / success toast odvojiti od storage greške, da se ne prijavi lažna greška spremanja.
 
-### Changes
+4. Provjera nakon izmjene
+   - Testirati postavljanje 4-znamenkastog i 6-znamenkastog PIN-a.
+   - Zatvoriti i ponovno otvoriti Settings i provjeriti da se umjesto “Postavi PIN” prikaže switch.
+   - Zaključati aplikaciju i provjeriti ispravan/pogrešan PIN.
+   - Ako je APK napravljen prije nego što je secure storage plugin bio uključen u native build, napraviti jedan novi `npx cap sync android` + rebuild.
 
-```tsx
-// Use refs to avoid stale closures in setTimeout
-const stepRef = useRef(step);
-const firstPinRef = useRef(firstPin);
+Tehnički sažetak:
+```text
+Sada:
+SetPinDialog -> AppLockContext.setPin() -> SecureStorage.set() -> @capacitor/preferences
 
-// Keep refs in sync
-useEffect(() => { stepRef.current = step; }, [step]);
-useEffect(() => { firstPinRef.current = firstPin; }, [firstPin]);
-
-const handleDigit = (digit: string) => {
-  if (currentPin.length >= 6) return;
-  lightTap(); // fire-and-forget
-  const newPin = currentPin + digit;
-  setCurrentPin(newPin);
-  setError(false);
-
-  if (newPin.length === 4 || newPin.length === 6) {
-    setTimeout(async () => {
-      if (stepRef.current === 'enter') {
-        setFirstPin(newPin);
-        setCurrentPin('');
-        setStep('confirm');
-      } else {
-        if (newPin === firstPinRef.current) {
-          try {
-            await setPin(newPin);
-            enableLock(true);
-            successVibration();
-            emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
-            toast.success(t('lock.pinSet', 'PIN je postavljen'));
-            resetAndClose();
-          } catch (err) {
-            console.error('Failed to save PIN:', err);
-            toast.error('Greška pri spremanju PIN-a');
-          }
-        } else if (newPin.length === firstPinRef.current.length) {
-          setError(true);
-          errorVibration();
-          setTimeout(() => setCurrentPin(''), 600);
-        }
-      }
-    }, 150);
-  }
-};
+Nakon popravka:
+SetPinDialog -> AppLockContext.setPin() -> SecureStorage.set() -> capacitor-secure-storage-plugin
+                                                   \-> localStorage samo na webu
 ```
 
-This ensures the `step` and `firstPin` values read inside the `setTimeout` are always current, not stale from a previous render closure.
-
+Očekivani rezultat:
+- PIN će se stvarno spremiti na uređaj.
+- U Settings će se odmah pojaviti PIN lock switch.
+- Toast “Greška pri spremanju PIN-a” pojavit će se samo ako spremanje stvarno padne.
