@@ -26,6 +26,9 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     mode === "production" && VitePWA({
       registerType: "autoUpdate",
+      devOptions: {
+        enabled: false,
+      },
       includeAssets: ["favicon.png", "logo-192.png", "logo-512.png"],
       manifest: {
         name: "V&M Balance - Upravljanje financijama",
@@ -81,6 +84,11 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      ...(mode !== "production"
+        ? {
+            "virtual:pwa-register/react": path.resolve(__dirname, "./src/lib/pwa-register-stub.ts"),
+          }
+        : {}),
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime"],
   },
