@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { APP_VERSION } from '@/lib/version';
 import { exportTextFile } from '@/lib/fileExport';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -1506,7 +1507,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
           {/* App Info */}
           <div className="text-center text-xs text-muted-foreground space-y-1">
             <p>V&M Balance</p>
-            <p>{t('settings.version', 'Verzija')} 1.0.0</p>
+            <p>{t('settings.version', 'Verzija')} {APP_VERSION}</p>
           </div>
         </div>
         </ScrollArea>
