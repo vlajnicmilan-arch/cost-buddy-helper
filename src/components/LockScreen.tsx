@@ -31,16 +31,16 @@ export const LockScreen = () => {
   }, [isLocked]);
 
   const handleDigit = (digit: string) => {
-    if (pin.length >= 6) return;
+    if (pin.length >= 4) return;
     lightTap();
     const newPin = pin + digit;
     setPin(newPin);
     setError(false);
 
-    if (newPin.length === 4 || newPin.length === 6) {
+    if (newPin.length === 4) {
       setTimeout(async () => {
         const success = await unlock(newPin);
-        if (!success && newPin.length === 6) {
+        if (!success) {
           setError(true);
           setShake(true);
           errorVibration();
@@ -92,7 +92,7 @@ export const LockScreen = () => {
           transition={{ duration: 0.4 }}
           className="flex gap-3 mb-8"
         >
-          {[0, 1, 2, 3, 4, 5].map((i) => (
+          {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
               className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
