@@ -1,94 +1,61 @@
 
-Problem koji sada stvarno vidim:
 
-- Greška nije više “ne znam gdje puca”, nego je vrlo vjerojatno mismatch između koda u repou i koda koji se stvarno izvršava na telefonu.
-- Trenutni source već ima:
-  - fallback u `src/lib/secureStorage.ts` na `localStorage`
-  - jednostavan `setPin()` u `src/contexts/AppLockContext.tsx` bez stroge read-back provjere
-  - toast u `src/components/SetPinDialog.tsx` koji se prikazuje samo ako `await setPin(newPin)` stvarno rejecta
-- Po toj verziji koda taj toast bi se trebao događati puno rjeđe nego što ga ti i dalje vidiš.
+## Problem
 
-Do I know what the issue is?
+Biometrijski plugin (`@aparajita/capacitor-biometric-auth`) **nikada nije dodan u projekt**. Kod u `AppLockContext.tsx` pokušava koristiti `window.BiometricAuth` koji ne postoji, pa se opcija za biometriju nikad ne prikazuje u postavkama.
 
-Da — dovoljno da prestanemo naslijepo mijenjati istu PIN logiku.
-Najvjerojatniji problem je da instalirana Android aplikacija i dalje vrti stariji bundle / cache, a ne ovu aktualnu verziju sourcea.
+Također, PIN UI prikazuje 6 točkica, ali auto-submit se trigerira na 4 znamenke — korisnik nikad ne stigne do 5. ili 6.
 
-Zašto mislim da je to to:
-- `SecureStoragePlugin.set({ key, value })` koristi se u ispravnom obliku prema dokumentaciji plugina.
-- `secureStorage.ts` sada već hvata native greške i pada natrag na `localStorage`.
-- `SetPinDialog.tsx` još uvijek pokazuje samo generički toast, pa ne razlikujemo:
-  1. stari bundle na uređaju
-  2. stvarni storage error na novom bundleu
-- `capacitor.config.ts` pokazuje da native app učitava `https://vmbalance.com`, što uvodi dodatni cache/update sloj.
-- `public/version.json` i objavljena domena trenutno obe vraćaju `1.3.4`, pa bez novog bumpa verzije ne možemo lako dokazati je li uređaj stvarno na zadnjoj verziji.
+---
 
-Plan implementacije:
+## Plan promjena
 
-1. Učiniti PIN save flow “samodijagnostičkim”
-- U `src/lib/secureStorage.ts` promijeniti API tako da ne vraća samo tihi fallback, nego i podatak:
-  - koji backend je korišten (`native` ili `localStorage`)
-  - je li native pao
-  - koja je stvarna poruka greške
-- Time više nećemo pogađati je li pukao plugin ili runtime.
+### 1. Instalirati biometrijski plugin
 
-2. Propustiti točne informacije do PIN dijaloga
-- U `src/contexts/AppLockContext.tsx` neka `setPin()` vrati jasan rezultat spremanja umjesto “uspjelo/nije uspjelo bez detalja”.
-- Pohraniti zadnji storage status u context ili pomoćno stanje za dijagnostiku.
+Dodati `@aparajita/capacitor-biometric-auth` u `package.json` i koristiti ga ispravno kao ES modul import umjesto `window` pristupa.
 
-3. Maknuti generičku grešku i pokazati pravi razlog
-- U `src/components/SetPinDialog.tsx` zamijeniti generički toast “Greška pri spremanju PIN-a” s preciznijim ishodom:
-  - “PIN spremljen u local fallback”
-  - “Native secure storage nije dostupan”
-  - “Spremanje nije uspjelo”
-- Dodati detaljan `console.error` s:
-  - `APP_VERSION`
-  - `window.location.origin`
-  - platformom
-  - storage backendom
-- Tako ćemo na sljedećem pokušaju odmah znati izvršava li se nova ili stara verzija.
+### 2. Popraviti `AppLockContext.tsx` — biometrija
 
-4. Dodati vidljivu runtime dijagnostiku u postavke
-- U `src/components/update/RuntimeDiagnostics.tsx` dodati redove za:
-  - aktivni origin
-  - `APP_VERSION`
-  - zadnji PIN storage backend
-  - zadnju PIN storage grešku
-- Ako je problem stale build, to će biti odmah vidljivo bez novog nagađanja.
+Zamijeniti nestandardni `(window as any).BiometricAuth` pristup s ispravnim importom:
 
-5. Bumpati verziju aplikacije uz ovu izmjenu
-- U `public/version.json` podići verziju.
-- Time native update check konačno može razlikovati staru i novu verziju i pomoći potvrditi da telefon stvarno vrti novi bundle.
-
-Datoteke za doradu:
-- `src/lib/secureStorage.ts`
-- `src/contexts/AppLockContext.tsx`
-- `src/components/SetPinDialog.tsx`
-- `src/components/update/RuntimeDiagnostics.tsx`
-- po potrebi `src/components/SettingsDialog.tsx`
-- `public/version.json`
-
-Tehnički sažetak:
-```text
-Najvjerojatniji realni problem sada:
-
-Telefon:
-native shell
-  -> učitava https://vmbalance.com
-  -> može imati stariji bundle / cache
-  -> zato i dalje vidiš stari generički PIN error
-
-Repo:
-SetPinDialog -> AppLockContext.setPin -> SecureStorage.set
-                                      -> native try
-                                      -> fallback localStorage
-
-Zaključak:
-sljedeći korak nije još jedna slijepa promjena PIN logike,
-nego ugradnja jasne dijagnostike + bump verzije da točno vidimo
-što se stvarno izvršava na uređaju.
+```typescript
+import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
 ```
 
-Očekivani rezultat nakon ove runde:
-- odmah ćemo znati je li problem stari bundle ili stvarni storage failure
-- prestat će se pojavljivati “ista” greška bez objašnjenja
-- ako storage i dalje stvarno puca, imat ćemo točnu poruku i backend koji je korišten, pa će sljedeći fix biti direktan, a ne naslijepo
+Koristiti `BiometricAuth.checkBiometry()` i `BiometricAuth.authenticate()` direktno.
+
+### 3. Standardizirati PIN na 4 znamenke
+
+**`SetPinDialog.tsx`:**
+- Promijeniti prikaz točkica s 6 na 4
+- Ograničiti unos na max 4 znamenke
+- Ukloniti auto-submit na `length === 6`
+
+**`LockScreen.tsx`:**
+- Promijeniti prikaz točkica s 6 na 4
+- Ograničiti unos na max 4 znamenke
+- Ukloniti auto-submit na `length === 6`
+
+---
+
+## Datoteke za izmjenu
+
+| Datoteka | Promjena |
+|---|---|
+| `package.json` | Dodati `@aparajita/capacitor-biometric-auth` |
+| `src/contexts/AppLockContext.tsx` | Ispraviti biometrijski import i pozive |
+| `src/components/SetPinDialog.tsx` | PIN ograničiti na 4 znamenke |
+| `src/components/LockScreen.tsx` | PIN ograničiti na 4 znamenke |
+
+---
+
+## Napomena
+
+Nakon ovih promjena, morat ćeš na računalu napraviti:
+1. `npm install`
+2. `npm run build`
+3. `npx cap sync android`
+4. Novi APK build u Android Studiju
+
+Tek tada će biometrija biti dostupna na mobitelu.
+
