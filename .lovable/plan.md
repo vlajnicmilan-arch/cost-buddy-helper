@@ -1,61 +1,64 @@
 
+Dijagnoza
 
-## Problem
+Najveći problem nije Git nego kombinacija više stvari:
 
-Biometrijski plugin (`@aparajita/capacitor-biometric-auth`) **nikada nije dodan u projekt**. Kod u `AppLockContext.tsx` pokušava koristiti `window.BiometricAuth` koji ne postoji, pa se opcija za biometriju nikad ne prikazuje u postavkama.
+1. Na slici Android Studio završava build na `:app:assembleDebugAndroidTest`.
+   - To je testni APK, ne glavni instalacijski APK.
+   - Zato se lako dogodi da gledaš krivu `.apk` datoteku ili da se glavni APK uopće ne osvježi.
 
-Također, PIN UI prikazuje 6 točkica, ali auto-submit se trigerira na 4 znamenke — korisnik nikad ne stigne do 5. ili 6.
+2. `capacitor.config.ts` je postavljen da nativna aplikacija učitava live web:
+   ```ts
+   server: {
+     url: 'https://vmbalance.com?forceHideBadge=true'
+   }
+   ```
+   - To znači da APK ne koristi lokalni `dist` bundle kao glavni izvor.
+   - Drugim riječima: možeš napraviti novi APK, ali će on i dalje otvoriti ono što je trenutno objavljeno na `vmbalance.com`.
 
----
+3. Lokalni kod i preview jesu noviji, ali javna stranica nije.
+   - `public/version.json` u projektu: `1.3.5`
+   - preview URL vraća: `1.3.5`
+   - `https://vmbalance.com/version.json` vraća: `1.3.4`
+   - `https://cost-buddy-helper.lovable.app/version.json` vraća: `1.3.4`
 
-## Plan promjena
+To praktično znači:
+- tvoj APK trenutno otvara staru web verziju `1.3.4`
+- zato ne vidiš zadnje promjene i imaš dojam da se APK “ne mijenja”
 
-### 1. Instalirati biometrijski plugin
+Dodatni problemi koje sam našao
 
-Dodati `@aparajita/capacitor-biometric-auth` u `package.json` i koristiti ga ispravno kao ES modul import umjesto `window` pristupa.
+- `src/components/SettingsDialog.tsx` još prikazuje hardcoded:
+  ```tsx
+  Verzija 1.0.0
+  ```
+  To zbunjuje jer ne pokazuje stvarni build/runtime version.
 
-### 2. Popraviti `AppLockContext.tsx` — biometrija
+- Screenshot i raniji sync izlaz pokazuju da Android projekt još ne izgleda usklađen s novim nativnim pluginima:
+  - ne vidi se biometrijski plugin u Android projektu
+  - to znači da ni nativni dio nije potpuno ažuriran
 
-Zamijeniti nestandardni `(window as any).BiometricAuth` pristup s ispravnim importom:
+Plan ispravka
 
-```typescript
-import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
-```
+1. Ispraviti što se builda
+   - Graditi glavni app APK, ne `androidTest` artefakt.
 
-Koristiti `BiometricAuth.checkBiometry()` i `BiometricAuth.authenticate()` direktno.
+2. Ispraviti način učitavanja aplikacije u nativnom shellu
+   - Za pravi APK release: maknuti `server.url` kako bi aplikacija koristila lokalni `dist`
+   - Ili, ako želiš zadržati remote učitavanje: prvo objaviti novu web verziju, jer APK sada vuče staru live verziju
 
-### 3. Standardizirati PIN na 4 znamenke
+3. Sinkronizirati nativne pluginove
+   - Android projekt mora stvarno sadržavati biometrijski plugin i ostale nove native dependencyje
 
-**`SetPinDialog.tsx`:**
-- Promijeniti prikaz točkica s 6 na 4
-- Ograničiti unos na max 4 znamenke
-- Ukloniti auto-submit na `length === 6`
+4. Popraviti prikaz verzije u aplikaciji
+   - Zamijeniti hardcoded `1.0.0` sa stvarnim `APP_VERSION`
 
-**`LockScreen.tsx`:**
-- Promijeniti prikaz točkica s 6 na 4
-- Ograničiti unos na max 4 znamenke
-- Ukloniti auto-submit na `length === 6`
+Zaključak
 
----
+Glavni uzrok je ovdje:
+- nativna aplikacija je podešena da otvara staru objavljenu web verziju
+- screenshot dodatno sugerira da se builda testni artefakt umjesto glavnog APK-a
 
-## Datoteke za izmjenu
-
-| Datoteka | Promjena |
-|---|---|
-| `package.json` | Dodati `@aparajita/capacitor-biometric-auth` |
-| `src/contexts/AppLockContext.tsx` | Ispraviti biometrijski import i pozive |
-| `src/components/SetPinDialog.tsx` | PIN ograničiti na 4 znamenke |
-| `src/components/LockScreen.tsx` | PIN ograničiti na 4 znamenke |
-
----
-
-## Napomena
-
-Nakon ovih promjena, morat ćeš na računalu napraviti:
-1. `npm install`
-2. `npm run build`
-3. `npx cap sync android`
-4. Novi APK build u Android Studiju
-
-Tek tada će biometrija biti dostupna na mobitelu.
-
+Znači:
+- nije primarno problem u Gitu
+- problem je u build targetu + `server.url` konfiguraciji + zastarjeloj objavljenoj web verziji
