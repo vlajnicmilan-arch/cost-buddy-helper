@@ -32,13 +32,13 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
   useEffect(() => { firstPinRef.current = firstPin; }, [firstPin]);
 
   const handleDigit = (digit: string) => {
-    if (currentPin.length >= 6) return;
+    if (currentPin.length >= 4) return;
     lightTap();
     const newPin = currentPin + digit;
     setCurrentPin(newPin);
     setError(false);
 
-    if (newPin.length === 4 || newPin.length === 6) {
+    if (newPin.length === 4) {
       setTimeout(async () => {
         if (stepRef.current === 'enter') {
           setFirstPin(newPin);
@@ -133,7 +133,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
             transition={{ duration: 0.4 }}
             className="flex gap-3 mb-6"
           >
-            {[0, 1, 2, 3, 4, 5].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
                 className={`w-3 h-3 rounded-full transition-all duration-200 ${

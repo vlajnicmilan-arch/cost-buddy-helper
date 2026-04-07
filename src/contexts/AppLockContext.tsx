@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { SecureStorage, type StorageResult } from '@/lib/secureStorage';
 import { Capacitor } from '@capacitor/core';
+import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
 
 const LOCK_PIN_KEY = 'app_lock_pin';
 const LOCK_ENABLED_KEY = 'app_lock_enabled';
@@ -89,13 +90,15 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
       if (Capacitor.isNativePlatform()) {
         try {
-          const BiometricAuth = (window as any).BiometricAuth;
-          if (BiometricAuth?.checkBiometry) {
-            const result = await BiometricAuth.checkBiometry();
-            if (result?.isAvailable) {
-              setBiometricAvailable(true);
-              setBiometricType(result.biometryType === 2 ? 'face' : 'fingerprint');
-            }
+          const result = await BiometricAuth.checkBiometry();
+          if (result?.isAvailable) {
+            setBiometricAvailable(true);
+            setBiometricType(
+              result.biometryType === BiometryType.faceAuthentication ||
+              result.biometryType === BiometryType.faceId
+                ? 'face'
+                : 'fingerprint'
+            );
           }
         } catch {
           // Plugin not available
@@ -165,13 +168,9 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
     if (!biometricEnabled || !biometricAvailable) return false;
     try {
       if (Capacitor.isNativePlatform()) {
-        const BiometricAuth = (window as any).BiometricAuth;
-        if (!BiometricAuth) return false;
         await BiometricAuth.authenticate({
           reason: 'Otključajte V&M Balance',
-          title: 'Biometrijska provjera',
-          subtitle: 'Koristite otisak prsta ili prepoznavanje lica',
-          negativeButtonText: 'Koristi PIN',
+          allowDeviceCredential: true,
         });
         setIsLocked(false);
         localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
