@@ -1,55 +1,94 @@
 
-Problem koji sada vidim:
-- Screenshot pokazuje da unos dolazi do koraka “Potvrdite PIN” i da se nakon 4 znamenke aktivira spremanje.
-- Dakle, prethodni problem s korakom potvrde je vrlo vjerojatno riješen.
-- Trenutni kvar je u samom spremanju PIN-a na uređaj.
+Problem koji sada stvarno vidim:
+
+- Greška nije više “ne znam gdje puca”, nego je vrlo vjerojatno mismatch između koda u repou i koda koji se stvarno izvršava na telefonu.
+- Trenutni source već ima:
+  - fallback u `src/lib/secureStorage.ts` na `localStorage`
+  - jednostavan `setPin()` u `src/contexts/AppLockContext.tsx` bez stroge read-back provjere
+  - toast u `src/components/SetPinDialog.tsx` koji se prikazuje samo ako `await setPin(newPin)` stvarno rejecta
+- Po toj verziji koda taj toast bi se trebao događati puno rjeđe nego što ga ti i dalje vidiš.
 
 Do I know what the issue is?
-- Da.
-- `SetPinDialog` prikazuje toast “Greška pri spremanju PIN-a” samo ako `await setPin(newPin)` baci grešku.
-- `setPin()` u `AppLockContext` samo zove `SecureStorage.set(...)`.
-- A `SecureStorage` trenutno na native platformi koristi `@capacitor/preferences`, iako projekt već ima instaliran `capacitor-secure-storage-plugin`.
-- Zato je najvjerojatniji stvarni uzrok: PIN se i dalje sprema kroz pogrešan native storage sloj, pa zapis pada na Androidu.
 
-Datoteke koje treba doraditi:
-1. `src/lib/secureStorage.ts`
-2. `src/contexts/AppLockContext.tsx`
-3. `src/components/SetPinDialog.tsx`
+Da — dovoljno da prestanemo naslijepo mijenjati istu PIN logiku.
+Najvjerojatniji problem je da instalirana Android aplikacija i dalje vrti stariji bundle / cache, a ne ovu aktualnu verziju sourcea.
+
+Zašto mislim da je to to:
+- `SecureStoragePlugin.set({ key, value })` koristi se u ispravnom obliku prema dokumentaciji plugina.
+- `secureStorage.ts` sada već hvata native greške i pada natrag na `localStorage`.
+- `SetPinDialog.tsx` još uvijek pokazuje samo generički toast, pa ne razlikujemo:
+  1. stari bundle na uređaju
+  2. stvarni storage error na novom bundleu
+- `capacitor.config.ts` pokazuje da native app učitava `https://vmbalance.com`, što uvodi dodatni cache/update sloj.
+- `public/version.json` i objavljena domena trenutno obe vraćaju `1.3.4`, pa bez novog bumpa verzije ne možemo lako dokazati je li uređaj stvarno na zadnjoj verziji.
 
 Plan implementacije:
-1. Zamijeniti native backend za PIN spremanje
-   - U `secureStorage.ts` koristiti `SecureStoragePlugin` na native platformi.
-   - Na webu zadržati fallback na `localStorage`.
-   - `get()` neka vrati `null` ako ključ ne postoji, umjesto da ruši flow.
-   - Ukloniti zastarjeli komentar da secure storage plugin “nije bio dostupan”.
 
-2. Ojačati `AppLockContext`
-   - Oko inicijalnog čitanja PIN postavki dodati `try/catch`, da lock sustav ne ostane u polu-ispravnom stanju ako native storage baci grešku.
-   - U `setPin()` zadržati throw ako spremanje stvarno ne uspije.
-   - Po mogućnosti odmah nakon spremanja napraviti read-back provjeru da je hash stvarno zapisan.
+1. Učiniti PIN save flow “samodijagnostičkim”
+- U `src/lib/secureStorage.ts` promijeniti API tako da ne vraća samo tihi fallback, nego i podatak:
+  - koji backend je korišten (`native` ili `localStorage`)
+  - je li native pao
+  - koja je stvarna poruka greške
+- Time više nećemo pogađati je li pukao plugin ili runtime.
 
-3. Ispraviti poruku greške u dijalogu
-   - U `SetPinDialog` zadržati postojeći ref-based flow za `step` i `firstPin`.
-   - Suziti `try/catch` tako da “Greška pri spremanju PIN-a” pokriva samo stvarni storage save.
-   - Haptics / avatar / success toast odvojiti od storage greške, da se ne prijavi lažna greška spremanja.
+2. Propustiti točne informacije do PIN dijaloga
+- U `src/contexts/AppLockContext.tsx` neka `setPin()` vrati jasan rezultat spremanja umjesto “uspjelo/nije uspjelo bez detalja”.
+- Pohraniti zadnji storage status u context ili pomoćno stanje za dijagnostiku.
 
-4. Provjera nakon izmjene
-   - Testirati postavljanje 4-znamenkastog i 6-znamenkastog PIN-a.
-   - Zatvoriti i ponovno otvoriti Settings i provjeriti da se umjesto “Postavi PIN” prikaže switch.
-   - Zaključati aplikaciju i provjeriti ispravan/pogrešan PIN.
-   - Ako je APK napravljen prije nego što je secure storage plugin bio uključen u native build, napraviti jedan novi `npx cap sync android` + rebuild.
+3. Maknuti generičku grešku i pokazati pravi razlog
+- U `src/components/SetPinDialog.tsx` zamijeniti generički toast “Greška pri spremanju PIN-a” s preciznijim ishodom:
+  - “PIN spremljen u local fallback”
+  - “Native secure storage nije dostupan”
+  - “Spremanje nije uspjelo”
+- Dodati detaljan `console.error` s:
+  - `APP_VERSION`
+  - `window.location.origin`
+  - platformom
+  - storage backendom
+- Tako ćemo na sljedećem pokušaju odmah znati izvršava li se nova ili stara verzija.
+
+4. Dodati vidljivu runtime dijagnostiku u postavke
+- U `src/components/update/RuntimeDiagnostics.tsx` dodati redove za:
+  - aktivni origin
+  - `APP_VERSION`
+  - zadnji PIN storage backend
+  - zadnju PIN storage grešku
+- Ako je problem stale build, to će biti odmah vidljivo bez novog nagađanja.
+
+5. Bumpati verziju aplikacije uz ovu izmjenu
+- U `public/version.json` podići verziju.
+- Time native update check konačno može razlikovati staru i novu verziju i pomoći potvrditi da telefon stvarno vrti novi bundle.
+
+Datoteke za doradu:
+- `src/lib/secureStorage.ts`
+- `src/contexts/AppLockContext.tsx`
+- `src/components/SetPinDialog.tsx`
+- `src/components/update/RuntimeDiagnostics.tsx`
+- po potrebi `src/components/SettingsDialog.tsx`
+- `public/version.json`
 
 Tehnički sažetak:
 ```text
-Sada:
-SetPinDialog -> AppLockContext.setPin() -> SecureStorage.set() -> @capacitor/preferences
+Najvjerojatniji realni problem sada:
 
-Nakon popravka:
-SetPinDialog -> AppLockContext.setPin() -> SecureStorage.set() -> capacitor-secure-storage-plugin
-                                                   \-> localStorage samo na webu
+Telefon:
+native shell
+  -> učitava https://vmbalance.com
+  -> može imati stariji bundle / cache
+  -> zato i dalje vidiš stari generički PIN error
+
+Repo:
+SetPinDialog -> AppLockContext.setPin -> SecureStorage.set
+                                      -> native try
+                                      -> fallback localStorage
+
+Zaključak:
+sljedeći korak nije još jedna slijepa promjena PIN logike,
+nego ugradnja jasne dijagnostike + bump verzije da točno vidimo
+što se stvarno izvršava na uređaju.
 ```
 
-Očekivani rezultat:
-- PIN će se stvarno spremiti na uređaj.
-- U Settings će se odmah pojaviti PIN lock switch.
-- Toast “Greška pri spremanju PIN-a” pojavit će se samo ako spremanje stvarno padne.
+Očekivani rezultat nakon ove runde:
+- odmah ćemo znati je li problem stari bundle ili stvarni storage failure
+- prestat će se pojavljivati “ista” greška bez objašnjenja
+- ako storage i dalje stvarno puca, imat ćemo točnu poruku i backend koji je korišten, pa će sljedeći fix biti direktan, a ne naslijepo
