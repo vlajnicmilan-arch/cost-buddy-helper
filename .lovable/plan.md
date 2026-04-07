@@ -1,64 +1,94 @@
 
-Dijagnoza
+Problem
 
-Najveći problem nije Git nego kombinacija više stvari:
+Tvoj trenutni problem više nije Git niti APK timestamp, nego konkretan Android build error:
 
-1. Na slici Android Studio završava build na `:app:assembleDebugAndroidTest`.
-   - To je testni APK, ne glavni instalacijski APK.
-   - Zato se lako dogodi da gledaš krivu `.apk` datoteku ili da se glavni APK uopće ne osvježi.
+```text
+getDefaultProguardFile('proguard-android.txt') is no longer supported
+```
 
-2. `capacitor.config.ts` je postavljen da nativna aplikacija učitava live web:
-   ```ts
-   server: {
-     url: 'https://vmbalance.com?forceHideBadge=true'
-   }
-   ```
-   - To znači da APK ne koristi lokalni `dist` bundle kao glavni izvor.
-   - Drugim riječima: možeš napraviti novi APK, ali će on i dalje otvoriti ono što je trenutno objavljeno na `vmbalance.com`.
+To znači da je lokalni Android projekt u Android Studiju nadograđen na noviji Android Gradle Plugin, ali barem jedan `build.gradle` još koristi staru ProGuard postavku. Zato build puca prije nego se novi APK uopće napravi.
 
-3. Lokalni kod i preview jesu noviji, ali javna stranica nije.
-   - `public/version.json` u projektu: `1.3.5`
-   - preview URL vraća: `1.3.5`
-   - `https://vmbalance.com/version.json` vraća: `1.3.4`
-   - `https://cost-buddy-helper.lovable.app/version.json` vraća: `1.3.4`
+Što sam potvrdio iz projekta
 
-To praktično znači:
-- tvoj APK trenutno otvara staru web verziju `1.3.4`
-- zato ne vidiš zadnje promjene i imaš dojam da se APK “ne mijenja”
+- `capacitor.config.ts` i dalje koristi live web:
+  - `https://vmbalance.com?forceHideBadge=true`
+- `package.json` koristi Capacitor 8 pakete
+- u web kodu već postoji runtime dijagnostika i dinamička verzija (`APP_VERSION`)
+- screenshot pokazuje da build puca u lokalnom `android/app/build.gradle`
+- u ovom repo snapshotu nema `android/` mape, pa je problem u tvom lokalno generiranom Android projektu, ne u React dijelu repo-a
 
-Dodatni problemi koje sam našao
+Root cause
 
-- `src/components/SettingsDialog.tsx` još prikazuje hardcoded:
-  ```tsx
-  Verzija 1.0.0
+Imaš 2 odvojena problema koji se preklapaju:
+
+1. Android build trenutno ne prolazi
+- zbog zastarjele Gradle/ProGuard konfiguracije u lokalnoj `android` mapi
+
+2. Čak i kad build prođe, app koristi remote web preko `server.url`
+- zato bez objave najnovije web verzije APK može otvoriti stariji sadržaj
+
+Plan popravka
+
+1. Popraviti lokalni Android build
+- U lokalnom `android/app/build.gradle` zamijeniti:
+  ```gradle
+  getDefaultProguardFile('proguard-android.txt')
   ```
-  To zbunjuje jer ne pokazuje stvarni build/runtime version.
+  sa:
+  ```gradle
+  getDefaultProguardFile('proguard-android-optimize.txt')
+  ```
+- Provjeriti postoji li ista stara vrijednost i u plugin modulima ako build nakon toga i dalje puca
 
-- Screenshot i raniji sync izlaz pokazuju da Android projekt još ne izgleda usklađen s novim nativnim pluginima:
-  - ne vidi se biometrijski plugin u Android projektu
-  - to znači da ni nativni dio nije potpuno ažuriran
+2. Izbjeći ručno krpanje ako je Android projekt zastario
+- Najsigurniji pristup je regenerirati `android` platformu iz roota projekta:
+  ```text
+  npx cap add android
+  npx cap sync android
+  ```
+- To je posebno važno jer screenshot pokazuje da lokalni native projekt vjerojatno nije potpuno usklađen s trenutnim npm paketima
 
-Plan ispravka
+3. Uskladiti native projekt s trenutnim Capacitor paketima
+- Provjeriti da lokalni Android projekt stvarno povlači aktualne pluginove:
+  - biometric auth
+  - camera
+  - push notifications
+  - haptics
+  - secure/native storage povezane module
+- Ako ne, novi APK opet neće odražavati zadnje native promjene
 
-1. Ispraviti što se builda
-   - Graditi glavni app APK, ne `androidTest` artefakt.
+4. Zadržati svijest o live-sync ponašanju
+- Pošto `capacitor.config.ts` ima `server.url`, APK će i dalje učitavati objavljeni web
+- Zato za vidljive UI promjene treba i:
+  - objaviti novu web verziju
+- Za nove native pluginove treba i:
+  - sync Android projekta
+  - novi APK build
 
-2. Ispraviti način učitavanja aplikacije u nativnom shellu
-   - Za pravi APK release: maknuti `server.url` kako bi aplikacija koristila lokalni `dist`
-   - Ili, ako želiš zadržati remote učitavanje: prvo objaviti novu web verziju, jer APK sada vuče staru live verziju
+5. Provjera nakon popravka
+- U aplikaciji otvoriti Runtime dijagnostiku i provjeriti:
+  - `Runtime = Native`
+  - `APP_VERSION`
+  - `Origin`
+  - remote verziju
+- Time ćeš odmah znati gleda li APK novi native shell i koju web verziju učitava
 
-3. Sinkronizirati nativne pluginove
-   - Android projekt mora stvarno sadržavati biometrijski plugin i ostale nove native dependencyje
+Datoteke / mjesta koja treba dirati
 
-4. Popraviti prikaz verzije u aplikaciji
-   - Zamijeniti hardcoded `1.0.0` sa stvarnim `APP_VERSION`
+- Lokalno na računalu:
+  - `android/app/build.gradle`
+  - po potrebi i drugi lokalni `android/*/build.gradle` moduli ako isti error ostane
+- U repo logici već relevantno:
+  - `capacitor.config.ts`
+  - `src/components/update/RuntimeDiagnostics.tsx`
+  - `src/components/update/updateUtils.ts`
+  - `src/components/SettingsDialog.tsx`
 
-Zaključak
+Napomena o implementaciji
 
-Glavni uzrok je ovdje:
-- nativna aplikacija je podešena da otvara staru objavljenu web verziju
-- screenshot dodatno sugerira da se builda testni artefakt umjesto glavnog APK-a
-
-Znači:
-- nije primarno problem u Gitu
-- problem je u build targetu + `server.url` konfiguraciji + zastarjeloj objavljenoj web verziji
+Pošto sam sada u read-only modu i `android/` mapa nije prisutna u ovom snapshotu, ne mogu direktno izmijeniti lokalni Gradle file. Kad odobriš implementaciju u normalnom modu, ispravan smjer je:
+- ili promijeniti plan tako da app koristi bundled `dist` za release build
+- ili ostaviti live-sync, ali jasno odvojiti:
+  - web publish korak
+  - native sync/build korak
