@@ -1,19 +1,34 @@
 /**
  * Secure Storage helper — tries capacitor-secure-storage-plugin on native,
  * always falls back to localStorage if anything fails.
+ * Returns diagnostic info for debugging PIN save issues.
  */
 import { Capacitor } from '@capacitor/core';
 
 const isNative = Capacitor.isNativePlatform();
 
-async function nativeSet(key: string, value: string): Promise<boolean> {
+export interface StorageResult {
+  success: boolean;
+  backend: 'native' | 'localStorage';
+  error?: string;
+}
+
+// Last operation result for diagnostics
+let lastResult: StorageResult = { success: true, backend: 'localStorage' };
+
+export function getLastStorageResult(): StorageResult {
+  return { ...lastResult };
+}
+
+async function nativeSet(key: string, value: string): Promise<StorageResult> {
   try {
     const { SecureStoragePlugin } = await import('capacitor-secure-storage-plugin');
     await SecureStoragePlugin.set({ key, value });
-    return true;
-  } catch (e) {
-    console.warn('SecureStorage native set failed, using localStorage:', e);
-    return false;
+    return { success: true, backend: 'native' };
+  } catch (e: any) {
+    const msg = e?.message || String(e);
+    console.warn('[SecureStorage] native set failed:', msg);
+    return { success: false, backend: 'native', error: msg };
   }
 }
 
@@ -37,16 +52,29 @@ async function nativeRemove(key: string): Promise<void> {
 }
 
 export const SecureStorage = {
-  async set(key: string, value: string): Promise<void> {
+  async set(key: string, value: string): Promise<StorageResult> {
     if (isNative) {
-      const ok = await nativeSet(key, value);
-      if (!ok) {
+      const result = await nativeSet(key, value);
+      if (!result.success) {
         // Fallback to localStorage on native if plugin fails
-        localStorage.setItem(key, value);
+        try {
+          localStorage.setItem(key, value);
+          lastResult = { success: true, backend: 'localStorage', error: `native failed: ${result.error}` };
+        } catch (e: any) {
+          lastResult = { success: false, backend: 'localStorage', error: `both failed: native(${result.error}), ls(${e?.message})` };
+        }
+      } else {
+        lastResult = result;
       }
     } else {
-      localStorage.setItem(key, value);
+      try {
+        localStorage.setItem(key, value);
+        lastResult = { success: true, backend: 'localStorage' };
+      } catch (e: any) {
+        lastResult = { success: false, backend: 'localStorage', error: e?.message || String(e) };
+      }
     }
+    return { ...lastResult };
   },
 
   async get(key: string): Promise<string | null> {

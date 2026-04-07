@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { APP_VERSION } from '@/lib/version';
 import { isNativeApp, getPlatformName, fetchLatestVersion, type VersionCheckResult } from './updateUtils';
+import { getLastStorageResult } from '@/lib/secureStorage';
 import { ChevronDown, ChevronUp, Activity } from 'lucide-react';
 
 export const RuntimeDiagnostics = () => {
@@ -32,6 +33,7 @@ export const RuntimeDiagnostics = () => {
   const platform = getPlatformName();
   const origin = typeof window !== 'undefined' ? window.location.origin : 'N/A';
   const href = typeof window !== 'undefined' ? window.location.href : 'N/A';
+  const lastStorage = getLastStorageResult();
 
   return (
     <div className="mt-3 border border-border/50 rounded-xl overflow-hidden">
@@ -54,6 +56,9 @@ export const RuntimeDiagnostics = () => {
           <Row label="Origin" value={origin} />
           <Row label="Href" value={href} truncate />
           <Row label="Service Worker" value={swStatus} />
+          <Row label="Storage backend" value={lastStorage.backend} />
+          <Row label="Storage OK" value={lastStorage.success ? '✅' : '❌'} />
+          {lastStorage.error && <Row label="Storage error" value={lastStorage.error} truncate />}
 
           <button
             onClick={handleCheckRemote}

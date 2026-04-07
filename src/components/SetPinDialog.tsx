@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { useAppLock } from '@/contexts/AppLockContext';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Lock, Check } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useHaptics } from '@/hooks/useHaptics';
+import { APP_VERSION } from '@/lib/version';
 
 interface SetPinDialogProps {
   open: boolean;
@@ -46,18 +47,42 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
         } else {
           if (newPin === firstPinRef.current) {
             try {
-              await setPin(newPin);
+              const result = await setPin(newPin);
+              if (!result.success) {
+                console.error('[PIN] Save failed', {
+                  version: APP_VERSION,
+                  origin: window.location.origin,
+                  backend: result.backend,
+                  error: result.error,
+                });
+                toast.error(`PIN greška: ${result.error || 'nepoznato'}`);
+                return;
+              }
               enableLock(true);
-            } catch (err) {
-              console.error('Failed to save PIN:', err);
-              toast.error('Greška pri spremanju PIN-a');
+              console.log('[PIN] Saved OK', {
+                version: APP_VERSION,
+                backend: result.backend,
+                error: result.error,
+              });
+              if (result.error) {
+                // Saved via fallback
+                toast.success(`PIN postavljen (fallback: ${result.backend})`, { duration: 5000 });
+              } else {
+                toast.success(t('lock.pinSet', 'PIN je postavljen'));
+              }
+            } catch (err: any) {
+              console.error('[PIN] Unexpected error', {
+                version: APP_VERSION,
+                origin: window.location.origin,
+                message: err?.message,
+              });
+              toast.error(`PIN error: ${err?.message || 'unknown'}`);
               return;
             }
             try {
               successVibration();
               emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
             } catch { /* non-critical */ }
-            toast.success(t('lock.pinSet', 'PIN je postavljen'));
             resetAndClose();
           } else if (newPin.length === firstPinRef.current.length) {
             setError(true);
@@ -103,7 +128,6 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
               : t('lock.reenterPin', 'Unesite PIN ponovo za potvrdu')}
           </p>
 
-          {/* PIN dots */}
           <motion.div
             animate={error ? { x: [-10, 10, -10, 10, 0] } : {}}
             transition={{ duration: 0.4 }}
@@ -127,7 +151,6 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
             </p>
           )}
 
-          {/* Numpad */}
           <div className="grid grid-cols-3 gap-2 max-w-[220px] w-full">
             {digits.map((d, i) => {
               if (d === '') return <div key={i} />;
