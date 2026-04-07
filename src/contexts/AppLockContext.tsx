@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import { SecureStorage } from '@/lib/secureStorage';
+import { SecureStorage, type StorageResult } from '@/lib/secureStorage';
 import { Capacitor } from '@capacitor/core';
 
 const LOCK_PIN_KEY = 'app_lock_pin';
@@ -20,7 +20,7 @@ interface AppLockContextType {
   biometricType: 'fingerprint' | 'face' | 'none';
   unlock: (pin: string) => Promise<boolean>;
   unlockBiometric: () => Promise<boolean>;
-  setPin: (pin: string) => Promise<void>;
+  setPin: (pin: string) => Promise<StorageResult>;
   removePin: () => Promise<void>;
   enableLock: (enabled: boolean) => void;
   setLockTimeout: (timeout: LockTimeout) => void;
@@ -76,7 +76,6 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
         setLockTimeoutState(timeout ? (Number(timeout) as LockTimeout) : 60);
         setBiometricEnabledState(bioEnabled === 'true');
 
-        // Check if should be locked
         if (isEnabled && hasPIN) {
           const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
           const timeoutVal = timeout ? Number(timeout) : 60;
@@ -88,7 +87,6 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
         console.error('AppLock init failed:', err);
       }
 
-      // Check biometric availability via native plugin (dynamic)
       if (Capacitor.isNativePlatform()) {
         try {
           const BiometricAuth = (window as any).BiometricAuth;
@@ -96,7 +94,6 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
             const result = await BiometricAuth.checkBiometry();
             if (result?.isAvailable) {
               setBiometricAvailable(true);
-              // biometryType: 1=touchId/fingerprint, 2=faceId/face
               setBiometricType(result.biometryType === 2 ? 'face' : 'fingerprint');
             }
           }
@@ -110,7 +107,6 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
     init();
   }, []);
 
-  // Track activity
   const updateActivity = useCallback(() => {
     if (isLockEnabled && hasPinSet && !isLocked) {
       localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
@@ -119,10 +115,8 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!isLockEnabled || !hasPinSet) return;
-
     const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
     events.forEach(e => window.addEventListener(e, updateActivity, { passive: true }));
-
     const interval = setInterval(() => {
       if (isLocked) return;
       const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
@@ -132,17 +126,14 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
         setIsLocked(true);
       }
     }, 5000);
-
     return () => {
       events.forEach(e => window.removeEventListener(e, updateActivity));
       clearInterval(interval);
     };
   }, [isLockEnabled, hasPinSet, isLocked, lockTimeout, updateActivity]);
 
-  // Visibility change
   useEffect(() => {
     if (!isLockEnabled || !hasPinSet) return;
-
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') {
         localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
@@ -156,7 +147,6 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [isLockEnabled, hasPinSet, lockTimeout]);
@@ -173,7 +163,6 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
   const unlockBiometric = async (): Promise<boolean> => {
     if (!biometricEnabled || !biometricAvailable) return false;
-
     try {
       if (Capacitor.isNativePlatform()) {
         const BiometricAuth = (window as any).BiometricAuth;
@@ -194,11 +183,14 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
-  const setPin = async (pin: string) => {
+  const setPin = async (pin: string): Promise<StorageResult> => {
     const hashed = hashPin(pin);
-    await SecureStorage.set(LOCK_PIN_KEY, hashed);
-    setHasPinSet(true);
-    localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    const result = await SecureStorage.set(LOCK_PIN_KEY, hashed);
+    if (result.success) {
+      setHasPinSet(true);
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    }
+    return result;
   };
 
   const removePin = async () => {
