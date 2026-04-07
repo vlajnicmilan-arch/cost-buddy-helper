@@ -20,8 +20,8 @@ export const useInAppReview = () => {
       if (Date.now() - lastShown < REVIEW_COOLDOWN_MS) return;
 
       // Dynamic import to avoid bundling on web
-      const { RateApp } = await import('capacitor-rate-app');
-      await RateApp.requestReview();
+      const { InAppReview } = await import('@capacitor-community/in-app-review');
+      await InAppReview.requestReview();
       localStorage.setItem(REVIEW_LAST_KEY, String(Date.now()));
       // Reset counter after showing
       localStorage.setItem(REVIEW_COUNT_KEY, '0');
