@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { APP_VERSION } from '@/lib/version';
 import { exportTextFile } from '@/lib/fileExport';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
