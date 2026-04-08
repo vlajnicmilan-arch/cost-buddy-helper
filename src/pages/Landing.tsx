@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import logo from '@/assets/logo.png';
 import heroImage from '@/assets/hero-receipt-scan.jpg';
 import cardsImage from '@/assets/cards-floating.png';
 import mockupDashboard from '@/assets/app-mockup-dashboard.png';
@@ -54,8 +55,8 @@ const LandingNav = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Wallet className="w-5 h-5 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
+            <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
           </div>
           <span className="text-xl font-bold text-foreground">V&M Balance</span>
         </div>
@@ -444,8 +445,8 @@ const FooterSection = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-primary-foreground" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
+                <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
               </div>
               <span className="font-bold text-foreground">V&M Balance</span>
             </div>
@@ -496,8 +497,8 @@ const APKDownloadSection = ({ referralCode }: { referralCode: string }) => {
 
       <div className="max-w-lg mx-auto text-center">
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/25">
-            <Wallet className="w-10 h-10 text-primary-foreground" />
+          <div className="w-20 h-20 rounded-3xl overflow-hidden mx-auto mb-6 shadow-lg shadow-primary/25">
+            <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
           </div>
         </motion.div>
 
