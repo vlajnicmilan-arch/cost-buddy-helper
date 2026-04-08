@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ProjectMember, ProjectInvitation, ProjectRole } from '@/types/project';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export const useProjectMembers = (projectId: string | null) => {
@@ -93,10 +93,10 @@ export const useProjectMembers = (projectId: string | null) => {
       setMembers(prev => prev.map(m => 
         m.id === memberId ? { ...m, role: newRole } : m
       ));
-      toast.success(t('projects.memberRoleUpdated'));
+      showSuccess(t('projects.memberRoleUpdated'));
     } catch (error) {
       console.error('Error updating member role:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -110,10 +110,10 @@ export const useProjectMembers = (projectId: string | null) => {
       if (error) throw error;
 
       setMembers(prev => prev.filter(m => m.id !== memberId));
-      toast.success(t('projects.memberRemoved'));
+      showSuccess(t('projects.memberRemoved'));
     } catch (error) {
       console.error('Error removing member:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -127,10 +127,10 @@ export const useProjectMembers = (projectId: string | null) => {
       if (error) throw error;
 
       setInvitations(prev => prev.filter(i => i.id !== invitationId));
-      toast.success(t('projects.invitationCancelled'));
+      showSuccess(t('projects.invitationCancelled'));
     } catch (error) {
       console.error('Error cancelling invitation:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -164,7 +164,7 @@ export const useProjectMembers = (projectId: string | null) => {
       return link;
     } catch (error) {
       console.error('Error generating invite link:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
       return null;
     }
   };

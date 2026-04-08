@@ -9,7 +9,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { CreditCard, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 interface BulkPaymentSourceDialogProps {
@@ -74,7 +74,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newPaymentSource) {
-      toast.error(t('toasts.selectTransactionsAndSource'));
+      showError(t('toasts.selectTransactionsAndSource'));
       return;
     }
 
@@ -90,13 +90,13 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
       await onUpdateExpenses(updatedExpenses);
       
       const sourceInfo = getPaymentSourceInfo(newPaymentSource);
-      toast.success(t('toasts.transactionsUpdatedSource', { count: selectedIds.size, name: sourceInfo.name }));
+      showSuccess(t('toasts.transactionsUpdatedSource', { count: selectedIds.size, name: sourceInfo.name }));
       
       setSelectedIds(new Set());
       setNewPaymentSource('');
       setOpen(false);
     } catch (error) {
-      toast.error(t('toasts.updateError'));
+      showError(t('toasts.updateError'));
     } finally {
       setSaving(false);
     }

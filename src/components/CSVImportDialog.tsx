@@ -18,7 +18,7 @@ import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
 
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 
@@ -230,7 +230,7 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
         status: 'active',
       });
     }
-    toast.success(`Dodano ${loans.length} pozajmica u evidenciju dugovanja`);
+    showSuccess(`Dodano ${loans.length} pozajmica u evidenciju dugovanja`);
     setDetectedLoans([]);
   };
 

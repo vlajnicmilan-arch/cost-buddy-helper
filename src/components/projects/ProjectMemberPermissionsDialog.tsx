@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Loader2, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { 
   OPTIONAL_TABS, 
   MANDATORY_TABS, 
@@ -51,10 +51,10 @@ export const ProjectMemberPermissionsDialog = ({
     const success = await updatePermissions(projectId, userId, localPerms);
     setSaving(false);
     if (success) {
-      toast.success(t('projects.permissionsSaved', 'Dozvole spremljene'));
+      showSuccess(t('projects.permissionsSaved', 'Dozvole spremljene'));
       onOpenChange(false);
     } else {
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

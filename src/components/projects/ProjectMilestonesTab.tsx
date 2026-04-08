@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { showError } from '@/hooks/useStatusFeedback';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
@@ -94,7 +95,7 @@ export const ProjectMilestonesTab = ({
       const depMilestone = milestones.find(m => m.id === dependsOn);
       if (depMilestone && depMilestone.status !== 'completed') {
         const { toast } = await import('sonner');
-        toast.error(t('projects.dependencyNotCompleted', 'Prethodna faza mora biti završena prije pokretanja ove faze'));
+        showError(t('projects.dependencyNotCompleted', 'Prethodna faza mora biti završena prije pokretanja ove faze'));
         return;
       }
     }

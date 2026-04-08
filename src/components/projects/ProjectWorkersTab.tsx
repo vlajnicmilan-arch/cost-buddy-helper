@@ -30,7 +30,7 @@ import { WorkCalendarOverview } from './WorkCalendarOverview';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { supabase } from '@/integrations/supabase/client';
 import { generateWorkRecordsPDF, generateWorkRecordsCSV, generateWorkRecordsJSON, WorkExportConfig } from '@/lib/workRecordsExport';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 interface ProjectWorkersTabProps {
   projectId: string;
@@ -96,10 +96,10 @@ export const ProjectWorkersTab = ({
       else if (format === 'csv') await generateWorkRecordsCSV(config);
       else await generateWorkRecordsJSON(config);
 
-      toast.success(t('common.exported', 'Izvoz uspješan'));
+      showSuccess(t('common.exported', 'Izvoz uspješan'));
     } catch (error) {
       console.error('Export error:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

@@ -3,7 +3,7 @@ import { WifiOff, CloudOff, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 
 export const OfflineBanner = () => {
   const { t } = useTranslation();
@@ -13,7 +13,7 @@ export const OfflineBanner = () => {
   // Show toast when syncing completes
   useEffect(() => {
     if (isOnline && showSyncToast && !syncing && queueSize === 0) {
-      toast.success(t('offline.syncComplete', 'Offline transakcije su sinkronizirane!'));
+      showSuccess(t('offline.syncComplete', 'Offline transakcije su sinkronizirane!'));
       setShowSyncToast(false);
     }
   }, [isOnline, syncing, queueSize, showSyncToast, t]);

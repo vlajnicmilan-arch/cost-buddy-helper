@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
 import { Camera, Loader2, CreditCard, ScanLine, AlertCircle, ShieldCheck, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 
 interface CardScannerDialogProps {
@@ -94,7 +94,7 @@ export const CardScannerDialog = ({
         setShowManualEntry(true);
       } else {
         setDetectedType(cardType);
-        toast.success(t('onboarding.cardRecognized', 'Kartica prepoznata: {{type}}').replace('{{type}}', cardType));
+        showSuccess(t('onboarding.cardRecognized', 'Kartica prepoznata: {{type}}').replace('{{type}}', cardType));
       }
     } catch (err) {
       console.error('Card scan error:', err);

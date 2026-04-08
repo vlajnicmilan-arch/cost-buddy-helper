@@ -44,7 +44,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { APP_VERSION } from '@/lib/version';
 
@@ -329,7 +329,7 @@ const Index = () => {
         last_generated_date: new Date().toISOString().split('T')[0],
       });
     }
-    toast.success(t('toasts.obligationsMarkedPaid', { count: selectedIds.length }));
+    showSuccess(t('toasts.obligationsMarkedPaid', { count: selectedIds.length }));
     refetchRecurring();
   }, [recurringTransactions, updateRecurring, refetchRecurring, calculateNextDueDateForMatch]);
 
@@ -359,21 +359,21 @@ const Index = () => {
     const selectedExpenses = filteredDashboardExpenses.filter(e => selectedTransactionIds.has(e.id));
     await bulkUpdateExpenses(selectedExpenses.map(e => ({ ...e, category })));
     setSelectedTransactionIds(new Set());
-    toast.success(t('transactions.bulkCategoryChanged', { count: selectedExpenses.length }));
+    showSuccess(t('transactions.bulkCategoryChanged', { count: selectedExpenses.length }));
   }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
 
   const handleBulkPaymentSourceChange = useCallback(async (paymentSource: string) => {
     const selectedExpenses = filteredDashboardExpenses.filter(e => selectedTransactionIds.has(e.id));
     await bulkUpdateExpenses(selectedExpenses.map(e => ({ ...e, paymentSource })));
     setSelectedTransactionIds(new Set());
-    toast.success(t('transactions.bulkSourceChanged', { count: selectedExpenses.length }));
+    showSuccess(t('transactions.bulkSourceChanged', { count: selectedExpenses.length }));
   }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
 
   const handleBulkDelete = useCallback(async () => {
     const idsToDelete = Array.from(selectedTransactionIds);
     await Promise.all(idsToDelete.map(id => deleteExpense(id)));
     setSelectedTransactionIds(new Set());
-    toast.success(t('transactions.bulkDeleted', { count: idsToDelete.length }));
+    showSuccess(t('transactions.bulkDeleted', { count: idsToDelete.length }));
   }, [selectedTransactionIds, deleteExpense, t]);
 
   const handleSignOut = async () => {

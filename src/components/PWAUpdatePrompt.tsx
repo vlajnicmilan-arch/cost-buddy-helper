@@ -7,6 +7,7 @@ import { RefreshCw, X, Sparkles, Bug, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { APP_VERSION } from '@/lib/version';
 import {
   isNativeApp,
@@ -56,7 +57,7 @@ const PWAUpdatePromptInner = () => {
           }
         } catch (error) {
           console.error('[UpdateCheck] Web update check failed:', error);
-          toast.error(t('update.checkFailed', 'Provjera nije uspjela'));
+          showError(t('update.checkFailed', 'Provjera nije uspjela'));
           setPendingUpdateCheck(false);
         } finally {
           setIsChecking(false);
@@ -103,7 +104,7 @@ const PWAUpdatePromptInner = () => {
           setIsTestMode(false);
         }
       } else {
-        toast.success(t('update.upToDate', 'Aplikacija je ažurna!'));
+        showSuccess(t('update.upToDate', 'Aplikacija je ažurna!'));
       }
       setPendingUpdateCheck(false);
     }
@@ -142,7 +143,7 @@ const PWAUpdatePromptInner = () => {
     setAutoUpdate(enabled);
     setAutoUpdatePreference(enabled);
     if (enabled) {
-      toast.success(t('toasts.autoUpdateOn'));
+      showSuccess(t('toasts.autoUpdateOn'));
       if (needRefresh && !isTestMode) {
         performAutoUpdate();
       }

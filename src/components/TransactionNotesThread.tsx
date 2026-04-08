@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 interface TransactionNote {
   id: string;
@@ -172,10 +172,10 @@ export const TransactionNotesThread = ({
       }
 
       onNoteAdded?.();
-      toast.success(t('transactions.noteSent', 'Napomena poslana'));
+      showSuccess(t('transactions.noteSent', 'Napomena poslana'));
     } catch (error) {
       console.error('Error sending note:', error);
-      toast.error(t('transactions.noteError', 'Greška pri slanju napomene'));
+      showError(t('transactions.noteError', 'Greška pri slanju napomene'));
     } finally {
       setSending(false);
     }
@@ -191,10 +191,10 @@ export const TransactionNotesThread = ({
       if (error) throw error;
 
       setNotes(prev => prev.filter(n => n.id !== noteId));
-      toast.success(t('common.deleted', 'Obrisano'));
+      showSuccess(t('common.deleted', 'Obrisano'));
     } catch (error) {
       console.error('Error deleting note:', error);
-      toast.error(t('common.error', t('toasts.error')));
+      showError(t('common.error', t('toasts.error')));
     }
   };
 

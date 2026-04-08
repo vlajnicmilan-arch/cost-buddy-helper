@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Crown, Zap, Building2, Loader2, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showError } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 
 export const SubscriptionSection = () => {
@@ -35,7 +35,7 @@ export const SubscriptionSection = () => {
       }
     } catch (err) {
       console.error('Portal error:', err);
-      toast.error(t('subscription.portalError', 'Greška pri otvaranju portala za upravljanje pretplatom'));
+      showError(t('subscription.portalError', 'Greška pri otvaranju portala za upravljanje pretplatom'));
     } finally {
       setPortalLoading(false);
     }

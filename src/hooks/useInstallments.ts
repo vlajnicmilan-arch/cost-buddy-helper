@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { InstallmentPlan, Installment, InstallmentPlanWithProgress } from '@/types/installment';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { addMonths, startOfMonth, endOfMonth, isWithinInterval, isBefore, startOfToday } from 'date-fns';
 
 interface CreateInstallmentPlanInput {
@@ -131,7 +131,7 @@ export const useInstallments = () => {
       setPlans(plansWithProgress);
     } catch (error) {
       console.error('Error fetching installment plans:', error);
-      toast.error('Greška pri učitavanju planova rata');
+      showError('Greška pri učitavanju planova rata');
     } finally {
       setLoading(false);
     }
@@ -326,7 +326,7 @@ export const useInstallments = () => {
       localStorage.setItem('installments', JSON.stringify([...existingInstallments, ...installments]));
       
       await fetchPlans();
-      toast.success('Plan plaćanja na rate kreiran');
+      showSuccess('Plan plaćanja na rate kreiran');
       return newPlan;
     }
 
@@ -376,7 +376,7 @@ export const useInstallments = () => {
       if (installmentsError) throw installmentsError;
 
       await fetchPlans();
-      toast.success('Plan plaćanja na rate kreiran');
+      showSuccess('Plan plaćanja na rate kreiran');
       return {
         ...planData,
         type: planData.type as 'expense' | 'income',
@@ -385,7 +385,7 @@ export const useInstallments = () => {
       };
     } catch (error) {
       console.error('Error creating installment plan:', error);
-      toast.error('Greška pri kreiranju plana rata');
+      showError('Greška pri kreiranju plana rata');
       return null;
     }
   };
@@ -402,7 +402,7 @@ export const useInstallments = () => {
         );
         localStorage.setItem('installments', JSON.stringify(updated));
         await fetchPlans();
-        toast.success('Rata označena kao plaćena');
+        showSuccess('Rata označena kao plaćena');
       }
       return;
     }
@@ -419,10 +419,10 @@ export const useInstallments = () => {
       if (error) throw error;
 
       await fetchPlans();
-      toast.success('Rata označena kao plaćena');
+      showSuccess('Rata označena kao plaćena');
     } catch (error) {
       console.error('Error marking installment as paid:', error);
-      toast.error('Greška pri ažuriranju rate');
+      showError('Greška pri ažuriranju rate');
     }
   };
 
@@ -438,7 +438,7 @@ export const useInstallments = () => {
         );
         localStorage.setItem('installments', JSON.stringify(updated));
         await fetchPlans();
-        toast.success('Rata označena kao neplaćena');
+        showSuccess('Rata označena kao neplaćena');
       }
       return;
     }
@@ -455,10 +455,10 @@ export const useInstallments = () => {
       if (error) throw error;
 
       await fetchPlans();
-      toast.success('Rata označena kao neplaćena');
+      showSuccess('Rata označena kao neplaćena');
     } catch (error) {
       console.error('Error marking installment as unpaid:', error);
-      toast.error('Greška pri ažuriranju rate');
+      showError('Greška pri ažuriranju rate');
     }
   };
 
@@ -478,7 +478,7 @@ export const useInstallments = () => {
       }
       
       await fetchPlans();
-      toast.success('Plan plaćanja obrisan');
+      showSuccess('Plan plaćanja obrisan');
       return;
     }
 
@@ -494,10 +494,10 @@ export const useInstallments = () => {
       if (error) throw error;
 
       await fetchPlans();
-      toast.success('Plan plaćanja obrisan');
+      showSuccess('Plan plaćanja obrisan');
     } catch (error) {
       console.error('Error deleting installment plan:', error);
-      toast.error('Greška pri brisanju plana');
+      showError('Greška pri brisanju plana');
     }
   };
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export interface BudgetPendingTransaction {
@@ -88,7 +88,7 @@ export const useBudgetPendingTransactions = (budgetId: string | null) => {
       setPendingTransactions(transactions);
     } catch (error) {
       console.error('Error fetching pending budget transactions:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -108,10 +108,10 @@ export const useBudgetPendingTransactions = (budgetId: string | null) => {
       if (error) throw error;
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
-      toast.success(t('budget.transactionApproved', 'Transakcija odobrena'));
+      showSuccess(t('budget.transactionApproved', 'Transakcija odobrena'));
     } catch (error) {
       console.error('Error approving transaction:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -125,10 +125,10 @@ export const useBudgetPendingTransactions = (budgetId: string | null) => {
       if (error) throw error;
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
-      toast.success(t('budget.transactionRejected', 'Transakcija odbijena'));
+      showSuccess(t('budget.transactionRejected', 'Transakcija odbijena'));
     } catch (error) {
       console.error('Error rejecting transaction:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Sparkles, Loader2, Check, X, ArrowRight, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from 'react-i18next';
 
@@ -62,7 +63,7 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
       .in('expense_id', expenseIds.length > 0 ? expenseIds : ['none']);
 
     if (error || !itemsData || itemsData.length === 0) {
-      toast.error('Nema transakcija s artiklima za analizu');
+      showError('Nema transakcija s artiklima za analizu');
       setPhase('idle');
       return;
     }
@@ -137,7 +138,7 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
   const applySuggestions = async () => {
     const toApply = suggestions.filter(s => s.accepted);
     if (toApply.length === 0) {
-      toast.error('Nema odabranih prijedloga');
+      showError('Nema odabranih prijedloga');
       return;
     }
 
@@ -150,10 +151,10 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
       }));
 
       await onUpdateExpenses(updatedExpenses);
-      toast.success(`Rekategorizirano ${toApply.length} transakcija! ✨`);
+      showSuccess(`Rekategorizirano ${toApply.length} transakcija! ✨`);
       handleClose();
     } catch (error) {
-      toast.error(t('toasts.recategorizeError'));
+      showError(t('toasts.recategorizeError'));
       setPhase('review');
     }
   };

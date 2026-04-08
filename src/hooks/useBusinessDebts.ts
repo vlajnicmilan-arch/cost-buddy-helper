@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
 import { BusinessDebt, DebtType, DebtStatus } from '@/types/businessDebt';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export const useBusinessDebts = () => {
@@ -43,8 +43,8 @@ export const useBusinessDebts = () => {
     const { error } = await supabase
       .from('business_debts' as any)
       .insert({ ...debt, user_id: user.id } as any);
-    if (error) { toast.error(t('toasts.premiseAddError')); return; }
-    toast.success('Dugovanje dodano');
+    if (error) { showError(t('toasts.premiseAddError')); return; }
+    showSuccess('Dugovanje dodano');
     fetchDebts();
   };
 
@@ -53,8 +53,8 @@ export const useBusinessDebts = () => {
       .from('business_debts' as any)
       .update(updates as any)
       .eq('id', id);
-    if (error) { toast.error(t('toasts.recategorizeError')); return; }
-    toast.success('Ažurirano');
+    if (error) { showError(t('toasts.recategorizeError')); return; }
+    showSuccess('Ažurirano');
     fetchDebts();
   };
 
@@ -63,8 +63,8 @@ export const useBusinessDebts = () => {
       .from('business_debts' as any)
       .delete()
       .eq('id', id);
-    if (error) { toast.error(t('toasts.cashRegisterDeleteError')); return; }
-    toast.success('Obrisano');
+    if (error) { showError(t('toasts.cashRegisterDeleteError')); return; }
+    showSuccess('Obrisano');
     fetchDebts();
   };
 

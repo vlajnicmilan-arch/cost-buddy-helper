@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export interface RecurringTransaction {
@@ -89,10 +90,10 @@ export const useRecurringTransactions = () => {
 
     if (error) {
       console.error('Error adding recurring transaction:', error);
-      toast.error(`Greška pri dodavanju: ${error.message}`);
+      showError(`Greška pri dodavanju: ${error.message}`);
       throw error;
     }
-    toast.success('Ponavljajuća transakcija dodana');
+    showSuccess('Ponavljajuća transakcija dodana');
     await fetchRecurring();
   };
 
@@ -106,11 +107,11 @@ export const useRecurringTransactions = () => {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success('Ažurirano');
+      showSuccess('Ažurirano');
       await fetchRecurring();
     } catch (error) {
       console.error('Error updating recurring transaction:', error);
-      toast.error(t('toasts.recategorizeError'));
+      showError(t('toasts.recategorizeError'));
     }
   };
 
@@ -124,11 +125,11 @@ export const useRecurringTransactions = () => {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success('Ponavljajuća transakcija obrisana');
+      showSuccess('Ponavljajuća transakcija obrisana');
       setRecurringTransactions(prev => prev.filter(r => r.id !== id));
     } catch (error) {
       console.error('Error deleting recurring transaction:', error);
-      toast.error(t('toasts.cashRegisterDeleteError'));
+      showError(t('toasts.cashRegisterDeleteError'));
     }
   };
 

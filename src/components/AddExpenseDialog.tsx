@@ -22,6 +22,7 @@ import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 import { InstallmentToggle } from '@/components/installments';
@@ -299,7 +300,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       if (!scannedData.merchant?.trim()) missing.push('partner/trgovac');
       if (!scannedData.date) missing.push('datum');
       if (missing.length > 0) {
-        toast.error(`Obavezna polja za poslovni mod: ${missing.join(', ')}. Uredi podatke prije spremanja.`);
+        showError(`Obavezna polja za poslovni mod: ${missing.join(', ')}. Uredi podatke prije spremanja.`);
         return;
       }
     }
@@ -428,7 +429,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
     } catch (error) {
       console.error('Error saving expense:', error);
-      toast.error(t('transactions.saveError'));
+      showError(t('transactions.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -550,7 +551,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       }, 150);
     } catch (error) {
       console.error('Error saving transaction:', error);
-      toast.error(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
+      showError(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
     }
   };
 
@@ -568,7 +569,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         status: 'active',
       });
     }
-    toast.success(`Pozajmica dodana u evidenciju dugovanja`);
+    showSuccess(`Pozajmica dodana u evidenciju dugovanja`);
     setLoanDetected(null);
   };
 
@@ -603,7 +604,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
         .gte('date', monthStart)
         .lte('date', monthEnd);
       if (count !== null && count >= FREE_LIMITS.transactions_per_month) {
-        toast.error(t('limits.transactionsReached', `Dosegnuli ste limit od ${FREE_LIMITS.transactions_per_month} transakcija mjesečno. Nadogradite na Pro za neograničene transakcije.`));
+        showError(t('limits.transactionsReached', `Dosegnuli ste limit od ${FREE_LIMITS.transactions_per_month} transakcija mjesečno. Nadogradite na Pro za neograničene transakcije.`));
         return;
       }
     }
@@ -666,7 +667,7 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       const uploadedUrl = await uploadReceiptImage(receiptImage);
       if (uploadedUrl) {
         receiptUrl = uploadedUrl;
-        toast.success(t('transactions.receiptSaved'));
+        showSuccess(t('transactions.receiptSaved'));
       }
     }
 
@@ -1940,9 +1941,9 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                       if (loc) {
                         setLocationName(loc.name);
                         setLocationCoords(loc.coords);
-                        toast.success(t('transactions.locationAdded', 'Lokacija dodana'));
+                        showSuccess(t('transactions.locationAdded', 'Lokacija dodana'));
                       } else {
-                        toast.error(t('transactions.locationError', 'Nije moguće dohvatiti lokaciju'));
+                        showError(t('transactions.locationError', 'Nije moguće dohvatiti lokaciju'));
                       }
                     }
                   }}

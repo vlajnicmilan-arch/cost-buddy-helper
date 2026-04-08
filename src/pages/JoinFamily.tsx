@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 const JoinFamily = () => {
@@ -67,7 +67,7 @@ const JoinFamily = () => {
         }
 
         setStatus('success');
-        toast.success(t('toasts.joinedGroup', { name: invitation.target_name }));
+        showSuccess(t('toasts.joinedGroup', { name: invitation.target_name }));
       } catch (error) {
         console.error('Error accepting family invitation:', error);
         setStatus('error');

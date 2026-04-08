@@ -14,7 +14,7 @@ import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 import { CustomPaymentSource, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
 import { ChevronRight, ChevronLeft, User, Wallet, CreditCard, Briefcase, Gift, Sparkles, Check, Plus, ScanLine } from 'lucide-react';
 import logo from '@/assets/logo.png';
-import { toast } from 'sonner';
+import { showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 
 
@@ -74,7 +74,7 @@ const Onboarding = () => {
 
   const handleNext = () => {
     if (step === 1 && !displayName.trim()) {
-      toast.error(t('onboarding.nameRequired', 'Molimo unesite svoje ime'));
+      showError(t('onboarding.nameRequired', 'Molimo unesite svoje ime'));
       return;
     }
     setStep(step + 1);
@@ -191,7 +191,7 @@ const Onboarding = () => {
       navigate('/home', { replace: true });
     } catch (error) {
       console.error('Onboarding error:', error);
-      toast.error(t('errors.generic', 'Došlo je do greške'));
+      showError(t('errors.generic', 'Došlo je do greške'));
     } finally {
       setSaving(false);
     }

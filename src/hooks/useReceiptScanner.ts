@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, ReceiptItem } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { LocalFileCache } from './useLocalFileCache';
 import { LocalStorage } from './useLocalStorage';
@@ -99,7 +99,7 @@ export const useReceiptScanner = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
-        toast.error('AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.');
+        showError('AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.');
         return null;
       }
 
@@ -139,12 +139,12 @@ export const useReceiptScanner = () => {
       
 
       if (response.status === 429) {
-        toast.error('Previše zahtjeva. Pokušaj ponovno za minutu.');
+        showError('Previše zahtjeva. Pokušaj ponovno za minutu.');
         return null;
       }
 
       if (response.status === 402) {
-        toast.error('Nedostaje kredita za AI obradu.');
+        showError('Nedostaje kredita za AI obradu.');
         return null;
       }
 
@@ -216,21 +216,21 @@ export const useReceiptScanner = () => {
       // Show different message if custom source was matched
       if (data.custom_payment_source_id) {
         const matchedSource = customPaymentSources?.find(s => s.id === data.custom_payment_source_id);
-        toast.success(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
+        showSuccess(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
       } else {
         const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';
-        toast.success(`Račun skeniran${pagesNote}! Pronađeno ${result.items.length} artikala.`);
+        showSuccess(`Račun skeniran${pagesNote}! Pronađeno ${result.items.length} artikala.`);
       }
       return result;
     } catch (error) {
       if (isAbortLikeError(error)) {
         console.warn('Receipt scanning was interrupted:', error);
-        toast.error('Skeniranje je prekinuto. Pokušaj ponovno.');
+        showError('Skeniranje je prekinuto. Pokušaj ponovno.');
         return null;
       }
 
       console.error('Error scanning receipt:', error);
-      toast.error(error instanceof Error ? error.message : 'Greška pri skeniranju računa');
+      showError(error instanceof Error ? error.message : 'Greška pri skeniranju računa');
       return null;
     } finally {
       setScanning(false);

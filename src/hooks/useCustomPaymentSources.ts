@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSource';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 
 
@@ -115,7 +115,7 @@ export const useCustomPaymentSources = () => {
         }
       }
       console.error('Error fetching custom payment sources:', error);
-      toast.error('Greška pri dohvaćanju prilagođenih izvora plaćanja');
+      showError('Greška pri dohvaćanju prilagođenih izvora plaćanja');
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export const useCustomPaymentSources = () => {
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     // Check free tier payment source limit
     if (!hasAccess('unlimited_payment_sources') && customPaymentSources.length >= FREE_LIMITS.payment_sources) {
-      toast.error('Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore.');
+      showError('Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore.');
       return null;
     }
 
@@ -154,12 +154,12 @@ export const useCustomPaymentSources = () => {
       const updated = [...customPaymentSources, newSource];
       setCustomPaymentSources(updated);
       localStorage.setItem('customPaymentSources', JSON.stringify(updated));
-      toast.success('Izvor plaćanja dodan');
+      showSuccess('Izvor plaćanja dodan');
       return newSource;
     }
 
     if (!user) {
-      toast.error('Morate biti prijavljeni');
+      showError('Morate biti prijavljeni');
       return null;
     }
 
@@ -181,11 +181,11 @@ export const useCustomPaymentSources = () => {
       if (error) throw error;
       const newSource = { ...(data as object), cards: [] } as CustomPaymentSource;
       setCustomPaymentSources(prev => [...prev, newSource]);
-      toast.success('Izvor plaćanja dodan');
+      showSuccess('Izvor plaćanja dodan');
       return newSource;
     } catch (error) {
       console.error('Error adding custom payment source:', error);
-      toast.error('Greška pri dodavanju izvora plaćanja');
+      showError('Greška pri dodavanju izvora plaćanja');
       return null;
     }
   };
@@ -197,7 +197,7 @@ export const useCustomPaymentSources = () => {
       );
       setCustomPaymentSources(updated);
       localStorage.setItem('customPaymentSources', JSON.stringify(updated));
-      toast.success('Izvor plaćanja ažuriran');
+      showSuccess('Izvor plaćanja ažuriran');
       return;
     }
 
@@ -212,10 +212,10 @@ export const useCustomPaymentSources = () => {
       setCustomPaymentSources(prev =>
         prev.map(src => (src.id === id ? { ...src, ...updates } : src))
       );
-      toast.success('Izvor plaćanja ažuriran');
+      showSuccess('Izvor plaćanja ažuriran');
     } catch (error) {
       console.error('Error updating custom payment source:', error);
-      toast.error('Greška pri ažuriranju izvora plaćanja');
+      showError('Greška pri ažuriranju izvora plaćanja');
     }
   };
 
@@ -224,7 +224,7 @@ export const useCustomPaymentSources = () => {
       const updated = customPaymentSources.filter(src => src.id !== id);
       setCustomPaymentSources(updated);
       localStorage.setItem('customPaymentSources', JSON.stringify(updated));
-      toast.success('Izvor plaćanja obrisan');
+      showSuccess('Izvor plaćanja obrisan');
       return;
     }
 
@@ -236,10 +236,10 @@ export const useCustomPaymentSources = () => {
 
       if (error) throw error;
       setCustomPaymentSources(prev => prev.filter(src => src.id !== id));
-      toast.success('Izvor plaćanja obrisan');
+      showSuccess('Izvor plaćanja obrisan');
     } catch (error) {
       console.error('Error deleting custom payment source:', error);
-      toast.error('Greška pri brisanju izvora plaćanja');
+      showError('Greška pri brisanju izvora plaćanja');
     }
   };
 
@@ -264,7 +264,7 @@ export const useCustomPaymentSources = () => {
     }
 
     if (!user) {
-      toast.error('Morate biti prijavljeni');
+      showError('Morate biti prijavljeni');
       return null;
     }
 
@@ -291,7 +291,7 @@ export const useCustomPaymentSources = () => {
       return newCard;
     } catch (error) {
       console.error('Error adding card:', error);
-      toast.error('Greška pri dodavanju kartice');
+      showError('Greška pri dodavanju kartice');
       return null;
     }
   };
@@ -326,7 +326,7 @@ export const useCustomPaymentSources = () => {
       );
     } catch (error) {
       console.error('Error updating card:', error);
-      toast.error('Greška pri ažuriranju kartice');
+      showError('Greška pri ažuriranju kartice');
     }
   };
 
@@ -356,7 +356,7 @@ export const useCustomPaymentSources = () => {
       );
     } catch (error) {
       console.error('Error deleting card:', error);
-      toast.error('Greška pri brisanju kartice');
+      showError('Greška pri brisanju kartice');
     }
   };
 
@@ -386,7 +386,7 @@ export const useCustomPaymentSources = () => {
       await Promise.all(updates);
     } catch (error) {
       console.error('Error reordering payment sources:', error);
-      toast.error('Greška pri preslagivanju izvora plaćanja');
+      showError('Greška pri preslagivanju izvora plaćanja');
       // Refetch to restore correct order on error
       fetchCustomPaymentSources();
     }

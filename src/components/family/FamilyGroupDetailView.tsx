@@ -34,6 +34,7 @@ import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { FamilyGroupDialog } from './FamilyGroupDialog';
 
 interface Props {
@@ -170,22 +171,22 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
 
       if (data?.error) {
         if (data.error === 'user_not_found') {
-          toast.error(t('family.userNotFound'));
+          showError(t('family.userNotFound'));
         } else if (data.error === 'already_member') {
-          toast.error(t('family.alreadyMember'));
+          showError(t('family.alreadyMember'));
         } else if (data.error === 'already_invited') {
-          toast.error(t('family.alreadyInvited'));
+          showError(t('family.alreadyInvited'));
         } else {
-          toast.error(data.message || t('family.inviteError'));
+          showError(data.message || t('family.inviteError'));
         }
         return;
       }
 
-      toast.success(`${t('family.inviteSent')} ${inviteEmail.trim()}`);
+      showSuccess(`${t('family.inviteSent')} ${inviteEmail.trim()}`);
       setInviteEmail('');
     } catch (error) {
       console.error('Error sending invitation:', error);
-      toast.error(t('family.inviteError'));
+      showError(t('family.inviteError'));
     } finally {
       setInviteLoading(false);
     }

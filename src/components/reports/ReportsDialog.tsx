@@ -61,7 +61,7 @@ import {
   ReportData, 
   IncomeReportData 
 } from '@/lib/reportExport';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
@@ -571,30 +571,30 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const handleExportPDF = async () => {
     try {
       await generatePDFReport(getReportData());
-      toast.success(t('toasts.pdfReportGenerated'));
+      showSuccess(t('toasts.pdfReportGenerated'));
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error(t('toasts.pdfGenerateError'));
+      showError(t('toasts.pdfGenerateError'));
     }
   };
 
   const handleExportCSV = async () => {
     try {
       await generateCSVReport(getReportData());
-      toast.success('CSV datoteka generirana!');
+      showSuccess('CSV datoteka generirana!');
     } catch (error) {
       console.error('Error generating CSV:', error);
-      toast.error(t('toasts.csvGenerateError'));
+      showError(t('toasts.csvGenerateError'));
     }
   };
 
   const handleExportJSON = async () => {
     try {
       await generateJSONExport(getReportData());
-      toast.success('JSON datoteka generirana!');
+      showSuccess('JSON datoteka generirana!');
     } catch (error) {
       console.error('Error generating JSON:', error);
-      toast.error(t('toasts.jsonGenerateError'));
+      showError(t('toasts.jsonGenerateError'));
     }
   };
 
@@ -612,30 +612,30 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
   const handleExportIncomePDF = async () => {
     try {
       await generateIncomePDFReport(getIncomeReportData());
-      toast.success(t('reports.incomeReportGenerated', 'PDF izvješće prihoda generirano!'));
+      showSuccess(t('reports.incomeReportGenerated', 'PDF izvješće prihoda generirano!'));
     } catch (error) {
       console.error('Error generating income PDF:', error);
-      toast.error(t('reports.exportError', 'Greška pri generiranju izvoza'));
+      showError(t('reports.exportError', 'Greška pri generiranju izvoza'));
     }
   };
 
   const handleExportIncomeCSV = async () => {
     try {
       await generateIncomeCSVReport(getIncomeReportData());
-      toast.success(t('reports.incomeCSVGenerated', 'CSV datoteka prihoda generirana!'));
+      showSuccess(t('reports.incomeCSVGenerated', 'CSV datoteka prihoda generirana!'));
     } catch (error) {
       console.error('Error generating income CSV:', error);
-      toast.error(t('reports.exportError', 'Greška pri generiranju izvoza'));
+      showError(t('reports.exportError', 'Greška pri generiranju izvoza'));
     }
   };
 
   const handleExportIncomeJSON = async () => {
     try {
       await generateIncomeJSONExport(getIncomeReportData());
-      toast.success(t('reports.incomeJSONGenerated', 'JSON datoteka prihoda generirana!'));
+      showSuccess(t('reports.incomeJSONGenerated', 'JSON datoteka prihoda generirana!'));
     } catch (error) {
       console.error('Error generating income JSON:', error);
-      toast.error(t('reports.exportError', 'Greška pri generiranju izvoza'));
+      showError(t('reports.exportError', 'Greška pri generiranju izvoza'));
     }
   };
 

@@ -14,7 +14,7 @@ import {
   generateProjectJSONExport,
   ProjectReportData 
 } from '@/lib/projectReportExport';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { 
   FileText, Download, Wallet, Target, Users, 
@@ -226,20 +226,20 @@ export const ProjectReportsDialog = ({
       switch (format) {
         case 'pdf':
           await generateProjectPDFReport(reportData);
-          toast.success(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
+          showSuccess(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
           break;
         case 'csv':
           await generateProjectCSVReport(reportData);
-          toast.success(t('reports.csvGenerated', 'CSV izvještaj generiran'));
+          showSuccess(t('reports.csvGenerated', 'CSV izvještaj generiran'));
           break;
         case 'json':
           await generateProjectJSONExport(reportData);
-          toast.success(t('reports.jsonGenerated', 'JSON izvoz generiran'));
+          showSuccess(t('reports.jsonGenerated', 'JSON izvoz generiran'));
           break;
       }
     } catch (error) {
       console.error('Export error:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

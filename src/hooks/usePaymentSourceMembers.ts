@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export type PaymentSourceRole = 'owner' | 'member' | 'limited' | 'full';
@@ -149,10 +149,10 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       if (error) throw error;
 
       setMembers(prev => prev.filter(m => m.id !== memberId));
-      toast.success('Član uklonjen');
+      showSuccess('Član uklonjen');
     } catch (error) {
       console.error('Error removing member:', error);
-      toast.error(t('toasts.error'));
+      showError(t('toasts.error'));
     }
   };
 
@@ -166,10 +166,10 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       if (error) throw error;
 
       setInvitations(prev => prev.filter(i => i.id !== invitationId));
-      toast.success('Pozivnica otkazana');
+      showSuccess('Pozivnica otkazana');
     } catch (error) {
       console.error('Error cancelling invitation:', error);
-      toast.error(t('toasts.error'));
+      showError(t('toasts.error'));
     }
   };
 
@@ -183,10 +183,10 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       if (error) throw error;
 
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
-      toast.success('Uloga ažurirana');
+      showSuccess('Uloga ažurirana');
     } catch (error) {
       console.error('Error updating member role:', error);
-      toast.error('Greška pri ažuriranju uloge');
+      showError('Greška pri ažuriranju uloge');
     }
   };
 

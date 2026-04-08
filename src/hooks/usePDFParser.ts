@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, TransactionType } from '@/types/expense';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export interface ParsedPDFTransaction {
@@ -89,7 +89,7 @@ export const usePDFParser = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData?.session?.access_token) {
-        toast.error('Moraš biti prijavljen za analizu izvoda');
+        showError('Moraš biti prijavljen za analizu izvoda');
         return null;
       }
 
@@ -111,11 +111,11 @@ export const usePDFParser = () => {
 
       if (!response.ok) {
         if (response.status === 429) {
-          toast.error('Previše zahtjeva. Pokušaj ponovno za minutu.');
+          showError('Previše zahtjeva. Pokušaj ponovno za minutu.');
           return null;
         }
         if (response.status === 402) {
-          toast.error('Nedostaje kredita za AI obradu.');
+          showError('Nedostaje kredita za AI obradu.');
           return null;
         }
         const errorData = await response.json();
@@ -144,11 +144,11 @@ export const usePDFParser = () => {
       
       const bankInfo = result.detected_bank ? ` (${result.detected_bank})` : '';
       const cardInfo = result.cards_detected.length > 0 ? `, ${result.cards_detected.length} kartica` : '';
-      toast.success(`Pronađeno ${result.transactions.length} transakcija${bankInfo}${cardInfo}`);
+      showSuccess(`Pronađeno ${result.transactions.length} transakcija${bankInfo}${cardInfo}`);
       return result;
     } catch (error) {
       console.error('Error parsing statement:', error);
-      toast.error(error instanceof Error ? error.message : 'Greška pri analizi izvoda');
+      showError(error instanceof Error ? error.message : 'Greška pri analizi izvoda');
       return null;
     } finally {
       setParsing(false);
@@ -169,7 +169,7 @@ export const usePDFParser = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData?.session?.access_token) {
-        toast.error('Moraš biti prijavljen za analizu izvoda');
+        showError('Moraš biti prijavljen za analizu izvoda');
         return null;
       }
 
@@ -187,11 +187,11 @@ export const usePDFParser = () => {
 
       if (!response.ok) {
         if (response.status === 429) {
-          toast.error('Previše zahtjeva. Pokušaj ponovno za minutu.');
+          showError('Previše zahtjeva. Pokušaj ponovno za minutu.');
           return null;
         }
         if (response.status === 402) {
-          toast.error('Nedostaje kredita za AI obradu.');
+          showError('Nedostaje kredita za AI obradu.');
           return null;
         }
         const errorData = await response.json();
@@ -219,11 +219,11 @@ export const usePDFParser = () => {
       setParsedData(result);
       
       const bankInfo = result.detected_bank ? ` (${result.detected_bank})` : '';
-      toast.success(`Pronađeno ${result.transactions.length} transakcija${bankInfo}`);
+      showSuccess(`Pronađeno ${result.transactions.length} transakcija${bankInfo}`);
       return result;
     } catch (error) {
       console.error('Error parsing HTML statement:', error);
-      toast.error(error instanceof Error ? error.message : t('toasts.htmlAnalysisError'));
+      showError(error instanceof Error ? error.message : t('toasts.htmlAnalysisError'));
       return null;
     } finally {
       setParsing(false);

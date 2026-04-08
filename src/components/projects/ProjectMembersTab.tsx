@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ProjectMember, ProjectInvitation, ProjectRole, PROJECT_ROLE_LABELS } from '@/types/project';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog';
@@ -62,13 +62,13 @@ export const ProjectMembersTab = ({
   const copyLink = async () => {
     if (inviteLink) {
       await navigator.clipboard.writeText(inviteLink);
-      toast.success(t('projects.linkCopied'));
+      showSuccess(t('projects.linkCopied'));
     }
   };
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) {
-      toast.error(t('projects.enterEmail', t('toasts.enterEmail')));
+      showError(t('projects.enterEmail', t('toasts.enterEmail')));
       return;
     }
 
@@ -87,23 +87,23 @@ export const ProjectMembersTab = ({
       
       if (data.error) {
         if (data.error === 'user_not_found') {
-          toast.error(t('projects.userNotFound', t('toasts.userNotFound')));
+          showError(t('projects.userNotFound', t('toasts.userNotFound')));
         } else if (data.error === 'already_member') {
-          toast.error(t('projects.alreadyMember', t('toasts.alreadyMember')));
+          showError(t('projects.alreadyMember', t('toasts.alreadyMember')));
         } else if (data.error === 'already_invited') {
-          toast.error(t('projects.alreadyInvited', t('toasts.alreadyInvited')));
+          showError(t('projects.alreadyInvited', t('toasts.alreadyInvited')));
         } else {
-          toast.error(data.message || t('common.error'));
+          showError(data.message || t('common.error'));
         }
         return;
       }
 
-      toast.success(t('projects.invitationSent', t('toasts.invitationSent')));
+      showSuccess(t('projects.invitationSent', t('toasts.invitationSent')));
       setInviteEmail('');
       onRefetch();
     } catch (error) {
       console.error('Error sending invitation:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setSendingInvite(false);
     }

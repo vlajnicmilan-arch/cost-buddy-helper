@@ -17,7 +17,7 @@ import { format, parseISO, isSameDay } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2, CheckSquare, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 interface WorkEntry {
   id: string;
@@ -240,7 +240,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       const skippedCount = dateStrings.length - newDates.length;
 
       if (newDates.length === 0) {
-        toast.error(t('toasts.duplicateDatesForWorker'));
+        showError(t('toasts.duplicateDatesForWorker'));
         setIsBulkSubmitting(false);
         return;
       }
@@ -273,7 +273,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       const msg = skippedCount > 0
         ? `Dodano ${newDates.length} radnih dana (${skippedCount} preskočeno - već postoji)`
         : `Dodano ${newDates.length} radnih dana`;
-      toast.success(msg);
+      showSuccess(msg);
       
       setShowBulkDialog(false);
       setMultiSelectedDates([]);
@@ -281,7 +281,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       resetBulkForm();
     } catch (error: any) {
       console.error('Error bulk adding entries:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setIsBulkSubmitting(false);
     }
@@ -328,7 +328,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       e => e.worker_id === selectedWorkerId && e.work_date === dateStr
     );
     if (alreadyExists) {
-      toast.error(t('workers.entryExists', 'Unos za ovog djelatnika na ovaj datum već postoji'));
+      showError(t('workers.entryExists', 'Unos za ovog djelatnika na ovaj datum već postoji'));
       return;
     }
 
@@ -356,15 +356,15 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
         actual_hours: Number(data.actual_hours)
       }]);
 
-      toast.success(t('workers.entryAdded', 'Radni dan dodan'));
+      showSuccess(t('workers.entryAdded', 'Radni dan dodan'));
       setShowAddForm(false);
       resetAddForm();
     } catch (error: any) {
       if (error.code === '23505') {
-        toast.error(t('workers.entryExists', 'Unos za ovog djelatnika na ovaj datum već postoji'));
+        showError(t('workers.entryExists', 'Unos za ovog djelatnika na ovaj datum već postoji'));
       } else {
         console.error('Error adding entry:', error);
-        toast.error(t('common.error'));
+        showError(t('common.error'));
       }
     } finally {
       setIsSubmitting(false);
@@ -427,11 +427,11 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
         note: editNote.trim() || null
       } : e));
 
-      toast.success(t('common.saved', 'Spremljeno'));
+      showSuccess(t('common.saved', 'Spremljeno'));
       setEditingEntryId(null);
     } catch (error) {
       console.error('Error updating entry:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -447,10 +447,10 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       if (error) throw error;
 
       setEntries(prev => prev.filter(e => e.id !== entryId));
-      toast.success(t('common.deleted', 'Obrisano'));
+      showSuccess(t('common.deleted', 'Obrisano'));
     } catch (error) {
       console.error('Error deleting entry:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
