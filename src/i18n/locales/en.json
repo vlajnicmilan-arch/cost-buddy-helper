@@ -276,6 +276,8 @@
     "savedSuccess": "Transaction saved successfully!",
     "saveError": "Error saving transaction.",
     "receiptImage": "Receipt image",
+    "viewReceipt": "View",
+    "shareOrExport": "Share / Save elsewhere",
     "details": "Transaction details",
     "deleteTitle": "Delete transaction",
     "confirmDelete": "Are you sure you want to delete this transaction?",
