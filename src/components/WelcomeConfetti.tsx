@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import Confetti from 'react-confetti';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+const Confetti = lazy(() => import('react-confetti'));
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
