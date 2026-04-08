@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Building2, Lock, Fingerprint } from 'lucide-react';
+import { Settings, Zap, RefreshCw, Loader2, Download, Upload, Check, AlertCircle, FileJson, Coins, Bell, Volume2, Globe, HelpCircle, Database, ChevronRight, Moon, Sun, User, Pencil, Trash2, RotateCcw, Bot, Sparkles, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Building2, Lock, Fingerprint, ImageOff } from 'lucide-react';
 import { BugReportDialog } from '@/components/BugReportDialog';
 import { BusinessProfileDialog } from '@/components/BusinessProfileDialog';
 import { useTranslation } from 'react-i18next';
@@ -1392,6 +1392,40 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               {t('settings.dangerZone', 'Opasna zona')}
             </h3>
             
+            {/* Clear receipt image cache */}
+            <div className="p-3 border border-border rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                  <ImageOff className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-sm font-medium">
+                    {t('settings.clearReceiptCache', 'Očisti slike računa')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.clearReceiptCacheDesc', 'Briše lokalno spremljene slike računa s uređaja. Transakcije ostaju netaknute.')}
+                  </p>
+                </div>
+              </div>
+              
+              <Button
+                variant="outline"
+                className="w-full gap-2 rounded-xl"
+                onClick={async () => {
+                  try {
+                    const { LocalFileCache } = await import('@/hooks/useLocalFileCache');
+                    const count = await LocalFileCache.clearAllCachedReceipts();
+                    showSuccess(t('settings.receiptCacheCleared', `Obrisano ${count} slika računa`));
+                  } catch (e) {
+                    showError(t('settings.receiptCacheClearError', 'Greška pri brisanju slika'));
+                  }
+                }}
+              >
+                <ImageOff className="w-4 h-4" />
+                {t('settings.clearReceiptCacheBtn', 'Obriši sve slike')}
+              </Button>
+            </div>
+
             {/* Reset data option */}
             <div className="p-3 border border-amber-500/30 bg-amber-500/5 rounded-xl">
               <div className="flex items-center gap-3 mb-3">

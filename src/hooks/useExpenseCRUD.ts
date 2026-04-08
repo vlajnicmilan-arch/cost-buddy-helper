@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { useTranslation } from 'react-i18next';
+import { LocalFileCache } from './useLocalFileCache';
+import { LocalStorage } from './useLocalStorage';
 import {
   saveLocalExpense,
   updateLocalExpense,
@@ -303,6 +305,13 @@ export const useExpenseCRUD = ({
       if (!expenseToDelete && !isLocalMode && user) {
         const { data } = await supabase.from('expenses').select('*').eq('id', id).maybeSingle();
         if (data) expenseToDelete = data as unknown as Expense;
+      }
+
+      // Delete local receipt image if it exists
+      if (expenseToDelete?.receipt_url?.startsWith('local:')) {
+        const localPath = expenseToDelete.receipt_url.replace('local:', '');
+        await LocalFileCache.deleteReceiptImage(localPath).catch(() => {});
+        await LocalStorage.remove(localPath).catch(() => {});
       }
 
       if (isLocalMode) {
