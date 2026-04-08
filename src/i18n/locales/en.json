@@ -278,6 +278,8 @@
     "receiptImage": "Receipt image",
     "viewReceipt": "View",
     "shareOrExport": "Share / Save elsewhere",
+    "saveToDevice": "Save",
+    "share": "Share",
     "details": "Transaction details",
     "deleteTitle": "Delete transaction",
     "confirmDelete": "Are you sure you want to delete this transaction?",

@@ -190,6 +190,8 @@
     "receiptImage": "Belegbild",
     "viewReceipt": "Ansehen",
     "shareOrExport": "Teilen / Anderswo speichern",
+    "saveToDevice": "Speichern",
+    "share": "Teilen",
     "details": "Transaktionsdetails",
     "deleteTitle": "Transaktion löschen",
     "confirmDelete": "Sind Sie sicher, dass Sie diese Transaktion löschen möchten?",
