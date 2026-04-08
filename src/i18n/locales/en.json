@@ -85,7 +85,28 @@
     "expenseAdded": "Expense added to project",
     "milestone": "Project Milestone",
     "selectMilestone": "Select milestone (optional)",
-    "noMilestone": "No milestone"
+    "noMilestone": "No milestone",
+    "addMilestonesToSeeTimeline": "Add milestones to see the timeline",
+    "today": "Today",
+    "totalMilestones": "Total milestones",
+    "inProgress": "In progress",
+    "overdue": "Overdue",
+    "reports": "Reports",
+    "budgetProgress": "Budget progress",
+    "used": "Used",
+    "spendingByMilestone": "Spending by milestone",
+    "spendingByMember": "Spending by member",
+    "milestoneBudgets": "Milestone budgets",
+    "ofTotal": "of total",
+    "overBudget": "Over budget",
+    "overBudgetWarning": "Budget exceeded!",
+    "overBudgetDescription": "Spending has exceeded received funds by",
+    "budgetWarningTitle": "Warning: approaching limit",
+    "budgetWarningDescription": "Used",
+    "ofAvailableFunds": "of available funds",
+    "milestoneOverBudget": "Milestone has exceeded budget",
+    "milestonesOverBudget": "Milestones have exceeded budget",
+    "overBudgetBy": "Over budget by"
   },
   "settings": {
     "title": "Settings",
@@ -208,7 +229,11 @@
     "confirmReset": "Reset",
     "resetting": "Resetting...",
     "resetComplete": "Data successfully reset",
-    "version": "Version"
+    "version": "Version",
+    "multiCurrency": "Multi-currency accounts",
+    "multiCurrencyDesc": "Each payment source can have its own currency",
+    "multiCurrencyEnabled": "Multi-currency mode enabled",
+    "multiCurrencyDisabled": "Multi-currency mode disabled"
   },
   "transactions": {
     "title": "Transactions",
