@@ -1,8 +1,6 @@
 import { useExpenses } from '@/hooks/useExpenses';
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { useRecurringMatcher, RecurringMatch } from '@/hooks/useRecurringMatcher';
-import { RecurringMatchDialog } from '@/components/recurring/RecurringMatchDialog';
-import { RecurringTransactionsPanel } from '@/components/recurring/RecurringTransactionsPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -15,52 +13,21 @@ import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
+import { useBulkActions } from '@/hooks/useBulkActions';
 import { supabase } from '@/integrations/supabase/client';
-import { TransactionItem } from '@/components/TransactionItem';
-import { TransactionListDialog } from '@/components/TransactionListDialog';
-import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
-import { EditTransactionDialog } from '@/components/EditTransactionDialog';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { TransferListDialog } from '@/components/TransferListDialog';
-import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
-import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
-import { AIInsightBubble } from '@/components/AIInsightBubble';
-import { TransactionFilters, FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
-import { BottomNav } from '@/components/BottomNav';
-import { BusinessBottomNav, BusinessTab } from '@/components/business/BusinessBottomNav';
-import { BusinessDashboard } from '@/components/business/BusinessDashboard';
-import { BusinessTransactions } from '@/components/business/BusinessTransactions';
-import { BusinessReports } from '@/components/business/BusinessReports';
-import { BusinessMore } from '@/components/business/BusinessMore';
-import { BusinessWallet } from '@/components/business/BusinessWallet';
-import { BusinessProjects } from '@/components/business/BusinessProjects';
-import { Expense, Category } from '@/types/expense';
+import { FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
+import { BusinessTab } from '@/components/business/BusinessBottomNav';
+import { BusinessModeView } from '@/components/home/BusinessModeView';
+import { PersonalModeView } from '@/components/home/PersonalModeView';
+import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
-import { Loader2, Smartphone, ChevronDown, ArrowRight, Receipt, ArrowLeft, Building2, FileSpreadsheet } from 'lucide-react';
-import { EmptyState } from '@/components/EmptyState';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
-import { WelcomeConfetti } from '@/components/WelcomeConfetti';
-import { APP_VERSION } from '@/lib/version';
 
-// Extracted components
-import { HomeHeader } from '@/components/home/HomeHeader';
-import { PaymentSourcesSection } from '@/components/home/PaymentSourcesSection';
-import { SummarySection } from '@/components/home/SummarySection';
-import { QuickLinksSection } from '@/components/home/QuickLinksSection';
-import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
-import { CashflowForecast } from '@/components/CashflowForecast';
-import { SavingsGoalsSection } from '@/components/savings';
-import { ReportsDialog } from '@/components/reports/ReportsDialog';
-import { AddExpenseDialog } from '@/components/AddExpenseDialog';
-import { CSVImportDialog } from '@/components/CSVImportDialog';
-import { WelcomeChecklist } from '@/components/WelcomeChecklist';
-import { TrialBanner } from '@/components/TrialBanner';
 const Index = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -72,7 +39,6 @@ const Index = () => {
   const isBusinessMode = !!activeBusinessProfileId;
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
-  const [businessImportOpen, setBusinessImportOpen] = useState(false);
 
   // Load business profile data
   useEffect(() => {
@@ -101,7 +67,6 @@ const Index = () => {
   const [dashboardFilters, setDashboardFilters] = useState<FilterState>(defaultFilters);
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
-  const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
   const [showWelcome, setShowWelcome] = useState(false);
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
   const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
@@ -123,15 +88,13 @@ const Index = () => {
   const { recurringTransactions, processDueTransactions, updateRecurring, refetch: refetchRecurring } = useRecurringTransactions();
   const { findMatches } = useRecurringMatcher();
 
-  // Load welcome animation flag; displayName now comes from AppStateContext
+  // Load welcome animation flag
   useEffect(() => {
     const shouldShowWelcome = localStorage.getItem('show_welcome_animation');
     if (shouldShowWelcome === 'true') {
       setShowWelcome(true);
       localStorage.removeItem('show_welcome_animation');
     }
-
-    // If no local name yet but user is loaded, load from DB and sync to context
     const localName = localStorage.getItem('user_display_name');
     if (!localName && user) {
       supabase
@@ -165,8 +128,6 @@ const Index = () => {
     }
     return next;
   }, []);
-
-
 
   const { ownedPaymentSources: customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources();
   const { customCategories } = useCustomCategories();
@@ -280,6 +241,27 @@ const Index = () => {
 
   useAutoBackup();
 
+  // Bulk actions hook
+  const {
+    selectedTransactionIds,
+    setSelectedTransactionIds,
+    handleToggleSelect,
+    handleSelectAll,
+    handleClearSelection,
+    handleBulkCategoryChange,
+    handleBulkPaymentSourceChange,
+    handleBulkDelete,
+  } = useBulkActions({
+    filteredExpenses: filteredDashboardExpenses,
+    bulkUpdateExpenses,
+    deleteExpense,
+  });
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedTransactionIds(new Set());
+  }, [dashboardFilters, setSelectedTransactionIds]);
+
   // Wrapper: check for recurring matches after adding a transaction
   const addExpenseWithRecurringCheck = useCallback(async (expense: any) => {
     await addExpense(expense);
@@ -331,78 +313,31 @@ const Index = () => {
     }
     showSuccess(t('toasts.obligationsMarkedPaid', { count: selectedIds.length }));
     refetchRecurring();
-  }, [recurringTransactions, updateRecurring, refetchRecurring, calculateNextDueDateForMatch]);
+  }, [recurringTransactions, updateRecurring, refetchRecurring, calculateNextDueDateForMatch, t]);
 
-  // Clear selection when filters change
-  useEffect(() => {
-    setSelectedTransactionIds(new Set());
-  }, [dashboardFilters]);
-
-  // Bulk selection handlers
-  const handleToggleSelect = useCallback((id: string) => {
-    setSelectedTransactionIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  const handlePaymentSourceClick = useCallback((source: CustomPaymentSource) => {
+    setSelectedPaymentSource(source);
+    setPaymentSourceDialogOpen(true);
   }, []);
 
-  const handleSelectAll = useCallback(() => {
-    setSelectedTransactionIds(new Set(filteredDashboardExpenses.map(e => e.id)));
-  }, [filteredDashboardExpenses]);
-
-  const handleClearSelection = useCallback(() => {
-    setSelectedTransactionIds(new Set());
+  const handleTransactionClick = useCallback((expense: Expense) => {
+    setSelectedTransaction(expense);
+    setDetailDialogOpen(true);
   }, []);
 
-  const handleBulkCategoryChange = useCallback(async (category: Category) => {
-    const selectedExpenses = filteredDashboardExpenses.filter(e => selectedTransactionIds.has(e.id));
-    await bulkUpdateExpenses(selectedExpenses.map(e => ({ ...e, category })));
-    setSelectedTransactionIds(new Set());
-    showSuccess(t('transactions.bulkCategoryChanged', { count: selectedExpenses.length }));
-  }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
+  const handleEditFromDetail = useCallback((expense: Expense) => {
+    setSelectedTransaction(expense);
+    setEditDialogOpen(true);
+  }, []);
 
-  const handleBulkPaymentSourceChange = useCallback(async (paymentSource: string) => {
-    const selectedExpenses = filteredDashboardExpenses.filter(e => selectedTransactionIds.has(e.id));
-    await bulkUpdateExpenses(selectedExpenses.map(e => ({ ...e, paymentSource })));
-    setSelectedTransactionIds(new Set());
-    showSuccess(t('transactions.bulkSourceChanged', { count: selectedExpenses.length }));
-  }, [filteredDashboardExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
+  const handleShowMore = useCallback(() => {
+    setVisibleCount(prev => prev + 50);
+  }, []);
 
-  const handleBulkDelete = useCallback(async () => {
-    const idsToDelete = Array.from(selectedTransactionIds);
-    await Promise.all(idsToDelete.map(id => deleteExpense(id)));
-    setSelectedTransactionIds(new Set());
-    showSuccess(t('transactions.bulkDeleted', { count: idsToDelete.length }));
-  }, [selectedTransactionIds, deleteExpense, t]);
-
-  const handleSignOut = async () => {
-    if (isLocalMode) {
-      navigate('/setup');
-    } else {
-      try {
-        await signOut();
-      } catch (error) {
-        console.error('Sign out error:', error);
-      } finally {
-        // Clear all app state from localStorage
-        const theme = localStorage.getItem('theme');
-        const storageConfig = localStorage.getItem('finmate-storage-config');
-        const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-        const simpleMode = localStorage.getItem('simple_mode_enabled');
-        const familyMode = localStorage.getItem('family_mode_enabled');
-        const businessMode = localStorage.getItem('business_mode_enabled');
-        localStorage.clear();
-        if (theme) localStorage.setItem('theme', theme);
-        if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
-        if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-        if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
-        if (familyMode) localStorage.setItem('family_mode_enabled', familyMode);
-        if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
-        navigate('/');
-      }
-    }
-  };
+  const handleDashboardFiltersChange = useCallback((f: FilterState) => {
+    setDashboardFilters(f);
+    setVisibleCount(50);
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
@@ -426,642 +361,121 @@ const Index = () => {
     );
   }
 
-  // ── Business Mode Rendering ──
+  // Shared dialog props
+  const sharedDialogProps = {
+    incomeDialogOpen,
+    onIncomeDialogChange: setIncomeDialogOpen,
+    expenseDialogOpen,
+    onExpenseDialogChange: setExpenseDialogOpen,
+    transferDialogOpen,
+    onTransferDialogChange: setTransferDialogOpen,
+    selectedTransaction,
+    detailDialogOpen,
+    onDetailDialogChange: (open: boolean) => {
+      setDetailDialogOpen(open);
+      if (!open) setSelectedTransaction(null);
+    },
+    onEditFromDetail: handleEditFromDetail,
+    editDialogOpen,
+    onEditDialogChange: setEditDialogOpen,
+    paymentSourceDialogOpen,
+    onPaymentSourceDialogChange: setPaymentSourceDialogOpen,
+    selectedPaymentSource,
+    onPaymentSourceClick: handlePaymentSourceClick,
+    onTransactionClick: handleTransactionClick,
+    recurringPanelOpen,
+    onRecurringPanelClose: () => setRecurringPanelOpen(false),
+    onRecurringPanelOpen: () => setRecurringPanelOpen(true),
+    recurringMatchDialogOpen,
+    onRecurringMatchDialogChange: setRecurringMatchDialogOpen,
+    recurringMatches,
+    onRecurringMatchConfirm: handleRecurringMatchConfirm,
+    transactionsOpen,
+    onTransactionsOpenChange: setTransactionsOpen,
+    // Data
+    expenses,
+    allExpenses,
+    expensesLoading,
+    totalIncome,
+    totalExpenses,
+    totalTransfers,
+    monthlyTransfers,
+    monthlyTransferCount,
+    allTransfers,
+    allCards,
+    // Actions
+    onUpdateExpense: updateExpense,
+    onDeleteExpense: deleteExpense,
+    importFromCSV: importWithRecurringCheck,
+    findDuplicates,
+    // Bulk
+    dashboardFilters,
+    onDashboardFiltersChange: handleDashboardFiltersChange,
+    filteredDashboardExpenses,
+    visibleCount,
+    onShowMore: handleShowMore,
+    selectedTransactionIds,
+    onToggleSelect: handleToggleSelect,
+    onSelectAll: handleSelectAll,
+    onClearSelection: handleClearSelection,
+    onBulkCategoryChange: handleBulkCategoryChange,
+    onBulkPaymentSourceChange: handleBulkPaymentSourceChange,
+    onBulkDelete: handleBulkDelete,
+    contextLookup,
+    // Sources
+    customPaymentSources,
+    multiCurrencyEnabled,
+    currencyCode: currency.code,
+    convert,
+    netWorth,
+    isLocalMode,
+    expensesByCategory,
+    activeRecurringCount: recurringTransactions.filter(r => r.is_active).length,
+  };
+
   if (isBusinessMode) {
-    const handleBackToPersonal = () => {
-      setActiveBusinessProfileId(null);
-      setBusinessTab('dashboard');
-    };
-
-    const handleEditExpense = async (updatedExpense: Expense) => {
-      await updateExpense(updatedExpense);
-    };
-
     return (
-      <div className={`business-theme-${businessProfile?.theme_color || 'ocean-blue'} min-h-dvh bg-background pb-20`}>
-        {/* Accent bar + Business header */}
-        <div className="h-1 bg-primary rounded-b-full" />
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 pt-4">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4">
-            <button
-              onClick={handleBackToPersonal}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-muted/60 flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors flex-shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/15 border-2 border-primary/30 flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
-                {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
-              </h1>
-              <p className="text-xs sm:text-sm text-primary/80 font-medium truncate">
-                {businessProfile?.company_name || 'Tvrtka'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Business Content */}
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4">
-          {businessTab === 'dashboard' && (
-            <>
-              {/* Action buttons (no BulkEdit for business) */}
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <ReportsDialog expenses={allExpenses} />
-                {importFromCSV && (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      className="gap-2 rounded-xl"
-                      onClick={() => setBusinessImportOpen(true)}
-                    >
-                      <FileSpreadsheet className="w-4 h-4" />
-                      {t('import.title', 'Uvoz izvoda')}
-                    </Button>
-                    <CSVImportDialog
-                      onImport={importFromCSV}
-                      findDuplicates={findDuplicates}
-                      existingExpenses={allExpenses}
-                      externalOpen={businessImportOpen}
-                      onExternalOpenChange={setBusinessImportOpen}
-                    />
-                  </>
-                )}
-                <AddExpenseDialog onAdd={addExpenseWithRecurringCheck} checkDuplicate={checkDuplicate} />
-              </div>
-
-              {/* Payment Sources */}
-              <PaymentSourcesSection
-                customPaymentSources={customPaymentSources}
-                onSourceClick={(source) => {
-                  setSelectedPaymentSource(source);
-                  setPaymentSourceDialogOpen(true);
-                }}
-              />
-
-              {/* Summary Cards */}
-              <SummarySection
-                balance={customPaymentSources.reduce((sum, s) => {
-                  const bal = s.balance || 0;
-                  if (multiCurrencyEnabled && s.currency && s.currency !== currency.code) {
-                    return sum + convert(bal, s.currency, currency.code);
-                  }
-                  return sum + bal;
-                }, 0)}
-                netWorth={netWorth}
-                totalIncome={totalIncome}
-                totalExpenses={totalExpenses}
-                totalTransfers={totalTransfers}
-                monthlyTransfers={monthlyTransfers}
-                monthlyTransferCount={monthlyTransferCount}
-                allTransfers={allTransfers}
-                recurringCount={recurringTransactions.filter(r => r.is_active).length}
-                isLocalMode={isLocalMode}
-                simpleModeEnabled={false}
-                onIncomeClick={() => setIncomeDialogOpen(true)}
-                onExpenseClick={() => setExpenseDialogOpen(true)}
-                onTransferClick={() => setTransferDialogOpen(true)}
-                onRecurringClick={() => setRecurringPanelOpen(true)}
-              />
-
-              {/* Receivables & Payables */}
-              {(totalReceivable > 0 || totalPayable > 0) && (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, transparent 100%)' }}>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.receivables', 'Potraživanja')}</p>
-                    <p className="text-sm font-bold text-income">{formatAmount(totalReceivable)}</p>
-                  </div>
-                  <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)' }}>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.payables', 'Dugovanja')}</p>
-                    <p className="text-sm font-bold text-destructive">{formatAmount(totalPayable)}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Recent Transactions */}
-              <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen}>
-                <div className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 ${transactionsOpen ? 'p-6' : 'p-4'}`}>
-                  <CollapsibleTrigger asChild>
-                    <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
-                      <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Receipt className="w-5 h-5 text-primary" />
-                        {t('transactions.recent', 'Nedavno')}
-                      </h2>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {filteredDashboardExpenses.length !== expenses.length
-                            ? t('transactions.transactionsCountFiltered', { filtered: filteredDashboardExpenses.length, total: expenses.length })
-                            : t('transactions.transactionsCount', { count: expenses.length })}
-                        </span>
-                        <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${transactionsOpen ? 'rotate-180' : ''}`} />
-                      </div>
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-4 space-y-4">
-                    <TransactionFilters
-                      filters={dashboardFilters}
-                      onFiltersChange={(f) => { setDashboardFilters(f); setVisibleCount(50); }}
-                      showCardFilter={allCards.length > 0}
-                      showScopeFilter={false}
-                      cards={allCards}
-                    />
-                    <BulkActionsToolbar
-                      selectedCount={selectedTransactionIds.size}
-                      onClearSelection={handleClearSelection}
-                      onSelectAll={handleSelectAll}
-                      totalCount={filteredDashboardExpenses.length}
-                      onBulkCategoryChange={handleBulkCategoryChange}
-                      onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
-                      onBulkDelete={handleBulkDelete}
-                    />
-                    {expensesLoading ? (
-                      <div className="py-12 flex items-center justify-center">
-                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : filteredDashboardExpenses.length === 0 ? (
-                      <EmptyState
-                        variant="transactions"
-                        title={expenses.length === 0 ? t('transactions.noTransactions') : t('transactions.noResults', 'Nema rezultata za odabrane filtere')}
-                        description={expenses.length === 0 ? t('transactions.addFirstTransaction') : undefined}
-                        compact
-                      />
-                    ) : (
-                      <div className="space-y-1">
-                        {filteredDashboardExpenses.slice(0, visibleCount).map((expense) => (
-                          <div key={expense.id} className="flex items-center gap-2">
-                            <Checkbox
-                              checked={selectedTransactionIds.has(expense.id)}
-                              onCheckedChange={() => handleToggleSelect(expense.id)}
-                              className="shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <TransactionItem
-                                expense={expense}
-                                onDelete={deleteExpense}
-                                onClick={(e) => {
-                                  if (selectedTransactionIds.size === 0) {
-                                    setSelectedTransaction(e);
-                                    setDetailDialogOpen(true);
-                                  } else {
-                                    handleToggleSelect(e.id);
-                                  }
-                                }}
-                                contextLookup={contextLookup}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                        {visibleCount < filteredDashboardExpenses.length && (
-                          <Button
-                            variant="ghost"
-                            className="w-full mt-2 text-sm text-muted-foreground"
-                            onClick={() => setVisibleCount(prev => prev + 50)}
-                          >
-                            {t('transactions.showMore', 'Prikaži još')} ({filteredDashboardExpenses.length - visibleCount} {t('transactions.remaining', 'preostalo')})
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-
-              {/* Quick Links: Projects & Budgets */}
-              <div className="mt-6 space-y-4">
-                <QuickLinksSection
-                  simpleModeEnabled={false}
-                  isLocalMode={false}
-                  expensesByCategory={expensesByCategory}
-                  totalExpenses={totalExpenses}
-                  expenses={expenses}
-                  onUpdateExpense={updateExpense}
-                  onDeleteExpense={deleteExpense}
-                />
-              </div>
-            </>
-          )}
-          {businessTab === 'wallet' && <BusinessWallet />}
-          {businessTab === 'transactions' && (
-            <BusinessTransactions
-              expenses={expenses}
-              onAddClick={() => {}}
-              onEditExpense={handleEditExpense}
-              onDeleteExpense={deleteExpense}
-              onImportCSV={importFromCSV}
-              findDuplicates={findDuplicates}
-              existingExpenses={allExpenses}
-            />
-          )}
-          {businessTab === 'projects' && (
-            <BusinessProjects onRefreshExpenses={refetch} />
-          )}
-          {businessTab === 'reports' && (
-            <BusinessReports
-              expenses={expenses}
-              companyName={businessProfile?.company_name || 'Tvrtka'}
-            />
-          )}
-          {businessTab === 'more' && <BusinessMore expenses={expenses} />}
-        </div>
-
-        {/* Dialogs for business mode */}
-        <TransactionListDialog
-          open={incomeDialogOpen}
-          onOpenChange={setIncomeDialogOpen}
-          type="income"
-          expenses={expenses}
-          onUpdate={updateExpense}
-          onDelete={deleteExpense}
-          total={totalIncome}
-        />
-        <TransactionListDialog
-          open={expenseDialogOpen}
-          onOpenChange={setExpenseDialogOpen}
-          type="expense"
-          expenses={expenses}
-          onUpdate={updateExpense}
-          onDelete={deleteExpense}
-          total={totalExpenses}
-        />
-        <TransferListDialog
-          open={transferDialogOpen}
-          onOpenChange={setTransferDialogOpen}
-          transfers={allTransfers}
-          totalAmount={totalTransfers}
-        />
-        <TransactionDetailDialog
-          expense={selectedTransaction}
-          open={detailDialogOpen}
-          onOpenChange={(open) => {
-            setDetailDialogOpen(open);
-            if (!open) setSelectedTransaction(null);
-          }}
-          onEdit={(expense) => {
-            setSelectedTransaction(expense);
-            setEditDialogOpen(true);
-          }}
-          onDelete={deleteExpense}
-        />
-        <EditTransactionDialog
-          expense={selectedTransaction}
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          onSave={updateExpense}
-        />
-        <PaymentSourceTransactionsDialog
-          open={paymentSourceDialogOpen}
-          onOpenChange={setPaymentSourceDialogOpen}
-          paymentSource={selectedPaymentSource}
-          expenses={allExpenses}
-          onUpdate={updateExpense}
-          onDelete={deleteExpense}
-          onImportCSV={importFromCSV}
-          findDuplicates={findDuplicates}
-        />
-
-        {recurringPanelOpen && (
-          <RecurringTransactionsPanel onClose={() => setRecurringPanelOpen(false)} />
-        )}
-
-        <BusinessBottomNav activeTab={businessTab} onTabChange={setBusinessTab} />
-      </div>
+      <BusinessModeView
+        {...sharedDialogProps}
+        businessTab={businessTab}
+        onBusinessTabChange={setBusinessTab}
+        businessProfile={businessProfile}
+        displayName={displayName}
+        onBackToPersonal={() => {
+          setActiveBusinessProfileId(null);
+          setBusinessTab('dashboard');
+        }}
+        onAddExpense={addExpenseWithRecurringCheck}
+        bulkUpdateExpenses={bulkUpdateExpenses}
+        checkDuplicate={checkDuplicate}
+        refetch={refetch}
+        totalReceivable={totalReceivable}
+        totalPayable={totalPayable}
+        formatAmount={formatAmount}
+      />
     );
   }
 
   return (
-    <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-
-        {/* ── Financial Assistant Dialog (portal-rendered, outside header to avoid click conflicts) ── */}
-        {!isLocalMode && aiAssistantEnabled && !simpleModeEnabled && (
-          <FinancialAssistantDialog
-            expenses={expenses}
-            totalIncome={totalIncome}
-            totalExpenses={totalExpenses}
-            balance={balance}
-            paymentSources={customPaymentSources}
-            budgets={budgetsForAssistant}
-            projects={projectsForAssistant}
-            open={assistantDialogOpen}
-            onOpenChange={setAssistantDialogOpen}
-            hideTrigger
-            businessProfileName={businessProfile?.company_name}
-          />
-        )}
-
-        {/* ── Header ── */}
-        <HomeHeader
-          displayName={displayName}
-          isLocalMode={isLocalMode}
-          simpleModeEnabled={simpleModeEnabled}
-          expenses={expenses}
-          reportsExpenses={allExpenses}
-          allExpenses={allExpenses}
-          onAddExpense={addExpenseWithRecurringCheck}
-          onCheckDuplicate={checkDuplicate}
-          onBulkUpdateExpenses={bulkUpdateExpenses}
-          onImportCSV={importWithRecurringCheck}
-          findDuplicates={findDuplicates}
-          existingExpenses={allExpenses}
-          onRefetch={refetch}
-          onSelectExpense={(expense) => {
-            setSelectedTransaction(expense);
-            setDetailDialogOpen(true);
-          }}
-        />
-
-        {/* Trial Banner */}
-        <TrialBanner />
-
-        {/* Local Mode Banner */}
-        {isLocalMode && (
-          <div className="mb-6 p-4 bg-muted/50 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Smartphone className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">{t('common.localMode')}</p>
-                <p className="text-xs text-muted-foreground">{t('common.dataStaysLocal')}</p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/setup')} className="rounded-lg text-xs">
-              {t('common.switchToCloud')}
-            </Button>
-          </div>
-        )}
-
-        {/* ── Welcome Checklist for new users ── */}
-        <WelcomeChecklist
-          hasPaymentSources={customPaymentSources.length > 0}
-          hasTransactions={expenses.length > 0}
-          hasBudgets={budgetsWithStats.length > 0}
-          onAddPaymentSource={() => navigate('/wallet')}
-          onAddTransaction={() => {
-            // Trigger add expense dialog
-            const addBtn = document.querySelector('[data-tutorial="add-buttons"] button:last-child') as HTMLButtonElement;
-            addBtn?.click();
-          }}
-          onAddBudget={() => navigate('/budgets')}
-        />
-
-        {/* ── Payment Sources ── */}
-        <PaymentSourcesSection
-          customPaymentSources={customPaymentSources}
-          onSourceClick={(source) => {
-            setSelectedPaymentSource(source);
-            setPaymentSourceDialogOpen(true);
-          }}
-        />
-
-        {/* ── Summary Cards + Transfers + Recurring ── */}
-        <SummarySection
-          balance={customPaymentSources.reduce((sum, s) => {
-            const bal = s.balance || 0;
-            if (multiCurrencyEnabled && s.currency && s.currency !== currency.code) {
-              return sum + convert(bal, s.currency, currency.code);
-            }
-            return sum + bal;
-          }, 0)}
-          netWorth={netWorth}
-          totalIncome={totalIncome}
-          totalExpenses={totalExpenses}
-          totalTransfers={totalTransfers}
-          monthlyTransfers={monthlyTransfers}
-          monthlyTransferCount={monthlyTransferCount}
-          allTransfers={allTransfers}
-          recurringCount={recurringTransactions.filter(r => r.is_active).length}
-          isLocalMode={isLocalMode}
-          simpleModeEnabled={simpleModeEnabled}
-          onIncomeClick={() => setIncomeDialogOpen(true)}
-          onExpenseClick={() => setExpenseDialogOpen(true)}
-          onTransferClick={() => setTransferDialogOpen(true)}
-          onRecurringClick={() => setRecurringPanelOpen(true)}
-        />
-
-        {/* ── Cashflow Forecast (collapsible, always visible) ── */}
-        <Collapsible className="group mb-3">
-          <div className="glass-card rounded-2xl animate-fade-in p-4">
-            <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
-                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  {t('dashboard.cashflow.title')}
-                </h3>
-                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="mt-3">
-                <CashflowForecast />
-              </div>
-            </CollapsibleContent>
-          </div>
-        </Collapsible>
-
-
-        {/* ── Main Content Grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Transactions */}
-          <Collapsible open={transactionsOpen} onOpenChange={setTransactionsOpen} className="lg:col-span-2">
-            <div className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 ${transactionsOpen ? 'p-6' : 'p-4'}`}>
-              <CollapsibleTrigger asChild>
-                <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity" data-tutorial="transactions">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <Receipt className="w-5 h-5 text-primary" />
-                    {t('transactions.recent', 'Nedavno')}
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {filteredDashboardExpenses.length !== expenses.length
-                        ? t('transactions.transactionsCountFiltered', { filtered: filteredDashboardExpenses.length, total: expenses.length })
-                        : t('transactions.transactionsCount', { count: expenses.length })}
-                    </span>
-                    <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${transactionsOpen ? 'rotate-180' : ''}`} />
-                  </div>
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-4">
-                <TransactionFilters
-                  filters={dashboardFilters}
-                  onFiltersChange={(f) => { setDashboardFilters(f); setVisibleCount(50); }}
-                  showCardFilter={allCards.length > 0}
-                  showScopeFilter={!isLocalMode}
-                  cards={allCards}
-                />
-                <BulkActionsToolbar
-                  selectedCount={selectedTransactionIds.size}
-                  onClearSelection={handleClearSelection}
-                  onSelectAll={handleSelectAll}
-                  totalCount={filteredDashboardExpenses.length}
-                  onBulkCategoryChange={handleBulkCategoryChange}
-                  onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
-                  onBulkDelete={handleBulkDelete}
-                />
-                {expensesLoading ? (
-                  <div className="py-12 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredDashboardExpenses.length === 0 ? (
-                  <EmptyState
-                    variant="transactions"
-                    title={
-                      expenses.length === 0
-                        ? t('transactions.noTransactions')
-                        : t('transactions.noResults', 'Nema rezultata za odabrane filtere')
-                    }
-                    description={
-                      expenses.length === 0
-                        ? t('transactions.addFirstTransaction')
-                        : undefined
-                    }
-                    compact
-                  />
-                ) : (
-                  <div className="space-y-1">
-                    {filteredDashboardExpenses.slice(0, visibleCount).map((expense) => (
-                      <div key={expense.id} className="flex items-center gap-2">
-                        <Checkbox
-                          checked={selectedTransactionIds.has(expense.id)}
-                          onCheckedChange={() => handleToggleSelect(expense.id)}
-                          className="shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <TransactionItem
-                            expense={expense}
-                            onDelete={deleteExpense}
-                            onClick={(e) => {
-                              if (selectedTransactionIds.size === 0) {
-                                setSelectedTransaction(e);
-                                setDetailDialogOpen(true);
-                              } else {
-                                handleToggleSelect(e.id);
-                              }
-                            }}
-                            contextLookup={contextLookup}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    {visibleCount < filteredDashboardExpenses.length && (
-                      <Button
-                        variant="ghost"
-                        className="w-full mt-2 text-sm text-muted-foreground"
-                        onClick={() => setVisibleCount(prev => prev + 50)}
-                      >
-                        {t('transactions.showMore', 'Prikaži još')} ({filteredDashboardExpenses.length - visibleCount} {t('transactions.remaining', 'preostalo')})
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </CollapsibleContent>
-            </div>
-          </Collapsible>
-
-          {/* ── Sidebar: Quick Links + Category Breakdown ── */}
-          <QuickLinksSection
-            simpleModeEnabled={simpleModeEnabled}
-            isLocalMode={isLocalMode}
-            expensesByCategory={expensesByCategory}
-            totalExpenses={totalExpenses}
-            expenses={expenses}
-            onUpdateExpense={updateExpense}
-            onDeleteExpense={deleteExpense}
-          />
-        </div>
-
-        {/* Footer */}
-        <footer className="mt-8 py-4 text-center border-t border-border/30">
-          <p className="text-xs text-muted-foreground">V&M Balance v{APP_VERSION}</p>
-        </footer>
-      </div>
-
-      {/* ── Dialogs ── */}
-      <TransactionListDialog
-        open={incomeDialogOpen}
-        onOpenChange={setIncomeDialogOpen}
-        type="income"
-        expenses={expenses}
-        onUpdate={updateExpense}
-        onDelete={deleteExpense}
-        total={totalIncome}
-      />
-      <TransactionListDialog
-        open={expenseDialogOpen}
-        onOpenChange={setExpenseDialogOpen}
-        type="expense"
-        expenses={expenses}
-        onUpdate={updateExpense}
-        onDelete={deleteExpense}
-        total={totalExpenses}
-      />
-      <TransferListDialog
-        open={transferDialogOpen}
-        onOpenChange={setTransferDialogOpen}
-        transfers={allTransfers}
-        totalAmount={totalTransfers}
-      />
-      <TransactionDetailDialog
-        expense={selectedTransaction}
-        open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
-        onEdit={(expense) => {
-          setSelectedTransaction(expense);
-          setEditDialogOpen(true);
-        }}
-        onDelete={deleteExpense}
-      />
-      <EditTransactionDialog
-        expense={selectedTransaction}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onSave={updateExpense}
-      />
-      <PaymentSourceTransactionsDialog
-        open={paymentSourceDialogOpen}
-        onOpenChange={setPaymentSourceDialogOpen}
-        paymentSource={selectedPaymentSource}
-        expenses={allExpenses}
-        onUpdate={updateExpense}
-        onDelete={deleteExpense}
-        onImportCSV={importFromCSV}
-        findDuplicates={findDuplicates}
-      />
-
-      {showWelcome && (
-        <WelcomeConfetti
-          displayName={displayName || 'Korisnik'}
-          onComplete={() => setShowWelcome(false)}
-        />
-      )}
-
-      {aiAssistantEnabled && !simpleModeEnabled && (
-        <div data-tutorial="ai-assistant">
-          <AIInsightBubble
-            expenses={expenses}
-            totalIncome={totalIncome}
-            totalExpenses={totalExpenses}
-            balance={balance}
-            paymentSources={customPaymentSources}
-            onOpenAssistant={() => setAssistantDialogOpen(true)}
-          />
-        </div>
-      )}
-
-      
-      <BottomNav />
-
-      {recurringPanelOpen && (
-        <RecurringTransactionsPanel onClose={() => setRecurringPanelOpen(false)} />
-      )}
-
-      <RecurringMatchDialog
-        open={recurringMatchDialogOpen}
-        onOpenChange={setRecurringMatchDialogOpen}
-        matches={recurringMatches}
-        onConfirm={handleRecurringMatchConfirm}
-      />
-    </div>
+    <PersonalModeView
+      {...sharedDialogProps}
+      displayName={displayName}
+      simpleModeEnabled={simpleModeEnabled}
+      aiAssistantEnabled={aiAssistantEnabled}
+      onAddExpense={addExpenseWithRecurringCheck}
+      bulkUpdateExpenses={bulkUpdateExpenses}
+      checkDuplicate={checkDuplicate}
+      refetch={refetch}
+      balance={balance}
+      budgetsCount={budgetsWithStats.length}
+      budgetsForAssistant={budgetsForAssistant}
+      projectsForAssistant={projectsForAssistant}
+      businessProfileName={businessProfile?.company_name}
+      showWelcome={showWelcome}
+      onWelcomeComplete={() => setShowWelcome(false)}
+      assistantDialogOpen={assistantDialogOpen}
+      onAssistantDialogChange={setAssistantDialogOpen}
+    />
   );
 };
 
