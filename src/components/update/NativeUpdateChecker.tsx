@@ -23,10 +23,7 @@ const createNativeUpdateChecker = () => {
     const result = await fetchLatestVersion();
 
     if (!result.version) {
-      showError(
-        `Provjera web verzije nije uspjela. Nijedan server nije odgovorio.`,
-        { duration: 5000 }
-      );
+      showError(`Provjera web verzije nije uspjela. Nijedan server nije odgovorio.`);
       console.error('[NativeUpdate] All origins failed');
       return;
     }
@@ -43,10 +40,7 @@ const createNativeUpdateChecker = () => {
         }
       );
     } else {
-      showSuccess(
-        `Web verzija je ažurna (${APP_VERSION}).`,
-        { duration: 3000 }
-      );
+      showSuccess(`Web verzija je ažurna (${APP_VERSION}).`);
     }
   };
 };
