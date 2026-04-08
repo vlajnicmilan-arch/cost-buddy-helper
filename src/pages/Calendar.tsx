@@ -80,21 +80,7 @@ const Calendar = () => {
 
   return (
     <div className="min-h-dvh bg-background pb-24">
-      <PageHeader title={t('calendar.title', 'Kalendar')} rightContent={
-        <Button variant="ghost" size="icon" onClick={async () => {
-          const allEvents = Object.values(eventsByDate).flat();
-          if (!allEvents.length) return;
-          try {
-            await downloadCalendarEventsICS(
-              allEvents.map(e => ({ id: e.id, title: e.title, description: e.description, date: e.date, amount: e.amount, type: e.type, source: e.source })),
-              `kalendar-${format(currentMonth, 'yyyy-MM')}.ics`
-            );
-            showSuccess(t('calendar.monthExported', 'Mjesec izvezen'));
-          } catch { showError('Greška'); }
-        }}>
-          <Download className="w-5 h-5" />
-        </Button>
-      } />
+      <PageHeader title={t('calendar.title', 'Kalendar')} />
 
       <div className="max-w-lg mx-auto px-4 pt-4">
         {/* Month navigation */}
@@ -103,9 +89,24 @@ const Calendar = () => {
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <h2 className="text-lg font-semibold capitalize">{monthName}</h2>
-          <Button variant="ghost" size="icon" onClick={nextMonth}>
-            <ChevronRight className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={async () => {
+              const allEvents = Object.values(eventsByDate).flat();
+              if (!allEvents.length) return;
+              try {
+                await downloadCalendarEventsICS(
+                  allEvents.map(e => ({ id: e.id, title: e.title, description: e.description, date: e.date, amount: e.amount, type: e.type, source: e.source })),
+                  `kalendar-${format(currentMonth, 'yyyy-MM')}.ics`
+                );
+                showSuccess(t('calendar.monthExported', 'Mjesec izvezen'));
+              } catch { showError('Greška'); }
+            }} title={t('calendar.exportMonth', 'Izvezi mjesec')}>
+              <Download className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={nextMonth}>
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Day names */}
