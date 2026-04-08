@@ -578,7 +578,8 @@
     "foundData": "Pronađeni podaci s računa",
     "accept": "Prihvati i spremi",
     "reject": "Odbaci",
-    "saveImage": "Spremi sliku računa",
+    "saveImage": "Spremi sliku na uređaj",
+    "saveImageHint": "Slika ostaje samo na ovom uređaju",
     "itemsFound": "Artikli",
     "merchant": "Trgovina",
     "dateNotFound": "Nije pronađen"

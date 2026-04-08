@@ -486,7 +486,8 @@
     "foundData": "Gefundene Daten auf dem Beleg",
     "accept": "Akzeptieren und speichern",
     "reject": "Ablehnen",
-    "saveImage": "Belegbild speichern",
+    "saveImage": "Bild auf Gerät speichern",
+    "saveImageHint": "Bild bleibt nur auf diesem Gerät",
     "itemsFound": "Artikel",
     "merchant": "Händler",
     "dateNotFound": "Nicht gefunden"

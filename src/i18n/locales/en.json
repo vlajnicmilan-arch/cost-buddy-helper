@@ -574,7 +574,8 @@
     "foundData": "Data found on receipt",
     "accept": "Accept and save",
     "reject": "Reject",
-    "saveImage": "Save receipt image",
+    "saveImage": "Save image to device",
+    "saveImageHint": "Image stays only on this device",
     "itemsFound": "Items",
     "merchant": "Merchant",
     "dateNotFound": "Not found"
