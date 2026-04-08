@@ -211,6 +211,7 @@ const App = () => (
                 <TutorialProvider>
                   <NativeInit />
                   <OfflineBanner />
+                  <StatusFeedback />
                   <Toaster />
                   <Sonner />
                   <PWAUpdatePrompt />
