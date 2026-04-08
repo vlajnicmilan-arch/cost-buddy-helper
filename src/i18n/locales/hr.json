@@ -282,6 +282,8 @@
     "receiptImage": "Slika računa",
     "viewReceipt": "Pregledaj",
     "shareOrExport": "Podijeli / Spremi drugdje",
+    "saveToDevice": "Spremi",
+    "share": "Podijeli",
     "details": "Detalji transakcije",
     "deleteTitle": "Obriši transakciju",
     "confirmDelete": "Jeste li sigurni da želite obrisati ovu transakciju?",
