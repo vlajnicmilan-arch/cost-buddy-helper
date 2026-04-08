@@ -19,6 +19,7 @@ import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
+import StatusFeedback from "@/components/StatusFeedback";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = lazy(() => import("./pages/Index"));
