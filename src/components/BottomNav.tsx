@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Target, Wallet, Users } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Target, Wallet, Users, CalendarDays } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -7,7 +7,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 
 const allNavItems = [
   { path: '/home', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/home', '/dashboard'] },
-  { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'] },
+  { path: '/calendar', icon: CalendarDays, labelKey: 'nav.calendar', fallback: 'Kalendar', activePaths: ['/calendar'] },
   { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'] },
   { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'] },
   { path: '/family', icon: Users, labelKey: 'nav.family', fallback: 'Obitelj', activePaths: ['/family'] },

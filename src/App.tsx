@@ -26,6 +26,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Projects = lazy(() => import("./pages/Projects"));
+const CalendarPage = lazy(() => import("./pages/Calendar"));
 const Budgets = lazy(() => import("./pages/Budgets"));
 const Wallet = lazy(() => import("./pages/Wallet"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -179,6 +180,7 @@ const AppRoutes = () => {
         <Route path="/onboarding" element={onboardingCompleted ? <Navigate to="/home" replace /> : <Onboarding />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={requireOnboarding(<Projects />)} />
+        <Route path="/calendar" element={requireOnboarding(<CalendarPage />)} />
         <Route path="/budgets" element={requireOnboarding(<Budgets />)} />
         <Route path="/wallet" element={requireOnboarding(<Wallet />)} />
         <Route path="/family" element={requireOnboarding(<Family />)} />

@@ -66,7 +66,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
               });
               if (result.error) {
                 // Saved via fallback
-                showSuccess(`PIN postavljen (fallback: ${result.backend})`, { duration: 5000 });
+                showSuccess(`PIN postavljen (fallback: ${result.backend})`);
               } else {
                 showSuccess(t('lock.pinSet', 'PIN je postavljen'));
               }
