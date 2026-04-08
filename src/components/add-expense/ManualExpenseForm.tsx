@@ -653,6 +653,18 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         </div>
       )}
 
+      {/* Note */}
+      <div className="space-y-2">
+        <Label htmlFor="note" className="text-sm font-medium">{t('common.note', 'Bilješka')}</Label>
+        <Input
+          id="note"
+          placeholder={t('transactions.notePlaceholder', 'Dodatna bilješka...')}
+          value={props.note}
+          onChange={(e) => props.onNoteChange(e.target.value)}
+          className="h-12 rounded-xl"
+        />
+      </div>
+
       {/* Save Receipt Option */}
       {props.receiptImage && (
         <div>
