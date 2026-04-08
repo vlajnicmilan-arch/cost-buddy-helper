@@ -13,7 +13,7 @@ import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useInstallments } from '@/hooks/useInstallments';
-import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank, MapPin } from 'lucide-react';
+import { Plus, Camera, Image, Loader2, X, ChevronDown, ChevronUp, Save, Check, RotateCcw, FolderKanban, PiggyBank, MapPin, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
@@ -1247,19 +1247,24 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
                   </div>
                 )}
 
-                <div className="flex items-center space-x-2 pt-2">
-                  <Checkbox 
-                    id="save-receipt-preview" 
-                    checked={saveReceipt}
-                    onCheckedChange={(checked) => setSaveReceipt(checked as boolean)}
-                  />
-                  <label 
-                    htmlFor="save-receipt-preview" 
-                    className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
-                  >
-                    <Save className="w-3 h-3" />
-                    {t('scanner.saveImage')}
-                  </label>
+                <div className="pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="save-receipt-preview" 
+                      checked={saveReceipt}
+                      onCheckedChange={(checked) => setSaveReceipt(checked as boolean)}
+                    />
+                    <label 
+                      htmlFor="save-receipt-preview" 
+                      className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
+                    >
+                      <Smartphone className="w-3 h-3" />
+                      {t('scanner.saveImage')}
+                    </label>
+                  </div>
+                  {saveReceipt && (
+                    <p className="text-xs text-muted-foreground/70 ml-6 mt-1">{t('scanner.saveImageHint')}</p>
+                  )}
                 </div>
               </div>
               
@@ -2216,19 +2221,24 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
 
               {/* Save Receipt Option */}
               {receiptImage && (
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="save-receipt" 
-                    checked={saveReceipt}
-                    onCheckedChange={(checked) => setSaveReceipt(checked as boolean)}
-                  />
-                  <label 
-                    htmlFor="save-receipt" 
-                    className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
-                  >
-                    <Save className="w-3 h-3" />
-                    {t('scanner.saveImage')}
-                  </label>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="save-receipt" 
+                      checked={saveReceipt}
+                      onCheckedChange={(checked) => setSaveReceipt(checked as boolean)}
+                    />
+                    <label 
+                      htmlFor="save-receipt" 
+                      className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
+                    >
+                      <Smartphone className="w-3 h-3" />
+                      {t('scanner.saveImage')}
+                    </label>
+                  </div>
+                  {saveReceipt && (
+                    <p className="text-xs text-muted-foreground/70 ml-6 mt-1">{t('scanner.saveImageHint')}</p>
+                  )}
                 </div>
               )}
             </form>
