@@ -45,7 +45,14 @@ const Paywall = lazy(() => import("./pages/Paywall"));
 const Landing = lazy(() => import("./pages/Landing"));
 const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const NativeInit = () => {
   useStatusBar();
