@@ -21,6 +21,7 @@ import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
 import StatusFeedback from "@/components/StatusFeedback";
 import { useAuth } from "@/hooks/useAuth";
+import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 
 const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
