@@ -66,7 +66,6 @@ export const TransactionDetailDialog = ({
       setImageZoom(1);
     }
   }, [open, expense?.id]);
-  const [isLocalReceipt, setIsLocalReceipt] = useState(false);
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
