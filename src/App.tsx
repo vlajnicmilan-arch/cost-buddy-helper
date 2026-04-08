@@ -21,6 +21,7 @@ import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
 import StatusFeedback from "@/components/StatusFeedback";
 import { useAuth } from "@/hooks/useAuth";
+import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 
 const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
@@ -178,34 +179,32 @@ const AppRoutes = () => {
     onboardingCompleted ? element : <Navigate to="/onboarding" replace />;
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/" element={<RootRoute />} />
-        <Route path="/app" element={<Navigate to={appEntryRoute!} replace />} />
-        <Route path="/home" element={requireOnboarding(<Index />)} />
-        <Route path="/business" element={<Business />} />
-        <Route path="/onboarding" element={onboardingCompleted ? <Navigate to="/home" replace /> : <Onboarding />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={requireOnboarding(<Projects />)} />
-        <Route path="/calendar" element={requireOnboarding(<CalendarPage />)} />
-        <Route path="/budgets" element={requireOnboarding(<Budgets />)} />
-        <Route path="/wallet" element={requireOnboarding(<Wallet />)} />
-        <Route path="/family" element={requireOnboarding(<Family />)} />
-        <Route path="/join-family/:token" element={<JoinFamily />} />
-        <Route path="/auth" element={user ? <Navigate to="/home" replace /> : <Auth />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/setup" element={<StorageSetup />} />
-        <Route path="/install" element={<Install />} />
-        <Route path="/join-project/:token" element={<JoinProject />} />
-        <Route path="/join-budget/:token" element={<JoinBudget />} />
-        <Route path="/paywall" element={<Paywall />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/avatar-demo" element={<AvatarDemo />} />
-        <Route path="/landing" element={<Navigate to="/" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Suspense>
+    <Routes>
+      <Route path="/" element={<RootRoute />} />
+      <Route path="/app" element={<Navigate to={appEntryRoute!} replace />} />
+      <Route path="/home" element={<Suspense fallback={<HomeSkeleton />}>{requireOnboarding(<Index />)}</Suspense>} />
+      <Route path="/business" element={<Suspense fallback={<HomeSkeleton />}><Business /></Suspense>} />
+      <Route path="/onboarding" element={<Suspense fallback={<PageLoader />}>{onboardingCompleted ? <Navigate to="/home" replace /> : <Onboarding />}</Suspense>} />
+      <Route path="/dashboard" element={<Suspense fallback={<DashboardSkeleton />}><Dashboard /></Suspense>} />
+      <Route path="/projects" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Projects />)}</Suspense>} />
+      <Route path="/calendar" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<CalendarPage />)}</Suspense>} />
+      <Route path="/budgets" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Budgets />)}</Suspense>} />
+      <Route path="/wallet" element={<Suspense fallback={<WalletSkeleton />}>{requireOnboarding(<Wallet />)}</Suspense>} />
+      <Route path="/family" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Family />)}</Suspense>} />
+      <Route path="/join-family/:token" element={<Suspense fallback={<PageLoader />}><JoinFamily /></Suspense>} />
+      <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <Navigate to="/home" replace /> : <Auth />}</Suspense>} />
+      <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
+      <Route path="/setup" element={<Suspense fallback={<PageLoader />}><StorageSetup /></Suspense>} />
+      <Route path="/install" element={<Suspense fallback={<PageLoader />}><Install /></Suspense>} />
+      <Route path="/join-project/:token" element={<Suspense fallback={<PageLoader />}><JoinProject /></Suspense>} />
+      <Route path="/join-budget/:token" element={<Suspense fallback={<PageLoader />}><JoinBudget /></Suspense>} />
+      <Route path="/paywall" element={<Suspense fallback={<PageLoader />}><Paywall /></Suspense>} />
+      <Route path="/privacy-policy" element={<Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
+      <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
+      <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
+      <Route path="/landing" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
+    </Routes>
   );
 };
 
