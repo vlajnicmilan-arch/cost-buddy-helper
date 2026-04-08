@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -139,8 +139,12 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     }).format(amount);
   }, [currency.code]);
 
+  const contextValue = useMemo(() => ({
+    currency, setCurrency, formatAmount, loading, multiCurrencyEnabled, setMultiCurrencyEnabled,
+  }), [currency, setCurrency, formatAmount, loading, multiCurrencyEnabled, setMultiCurrencyEnabled]);
+
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount, loading, multiCurrencyEnabled, setMultiCurrencyEnabled }}>
+    <CurrencyContext.Provider value={contextValue}>
       {children}
     </CurrencyContext.Provider>
   );

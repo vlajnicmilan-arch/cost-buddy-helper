@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { StorageMode, StorageConfig } from '@/lib/storage/types';
 
 interface StorageContextType {
@@ -40,7 +40,7 @@ export const StorageProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('storage-mode-restored', handleRestore);
   }, []);
 
-  const setStorageMode = (mode: StorageMode) => {
+  const setStorageMode = useCallback((mode: StorageMode) => {
     const newConfig: StorageConfig = {
       mode,
       lastSync: new Date().toISOString()
@@ -49,15 +49,14 @@ export const StorageProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(newConfig));
     setConfig(newConfig);
     setStorageModeState(mode);
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    storageMode, isInitialized, setStorageMode, config,
+  }), [storageMode, isInitialized, setStorageMode, config]);
 
   return (
-    <StorageContext.Provider value={{ 
-      storageMode, 
-      isInitialized, 
-      setStorageMode,
-      config 
-    }}>
+    <StorageContext.Provider value={contextValue}>
       {children}
     </StorageContext.Provider>
   );

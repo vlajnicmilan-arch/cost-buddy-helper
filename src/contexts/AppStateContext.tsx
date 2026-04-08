@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 
@@ -215,30 +215,44 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     paymentHandlers.current.forEach(h => h(sources));
   }, []);
 
+  const contextValue = useMemo(() => ({
+    displayName,
+    setDisplayName,
+    aiAssistantEnabled,
+    setAiAssistantEnabled,
+    simpleModeEnabled,
+    setSimpleModeEnabled,
+    familyModeEnabled,
+    setFamilyModeEnabled,
+    businessModeEnabled,
+    setBusinessModeEnabled,
+    activeBusinessProfileId,
+    setActiveBusinessProfileId,
+    onboardingCompleted,
+    setOnboardingCompleted,
+    appStateReady,
+    onAvatarEvent,
+    emitAvatarEvent,
+    onFinancialReset,
+    emitFinancialReset,
+    onPaymentSourcesReordered,
+    emitPaymentSourcesReordered,
+  }), [
+    displayName, setDisplayName,
+    aiAssistantEnabled, setAiAssistantEnabled,
+    simpleModeEnabled, setSimpleModeEnabled,
+    familyModeEnabled, setFamilyModeEnabled,
+    businessModeEnabled, setBusinessModeEnabled,
+    activeBusinessProfileId, setActiveBusinessProfileId,
+    onboardingCompleted, setOnboardingCompleted,
+    appStateReady,
+    onAvatarEvent, emitAvatarEvent,
+    onFinancialReset, emitFinancialReset,
+    onPaymentSourcesReordered, emitPaymentSourcesReordered,
+  ]);
+
   return (
-    <AppStateContext.Provider value={{
-      displayName,
-      setDisplayName,
-      aiAssistantEnabled,
-      setAiAssistantEnabled,
-      simpleModeEnabled,
-      setSimpleModeEnabled,
-      familyModeEnabled,
-      setFamilyModeEnabled,
-      businessModeEnabled,
-      setBusinessModeEnabled,
-      activeBusinessProfileId,
-      setActiveBusinessProfileId,
-      onboardingCompleted,
-      setOnboardingCompleted,
-      appStateReady,
-      onAvatarEvent,
-      emitAvatarEvent,
-      onFinancialReset,
-      emitFinancialReset,
-      onPaymentSourcesReordered,
-      emitPaymentSourcesReordered,
-    }}>
+    <AppStateContext.Provider value={contextValue}>
       {children}
     </AppStateContext.Provider>
   );

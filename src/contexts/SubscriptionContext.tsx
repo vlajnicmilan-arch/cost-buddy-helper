@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionTier, isTrialExpired, getTrialDaysRemaining } from '@/lib/subscriptionTiers';
@@ -106,18 +106,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => clearInterval(interval);
   }, [session, checkSubscription]);
 
+  const contextValue = useMemo(() => ({
+    tier, subscribed, loading, trialActive, trialDaysRemaining,
+    trialExpired, subscriptionEnd, source, checkSubscription,
+  }), [tier, subscribed, loading, trialActive, trialDaysRemaining, trialExpired, subscriptionEnd, source, checkSubscription]);
+
   return (
-    <SubscriptionContext.Provider value={{
-      tier,
-      subscribed,
-      loading,
-      trialActive,
-      trialDaysRemaining,
-      trialExpired,
-      subscriptionEnd,
-      source,
-      checkSubscription,
-    }}>
+    <SubscriptionContext.Provider value={contextValue}>
       {children}
     </SubscriptionContext.Provider>
   );
