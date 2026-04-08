@@ -121,8 +121,34 @@ export const TransactionDetailDialog = ({
     const refreshReceiptUrl = async () => {
       if (!expense?.receipt_url || !open) {
         setFreshReceiptUrl(null);
+        setIsLocalReceipt(false);
         return;
       }
+
+      // Handle local receipt images
+      if (expense.receipt_url.startsWith('local:')) {
+        setIsLocalReceipt(true);
+        const localPath = expense.receipt_url.replace('local:', '');
+        
+        // Try native filesystem first
+        const nativeImage = await LocalFileCache.readReceiptImage(localPath);
+        if (nativeImage) {
+          setFreshReceiptUrl(nativeImage);
+          return;
+        }
+
+        // Web fallback: try localStorage/IndexedDB
+        const webImage = await LocalStorage.get(localPath);
+        if (webImage) {
+          setFreshReceiptUrl(webImage);
+          return;
+        }
+
+        setFreshReceiptUrl(null);
+        return;
+      }
+      
+      setIsLocalReceipt(false);
       
       try {
         let filePath = expense.receipt_url;
