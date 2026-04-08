@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import Confetti from 'react-confetti';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+const Confetti = lazy(() => import('react-confetti'));
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
@@ -74,14 +74,16 @@ export const WelcomeConfetti = ({ displayName, onComplete }: WelcomeConfettiProp
       >
         {/* Confetti */}
         {showConfetti && (
-          <Confetti
-            width={windowSize.width}
-            height={windowSize.height}
-            numberOfPieces={numberOfPieces}
-            colors={confettiColors}
-            recycle={false}
-            gravity={0.3}
-          />
+          <Suspense fallback={null}>
+            <Confetti
+              width={windowSize.width}
+              height={windowSize.height}
+              numberOfPieces={numberOfPieces}
+              colors={confettiColors}
+              recycle={false}
+              gravity={0.3}
+            />
+          </Suspense>
         )}
 
         {/* Welcome message */}

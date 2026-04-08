@@ -14,7 +14,8 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
+import { lazy, Suspense } from 'react';
+const ReactMarkdown = lazy(() => import('react-markdown'));
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
@@ -759,7 +760,9 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
         ) : (
           <>
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
+              <Suspense fallback={<div className="text-sm text-muted-foreground">...</div>}>
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </Suspense>
             </div>
             {tableData ? (
               <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
