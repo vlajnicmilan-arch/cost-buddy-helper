@@ -188,6 +188,8 @@
     "savedSuccess": "Transaktion erfolgreich gespeichert!",
     "saveError": "Fehler beim Speichern der Transaktion.",
     "receiptImage": "Belegbild",
+    "viewReceipt": "Ansehen",
+    "shareOrExport": "Teilen / Anderswo speichern",
     "details": "Transaktionsdetails",
     "deleteTitle": "Transaktion löschen",
     "confirmDelete": "Sind Sie sicher, dass Sie diese Transaktion löschen möchten?",

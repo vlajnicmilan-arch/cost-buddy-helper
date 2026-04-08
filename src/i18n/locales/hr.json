@@ -280,6 +280,8 @@
     "savedSuccess": "Transakcija uspješno spremljena!",
     "saveError": "Greška pri spremanju transakcije.",
     "receiptImage": "Slika računa",
+    "viewReceipt": "Pregledaj",
+    "shareOrExport": "Podijeli / Spremi drugdje",
     "details": "Detalji transakcije",
     "deleteTitle": "Obriši transakciju",
     "confirmDelete": "Jeste li sigurni da želite obrisati ovu transakciju?",
