@@ -1,40 +1,59 @@
 
 
-## Popravci receipt sekcije
+## Problem
 
-### Problemi
-1. **Slika se otvara uvećano** — zoom počinje na `scale(1)` ali slika nema `max-width: 100%`, pa se prikazuje u punoj rezoluciji i izgleda uvećano
-2. **"Podijeli / Spremi drugdje"** — `exportFile` na webu radi samo download, a na nativnom otvara share sheet. Korisnik ne vidi jasnu razliku. Treba razdvojiti na dva gumba: "Spremi na uređaj" (download) i "Podijeli" (share)
-3. **"Pregledaj" gumb** treba premjestiti gore lijevo iznad slike umjesto ispod
-4. **Tekst "Slika računa"** treba ukloniti (nepotreban label)
+1. **"Spremi" i "Podijeli" rade isto** — `exportFile` na nativnom otvara share sheet, a na webu radi download. `navigator.share` također otvara share sheet. Dakle oba gumba pokreću istu stvar.
+2. **Nedostaje kontekstualna akcija** — ako je slika lokalna, logično je nuditi upload u oblak. Ako je u oblaku, nuditi spremanje na uređaj.
+
+## Rješenje
+
+Zamijeniti dva generička gumba s **jednim kontekstualnim gumbom + "Podijeli"**:
+
+```text
+Ako je slika lokalna (isLocalReceipt = true):
+  [☁️ Spremi u oblak]   [📤 Podijeli]
+
+Ako je slika u oblaku (isLocalReceipt = false):
+  [📱 Spremi na uređaj]   [📤 Podijeli]
+```
 
 ### Promjene u `TransactionDetailDialog.tsx`
 
-1. **Ukloniti "Slika računa" tekst** (linije 514-523) — maknuti cijeli `div` s labelom i badge-om. Badge "Na uređaju" prebaciti da bude overlay na slici
+1. **Kontekstualni gumb umjesto generičkog "Spremi"**:
+   - `isLocalReceipt = true` → "Spremi u oblak": upload u Supabase `receipts` bucket (`supabase.storage.from('receipts').upload(...)`) i ažurira `receipt_url` u expenses tablici na cloud path
+   - `isLocalReceipt = false` → "Spremi na uređaj": koristi `exportFile` za web download, a na nativnom sprema kroz `LocalFileCache.saveReceiptImage` i ažurira `receipt_url` na `local:` path
+   - Nakon uspješne akcije, ažurirati lokalni state (`isLocalReceipt`, badge)
 
-2. **Premjestiti "Pregledaj" iznad slike** — mali gumb s `Eye` ikonom pozicioniran apsolutno gore lijevo na thumbnail-u
+2. **"Podijeli" ostaje** ali koristit će `navigator.share` s file kad je dostupno, inače fallback na URL share. Neće koristiti `exportFile` kao fallback jer to duplicira funkcionalnost.
 
-3. **Razdvojiti donji gumb na dva**:
-   - "Spremi" — koristi `exportFile` za download/save
-   - "Podijeli" — koristi `navigator.share` / native Share za dijeljenje
+3. **Web "Spremi na uređaj"** — na webu (ne-native) koristiti `exportFileWeb` direktno (ovo radi pravi download s `<a download>`), ne `exportFile` koji na nativnom otvara share
 
-4. **Popraviti fullscreen viewer** — dodati `max-w-full` i `object-contain` na `<img>` unutar portala tako da slika stane u ekran umjesto da se prikazuje u punoj rezoluciji. Zoom 1 = slika stane u viewport
+### Upload u oblak - logika
 
-### Prijevodi
-- Dodati ključeve `transactions.saveToDevice` i `transactions.share` u `hr.json`, `en.json`, `de.json`
-- Ukloniti nekorišteni `transactions.shareOrExport`
-
-### Rezultat
-```text
-┌─────────────────────────┐
-│ 👁 [badge: Na uređaju] │  ← Eye gumb gore lijevo, badge gore desno
-│                         │
-│    [thumbnail slike]    │
-│                         │
-├─────────────────────────┤
-│ [Spremi]    [Podijeli]  │  ← dva jasna gumba
-└─────────────────────────┘
+```typescript
+const handleSaveToCloud = async () => {
+  const response = await fetch(freshReceiptUrl);
+  const blob = await response.blob();
+  const filePath = `${user.id}/${expense.id}.jpg`;
+  
+  await supabase.storage.from('receipts').upload(filePath, blob, { upsert: true });
+  await supabase.from('expenses').update({ receipt_url: filePath }).eq('id', expense.id);
+  
+  // Cleanup local copy
+  LocalFileCache.deleteReceiptImage(...);
+  
+  setIsLocalReceipt(false);
+  // Refresh URL
+};
 ```
 
-Fullscreen viewer: slika fitana u ekran, zoom 1 = cijela slika vidljiva.
+### Prijevodi
+
+- `hr`: "Spremi u oblak" / "Spremi na uređaj" / "Podijeli"
+- `en`: "Save to cloud" / "Save to device" / "Share"  
+- `de`: "In Cloud speichern" / "Auf Gerät speichern" / "Teilen"
+
+### Datoteke za promjenu
+- `src/components/TransactionDetailDialog.tsx` — gumbi + upload/download logika
+- `src/i18n/locales/hr.json`, `en.json`, `de.json` — novi ključevi
 
