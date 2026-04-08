@@ -495,8 +495,14 @@ export const TransactionDetailDialog = ({
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Receipt className="w-4 h-4" />
                   <span className="text-sm font-medium">{t('transactions.receiptImage', 'Slika računa')}</span>
+                  {isLocalReceipt && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                      <Smartphone className="w-3 h-3" />
+                      {t('transactions.localOnly', 'Na uređaju')}
+                    </Badge>
+                  )}
                 </div>
-                {freshReceiptUrl && (
+                {freshReceiptUrl && !isLocalReceipt && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -509,21 +515,76 @@ export const TransactionDetailDialog = ({
                 )}
               </div>
               {freshReceiptUrl ? (
-                <div 
-                  className="relative cursor-pointer group rounded-lg overflow-hidden border"
-                  onClick={() => setShowReceiptImage(true)}
-                >
-                  <AspectRatio ratio={4/3}>
-                    <img 
-                      src={freshReceiptUrl} 
-                      alt={t('transactions.receiptImage', 'Slika računa')}
-                      className="object-cover w-full h-full transition-transform group-hover:scale-105"
-                    />
-                  </AspectRatio>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                <>
+                  <div 
+                    className="relative cursor-pointer group rounded-lg overflow-hidden border"
+                    onClick={() => setShowReceiptImage(true)}
+                  >
+                    <AspectRatio ratio={4/3}>
+                      <img 
+                        src={freshReceiptUrl} 
+                        alt={t('transactions.receiptImage', 'Slika računa')}
+                        className="object-cover w-full h-full transition-transform group-hover:scale-105"
+                      />
+                    </AspectRatio>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
                   </div>
-                </div>
+                  {/* Save to cloud / Download buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={async () => {
+                        if (!freshReceiptUrl) return;
+                        const isNativePlatform = Capacitor.isNativePlatform();
+                        if (isNativePlatform || navigator.share) {
+                          try {
+                            // Convert base64/blob to file for sharing
+                            const response = await fetch(freshReceiptUrl);
+                            const blob = await response.blob();
+                            const file = new File([blob], `racun_${expense.id.slice(0,8)}.jpg`, { type: 'image/jpeg' });
+                            await navigator.share({
+                              title: t('transactions.receiptImage', 'Slika računa'),
+                              text: `${expense.description} - ${formatAmount(expense.amount)}`,
+                              files: [file]
+                            });
+                          } catch (e: any) {
+                            if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
+                              console.error('Share error:', e);
+                            }
+                          }
+                        } else {
+                          // Web fallback: download
+                          const a = document.createElement('a');
+                          a.href = freshReceiptUrl;
+                          a.download = `racun_${expense.id.slice(0,8)}.jpg`;
+                          a.click();
+                        }
+                      }}
+                    >
+                      <CloudUpload className="w-3.5 h-3.5" />
+                      {t('transactions.saveToCloud', 'Spremi u oblak')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={async () => {
+                        if (!freshReceiptUrl) return;
+                        const a = document.createElement('a');
+                        a.href = freshReceiptUrl;
+                        a.download = `racun_${expense.id.slice(0,8)}.jpg`;
+                        a.click();
+                      }}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {t('transactions.saveToDevice', 'Spremi na uređaj')}
+                    </Button>
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center justify-center p-6 rounded-lg border bg-muted/30">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mr-2" />
