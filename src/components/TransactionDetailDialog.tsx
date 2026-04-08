@@ -8,9 +8,11 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, Download, MapPin, Smartphone } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, Download, MapPin, Smartphone, Cloud, Upload } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { exportFile } from '@/lib/fileExport';
+import { Capacitor } from '@capacitor/core';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -542,28 +544,89 @@ export const TransactionDetailDialog = ({
                       <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
-                  {/* Save + Share buttons */}
+                  {/* Contextual Save + Share buttons */}
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 gap-1.5 text-xs"
-                      onClick={async () => {
-                        if (!freshReceiptUrl) return;
-                        try {
-                          const response = await fetch(freshReceiptUrl);
-                          const blob = await response.blob();
-                          await exportFile(blob, `racun_${expense.id.slice(0,8)}.jpg`);
-                        } catch (e: any) {
-                          if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
-                            console.error('Export error:', e);
+                    {isLocalReceipt ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5 text-xs"
+                        onClick={async () => {
+                          if (!freshReceiptUrl || !user) return;
+                          try {
+                            const response = await fetch(freshReceiptUrl);
+                            const blob = await response.blob();
+                            const filePath = `${user.id}/${expense.id}.jpg`;
+                            const { error: uploadError } = await supabase.storage.from('receipts').upload(filePath, blob, { upsert: true });
+                            if (uploadError) throw uploadError;
+                            const { error: updateError } = await supabase.from('expenses').update({ receipt_url: filePath }).eq('id', expense.id);
+                            if (updateError) throw updateError;
+                            // Cleanup local copy
+                            const localPath = expense.receipt_url?.replace('local:', '');
+                            if (localPath) {
+                              await LocalFileCache.deleteReceiptImage(localPath);
+                            }
+                            setIsLocalReceipt(false);
+                            // Refresh URL from cloud
+                            const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(filePath);
+                            if (urlData?.publicUrl) setFreshReceiptUrl(urlData.publicUrl);
+                            toast.success(t('transactions.savedToCloud', 'Spremljeno u oblak'));
+                          } catch (e: any) {
+                            console.error('Cloud upload error:', e);
+                            toast.error(t('common.error', 'Greška'));
                           }
-                        }
-                      }}
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      {t('transactions.saveToDevice', 'Spremi')}
-                    </Button>
+                        }}
+                      >
+                        <Cloud className="w-3.5 h-3.5" />
+                        {t('transactions.saveToCloud', 'Spremi u oblak')}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5 text-xs"
+                        onClick={async () => {
+                          if (!freshReceiptUrl) return;
+                          try {
+                            const response = await fetch(freshReceiptUrl);
+                            const blob = await response.blob();
+                            if (Capacitor.isNativePlatform()) {
+                              // Native: save locally via LocalFileCache
+                              const reader = new FileReader();
+                              reader.onloadend = async () => {
+                                const base64 = reader.result as string;
+                                const localPath = await LocalFileCache.saveReceiptImage(base64, `${expense.id}.jpg`);
+                                if (localPath && user) {
+                                  await supabase.from('expenses').update({ receipt_url: `local:${localPath}` }).eq('id', expense.id);
+                                  setIsLocalReceipt(true);
+                                  toast.success(t('transactions.savedToDevice', 'Spremljeno na uređaj'));
+                                }
+                              };
+                              reader.readAsDataURL(blob);
+                            } else {
+                              // Web: direct download
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `racun_${expense.id.slice(0,8)}.jpg`;
+                              a.style.display = 'none';
+                              document.body.appendChild(a);
+                              a.click();
+                              setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+                              toast.success(t('transactions.savedToDevice', 'Spremljeno na uređaj'));
+                            }
+                          } catch (e: any) {
+                            if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
+                              console.error('Save error:', e);
+                              toast.error(t('common.error', 'Greška'));
+                            }
+                          }
+                        }}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        {t('transactions.saveToDevice', 'Spremi na uređaj')}
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
@@ -578,8 +641,6 @@ export const TransactionDetailDialog = ({
                             await navigator.share({ files: [file], title: t('transactions.receiptImage', 'Slika računa') });
                           } else if (navigator.share) {
                             await navigator.share({ title: t('transactions.receiptImage', 'Slika računa'), url: freshReceiptUrl });
-                          } else {
-                            await exportFile(blob, `racun_${expense.id.slice(0,8)}.jpg`);
                           }
                         } catch (e: any) {
                           if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
