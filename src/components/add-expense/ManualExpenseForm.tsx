@@ -283,8 +283,54 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                     ))}
                 </>
               )}
+              {PAYMENT_SOURCE_GROUPS.map((group) => (
+                <div key={group.label}>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {group.label}
+                  </div>
+                  {group.sources
+                    .filter(s => s.id !== props.paymentSource)
+                    .map((source) => (
+                      <SelectItem key={source.id} value={source.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{source.icon}</span>
+                          <span>{source.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                </div>
+              ))}
             </SelectContent>
           </Select>
+        </div>
+      )}
+
+      {/* Visual Transfer Flow */}
+      {props.type === 'transfer' && props.paymentSource && props.transferDestination && (
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-center gap-3">
+          {(() => {
+            const fromCustom = props.customPaymentSources.find(s => s.id === props.paymentSource);
+            const fromStandard = PAYMENT_SOURCES.find(s => s.id === props.paymentSource);
+            const toCustom = props.customPaymentSources.find(s => s.id === props.transferDestination);
+            const toStandard = PAYMENT_SOURCES.find(s => s.id === props.transferDestination);
+            return (
+              <>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-2xl">{fromCustom?.icon || fromStandard?.icon || '💳'}</span>
+                  <span className="text-xs text-muted-foreground font-medium">{fromCustom?.name || fromStandard?.name}</span>
+                </div>
+                <div className="flex items-center gap-1 text-primary">
+                  <div className="h-px w-6 bg-primary/40" />
+                  <span className="text-lg">→</span>
+                  <div className="h-px w-6 bg-primary/40" />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-2xl">{toCustom?.icon || toStandard?.icon || '💳'}</span>
+                  <span className="text-xs text-muted-foreground font-medium">{toCustom?.name || toStandard?.name}</span>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
