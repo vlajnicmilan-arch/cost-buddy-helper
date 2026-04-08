@@ -1,42 +1,40 @@
 
-Problem koji se vidi u kodu
 
-- `TransactionDetailDialog.tsx` drži viewer state (`showReceiptImage`, `imageZoom`) lokalno, ali ga ne resetira kad se detail dialog zatvori ili kad se promijeni transakcija.
-- fullscreen preview je portal izvan Radix `Dialog` sustava i trenutno nije registriran u `useBackButton`, pa Android/Samsung back zatvara parent dialog transakcije umjesto samog previewa.
-- u `Index.tsx`, `PaymentSourceTransactionsDialog.tsx` i `BudgetFullScreenView.tsx` detail dialog ostaje mountan i nakon zatvaranja, pa stari viewer state preživi sljedeće otvaranje.
+## Popravci receipt sekcije
 
-Plan
+### Problemi
+1. **Slika se otvara uvećano** — zoom počinje na `scale(1)` ali slika nema `max-width: 100%`, pa se prikazuje u punoj rezoluciji i izgleda uvećano
+2. **"Podijeli / Spremi drugdje"** — `exportFile` na webu radi samo download, a na nativnom otvara share sheet. Korisnik ne vidi jasnu razliku. Treba razdvojiti na dva gumba: "Spremi na uređaj" (download) i "Podijeli" (share)
+3. **"Pregledaj" gumb** treba premjestiti gore lijevo iznad slike umjesto ispod
+4. **Tekst "Slika računa"** treba ukloniti (nepotreban label)
 
-1. Stabilizirati lifecycle previewa u `TransactionDetailDialog.tsx`
-- uvesti jedinstveni `closeReceiptViewer()` helper
-- portal renderirati samo kad je `open && showReceiptImage && freshReceiptUrl`
-- resetirati viewer state kad `open` postane `false` i kad se promijeni `expense.id`
-- kroz wrapper za `onOpenChange` prvo zatvoriti preview, pa tek onda detail dialog
+### Promjene u `TransactionDetailDialog.tsx`
 
-2. Ispravno spojiti preview na mobile/back ponašanje
-- registrirati receipt preview preko `useBackButton(showReceiptImage, closeReceiptViewer, višiPrioritet)`
-- time će back prvo zatvoriti sliku, a tek drugi back detail transakcije
-- isto ponašanje koristiti za X i tap na backdrop
+1. **Ukloniti "Slika računa" tekst** (linije 514-523) — maknuti cijeli `div` s labelom i badge-om. Badge "Na uređaju" prebaciti da bude overlay na slici
 
-3. Uskladiti parent komponente da ne čuvaju “stari” dialog state
-- `Index.tsx`
-- `PaymentSourceTransactionsDialog.tsx`
-- `BudgetFullScreenView.tsx`
-- na zatvaranju clearati odabranu transakciju i uvjetno mountati `TransactionDetailDialog`, po uzoru na već ispravan pattern u `BusinessTransactions.tsx`
+2. **Premjestiti "Pregledaj" iznad slike** — mali gumb s `Eye` ikonom pozicioniran apsolutno gore lijevo na thumbnail-u
 
-4. Mali mobile UX popravci dok se dira viewer
-- povećati close/zoom touch targete na najmanje 44x44
-- zadržati isti izgled, ali ukloniti mogućnost da fullscreen overlay ostane “odspojen” od transakcije
+3. **Razdvojiti donji gumb na dva**:
+   - "Spremi" — koristi `exportFile` za download/save
+   - "Podijeli" — koristi `navigator.share` / native Share za dijeljenje
 
-Tehnički detalji
-- glavni bug nije storage nego state/lifecycle
-- ne treba vraćati nested dialog
-- ne treba mijenjati local-first spremanje receipt slike
-- ne treba uvoditi nove akcije; fokus je da `Pregledaj` radi pouzdano
+4. **Popraviti fullscreen viewer** — dodati `max-w-full` i `object-contain` na `<img>` unutar portala tako da slika stane u ekran umjesto da se prikazuje u punoj rezoluciji. Zoom 1 = slika stane u viewport
 
-Provjera nakon implementacije
-- otvori receipt, zatvori ga s X → vraća se na detalj transakcije
-- otvori receipt, zatvori ga Android/browser back tipkom → zatvara se samo preview
-- zatvori cijelu transakciju dok je preview bio otvoren → ponovno otvaranje kreće iz detalja, ne iz fullscreen slike
-- isto ponašanje radi na `/index`, u payment source pregledu i u budget pregledu
-- Samsung Internet / mobilni preview više ne “lijepi” fullscreen viewer za sljedeće otvaranje
+### Prijevodi
+- Dodati ključeve `transactions.saveToDevice` i `transactions.share` u `hr.json`, `en.json`, `de.json`
+- Ukloniti nekorišteni `transactions.shareOrExport`
+
+### Rezultat
+```text
+┌─────────────────────────┐
+│ 👁 [badge: Na uređaju] │  ← Eye gumb gore lijevo, badge gore desno
+│                         │
+│    [thumbnail slike]    │
+│                         │
+├─────────────────────────┤
+│ [Spremi]    [Podijeli]  │  ← dva jasna gumba
+└─────────────────────────┘
+```
+
+Fullscreen viewer: slika fitana u ekran, zoom 1 = cijela slika vidljiva.
+
