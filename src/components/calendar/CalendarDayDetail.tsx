@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { getCategoryInfo } from '@/types/expense';
 import { cn } from '@/lib/utils';
-import { Check, Trash2, Cake, CreditCard, AlertTriangle, CalendarDays, RefreshCw } from 'lucide-react';
+import { Check, Trash2, Cake, CreditCard, AlertTriangle, CalendarDays, RefreshCw, CalendarPlus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { downloadCalendarEventICS } from '@/lib/icsExport';
 
 interface Props {
   open: boolean;
@@ -58,6 +59,23 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
     if (event.source !== 'reminder') return;
     try {
       await onToggleComplete(event.id, !event.isCompleted);
+    } catch {
+      showError('Greška');
+    }
+  };
+
+  const handleExportICS = async (event: CalendarEvent) => {
+    try {
+      await downloadCalendarEventICS({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        date: event.date,
+        amount: event.amount,
+        type: event.type,
+        source: event.source,
+      });
+      showSuccess(t('calendar.exportedToCalendar', 'Izvezeno'));
     } catch {
       showError('Greška');
     }
@@ -134,27 +152,38 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
                   </span>
                 )}
 
-                {/* Actions for reminders */}
-                {isReminder && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleToggle(event)}
-                    >
-                      <Check className={cn("w-4 h-4", event.isCompleted && "text-green-500")} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => handleDelete(event)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
+                {/* Actions */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleExportICS(event)}
+                    title={t('calendar.addToCalendar', 'Dodaj u kalendar')}
+                  >
+                    <CalendarPlus className="w-4 h-4" />
+                  </Button>
+                  {isReminder && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleToggle(event)}
+                      >
+                        <Check className={cn("w-4 h-4", event.isCompleted && "text-green-500")} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => handleDelete(event)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}
