@@ -239,40 +239,20 @@ export const useReceiptScanner = () => {
 
   const uploadReceiptImage = async (imageBase64: string): Promise<string | null> => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      // Always save locally — no cloud upload
+      const fileName = `receipt_${Date.now()}.jpg`;
+      const localPath = await LocalFileCache.saveReceiptImage(imageBase64, fileName);
       
-      if (!sessionData.session) {
-        return null;
+      if (localPath) {
+        return `local:${localPath}`;
       }
 
-      const userId = sessionData.session.user.id;
-      const fileName = `${userId}/${Date.now()}.jpg`;
-      
-      // Convert base64 to blob
-      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
-
-      const { error } = await supabase.storage
-        .from('receipts')
-        .upload(fileName, blob, {
-          contentType: 'image/jpeg',
-          upsert: false
-        });
-
-      if (error) {
-        console.error('Error uploading receipt:', error);
-        return null;
-      }
-
-      return fileName;
+      // Web/PWA fallback: save to IndexedDB via LocalStorage
+      const key = `receipt_img_${Date.now()}`;
+      await LocalStorage.set(key, imageBase64);
+      return `local:${key}`;
     } catch (error) {
-      console.error('Error uploading receipt image:', error);
+      console.error('Error saving receipt image locally:', error);
       return null;
     }
   };

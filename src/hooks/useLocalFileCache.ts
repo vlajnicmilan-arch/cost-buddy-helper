@@ -1,4 +1,4 @@
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 
 const isNative = Capacitor.isNativePlatform();
@@ -118,6 +118,63 @@ export const LocalFileCache = {
       }
     } catch (error) {
       console.error('Failed to clean old cache:', error);
+    }
+  },
+
+  /**
+   * Delete ALL cached receipt images. Returns the count of deleted files.
+   */
+  async clearAllCachedReceipts(): Promise<number> {
+    if (!isNative) {
+      // Web: clear IndexedDB receipt keys
+      let count = 0;
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('receipt_img_')) {
+          localStorage.removeItem(key);
+          count++;
+        }
+      }
+      return count;
+    }
+
+    try {
+      const files = await LocalFileCache.listCachedReceipts();
+      for (const filePath of files) {
+        try {
+          await Filesystem.deleteFile({
+            path: filePath,
+            directory: Directory.Data
+          });
+        } catch {
+          // skip
+        }
+      }
+      return files.length;
+    } catch (error) {
+      console.error('Failed to clear all cached receipts:', error);
+      return 0;
+    }
+  },
+
+  /**
+   * Get the total number of cached receipt images.
+   */
+  async getCachedReceiptCount(): Promise<number> {
+    if (!isNative) {
+      let count = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('receipt_img_')) count++;
+      }
+      return count;
+    }
+
+    try {
+      const files = await LocalFileCache.listCachedReceipts();
+      return files.length;
+    } catch {
+      return 0;
     }
   }
 };
