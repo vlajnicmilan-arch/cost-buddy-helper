@@ -49,6 +49,24 @@ export const TransactionDetailDialog = ({
   const [imageZoom, setImageZoom] = useState(1);
   const [freshReceiptUrl, setFreshReceiptUrl] = useState<string | null>(null);
   const [isLocalReceipt, setIsLocalReceipt] = useState(false);
+
+  // Stable close helper for receipt viewer
+  const closeReceiptViewer = useCallback(() => {
+    setShowReceiptImage(false);
+    setImageZoom(1);
+  }, []);
+
+  // Register receipt viewer with back button (priority 10 = higher than dialog's default 0)
+  useBackButton(showReceiptImage, closeReceiptViewer, 10);
+
+  // Reset viewer state when dialog closes or expense changes
+  useEffect(() => {
+    if (!open) {
+      setShowReceiptImage(false);
+      setImageZoom(1);
+    }
+  }, [open, expense?.id]);
+  const [isLocalReceipt, setIsLocalReceipt] = useState(false);
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
