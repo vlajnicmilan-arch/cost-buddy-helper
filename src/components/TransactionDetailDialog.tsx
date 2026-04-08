@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -6,8 +7,9 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, ExternalLink, Briefcase, FolderOpen, Share2, MapPin, CloudUpload, Smartphone, Download } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, MapPin, Smartphone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { exportFile } from '@/lib/fileExport';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -491,27 +493,14 @@ export const TransactionDetailDialog = ({
           {/* Receipt Image */}
           {expense.receipt_url && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Receipt className="w-4 h-4" />
-                  <span className="text-sm font-medium">{t('transactions.receiptImage', 'Slika računa')}</span>
-                  {isLocalReceipt && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
-                      <Smartphone className="w-3 h-3" />
-                      {t('transactions.localOnly', 'Na uređaju')}
-                    </Badge>
-                  )}
-                </div>
-                {freshReceiptUrl && !isLocalReceipt && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1.5 text-xs text-muted-foreground"
-                    onClick={() => window.open(freshReceiptUrl, '_blank', 'noopener,noreferrer')}
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    {t('common.openInNewWindow', 'Otvori u novom prozoru')}
-                  </Button>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Receipt className="w-4 h-4" />
+                <span className="text-sm font-medium">{t('transactions.receiptImage', 'Slika računa')}</span>
+                {isLocalReceipt && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                    <Smartphone className="w-3 h-3" />
+                    {t('transactions.localOnly', 'Na uređaju')}
+                  </Badge>
                 )}
               </div>
               {freshReceiptUrl ? (
@@ -531,42 +520,16 @@ export const TransactionDetailDialog = ({
                       <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
-                  {/* Save to cloud / Download buttons */}
+                  {/* View + Share/Export buttons */}
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       className="flex-1 gap-1.5 text-xs"
-                      onClick={async () => {
-                        if (!freshReceiptUrl) return;
-                        const isNativePlatform = Capacitor.isNativePlatform();
-                        if (isNativePlatform || navigator.share) {
-                          try {
-                            // Convert base64/blob to file for sharing
-                            const response = await fetch(freshReceiptUrl);
-                            const blob = await response.blob();
-                            const file = new File([blob], `racun_${expense.id.slice(0,8)}.jpg`, { type: 'image/jpeg' });
-                            await navigator.share({
-                              title: t('transactions.receiptImage', 'Slika računa'),
-                              text: `${expense.description} - ${formatAmount(expense.amount)}`,
-                              files: [file]
-                            });
-                          } catch (e: any) {
-                            if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
-                              console.error('Share error:', e);
-                            }
-                          }
-                        } else {
-                          // Web fallback: download
-                          const a = document.createElement('a');
-                          a.href = freshReceiptUrl;
-                          a.download = `racun_${expense.id.slice(0,8)}.jpg`;
-                          a.click();
-                        }
-                      }}
+                      onClick={() => setShowReceiptImage(true)}
                     >
-                      <CloudUpload className="w-3.5 h-3.5" />
-                      {t('transactions.saveToCloud', 'Spremi u oblak')}
+                      <Eye className="w-3.5 h-3.5" />
+                      {t('transactions.viewReceipt', 'Pregledaj')}
                     </Button>
                     <Button
                       variant="outline"
@@ -574,14 +537,19 @@ export const TransactionDetailDialog = ({
                       className="flex-1 gap-1.5 text-xs"
                       onClick={async () => {
                         if (!freshReceiptUrl) return;
-                        const a = document.createElement('a');
-                        a.href = freshReceiptUrl;
-                        a.download = `racun_${expense.id.slice(0,8)}.jpg`;
-                        a.click();
+                        try {
+                          const response = await fetch(freshReceiptUrl);
+                          const blob = await response.blob();
+                          await exportFile(blob, `racun_${expense.id.slice(0,8)}.jpg`);
+                        } catch (e: any) {
+                          if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
+                            console.error('Export error:', e);
+                          }
+                        }
                       }}
                     >
-                      <Download className="w-3.5 h-3.5" />
-                      {t('transactions.saveToDevice', 'Spremi na uređaj')}
+                      <Share2 className="w-3.5 h-3.5" />
+                      {t('transactions.shareOrExport', 'Podijeli / Spremi drugdje')}
                     </Button>
                   </div>
                 </>
@@ -694,70 +662,57 @@ export const TransactionDetailDialog = ({
         </div>
       </DialogContent>
 
-      {/* Receipt Image Fullscreen Modal */}
-      {showReceiptImage && freshReceiptUrl && (
-        <Dialog open={showReceiptImage} onOpenChange={setShowReceiptImage}>
-          <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 border-0 bg-black/95">
-            <div className="relative w-full h-full flex items-center justify-center">
-              {/* Close button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 z-50 bg-black/50 hover:bg-black/70 text-white"
-                onClick={() => {
-                  setShowReceiptImage(false);
-                  setImageZoom(1);
-                }}
-              >
-                <X className="w-5 h-5" />
-              </Button>
+      {/* Receipt Image Fullscreen Overlay (portal, no nested Dialog) */}
+      {showReceiptImage && freshReceiptUrl && createPortal(
+        <div 
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          onClick={() => { setShowReceiptImage(false); setImageZoom(1); }}
+        >
+          {/* Close button */}
+          <button
+            className="absolute top-3 right-3 z-[110] flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+            onClick={(e) => { e.stopPropagation(); setShowReceiptImage(false); setImageZoom(1); }}
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-              {/* Zoom controls */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex gap-2 bg-black/50 rounded-full p-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20 h-8 w-8"
-                  onClick={() => setImageZoom(prev => Math.max(0.5, prev - 0.25))}
-                  disabled={imageZoom <= 0.5}
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </Button>
-                <span className="text-white text-sm flex items-center px-2 min-w-[3rem] justify-center">
-                  {Math.round(imageZoom * 100)}%
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20 h-8 w-8"
-                  onClick={() => setImageZoom(prev => Math.min(3, prev + 0.25))}
-                  disabled={imageZoom >= 3}
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20 h-8 w-8"
-                  onClick={() => window.open(freshReceiptUrl, '_blank', 'noopener,noreferrer')}
-                  title={t('common.openInNewWindow', 'Otvori u novom prozoru')}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </div>
+          {/* Zoom controls */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[110] flex gap-2 bg-black/50 rounded-full p-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="text-white hover:bg-white/20 h-8 w-8 flex items-center justify-center rounded-full disabled:opacity-40"
+              onClick={() => setImageZoom(prev => Math.max(0.5, prev - 0.25))}
+              disabled={imageZoom <= 0.5}
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <span className="text-white text-sm flex items-center px-2 min-w-[3rem] justify-center">
+              {Math.round(imageZoom * 100)}%
+            </span>
+            <button
+              className="text-white hover:bg-white/20 h-8 w-8 flex items-center justify-center rounded-full disabled:opacity-40"
+              onClick={() => setImageZoom(prev => Math.min(3, prev + 0.25))}
+              disabled={imageZoom >= 3}
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+          </div>
 
-              {/* Image */}
-              <div className="overflow-auto max-w-full max-h-[90vh] p-4">
-                <img 
-                  src={freshReceiptUrl} 
-                  alt={t('transactions.receiptImage', 'Slika računa')}
-                  className="max-w-none transition-transform duration-200"
-                  style={{ transform: `scale(${imageZoom})`, transformOrigin: 'center' }}
-                />
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+          {/* Image */}
+          <div 
+            className="overflow-auto max-w-full max-h-[90vh] p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={freshReceiptUrl} 
+              alt={t('transactions.receiptImage', 'Slika računa')}
+              className="max-w-none transition-transform duration-200"
+              style={{ transform: `scale(${imageZoom})`, transformOrigin: 'center' }}
+            />
+          </div>
+        </div>,
+        document.body
       )}
     </Dialog>
   );
