@@ -8,7 +8,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, MapPin, Smartphone } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, Download, MapPin, Smartphone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { exportFile } from '@/lib/fileExport';
 import { cn } from '@/lib/utils';
@@ -511,22 +511,26 @@ export const TransactionDetailDialog = ({
           {/* Receipt Image */}
           {expense.receipt_url && (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Receipt className="w-4 h-4" />
-                <span className="text-sm font-medium">{t('transactions.receiptImage', 'Slika računa')}</span>
-                {isLocalReceipt && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
-                    <Smartphone className="w-3 h-3" />
-                    {t('transactions.localOnly', 'Na uređaju')}
-                  </Badge>
-                )}
-              </div>
               {freshReceiptUrl ? (
                 <>
                   <div 
                     className="relative cursor-pointer group rounded-lg overflow-hidden border"
                     onClick={() => setShowReceiptImage(true)}
                   >
+                    {/* Eye button top-left */}
+                    <button
+                      className="absolute top-2 left-2 z-10 flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setShowReceiptImage(true); }}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    {/* Local badge top-right */}
+                    {isLocalReceipt && (
+                      <Badge variant="outline" className="absolute top-2 right-2 z-10 text-[10px] px-1.5 py-0.5 gap-1 bg-background/80 backdrop-blur-sm">
+                        <Smartphone className="w-3 h-3" />
+                        {t('transactions.localOnly', 'Na uređaju')}
+                      </Badge>
+                    )}
                     <AspectRatio ratio={4/3}>
                       <img 
                         src={freshReceiptUrl} 
@@ -534,21 +538,12 @@ export const TransactionDetailDialog = ({
                         className="object-cover w-full h-full transition-transform group-hover:scale-105"
                       />
                     </AspectRatio>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
                       <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
-                  {/* View + Share/Export buttons */}
+                  {/* Save + Share buttons */}
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 gap-1.5 text-xs"
-                      onClick={() => setShowReceiptImage(true)}
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      {t('transactions.viewReceipt', 'Pregledaj')}
-                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -566,8 +561,35 @@ export const TransactionDetailDialog = ({
                         }
                       }}
                     >
+                      <Download className="w-3.5 h-3.5" />
+                      {t('transactions.saveToDevice', 'Spremi')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={async () => {
+                        if (!freshReceiptUrl) return;
+                        try {
+                          const response = await fetch(freshReceiptUrl);
+                          const blob = await response.blob();
+                          const file = new File([blob], `racun_${expense.id.slice(0,8)}.jpg`, { type: blob.type });
+                          if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                            await navigator.share({ files: [file], title: t('transactions.receiptImage', 'Slika računa') });
+                          } else if (navigator.share) {
+                            await navigator.share({ title: t('transactions.receiptImage', 'Slika računa'), url: freshReceiptUrl });
+                          } else {
+                            await exportFile(blob, `racun_${expense.id.slice(0,8)}.jpg`);
+                          }
+                        } catch (e: any) {
+                          if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
+                            console.error('Share error:', e);
+                          }
+                        }
+                      }}
+                    >
                       <Share2 className="w-3.5 h-3.5" />
-                      {t('transactions.shareOrExport', 'Podijeli / Spremi drugdje')}
+                      {t('transactions.share', 'Podijeli')}
                     </Button>
                   </div>
                 </>
@@ -719,13 +741,13 @@ export const TransactionDetailDialog = ({
 
           {/* Image */}
           <div 
-            className="overflow-auto max-w-full max-h-[90vh] p-4"
+            className="overflow-auto max-w-full max-h-[90vh] p-4 flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
             <img 
               src={freshReceiptUrl} 
               alt={t('transactions.receiptImage', 'Slika računa')}
-              className="max-w-none transition-transform duration-200"
+              className="max-w-full max-h-[85vh] object-contain transition-transform duration-200"
               style={{ transform: `scale(${imageZoom})`, transformOrigin: 'center' }}
             />
           </div>
