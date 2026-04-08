@@ -44,12 +44,12 @@ Trenutno jedna ScrollArea sa svim sekcijama + 5 AlertDialoga + HelpDialog.
 
 ---
 
-## Tehnički detalji
+## Tehnicki detalji
 
 - Sve podkomponente koriste iste UI primitives (Dialog, Select, Switch, Button, Input)
 - State ostaje u parent komponentama -- podkomponente su "prezentacijske"
 - Importi se ne mijenjaju za ostatak aplikacije (`AddExpenseDialog` i `SettingsDialog` se i dalje exportaju iz istih putanja)
-- Re-exporti iz originalnih putanja kako postojeći importi ne bi pucali
+- Re-exporti iz originalnih putanja kako postojeci importi ne bi pucali
 
 ## Datoteke za promjenu
 
