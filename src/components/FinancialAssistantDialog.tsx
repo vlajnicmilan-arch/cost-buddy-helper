@@ -760,7 +760,9 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
         ) : (
           <>
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
+              <Suspense fallback={<div className="text-sm text-muted-foreground">...</div>}>
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </Suspense>
             </div>
             {tableData ? (
               <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">

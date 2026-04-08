@@ -75,14 +75,15 @@ export const WelcomeConfetti = ({ displayName, onComplete }: WelcomeConfettiProp
         {/* Confetti */}
         {showConfetti && (
           <Suspense fallback={null}>
-          <Confetti
-            width={windowSize.width}
-            height={windowSize.height}
-            numberOfPieces={numberOfPieces}
-            colors={confettiColors}
-            recycle={false}
-            gravity={0.3}
-          />
+            <Confetti
+              width={windowSize.width}
+              height={windowSize.height}
+              numberOfPieces={numberOfPieces}
+              colors={confettiColors}
+              recycle={false}
+              gravity={0.3}
+            />
+          </Suspense>
         )}
 
         {/* Welcome message */}
