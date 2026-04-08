@@ -496,7 +496,10 @@ export const BudgetFullScreenView = ({
     <TransactionDetailDialog
       expense={selectedExpense}
       open={detailOpen}
-      onOpenChange={setDetailOpen}
+      onOpenChange={(open) => {
+        setDetailOpen(open);
+        if (!open) setSelectedExpense(null);
+      }}
       onEdit={handleEditFromDetail}
       onDelete={handleDeleteExpense}
     />

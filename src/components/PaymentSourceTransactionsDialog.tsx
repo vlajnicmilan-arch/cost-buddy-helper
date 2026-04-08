@@ -941,13 +941,18 @@ export const PaymentSourceTransactionsDialog = ({
       <TransactionDetailDialog
         expense={detailExpense}
         open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
+        onOpenChange={(open) => {
+          setDetailDialogOpen(open);
+          if (!open) setDetailExpense(null);
+        }}
         onEdit={(expense) => {
           setDetailDialogOpen(false);
+          setDetailExpense(null);
           handleEdit(expense);
         }}
         onDelete={(id) => {
           setDetailDialogOpen(false);
+          setDetailExpense(null);
           handleDelete(id);
         }}
       />

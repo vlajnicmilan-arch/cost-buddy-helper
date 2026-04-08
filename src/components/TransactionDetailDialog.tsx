@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useBackButton } from '@/hooks/useBackButton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -48,6 +49,23 @@ export const TransactionDetailDialog = ({
   const [imageZoom, setImageZoom] = useState(1);
   const [freshReceiptUrl, setFreshReceiptUrl] = useState<string | null>(null);
   const [isLocalReceipt, setIsLocalReceipt] = useState(false);
+
+  // Stable close helper for receipt viewer
+  const closeReceiptViewer = useCallback(() => {
+    setShowReceiptImage(false);
+    setImageZoom(1);
+  }, []);
+
+  // Register receipt viewer with back button (priority 10 = higher than dialog's default 0)
+  useBackButton(showReceiptImage, closeReceiptViewer, 10);
+
+  // Reset viewer state when dialog closes or expense changes
+  useEffect(() => {
+    if (!open) {
+      setShowReceiptImage(false);
+      setImageZoom(1);
+    }
+  }, [open, expense?.id]);
   const { storageMode } = useStorage();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -663,25 +681,25 @@ export const TransactionDetailDialog = ({
       </DialogContent>
 
       {/* Receipt Image Fullscreen Overlay (portal, no nested Dialog) */}
-      {showReceiptImage && freshReceiptUrl && createPortal(
+      {open && showReceiptImage && freshReceiptUrl && createPortal(
         <div 
           className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
-          onClick={() => { setShowReceiptImage(false); setImageZoom(1); }}
+          onClick={closeReceiptViewer}
         >
-          {/* Close button */}
+          {/* Close button — 44x44 touch target */}
           <button
-            className="absolute top-3 right-3 z-[110] flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
-            onClick={(e) => { e.stopPropagation(); setShowReceiptImage(false); setImageZoom(1); }}
+            className="absolute top-3 right-3 z-[110] flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+            onClick={(e) => { e.stopPropagation(); closeReceiptViewer(); }}
           >
             <X className="w-5 h-5" />
           </button>
 
-          {/* Zoom controls */}
+          {/* Zoom controls — 44x44 touch targets */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[110] flex gap-2 bg-black/50 rounded-full p-1"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="text-white hover:bg-white/20 h-8 w-8 flex items-center justify-center rounded-full disabled:opacity-40"
+              className="text-white hover:bg-white/20 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full disabled:opacity-40"
               onClick={() => setImageZoom(prev => Math.max(0.5, prev - 0.25))}
               disabled={imageZoom <= 0.5}
             >
@@ -691,7 +709,7 @@ export const TransactionDetailDialog = ({
               {Math.round(imageZoom * 100)}%
             </span>
             <button
-              className="text-white hover:bg-white/20 h-8 w-8 flex items-center justify-center rounded-full disabled:opacity-40"
+              className="text-white hover:bg-white/20 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full disabled:opacity-40"
               onClick={() => setImageZoom(prev => Math.min(3, prev + 0.25))}
               disabled={imageZoom >= 3}
             >

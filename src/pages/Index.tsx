@@ -694,7 +694,10 @@ const Index = () => {
         <TransactionDetailDialog
           expense={selectedTransaction}
           open={detailDialogOpen}
-          onOpenChange={setDetailDialogOpen}
+          onOpenChange={(open) => {
+            setDetailDialogOpen(open);
+            if (!open) setSelectedTransaction(null);
+          }}
           onEdit={(expense) => {
             setSelectedTransaction(expense);
             setEditDialogOpen(true);
