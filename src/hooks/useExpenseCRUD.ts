@@ -307,6 +307,13 @@ export const useExpenseCRUD = ({
         if (data) expenseToDelete = data as unknown as Expense;
       }
 
+      // Delete local receipt image if it exists
+      if (expenseToDelete?.receipt_url?.startsWith('local:')) {
+        const localPath = expenseToDelete.receipt_url.replace('local:', '');
+        await LocalFileCache.deleteReceiptImage(localPath).catch(() => {});
+        await LocalStorage.remove(localPath).catch(() => {});
+      }
+
       if (isLocalMode) {
         await deleteLocalExpense(id);
       } else {
