@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 const ProfileField = ({ label, value, field, editing, formValue, onUpdate }: { 
@@ -113,9 +113,9 @@ export const BusinessProfileView = () => {
 
     setSaving(false);
     if (error) {
-      toast.error(t('toasts.profileSaveError'));
+      showError(t('toasts.profileSaveError'));
     } else {
-      toast.success(t('toasts.profileUpdated'));
+      showSuccess(t('toasts.profileUpdated'));
       setProfile({ ...profile, ...form } as ProfileData);
       setEditing(false);
     }

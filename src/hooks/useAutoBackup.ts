@@ -8,7 +8,7 @@ import {
   BackupSettings,
   initBackupDB
 } from '@/lib/storage/autoBackup';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 
 export const useAutoBackup = () => {
   const { expenses } = useExpenses();
@@ -33,7 +33,7 @@ export const useAutoBackup = () => {
       });
 
       if (!silent) {
-        toast.success('Automatski backup spremljen');
+        showSuccess('Automatski backup spremljen');
       }
     } catch (error) {
       console.error('Auto backup failed:', error);

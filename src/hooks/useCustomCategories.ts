@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { CustomCategory } from '@/types/customCategory';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 export const useCustomCategories = () => {
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
@@ -39,7 +39,7 @@ export const useCustomCategories = () => {
       setCustomCategories((data || []) as CustomCategory[]);
     } catch (error) {
       console.error('Error fetching custom categories:', error);
-      toast.error('Greška pri dohvaćanju prilagođenih kategorija');
+      showError('Greška pri dohvaćanju prilagođenih kategorija');
     } finally {
       setLoading(false);
     }
@@ -61,12 +61,12 @@ export const useCustomCategories = () => {
       const updated = [newCategory, ...customCategories];
       setCustomCategories(updated);
       localStorage.setItem('customCategories', JSON.stringify(updated));
-      toast.success('Kategorija dodana');
+      showSuccess('Kategorija dodana');
       return newCategory;
     }
 
     if (!user) {
-      toast.error('Morate biti prijavljeni');
+      showError('Morate biti prijavljeni');
       return null;
     }
 
@@ -83,11 +83,11 @@ export const useCustomCategories = () => {
       if (error) throw error;
       const newCat = data as CustomCategory;
       setCustomCategories(prev => [newCat, ...prev]);
-      toast.success('Kategorija dodana');
+      showSuccess('Kategorija dodana');
       return newCat;
     } catch (error) {
       console.error('Error adding custom category:', error);
-      toast.error('Greška pri dodavanju kategorije');
+      showError('Greška pri dodavanju kategorije');
       return null;
     }
   };
@@ -99,7 +99,7 @@ export const useCustomCategories = () => {
       );
       setCustomCategories(updated);
       localStorage.setItem('customCategories', JSON.stringify(updated));
-      toast.success('Kategorija ažurirana');
+      showSuccess('Kategorija ažurirana');
       return;
     }
 
@@ -113,10 +113,10 @@ export const useCustomCategories = () => {
       setCustomCategories(prev =>
         prev.map(cat => (cat.id === id ? { ...cat, ...updates } : cat))
       );
-      toast.success('Kategorija ažurirana');
+      showSuccess('Kategorija ažurirana');
     } catch (error) {
       console.error('Error updating custom category:', error);
-      toast.error('Greška pri ažuriranju kategorije');
+      showError('Greška pri ažuriranju kategorije');
     }
   };
 
@@ -125,7 +125,7 @@ export const useCustomCategories = () => {
       const updated = customCategories.filter(cat => cat.id !== id);
       setCustomCategories(updated);
       localStorage.setItem('customCategories', JSON.stringify(updated));
-      toast.success('Kategorija obrisana');
+      showSuccess('Kategorija obrisana');
       return;
     }
 
@@ -137,10 +137,10 @@ export const useCustomCategories = () => {
 
       if (error) throw error;
       setCustomCategories(prev => prev.filter(cat => cat.id !== id));
-      toast.success('Kategorija obrisana');
+      showSuccess('Kategorija obrisana');
     } catch (error) {
       console.error('Error deleting custom category:', error);
-      toast.error('Greška pri brisanju kategorije');
+      showError('Greška pri brisanju kategorije');
     }
   };
 

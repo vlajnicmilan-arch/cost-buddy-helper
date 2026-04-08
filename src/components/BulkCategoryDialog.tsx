@@ -9,7 +9,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Tags, Search, CheckSquare, Square, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useTranslation } from 'react-i18next';
 
@@ -107,7 +107,7 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newCategory) {
-      toast.error(t('bulk.selectTransactionsAndCategory', t('toasts.selectTransactionsAndCategory')));
+      showError(t('bulk.selectTransactionsAndCategory', t('toasts.selectTransactionsAndCategory')));
       return;
     }
 
@@ -123,13 +123,13 @@ export const BulkCategoryDialog = ({ expenses, onUpdateExpenses }: BulkCategoryD
       await onUpdateExpenses(updatedExpenses);
       
       const categoryInfo = getCategoryInfoExtended(newCategory);
-      toast.success(t('bulk.updatedTransactions', 'Ažurirano {{count}} transakcija na "{{name}}"').replace('{{count}}', String(selectedIds.size)).replace('{{name}}', categoryInfo.name));
+      showSuccess(t('bulk.updatedTransactions', 'Ažurirano {{count}} transakcija na "{{name}}"').replace('{{count}}', String(selectedIds.size)).replace('{{name}}', categoryInfo.name));
       
       setSelectedIds(new Set());
       setNewCategory('');
       setOpen(false);
     } catch (error) {
-      toast.error(t('bulk.updateError', t('toasts.updateError')));
+      showError(t('bulk.updateError', t('toasts.updateError')));
     } finally {
       setSaving(false);
     }

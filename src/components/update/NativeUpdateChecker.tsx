@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { APP_VERSION } from '@/lib/version';
 import {
   fetchLatestVersion,
@@ -22,7 +23,7 @@ const createNativeUpdateChecker = () => {
     const result = await fetchLatestVersion();
 
     if (!result.version) {
-      toast.error(
+      showError(
         `Provjera web verzije nije uspjela. Nijedan server nije odgovorio.`,
         { duration: 5000 }
       );
@@ -42,7 +43,7 @@ const createNativeUpdateChecker = () => {
         }
       );
     } else {
-      toast.success(
+      showSuccess(
         `Web verzija je ažurna (${APP_VERSION}).`,
         { duration: 3000 }
       );
@@ -70,7 +71,7 @@ export const checkForNativeUpdates = async () => {
     await checkForUpdatesRef();
     return;
   }
-  toast.error('Provjera ažuriranja nije dostupna na ovoj platformi.');
+  showError('Provjera ažuriranja nije dostupna na ovoj platformi.');
 };
 
 export const NativeUpdateInitializer = () => {

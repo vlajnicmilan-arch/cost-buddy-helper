@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Users, Check, Plus, RefreshCw, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useTranslation } from 'react-i18next';
@@ -200,10 +201,10 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
       setPartnerDetails(prev => ({ ...prev, [partnerName]: newDetails }));
 
       const source = data.source === 'sudreg' ? 'sudski registar' : 'AI';
-      toast.success(t('toasts.dataLoadedFor', { name: data.company_name || partnerName, source }));
+      showSuccess(t('toasts.dataLoadedFor', { name: data.company_name || partnerName, source }));
     } catch (error: any) {
       console.error('Error looking up company:', error);
-      toast.error(t('toasts.registryFetchError'));
+      showError(t('toasts.registryFetchError'));
     } finally {
       setLookingUp(null);
     }
@@ -267,11 +268,11 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
         updated > 0 ? `${updated} ${updated === 1 ? 'partner ažuriran' : 'partnera ažurirano'}` : '',
       ].filter(Boolean).join(', ');
 
-      toast.success(msg);
+      showSuccess(msg);
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving partners:', error);
-      toast.error(t('toasts.partnerSaveError'));
+      showError(t('toasts.partnerSaveError'));
     } finally {
       setSaving(false);
     }

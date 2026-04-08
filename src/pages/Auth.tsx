@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Mail, Lock, Loader2, CheckCircle, RefreshCw, User, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
@@ -111,28 +111,28 @@ const Auth = () => {
         const { error } = await signIn(email.trim(), password);
         if (error) {
           if (error.message.includes('Invalid login')) {
-            toast.error(t('toasts.wrongEmailOrPassword'));
+            showError(t('toasts.wrongEmailOrPassword'));
           } else if (error.message.includes('Email not confirmed')) {
-            toast.error(t('toasts.emailNotConfirmed'));
+            showError(t('toasts.emailNotConfirmed'));
             setAwaitingVerification(true);
             setRegisteredEmail(email.trim());
           } else {
-            toast.error(error.message);
+            showError(error.message);
           }
           return;
         }
         if (!storageMode) {
           setStorageMode('cloud');
         }
-        toast.success(t('toasts.welcomeBack'));
+        showSuccess(t('toasts.welcomeBack'));
         // Routing is handled centrally by App.tsx — no navigate needed here
       } else {
         const { error, needsEmailConfirmation } = await signUp(email.trim(), password, displayName.trim() || undefined);
         if (error) {
           if (error.message.includes('already registered')) {
-            toast.error(t('toasts.userAlreadyExists'));
+            showError(t('toasts.userAlreadyExists'));
           } else {
-            toast.error(error.message);
+            showError(error.message);
           }
           return;
         }
@@ -141,7 +141,7 @@ const Auth = () => {
           if (!storageMode) setStorageMode('cloud');
           setAwaitingVerification(true);
           setRegisteredEmail(email.trim());
-          toast.success(t('toasts.registrationSuccess'));
+          showSuccess(t('toasts.registrationSuccess'));
           trackReferral();
         } else {
           // Use entered name or fallback to email-extracted name
@@ -171,9 +171,9 @@ const Auth = () => {
     try {
       const { error } = await resendVerificationEmail(registeredEmail);
       if (error) {
-        toast.error(t('toasts.emailSendError'));
+        showError(t('toasts.emailSendError'));
       } else {
-        toast.success('Verifikacijski email je poslan!');
+        showSuccess('Verifikacijski email je poslan!');
       }
     } finally {
       setResendLoading(false);
@@ -209,12 +209,12 @@ const Auth = () => {
     try {
       const { error } = await resetPassword(trimmedEmail);
       if (error) {
-        toast.error(error.message || 'Greška pri slanju emaila');
+        showError(error.message || 'Greška pri slanju emaila');
         return;
       }
       setResetEmailSent(true);
       setRegisteredEmail(trimmedEmail);
-      toast.success('Email za resetiranje lozinke je poslan!');
+      showSuccess('Email za resetiranje lozinke je poslan!');
     } finally {
       setResetLoading(false);
     }
@@ -605,11 +605,11 @@ const Auth = () => {
                   redirect_uri: window.location.origin,
                 });
                 if (error) {
-                  toast.error('Greška pri Google prijavi');
+                  showError('Greška pri Google prijavi');
                   console.error('Google OAuth error:', error);
                 }
               } catch (err) {
-                toast.error('Greška pri Google prijavi');
+                showError('Greška pri Google prijavi');
                 console.error('Google OAuth error:', err);
               } finally {
                 setLoading(false);
@@ -638,11 +638,11 @@ const Auth = () => {
                   redirect_uri: window.location.origin,
                 });
                 if (error) {
-                  toast.error('Greška pri Apple prijavi');
+                  showError('Greška pri Apple prijavi');
                   console.error('Apple OAuth error:', error);
                 }
               } catch (err) {
-                toast.error('Greška pri Apple prijavi');
+                showError('Greška pri Apple prijavi');
                 console.error('Apple OAuth error:', err);
               } finally {
                 setLoading(false);

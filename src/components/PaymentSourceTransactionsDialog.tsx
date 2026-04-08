@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePDFParser } from '@/hooks/usePDFParser';
@@ -212,7 +213,7 @@ export const PaymentSourceTransactionsDialog = ({
     for (const expense of selected) {
       try { await onUpdate({ ...expense, category }); count++; } catch {}
     }
-    toast.success(t('transactions.categoryChanged', { count }));
+    showSuccess(t('transactions.categoryChanged', { count }));
     clearSelection();
   };
 
@@ -222,7 +223,7 @@ export const PaymentSourceTransactionsDialog = ({
     for (const expense of selected) {
       try { await onUpdate({ ...expense, payment_source: newPaymentSource as any, payment_source_card_id: null }); count++; } catch {}
     }
-    toast.success(t('transactions.paymentSourceChanged', { count }));
+    showSuccess(t('transactions.paymentSourceChanged', { count }));
     clearSelection();
   };
 
@@ -232,7 +233,7 @@ export const PaymentSourceTransactionsDialog = ({
     for (const expense of selected) {
       try { await onDelete(expense.id); count++; } catch {}
     }
-    toast.success(t('transactions.deleted', { count }));
+    showSuccess(t('transactions.deleted', { count }));
     clearSelection();
   };
 
@@ -243,7 +244,7 @@ export const PaymentSourceTransactionsDialog = ({
     // Accept PDF by MIME type or file extension (mobile browsers may not set type correctly)
     const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPDF) {
-      toast.error(t('import.selectPDF'));
+      showError(t('import.selectPDF'));
       if (pdfInputRef.current) pdfInputRef.current.value = '';
       return;
     }
@@ -259,12 +260,12 @@ export const PaymentSourceTransactionsDialog = ({
     
     const reader = new FileReader();
     reader.onerror = () => {
-      toast.error(t('toasts.fileReadError'));
+      showError(t('toasts.fileReadError'));
     };
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
       if (!base64) {
-        toast.error(t('toasts.fileReadError'));
+        showError(t('toasts.fileReadError'));
         return;
       }
       try {
@@ -276,7 +277,7 @@ export const PaymentSourceTransactionsDialog = ({
         }
       } catch (err) {
         console.error('PDF parse error:', err);
-        toast.error(t('toasts.pdfAnalysisError'));
+        showError(t('toasts.pdfAnalysisError'));
       }
     };
     reader.readAsDataURL(fileBlob);
@@ -287,7 +288,7 @@ export const PaymentSourceTransactionsDialog = ({
     if (!file) return;
     const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
     if (!isHTMLFile) {
-      toast.error(t('toasts.selectHtmlFile'));
+      showError(t('toasts.selectHtmlFile'));
       if (htmlInputRef.current) htmlInputRef.current.value = '';
       return;
     }
@@ -303,7 +304,7 @@ export const PaymentSourceTransactionsDialog = ({
       }
     } catch (err) {
       console.error('HTML parse error:', err);
-      toast.error(t('toasts.htmlAnalysisError'));
+      showError(t('toasts.htmlAnalysisError'));
     }
   };
 
@@ -348,10 +349,10 @@ export const PaymentSourceTransactionsDialog = ({
       await onImportCSV(transactions);
       setPdfPreviewOpen(false);
       clearParsedData();
-      toast.success(t('import.importedFromPDF', { count: transactions.length }));
+      showSuccess(t('import.importedFromPDF', { count: transactions.length }));
     } catch (error) {
       console.error('Error importing PDF transactions:', error);
-      toast.error(t('toasts.importError'));
+      showError(t('toasts.importError'));
     } finally {
       setIsImportingPdf(false);
     }
@@ -376,10 +377,10 @@ export const PaymentSourceTransactionsDialog = ({
       setDuplicateWarningOpen(false);
       clearParsedData();
       setDuplicateInfo(null);
-      toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
+      showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
     } catch (error) {
       console.error('Error importing duplicate-reviewed transactions:', error);
-      toast.error(t('toasts.importError'));
+      showError(t('toasts.importError'));
     } finally {
       setIsImportingPdf(false);
     }
@@ -467,14 +468,14 @@ export const PaymentSourceTransactionsDialog = ({
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
     const data = buildReportData();
     await generatePDFReport(data, `${paymentSource.name} - ${t('transactions.transactions')}`);
-    toast.success(t('reports.pdfExported', 'PDF izvoz završen'));
+    showSuccess(t('reports.pdfExported', 'PDF izvoz završen'));
   };
 
   const handleExportCSV = async () => {
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
     const data = buildReportData();
     await generateCSVReport(data);
-    toast.success(t('reports.csvExported', 'CSV izvoz završen'));
+    showSuccess(t('reports.csvExported', 'CSV izvoz završen'));
   };
 
   if (!paymentSource) return null;

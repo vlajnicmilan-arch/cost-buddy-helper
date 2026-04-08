@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, FolderKanban, Download, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface BusinessProjectsProps {
@@ -133,12 +133,12 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           business_profile_id: activeBusinessProfileId,
         });
       if (error) throw error;
-      toast.success(`Projekt "${project.name}" uvezen`);
+      showSuccess(`Projekt "${project.name}" uvezen`);
       refetch();
       onRefreshExpenses?.();
     } catch (err) {
       console.error('Error importing project:', err);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setImportingIds(prev => { const n = new Set(prev); n.delete(project.id); return n; });
     }

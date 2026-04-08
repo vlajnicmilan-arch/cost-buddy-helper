@@ -17,6 +17,7 @@ import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from './LoanDetectionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 export const BusinessDebtTracker = () => {
   const { formatAmount } = useCurrency();
@@ -104,7 +105,7 @@ export const BusinessDebtTracker = () => {
       }
     } catch (e) {
       console.error('Scan error:', e);
-      toast.error(t('toasts.scanError'));
+      showError(t('toasts.scanError'));
     } finally {
       setScanning(false);
     }
@@ -124,7 +125,7 @@ export const BusinessDebtTracker = () => {
         status: 'active',
       });
     }
-    toast.success(t('business.debts.loansAdded', { count: loans.length, defaultValue: `Dodano ${loans.length} pozajmica` }));
+    showSuccess(t('business.debts.loansAdded', { count: loans.length, defaultValue: `Dodano ${loans.length} pozajmica` }));
     setDetectedLoans([]);
   };
 

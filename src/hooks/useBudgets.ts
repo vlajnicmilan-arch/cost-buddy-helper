@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useExpenses } from '@/hooks/useExpenses';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { 
@@ -68,7 +69,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
       })));
     } catch (error) {
       console.error('Error fetching budgets:', error);
-      toast.error(t('errors.fetchBudgets', 'Greška pri učitavanju budžeta'));
+      showError(t('errors.fetchBudgets', 'Greška pri učitavanju budžeta'));
     } finally {
       setLoading(false);
     }
@@ -308,7 +309,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
 
     // Check free tier budget limit
     if (!hasAccess('unlimited_budgets') && budgets.length >= FREE_LIMITS.budgets) {
-      toast.error(t('limits.budgetsReached', `Dosegnuli ste limit od ${FREE_LIMITS.budgets} budžeta. Nadogradite na Pro za neograničene budžete.`));
+      showError(t('limits.budgetsReached', `Dosegnuli ste limit od ${FREE_LIMITS.budgets} budžeta. Nadogradite na Pro za neograničene budžete.`));
       return;
     }
 
@@ -351,11 +352,11 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         if (catError) throw catError;
       }
 
-      toast.success(t('budget.created', 'Budžet kreiran'));
+      showSuccess(t('budget.created', 'Budžet kreiran'));
       await fetchBudgets();
     } catch (error) {
       console.error('Error creating budget:', error);
-      toast.error(t('errors.createBudget', 'Greška pri kreiranju budžeta'));
+      showError(t('errors.createBudget', 'Greška pri kreiranju budžeta'));
     }
   }, [user, isLocalMode, t, fetchBudgets, hasAccess, budgets.length]);
 
@@ -406,11 +407,11 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         if (catError) throw catError;
       }
 
-      toast.success(t('budget.updated', 'Budžet ažuriran'));
+      showSuccess(t('budget.updated', 'Budžet ažuriran'));
       await fetchBudgets();
     } catch (error) {
       console.error('Error updating budget:', error);
-      toast.error(t('errors.updateBudget', 'Greška pri ažuriranju budžeta'));
+      showError(t('errors.updateBudget', 'Greška pri ažuriranju budžeta'));
     }
   }, [user, isLocalMode, t, fetchBudgets]);
 
@@ -439,11 +440,11 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
 
       if (error) throw error;
 
-      toast.success(t('budget.deleted', 'Budžet obrisan'));
+      showSuccess(t('budget.deleted', 'Budžet obrisan'));
       await fetchBudgets();
     } catch (error) {
       console.error('Error deleting budget:', error);
-      toast.error(t('errors.deleteBudget', 'Greška pri brisanju budžeta'));
+      showError(t('errors.deleteBudget', 'Greška pri brisanju budžeta'));
     }
   }, [user, isLocalMode, t, fetchBudgets]);
 

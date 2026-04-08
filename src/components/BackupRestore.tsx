@@ -17,7 +17,7 @@ import {
 } from '@/lib/storage/autoBackup';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -84,9 +84,9 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
     
     try {
       await saveBackupSettings(newSettings);
-      toast.success(t('backup.settingsSaved'));
+      showSuccess(t('backup.settingsSaved'));
     } catch (error) {
-      toast.error(t('errors.saveError'));
+      showError(t('errors.saveError'));
     }
   };
 
@@ -103,11 +103,11 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       });
       
       await importLocalData(jsonData);
-      toast.success(t('backup.restored', { count: data.expenses.length }));
+      showSuccess(t('backup.restored', { count: data.expenses.length }));
       onDataImported?.();
       setHistoryOpen(false);
     } catch (error) {
-      toast.error(t('errors.saveError'));
+      showError(t('errors.saveError'));
     } finally {
       setIsRestoring(false);
     }
@@ -117,9 +117,9 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
     try {
       await deleteBackup(id);
       await loadAutoBackups();
-      toast.success(t('backup.backupDeleted'));
+      showSuccess(t('backup.backupDeleted'));
     } catch (error) {
-      toast.error(t('errors.deleteError'));
+      showError(t('errors.deleteError'));
     }
   };
 
@@ -161,11 +161,11 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       await exportTextFile(jsonData, `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
 
       emitAvatarEvent('proud', 'Podatci su sigurni! 🔒');
-      toast.success(t('backup.exportSuccess'));
+      showSuccess(t('backup.exportSuccess'));
     } catch (err) {
       console.error('Export error:', err);
       setError(t('errors.saveError'));
-      toast.error(t('errors.saveError'));
+      showError(t('errors.saveError'));
     } finally {
       setIsExporting(false);
     }
@@ -241,12 +241,12 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       }
 
       emitAvatarEvent('proud', 'Podatci su sigurni! 🔒');
-      toast.success(t('backup.importSuccess'));
+      showSuccess(t('backup.importSuccess'));
       onDataImported?.();
     } catch (err) {
       console.error('Import error:', err);
       setError(err instanceof Error ? err.message : t('errors.saveError'));
-      toast.error(t('errors.saveError'));
+      showError(t('errors.saveError'));
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {

@@ -21,7 +21,7 @@ import { useProjectPendingTransactions } from '@/hooks/useProjectPendingTransact
 import { TransactionNotesThread } from '@/components/TransactionNotesThread';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
   Target, Trash2, Clock, Check, X, AlertCircle, User, MessageCircle,
@@ -218,11 +218,11 @@ export const ProjectTransactionsTab = ({
 
       if (error) throw error;
 
-      toast.success(t('projects.milestoneUpdated', 'Faza ažurirana'));
+      showSuccess(t('projects.milestoneUpdated', 'Faza ažurirana'));
       onRefetch();
     } catch (error) {
       console.error('Error updating milestone:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setUpdatingMilestone(null);
     }
@@ -255,9 +255,9 @@ export const ProjectTransactionsTab = ({
       if (error) throw error;
 
       if (needsApproval) {
-        toast.success(t('projects.expenseSubmitted', 'Transakcija poslana na odobrenje'));
+        showSuccess(t('projects.expenseSubmitted', 'Transakcija poslana na odobrenje'));
       } else {
-        toast.success(t('projects.expenseAdded', 'Trošak dodan'));
+        showSuccess(t('projects.expenseAdded', 'Trošak dodan'));
       }
       setAddDialogOpen(false);
       resetForm();
@@ -267,7 +267,7 @@ export const ProjectTransactionsTab = ({
       }
     } catch (error) {
       console.error('Error adding expense:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setSaving(false);
     }
@@ -307,11 +307,11 @@ export const ProjectTransactionsTab = ({
 
       if (error) throw error;
 
-      toast.success(t('common.deleted'));
+      showSuccess(t('common.deleted'));
       onRefetch();
     } catch (error) {
       console.error('Error deleting expense:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setDeleteDialogOpen(false);
       setExpenseToDelete(null);
@@ -350,13 +350,13 @@ export const ProjectTransactionsTab = ({
 
       if (error) throw error;
 
-      toast.success(t('common.saved', 'Spremljeno'));
+      showSuccess(t('common.saved', 'Spremljeno'));
       setEditDialogOpen(false);
       setEditingExpense(null);
       onRefetch();
     } catch (error) {
       console.error('Error updating expense:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setSaving(false);
     }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProjectWorkEntry } from '@/types/projectWorker';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export const useProjectWorkEntries = (workerId: string | null, projectId: string | null) => {
@@ -77,14 +77,14 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
       setEntries(prev => [newEntry, ...prev].sort((a, b) => 
         new Date(b.work_date).getTime() - new Date(a.work_date).getTime()
       ));
-      toast.success(t('workers.entryAdded', 'Radni dan dodan'));
+      showSuccess(t('workers.entryAdded', 'Radni dan dodan'));
       return newEntry;
     } catch (error: any) {
       if (error.code === '23505') {
-        toast.error(t('workers.entryExists', 'Unos za ovaj datum već postoji'));
+        showError(t('workers.entryExists', 'Unos za ovaj datum već postoji'));
       } else {
         console.error('Error adding work entry:', error);
-        toast.error(t('common.error'));
+        showError(t('common.error'));
       }
       return null;
     }
@@ -105,10 +105,10 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
       if (error) throw error;
 
       setEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
-      toast.success(t('workers.entryUpdated', 'Radni dan ažuriran'));
+      showSuccess(t('workers.entryUpdated', 'Radni dan ažuriran'));
     } catch (error) {
       console.error('Error updating work entry:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -122,10 +122,10 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
       if (error) throw error;
 
       setEntries(prev => prev.filter(e => e.id !== id));
-      toast.success(t('workers.entryDeleted', 'Radni dan uklonjen'));
+      showSuccess(t('workers.entryDeleted', 'Radni dan uklonjen'));
     } catch (error) {
       console.error('Error deleting work entry:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -164,11 +164,11 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
         new Date(b.work_date).getTime() - new Date(a.work_date).getTime()
       ));
       
-      toast.success(t('workers.entriesAdded', '{{count}} radnih dana dodano', { count: newEntries.length }));
+      showSuccess(t('workers.entriesAdded', '{{count}} radnih dana dodano', { count: newEntries.length }));
       return true;
     } catch (error: any) {
       console.error('Error adding work entries:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
       return false;
     }
   };

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { BudgetMember, BudgetInvitation, BudgetRole } from '@/types/budgetMember';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export const useBudgetMembers = (budgetId: string | null) => {
@@ -93,10 +93,10 @@ export const useBudgetMembers = (budgetId: string | null) => {
       setMembers(prev => prev.map(m => 
         m.id === memberId ? { ...m, role: newRole } : m
       ));
-      toast.success(t('budget.memberRoleUpdated', 'Uloga člana ažurirana'));
+      showSuccess(t('budget.memberRoleUpdated', 'Uloga člana ažurirana'));
     } catch (error) {
       console.error('Error updating member role:', error);
-      toast.error(t('common.error', t('toasts.error')));
+      showError(t('common.error', t('toasts.error')));
     }
   };
 
@@ -110,10 +110,10 @@ export const useBudgetMembers = (budgetId: string | null) => {
       if (error) throw error;
 
       setMembers(prev => prev.filter(m => m.id !== memberId));
-      toast.success(t('budget.memberRemoved', 'Član uklonjen'));
+      showSuccess(t('budget.memberRemoved', 'Član uklonjen'));
     } catch (error) {
       console.error('Error removing member:', error);
-      toast.error(t('common.error', t('toasts.error')));
+      showError(t('common.error', t('toasts.error')));
     }
   };
 
@@ -127,10 +127,10 @@ export const useBudgetMembers = (budgetId: string | null) => {
       if (error) throw error;
 
       setInvitations(prev => prev.filter(i => i.id !== invitationId));
-      toast.success(t('budget.invitationCancelled', 'Pozivnica otkazana'));
+      showSuccess(t('budget.invitationCancelled', 'Pozivnica otkazana'));
     } catch (error) {
       console.error('Error cancelling invitation:', error);
-      toast.error(t('common.error', t('toasts.error')));
+      showError(t('common.error', t('toasts.error')));
     }
   };
 
@@ -164,7 +164,7 @@ export const useBudgetMembers = (budgetId: string | null) => {
       return link;
     } catch (error) {
       console.error('Error generating invite link:', error);
-      toast.error(t('common.error', t('toasts.error')));
+      showError(t('common.error', t('toasts.error')));
       return null;
     }
   };

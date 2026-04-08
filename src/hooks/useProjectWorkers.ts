@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProjectWorker, ProjectWorkerInput, ProjectWorkEntry } from '@/types/projectWorker';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 interface WorkerWithStats extends ProjectWorker {
@@ -61,7 +61,7 @@ export const useProjectWorkers = (projectId: string | null) => {
       setWorkers(workersWithStats);
     } catch (error) {
       console.error('Error fetching project workers:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -101,11 +101,11 @@ export const useProjectWorkers = (projectId: string | null) => {
       };
 
       setWorkers(prev => [newWorker, ...prev]);
-      toast.success(t('workers.added', 'Radnik dodan'));
+      showSuccess(t('workers.added', 'Radnik dodan'));
       return newWorker;
     } catch (error) {
       console.error('Error adding worker:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
       return null;
     }
   };
@@ -137,10 +137,10 @@ export const useProjectWorkers = (projectId: string | null) => {
         }
         return w;
       }));
-      toast.success(t('workers.updated', 'Radnik ažuriran'));
+      showSuccess(t('workers.updated', 'Radnik ažuriran'));
     } catch (error) {
       console.error('Error updating worker:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -154,10 +154,10 @@ export const useProjectWorkers = (projectId: string | null) => {
       if (error) throw error;
 
       setWorkers(prev => prev.filter(w => w.id !== id));
-      toast.success(t('workers.deleted', 'Radnik uklonjen'));
+      showSuccess(t('workers.deleted', 'Radnik uklonjen'));
     } catch (error) {
       console.error('Error deleting worker:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

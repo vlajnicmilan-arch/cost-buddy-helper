@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePaymentSourceMembers, PaymentSourceRole, PAYMENT_SOURCE_ROLE_LABELS } from '@/hooks/usePaymentSourceMembers';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Users, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Eye, Edit3 } from 'lucide-react';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +37,7 @@ export const PaymentSourceMembersDialog = ({
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim() || !paymentSource) {
-      toast.error(t('toasts.enterEmail'));
+      showError(t('toasts.enterEmail'));
       return;
     }
 
@@ -56,23 +56,23 @@ export const PaymentSourceMembersDialog = ({
       
       if (data.error) {
         if (data.error === 'user_not_found') {
-          toast.error(t('toasts.userNotFound'));
+          showError(t('toasts.userNotFound'));
         } else if (data.error === 'already_member') {
-          toast.error(t('toasts.alreadyMember'));
+          showError(t('toasts.alreadyMember'));
         } else if (data.error === 'already_invited') {
-          toast.error(t('toasts.alreadyInvited'));
+          showError(t('toasts.alreadyInvited'));
         } else {
-          toast.error(data.message || t('toasts.error'));
+          showError(data.message || t('toasts.error'));
         }
         return;
       }
 
-      toast.success(t('toasts.invitationSent'));
+      showSuccess(t('toasts.invitationSent'));
       setInviteEmail('');
       refetch();
     } catch (error) {
       console.error('Error sending invitation:', error);
-      toast.error(t('toasts.invitationSendError'));
+      showError(t('toasts.invitationSendError'));
     } finally {
       setSendingInvite(false);
     }

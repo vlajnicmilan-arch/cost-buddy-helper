@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Bug, Loader2, Send } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -40,12 +40,12 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      toast.error(t('toasts.fillTitleAndDescription'));
+      showError(t('toasts.fillTitleAndDescription'));
       return;
     }
 
     if (!user) {
-      toast.error('Morate biti prijavljeni za prijavu problema');
+      showError('Morate biti prijavljeni za prijavu problema');
       return;
     }
 
@@ -60,13 +60,13 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
 
       if (error) throw error;
 
-      toast.success(t('toasts.bugReportSent'));
+      showSuccess(t('toasts.bugReportSent'));
       setTitle('');
       setDescription('');
       onOpenChange(false);
     } catch (error) {
       console.error('Bug report error:', error);
-      toast.error(t('toasts.bugReportError'));
+      showError(t('toasts.bugReportError'));
     } finally {
       setIsSubmitting(false);
     }

@@ -23,7 +23,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { Notification } from '@/types/notification';
 
@@ -164,21 +164,21 @@ export const NotificationsDropdown = () => {
       if (error) throw error;
 
       if (data.error) {
-        toast.error(data.error);
+        showError(data.error);
         return;
       }
 
       if (action === 'accept') {
-        toast.success(t('notifications.invitationAccepted', 'Pozivnica prihvaćena'));
+        showSuccess(t('notifications.invitationAccepted', 'Pozivnica prihvaćena'));
       } else {
-        toast.success(t('notifications.invitationDeclined', 'Pozivnica odbijena'));
+        showSuccess(t('notifications.invitationDeclined', 'Pozivnica odbijena'));
       }
 
       await deleteNotification(notification.id);
       refetch();
     } catch (error) {
       console.error('Error responding to invitation:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setRespondingTo(null);
       setInvitationDialog(null);

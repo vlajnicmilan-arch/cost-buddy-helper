@@ -21,6 +21,7 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
+import { showError } from '@/hooks/useStatusFeedback';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -131,7 +132,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
     } catch (error) {
       console.error('Error saving transaction:', error);
       const { toast } = await import('sonner');
-      toast.error(t('transactions.saveError2'));
+      showError(t('transactions.saveError2'));
     } finally {
       setSaving(false);
     }

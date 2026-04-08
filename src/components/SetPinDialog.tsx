@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { useAppLock } from '@/contexts/AppLockContext';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -55,7 +55,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
                   backend: result.backend,
                   error: result.error,
                 });
-                toast.error(`PIN greška: ${result.error || 'nepoznato'}`);
+                showError(`PIN greška: ${result.error || 'nepoznato'}`);
                 return;
               }
               enableLock(true);
@@ -66,9 +66,9 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
               });
               if (result.error) {
                 // Saved via fallback
-                toast.success(`PIN postavljen (fallback: ${result.backend})`, { duration: 5000 });
+                showSuccess(`PIN postavljen (fallback: ${result.backend})`, { duration: 5000 });
               } else {
-                toast.success(t('lock.pinSet', 'PIN je postavljen'));
+                showSuccess(t('lock.pinSet', 'PIN je postavljen'));
               }
             } catch (err: any) {
               console.error('[PIN] Unexpected error', {
@@ -76,7 +76,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
                 origin: window.location.origin,
                 message: err?.message,
               });
-              toast.error(`PIN error: ${err?.message || 'unknown'}`);
+              showError(`PIN error: ${err?.message || 'unknown'}`);
               return;
             }
             try {

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ProjectMilestone, MilestoneStatus } from '@/types/project';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export const useProjectMilestones = (projectId: string | null) => {
@@ -98,11 +98,11 @@ export const useProjectMilestones = (projectId: string | null) => {
       };
 
       setMilestones(prev => [...prev, newMilestone].sort((a, b) => a.sort_order - b.sort_order));
-      toast.success(t('projects.milestoneCreated'));
+      showSuccess(t('projects.milestoneCreated'));
       return newMilestone;
     } catch (error) {
       console.error('Error adding milestone:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
       return null;
     }
   };
@@ -131,10 +131,10 @@ export const useProjectMilestones = (projectId: string | null) => {
       setMilestones(prev => prev.map(m => 
         m.id === milestone.id ? { ...milestone, budget: Number(milestone.budget) } : m
       ));
-      toast.success(t('projects.milestoneUpdated'));
+      showSuccess(t('projects.milestoneUpdated'));
     } catch (error) {
       console.error('Error updating milestone:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -148,10 +148,10 @@ export const useProjectMilestones = (projectId: string | null) => {
       if (error) throw error;
 
       setMilestones(prev => prev.filter(m => m.id !== id));
-      toast.success(t('projects.milestoneDeleted'));
+      showSuccess(t('projects.milestoneDeleted'));
     } catch (error) {
       console.error('Error deleting milestone:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -172,7 +172,7 @@ export const useProjectMilestones = (projectId: string | null) => {
       setMilestones(reorderedMilestones.map((m, index) => ({ ...m, sort_order: index })));
     } catch (error) {
       console.error('Error reordering milestones:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BudgetMember, BudgetInvitation, BudgetRole, BUDGET_ROLE_LABELS } from '@/types/budgetMember';
 import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -51,13 +51,13 @@ export const BudgetMembersTab = ({
   const copyLink = async () => {
     if (inviteLink) {
       await navigator.clipboard.writeText(inviteLink);
-      toast.success(t('budget.linkCopied', 'Link kopiran'));
+      showSuccess(t('budget.linkCopied', 'Link kopiran'));
     }
   };
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) {
-      toast.error(t('budget.enterEmail', t('toasts.enterEmail')));
+      showError(t('budget.enterEmail', t('toasts.enterEmail')));
       return;
     }
 
@@ -76,24 +76,24 @@ export const BudgetMembersTab = ({
       
       if (data.error) {
         if (data.error === 'user_not_found') {
-          toast.error(t('budget.userNotFound', t('toasts.userNotFound')));
+          showError(t('budget.userNotFound', t('toasts.userNotFound')));
         } else if (data.error === 'already_member') {
-          toast.error(t('budget.alreadyMember', t('toasts.alreadyMember')));
+          showError(t('budget.alreadyMember', t('toasts.alreadyMember')));
         } else if (data.error === 'already_invited') {
-          toast.error(t('budget.alreadyInvited', t('toasts.alreadyInvited')));
+          showError(t('budget.alreadyInvited', t('toasts.alreadyInvited')));
         } else {
-          toast.error(data.message || t('common.error'));
+          showError(data.message || t('common.error'));
         }
         return;
       }
 
-      toast.success(t('budget.invitationSent', t('toasts.invitationSent')));
+      showSuccess(t('budget.invitationSent', t('toasts.invitationSent')));
       setInviteEmail('');
       onRefetch();
     } catch (error: any) {
       console.error('Error sending invitation:', error);
       const msg = error?.message || error?.context?.body?.message || t('common.error');
-      toast.error(msg);
+      showError(msg);
     } finally {
       setSendingInvite(false);
     }

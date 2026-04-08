@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Lock, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
@@ -91,12 +91,12 @@ const ResetPassword = () => {
       const { error } = await updatePassword(password);
       
       if (error) {
-        toast.error(error.message || 'Greška pri promjeni lozinke');
+        showError(error.message || 'Greška pri promjeni lozinke');
         return;
       }
       
       setSuccess(true);
-      toast.success(t('toasts.passwordChanged'));
+      showSuccess(t('toasts.passwordChanged'));
     } finally {
       setLoading(false);
     }

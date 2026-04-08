@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
 
@@ -70,11 +70,11 @@ export function useSavingsGoals() {
         });
 
       if (error) throw error;
-      toast.success(t('savingsGoals.goalAdded'));
+      showSuccess(t('savingsGoals.goalAdded'));
       fetchGoals();
     } catch (err) {
       console.error('Error adding savings goal:', err);
-      toast.error(t('savingsGoals.errorAdding'));
+      showError(t('savingsGoals.errorAdding'));
     }
   }, [user, fetchGoals, t]);
 
@@ -86,11 +86,11 @@ export function useSavingsGoals() {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success(t('savingsGoals.goalUpdated'));
+      showSuccess(t('savingsGoals.goalUpdated'));
       fetchGoals();
     } catch (err) {
       console.error('Error updating savings goal:', err);
-      toast.error(t('savingsGoals.errorUpdating'));
+      showError(t('savingsGoals.errorUpdating'));
     }
   }, [fetchGoals, t]);
 
@@ -102,11 +102,11 @@ export function useSavingsGoals() {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success(t('savingsGoals.goalDeleted'));
+      showSuccess(t('savingsGoals.goalDeleted'));
       fetchGoals();
     } catch (err) {
       console.error('Error deleting savings goal:', err);
-      toast.error(t('savingsGoals.errorDeleting'));
+      showError(t('savingsGoals.errorDeleting'));
     }
   }, [fetchGoals, t]);
 
@@ -125,7 +125,7 @@ export function useSavingsGoals() {
 
     if (isCompleted) {
       emitAvatarEvent('proud', 'Bravo! Cilj ostvaren! 🎉');
-      toast.success(t('savingsGoals.goalCompleted', { name: goal.name }));
+      showSuccess(t('savingsGoals.goalCompleted', { name: goal.name }));
     } else {
       emitAvatarEvent('happy', 'Sjajno, štedeš! 🐷');
     }

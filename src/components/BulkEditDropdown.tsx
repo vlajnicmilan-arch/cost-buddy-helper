@@ -86,7 +86,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Search, CheckSquare, Square, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 interface BulkPaymentSourceDialogControlledProps {
@@ -149,7 +149,7 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newPaymentSource) {
-      toast.error(t('toasts.selectTransactionsAndSource'));
+      showError(t('toasts.selectTransactionsAndSource'));
       return;
     }
 
@@ -165,11 +165,11 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
       await onUpdateExpenses(updatedExpenses);
       
       const sourceInfo = getPaymentSourceInfo(newPaymentSource);
-      toast.success(t('toasts.transactionsUpdatedSource', { count: selectedIds.size, name: sourceInfo.name }));
+      showSuccess(t('toasts.transactionsUpdatedSource', { count: selectedIds.size, name: sourceInfo.name }));
       
       handleClose();
     } catch (error) {
-      toast.error(t('toasts.updateError'));
+      showError(t('toasts.updateError'));
     } finally {
       setSaving(false);
     }
@@ -366,7 +366,7 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
 
   const handleApply = async () => {
     if (selectedIds.size === 0 || !newCategory) {
-      toast.error(t('toasts.selectTransactionsAndCategory'));
+      showError(t('toasts.selectTransactionsAndCategory'));
       return;
     }
     setSaving(true);
@@ -375,10 +375,10 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
       const updatedExpenses = expensesToUpdate.map(e => ({ ...e, category: newCategory, updated_at: new Date().toISOString() }));
       await onUpdateExpenses(updatedExpenses);
       const categoryInfo = getCategoryInfoExtended(newCategory);
-      toast.success(t('toasts.transactionsUpdatedCategory', { count: selectedIds.size, name: categoryInfo.name }));
+      showSuccess(t('toasts.transactionsUpdatedCategory', { count: selectedIds.size, name: categoryInfo.name }));
       handleClose();
     } catch (error) {
-      toast.error(t('toasts.updateError'));
+      showError(t('toasts.updateError'));
     } finally {
       setSaving(false);
     }

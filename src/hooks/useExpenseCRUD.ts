@@ -6,6 +6,7 @@ import { useBalanceUpdater } from './useBalanceUpdater';
 import { useBudgetAlerts } from './useBudgetAlerts';
 import { useAppState } from '@/contexts/AppStateContext';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { useTranslation } from 'react-i18next';
 import {
@@ -63,9 +64,9 @@ export const useExpenseCRUD = ({
         } else if (normalizedExpense.type === 'expense') {
           emitAvatarEvent('neutral', 'Zapisano! 📝');
         }
-        toast.success(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
+        showSuccess(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
       } else {
-        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
+        if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
         const { data, error } = await supabase
           .from('expenses')
@@ -155,18 +156,18 @@ export const useExpenseCRUD = ({
         if (normalizedExpense.type === 'income') emitAvatarEvent('happy', 'Super! Novi prihod zabilježen! 💰');
 
         if (isPendingMemberTransaction) {
-          toast.success(t('feedback.pendingSent'));
+          showSuccess(t('feedback.pendingSent'));
         } else {
-          toast.success(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
+          showSuccess(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
         }
       }
     } catch (error) {
       console.error('Error adding expense:', error);
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('description')) {
-        toast.error(t('feedback.missingDescription'));
+        showError(t('feedback.missingDescription'));
       } else {
-        toast.error(t('toasts.premiseAddError'));
+        showError(t('toasts.premiseAddError'));
       }
       throw error; // Re-throw so callers know the operation failed
     }
@@ -187,9 +188,9 @@ export const useExpenseCRUD = ({
           );
           onBalanceUpdated?.();
         }
-        toast.success(t('feedback.updated'));
+        showSuccess(t('feedback.updated'));
       } else {
-        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
+        if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
         if (!oldExpense) {
           const { data: dbOldExpense } = await supabase
@@ -250,11 +251,11 @@ export const useExpenseCRUD = ({
           }).catch(e => console.error('Notification error:', e));
         }
 
-        toast.success(t('feedback.updated'));
+        showSuccess(t('feedback.updated'));
       }
     } catch (error) {
       console.error('Error updating expense:', error);
-      toast.error(t('toasts.recategorizeError'));
+      showError(t('toasts.recategorizeError'));
     }
   }, [isLocalMode, user, expenses, setExpenses, handleTransactionUpdate, onBalanceUpdated]);
 
@@ -266,9 +267,9 @@ export const useExpenseCRUD = ({
           const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
           return prev.map(e => updatedMap.get(e.id) || e);
         });
-        toast.success(t('feedback.bulkUpdated', { count: expensesToUpdate.length }));
+        showSuccess(t('feedback.bulkUpdated', { count: expensesToUpdate.length }));
       } else {
-        if (!user) { toast.error(t('feedback.mustBeLoggedIn')); return; }
+        if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
         await Promise.all(expensesToUpdate.map(async (expense) => {
           const { error } = await supabase
@@ -289,7 +290,7 @@ export const useExpenseCRUD = ({
       }
     } catch (error) {
       console.error('Error bulk updating expenses:', error);
-      toast.error(t('feedback.bulkUpdateError'));
+      showError(t('feedback.bulkUpdateError'));
       throw error;
     }
   }, [isLocalMode, user, setExpenses]);
@@ -328,10 +329,10 @@ export const useExpenseCRUD = ({
       }
 
       emitAvatarEvent('thinking', 'Uklonjeno... 🗑️');
-      toast.success(t('feedback.deleted'));
+      showSuccess(t('feedback.deleted'));
     } catch (error) {
       console.error('Error deleting expense:', error);
-      toast.error(t('toasts.cashRegisterDeleteError'));
+      showError(t('toasts.cashRegisterDeleteError'));
     }
   }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated]);
 
@@ -363,9 +364,9 @@ export const useExpenseCRUD = ({
         onBalanceUpdated?.();
         const updatedExpenses = await getLocalExpenses();
         setExpenses(updatedExpenses);
-        toast.success(`Uvezeno ${transactions.length} transakcija`);
+        showSuccess(`Uvezeno ${transactions.length} transakcija`);
       } else {
-        if (!user) { toast.error('Moraš biti prijavljen'); return; }
+        if (!user) { showError('Moraš biti prijavljen'); return; }
 
         const rows = transactions.map(tx => ({
           user_id: user.id,
@@ -437,11 +438,11 @@ export const useExpenseCRUD = ({
         setExpenses(prev => [...newExpenses, ...prev].sort(
           (a, b) => b.date.getTime() - a.date.getTime()
         ));
-        toast.success(`Uvezeno ${newExpenses.length} transakcija`);
+        showSuccess(`Uvezeno ${newExpenses.length} transakcija`);
       }
     } catch (error) {
       console.error('Error importing CSV:', error);
-      toast.error(t('toasts.importError'));
+      showError(t('toasts.importError'));
       throw error;
     }
   }, [isLocalMode, user, setExpenses, updateBalance, onBalanceUpdated]);

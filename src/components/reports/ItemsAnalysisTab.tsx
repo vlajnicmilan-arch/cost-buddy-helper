@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Download, FileText, FileSpreadsheet, FileJson, ShoppingBag, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
@@ -215,9 +215,9 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
 
       const pdfFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`;
       await exportPDFDoc(doc, pdfFileName);
-      toast.success('PDF izvjesce generirano!');
+      showSuccess('PDF izvjesce generirano!');
     } catch {
-      toast.error('Greska pri generiranju PDF-a');
+      showError('Greska pri generiranju PDF-a');
     }
   };
 
@@ -239,9 +239,9 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       const csvContent = header + rows.join('\n');
       const csvFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.csv`;
       await exportTextFile(csvContent, csvFileName, 'text/csv', true);
-      toast.success('CSV datoteka generirana!');
+      showSuccess('CSV datoteka generirana!');
     } catch {
-      toast.error('Greska pri generiranju CSV-a');
+      showError('Greska pri generiranju CSV-a');
     }
   };
 
@@ -272,9 +272,9 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       };
       const jsonFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.json`;
       await exportTextFile(JSON.stringify(data, null, 2), jsonFileName, 'application/json');
-      toast.success('JSON datoteka generirana!');
+      showSuccess('JSON datoteka generirana!');
     } catch {
-      toast.error('Greska pri generiranju JSON-a');
+      showError('Greska pri generiranju JSON-a');
     }
   };
 

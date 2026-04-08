@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Send, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { toast } from 'sonner';
+import { showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 interface Message {
@@ -140,7 +140,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
 
     if (error) {
       console.error('Error sending message:', error);
-      toast.error(t('family.sendError'));
+      showError(t('family.sendError'));
     } else if (data) {
       // Fire-and-forget notification
       supabase.functions.invoke('notify-family-message', {
@@ -159,7 +159,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
   const handleDelete = async (messageId: string) => {
     const { error } = await supabase.from('family_messages').delete().eq('id', messageId);
     if (error) {
-      toast.error(t('family.deleteError'));
+      showError(t('family.deleteError'));
     }
   };
 

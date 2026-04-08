@@ -4,7 +4,7 @@ import { Expense, Category, PaymentSource, TransactionType } from '@/types/expen
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
-import { toast } from 'sonner';
+import { showError } from '@/hooks/useStatusFeedback';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
 
@@ -123,7 +123,7 @@ export const useExpenseFetch = () => {
         }
       }
       console.error('Error fetching expenses:', error);
-      toast.error('Greška pri učitavanju troškova');
+      showError('Greška pri učitavanju troškova');
     } finally {
       setLoading(false);
     }

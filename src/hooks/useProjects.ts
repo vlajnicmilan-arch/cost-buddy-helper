@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Project, ProjectWithOwnership, ProjectRole, ProjectStatus } from '@/types/project';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
 
@@ -110,7 +110,7 @@ export const useProjects = () => {
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ export const useProjects = () => {
         localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
         setProjects(updated);
         emitAvatarEvent('happy', 'Novi projekt, nove prilike! 🚀');
-        toast.success(t('projects.created'));
+        showSuccess(t('projects.created'));
         return newProject;
       }
 
@@ -171,11 +171,11 @@ export const useProjects = () => {
       
       setProjects(prev => [newProject, ...prev]);
       emitAvatarEvent('happy', 'Novi projekt, nove prilike! 🚀');
-      toast.success(t('projects.created'));
+      showSuccess(t('projects.created'));
       return newProject;
     } catch (error) {
       console.error('Error adding project:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
       return null;
     }
   };
@@ -190,7 +190,7 @@ export const useProjects = () => {
         );
         localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
         setProjects(updated);
-        toast.success(t('projects.updated'));
+        showSuccess(t('projects.updated'));
         return;
       }
 
@@ -231,10 +231,10 @@ export const useProjects = () => {
           ? { ...project, total_budget: Number(project.total_budget), isOwner: p.isOwner, role: p.role } 
           : p
       ));
-      toast.success(t('projects.updated'));
+      showSuccess(t('projects.updated'));
     } catch (error) {
       console.error('Error updating project:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -244,7 +244,7 @@ export const useProjects = () => {
         const updated = projects.filter(p => p.id !== id);
         localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
         setProjects(updated);
-        toast.success(t('projects.deleted'));
+        showSuccess(t('projects.deleted'));
         return;
       }
 
@@ -256,10 +256,10 @@ export const useProjects = () => {
       if (error) throw error;
 
       setProjects(prev => prev.filter(p => p.id !== id));
-      toast.success(t('projects.deleted'));
+      showSuccess(t('projects.deleted'));
     } catch (error) {
       console.error('Error deleting project:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -273,7 +273,7 @@ export const useProjects = () => {
         );
         localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
         setProjects(updated);
-        toast.success(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
+        showSuccess(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
         return true;
       }
 
@@ -294,11 +294,11 @@ export const useProjects = () => {
 
       // Remove from current view (user will see it when switching to business mode)
       setProjects(prev => prev.filter(p => p.id !== projectId));
-      toast.success(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
+      showSuccess(t('projects.migratedToBusiness', 'Projekt premješten u poslovni mod'));
       return true;
     } catch (error) {
       console.error('Error migrating project:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
       return false;
     }
   };

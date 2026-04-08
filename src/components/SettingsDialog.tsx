@@ -16,6 +16,7 @@ import { BusinessProfileDialog } from '@/components/BusinessProfileDialog';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { motion } from 'framer-motion';
 import { 
   getAutoUpdatePreference, 
@@ -153,17 +154,17 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
-    toast.success(newIsDark ? t('settings.darkMode', 'Tamna tema aktivirana') : t('settings.lightMode', 'Svijetla tema aktivirana'));
+    showSuccess(newIsDark ? t('settings.darkMode', 'Tamna tema aktivirana') : t('settings.lightMode', 'Svijetla tema aktivirana'));
   };
 
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode);
-    toast.success(t('settings.languageChanged', 'Jezik promijenjen'));
+    showSuccess(t('settings.languageChanged', 'Jezik promijenjen'));
   };
 
   const handleSaveName = async () => {
     if (!tempName.trim()) {
-      toast.error(t('settings.nameRequired', 'Ime je obavezno'));
+      showError(t('settings.nameRequired', 'Ime je obavezno'));
       return;
     }
     
@@ -185,10 +186,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       // Update via Context (also persists to localStorage)
       setDisplayName(tempName.trim());
       setEditingName(false);
-      toast.success(t('settings.nameSaved', 'Ime uspješno spremljeno'));
+      showSuccess(t('settings.nameSaved', 'Ime uspješno spremljeno'));
     } catch (error) {
       console.error('Save name error:', error);
-      toast.error(t('errors.generic', 'Došlo je do greške'));
+      showError(t('errors.generic', 'Došlo je do greške'));
     } finally {
       setSavingName(false);
     }
@@ -204,7 +205,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     setAutoUpdate(enabled);
     setAutoUpdatePreference(enabled);
     if (enabled) {
-      toast.success(t('settings.autoUpdateEnabled', t('toasts.autoUpdateOn')));
+      showSuccess(t('settings.autoUpdateEnabled', t('toasts.autoUpdateOn')));
     } else {
       toast.info(t('settings.autoUpdateDisabled', t('toasts.autoUpdateOff')));
     }
@@ -222,7 +223,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const handleSoundToggle = (enabled: boolean) => {
     setSoundEnabled(enabled);
     setNotificationSoundEnabled(enabled);
-    toast.success(enabled ? t('settings.soundEnabled', 'Zvučne obavijesti uključene') : t('settings.soundDisabled', 'Zvučne obavijesti isključene'));
+    showSuccess(enabled ? t('settings.soundEnabled', 'Zvučne obavijesti uključene') : t('settings.soundDisabled', 'Zvučne obavijesti isključene'));
   };
 
   const handlePushToggle = async (enabled: boolean) => {
@@ -231,9 +232,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       if (granted) {
         setPushEnabled(true);
         setPushNotificationsEnabled(true);
-        toast.success(t('settings.pushEnabled', 'Push obavijesti uključene'));
+        showSuccess(t('settings.pushEnabled', 'Push obavijesti uključene'));
       } else {
-        toast.error(t('settings.pushDenied', 'Preglednik je blokirao push obavijesti'));
+        showError(t('settings.pushDenied', 'Preglednik je blokirao push obavijesti'));
       }
     } else {
       setPushEnabled(false);
@@ -278,10 +279,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
       await exportTextFile(jsonData, `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
 
-      toast.success(t('settings.exportSuccess', 'Backup uspješno izvezen'));
+      showSuccess(t('settings.exportSuccess', 'Backup uspješno izvezen'));
     } catch (err) {
       console.error('Export error:', err);
-      toast.error(t('settings.exportError', 'Greška pri izvozu'));
+      showError(t('settings.exportError', 'Greška pri izvozu'));
     } finally {
       setIsExporting(false);
     }
@@ -356,12 +357,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         setImportResult({ expenses: expenseCount, items: itemCount });
       }
 
-      toast.success(t('settings.importSuccess', 'Podaci uspješno uvezeni'));
+      showSuccess(t('settings.importSuccess', 'Podaci uspješno uvezeni'));
       onDataImported?.();
     } catch (err) {
       console.error('Import error:', err);
       setImportError(err instanceof Error ? err.message : t('settings.importError', 'Greška pri uvozu podataka'));
-      toast.error(t('settings.importError', 'Greška pri uvozu'));
+      showError(t('settings.importError', 'Greška pri uvozu'));
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {
@@ -384,7 +385,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         const { resetLocalData } = await import('@/lib/storage/indexedDB');
         await resetLocalData();
         
-        toast.success(t('settings.resetComplete', 'Podaci uspješno resetirani'));
+        showSuccess(t('settings.resetComplete', 'Podaci uspješno resetirani'));
         onDataImported?.();
       } else if (user) {
         // Cloud mode: Delete expenses, projects, budgets but keep payment sources
@@ -440,7 +441,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         // 6. Delete all budgets
         await supabase.from('budget_plans').delete().eq('user_id', user.id);
         
-        toast.success(t('settings.resetComplete', 'Podaci uspješno resetirani'));
+        showSuccess(t('settings.resetComplete', 'Podaci uspješno resetirani'));
         onDataImported?.();
       }
       
@@ -450,7 +451,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       setShowResetConfirm(false);
     } catch (error) {
       console.error('Reset error:', error);
-      toast.error(t('errors.generic', 'Došlo je do greške'));
+      showError(t('errors.generic', 'Došlo je do greške'));
     } finally {
       setIsResetting(false);
     }
@@ -476,7 +477,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         if (familyMode) localStorage.setItem('family_mode_enabled', familyMode);
         if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         
-        toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
+        showSuccess(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/onboarding';
       } else if (user) {
         // Delete all user data from Supabase tables
@@ -553,12 +554,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         if (familyMode) localStorage.setItem('family_mode_enabled', familyMode);
         if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         
-        toast.success(t('settings.accountDeleted', 'Račun uspješno obrisan'));
+        showSuccess(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/';
       }
     } catch (error) {
       console.error('Delete account error:', error);
-      toast.error(t('errors.generic', 'Došlo je do greške'));
+      showError(t('errors.generic', 'Došlo je do greške'));
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm2(false);
@@ -835,7 +836,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                     className="w-full gap-2 rounded-xl text-destructive hover:text-destructive"
                     onClick={async () => {
                       await appLock.removePin();
-                      toast.success(t('lock.pinRemoved', 'PIN je uklonjen'));
+                      showSuccess(t('lock.pinRemoved', 'PIN je uklonjen'));
                     }}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -979,9 +980,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                                 onClick={async () => {
                                   try {
                                     await navigator.clipboard.writeText(referralUrl);
-                                    toast.success(t('settings.linkCopied', 'Link kopiran!'));
+                                    showSuccess(t('settings.linkCopied', 'Link kopiran!'));
                                   } catch {
-                                    toast.error(t('settings.copyError', 'Greška pri kopiranju'));
+                                    showError(t('settings.copyError', 'Greška pri kopiranju'));
                                   }
                                   setShowShareDialog(false);
                                 }}
@@ -1165,7 +1166,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   checked={aiAssistantEnabled}
                   onCheckedChange={(checked) => {
                     setAiAssistantEnabled(checked);
-                    toast.success(checked 
+                    showSuccess(checked 
                       ? t('settings.aiEnabled', 'AI asistent uključen') 
                       : t('settings.aiDisabled', 'AI asistent isključen')
                     );
@@ -1194,7 +1195,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 checked={simpleModeEnabled}
                 onCheckedChange={(checked) => {
                   setSimpleModeEnabled(checked);
-                  toast.success(checked 
+                  showSuccess(checked 
                     ? t('settings.simpleModeEnabled', 'Jednostavni način uključen') 
                     : t('settings.simpleModeDisabled', 'Puni način vraćen')
                   );
@@ -1226,7 +1227,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                       setShowFamilyDisableConfirm(true);
                     } else {
                       setFamilyModeEnabled(true);
-                      toast.success(t('settings.familyModeEnabled', 'Obiteljski način uključen'));
+                      showSuccess(t('settings.familyModeEnabled', 'Obiteljski način uključen'));
                     }
                   }}
                 />
@@ -1255,7 +1256,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                     checked={businessModeEnabled}
                     onCheckedChange={(checked) => {
                       setBusinessModeEnabled(checked);
-                      toast.success(checked 
+                      showSuccess(checked 
                         ? t('settings.businessModeEnabled', 'Poslovni način uključen') 
                         : t('settings.businessModeDisabled', 'Osobni način vraćen')
                       );
@@ -1303,7 +1304,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 value={currency.code}
                 onValueChange={(value) => {
                   setCurrency(value as CurrencyCode);
-                  toast.success(t('settings.currencyChanged', 'Valuta promijenjena'));
+                  showSuccess(t('settings.currencyChanged', 'Valuta promijenjena'));
                 }}
               >
                 <SelectTrigger className="w-[100px] rounded-xl">
@@ -1341,7 +1342,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 checked={multiCurrencyEnabled}
                 onCheckedChange={(checked) => {
                   setMultiCurrencyEnabled(checked);
-                  toast.success(checked 
+                  showSuccess(checked 
                     ? t('settings.multiCurrencyEnabled', 'Viševalutni način omogućen') 
                     : t('settings.multiCurrencyDisabled', 'Viševalutni način onemogućen'));
                 }}
@@ -1480,7 +1481,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                       await navigator.share({ title: 'V&M Balance', text, url });
                     } else {
                       await navigator.clipboard.writeText(`${text}\n${url}`);
-                      toast.success(t('common.copied', 'Link kopiran!'));
+                      showSuccess(t('common.copied', 'Link kopiran!'));
                     }
                   } catch (e: any) {
                     if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
@@ -1541,7 +1542,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onClick={() => {
                 setFamilyModeEnabled(false);
                 setShowFamilyDisableConfirm(false);
-                toast.success(t('settings.familyModeDisabled', 'Obiteljski način isključen'));
+                showSuccess(t('settings.familyModeDisabled', 'Obiteljski način isključen'));
               }}
             >
               {t('settings.familyDisableConfirm', 'Isključi')}

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { CustomIncomeCategory } from '@/types/customIncomeCategory';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 
 const STORAGE_KEY = 'customIncomeCategories';
 
@@ -41,7 +41,7 @@ export const useCustomIncomeCategories = () => {
     const updated = [newCategory, ...customIncomeCategories];
     setCustomIncomeCategories(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    toast.success('Kategorija prihoda dodana');
+    showSuccess('Kategorija prihoda dodana');
     return newCategory;
   };
 
@@ -54,14 +54,14 @@ export const useCustomIncomeCategories = () => {
     );
     setCustomIncomeCategories(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    toast.success('Kategorija prihoda ažurirana');
+    showSuccess('Kategorija prihoda ažurirana');
   };
 
   const deleteCustomIncomeCategory = async (id: string) => {
     const updated = customIncomeCategories.filter(cat => cat.id !== id);
     setCustomIncomeCategories(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    toast.success('Kategorija prihoda obrisana');
+    showSuccess('Kategorija prihoda obrisana');
   };
 
   return {

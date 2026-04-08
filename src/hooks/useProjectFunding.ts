@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ProjectFunding } from '@/types/project';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export interface ProjectIncomeSource {
@@ -133,14 +133,14 @@ export const useProjectFunding = (projectId: string | null) => {
       };
 
       setFunding(prev => [...prev, newFunding]);
-      toast.success(t('projects.fundingAdded'));
+      showSuccess(t('projects.fundingAdded'));
       return newFunding;
     } catch (error: any) {
       console.error('Error adding funding:', error);
       if (error.code === '23505') {
-        toast.error(t('projects.fundingAlreadyExists'));
+        showError(t('projects.fundingAlreadyExists'));
       } else {
-        toast.error(t('common.error'));
+        showError(t('common.error'));
       }
       return null;
     }
@@ -167,10 +167,10 @@ export const useProjectFunding = (projectId: string | null) => {
           ? { ...f, allocated_amount: allocatedAmount, percentage: percentage || null } 
           : f
       ));
-      toast.success(t('projects.fundingUpdated'));
+      showSuccess(t('projects.fundingUpdated'));
     } catch (error) {
       console.error('Error updating funding:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -184,10 +184,10 @@ export const useProjectFunding = (projectId: string | null) => {
       if (error) throw error;
 
       setFunding(prev => prev.filter(f => f.id !== id));
-      toast.success(t('projects.fundingRemoved'));
+      showSuccess(t('projects.fundingRemoved'));
     } catch (error) {
       console.error('Error deleting funding:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

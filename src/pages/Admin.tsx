@@ -10,7 +10,7 @@ import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, 
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
@@ -137,10 +137,10 @@ const Admin = () => {
       .from('app_settings')
       .upsert({ key: 'billing_enabled', value: enabled as any, updated_at: new Date().toISOString() });
     if (error) {
-      toast.error('Greška pri spremanju postavke');
+      showError('Greška pri spremanju postavke');
     } else {
       setBillingEnabled(enabled);
-      toast.success(enabled ? 'Naplata aktivirana' : 'Naplata deaktivirana');
+      showSuccess(enabled ? 'Naplata aktivirana' : 'Naplata deaktivirana');
     }
     setBillingLoading(false);
   };
@@ -166,10 +166,10 @@ const Admin = () => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
     if (error) {
-      toast.error('Greška pri postavljanju razine');
+      showError('Greška pri postavljanju razine');
     } else {
       setSubscriptions(prev => ({ ...prev, [userId]: tier }));
-      toast.success(`Razina postavljena na ${tier.charAt(0).toUpperCase() + tier.slice(1)}`);
+      showSuccess(`Razina postavljena na ${tier.charAt(0).toUpperCase() + tier.slice(1)}`);
     }
     setSubLoading(null);
   };
@@ -182,7 +182,7 @@ const Admin = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      toast.error(t('toasts.loadBugReportsError'));
+      showError(t('toasts.loadBugReportsError'));
       setLoading(false);
       return;
     }
@@ -228,7 +228,7 @@ const Admin = () => {
       setHasMoreUsers(result?.pagination?.hasMore ?? false);
       setUsersPage(page);
     } catch (err: any) {
-      toast.error(t('toasts.loadUsersError'));
+      showError(t('toasts.loadUsersError'));
       console.error(err);
     }
     setUsersLoading(false);
@@ -241,10 +241,10 @@ const Admin = () => {
       .eq('id', id);
 
     if (error) {
-      toast.error(t('toasts.statusUpdateError'));
+      showError(t('toasts.statusUpdateError'));
     } else {
       setReports(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
-      toast.success(`Status promijenjen u "${statusLabels[newStatus]}"`);
+      showSuccess(`Status promijenjen u "${statusLabels[newStatus]}"`);
     }
   };
 
@@ -255,17 +255,17 @@ const Admin = () => {
         body: { action, userId, role },
       });
       if (error) throw error;
-      toast.success(data?.message || 'Akcija izvršena');
+      showSuccess(data?.message || 'Akcija izvršena');
       await loadUsers();
     } catch (err: any) {
-      toast.error('Greška: ' + (err.message || 'Nepoznata greška'));
+      showError('Greška: ' + (err.message || 'Nepoznata greška'));
     }
     setActionLoading(null);
   };
 
   const sendBroadcastNotification = async () => {
     if (!notifTitle.trim() || !notifMessage.trim()) {
-      toast.error(t('toasts.enterTitleAndMessage'));
+      showError(t('toasts.enterTitleAndMessage'));
       return;
     }
     setSendingNotif(true);
@@ -274,11 +274,11 @@ const Admin = () => {
         body: { title: notifTitle.trim(), message: notifMessage.trim() },
       });
       if (error) throw error;
-      toast.success(`Obavijest poslana ${data?.count || ''} korisnicima`);
+      showSuccess(`Obavijest poslana ${data?.count || ''} korisnicima`);
       setNotifTitle('');
       setNotifMessage('');
     } catch (err: any) {
-      toast.error('Greška: ' + (err.message || 'Nepoznata greška'));
+      showError('Greška: ' + (err.message || 'Nepoznata greška'));
     }
     setSendingNotif(false);
   };
@@ -286,7 +286,7 @@ const Admin = () => {
   const sendReplyToReporter = async (report: BugReport) => {
     const replyText = replyMessages[report.id]?.trim();
     if (!replyText) {
-      toast.error(t('toasts.enterMessage'));
+      showError(t('toasts.enterMessage'));
       return;
     }
     setSendingReply(report.id);
@@ -299,10 +299,10 @@ const Admin = () => {
         },
       });
       if (error) throw error;
-      toast.success(`Poruka poslana korisniku ${report.user_display_name || ''}`);
+      showSuccess(`Poruka poslana korisniku ${report.user_display_name || ''}`);
       setReplyMessages(prev => ({ ...prev, [report.id]: '' }));
     } catch (err: any) {
-      toast.error('Greška: ' + (err.message || 'Nepoznata greška'));
+      showError('Greška: ' + (err.message || 'Nepoznata greška'));
     }
     setSendingReply(null);
   };

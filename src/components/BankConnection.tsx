@@ -8,6 +8,7 @@ import { ParsedTransaction } from '@/lib/csvParsers';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePDFParser } from '@/hooks/usePDFParser';
 import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -50,7 +51,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      toast.error(t('import.selectPDF'));
+      showError(t('import.selectPDF'));
       return;
     }
 
@@ -76,7 +77,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
 
     const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
     if (!isHTMLFile) {
-      toast.error(t('toasts.selectHtmlFile'));
+      showError(t('toasts.selectHtmlFile'));
       return;
     }
 
@@ -86,7 +87,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     if (result && result.transactions.length > 0) {
       setPdfPreviewOpen(true);
     } else if (result && result.transactions.length === 0) {
-      toast.error(t('toasts.noTransactionsInHtml'));
+      showError(t('toasts.noTransactionsInHtml'));
     }
 
     if (htmlInputRef.current) {
@@ -99,7 +100,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error(t('toasts.selectImageFile'));
+      showError(t('toasts.selectImageFile'));
       return;
     }
 
@@ -124,7 +125,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
         if (result && result.transactions.length > 0) {
           setPdfPreviewOpen(true);
         } else if (result && result.transactions.length === 0) {
-          toast.error(t('toasts.noTransactionsInPhoto'));
+          showError(t('toasts.noTransactionsInPhoto'));
         }
       };
       img.src = base64;
@@ -174,7 +175,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       setPartnersDialogOpen(true);
     }
     clearParsedData();
-    toast.success(t('import.importedFromPDF', { count: transactions.length }));
+    showSuccess(t('import.importedFromPDF', { count: transactions.length }));
   };
 
   const handleConfirmImportWithDuplicates = async () => {
@@ -203,7 +204,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     }
     clearParsedData();
     setDuplicateInfo(null);
-    toast.success(t('import.importedTransactions', { count: transactionsToImport.length }));
+    showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
   };
 
   return (

@@ -10,7 +10,7 @@ import { Building2, Save, Loader2, Sparkles, Plus, ArrowLeft, Trash2, Check } fr
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 interface BusinessProfile {
   id?: string;
@@ -139,11 +139,11 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         .update({ is_active: true })
         .eq('id', profileId);
 
-      toast.success(t('business.activated', 'Tvrtka postavljena kao aktivna'));
+      showSuccess(t('business.activated', 'Tvrtka postavljena kao aktivna'));
       loadProfiles();
     } catch (error) {
       console.error('Error setting active profile:', error);
-      toast.error(t('errors.generic', 'Došlo je do greške'));
+      showError(t('errors.generic', 'Došlo je do greške'));
     }
   };
 
@@ -156,11 +156,11 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         .eq('id', profileId);
 
       if (error) throw error;
-      toast.success(t('business.deleted', 'Tvrtka obrisana'));
+      showSuccess(t('business.deleted', 'Tvrtka obrisana'));
       loadProfiles();
     } catch (error) {
       console.error('Error deleting profile:', error);
-      toast.error(t('errors.generic', 'Došlo je do greške'));
+      showError(t('errors.generic', 'Došlo je do greške'));
     }
   };
 
@@ -177,7 +177,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
   const handleAILookup = async () => {
     const query = profile.company_name.trim();
     if (!query || query.length < 2) {
-      toast.error(t('business.aiLookupHint', 'Unesite naziv tvrtke za pretragu'));
+      showError(t('business.aiLookupHint', 'Unesite naziv tvrtke za pretragu'));
       return;
     }
 
@@ -189,11 +189,11 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
 
       if (error) throw error;
       if (data?.error) {
-        toast.error(data.error);
+        showError(data.error);
         return;
       }
       if (!data?.found) {
-        toast.error(t('business.notFound', 'Tvrtka nije pronađena'));
+        showError(t('business.notFound', 'Tvrtka nije pronađena'));
         return;
       }
 
@@ -219,10 +219,10 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         legal_form: prev.legal_form || data.legal_form || '',
       }));
       const sourceLabel = data.source === 'sudreg' ? 'sudskog registra' : 'AI baze';
-      toast.success(t('business.aiFilledSuccess', `Podaci popunjeni iz ${sourceLabel}`).replace('{{source}}', sourceLabel));
+      showSuccess(t('business.aiFilledSuccess', `Podaci popunjeni iz ${sourceLabel}`).replace('{{source}}', sourceLabel));
     } catch (error) {
       console.error('AI lookup error:', error);
-      toast.error(t('business.aiLookupError', 'Greška pri AI pretraživanju'));
+      showError(t('business.aiLookupError', 'Greška pri AI pretraživanju'));
     } finally {
       setAiLoading(false);
     }
@@ -231,7 +231,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
   const handleSave = async () => {
     if (!user) return;
     if (!profile.company_name.trim()) {
-      toast.error(t('business.nameRequired', 'Naziv tvrtke je obavezan'));
+      showError(t('business.nameRequired', 'Naziv tvrtke je obavezan'));
       return;
     }
 
@@ -285,12 +285,12 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         if (error) throw error;
       }
 
-      toast.success(t('business.saved', 'Poslovni profil spremljen'));
+      showSuccess(t('business.saved', 'Poslovni profil spremljen'));
       setView('list');
       loadProfiles();
     } catch (error) {
       console.error('Error saving business profile:', error);
-      toast.error(t('errors.generic', 'Došlo je do greške'));
+      showError(t('errors.generic', 'Došlo je do greške'));
     } finally {
       setSaving(false);
     }

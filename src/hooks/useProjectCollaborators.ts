@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProjectCollaborator, ProjectCollaboratorInput } from '@/types/projectCollaborator';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export const useProjectCollaborators = (projectId: string | null) => {
@@ -67,11 +67,11 @@ export const useProjectCollaborators = (projectId: string | null) => {
 
       const newItem = { ...data, total_price: Number(data.total_price), paid_amount: Number(data.paid_amount || 0) };
       setCollaborators(prev => [newItem, ...prev]);
-      toast.success(t('collaborators.added', 'Suradnik dodan'));
+      showSuccess(t('collaborators.added', 'Suradnik dodan'));
       return newItem;
     } catch (error) {
       console.error('Error adding collaborator:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
       return null;
     }
   };
@@ -97,10 +97,10 @@ export const useProjectCollaborators = (projectId: string | null) => {
       if (error) throw error;
 
       setCollaborators(prev => prev.map(c => c.id === collaborator.id ? { ...collaborator } : c));
-      toast.success(t('collaborators.updated', 'Suradnik ažuriran'));
+      showSuccess(t('collaborators.updated', 'Suradnik ažuriran'));
     } catch (error) {
       console.error('Error updating collaborator:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -114,10 +114,10 @@ export const useProjectCollaborators = (projectId: string | null) => {
       if (error) throw error;
 
       setCollaborators(prev => prev.filter(c => c.id !== id));
-      toast.success(t('collaborators.deleted', 'Suradnik uklonjen'));
+      showSuccess(t('collaborators.deleted', 'Suradnik uklonjen'));
     } catch (error) {
       console.error('Error deleting collaborator:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

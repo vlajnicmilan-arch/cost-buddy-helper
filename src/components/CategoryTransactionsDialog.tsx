@@ -14,7 +14,7 @@ import { Pencil, Trash2, Tag, CheckSquare, ShoppingCart } from 'lucide-react';
 import { TransactionItemsExpander } from './TransactionItemsExpander';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 interface CategoryTransactionsDialogProps {
@@ -97,7 +97,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
       }
     }
     
-    toast.success(t('transactions.categoryChanged', { count: successCount }));
+    showSuccess(t('transactions.categoryChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -118,7 +118,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
       }
     }
     
-    toast.success(t('transactions.paymentSourceChanged', { count: successCount }));
+    showSuccess(t('transactions.paymentSourceChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -135,7 +135,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
       }
     }
     
-    toast.success(t('transactions.deleted', { count: successCount }));
+    showSuccess(t('transactions.deleted', { count: successCount }));
     clearSelection();
   };
 
@@ -146,10 +146,10 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
         category: newCategory
       });
       const newCatInfo = getCategoryInfo(newCategory);
-      toast.success(t('transactions.categoryChangedTo', { name: newCatInfo.name }));
+      showSuccess(t('transactions.categoryChangedTo', { name: newCatInfo.name }));
       setChangingCategoryId(null);
     } catch (error) {
-      toast.error(t('transactions.categoryChangeError'));
+      showError(t('transactions.categoryChangeError'));
     }
   };
 

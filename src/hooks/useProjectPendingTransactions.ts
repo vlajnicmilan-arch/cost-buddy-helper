@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export interface ProjectPendingTransaction {
@@ -64,7 +64,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
       setPendingTransactions(transactions);
     } catch (error) {
       console.error('Error fetching pending project transactions:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -84,10 +84,10 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
       if (error) throw error;
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
-      toast.success(t('projects.transactionApproved', 'Transakcija odobrena'));
+      showSuccess(t('projects.transactionApproved', 'Transakcija odobrena'));
     } catch (error) {
       console.error('Error approving transaction:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 
@@ -101,10 +101,10 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
       if (error) throw error;
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
-      toast.success(t('projects.transactionRejected', 'Transakcija odbijena'));
+      showSuccess(t('projects.transactionRejected', 'Transakcija odbijena'));
     } catch (error) {
       console.error('Error rejecting transaction:', error);
-      toast.error(t('common.error'));
+      showError(t('common.error'));
     }
   };
 

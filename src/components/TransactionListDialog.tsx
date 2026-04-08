@@ -14,7 +14,7 @@ import { hr } from 'date-fns/locale';
 import { Pencil, Trash2, TrendingUp, TrendingDown, CheckSquare, Eye, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 import { TransactionItemsExpander } from './TransactionItemsExpander';
 import { ImportBatchDialog } from './ImportBatchDialog';
 
@@ -135,7 +135,7 @@ export const TransactionListDialog = ({
       }
     }
     
-    toast.success(t('transactions.categoryChanged', { count: successCount }));
+    showSuccess(t('transactions.categoryChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -156,7 +156,7 @@ export const TransactionListDialog = ({
       }
     }
     
-    toast.success(t('transactions.paymentSourceChanged', { count: successCount }));
+    showSuccess(t('transactions.paymentSourceChanged', { count: successCount }));
     clearSelection();
   };
 
@@ -173,7 +173,7 @@ export const TransactionListDialog = ({
       }
     }
     
-    toast.success(t('transactions.deleted', { count: successCount }));
+    showSuccess(t('transactions.deleted', { count: successCount }));
     clearSelection();
   };
 

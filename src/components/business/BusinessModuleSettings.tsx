@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import {
   INDUSTRIES, MODULES, getIndustry, getDefaultModules, getAvailableModules,
@@ -92,9 +92,9 @@ export const BusinessModuleSettings = () => {
 
     setSaving(false);
     if (error) {
-      toast.error(t('businessModules.saveError'));
+      showError(t('businessModules.saveError'));
     } else {
-      toast.success(t('businessModules.saved'));
+      showSuccess(t('businessModules.saved'));
     }
   };
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Expense } from '@/types/expense';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 export const usePendingTransactions = (incomeSourceId: string | null) => {
   const { user } = useAuth();
@@ -35,7 +35,7 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       setPendingTransactions(transactions);
     } catch (error) {
       console.error('Error fetching pending transactions:', error);
-      toast.error('Greška pri učitavanju transakcija na čekanju');
+      showError('Greška pri učitavanju transakcija na čekanju');
     } finally {
       setLoading(false);
     }
@@ -55,10 +55,10 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       if (error) throw error;
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
-      toast.success('Transakcija odobrena');
+      showSuccess('Transakcija odobrena');
     } catch (error) {
       console.error('Error approving transaction:', error);
-      toast.error('Greška pri odobravanju transakcije');
+      showError('Greška pri odobravanju transakcije');
     }
   };
 
@@ -72,10 +72,10 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       if (error) throw error;
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
-      toast.success('Transakcija odbijena');
+      showSuccess('Transakcija odbijena');
     } catch (error) {
       console.error('Error rejecting transaction:', error);
-      toast.error('Greška pri odbijanju transakcije');
+      showError('Greška pri odbijanju transakcije');
     }
   };
 

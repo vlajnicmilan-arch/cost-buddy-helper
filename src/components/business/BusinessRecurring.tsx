@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 interface RecurringTx {
@@ -51,7 +51,7 @@ export const BusinessRecurring = () => {
 
   const deleteItem = async (id: string) => {
     await supabase.from('recurring_transactions').delete().eq('id', id);
-    toast.success(t('common.deleted', 'Obrisano'));
+    showSuccess(t('common.deleted', 'Obrisano'));
     fetchItems();
   };
 
