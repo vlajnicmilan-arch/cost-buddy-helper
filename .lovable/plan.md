@@ -1,34 +1,38 @@
 
 
-## Problem
+## Animirana povratna informacija - zelena kvačica / crveni X
 
-Landing stranica (`src/pages/Landing.tsx`) koristi generičku **Wallet ikonu** s plavo-bijelim gradijentom umjesto pravog loga (`src/assets/logo.png`). To se pojavljuje na **3 mjesta**:
+### Što radimo
+Zamjenjujemo sve `toast.success()` i `toast.error()` pozive s animiranom ikonom na sredini ekrana - zelena kvačica za uspjeh, crveni X za grešku. Ikona se pojavi, animira i nestane nakon ~1.2 sekunde. Framer-motion je već instaliran.
 
-1. **Navigacija** (linija 57-59) - gornji lijevi kut
-2. **Footer** (linija 447-449) - donji dio stranice  
-3. **APK Download sekcija** (linija 499-501) - velika ikona na sredini
+### Koraci
 
-## Plan
+**1. Kreirati globalni store `src/hooks/useStatusFeedback.ts`**
+- Zustand-style pattern (listener array + memoryState, kao postojeći `use-toast.ts`)
+- Eksportira `showSuccess(message?)` i `showError(message?)` funkcije
+- State: `{ type: 'success'|'error', message?, visible: boolean }`
+- Auto-hide nakon 1200ms
 
-### Izmjena: `src/pages/Landing.tsx`
+**2. Kreirati komponentu `src/components/StatusFeedback.tsx`**
+- Fixed overlay na sredini ekrana, `pointer-events-none`, visoki z-index
+- Framer-motion `AnimatePresence` sa scale (0→1.2→1) + fade out
+- Zelena `CheckCircle2` ikona (64px) za success
+- Crvena `XCircle` ikona (64px) + blagi shake za error
+- Opcionalni tekst ispod ikone (muted, mali font)
 
-1. Dodati import loga na vrh datoteke:
-   ```typescript
-   import logo from '@/assets/logo.png';
-   ```
+**3. Montirati u `src/App.tsx`**
+- Dodati `<StatusFeedback />` izvan routera (globalno vidljiv)
 
-2. Zamijeniti sve 3 Wallet ikone s pravom `<img>` oznakom loga:
+**4. Zamijeniti toast pozive (~68 datoteka)**
+- `toast.success(msg)` → `showSuccess(msg)`
+- `toast.error(msg)` → `showError(msg)`
+- Zadržati `toast()` pozive bez `.success`/`.error` (info toasts) ako ih ima
+- Radimo postupno po grupama datoteka
 
-   - **Nav** (linija 57-59): zamijeniti gradient div + Wallet ikonu s:
-     ```tsx
-     <div className="w-9 h-9 rounded-xl overflow-hidden">
-       <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
-     </div>
-     ```
+### Što NE radimo
+- Ne brišemo Sonner/Toaster komponente (mogu trebati za info poruke)
+- Ne diramo npm pakete - sve koristi postojeće biblioteke
 
-   - **Footer** (linija 447-449): isto, samo manji (w-8 h-8)
-
-   - **APK sekcija** (linija 499-501): isto, samo veći (w-20 h-20, rounded-3xl)
-
-Nikakve druge datoteke se ne mijenjaju. Ovo je ista `<img>` struktura koja se već koristi u `HomeHeader.tsx` i `PageHeader.tsx`.
+### Napomena
+Ovo je čisto frontend promjena - nakon publishanja automatski se ažurira na mobitelu, bez ponovnog builda APK-a.
 
