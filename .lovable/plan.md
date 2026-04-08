@@ -1,32 +1,54 @@
 
 
-## Dodavanje događaja u Google/mobilni kalendar
+## Spremanje slika računa: lokalno na uređaj + dijeljenje u vlastiti cloud
 
-### Kako funkcionira
-Aplikacija već ima **ICS export** (`src/lib/icsExport.ts`) koji generira `.ics` datoteke. ICS format je univerzalni standard koji otvaraju Google Calendar, Apple Calendar, Outlook i svi mobilni kalendari. Samo trebamo dodati gumb za izvoz na odgovarajućim mjestima.
+### Koncept
 
-### Koraci
+Slike računa spremaju se **uvijek lokalno na uređaj**. Korisnik dodatno može podijeliti/spremiti sliku u **vlastiti cloud** (Google Drive, iCloud, OneDrive) putem nativnog Share dijaloga — bez ikakvog troška za aplikaciju.
 
-**1. Dodati gumb "Dodaj u kalendar" u `CalendarDayDetail.tsx`**
-- Za svaki reminder/recurring/transaction event, dodati ikonu kalendara (CalendarPlus)
-- Klik generira `.ics` datoteku za taj jedan događaj i pokreće download/share
-- Na mobitelu, otvaranje `.ics` datoteke automatski nudi izbor kalendara (Google, Samsung, Apple itd.)
+```text
+Korisnik fotografira račun
+       ↓
+  AI parsira podatke (privremeno, cloud)
+       ↓
+  Slika se sprema LOKALNO na uređaj (automatski)
+       ↓
+  Korisnik može:
+    [Pregledaj]  →  prikazuje sliku iz uređaja
+    [Spremi u oblak]  →  otvara nativni Share dialog
+                         (Google Drive, iCloud, OneDrive, email...)
+```
 
-**2. Dodati opciju "Izvezi sve" u `Calendar.tsx`**
-- Gumb u headeru stranice za izvoz svih događaja prikazanog mjeseca u jednu `.ics` datoteku
-- Koristi postojeću `downloadICS()` funkciju
+### Koraci implementacije
 
-**3. Prilagoditi `icsExport.ts` za CalendarEvent tip**
-- Dodati novu helper funkciju `downloadCalendarEventICS(event: CalendarEvent)` koja mapira CalendarEvent na ReminderEvent format
-- Transakcije dobivaju iznos u opisu, reminderi zadržavaju opis
+**1. `useReceiptScanner.ts` — ukloniti cloud upload, koristiti samo lokalno**
+- Zamijeniti `uploadReceiptImage` da uvijek koristi `LocalFileCache.saveReceiptImage()`
+- Na nativnoj platformi: sprema u `@capacitor/filesystem` (receipts mapa)
+- Na webu/PWA: sprema u IndexedDB kao base64
+- `receipt_url` format: `local:receipts/receipt_123.jpg`
 
-### Rezultat
-- Korisnik klikne ikonu kalendara pored stavke → otvara se `.ics` → telefon pita "Dodaj u Google Calendar / Apple Calendar?"
-- Na webu, preuzima se datoteka koju korisnik može dvoklikom otvoriti u Outlook/Google Calendar
-- Nativni file export sustav (već implementiran) automatski koristi Share dialog na Capacitor platformi
+**2. `TransactionDetailDialog.tsx` — prikaz lokalne slike + gumb "Spremi u oblak"**
+- Prepoznati `local:` prefix → učitati base64 s uređaja putem `LocalFileCache.readReceiptImage()`
+- Dodati gumb "Spremi u oblak" koji koristi postojeći `useNativeShare` hook
+- Share šalje sliku kao file attachment → korisnik bira odredište (Drive, iCloud, itd.)
+- Na webu: fallback na download datoteke
 
-### Bez promjena
-- Nema novih npm paketa
-- Nema baze podataka promjena
-- Koristi postojeću infrastrukturu (`icsExport.ts` + `fileExport.ts`)
+**3. `useExpenseCRUD.ts` — brisanje lokalne slike pri brisanju transakcije**
+- Provjeriti `local:` prefix na `receipt_url`
+- Obrisati datoteku s uređaja putem `LocalFileCache.deleteReceiptImage()`
+
+**4. Postavke — opcija za čišćenje cache-a slika**
+- U `SettingsDialog.tsx` dodati "Očisti spremljene slike računa" s prikazom zauzetog prostora
+
+### Što se NE mijenja
+- AI skeniranje i parsiranje ostaje identično
+- Nema novih tablica, migracija ni Stripe proizvoda
+- Postojeći `receipts` storage bucket ostaje za legacy podatke
+
+### Tehnički detalji
+
+Koriste se već postojeći hookovi:
+- `useLocalFileCache.ts` — Capacitor Filesystem za native
+- `useNativeShare.ts` — nativni Share dialog za dijeljenje u cloud
+- `useLocalStorage.ts` — IndexedDB/Preferences za web fallback
 
