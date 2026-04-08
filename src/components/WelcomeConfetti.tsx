@@ -74,6 +74,7 @@ export const WelcomeConfetti = ({ displayName, onComplete }: WelcomeConfettiProp
       >
         {/* Confetti */}
         {showConfetti && (
+          <Suspense fallback={null}>
           <Confetti
             width={windowSize.width}
             height={windowSize.height}
