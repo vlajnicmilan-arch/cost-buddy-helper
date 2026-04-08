@@ -12,6 +12,16 @@ interface ReminderEvent {
   type?: string;
 }
 
+export interface CalendarEventForICS {
+  id: string;
+  title: string;
+  description?: string;
+  date: string; // YYYY-MM-DD or ISO
+  amount?: number;
+  type?: string;
+  source?: string;
+}
+
 function formatICSDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
@@ -57,4 +67,26 @@ export function generateICS(events: ReminderEvent[]): string {
 export async function downloadICS(events: ReminderEvent[], filename = 'reminders.ics'): Promise<void> {
   const icsContent = generateICS(events);
   await exportTextFile(icsContent, filename, 'text/calendar');
+}
+
+function mapCalendarEventToReminder(event: CalendarEventForICS): ReminderEvent {
+  const desc = [event.description, event.amount != null ? `Iznos: ${event.amount}` : ''].filter(Boolean).join(' • ');
+  return {
+    id: event.id,
+    title: event.title,
+    description: desc || undefined,
+    remind_at: event.date.includes('T') ? event.date : `${event.date}T09:00:00`,
+    type: event.type || 'custom',
+  };
+}
+
+export async function downloadCalendarEventICS(event: CalendarEventForICS): Promise<void> {
+  const reminder = mapCalendarEventToReminder(event);
+  const safeName = event.title.replace(/[^a-zA-Z0-9\u00C0-\u024F]/g, '_').substring(0, 30);
+  await downloadICS([reminder], `${safeName}.ics`);
+}
+
+export async function downloadCalendarEventsICS(events: CalendarEventForICS[], filename = 'calendar.ics'): Promise<void> {
+  const reminders = events.map(mapCalendarEventToReminder);
+  await downloadICS(reminders, filename);
 }

@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Download } from 'lucide-react';
+import { downloadCalendarEventsICS } from '@/lib/icsExport';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -78,7 +80,21 @@ const Calendar = () => {
 
   return (
     <div className="min-h-dvh bg-background pb-24">
-      <PageHeader title={t('calendar.title', 'Kalendar')} />
+      <PageHeader title={t('calendar.title', 'Kalendar')} rightContent={
+        <Button variant="ghost" size="icon" onClick={async () => {
+          const allEvents = Object.values(eventsByDate).flat();
+          if (!allEvents.length) return;
+          try {
+            await downloadCalendarEventsICS(
+              allEvents.map(e => ({ id: e.id, title: e.title, description: e.description, date: e.date, amount: e.amount, type: e.type, source: e.source })),
+              `kalendar-${format(currentMonth, 'yyyy-MM')}.ics`
+            );
+            showSuccess(t('calendar.monthExported', 'Mjesec izvezen'));
+          } catch { showError('Greška'); }
+        }}>
+          <Download className="w-5 h-5" />
+        </Button>
+      } />
 
       <div className="max-w-lg mx-auto px-4 pt-4">
         {/* Month navigation */}
