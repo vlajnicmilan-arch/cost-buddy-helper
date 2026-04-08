@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus, FolderKanban, PiggyBank, MapPin, X, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
-import { Category, CATEGORIES, PaymentSource, PAYMENT_SOURCES, ReceiptItem, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
+import { Category, CATEGORIES, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { CustomIncomeCategory } from '@/types/customIncomeCategory';
