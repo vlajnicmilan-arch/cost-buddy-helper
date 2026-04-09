@@ -300,7 +300,24 @@ const Index = () => {
     }
   }, [importFromCSV, recurringTransactions, isBusinessMode, findMatches]);
 
-  // Confirm matched recurring → advance next_due_date
+  // Handle replacing auto-generated recurring transactions with bank statement data
+  const handleReplaceAutoGen = useCallback(async (replacements: { tx: any; existingId: string }[]) => {
+    for (const { tx, existingId } of replacements) {
+      const existing = allExpenses.find(e => e.id === existingId);
+      if (!existing) continue;
+      const updated: Expense = {
+        ...existing,
+        description: tx.description || existing.description,
+        date: tx.date instanceof Date ? tx.date : new Date(tx.date),
+        merchant_name: tx.merchant_name || existing.merchant_name,
+        payment_source: tx.payment_source || existing.payment_source,
+        note: existing.note ? existing.note.replace('(auto)', '(bankovni izvod)') : '(bankovni izvod)',
+      };
+      await updateExpense(updated);
+    }
+  }, [allExpenses, updateExpense]);
+
+
   const handleRecurringMatchConfirm = useCallback(async (selectedIds: string[]) => {
     for (const id of selectedIds) {
       const rec = recurringTransactions.find(r => r.id === id);
