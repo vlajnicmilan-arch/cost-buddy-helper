@@ -366,14 +366,16 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col min-h-0"
             >
-              {(duplicateCount > 0 || fuzzyCount > 0) && (
+              {(duplicateCount > 0 || fuzzyCount > 0 || autoGenCount > 0) && (
                 <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col gap-2 text-amber-700 dark:text-amber-400">
                   <div className="flex items-center gap-2">
                     <Copy className="w-4 h-4 flex-shrink-0" />
                     <span className="text-xs font-medium">
                       {duplicateCount > 0 && `${duplicateCount} sigurnih duplikata`}
-                      {duplicateCount > 0 && fuzzyCount > 0 && ', '}
-                      {fuzzyCount > 0 && `${fuzzyCount} mogućih (±3 dana)`}
+                      {duplicateCount > 0 && (fuzzyCount > 0 || autoGenCount > 0) && ', '}
+                      {fuzzyCount > 0 && `${fuzzyCount} mogućih (2/3 kriterija)`}
+                      {fuzzyCount > 0 && autoGenCount > 0 && ', '}
+                      {autoGenCount > 0 && `${autoGenCount} auto-generiranih za zamjenu`}
                       {' — strogi automatski preskočeni'}
                     </span>
                   </div>
@@ -452,27 +454,35 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
                     const categoryInfo = getCategoryInfo(tx.category);
                     const isStrict = duplicateIndices.has(index);
                     const isFuzzy = fuzzyDuplicateIndices.has(index);
+                    const isAutoGen = autoGenIndices.has(index);
                     return (
                       <motion.div
                         key={index}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.02 }}
-                        onClick={() => toggleTransaction(index)}
+                        onClick={() => !isAutoGen && toggleTransaction(index)}
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-                          isStrict && !selectedIndices.has(index)
-                            ? 'bg-destructive/5 border border-destructive/20 opacity-50'
-                            : isFuzzy && !selectedIndices.has(index)
-                              ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
-                              : selectedIndices.has(index) 
-                                ? 'bg-muted/50 border border-primary/20' 
-                                : 'bg-muted/20 border border-transparent opacity-50'
+                          isAutoGen
+                            ? 'bg-primary/5 border border-primary/20'
+                            : isStrict && !selectedIndices.has(index)
+                              ? 'bg-destructive/5 border border-destructive/20 opacity-50'
+                              : isFuzzy && !selectedIndices.has(index)
+                                ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
+                                : selectedIndices.has(index) 
+                                  ? 'bg-muted/50 border border-primary/20' 
+                                  : 'bg-muted/20 border border-transparent opacity-50'
                         }`}
                       >
-                        <Checkbox
-                          checked={selectedIndices.has(index)}
-                          onCheckedChange={() => toggleTransaction(index)}
-                        />
+                        {!isAutoGen && (
+                          <Checkbox
+                            checked={selectedIndices.has(index)}
+                            onCheckedChange={() => toggleTransaction(index)}
+                          />
+                        )}
+                        {isAutoGen && (
+                          <span className="text-xs">🔄</span>
+                        )}
                         <span className="text-lg">{categoryInfo.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -486,7 +496,12 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
                             )}
                             {isFuzzy && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
-                                ±3 dana?
+                                Mogući duplikat
+                              </Badge>
+                            )}
+                            {isAutoGen && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/40 text-primary shrink-0">
+                                Zamjena
                               </Badge>
                             )}
                           </div>
