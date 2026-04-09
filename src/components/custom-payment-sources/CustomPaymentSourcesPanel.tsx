@@ -120,7 +120,6 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
       showError(t('paymentSources.correctionError', 'Greška pri korekciji salda'));
     }
   };
-  };
 
   const handleSave = async (data: { name: string; icon: string; color: string; balance: number; description?: string }) => {
     if (editingSource) {
