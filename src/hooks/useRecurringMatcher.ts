@@ -52,7 +52,7 @@ function localMatch(
 
     const rAmount = Math.abs(r.amount);
     const amountDiff = Math.abs(txAmount - rAmount) / Math.max(rAmount, 0.01);
-    if (amountDiff > 0.05) continue;
+    if (amountDiff > 0.001) continue; // Iznos mora biti identičan (samo floating point tolerancija)
 
     const rDesc = r.description.toLowerCase().trim();
     const rMerchant = (r.merchant_name || '').toLowerCase().trim();

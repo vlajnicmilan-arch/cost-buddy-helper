@@ -43,14 +43,23 @@ ${recList}
 Za svaki match vrati:
 - transaction_index (redni broj transakcije, 1-based)
 - recurring_index (redni broj ponavljajuće obveze, 1-based)  
-- confidence: "high" ako su opis i iznos gotovo identični, "medium" ako je semantički match
+- confidence: "high" ako su opis i iznos identični, "medium" ako je semantički match ali isti iznos
 
-Pravila:
-- Iznos mora biti identičan ili vrlo blizu (±5%)
-- Tip (expense/income) mora se poklapati
-- Opis ne mora biti identičan ali mora semantički odgovarati (npr. "Stanarina" = "Najam stana" = "Rent Leko")
-- Datum bi trebao biti blizu next_due_date (±10 dana), ali nije obavezan
-- Svaka transakcija može matchati najviše jednu ponavljajuću obvezu
+STROGA PRAVILA — NE SMIJEŠ KRŠITI:
+1. Iznos MORA biti IDENTIČAN. Npr. 9.86 ≠ 5.00, 0.40 ≠ 0.21. Čak i mala razlika znači da NIJE match.
+2. Tip (expense/income) MORA se poklapati. Expense ≠ income.
+3. Opis mora semantički odgovarati — mora postojati logička veza između opisa transakcije i ponavljajuće obveze.
+4. Ako nisi 100% siguran, NE matchaj. Vrati prazan array []. Bolje je propustiti 10 točnih matcheva nego dati 1 krivi.
+5. Svaka transakcija može matchati najviše jednu ponavljajuću obvezu.
+
+PRIMJERI KOJI NISU MATCH:
+- "Osiguranje kredita" (9.86€) i "Parking" (5.00€) → NIJE match (različit iznos i opis)
+- "Naknada za trajni nalog" (0.40€) i "Naknada" (0.21€) → NIJE match (različit iznos)
+- "Režije" (150€) i "Režije" (145€) → NIJE match (različit iznos)
+
+PRIMJERI KOJI JESU MATCH:
+- "Stanarina" (350.00€) i "Najam stana" (350.00€) → JEST match (identičan iznos, semantički sličan opis)
+- "Netflix" (13.99€) i "Netflix pretplata" (13.99€) → JEST match (identičan iznos, isti servis)
 
 VAŽNO: Odgovori ISKLJUČIVO s JSON arrayem. Bez dodatnog teksta.
 Ako nema matcheva, vrati: []
@@ -65,10 +74,10 @@ Primjer: [{"transaction_index": 1, "recurring_index": 2, "confidence": "high"}]`
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: "Ti si analitičar financijskih transakcija. Odgovaraj isključivo JSON arrayem." },
+          { role: "system", content: "Ti si precizan analitičar financijskih transakcija. Odgovaraš isključivo JSON arrayem. NIKADA ne haluciniraj — koristi SAMO podatke koji su ti dani. Ako iznosi nisu identični, to NIJE match. Bolje je vratiti prazan array nego dati krivi match." },
           { role: "user", content: prompt },
         ],
-        temperature: 0.1,
+        temperature: 0,
       }),
     });
 
