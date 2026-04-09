@@ -19,6 +19,20 @@ export const useDeepLinks = () => {
           try {
             const url = new URL(event.url);
             const path = url.pathname;
+            const params = new URLSearchParams(url.search || '');
+            const hashParams = new URLSearchParams(url.hash?.replace('#', '') || '');
+
+            // Skip OAuth callback URLs — handled by useNativeOAuth
+            const isOAuthCallback =
+              params.has('code') ||
+              hashParams.has('access_token') ||
+              params.has('error_description') ||
+              hashParams.has('error_description');
+
+            if (isOAuthCallback) {
+              console.log('[DeepLink] Skipping OAuth callback (handled by useNativeOAuth)');
+              return;
+            }
 
             // Match known deep link patterns
             const patterns = [

@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://vmbalance.com?forceHideBadge=true',
     cleartext: true,
-    allowNavigation: ['vmbalance.com', 'www.vmbalance.com', 'cost-buddy-helper.lovable.app'],
+    allowNavigation: ['vmbalance.com', 'www.vmbalance.com', 'cost-buddy-helper.lovable.app', 'accounts.google.com', 'appleid.apple.com'],
   },
   plugins: {
     SplashScreen: {

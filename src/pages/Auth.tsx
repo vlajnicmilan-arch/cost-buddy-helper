@@ -12,6 +12,7 @@ import { z } from 'zod';
 import logo from '@/assets/logo.png';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { useStorage } from '@/contexts/StorageContext';
+import { useNativeOAuth } from '@/hooks/useNativeOAuth';
 import { lovable } from '@/integrations/lovable/index';
 
 const authSchema = z.object({
@@ -41,6 +42,7 @@ const Auth = () => {
   const location = useLocation();
   const { storageMode, setStorageMode } = useStorage();
   const { t } = useTranslation();
+  const { signInWithOAuth: nativeOAuth, isNative } = useNativeOAuth();
   
   // Auto-switch to signup mode if navigated with mode: 'signup'
   useEffect(() => {
@@ -601,12 +603,26 @@ const Auth = () => {
             onClick={async () => {
               setLoading(true);
               try {
-                const { error } = await lovable.auth.signInWithOAuth("google", {
-                  redirect_uri: window.location.origin,
-                });
-                if (error) {
-                  showError('Greška pri Google prijavi');
-                  console.error('Google OAuth error:', error);
+                if (isNative) {
+                  // Native: use in-app browser + deep link callback
+                  const { error } = await nativeOAuth('google');
+                  if (error) {
+                    if (!error.message.includes('cancelled')) {
+                      showError('Greška pri Google prijavi');
+                      console.error('Google OAuth error:', error);
+                    }
+                  } else {
+                    if (!storageMode) setStorageMode('cloud');
+                  }
+                } else {
+                  // Web: use Lovable managed OAuth
+                  const { error } = await lovable.auth.signInWithOAuth("google", {
+                    redirect_uri: window.location.origin,
+                  });
+                  if (error) {
+                    showError('Greška pri Google prijavi');
+                    console.error('Google OAuth error:', error);
+                  }
                 }
               } catch (err) {
                 showError('Greška pri Google prijavi');
@@ -634,12 +650,24 @@ const Auth = () => {
             onClick={async () => {
               setLoading(true);
               try {
-                const { error } = await lovable.auth.signInWithOAuth("apple", {
-                  redirect_uri: window.location.origin,
-                });
-                if (error) {
-                  showError('Greška pri Apple prijavi');
-                  console.error('Apple OAuth error:', error);
+                if (isNative) {
+                  const { error } = await nativeOAuth('apple');
+                  if (error) {
+                    if (!error.message.includes('cancelled')) {
+                      showError('Greška pri Apple prijavi');
+                      console.error('Apple OAuth error:', error);
+                    }
+                  } else {
+                    if (!storageMode) setStorageMode('cloud');
+                  }
+                } else {
+                  const { error } = await lovable.auth.signInWithOAuth("apple", {
+                    redirect_uri: window.location.origin,
+                  });
+                  if (error) {
+                    showError('Greška pri Apple prijavi');
+                    console.error('Apple OAuth error:', error);
+                  }
                 }
               } catch (err) {
                 showError('Greška pri Apple prijavi');
