@@ -1,36 +1,40 @@
 
 
-# Plan: Popravka korekcije salda
+# Plan: Strogi iznos + anti-halucinacija za recurring matcher
 
-## Pronađeni problemi
+## Ključna promjena
 
-1. **Nema error handlinga** — insert korekcijske transakcije može tiho propasti
-2. **Zastarjeli podaci (stale state)** — saldo se čita kad se dialog otvori, a može se promijeniti do spremanja
-3. **Nema refresha** — korekcijska transakcija se ne pojavi u UI-u odmah
-4. **Prepisivanje polja** — `updateCustomPaymentSource` šalje `name/icon/color` nepotrebno
+Iznosi moraju biti **identični** (ne ±5%). Banka iskazuje naknade kao zasebne transakcije, pa nema razloga za toleranciju.
 
-## Rješenje
+## Promjene
 
-### Datoteka: `src/components/custom-payment-sources/CustomPaymentSourcesPanel.tsx`
+### 1. Edge function — `supabase/functions/match-recurring/index.ts`
 
-**handleBalanceCorrection:**
-- Dohvatiti svježi saldo iz baze (`supabase.from('custom_payment_sources').select('balance').eq('id', ...)`) prije računanja razlike
-- Slati samo `{ balance: newBalance }` u `updateCustomPaymentSource` — bez name/icon/color
-- Dodati `try/catch` oko insert-a s `showError()` toast-om ako padne
-- Ako insert padne, revertati balance natrag na stari
-- Pozvati `refetch()` (expenses) nakon uspješne korekcije da se transakcija odmah prikaže
+- **`temperature: 0`** (umjesto 0.1)
+- **System prompt**: eksplicitna anti-halucinacijska pravila
+- **User prompt**: 
+  - Iznos MORA biti identičan (ne "±5%")
+  - Negativni primjeri (što NIJE match)
+  - "Ako nisi siguran, NE matchaj — vrati prazan array"
+- Zadržati isti model i format odgovora
 
-### Datoteka: `src/components/custom-payment-sources/BalanceCorrectionDialog.tsx`
+### 2. Lokalni matcher — `src/hooks/useRecurringMatcher.ts`
 
-- Bez promjena — dialog sam po sebi radi ispravno
+- Linija 55: promijeniti `amountDiff > 0.05` → `amountDiff > 0.001` (praktički identičan iznos, samo floating point tolerancija)
 
-### Props promjena
+### 3. Post-validacija AI rezultata — `src/hooks/useRecurringMatcher.ts`
 
-Komponenta treba primiti `onRefetchExpenses` callback koji se poziva nakon uspješne korekcije. Proslijediti ga iz roditelja (Index.tsx ili tko god renderira panel).
+Prije prihvaćanja AI matcha (linije 151-164), dodati provjeru:
+- **Iznos**: `Math.abs(tx.amount) === Math.abs(rec.amount)` (tolerancija ±0.1% za zaokruživanje)
+- **Tip**: `tx.type === rec.type`
+- **Opis**: barem 1 zajednička riječ (≥3 slova)
+- Ako ne prođe → odbaciti match
+- **Confidence override**: "high" samo ako je iznos identičan I opis sadrži podstring; inače "medium"
 
-## Datoteke za promjenu
+## Datoteke
 
 | Datoteka | Promjena |
 |---|---|
-| `CustomPaymentSourcesPanel.tsx` | Fresh balance fetch, error handling, samo balance update, refetch poziv |
+| `supabase/functions/match-recurring/index.ts` | Stroži prompt, temperature 0, negativni primjeri |
+| `src/hooks/useRecurringMatcher.ts` | Identičan iznos u lokalnom matcheru + post-validacija AI matcheva |
 
