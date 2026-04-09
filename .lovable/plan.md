@@ -1,33 +1,52 @@
 
-# Refaktoriranje Index.tsx (1068 → ~400 linija)
 
-Index.tsx sadrži: business mode view, personal mode view, 15+ dialog stanja, bulk akcije, recurring logiku, i identičnu sekciju transakcija u oba moda.
+# Plan: Lovable značajke — korak po korak
 
----
+## Trenutno stanje
 
-## Nove datoteke u `src/components/home/`
+| Značajka | Status |
+|----------|--------|
+| Sigurnosni scan | 1 aktivni warning (family_invitations email) |
+| Lovable badge | ✅ Već sakriven |
+| Email domena (vmbalance.com) | ⚠️ DNS verifikacija u tijeku (status: initiated) |
+| Auth email predlošci | ✅ Već scaffoldirani |
+| Transakcijski emailovi | ❌ Nisu postavljeni |
+| Analitika | ❌ Nije korištena |
 
-| Datoteka | Sadržaj | ~Linija |
-|----------|---------|---------|
-| `BusinessModeView.tsx` | Cijeli business mode rendering (header, tabovi, dashboard sadržaj, dialozi) | ~320 |
-| `TransactionListSection.tsx` | Collapsible lista transakcija s filterima, bulk toolbar-om, checkbox selekcijom — koristi se u oba moda | ~120 |
-| `SharedDialogs.tsx` | TransactionList/Transfer/Detail/Edit/PaymentSource dialozi + RecurringPanel + RecurringMatchDialog | ~100 |
-| `PersonalModeView.tsx` | Personal mode layout (header, trial, checklist, payment sources, summary, cashflow, transakcije, quick links, footer) | ~180 |
+## Koraci implementacije
 
-## Hook za bulk akcije
+### Korak 1: Popraviti sigurnosni nalaz — family_invitations email exposure
 
-| Datoteka | Sadržaj |
-|----------|---------|
-| `src/hooks/useBulkActions.ts` | handleToggleSelect, handleSelectAll, handleClearSelection, handleBulkCategoryChange, handleBulkPaymentSourceChange, handleBulkDelete |
+Trenutno svi članovi obiteljske grupe mogu vidjeti email adrese pozivnica. Treba ograničiti SELECT politiku tako da email vide samo vlasnik grupe i pošiljatelj pozivnice.
 
-## Pristup
+- Kreirati migraciju koja ažurira RLS politiku na `family_invitations`
+- SELECT pristup emailu ograničiti na `invited_by = auth.uid()` ili vlasnika grupe (koristeći `is_family_owner()`)
 
-- State ostaje u Index.tsx — podkomponente primaju props
-- `TransactionListSection` prima filtrirane transakcije, selection state i handlere
-- `SharedDialogs` prima open/onChange state za sve dialoge
-- Business i Personal renderiraju iste `TransactionListSection` i `SharedDialogs`
-- Recurring logika (addExpenseWithRecurringCheck, importWithRecurringCheck, handleRecurringMatchConfirm) ostaje u Index.tsx jer ovisi o mnogo lokalnog stanja
+### Korak 2: Brendirati auth email predloške
 
-## Rezultat
+Predlošci već postoje ali koriste zadane stilove. Treba ih uskladiti s V&M Balance brendom:
 
-Index.tsx pada na ~400 linija (state + hookovi + routing logika + dva return-a koji koriste nove komponente)
+- Primarna boja: teal (HSL 172 66% 40%)
+- Font: Inter
+- Dodati logo iz `public-assets` bucketa ako postoji
+- Prilagoditi tekst na hrvatski jezik
+- Deployati ažuriranu `auth-email-hook` funkciju
+
+### Korak 3: Postaviti transakcijske emailove
+
+Omogućiti slanje emailova iz aplikacije (potvrde transakcija, budget alerte, podsjetnici):
+
+- Koristiti `scaffold_transactional_email` alat
+- Kreirati predloške za ključne notifikacije
+- Integrirati s postojećim notification sustavom
+
+### Korak 4: Provjeriti DNS status i aktivirati emailove
+
+- Provjeriti je li DNS verifikacija za vmbalance.com završena
+- Ako nije, uputiti korisnika na potrebne DNS zapise
+- Nakon verifikacije, emailovi se automatski aktiviraju
+
+## Napomena
+
+Analitika se može pregledati odmah u Lovable sučelju (Cloud → Analytics) bez ikakvih promjena u kodu. Samo treba otvoriti taj pregled.
+
