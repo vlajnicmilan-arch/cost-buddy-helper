@@ -424,6 +424,7 @@ const Index = () => {
     onUpdateExpense: updateExpense,
     onDeleteExpense: deleteExpense,
     importFromCSV: importWithRecurringCheck,
+    onReplaceAutoGen: handleReplaceAutoGen,
     findDuplicates,
     // Bulk
     dashboardFilters,
