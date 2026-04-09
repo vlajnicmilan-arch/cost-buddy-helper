@@ -52,10 +52,9 @@ const Wallet = () => {
           title={t('nav.wallet', 'Novčanik')}
           onDataImported={refetch}
         />
-        <CustomPaymentSourcesPanel onSourceClick={(source) => {
+        <CustomPaymentSourcesPanel onRefetchExpenses={refetch} onSourceClick={(source) => {
           setSelectedPaymentSource(source);
           setPaymentSourceDialogOpen(true);
-          // Refresh expenses when opening dialog to ensure latest data is shown
           refetch();
         }} />
         <InstallmentsPanel />
