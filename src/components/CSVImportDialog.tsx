@@ -195,7 +195,20 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
 
   const handleImport = async () => {
     let selectedTransactions = transactions.filter((_, i) => selectedIndices.has(i));
-    if (selectedTransactions.length === 0) return;
+
+    // Collect auto-gen replacements
+    const replacements: { tx: ParsedTransaction; existingId: string }[] = [];
+    if (replaceAutoGen && autoGenIndices.size > 0) {
+      autoGenIndices.forEach(idx => {
+        const tx = transactions[idx];
+        const existing = autoGenMap.get(idx);
+        if (tx && existing) {
+          replacements.push({ tx, existingId: existing.id });
+        }
+      });
+    }
+
+    if (selectedTransactions.length === 0 && replacements.length === 0) return;
 
     // Use defaultPaymentSource (from payment source context) or user-selected source
     const effectiveSource = defaultPaymentSource || (selectedPaymentSource ? `custom:${selectedPaymentSource}` : undefined);
@@ -204,13 +217,25 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
         ...tx,
         payment_source: effectiveSource as any
       }));
+      replacements.forEach(r => {
+        r.tx = { ...r.tx, payment_source: effectiveSource as any };
+      });
     }
 
     setStep('importing');
 
     try {
-      await onImport(selectedTransactions);
-      setImportedCount(selectedTransactions.length);
+      // Handle auto-gen replacements
+      if (replacements.length > 0 && onReplaceAutoGen) {
+        await onReplaceAutoGen(replacements);
+      }
+
+      // Import new transactions
+      if (selectedTransactions.length > 0) {
+        await onImport(selectedTransactions);
+      }
+
+      setImportedCount(selectedTransactions.length + replacements.length);
       setStep('complete');
       emitAvatarEvent('happy', 'Uvezeno! Sve je tu 📊');
 
