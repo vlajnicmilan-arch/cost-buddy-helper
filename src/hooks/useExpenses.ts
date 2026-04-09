@@ -52,86 +52,114 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     return common.length / minLen >= 0.5;
   }, [normalizeMerchant]);
 
-  // Duplicate detection utilities
-  const findDuplicates = useCallback((transactions: ParsedTransaction[]): {
-    duplicates: ParsedTransaction[];
-    fuzzyDuplicates: ParsedTransaction[];
-    fuzzyMatchedExpenses: Expense[];
-    unique: ParsedTransaction[];
-  } => {
-    const duplicates: ParsedTransaction[] = [];
-    const fuzzyDuplicates: ParsedTransaction[] = [];
-    const fuzzyMatchedExpenses: Expense[] = [];
-    const unique: ParsedTransaction[] = [];
+  const DAY_MS = 86400000;
 
-    const DAY_MS = 86400000;
+  /**
+   * Score a transaction against an existing expense using 3 criteria:
+   * 1. Amount: same amount (±1%) and same type → 1 point
+   * 2. Date: within ±5 days → 1 point
+   * 3. Description/Merchant: fuzzy match → 1 point
+   * Returns score 0-3 and whether the existing is auto-generated
+   */
+  const scoreDuplicate = useCallback((
+    tx: { amount: number; type: string; date: Date; description: string; merchant_name?: string },
+    existing: Expense
+  ): { score: number; isAutoGen: boolean } => {
+    let score = 0;
 
-    for (const tx of transactions) {
-      // Strict match: same date + same amount + same type + description/merchant match
-      const isStrictDuplicate = expenses.some(existing => {
-        const sameDate = existing.date.toDateString() === tx.date.toDateString();
-        const sameAmount = Math.abs(Number(existing.amount) - tx.amount) < 0.01;
-        const sameType = existing.type === tx.type;
-        if (!sameDate || !sameAmount || !sameType) return false;
+    // Criterion 1: Amount (±1%) and same type
+    const sameType = existing.type === tx.type;
+    const amountDiff = Math.abs(Number(existing.amount) - tx.amount) / Math.max(Math.abs(tx.amount), 0.01);
+    if (sameType && amountDiff <= 0.01) score++;
 
-        if (existing.merchant_name && tx.merchant_name &&
-            areMerchantsSimilar(existing.merchant_name, tx.merchant_name)) return true;
+    // Criterion 2: Date within ±5 days
+    const existingTime = existing.date.getTime();
+    const txTime = tx.date.getTime();
+    const dayDiff = Math.abs(existingTime - txTime) / DAY_MS;
+    if (dayDiff <= 5) score++;
 
-        const existingDesc = existing.description.toLowerCase();
-        const txDesc = tx.description.toLowerCase();
-        return existingDesc === txDesc ||
-          existingDesc.includes(txDesc) ||
-          txDesc.includes(existingDesc);
-      });
-
-      if (isStrictDuplicate) {
-        duplicates.push(tx);
-        continue;
-      }
-
-      // Fuzzy match: same amount + same type + date within ±3 days + similar description/merchant
-      const fuzzyMatch = expenses.find(existing => {
-        const sameAmount = Math.abs(Number(existing.amount) - tx.amount) < 0.01;
-        const sameType = existing.type === tx.type;
-        if (!sameAmount || !sameType) return false;
-
-        const existingTime = existing.date.getTime();
-        const txTime = tx.date.getTime();
-        const dayDiff = Math.abs(existingTime - txTime) / DAY_MS;
-        // Only fuzzy if different date but within 3 days
-        if (dayDiff < 0.5 || dayDiff > 3) return false;
-
-        // Must also have similar merchant or description to be a fuzzy duplicate
-        if (existing.merchant_name && tx.merchant_name &&
-            areMerchantsSimilar(existing.merchant_name, tx.merchant_name)) return true;
-
-        const existingDesc = existing.description.toLowerCase().trim();
-        const txDesc = tx.description.toLowerCase().trim();
-        if (existingDesc === txDesc) return true;
-        if (existingDesc.includes(txDesc) || txDesc.includes(existingDesc)) return true;
-
-        // Word overlap check
+    // Criterion 3: Description/Merchant fuzzy match
+    let descMatch = false;
+    if (existing.merchant_name && tx.merchant_name &&
+        areMerchantsSimilar(existing.merchant_name, tx.merchant_name)) {
+      descMatch = true;
+    }
+    if (!descMatch) {
+      const existingDesc = existing.description.toLowerCase().trim();
+      const txDesc = tx.description.toLowerCase().trim();
+      if (existingDesc === txDesc) {
+        descMatch = true;
+      } else if (existingDesc.includes(txDesc) || txDesc.includes(existingDesc)) {
+        descMatch = true;
+      } else {
         const wa = existingDesc.split(/\s+/).filter(w => w.length >= 3);
         const wb = txDesc.split(/\s+/).filter(w => w.length >= 3);
         if (wa.length > 0 && wb.length > 0) {
           const common = wa.filter(w => wb.some(w2 => w2.includes(w) || w.includes(w2)));
           const minLen = Math.min(wa.length, wb.length);
-          if (common.length / minLen >= 0.5) return true;
+          if (common.length / minLen >= 0.5) descMatch = true;
         }
+      }
+    }
+    if (descMatch) score++;
 
-        return false;
-      });
+    // Check if existing is auto-generated recurring
+    const note = (existing.note || '').toLowerCase();
+    const isAutoGen = note.includes('ponavljajuća') || note.includes('(auto)') || note.includes('automatski');
 
-      if (fuzzyMatch) {
-        fuzzyDuplicates.push(tx);
-        fuzzyMatchedExpenses.push(fuzzyMatch);
+    return { score, isAutoGen };
+  }, [areMerchantsSimilar]);
+
+  // Duplicate detection with 2-of-3 scoring system
+  const findDuplicates = useCallback((transactions: ParsedTransaction[]): {
+    duplicates: ParsedTransaction[];
+    fuzzyDuplicates: ParsedTransaction[];
+    fuzzyMatchedExpenses: Expense[];
+    autoGenMatches: { tx: ParsedTransaction; existing: Expense }[];
+    unique: ParsedTransaction[];
+  } => {
+    const duplicates: ParsedTransaction[] = [];
+    const fuzzyDuplicates: ParsedTransaction[] = [];
+    const fuzzyMatchedExpenses: Expense[] = [];
+    const autoGenMatches: { tx: ParsedTransaction; existing: Expense }[] = [];
+    const unique: ParsedTransaction[] = [];
+
+    for (const tx of transactions) {
+      const txDate = tx.date instanceof Date ? tx.date : new Date(tx.date);
+      const txData = { amount: tx.amount, type: tx.type, date: txDate, description: tx.description, merchant_name: tx.merchant_name };
+
+      let bestScore = 0;
+      let bestMatch: Expense | null = null;
+      let bestIsAutoGen = false;
+
+      for (const existing of expenses) {
+        const { score, isAutoGen } = scoreDuplicate(txData, existing);
+        if (score > bestScore || (score === bestScore && isAutoGen && !bestIsAutoGen)) {
+          bestScore = score;
+          bestMatch = existing;
+          bestIsAutoGen = isAutoGen;
+        }
+      }
+
+      if (bestScore >= 3) {
+        // 3/3 = certain duplicate → auto-skip
+        duplicates.push(tx);
+      } else if (bestScore >= 2 && bestMatch) {
+        if (bestIsAutoGen) {
+          // 2/3 match against auto-generated → offer replace
+          autoGenMatches.push({ tx, existing: bestMatch });
+        } else {
+          // 2/3 match against normal → fuzzy duplicate for review
+          fuzzyDuplicates.push(tx);
+          fuzzyMatchedExpenses.push(bestMatch);
+        }
       } else {
         unique.push(tx);
       }
     }
 
-    return { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique };
-  }, [expenses, areMerchantsSimilar]);
+    return { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, autoGenMatches, unique };
+  }, [expenses, scoreDuplicate]);
 
 
   const checkDuplicate = useCallback((transaction: {
@@ -142,36 +170,22 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     category?: string;
     merchant_name?: string;
   }): Expense | null => {
-    const match = expenses.find(existing => {
-      const sameDate = existing.date.toDateString() === transaction.date.toDateString();
-      const sameAmount = Math.abs(Number(existing.amount) - transaction.amount) < 0.01;
-      const sameType = existing.type === transaction.type;
-      if (!sameDate || !sameAmount || !sameType) return false;
+    const txData = { amount: transaction.amount, type: transaction.type, date: transaction.date, description: transaction.description, merchant_name: transaction.merchant_name };
 
-      // If both have merchant names, use fuzzy merchant matching as primary signal
-      if (existing.merchant_name && transaction.merchant_name) {
-        if (areMerchantsSimilar(existing.merchant_name, transaction.merchant_name)) return true;
+    let bestScore = 0;
+    let bestMatch: Expense | null = null;
+
+    for (const existing of expenses) {
+      const { score } = scoreDuplicate(txData, existing);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = existing;
       }
+    }
 
-      const existingDesc = existing.description.toLowerCase().trim();
-      const newDesc = transaction.description.toLowerCase().trim();
-
-      if (existingDesc === newDesc) return true;
-
-      const existingWords = existingDesc.split(/\s+/).filter(w => w.length >= 3);
-      const newWords = newDesc.split(/\s+/).filter(w => w.length >= 3);
-      const totalUniqueWords = new Set([...existingWords, ...newWords]).size;
-      const commonWords = existingWords.filter(w => newWords.includes(w));
-
-      if (totalUniqueWords > 0 && commonWords.length / totalUniqueWords < 0.5) return false;
-      if (existingDesc.includes(newDesc) || newDesc.includes(existingDesc)) return true;
-
-      if (totalUniqueWords > 0 && commonWords.length / totalUniqueWords >= 0.6) return true;
-      return false;
-    });
-
-    return match || null;
-  }, [expenses, areMerchantsSimilar]);
+    // Return match if score >= 2 (2-of-3 criteria met)
+    return bestScore >= 2 ? bestMatch : null;
+  }, [expenses, scoreDuplicate]);
 
   // Derived totals (computed from filtered dashboardExpenses)
   const now = new Date();

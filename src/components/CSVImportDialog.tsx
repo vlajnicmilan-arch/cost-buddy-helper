@@ -24,16 +24,17 @@ import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
+  onReplaceAutoGen?: (replacements: { tx: ParsedTransaction; existingId: string }[]) => Promise<void>;
   existingExpenses?: Expense[];
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   defaultPaymentSource?: string;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] };
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
-export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource, findDuplicates }: CSVImportDialogProps) => {
+export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource, findDuplicates }: CSVImportDialogProps) => {
   const { t, i18n } = useTranslation();
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canImport = hasAccess('csv_import');
@@ -57,6 +58,9 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
 
   const [duplicateIndices, setDuplicateIndices] = useState<Set<number>>(new Set());
   const [fuzzyDuplicateIndices, setFuzzyDuplicateIndices] = useState<Set<number>>(new Set());
+  const [autoGenIndices, setAutoGenIndices] = useState<Set<number>>(new Set());
+  const [autoGenMap, setAutoGenMap] = useState<Map<number, Expense>>(new Map());
+  const [replaceAutoGen, setReplaceAutoGen] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
   // Simple fallback duplicate detection: same amount and same date (day-level)
@@ -71,12 +75,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     });
   };
 
-  // Detect duplicates using fuzzy findDuplicates if available, else simple check
-  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number> } => {
+  // Detect duplicates using scoring findDuplicates if available, else simple check
+  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number>; autoGen: Set<number>; autoGenMapping: Map<number, Expense> } => {
     if (findDuplicates) {
-      const { duplicates, fuzzyDuplicates } = findDuplicates(txs);
+      const { duplicates, fuzzyDuplicates, autoGenMatches } = findDuplicates(txs);
       const strictSet = new Set<number>();
       const fuzzySet = new Set<number>();
+      const autoGenSet = new Set<number>();
+      const agMap = new Map<number, Expense>();
       duplicates.forEach(dup => {
         const idx = txs.findIndex(tx => tx === dup);
         if (idx >= 0) strictSet.add(idx);
@@ -85,14 +91,21 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
         const idx = txs.findIndex(tx => tx === dup);
         if (idx >= 0) fuzzySet.add(idx);
       });
-      return { strict: strictSet, fuzzy: fuzzySet };
+      (autoGenMatches || []).forEach(({ tx: agTx, existing }) => {
+        const idx = txs.findIndex(tx => tx === agTx);
+        if (idx >= 0) {
+          autoGenSet.add(idx);
+          agMap.set(idx, existing);
+        }
+      });
+      return { strict: strictSet, fuzzy: fuzzySet, autoGen: autoGenSet, autoGenMapping: agMap };
     }
     // Fallback: simple check
     const strictSet = new Set<number>();
     txs.forEach((tx, i) => {
       if (isSimpleDuplicate(tx)) strictSet.add(i);
     });
-    return { strict: strictSet, fuzzy: new Set() };
+    return { strict: strictSet, fuzzy: new Set(), autoGen: new Set(), autoGenMapping: new Map() };
   };
 
   const duplicateCount = duplicateIndices.size;
