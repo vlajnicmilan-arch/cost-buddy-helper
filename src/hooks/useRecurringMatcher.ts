@@ -15,7 +15,28 @@ export interface RecurringMatch {
 }
 
 /**
- * Local fast matching: same type, similar amount (±5%), similar description
+ * Calculate the previous due date by subtracting one frequency period.
+ */
+function calculatePreviousDueDate(nextDue: string, frequency: string): Date | null {
+  const d = new Date(nextDue);
+  if (isNaN(d.getTime())) return null;
+  switch (frequency) {
+    case 'weekly': d.setDate(d.getDate() - 7); break;
+    case 'biweekly': d.setDate(d.getDate() - 14); break;
+    case 'monthly': d.setMonth(d.getMonth() - 1); break;
+    case 'quarterly': d.setMonth(d.getMonth() - 3); break;
+    case 'semi-annually': d.setMonth(d.getMonth() - 6); break;
+    case 'yearly': d.setFullYear(d.getFullYear() - 1); break;
+    default: d.setMonth(d.getMonth() - 1); break;
+  }
+  return d;
+}
+
+const DAY_MS = 86400000;
+
+/**
+ * Local fast matching: same type, similar amount (±5%), similar description.
+ * Now also checks previous due date for historical imports.
  */
 function localMatch(
   tx: { description: string; amount: number; type: string; date: string },
@@ -23,6 +44,7 @@ function localMatch(
 ): RecurringMatch | null {
   const txDesc = tx.description.toLowerCase().trim();
   const txAmount = Math.abs(tx.amount);
+  const txDate = new Date(tx.date);
 
   for (const r of recurring) {
     if (!r.is_active) continue;
@@ -46,11 +68,28 @@ function localMatch(
     const wordMatch = txWords.length > 0 && overlap / txWords.length >= 0.5;
 
     if (descMatch || wordMatch) {
+      // Check date proximity: within ±5 days of next_due_date OR previous due date
+      let dateClose = false;
+      if (r.next_due_date) {
+        const nextDue = new Date(r.next_due_date);
+        const dayDiffNext = Math.abs(txDate.getTime() - nextDue.getTime()) / DAY_MS;
+        if (dayDiffNext <= 5) dateClose = true;
+
+        // Also check previous cycle date (for historical imports)
+        if (!dateClose) {
+          const prevDue = calculatePreviousDueDate(r.next_due_date, r.frequency);
+          if (prevDue) {
+            const dayDiffPrev = Math.abs(txDate.getTime() - prevDue.getTime()) / DAY_MS;
+            if (dayDiffPrev <= 5) dateClose = true;
+          }
+        }
+      }
+
       const isExactAmount = amountDiff < 0.001;
       return {
         transaction: tx,
         recurring: r,
-        confidence: isExactAmount && descMatch ? 'high' : 'medium',
+        confidence: isExactAmount && descMatch && dateClose ? 'high' : 'medium',
         source: 'local',
       };
     }

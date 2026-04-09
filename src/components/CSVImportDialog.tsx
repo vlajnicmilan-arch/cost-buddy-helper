@@ -24,16 +24,17 @@ import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
+  onReplaceAutoGen?: (replacements: { tx: ParsedTransaction; existingId: string }[]) => Promise<void>;
   existingExpenses?: Expense[];
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   defaultPaymentSource?: string;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] };
+  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
-export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource, findDuplicates }: CSVImportDialogProps) => {
+export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses = [], externalOpen, onExternalOpenChange, defaultPaymentSource, findDuplicates }: CSVImportDialogProps) => {
   const { t, i18n } = useTranslation();
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canImport = hasAccess('csv_import');
@@ -57,6 +58,9 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
 
   const [duplicateIndices, setDuplicateIndices] = useState<Set<number>>(new Set());
   const [fuzzyDuplicateIndices, setFuzzyDuplicateIndices] = useState<Set<number>>(new Set());
+  const [autoGenIndices, setAutoGenIndices] = useState<Set<number>>(new Set());
+  const [autoGenMap, setAutoGenMap] = useState<Map<number, Expense>>(new Map());
+  const [replaceAutoGen, setReplaceAutoGen] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
   // Simple fallback duplicate detection: same amount and same date (day-level)
@@ -71,12 +75,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     });
   };
 
-  // Detect duplicates using fuzzy findDuplicates if available, else simple check
-  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number> } => {
+  // Detect duplicates using scoring findDuplicates if available, else simple check
+  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number>; autoGen: Set<number>; autoGenMapping: Map<number, Expense> } => {
     if (findDuplicates) {
-      const { duplicates, fuzzyDuplicates } = findDuplicates(txs);
+      const { duplicates, fuzzyDuplicates, autoGenMatches } = findDuplicates(txs);
       const strictSet = new Set<number>();
       const fuzzySet = new Set<number>();
+      const autoGenSet = new Set<number>();
+      const agMap = new Map<number, Expense>();
       duplicates.forEach(dup => {
         const idx = txs.findIndex(tx => tx === dup);
         if (idx >= 0) strictSet.add(idx);
@@ -85,18 +91,26 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
         const idx = txs.findIndex(tx => tx === dup);
         if (idx >= 0) fuzzySet.add(idx);
       });
-      return { strict: strictSet, fuzzy: fuzzySet };
+      (autoGenMatches || []).forEach(({ tx: agTx, existing }) => {
+        const idx = txs.findIndex(tx => tx === agTx);
+        if (idx >= 0) {
+          autoGenSet.add(idx);
+          agMap.set(idx, existing);
+        }
+      });
+      return { strict: strictSet, fuzzy: fuzzySet, autoGen: autoGenSet, autoGenMapping: agMap };
     }
     // Fallback: simple check
     const strictSet = new Set<number>();
     txs.forEach((tx, i) => {
       if (isSimpleDuplicate(tx)) strictSet.add(i);
     });
-    return { strict: strictSet, fuzzy: new Set() };
+    return { strict: strictSet, fuzzy: new Set(), autoGen: new Set(), autoGenMapping: new Map() };
   };
 
   const duplicateCount = duplicateIndices.size;
   const fuzzyCount = fuzzyDuplicateIndices.size;
+  const autoGenCount = autoGenIndices.size;
 
   const resetState = () => {
     setStep('upload');
@@ -104,6 +118,9 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
     setSelectedIndices(new Set());
     setDuplicateIndices(new Set());
     setFuzzyDuplicateIndices(new Set());
+    setAutoGenIndices(new Set());
+    setAutoGenMap(new Map());
+    setReplaceAutoGen(true);
     setSkipDuplicates(true);
     setSource('');
     setError('');
@@ -129,12 +146,14 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
       setTransactions(result.transactions);
       setSource(result.source);
       // Detect duplicates
-      const { strict, fuzzy } = detectDuplicates(result.transactions);
+      const { strict, fuzzy, autoGen, autoGenMapping } = detectDuplicates(result.transactions);
       setDuplicateIndices(strict);
       setFuzzyDuplicateIndices(fuzzy);
-      // Auto-deselect strict duplicates, keep fuzzy selected (user decides)
+      setAutoGenIndices(autoGen);
+      setAutoGenMap(autoGenMapping);
+      // Auto-deselect strict duplicates and auto-gen (will be replaced separately)
       const nonStrictDupIndices = new Set(
-        result.transactions.map((_, i) => i).filter(i => !strict.has(i))
+        result.transactions.map((_, i) => i).filter(i => !strict.has(i) && !autoGen.has(i))
       );
       setSelectedIndices(nonStrictDupIndices);
       setStep('preview');
@@ -176,7 +195,20 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
 
   const handleImport = async () => {
     let selectedTransactions = transactions.filter((_, i) => selectedIndices.has(i));
-    if (selectedTransactions.length === 0) return;
+
+    // Collect auto-gen replacements
+    const replacements: { tx: ParsedTransaction; existingId: string }[] = [];
+    if (replaceAutoGen && autoGenIndices.size > 0) {
+      autoGenIndices.forEach(idx => {
+        const tx = transactions[idx];
+        const existing = autoGenMap.get(idx);
+        if (tx && existing) {
+          replacements.push({ tx, existingId: existing.id });
+        }
+      });
+    }
+
+    if (selectedTransactions.length === 0 && replacements.length === 0) return;
 
     // Use defaultPaymentSource (from payment source context) or user-selected source
     const effectiveSource = defaultPaymentSource || (selectedPaymentSource ? `custom:${selectedPaymentSource}` : undefined);
@@ -185,13 +217,25 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
         ...tx,
         payment_source: effectiveSource as any
       }));
+      replacements.forEach(r => {
+        r.tx = { ...r.tx, payment_source: effectiveSource as any };
+      });
     }
 
     setStep('importing');
 
     try {
-      await onImport(selectedTransactions);
-      setImportedCount(selectedTransactions.length);
+      // Handle auto-gen replacements
+      if (replacements.length > 0 && onReplaceAutoGen) {
+        await onReplaceAutoGen(replacements);
+      }
+
+      // Import new transactions
+      if (selectedTransactions.length > 0) {
+        await onImport(selectedTransactions);
+      }
+
+      setImportedCount(selectedTransactions.length + replacements.length);
       setStep('complete');
       emitAvatarEvent('happy', 'Uvezeno! Sve je tu 📊');
 
@@ -347,14 +391,16 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col min-h-0"
             >
-              {(duplicateCount > 0 || fuzzyCount > 0) && (
+              {(duplicateCount > 0 || fuzzyCount > 0 || autoGenCount > 0) && (
                 <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col gap-2 text-amber-700 dark:text-amber-400">
                   <div className="flex items-center gap-2">
                     <Copy className="w-4 h-4 flex-shrink-0" />
                     <span className="text-xs font-medium">
                       {duplicateCount > 0 && `${duplicateCount} sigurnih duplikata`}
-                      {duplicateCount > 0 && fuzzyCount > 0 && ', '}
-                      {fuzzyCount > 0 && `${fuzzyCount} mogućih (±3 dana)`}
+                      {duplicateCount > 0 && (fuzzyCount > 0 || autoGenCount > 0) && ', '}
+                      {fuzzyCount > 0 && `${fuzzyCount} mogućih (2/3 kriterija)`}
+                      {fuzzyCount > 0 && autoGenCount > 0 && ', '}
+                      {autoGenCount > 0 && `${autoGenCount} auto-generiranih za zamjenu`}
                       {' — strogi automatski preskočeni'}
                     </span>
                   </div>
@@ -433,27 +479,35 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                     const categoryInfo = getCategoryInfo(tx.category);
                     const isStrict = duplicateIndices.has(index);
                     const isFuzzy = fuzzyDuplicateIndices.has(index);
+                    const isAutoGen = autoGenIndices.has(index);
                     return (
                       <motion.div
                         key={index}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.02 }}
-                        onClick={() => toggleTransaction(index)}
+                        onClick={() => !isAutoGen && toggleTransaction(index)}
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-                          isStrict && !selectedIndices.has(index)
-                            ? 'bg-destructive/5 border border-destructive/20 opacity-50'
-                            : isFuzzy && !selectedIndices.has(index)
-                              ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
-                              : selectedIndices.has(index) 
-                                ? 'bg-muted/50 border border-primary/20' 
-                                : 'bg-muted/20 border border-transparent opacity-50'
+                          isAutoGen
+                            ? 'bg-primary/5 border border-primary/20'
+                            : isStrict && !selectedIndices.has(index)
+                              ? 'bg-destructive/5 border border-destructive/20 opacity-50'
+                              : isFuzzy && !selectedIndices.has(index)
+                                ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
+                                : selectedIndices.has(index) 
+                                  ? 'bg-muted/50 border border-primary/20' 
+                                  : 'bg-muted/20 border border-transparent opacity-50'
                         }`}
                       >
-                        <Checkbox
-                          checked={selectedIndices.has(index)}
-                          onCheckedChange={() => toggleTransaction(index)}
-                        />
+                        {!isAutoGen && (
+                          <Checkbox
+                            checked={selectedIndices.has(index)}
+                            onCheckedChange={() => toggleTransaction(index)}
+                          />
+                        )}
+                        {isAutoGen && (
+                          <span className="text-xs">🔄</span>
+                        )}
                         <span className="text-lg">{categoryInfo.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -467,7 +521,12 @@ export const CSVImportDialog = ({ onImport, existingExpenses = [], externalOpen,
                             )}
                             {isFuzzy && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
-                                ±3 dana?
+                                Mogući duplikat
+                              </Badge>
+                            )}
+                            {isAutoGen && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/40 text-primary shrink-0">
+                                Zamjena
                               </Badge>
                             )}
                           </div>
