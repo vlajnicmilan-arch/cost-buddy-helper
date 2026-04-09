@@ -1,59 +1,43 @@
 
 
-# Plan: OAuth povratak u nativnu aplikaciju umjesto PWA
+# Plan: Poboljšana detekcija duplikata s "2 od 3" logikom + recurring zaštita
 
-## Problem
+## Nova logika detekcije duplikata
 
-Kad korisnik u Capacitor nativnoj aplikaciji klikne "Nastavi s Google računom", OAuth flow otvara vanjski preglednik. Nakon autentifikacije, redirect ide na `https://vmbalance.com` — ali umjesto da se vrati u nativnu WebView shell, otvara PWA ili web stranicu u pregledniku.
+Umjesto trenutnog pristupa (strogi match = sve mora biti isto, fuzzy = ±3 dana + isti iznos + slično ime), koristimo **scoring sustav s 3 kriterija**:
 
-## Uzrok
+| Kriterij | Opis | Bodovi |
+|----------|------|--------|
+| **Iznos** | Isti iznos (±1%) i isti tip (expense/income) | 1 |
+| **Datum** | Unutar ±5 dana | 1 |
+| **Opis/Merchant** | Fuzzy match imena (podstring, word overlap ≥50%) | 1 |
 
-1. `redirect_uri` je postavljen na `window.location.origin` koji u Live Sync modu (`server.url: https://vmbalance.com`) resolva na `https://vmbalance.com`
-2. Nema konfiguriranog Android App Linka / iOS Universal Linka koji bi presreo taj URL i otvorio nativnu aplikaciju
-3. Deep link handler (`useDeepLinks.ts`) sluša `appUrlOpen` event, ali OAuth redirect ne koristi custom URL scheme niti verified domain link
+- **3/3** → automatski preskočiti (sigurni duplikat)
+- **2/3** → prikazati korisniku na provjeru ("Mogući duplikat")
+- **1/3 ili manje** → unikatna transakcija, uvesti normalno
 
-## Rješenje
+## Recurring auto-gen zaštita (Korak 2)
 
-### Korak 1: Konfigurirati Android App Links i iOS Universal Links
+Kod uvoza bankovnog izvoda, dodatno provjeriti postojeće transakcije čiji `note` sadrži "ponavljajuća" ili "(auto)":
 
-**Android** — dodati `assetlinks.json` na `vmbalance.com/.well-known/` i konfigurirati intent filter u `AndroidManifest.xml` da presretne `https://vmbalance.com/*` URL-ove i usmjeri ih natrag u nativnu aplikaciju.
+- Ako uvezena transakcija matchira auto-generiranu po 2/3 kriterija, ponuditi **zamjenu** umjesto duplikata
+- Zamjena preuzima točniji opis i datum iz bankovnog izvoda, ali čuva vezu s recurring templateom
 
-**iOS** — dodati `apple-app-site-association` na `vmbalance.com/.well-known/` i konfigurirati Associated Domains u Xcode projektu.
+## Recurring matcher backward date (Korak 3)
 
-> Ovo zahtijeva hosting konfiguraciju na `vmbalance.com` — treba dodati verification JSON datoteke.
-
-### Korak 2: Dodati OAuth callback handling u deep link handler
-
-Proširiti `useDeepLinks.ts` da prepozna OAuth callback URL-ove (koji sadrže `access_token` ili `code` parametar) i proslijedi token Supabase klijentu za uspostavu sesije.
-
-### Korak 3: Alternativa — koristiti In-App Browser
-
-Umjesto vanjskog preglednika, na nativnoj platformi koristiti `@capacitor/browser` plugin koji otvara OAuth stranicu unutar aplikacije. Nakon redirecta, presresti URL u `browserFinished` / URL change eventu i zatvoriti in-app browser.
-
-Ovo je **jednostavniji pristup** jer ne zahtijeva App Links konfiguraciju na serveru.
-
-### Korak 4: Implementirati nativni OAuth flow u Auth.tsx
-
-Dodati detekciju `Capacitor.isNativePlatform()` u Google/Apple sign-in buttone. Ako je nativna platforma:
-- Otvoriti OAuth URL putem `Browser.open()` umjesto `window.location` redirecta
-- Slušati `appUrlOpen` event za callback
-- Parsirati tokene iz callback URL-a
-- Postaviti Supabase sesiju putem `supabase.auth.setSession()`
+U `useRecurringMatcher.ts`, kod usporedbe s recurring templateom, izračunati **prethodni** `next_due_date` (oduzimanjem frekvencije) i usporediti s datumom uvezene transakcije unutar ±5 dana. Ovo pokriva slučaj kad je template već pomaknut naprijed.
 
 ## Datoteke za promjenu
 
 | Datoteka | Promjena |
 |---|---|
-| `src/pages/Auth.tsx` | Nativni OAuth flow s `@capacitor/browser` |
-| `src/hooks/useDeepLinks.ts` | Dodati OAuth callback pattern matching |
-| `capacitor.config.ts` | (možda) dodati `appUrlOpen` handling config |
-| `public/.well-known/assetlinks.json` | Android App Links verification (ako se ide taj put) |
+| `src/hooks/useExpenses.ts` | Nova `findDuplicates` logika sa scoring sustavom 2/3 |
+| `src/hooks/useExpenses.ts` | `checkDuplicate` isto prebaciti na scoring |
+| `src/components/CSVImportDialog.tsx` | UI za prikaz auto-gen matcheva s opcijom zamjene |
+| `src/hooks/useRecurringMatcher.ts` | Backward date matching za prethodni ciklus |
+| `src/pages/Index.tsx` | `importWithRecurringCheck` — anti-duplicate provjera za auto-gen |
 
-## Preporuka
+## Bez promjena u bazi
 
-**Korak 3 (In-App Browser)** je najpraktičniji jer radi odmah bez serverske konfiguracije. App Links se mogu dodati naknadno za još bolji UX.
-
-## Ograničenje
-
-`src/integrations/lovable/index.ts` je auto-generirani file koji se ne smije mijenjati. Trebat će "zaobići" `lovable.auth.signInWithOAuth` na nativnoj platformi — umjesto toga, ručno konstruirati OAuth URL i koristiti Capacitor Browser plugin za otvaranje, pa tokene ručno proslijediti `supabase.auth.setSession()`.
+Sve se rješava na klijentskoj strani — nema novih migracija ni edge funkcija.
 
