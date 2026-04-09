@@ -10,6 +10,7 @@ import { CustomPaymentSource, SUGGESTED_PAYMENT_SOURCES } from '@/types/customPa
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
+import { saveLocalExpense } from '@/lib/storage/indexedDB';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import {
   AlertDialog,
