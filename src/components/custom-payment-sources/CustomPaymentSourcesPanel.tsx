@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label';
 interface CustomPaymentSourcesPanelProps {
   hideHeader?: boolean;
   onSourceClick?: (source: CustomPaymentSource) => void;
+  onRefetchExpenses?: () => void;
 }
 
 export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }: CustomPaymentSourcesPanelProps) => {
