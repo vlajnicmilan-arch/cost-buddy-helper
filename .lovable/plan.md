@@ -1,52 +1,59 @@
 
 
-# Plan: Lovable značajke — korak po korak
+# Plan: OAuth povratak u nativnu aplikaciju umjesto PWA
 
-## Trenutno stanje
+## Problem
 
-| Značajka | Status |
-|----------|--------|
-| Sigurnosni scan | 1 aktivni warning (family_invitations email) |
-| Lovable badge | ✅ Već sakriven |
-| Email domena (vmbalance.com) | ⚠️ DNS verifikacija u tijeku (status: initiated) |
-| Auth email predlošci | ✅ Već scaffoldirani |
-| Transakcijski emailovi | ❌ Nisu postavljeni |
-| Analitika | ❌ Nije korištena |
+Kad korisnik u Capacitor nativnoj aplikaciji klikne "Nastavi s Google računom", OAuth flow otvara vanjski preglednik. Nakon autentifikacije, redirect ide na `https://vmbalance.com` — ali umjesto da se vrati u nativnu WebView shell, otvara PWA ili web stranicu u pregledniku.
 
-## Koraci implementacije
+## Uzrok
 
-### Korak 1: Popraviti sigurnosni nalaz — family_invitations email exposure
+1. `redirect_uri` je postavljen na `window.location.origin` koji u Live Sync modu (`server.url: https://vmbalance.com`) resolva na `https://vmbalance.com`
+2. Nema konfiguriranog Android App Linka / iOS Universal Linka koji bi presreo taj URL i otvorio nativnu aplikaciju
+3. Deep link handler (`useDeepLinks.ts`) sluša `appUrlOpen` event, ali OAuth redirect ne koristi custom URL scheme niti verified domain link
 
-Trenutno svi članovi obiteljske grupe mogu vidjeti email adrese pozivnica. Treba ograničiti SELECT politiku tako da email vide samo vlasnik grupe i pošiljatelj pozivnice.
+## Rješenje
 
-- Kreirati migraciju koja ažurira RLS politiku na `family_invitations`
-- SELECT pristup emailu ograničiti na `invited_by = auth.uid()` ili vlasnika grupe (koristeći `is_family_owner()`)
+### Korak 1: Konfigurirati Android App Links i iOS Universal Links
 
-### Korak 2: Brendirati auth email predloške
+**Android** — dodati `assetlinks.json` na `vmbalance.com/.well-known/` i konfigurirati intent filter u `AndroidManifest.xml` da presretne `https://vmbalance.com/*` URL-ove i usmjeri ih natrag u nativnu aplikaciju.
 
-Predlošci već postoje ali koriste zadane stilove. Treba ih uskladiti s V&M Balance brendom:
+**iOS** — dodati `apple-app-site-association` na `vmbalance.com/.well-known/` i konfigurirati Associated Domains u Xcode projektu.
 
-- Primarna boja: teal (HSL 172 66% 40%)
-- Font: Inter
-- Dodati logo iz `public-assets` bucketa ako postoji
-- Prilagoditi tekst na hrvatski jezik
-- Deployati ažuriranu `auth-email-hook` funkciju
+> Ovo zahtijeva hosting konfiguraciju na `vmbalance.com` — treba dodati verification JSON datoteke.
 
-### Korak 3: Postaviti transakcijske emailove
+### Korak 2: Dodati OAuth callback handling u deep link handler
 
-Omogućiti slanje emailova iz aplikacije (potvrde transakcija, budget alerte, podsjetnici):
+Proširiti `useDeepLinks.ts` da prepozna OAuth callback URL-ove (koji sadrže `access_token` ili `code` parametar) i proslijedi token Supabase klijentu za uspostavu sesije.
 
-- Koristiti `scaffold_transactional_email` alat
-- Kreirati predloške za ključne notifikacije
-- Integrirati s postojećim notification sustavom
+### Korak 3: Alternativa — koristiti In-App Browser
 
-### Korak 4: Provjeriti DNS status i aktivirati emailove
+Umjesto vanjskog preglednika, na nativnoj platformi koristiti `@capacitor/browser` plugin koji otvara OAuth stranicu unutar aplikacije. Nakon redirecta, presresti URL u `browserFinished` / URL change eventu i zatvoriti in-app browser.
 
-- Provjeriti je li DNS verifikacija za vmbalance.com završena
-- Ako nije, uputiti korisnika na potrebne DNS zapise
-- Nakon verifikacije, emailovi se automatski aktiviraju
+Ovo je **jednostavniji pristup** jer ne zahtijeva App Links konfiguraciju na serveru.
 
-## Napomena
+### Korak 4: Implementirati nativni OAuth flow u Auth.tsx
 
-Analitika se može pregledati odmah u Lovable sučelju (Cloud → Analytics) bez ikakvih promjena u kodu. Samo treba otvoriti taj pregled.
+Dodati detekciju `Capacitor.isNativePlatform()` u Google/Apple sign-in buttone. Ako je nativna platforma:
+- Otvoriti OAuth URL putem `Browser.open()` umjesto `window.location` redirecta
+- Slušati `appUrlOpen` event za callback
+- Parsirati tokene iz callback URL-a
+- Postaviti Supabase sesiju putem `supabase.auth.setSession()`
+
+## Datoteke za promjenu
+
+| Datoteka | Promjena |
+|---|---|
+| `src/pages/Auth.tsx` | Nativni OAuth flow s `@capacitor/browser` |
+| `src/hooks/useDeepLinks.ts` | Dodati OAuth callback pattern matching |
+| `capacitor.config.ts` | (možda) dodati `appUrlOpen` handling config |
+| `public/.well-known/assetlinks.json` | Android App Links verification (ako se ide taj put) |
+
+## Preporuka
+
+**Korak 3 (In-App Browser)** je najpraktičniji jer radi odmah bez serverske konfiguracije. App Links se mogu dodati naknadno za još bolji UX.
+
+## Ograničenje
+
+`src/integrations/lovable/index.ts` je auto-generirani file koji se ne smije mijenjati. Trebat će "zaobići" `lovable.auth.signInWithOAuth` na nativnoj platformi — umjesto toga, ručno konstruirati OAuth URL i koristiti Capacitor Browser plugin za otvaranje, pa tokene ručno proslijediti `supabase.auth.setSession()`.
 
