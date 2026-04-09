@@ -110,6 +110,7 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
 
   const duplicateCount = duplicateIndices.size;
   const fuzzyCount = fuzzyDuplicateIndices.size;
+  const autoGenCount = autoGenIndices.size;
 
   const resetState = () => {
     setStep('upload');
@@ -117,6 +118,9 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
     setSelectedIndices(new Set());
     setDuplicateIndices(new Set());
     setFuzzyDuplicateIndices(new Set());
+    setAutoGenIndices(new Set());
+    setAutoGenMap(new Map());
+    setReplaceAutoGen(true);
     setSkipDuplicates(true);
     setSource('');
     setError('');
@@ -142,12 +146,14 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
       setTransactions(result.transactions);
       setSource(result.source);
       // Detect duplicates
-      const { strict, fuzzy } = detectDuplicates(result.transactions);
+      const { strict, fuzzy, autoGen, autoGenMapping } = detectDuplicates(result.transactions);
       setDuplicateIndices(strict);
       setFuzzyDuplicateIndices(fuzzy);
-      // Auto-deselect strict duplicates, keep fuzzy selected (user decides)
+      setAutoGenIndices(autoGen);
+      setAutoGenMap(autoGenMapping);
+      // Auto-deselect strict duplicates and auto-gen (will be replaced separately)
       const nonStrictDupIndices = new Set(
-        result.transactions.map((_, i) => i).filter(i => !strict.has(i))
+        result.transactions.map((_, i) => i).filter(i => !strict.has(i) && !autoGen.has(i))
       );
       setSelectedIndices(nonStrictDupIndices);
       setStep('preview');
