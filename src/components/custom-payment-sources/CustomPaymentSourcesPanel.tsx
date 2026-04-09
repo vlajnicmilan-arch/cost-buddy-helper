@@ -34,7 +34,7 @@ interface CustomPaymentSourcesPanelProps {
   onRefetchExpenses?: () => void;
 }
 
-export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick }: CustomPaymentSourcesPanelProps) => {
+export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, onRefetchExpenses }: CustomPaymentSourcesPanelProps) => {
   const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
   const { user } = useAuth();
   const { storageMode } = useStorage();
