@@ -1,34 +1,55 @@
 
-
-# Plan: Dodati safe-area padding na dno dijaloga transakcija
+# Plan: Popravak brisanja transakcija u izvoru plaćanja
 
 ## Problem
 
-Na Vinkinom mobitelu sistemska navigacijska traka (gesture bar / nav bar) prekriva gumb "Prikaži još" jer scrollable container nema `safe-area-inset-bottom` padding.
+Kada korisnik klikne na transakciju u izvoru plaćanja, otvara se `TransactionDetailDialog` (s gumbom za brisanje). Međutim, taj dijalog koristi standardni `Dialog` komponentu koja renderira overlay i sadržaj na **z-50**, dok `PaymentSourceTransactionsDialog` koristi **z-[60]**. Rezultat: detalj dijalog se otvara **iza** izvora plaćanja i korisnik ga ne može vidjeti niti kliknuti gumb "Obriši".
+
+Isto vrijedi za `EditTransactionDialog` — editiranje također ne radi iz istog razloga.
 
 ## Rješenje
 
-Jedna promjena u `src/components/PaymentSourceTransactionsDialog.tsx`:
+U `PaymentSourceTransactionsDialog.tsx`, dodati viši z-index na `TransactionDetailDialog` i `EditTransactionDialog` putem wrapper `div`-ova, ili — jednostavnije — koristiti CSS klasu na `DialogContent` da se podigne iznad z-[60].
 
-**Linija 936** — scrollable `<div>` koji završava prije `</motion.div>`:
+Konkretno, obzirom da `DialogContent` i `DialogOverlay` koriste `z-50`, a ne možemo ih globalno mijenjati (jer bi to utjecalo na sve dijaloge), rješenje je:
 
-Dodati `pb-[env(safe-area-inset-bottom,16px)]` na scrollable container (linija ~836, `<div className="flex-1 overflow-y-auto">`), ili alternativno dodati `safe-area-bottom` klasu + ekstra padding na sam gumb container.
+### Promjena u `PaymentSourceTransactionsDialog.tsx`
 
-Konkretno: na `<div className="flex-1 overflow-y-auto">` dodati `pb-safe` ili koristiti Tailwind arbitrary value:
+Omotati `TransactionDetailDialog` i `EditTransactionDialog` u `<div className="relative z-[70]">` kako bi portali unutar njih naslijedili stacking context iznad z-[60] — **ali** Radix portali se renderiraju na `document.body`, pa wrapper ne pomaže.
 
-```tsx
-// Prije:
-<div className="flex-1 overflow-y-auto">
+Ispravno rješenje: proslijediti `className` na `DialogContent` unutar `TransactionDetailDialog` i `EditTransactionDialog`. Ali oni ne primaju tu prop.
 
-// Poslije:
-<div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom,16px)]">
-```
+**Praktično rješenje**: Dodati CSS stil koji cilja Radix dialog portale kada su otvoreni unutar konteksta payment source dijaloga. Najjednostavniji pristup:
 
-Ovo osigurava da na uređajima sa sistemskom navigacijom (iPhone gesture bar, Android nav bar) sadržaj ima dovoljno prostora na dnu da gumb "Prikaži još" ne bude prekriven.
+Promijeniti `TransactionDetailDialog` da prima opcionalnu `className` prop za `DialogContent`, i iz `PaymentSourceTransactionsDialog` proslijediti `z-[70]`.
 
-## Datoteke
+### Datoteke i promjene
 
 | Datoteka | Promjena |
 |---|---|
-| `src/components/PaymentSourceTransactionsDialog.tsx` | Dodati safe-area bottom padding na scroll container |
+| `src/components/TransactionDetailDialog.tsx` | Dodati opcionalnu `contentClassName` prop, proslijediti na `DialogContent` |
+| `src/components/EditTransactionDialog.tsx` | Dodati opcionalnu `contentClassName` prop, proslijediti na `DialogContent` |
+| `src/components/PaymentSourceTransactionsDialog.tsx` | Proslijediti `contentClassName="z-[70]"` na oba child dijaloga |
 
+### Detalji implementacije
+
+**TransactionDetailDialog.tsx**:
+- Dodati `contentClassName?: string` u interface
+- Na `DialogContent` dodati: `className={cn("sm:max-w-md max-h-[85vh]...", contentClassName)}`
+
+**EditTransactionDialog.tsx**:
+- Isto — dodati `contentClassName?: string` i proslijediti na `DialogContent`
+
+**PaymentSourceTransactionsDialog.tsx** (linije ~941 i ~960):
+```tsx
+<TransactionDetailDialog
+  ...
+  contentClassName="z-[70]"
+/>
+<EditTransactionDialog
+  ...
+  contentClassName="z-[70]"
+/>
+```
+
+Ovo osigurava da se oba dijaloga renderiraju **iznad** payment source overlay-a, čime gumbi "Obriši" i "Spremi" postaju vidljivi i funkcionalni.
