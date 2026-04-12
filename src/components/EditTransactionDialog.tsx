@@ -28,9 +28,10 @@ interface EditTransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (expense: Expense) => Promise<void>;
+  contentClassName?: string;
 }
 
-export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: EditTransactionDialogProps) => {
+export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, contentClassName }: EditTransactionDialogProps) => {
   const { t, i18n } = useTranslation();
   
   const [amount, setAmount] = useState('');
@@ -150,7 +151,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: E
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showBackButton={false} className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent showBackButton={false} className={cn("sm:max-w-md max-h-[90vh] overflow-y-auto", contentClassName)}>
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
         </DialogHeader>

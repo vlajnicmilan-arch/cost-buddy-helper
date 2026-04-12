@@ -955,6 +955,7 @@ export const PaymentSourceTransactionsDialog = ({
           setDetailExpense(null);
           handleDelete(id);
         }}
+        contentClassName="z-[70]"
       />
 
       <EditTransactionDialog
@@ -962,6 +963,7 @@ export const PaymentSourceTransactionsDialog = ({
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSave={handleSave}
+        contentClassName="z-[70]"
       />
 
       {selectedBatchId && (
