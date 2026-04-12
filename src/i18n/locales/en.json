@@ -314,6 +314,7 @@
     "noItems": "No items for this transaction",
     "regular": "Regular",
     "extraordinary": "Extraordinary",
+    "hasReceipt": "Receipt image",
     "incomes": "Income",
     "expenses": "Expenses",
     "shown": "Shown",
