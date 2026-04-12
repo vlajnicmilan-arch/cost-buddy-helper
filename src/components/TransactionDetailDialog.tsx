@@ -34,6 +34,7 @@ interface TransactionDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onEdit: (expense: Expense) => void;
   onDelete: (id: string) => void;
+  contentClassName?: string;
 }
 
 export const TransactionDetailDialog = ({

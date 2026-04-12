@@ -28,9 +28,10 @@ interface EditTransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (expense: Expense) => Promise<void>;
+  contentClassName?: string;
 }
 
-export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave }: EditTransactionDialogProps) => {
+export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, contentClassName }: EditTransactionDialogProps) => {
   const { t, i18n } = useTranslation();
   
   const [amount, setAmount] = useState('');
