@@ -1,55 +1,34 @@
 
-# Plan: Popravak brisanja transakcija u izvoru plaćanja
+
+# Plan: Iznos kao obavezan kriterij za duplikate (ručni unos)
 
 ## Problem
+Funkcija `checkDuplicate` (ručni unos) i dalje koristi čisti "2-od-3" sustav. Vinka je dobila lažno upozorenje jer su se poklopili datum i dio opisa ("Marino"), ali iznosi su bili potpuno različiti (7,23€ vs 50€).
 
-Kada korisnik klikne na transakciju u izvoru plaćanja, otvara se `TransactionDetailDialog` (s gumbom za brisanje). Međutim, taj dijalog koristi standardni `Dialog` komponentu koja renderira overlay i sadržaj na **z-50**, dok `PaymentSourceTransactionsDialog` koristi **z-[60]**. Rezultat: detalj dijalog se otvara **iza** izvora plaćanja i korisnik ga ne može vidjeti niti kliknuti gumb "Obriši".
+## Promjena
 
-Isto vrijedi za `EditTransactionDialog` — editiranje također ne radi iz istog razloga.
+**Datoteka:** `src/hooks/useExpenses.ts`, linije 186-187
 
-## Rješenje
+Zamijeniti:
+```typescript
+// Return match if score >= 2 (2-of-3 criteria met)
+return bestScore >= 2 ? bestMatch : null;
+```
 
-U `PaymentSourceTransactionsDialog.tsx`, dodati viši z-index na `TransactionDetailDialog` i `EditTransactionDialog` putem wrapper `div`-ova, ili — jednostavnije — koristiti CSS klasu na `DialogContent` da se podigne iznad z-[60].
+S:
+```typescript
+// Amount match is mandatory — without it, no duplicate warning
+if (bestScore >= 2 && bestMatch) {
+  const amountDiff = Math.abs(Number(bestMatch.amount) - transaction.amount) / Math.max(Math.abs(transaction.amount), 0.01);
+  const sameType = bestMatch.type === transaction.type;
+  if (!sameType || amountDiff > 0.01) return null;
+}
+return bestScore >= 2 ? bestMatch : null;
+```
 
-Konkretno, obzirom da `DialogContent` i `DialogOverlay` koriste `z-50`, a ne možemo ih globalno mijenjati (jer bi to utjecalo na sve dijaloge), rješenje je:
-
-### Promjena u `PaymentSourceTransactionsDialog.tsx`
-
-Omotati `TransactionDetailDialog` i `EditTransactionDialog` u `<div className="relative z-[70]">` kako bi portali unutar njih naslijedili stacking context iznad z-[60] — **ali** Radix portali se renderiraju na `document.body`, pa wrapper ne pomaže.
-
-Ispravno rješenje: proslijediti `className` na `DialogContent` unutar `TransactionDetailDialog` i `EditTransactionDialog`. Ali oni ne primaju tu prop.
-
-**Praktično rješenje**: Dodati CSS stil koji cilja Radix dialog portale kada su otvoreni unutar konteksta payment source dijaloga. Najjednostavniji pristup:
-
-Promijeniti `TransactionDetailDialog` da prima opcionalnu `className` prop za `DialogContent`, i iz `PaymentSourceTransactionsDialog` proslijediti `z-[70]`.
-
-### Datoteke i promjene
+`findDuplicates` (CSV import) ostaje nepromijenjen — tamo batch pregled ima smisla s 2-od-3.
 
 | Datoteka | Promjena |
 |---|---|
-| `src/components/TransactionDetailDialog.tsx` | Dodati opcionalnu `contentClassName` prop, proslijediti na `DialogContent` |
-| `src/components/EditTransactionDialog.tsx` | Dodati opcionalnu `contentClassName` prop, proslijediti na `DialogContent` |
-| `src/components/PaymentSourceTransactionsDialog.tsx` | Proslijediti `contentClassName="z-[70]"` na oba child dijaloga |
+| `src/hooks/useExpenses.ts` | Dodati provjeru iznosa kao obavezan uvjet u `checkDuplicate` |
 
-### Detalji implementacije
-
-**TransactionDetailDialog.tsx**:
-- Dodati `contentClassName?: string` u interface
-- Na `DialogContent` dodati: `className={cn("sm:max-w-md max-h-[85vh]...", contentClassName)}`
-
-**EditTransactionDialog.tsx**:
-- Isto — dodati `contentClassName?: string` i proslijediti na `DialogContent`
-
-**PaymentSourceTransactionsDialog.tsx** (linije ~941 i ~960):
-```tsx
-<TransactionDetailDialog
-  ...
-  contentClassName="z-[70]"
-/>
-<EditTransactionDialog
-  ...
-  contentClassName="z-[70]"
-/>
-```
-
-Ovo osigurava da se oba dijaloga renderiraju **iznad** payment source overlay-a, čime gumbi "Obriši" i "Spremi" postaju vidljivi i funkcionalni.
