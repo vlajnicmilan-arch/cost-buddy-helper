@@ -1,43 +1,36 @@
 
 
-# Plan: Dohvat svih transakcija iz baze (bez limita od 1000)
+# Analiza: Prikaz troškova po izvoru plaćanja u projektu Duje
 
-## Problem
+## Nalazi iz baze podataka
 
-Supabase ima **default limit od 1000 redova** po upitu. Korisnik ima **1012 transakcija**, pa se zadnjih 12 gubi. PBZ Solin ima 62 transakcije ukupno, ali dio nije dohvaćen jer spada u onih "odrezanih".
+| Metrika | Vrijednost |
+|---|---|
+| Ukupno transakcija u projektu Duje | 172 (odobrenih) |
+| Ukupni troškovi projekta | 11.999,05 € |
+| PBZ Solin kredit troškovi u projektu | 17 transakcija = **1.734,00 €** |
+| PBZ Solin kredit troškovi ukupno (svi projekti + osobno) | 41 transakcija = **5.374,24 €** |
 
-## Rješenje
+## Zaključak
 
-### `src/hooks/useExpenseFetch.ts`
+**Filtriranje radi ispravno.** Kada odabereš "PBZ Solin kredit" u projektu Duje, prikazuje se samo 17 transakcija (1.734 €) jer su **samo te transakcije dodijeljene tom projektu**. Ostalih 24 PBZ Solin transakcija (3.640 €) su osobne ili pripadaju drugim projektima.
 
-Zamijeniti jednostavan `.select('*')` poziv s **paginiranim dohvatom** koji iterira u blokovima od 1000 redova dok ne dohvati sve:
+Razlika između 1.734,44 € (što vidiš) i 1.734,00 € (u bazi) — 0,44 € — može biti floating point zaokruživanje.
 
-```typescript
-// Fetch all expenses with pagination (Supabase max 1000 per request)
-let allData: any[] = [];
-let from = 0;
-const pageSize = 1000;
+## Mogući koraci
 
-while (true) {
-  const { data, error } = await supabase
-    .from('expenses')
-    .select('*')
-    .order('date', { ascending: false })
-    .range(from, from + pageSize - 1);
+Ako želiš da više PBZ Solin transakcija bude u projektu Duje, potrebno je:
+1. **Ručno dodijeliti** postojeće transakcije projektu (editirati transakciju i dodati project_id)
+2. **Ili dodati "Bulk assign to project"** — opciju za masovno dodjeljivanje transakcija projektu iz glavnog popisa
 
-  if (error) throw error;
-  if (!data || data.length === 0) break;
-  allData = allData.concat(data);
-  if (data.length < pageSize) break;
-  from += pageSize;
-}
-```
+### Tehnički detalj — prevencija budućih problema
+`useProjectStats.ts` trenutno nema paginaciju (koristi jedan `.select()` poziv). Projekt Duje ima samo 172 transakcija pa to sada nije problem, ali kad naraste iznad 1000 trebat će isti fix kao u `useExpenseFetch.ts`.
 
-Ostatak koda (mapiranje `allData` u `Expense[]`) ostaje isti — samo se `data` zamijeni s `allData`.
-
-## Datoteke
+## Predložene promjene
 
 | Datoteka | Promjena |
 |---|---|
-| `src/hooks/useExpenseFetch.ts` | Paginirani dohvat umjesto jednog upita |
+| `src/hooks/useProjectStats.ts` | Dodati paginaciju (isti pattern kao useExpenseFetch) |
+
+Ako trebaš i mogućnost masovnog dodjeljivanja transakcija projektu, to je veća funkcionalnost koju mogu isplanirati zasebno.
 
