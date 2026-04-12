@@ -963,6 +963,7 @@ export const PaymentSourceTransactionsDialog = ({
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSave={handleSave}
+        contentClassName="z-[70]"
       />
 
       {selectedBatchId && (
