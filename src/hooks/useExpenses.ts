@@ -183,7 +183,12 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       }
     }
 
-    // Return match if score >= 2 (2-of-3 criteria met)
+    // Amount match is mandatory — without it, no duplicate warning
+    if (bestScore >= 2 && bestMatch) {
+      const amountDiff = Math.abs(Number(bestMatch.amount) - transaction.amount) / Math.max(Math.abs(transaction.amount), 0.01);
+      const sameType = bestMatch.type === transaction.type;
+      if (!sameType || amountDiff > 0.01) return null;
+    }
     return bestScore >= 2 ? bestMatch : null;
   }, [expenses, scoreDuplicate]);
 
