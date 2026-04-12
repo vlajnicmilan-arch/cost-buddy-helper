@@ -71,12 +71,24 @@ export const useExpenseFetch = () => {
           return;
         }
 
-        const { data, error } = await supabase
-          .from('expenses')
-          .select('*')
-          .order('date', { ascending: false });
+        // Paginated fetch to bypass Supabase 1000-row limit
+        let allData: any[] = [];
+        let from = 0;
+        const pageSize = 1000;
 
-        if (error) throw error;
+        while (true) {
+          const { data, error } = await supabase
+            .from('expenses')
+            .select('*')
+            .order('date', { ascending: false })
+            .range(from, from + pageSize - 1);
+
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          allData = allData.concat(data);
+          if (data.length < pageSize) break;
+          from += pageSize;
+        }
 
         setExpenses(data?.map(e => ({
           ...e,
