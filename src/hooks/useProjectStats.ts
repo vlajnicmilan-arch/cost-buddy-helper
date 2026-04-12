@@ -44,16 +44,27 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
 
     setLoading(true);
     try {
-      const { data, error } = await (supabase
-        .from('expenses')
-        .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature, payment_source') as any)
-        .eq('project_id', projectId)
-        .eq('status', 'approved')
-        .order('date', { ascending: false });
+      let allData: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
 
-      if (error) throw error;
+      while (true) {
+        const { data, error } = await (supabase
+          .from('expenses')
+          .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature, payment_source') as any)
+          .eq('project_id', projectId)
+          .eq('status', 'approved')
+          .order('date', { ascending: false })
+          .range(from, from + pageSize - 1);
 
-      setExpenses((data || []).map(e => ({
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+
+      setExpenses(allData.map(e => ({
         ...e,
         amount: Number(e.amount)
       })));
