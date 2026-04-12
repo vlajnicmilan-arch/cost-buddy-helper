@@ -1,31 +1,34 @@
 
 
-# Plan: Popravak filtera u transakcijama izvora plaćanja
+# Plan: Dodati safe-area padding na dno dijaloga transakcija
 
 ## Problem
 
-Dijalog izvora plaćanja koristi `z-[60]` (povišen u prethodnom popravku), ali Popover (kalendar za datume) i Select (kategorije, kartice) dropdowni koriste `z-50` — niži z-index. Budući da se portali renderiraju na razini `document.body`, oni završavaju **iza** overlay-a i korisnik ih ne može vidjeti niti kliknuti.
-
-Dodatno, Calendar komponenta nema `pointer-events-auto` klasu koja je potrebna za interaktivnost unutar portala.
+Na Vinkinom mobitelu sistemska navigacijska traka (gesture bar / nav bar) prekriva gumb "Prikaži još" jer scrollable container nema `safe-area-inset-bottom` padding.
 
 ## Rješenje
 
-Tri promjene:
+Jedna promjena u `src/components/PaymentSourceTransactionsDialog.tsx`:
 
-### 1. `src/components/ui/popover.tsx` — povećati z-index
-- Linija 20: `z-50` → `z-[70]`
+**Linija 936** — scrollable `<div>` koji završava prije `</motion.div>`:
 
-### 2. `src/components/ui/select.tsx` — povećati z-index
-- Linija 69: `z-50` → `z-[70]`
+Dodati `pb-[env(safe-area-inset-bottom,16px)]` na scrollable container (linija ~836, `<div className="flex-1 overflow-y-auto">`), ili alternativno dodati `safe-area-bottom` klasu + ekstra padding na sam gumb container.
 
-### 3. `src/components/ui/calendar.tsx` — dodati pointer-events-auto
-- Linija 14: `cn("p-3", className)` → `cn("p-3 pointer-events-auto", className)`
+Konkretno: na `<div className="flex-1 overflow-y-auto">` dodati `pb-safe` ili koristiti Tailwind arbitrary value:
 
-Ove promjene osiguravaju da svi dropdown/popover elementi uvijek budu iznad bilo kojeg overlay-a, uključujući full-screen dijalog izvora plaćanja.
+```tsx
+// Prije:
+<div className="flex-1 overflow-y-auto">
+
+// Poslije:
+<div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom,16px)]">
+```
+
+Ovo osigurava da na uređajima sa sistemskom navigacijom (iPhone gesture bar, Android nav bar) sadržaj ima dovoljno prostora na dnu da gumb "Prikaži još" ne bude prekriven.
+
+## Datoteke
 
 | Datoteka | Promjena |
 |---|---|
-| `src/components/ui/popover.tsx` | z-50 → z-[70] |
-| `src/components/ui/select.tsx` | z-50 → z-[70] |
-| `src/components/ui/calendar.tsx` | dodati pointer-events-auto |
+| `src/components/PaymentSourceTransactionsDialog.tsx` | Dodati safe-area bottom padding na scroll container |
 
