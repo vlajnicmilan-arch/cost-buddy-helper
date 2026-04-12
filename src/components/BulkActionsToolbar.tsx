@@ -216,7 +216,7 @@ export const BulkActionsToolbar = ({
       </AnimatePresence>
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[70]">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('bulk.deleteConfirmTitle', { count: selectedCount })}</AlertDialogTitle>
             <AlertDialogDescription>
