@@ -1,36 +1,43 @@
 
 
-# Analiza: Prikaz troškova po izvoru plaćanja u projektu Duje
+# Plan: Popravak prikaza "Prikaži još" u transakcijama izvora plaćanja
 
-## Nalazi iz baze podataka
+## Problem
 
-| Metrika | Vrijednost |
-|---|---|
-| Ukupno transakcija u projektu Duje | 172 (odobrenih) |
-| Ukupni troškovi projekta | 11.999,05 € |
-| PBZ Solin kredit troškovi u projektu | 17 transakcija = **1.734,00 €** |
-| PBZ Solin kredit troškovi ukupno (svi projekti + osobno) | 41 transakcija = **5.374,24 €** |
+Gumb "Prikaži još" postoji u kodu (`PaymentSourceTransactionsDialog.tsx`, linija 921-931), ali korisnik ga ne vidi. Najvjerojatniji uzrok je **Radix ScrollArea** koji ne funkcionira ispravno u flex layoutu — Viewport komponenta ima `h-full w-full` ali ne dobiva eksplicitnu visinu od flex roditelja, pa sadržaj može biti odrezan bez mogućnosti skrolanja do dna.
 
-## Zaključak
+## Rješenje
 
-**Filtriranje radi ispravno.** Kada odabereš "PBZ Solin kredit" u projektu Duje, prikazuje se samo 17 transakcija (1.734 €) jer su **samo te transakcije dodijeljene tom projektu**. Ostalih 24 PBZ Solin transakcija (3.640 €) su osobne ili pripadaju drugim projektima.
+Zamijeniti `ScrollArea` komponentu na liniji 611 sa običnim `div` elementom koji koristi `overflow-y-auto` — ovo je pouzdanije u flex layoutima i konzistentno funkcionira na desktopu i mobilnim uređajima.
 
-Razlika između 1.734,44 € (što vidiš) i 1.734,00 € (u bazi) — 0,44 € — može biti floating point zaokruživanje.
+### Promjena u `src/components/PaymentSourceTransactionsDialog.tsx`:
 
-## Mogući koraci
+**Linija 611**: Zamijeniti:
+```tsx
+<ScrollArea className="flex-1">
+```
+sa:
+```tsx
+<div className="flex-1 overflow-y-auto">
+```
 
-Ako želiš da više PBZ Solin transakcija bude u projektu Duje, potrebno je:
-1. **Ručno dodijeliti** postojeće transakcije projektu (editirati transakciju i dodati project_id)
-2. **Ili dodati "Bulk assign to project"** — opciju za masovno dodjeljivanje transakcija projektu iz glavnog popisa
+**Linija 936**: Zamijeniti:
+```tsx
+</ScrollArea>
+```
+sa:
+```tsx
+</div>
+```
 
-### Tehnički detalj — prevencija budućih problema
-`useProjectStats.ts` trenutno nema paginaciju (koristi jedan `.select()` poziv). Projekt Duje ima samo 172 transakcija pa to sada nije problem, ali kad naraste iznad 1000 trebat će isti fix kao u `useExpenseFetch.ts`.
+Ovo osigurava da:
+- Sav sadržaj bude dostupan skrolanjem
+- Gumb "Prikaži još" bude vidljiv na dnu liste
+- Radi identično na desktopu i u nativnoj aplikaciji
 
-## Predložene promjene
+## Datoteke
 
 | Datoteka | Promjena |
 |---|---|
-| `src/hooks/useProjectStats.ts` | Dodati paginaciju (isti pattern kao useExpenseFetch) |
-
-Ako trebaš i mogućnost masovnog dodjeljivanja transakcija projektu, to je veća funkcionalnost koju mogu isplanirati zasebno.
+| `src/components/PaymentSourceTransactionsDialog.tsx` | Zamjena ScrollArea s div+overflow-y-auto (2 linije) |
 
