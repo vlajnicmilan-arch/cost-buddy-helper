@@ -151,7 +151,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showBackButton={false} className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent showBackButton={false} className={cn("sm:max-w-md max-h-[90vh] overflow-y-auto", contentClassName)}>
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
         </DialogHeader>

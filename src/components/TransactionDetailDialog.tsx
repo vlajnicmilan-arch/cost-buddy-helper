@@ -42,7 +42,8 @@ export const TransactionDetailDialog = ({
   open,
   onOpenChange,
   onEdit,
-  onDelete
+  onDelete,
+  contentClassName
 }: TransactionDetailDialogProps) => {
   
   const [items, setItems] = useState<ReceiptItem[]>([]);
@@ -348,7 +349,7 @@ export const TransactionDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden">
+      <DialogContent className={cn("sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden", contentClassName)}>
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-start gap-2">
             <span className="text-2xl shrink-0">{categoryInfo.icon}</span>

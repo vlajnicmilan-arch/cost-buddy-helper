@@ -955,6 +955,7 @@ export const PaymentSourceTransactionsDialog = ({
           setDetailExpense(null);
           handleDelete(id);
         }}
+        contentClassName="z-[70]"
       />
 
       <EditTransactionDialog
