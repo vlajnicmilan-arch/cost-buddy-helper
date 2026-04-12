@@ -109,13 +109,22 @@ export const useExpenseFetch = () => {
         console.log('[Expenses] Auth error, refreshing session and retrying...');
         try {
           await supabase.auth.refreshSession();
-          // Retry once
-          const { data, error: retryError } = await supabase
-            .from('expenses')
-            .select('*')
-            .order('date', { ascending: false });
-          if (!retryError && data) {
-            setExpenses(data.map(e => ({
+          // Retry with pagination
+          let retryData: any[] = [];
+          let retryFrom = 0;
+          while (true) {
+            const { data, error: retryError } = await supabase
+              .from('expenses')
+              .select('*')
+              .order('date', { ascending: false })
+              .range(retryFrom, retryFrom + 999);
+            if (retryError || !data || data.length === 0) break;
+            retryData = retryData.concat(data);
+            if (data.length < 1000) break;
+            retryFrom += 1000;
+          }
+          if (retryData.length > 0) {
+            setExpenses(retryData.map(e => ({
               ...e,
               date: new Date(e.date),
               category: e.category as Category,
