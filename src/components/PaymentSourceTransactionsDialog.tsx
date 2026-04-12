@@ -608,7 +608,7 @@ export const PaymentSourceTransactionsDialog = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom,16px)]">
               <div className="max-w-2xl mx-auto w-full pl-3 pr-5 sm:px-4 py-4 space-y-4">
                 {/* Balance & Summary */}
                 <div className="grid grid-cols-2 gap-3">
