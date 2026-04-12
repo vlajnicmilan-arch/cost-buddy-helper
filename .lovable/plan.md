@@ -1,43 +1,31 @@
 
 
-# Plan: Popravak prikaza "Prikaži još" u transakcijama izvora plaćanja
+# Plan: Popravak filtera u transakcijama izvora plaćanja
 
 ## Problem
 
-Gumb "Prikaži još" postoji u kodu (`PaymentSourceTransactionsDialog.tsx`, linija 921-931), ali korisnik ga ne vidi. Najvjerojatniji uzrok je **Radix ScrollArea** koji ne funkcionira ispravno u flex layoutu — Viewport komponenta ima `h-full w-full` ali ne dobiva eksplicitnu visinu od flex roditelja, pa sadržaj može biti odrezan bez mogućnosti skrolanja do dna.
+Dijalog izvora plaćanja koristi `z-[60]` (povišen u prethodnom popravku), ali Popover (kalendar za datume) i Select (kategorije, kartice) dropdowni koriste `z-50` — niži z-index. Budući da se portali renderiraju na razini `document.body`, oni završavaju **iza** overlay-a i korisnik ih ne može vidjeti niti kliknuti.
+
+Dodatno, Calendar komponenta nema `pointer-events-auto` klasu koja je potrebna za interaktivnost unutar portala.
 
 ## Rješenje
 
-Zamijeniti `ScrollArea` komponentu na liniji 611 sa običnim `div` elementom koji koristi `overflow-y-auto` — ovo je pouzdanije u flex layoutima i konzistentno funkcionira na desktopu i mobilnim uređajima.
+Tri promjene:
 
-### Promjena u `src/components/PaymentSourceTransactionsDialog.tsx`:
+### 1. `src/components/ui/popover.tsx` — povećati z-index
+- Linija 20: `z-50` → `z-[70]`
 
-**Linija 611**: Zamijeniti:
-```tsx
-<ScrollArea className="flex-1">
-```
-sa:
-```tsx
-<div className="flex-1 overflow-y-auto">
-```
+### 2. `src/components/ui/select.tsx` — povećati z-index
+- Linija 69: `z-50` → `z-[70]`
 
-**Linija 936**: Zamijeniti:
-```tsx
-</ScrollArea>
-```
-sa:
-```tsx
-</div>
-```
+### 3. `src/components/ui/calendar.tsx` — dodati pointer-events-auto
+- Linija 14: `cn("p-3", className)` → `cn("p-3 pointer-events-auto", className)`
 
-Ovo osigurava da:
-- Sav sadržaj bude dostupan skrolanjem
-- Gumb "Prikaži još" bude vidljiv na dnu liste
-- Radi identično na desktopu i u nativnoj aplikaciji
-
-## Datoteke
+Ove promjene osiguravaju da svi dropdown/popover elementi uvijek budu iznad bilo kojeg overlay-a, uključujući full-screen dijalog izvora plaćanja.
 
 | Datoteka | Promjena |
 |---|---|
-| `src/components/PaymentSourceTransactionsDialog.tsx` | Zamjena ScrollArea s div+overflow-y-auto (2 linije) |
+| `src/components/ui/popover.tsx` | z-50 → z-[70] |
+| `src/components/ui/select.tsx` | z-50 → z-[70] |
+| `src/components/ui/calendar.tsx` | dodati pointer-events-auto |
 
