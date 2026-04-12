@@ -90,7 +90,7 @@ export const useExpenseFetch = () => {
           from += pageSize;
         }
 
-        setExpenses(data?.map(e => ({
+        setExpenses(allData.map(e => ({
           ...e,
           date: new Date(e.date),
           category: e.category as Category,
@@ -101,7 +101,7 @@ export const useExpenseFetch = () => {
           expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined,
           business_profile_id: (e as any).business_profile_id || null,
           currency: (e as any).currency || null,
-        })) || []);
+        })));
       }
     } catch (error) {
       const errMsg = String((error as any)?.message || error);
