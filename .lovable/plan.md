@@ -1,36 +1,43 @@
 
 
-# Plan: Ikona računa na transakciji
+# Plan: Dohvat svih transakcija iz baze (bez limita od 1000)
 
-## Što se radi
+## Problem
 
-Dodati malu ikonu fotoaparata (📷) uz naslov transakcije koja označava da postoji spremljena slika računa (`receipt_url` polje).
+Supabase ima **default limit od 1000 redova** po upitu. Korisnik ima **1012 transakcija**, pa se zadnjih 12 gubi. PBZ Solin ima 62 transakcije ukupno, ali dio nije dohvaćen jer spada u onih "odrezanih".
 
-## Promjene
+## Rješenje
 
-### `src/components/TransactionItem.tsx`
+### `src/hooks/useExpenseFetch.ts`
 
-1. Importati `Camera` ikonu iz lucide-react
-2. Nakon postojećih badge-ova u Title Row (linija 231-243, iza `expense.note` tooltipa), dodati novi tooltip s `Camera` ikonom — prikazuje se samo kad `expense.receipt_url` postoji
-3. Dodati `receipt_url` u memo comparison (linija 336-357) da se komponenta rerenderira kad se slika doda/ukloni
+Zamijeniti jednostavan `.select('*')` poziv s **paginiranim dohvatom** koji iterira u blokovima od 1000 redova dok ne dohvati sve:
 
-### Vizualni dizajn
+```typescript
+// Fetch all expenses with pagination (Supabase max 1000 per request)
+let allData: any[] = [];
+let from = 0;
+const pageSize = 1000;
 
-- Ikona: `Camera` iz lucide-react, veličina `w-3 h-3`
-- Boja: `text-emerald-500` (zelena — pozitivna oznaka da slika postoji)
-- Tooltip: "Slika računa" (i18n ključ)
-- Pozicija: u redu s ostalim ikonama (AI sparkles, note, installment)
+while (true) {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .order('date', { ascending: false })
+    .range(from, from + pageSize - 1);
 
-### i18n
+  if (error) throw error;
+  if (!data || data.length === 0) break;
+  allData = allData.concat(data);
+  if (data.length < pageSize) break;
+  from += pageSize;
+}
+```
 
-Dodati ključ `transactions.hasReceipt` u hr/en/de locale datoteke.
+Ostatak koda (mapiranje `allData` u `Expense[]`) ostaje isti — samo se `data` zamijeni s `allData`.
 
-## Datoteke za promjenu
+## Datoteke
 
 | Datoteka | Promjena |
 |---|---|
-| `src/components/TransactionItem.tsx` | Camera ikona + tooltip + memo update |
-| `src/i18n/locales/hr.json` | `transactions.hasReceipt` |
-| `src/i18n/locales/en.json` | `transactions.hasReceipt` |
-| `src/i18n/locales/de.json` | `transactions.hasReceipt` |
+| `src/hooks/useExpenseFetch.ts` | Paginirani dohvat umjesto jednog upita |
 
