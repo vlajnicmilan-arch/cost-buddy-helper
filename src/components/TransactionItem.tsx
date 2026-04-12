@@ -3,7 +3,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { Trash2, Sparkles, MessageCircle, CreditCard } from 'lucide-react';
+import { Trash2, Sparkles, MessageCircle, CreditCard, Camera } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import React, { useMemo, useRef } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -241,6 +241,16 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipContent>
               </Tooltip>
             )}
+            {expense.receipt_url && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Camera className="w-3 h-3 text-emerald-500 shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">{t('transactions.hasReceipt', 'Slika računa')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           {/* Info Row */}
@@ -349,6 +359,7 @@ export const TransactionItem = React.memo(TransactionItemInner, (prev, next) => 
     prev.expense.ai_extracted === next.expense.ai_extracted &&
     prev.expense.expense_nature === next.expense.expense_nature &&
     prev.expense.currency === next.expense.currency &&
+    prev.expense.receipt_url === next.expense.receipt_url &&
     prev.expense.date.getTime() === next.expense.date.getTime() &&
     prev.contextLookup === next.contextLookup &&
     prev.onDelete === next.onDelete &&
