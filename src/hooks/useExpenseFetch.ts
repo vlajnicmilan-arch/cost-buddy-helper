@@ -71,14 +71,26 @@ export const useExpenseFetch = () => {
           return;
         }
 
-        const { data, error } = await supabase
-          .from('expenses')
-          .select('*')
-          .order('date', { ascending: false });
+        // Paginated fetch to bypass Supabase 1000-row limit
+        let allData: any[] = [];
+        let from = 0;
+        const pageSize = 1000;
 
-        if (error) throw error;
+        while (true) {
+          const { data, error } = await supabase
+            .from('expenses')
+            .select('*')
+            .order('date', { ascending: false })
+            .range(from, from + pageSize - 1);
 
-        setExpenses(data?.map(e => ({
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          allData = allData.concat(data);
+          if (data.length < pageSize) break;
+          from += pageSize;
+        }
+
+        setExpenses(allData.map(e => ({
           ...e,
           date: new Date(e.date),
           category: e.category as Category,
@@ -89,7 +101,7 @@ export const useExpenseFetch = () => {
           expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined,
           business_profile_id: (e as any).business_profile_id || null,
           currency: (e as any).currency || null,
-        })) || []);
+        })));
       }
     } catch (error) {
       const errMsg = String((error as any)?.message || error);
@@ -97,13 +109,22 @@ export const useExpenseFetch = () => {
         console.log('[Expenses] Auth error, refreshing session and retrying...');
         try {
           await supabase.auth.refreshSession();
-          // Retry once
-          const { data, error: retryError } = await supabase
-            .from('expenses')
-            .select('*')
-            .order('date', { ascending: false });
-          if (!retryError && data) {
-            setExpenses(data.map(e => ({
+          // Retry with pagination
+          let retryData: any[] = [];
+          let retryFrom = 0;
+          while (true) {
+            const { data, error: retryError } = await supabase
+              .from('expenses')
+              .select('*')
+              .order('date', { ascending: false })
+              .range(retryFrom, retryFrom + 999);
+            if (retryError || !data || data.length === 0) break;
+            retryData = retryData.concat(data);
+            if (data.length < 1000) break;
+            retryFrom += 1000;
+          }
+          if (retryData.length > 0) {
+            setExpenses(retryData.map(e => ({
               ...e,
               date: new Date(e.date),
               category: e.category as Category,
