@@ -2775,13 +2775,20 @@ export type Database = {
           clock_out: string | null
           created_at: string
           entry_type: string
+          field_hours: number
+          holiday_hours: number
           id: string
           location_coords: string | null
           net_hours: number
+          night_hours: number
           note: string | null
+          overtime_hours: number
           project_id: string
           recorded_by: string
+          regular_hours: number
+          standby_hours: number
           status: string
+          sunday_hours: number
           updated_at: string
           user_id: string
           work_date: string
@@ -2796,13 +2803,20 @@ export type Database = {
           clock_out?: string | null
           created_at?: string
           entry_type?: string
+          field_hours?: number
+          holiday_hours?: number
           id?: string
           location_coords?: string | null
           net_hours?: number
+          night_hours?: number
           note?: string | null
+          overtime_hours?: number
           project_id: string
           recorded_by: string
+          regular_hours?: number
+          standby_hours?: number
           status?: string
+          sunday_hours?: number
           updated_at?: string
           user_id: string
           work_date: string
@@ -2817,13 +2831,20 @@ export type Database = {
           clock_out?: string | null
           created_at?: string
           entry_type?: string
+          field_hours?: number
+          holiday_hours?: number
           id?: string
           location_coords?: string | null
           net_hours?: number
+          night_hours?: number
           note?: string | null
+          overtime_hours?: number
           project_id?: string
           recorded_by?: string
+          regular_hours?: number
+          standby_hours?: number
           status?: string
+          sunday_hours?: number
           updated_at?: string
           user_id?: string
           work_date?: string
