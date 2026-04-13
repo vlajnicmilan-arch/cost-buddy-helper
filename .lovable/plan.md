@@ -1,45 +1,38 @@
 
-Dijagnoza
 
-Našao sam točnu grešku: problem nije u publishu niti u pristupu, nego u tome što je Šihterica spojena na krivu komponentu.
+# Plan: Zamjena hero slike na landing stranici
 
-```text
-Stvarni flow koji app koristi:
- /index -> BusinessProjects / ProjectsPanel -> ProjectFullScreenView
-                                            -> Šihterica NE postoji
+## Trenutno stanje
+- `hero-receipt-scan.webp` (27 KB) — generička slika skeniranja računa
+- Koristi se u hero sekciji (desktop i mobile)
 
-Mjesto gdje je Šihterica trenutno dodana:
- ProjectDetailDialog -> Šihterica postoji
-```
+## Nova slika
+**Pexels #6693631** — "Smartphone Calculator and Dollar Bills on Papers on Table Top"
+- Autor: Tima Miroshnichenko
+- Licenca: Pexels (Free to use, no attribution required)
+- URL: `https://images.pexels.com/photos/6693631/pexels-photo-6693631.jpeg`
+- Flat lay stil: mobitel s kalkulatorom, novčanice, financijski papiri na stolu
 
-Zato je ne vidiš ni kad su Tactura, projekt i pristupi ispravno uključeni. `BusinessProjects` i `ProjectsPanel` oba otvaraju `ProjectFullScreenView`, a on trenutno nema `TimeClockTab` ni trigger za tab.
+## Koraci
 
-Plan popravka
+### 1. Preuzeti i komprimirati sliku
+- Preuzeti original s Pexels-a
+- Resize na 1200px širine (dovoljno za hero)
+- Konvertirati u WebP (kvaliteta 80%)
+- Spremiti kao `src/assets/hero-receipt-scan.webp` (zamjena postojeće)
 
-1. U `src/components/projects/ProjectFullScreenView.tsx` dodati:
-   - `TimeClockTab` import
-   - `TabsTrigger` za “Šihterica”
-   - `TabsContent` koji renderira `TimeClockTab`
+### 2. Bez promjena koda
+- Postojeći import (`import heroImage from '@/assets/hero-receipt-scan.webp'`) ostaje isti
+- Alt tekst promijeniti u nešto prikladnije za novu sliku
 
-2. Uvesti isti uvjet vidljivosti za šihtericu u oba project prikaza, npr. zajednički `canAccessTimeClock`, da se logika više ne razilazi.
+## Datoteke za promjenu
+| Datoteka | Akcija |
+|---|---|
+| `src/assets/hero-receipt-scan.webp` | Zamjena novom slikom |
+| `src/pages/Landing.tsx` | Ažurirati alt tekst na img tagovima (2 mjesta) |
 
-3. Uskladiti ova dva filea da imaju isti business/time-clock tab set:
-   - `src/components/projects/ProjectFullScreenView.tsx`
-   - `src/components/projects/ProjectDetailDialog.tsx`
+## Očekivani rezultat
+- Profesionalnija hero slika koja bolje komunicira financijsko praćenje
+- Ista ili manja veličina datoteke (WebP kompresija)
+- Nema utjecaja na performanse ili bundle
 
-4. Zadržati postojeći access gate za sada (`isBusinessView && hasAccess('workforce')`), jer trenutni blocker nije pretplata nego to što se tab uopće ne renderira u glavnom project viewu.
-
-5. Nakon popravka provjeriti oba stvarna ulaza:
-   - `/index` → poslovni projekti → otvori projekt
-   - `/projects` → otvori projekt
-
-Datoteke
-- `src/components/projects/ProjectFullScreenView.tsx`
-- `src/components/projects/ProjectDetailDialog.tsx`
-
-Tehnička napomena
-- Nema potrebe za migracijom baze ni RLS izmjenama za ovaj bug.
-- Ako nakon ovoga želiš, u sljedećem koraku mogu odvojiti šihtericu od Business-only pristupa i dati joj zaseban feature gate, ali to nije uzrok trenutnog problema.
-
-Očekivani rezultat
-- Šihterica će se napokon pojaviti u stvarnom project prozoru koji koristi objavljena aplikacija.
