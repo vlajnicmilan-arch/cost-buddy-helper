@@ -190,7 +190,7 @@ const HeroSection = () => {
             whileHover={{ scale: 1.02, rotate: 1 }}
             transition={{ type: 'spring', stiffness: 300 }}
           >
-            <img src={heroImage} alt="Skeniranje računa mobilnim telefonom" className="w-full h-auto object-cover" loading="lazy" />
+            <img src={heroImage} alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
           </motion.div>
           <motion.div
@@ -213,7 +213,7 @@ const HeroSection = () => {
         transition={{ duration: 0.8, delay: 0.5, type: 'spring', stiffness: 150 }}
       >
         <div className="rounded-2xl overflow-hidden shadow-xl max-w-sm">
-          <img src={heroImage} alt="Skeniranje računa mobilnim telefonom" className="w-full h-auto object-cover" loading="lazy" />
+          <img src={heroImage} alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" loading="lazy" />
         </div>
       </motion.div>
     </section>
