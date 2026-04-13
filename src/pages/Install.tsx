@@ -301,37 +301,74 @@ const Install = () => {
             </p>
           </div>
 
-          {/* Primary: detected platform */}
-          <PlatformCard
-            platform={platform}
-            browser={browser}
-            detected
-            deferredPrompt={deferredPrompt}
-            onInstall={handleInstall}
-          />
+          {platform === 'android' ? (
+            <>
+              {/* Primary: APK download for Android */}
+              <Card className="border-primary ring-2 ring-primary/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Package className="w-5 h-5" />
+                    Preuzmi aplikaciju
+                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full ml-auto">
+                      Preporučeno
+                    </span>
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Nativna verzija za tvoj Android uređaj
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button
+                    className="w-full gap-2 rounded-xl h-12 text-base"
+                    onClick={() => window.open('https://cost-buddy-helper.lovable.app/vm-balance.apk', '_blank')}
+                  >
+                    <Download className="w-5 h-5" />
+                    Preuzmi APK
+                  </Button>
+                  <ol className="space-y-2">
+                    <li className="flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-semibold">1</span>
+                      <span className="text-sm pt-0.5">Klikni "Preuzmi APK" iznad</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-semibold">2</span>
+                      <span className="text-sm pt-0.5">Otvori preuzetu datoteku</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-semibold">3</span>
+                      <span className="text-sm pt-0.5">Dozvoli instalaciju iz nepoznatih izvora ako se traži</span>
+                    </li>
+                  </ol>
+                </CardContent>
+              </Card>
 
-          {/* APK download for Android */}
-          {platform === 'android' && (
-            <Card className="bg-muted/30">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Package className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">Nativna verzija (APK)</p>
-                  <p className="text-xs text-muted-foreground">Preuzmi i instaliraj kao klasičnu aplikaciju</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="shrink-0 gap-1.5"
-                  onClick={() => window.open('https://cost-buddy-helper.lovable.app/vm-balance.apk', '_blank')}
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  APK
-                </Button>
-              </CardContent>
-            </Card>
+              {/* Secondary: PWA as collapsible */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between text-muted-foreground text-sm">
+                    Alternativna instalacija (PWA)
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <PlatformCard
+                    platform={platform}
+                    browser={browser}
+                    deferredPrompt={deferredPrompt}
+                    onInstall={handleInstall}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            </>
+          ) : (
+            /* Primary: detected platform (iOS/Desktop) */
+            <PlatformCard
+              platform={platform}
+              browser={browser}
+              detected
+              deferredPrompt={deferredPrompt}
+              onInstall={handleInstall}
+            />
           )}
 
           {/* Web access */}
