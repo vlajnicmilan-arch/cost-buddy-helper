@@ -5,10 +5,13 @@ import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { useAuth } from '@/hooks/useAuth';
 import { TimeClockDailyView } from './TimeClockDailyView';
 import { TimeClockAbsenceDialog } from './TimeClockAbsenceDialog';
+import { TimeClockQuickEntryDialog } from './TimeClockQuickEntryDialog';
+import { TimeClockMonthlyReport } from './TimeClockMonthlyReport';
 import { useTranslation } from 'react-i18next';
 import { format, addDays, subDays } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Loader2, CalendarDays, List } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface TimeClockTabProps {
   projectId: string;
@@ -19,6 +22,7 @@ export const TimeClockTab = ({ projectId, isManager }: TimeClockTabProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { workers, loading: workersLoading } = useProjectWorkers(projectId);
+  const timeClock = useTimeClock(projectId);
   const {
     loading: entriesLoading,
     selectedDate,
@@ -29,16 +33,21 @@ export const TimeClockTab = ({ projectId, isManager }: TimeClockTabProps) => {
     startBreak,
     endBreak,
     addAbsence,
-    deleteEntry
-  } = useTimeClock(projectId);
+    addQuickEntry,
+    deleteEntry,
+    fetchEntriesRange
+  } = timeClock;
 
   const [absenceWorkerId, setAbsenceWorkerId] = useState<string | null>(null);
+  const [quickEntryWorkerId, setQuickEntryWorkerId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
 
   const loading = workersLoading || entriesLoading;
   const statuses = getWorkerStatuses(workers);
   const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
 
   const absenceWorker = workers.find(w => w.id === absenceWorkerId);
+  const quickEntryWorker = workers.find(w => w.id === quickEntryWorkerId);
 
   if (loading) {
     return (
@@ -50,51 +59,76 @@ export const TimeClockTab = ({ projectId, isManager }: TimeClockTabProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Date navigation */}
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-muted-foreground" />
-          <span className="font-medium">
-            {format(selectedDate, 'EEEE, d. MMMM yyyy', { locale: hr })}
-          </span>
-          {isToday && (
-            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-              {t('timeClock.today', 'Danas')}
-            </span>
-          )}
-        </div>
-        <Button variant="ghost" size="icon" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
-          <ChevronRight className="w-5 h-5" />
-        </Button>
-      </div>
+      {/* View mode toggle */}
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'daily' | 'monthly')}>
+        <TabsList className="w-full">
+          <TabsTrigger value="daily" className="flex-1 gap-1">
+            <List className="w-4 h-4" />
+            {t('timeClock.dailyView', 'Dnevni')}
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="flex-1 gap-1">
+            <CalendarDays className="w-4 h-4" />
+            {t('timeClock.monthlyView', 'Mjesečni')}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Summary */}
-      <div className="grid grid-cols-4 gap-2 text-center">
-        {(['working', 'on_break', 'finished', 'absent'] as const).map(status => {
-          const count = statuses.filter(s => s.status === status).length;
-          return (
-            <div key={status} className="p-2 rounded-lg bg-muted/50">
-              <p className="text-lg font-bold">{count}</p>
-              <p className="text-xs text-muted-foreground">{t(`timeClock.${status}`, status)}</p>
+        <TabsContent value="daily" className="mt-4 space-y-4">
+          {/* Date navigation */}
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium text-sm">
+                {format(selectedDate, 'EEEE, d. MMMM yyyy', { locale: hr })}
+              </span>
+              {isToday && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  {t('timeClock.today', 'Danas')}
+                </span>
+              )}
             </div>
-          );
-        })}
-      </div>
+            <Button variant="ghost" size="icon" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
 
-      {/* Worker cards */}
-      <TimeClockDailyView
-        statuses={statuses}
-        onClockIn={(workerId) => user && clockIn(workerId, user.id)}
-        onClockOut={clockOut}
-        onStartBreak={startBreak}
-        onEndBreak={endBreak}
-        onAddAbsence={setAbsenceWorkerId}
-        onDeleteEntry={deleteEntry}
-        isManager={isManager}
-      />
+          {/* Summary */}
+          <div className="grid grid-cols-4 gap-2 text-center">
+            {(['working', 'on_break', 'finished', 'absent'] as const).map(status => {
+              const count = statuses.filter(s => s.status === status).length;
+              return (
+                <div key={status} className="p-2 rounded-lg bg-muted/50">
+                  <p className="text-lg font-bold">{count}</p>
+                  <p className="text-xs text-muted-foreground">{t(`timeClock.${status}`, status)}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Worker cards */}
+          <TimeClockDailyView
+            statuses={statuses}
+            onClockIn={(workerId) => user && clockIn(workerId, user.id)}
+            onClockOut={clockOut}
+            onStartBreak={startBreak}
+            onEndBreak={endBreak}
+            onAddAbsence={setAbsenceWorkerId}
+            onQuickEntry={setQuickEntryWorkerId}
+            onDeleteEntry={deleteEntry}
+            isManager={isManager}
+          />
+        </TabsContent>
+
+        <TabsContent value="monthly" className="mt-4">
+          <TimeClockMonthlyReport
+            projectId={projectId}
+            workers={workers}
+            fetchEntriesRange={fetchEntriesRange}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Absence dialog */}
       {absenceWorker && (
@@ -105,6 +139,21 @@ export const TimeClockTab = ({ projectId, isManager }: TimeClockTabProps) => {
           onSubmit={(absenceType, note) => {
             if (user && absenceWorkerId) {
               addAbsence(absenceWorkerId, user.id, absenceType, note);
+            }
+          }}
+        />
+      )}
+
+      {/* Quick entry dialog */}
+      {quickEntryWorker && (
+        <TimeClockQuickEntryDialog
+          open={!!quickEntryWorkerId}
+          onOpenChange={(open) => !open && setQuickEntryWorkerId(null)}
+          workerName={`${quickEntryWorker.first_name} ${quickEntryWorker.last_name}`}
+          workDate={selectedDate}
+          onSubmit={({ totalHours, entryType, note, breakdown }) => {
+            if (user && quickEntryWorkerId) {
+              addQuickEntry(quickEntryWorkerId, user.id, totalHours, entryType, note);
             }
           }}
         />
