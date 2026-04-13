@@ -367,6 +367,15 @@ export const ProjectDetailDialog = ({
               />
             </TabsContent>
             )}
+
+            {canAccessBusinessTabs && (
+            <TabsContent value="timeclock" className="m-0">
+              <TimeClockTab
+                projectId={project.id}
+                isManager={isManager}
+              />
+            </TabsContent>
+            )}
           </div>
         </Tabs>
       </DialogContent>
