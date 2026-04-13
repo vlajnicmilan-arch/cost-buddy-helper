@@ -1919,7 +1919,44 @@
       "legal": "Pravno",
       "privacy": "Pravila privatnosti",
       "account": "Račun",
-      "rights": "Sva prava pridržana."
+    "rights": "Sva prava pridržana."
+    }
+  },
+  "timeClock": {
+    "title": "Šihterica",
+    "today": "Danas",
+    "notArrived": "Nije došao",
+    "working": "Na poslu",
+    "onBreak": "Na pauzi",
+    "finished": "Završio",
+    "absent": "Odsutan",
+    "in": "Dolazak",
+    "out": "Odlazak",
+    "endBreak": "Nastavi",
+    "breakMin": "pauza",
+    "arrivedAt": "Došao u",
+    "clockedIn": "Dolazak zabilježen",
+    "clockedOut": "Odlazak zabilježen",
+    "breakStarted": "Pauza započeta",
+    "breakEnded": "Pauza završena",
+    "absenceAdded": "Odsutnost zabilježena",
+    "entryDeleted": "Zapis obrisan",
+    "addAbsence": "Evidentiraj odsutnost",
+    "absenceType": "Vrsta odsutnosti",
+    "selectAbsence": "Odaberi...",
+    "note": "Bilješka",
+    "notePlaceholder": "Opcionalna bilješka...",
+    "saveAbsence": "Spremi odsutnost",
+    "noWorkers": "Nema radnika na projektu",
+    "absence": {
+      "annual_leave": "Godišnji odmor",
+      "sick_employer": "Bolovanje (teret poslodavca)",
+      "sick_hzzo": "Bolovanje (teret HZZO)",
+      "paid_leave": "Plaćeni dopust",
+      "unpaid_leave": "Neplaćeni dopust",
+      "parental": "Rodiljni/roditeljski dopust",
+      "pregnancy_complication": "Komplikacije u trudnoći",
+      "work_stoppage": "Zastoj u radu"
     }
   }
 }

@@ -17,7 +17,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, Settings,
-  Plus, Calendar, AlertTriangle, CheckCircle2, GanttChart, BarChart3
+  Plus, Calendar, AlertTriangle, CheckCircle2, GanttChart, BarChart3, Clock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
