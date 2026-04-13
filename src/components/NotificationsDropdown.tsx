@@ -269,7 +269,7 @@ export const NotificationsDropdown = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-6 w-6 min-h-[44px] min-w-[44px] touch-manipulation"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   markAsRead(notification.id);
@@ -281,7 +281,7 @@ export const NotificationsDropdown = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              className="h-6 w-6 min-h-[44px] min-w-[44px] touch-manipulation text-destructive hover:text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteNotification(notification.id);

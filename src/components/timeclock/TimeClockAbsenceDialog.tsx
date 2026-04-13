@@ -34,7 +34,7 @@ export const TimeClockAbsenceDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[calc(100vw-1rem)] sm:w-auto max-w-md">
         <DialogHeader>
           <DialogTitle>
             {t('timeClock.addAbsence', 'Evidentiraj odsutnost')} — {workerName}

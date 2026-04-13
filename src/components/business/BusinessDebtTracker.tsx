@@ -212,10 +212,10 @@ export const BusinessDebtTracker = () => {
                     <span className={`text-sm font-bold ${debt.type === 'receivable' ? 'text-income' : 'text-expense'}`}>
                       {formatAmount(debt.amount - debt.paid_amount)}
                     </span>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => markAsPaid(debt.id)}>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => markAsPaid(debt.id)}>
                       <Check className="w-3.5 h-3.5 text-income" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteDebt(debt.id)}>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => deleteDebt(debt.id)}>
                       <Trash2 className="w-3.5 h-3.5 text-destructive" />
                     </Button>
                   </div>
@@ -235,7 +235,7 @@ export const BusinessDebtTracker = () => {
                 <span className="text-sm line-through truncate">{debt.contact_name}</span>
               </div>
               <span className="text-xs text-muted-foreground">{formatAmount(debt.amount)}</span>
-              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteDebt(debt.id)}>
+              <Button size="icon" variant="ghost" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => deleteDebt(debt.id)}>
                 <Trash2 className="w-3 h-3 text-destructive/50" />
               </Button>
             </div>

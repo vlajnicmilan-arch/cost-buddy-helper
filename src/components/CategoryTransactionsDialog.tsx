@@ -296,7 +296,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
                             {expense.merchant_name || expense.description}
                           </p>
                           <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
-                            <span>{paymentInfo.icon} {paymentInfo.name}</span>
+                            <span className="truncate">{paymentInfo.icon} {paymentInfo.name}</span>
                           </div>
                         </div>
 

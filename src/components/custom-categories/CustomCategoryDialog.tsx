@@ -57,7 +57,7 @@ export const CustomCategoryDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showBackButton={false} className="max-w-md">
+      <DialogContent showBackButton={false} className="w-[calc(100vw-1rem)] sm:w-auto max-w-md">
         <DialogHeader>
           <DialogTitle>
             {category ? t('common.editCategory') : t('common.newCustomCategory')}

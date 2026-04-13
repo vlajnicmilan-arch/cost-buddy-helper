@@ -255,7 +255,7 @@ export const BudgetMembersTab = ({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 text-destructive"
+                  className="h-8 w-8 min-h-[44px] min-w-[44px] touch-manipulation text-destructive"
                   onClick={() => handleRemoveMember(member.id)}
                 >
                   <UserMinus className="w-4 h-4" />
@@ -295,7 +295,7 @@ export const BudgetMembersTab = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 text-destructive"
+                className="h-8 w-8 min-h-[44px] min-w-[44px] touch-manipulation text-destructive"
                 onClick={() => handleCancelInvitation(invitation.id)}
               >
                 <Trash2 className="w-4 h-4" />

@@ -1006,7 +1006,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                           </div>
                         )}
                         {isSelected && selectedCategoryTransactions.length === 0 && (
-                          <p className="ml-5 mt-1 mb-2 text-xs text-muted-foreground">Nema transakcija</p>
+                          <p className="ml-3 mt-1 mb-2 text-xs text-muted-foreground">Nema transakcija</p>
                         )}
                       </div>
                     );
@@ -1108,7 +1108,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 <Button
                   variant={incomeViewType === 'grouped' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="h-7 px-3"
+                  className="min-h-[44px] px-3 touch-manipulation"
                   onClick={() => setIncomeViewType('grouped')}
                 >
                   {t('reports.grouped', 'Grupno')}
@@ -1116,7 +1116,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                 <Button
                   variant={incomeViewType === 'individual' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="h-7 px-3"
+                  className="min-h-[44px] px-3 touch-manipulation"
                   onClick={() => setIncomeViewType('individual')}
                 >
                   {t('reports.individually', 'Pojedinačno')}
@@ -1132,7 +1132,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                     <Button
                       variant={incomeChartType === 'pie' ? 'secondary' : 'ghost'}
                       size="sm"
-                      className="h-7 px-2"
+                    className="min-h-[44px] min-w-[44px] px-2 touch-manipulation"
                       onClick={() => setIncomeChartType('pie')}
                     >
                       <PieChartIcon className="w-4 h-4" />
@@ -1140,7 +1140,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                     <Button
                       variant={incomeChartType === 'bar' ? 'secondary' : 'ghost'}
                       size="sm"
-                      className="h-7 px-2"
+                      className="min-h-[44px] min-w-[44px] px-2 touch-manipulation"
                       onClick={() => setIncomeChartType('bar')}
                     >
                       <BarChart3 className="w-4 h-4" />

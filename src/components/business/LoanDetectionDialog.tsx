@@ -87,17 +87,17 @@ export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfi
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground truncate">{loan.description}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <span className={`text-sm font-semibold ${isPayable ? 'text-expense' : 'text-income'}`}>
                           {isPayable ? '-' : '+'}{formatAmount(Math.abs(loan.amount))}
                         </span>
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                           {format(loan.date, 'dd.MM.yyyy')}
                         </Badge>
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                           {loan.transactionFlow === 'inflow' ? 'uplata' : 'isplata'}
                         </Badge>
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
                           {loan.source === 'keyword' ? <Search className="w-2.5 h-2.5" /> : <Sparkles className="w-2.5 h-2.5" />}
                           {loan.confidence === 'high' ? 'visoko' : 'srednje'}
                         </Badge>
@@ -106,9 +106,9 @@ export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfi
                   </div>
 
                   {selectedIndices.has(idx) && (
-                    <div className="ml-6 space-y-2">
+                    <div className="ml-4 space-y-2">
                       <div>
-                        <Label className="text-[10px] text-muted-foreground">{t('business.debts.contact', 'Kontakt / Tvrtka')}</Label>
+                        <Label className="text-xs text-muted-foreground">{t('business.debts.contact', 'Kontakt / Tvrtka')}</Label>
                         <Input
                           value={loan.contactName}
                           onChange={(e) => updateLoan(idx, { contactName: e.target.value })}
@@ -117,7 +117,7 @@ export const LoanDetectionDialog = ({ open, onOpenChange, detectedLoans, onConfi
                         />
                       </div>
                       <div>
-                        <Label className="text-[10px] text-muted-foreground">{t('business.debts.type', 'Vrsta')}</Label>
+                        <Label className="text-xs text-muted-foreground">{t('business.debts.type', 'Vrsta')}</Label>
                         <Select value={loan.type} onValueChange={(v: 'receivable' | 'payable') => updateLoan(idx, { type: v })}>
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue />
