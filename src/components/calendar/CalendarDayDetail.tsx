@@ -140,6 +140,7 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
                        event.type === 'income' ? t('dashboard.income', 'Prihod') :
                        event.type === 'expense' ? t('dashboard.expenses', 'Trošak') :
                        event.type === 'transfer' ? t('common.transfer', 'Transfer') :
+                       event.type === 'holiday' ? t('calendar.holiday', 'Praznik') :
                        t('calendar.event', 'Događaj')}
                     </span>
                   </div>
