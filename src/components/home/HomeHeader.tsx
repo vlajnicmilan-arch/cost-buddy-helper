@@ -13,7 +13,7 @@ import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { BusinessProfileSwitcher } from '@/components/BusinessProfileSwitcher';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
 import { GlobalSearch } from '@/components/GlobalSearch';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.webp';
 import { Expense, ReceiptItem } from '@/types/expense';
 import { ParsedTransaction } from '@/lib/csvParsers';
 

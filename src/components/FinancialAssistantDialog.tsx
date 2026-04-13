@@ -19,7 +19,7 @@ const ReactMarkdown = lazy(() => import('react-markdown'));
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
-import aiAvatarImage from '@/assets/ai-avatar.png';
+import aiAvatarImage from '@/assets/ai-avatar.webp';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAppState } from '@/contexts/AppStateContext';

@@ -11,11 +11,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
-import logo from '@/assets/logo.png';
-import heroImage from '@/assets/hero-receipt-scan.jpg';
-import cardsImage from '@/assets/cards-floating.png';
-import mockupDashboard from '@/assets/app-mockup-dashboard.png';
-import mockupBudget from '@/assets/app-mockup-budget.png';
+import logo from '@/assets/logo.webp';
+import heroImage from '@/assets/hero-receipt-scan.webp';
+import cardsImage from '@/assets/cards-floating.webp';
+import mockupDashboard from '@/assets/app-mockup-dashboard.webp';
+import mockupBudget from '@/assets/app-mockup-budget.webp';
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 60, scale: 0.95 },
   visible: (i: number) => ({

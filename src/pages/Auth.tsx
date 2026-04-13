@@ -9,7 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Mail, Lock, Loader2, CheckCircle, RefreshCw, User, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.webp';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { useStorage } from '@/contexts/StorageContext';
 import { useNativeOAuth } from '@/hooks/useNativeOAuth';

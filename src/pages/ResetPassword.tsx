@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Lock, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 

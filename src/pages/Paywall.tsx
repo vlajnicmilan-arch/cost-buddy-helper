@@ -9,7 +9,7 @@ import { Check, Loader2, Shield, Zap, Building2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { showError } from '@/hooks/useStatusFeedback';
 import { motion } from 'framer-motion';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.webp';
 
 type BillingInterval = 'monthly' | 'yearly';
 
