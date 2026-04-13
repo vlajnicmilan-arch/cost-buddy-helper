@@ -13,9 +13,10 @@ import { CalendarEventDialog } from '@/components/calendar/CalendarEventDialog';
 import { CalendarDayDetail } from '@/components/calendar/CalendarDayDetail';
 import { BottomNav } from '@/components/BottomNav';
 import { PageHeader } from '@/components/PageHeader';
+import { getHolidays } from '@/lib/holidays';
 
 const Calendar = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [addEventOpen, setAddEventOpen] = useState(false);
@@ -29,6 +30,29 @@ const Calendar = () => {
   const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
 
   const monthName = format(currentMonth, 'LLLL yyyy', { locale: hr });
+
+  // Get holidays for current year (and next year if needed for Dec/Jan edge)
+  const holidays = useMemo(() => getHolidays(year, i18n.language), [year, i18n.language]);
+
+  // Merge holidays into eventsByDate
+  const mergedEventsByDate = useMemo(() => {
+    const merged: Record<string, CalendarEvent[]> = { ...eventsByDate };
+    holidays.forEach((name, dateKey) => {
+      if (!merged[dateKey]) merged[dateKey] = [];
+      // Avoid duplicates
+      if (!merged[dateKey].some(e => e.source === 'holiday')) {
+        merged[dateKey].push({
+          id: `holiday-${dateKey}`,
+          title: name,
+          date: dateKey,
+          type: 'holiday',
+          source: 'holiday',
+          description: t('calendar.publicHoliday', 'Državni praznik'),
+        });
+      }
+    });
+    return merged;
+  }, [eventsByDate, holidays, t]);
 
   const dayNames = useMemo(() => {
     return ['Po', 'Ut', 'Sr', 'Če', 'Pe', 'Su', 'Ne'];
@@ -44,12 +68,18 @@ const Calendar = () => {
 
   const getDateKey = (day: number) => format(new Date(year, month, day), 'yyyy-MM-dd');
 
+  // Check if a day is Sunday (index 6 in Mon-first week)
+  const isSunday = (day: number) => {
+    return (firstDayOfWeek + day - 1) % 7 === 6;
+  };
+
   const getDotTypes = (day: number): string[] => {
     const dateKey = getDateKey(day);
-    const events = eventsByDate[dateKey] || [];
+    const events = mergedEventsByDate[dateKey] || [];
     const types = new Set<string>();
     events.forEach(e => {
-      if (e.source === 'expense' && e.type === 'income') types.add('income');
+      if (e.source === 'holiday') types.add('holiday');
+      else if (e.source === 'expense' && e.type === 'income') types.add('income');
       else if (e.source === 'expense') types.add('expense');
       else if (e.type === 'deadline') types.add('deadline');
       else if (e.source === 'recurring') types.add('recurring');
@@ -64,6 +94,7 @@ const Calendar = () => {
     event: 'bg-orange-400',
     deadline: 'bg-red-600',
     recurring: 'bg-blue-400',
+    holiday: 'bg-purple-500',
   };
 
   const handleDayClick = (day: number) => {
@@ -76,7 +107,10 @@ const Calendar = () => {
     setAddEventOpen(true);
   };
 
-  const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : [];
+  const selectedEvents = selectedDate ? (mergedEventsByDate[selectedDate] || []) : [];
+
+  // Check if a day has a holiday
+  const isHoliday = (day: number) => holidays.has(getDateKey(day));
 
   return (
     <div className="min-h-dvh bg-background pb-24">
@@ -91,7 +125,7 @@ const Calendar = () => {
           <h2 className="text-lg font-semibold capitalize">{monthName}</h2>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={async () => {
-              const allEvents = Object.values(eventsByDate).flat();
+              const allEvents = Object.values(mergedEventsByDate).flat().filter(e => e.source !== 'holiday');
               if (!allEvents.length) return;
               try {
                 await downloadCalendarEventsICS(
@@ -115,8 +149,8 @@ const Calendar = () => {
             <div
               key={i}
               className={cn(
-                "text-center text-[10px] font-medium text-muted-foreground py-1",
-                i >= 5 && "text-muted-foreground/60"
+                "text-center text-[10px] font-medium py-1",
+                i === 6 ? "text-red-400" : i === 5 ? "text-muted-foreground/60" : "text-muted-foreground"
               )}
             >
               {name}
@@ -141,7 +175,8 @@ const Calendar = () => {
             const dateKey = getDateKey(day);
             const dots = getDotTypes(day);
             const isSelected = selectedDate === dateKey;
-            const eventCount = (eventsByDate[dateKey] || []).length;
+            const sunday = isSunday(day);
+            const holiday = isHoliday(day);
 
             return (
               <button
@@ -152,12 +187,15 @@ const Calendar = () => {
                   "hover:ring-1 hover:ring-primary/40 active:scale-95",
                   isToday(day) && "ring-1 ring-primary",
                   isSelected && "ring-2 ring-primary bg-primary/10",
-                  !isSelected && !isToday(day) && "bg-muted/20"
+                  !isSelected && !isToday(day) && "bg-muted/20",
+                  holiday && !isSelected && "bg-red-500/5 dark:bg-red-500/10"
                 )}
               >
                 <span className={cn(
                   "text-sm font-medium leading-none",
-                  isToday(day) && "text-primary font-bold"
+                  isToday(day) && "text-primary font-bold",
+                  sunday && !isToday(day) && "text-red-400",
+                  holiday && !isToday(day) && !sunday && "text-red-400/80"
                 )}>
                   {day}
                 </span>
@@ -168,7 +206,10 @@ const Calendar = () => {
                     {dots.slice(0, 3).map((type, idx) => (
                       <div
                         key={idx}
-                        className={cn("w-1.5 h-1.5 rounded-full", dotColorMap[type] || 'bg-muted-foreground')}
+                        className={cn(
+                          "w-2 h-2 rounded-full ring-1 ring-background",
+                          dotColorMap[type] || 'bg-muted-foreground'
+                        )}
                       />
                     ))}
                     {dots.length > 3 && (
@@ -184,20 +225,24 @@ const Calendar = () => {
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-3 mt-4 justify-center">
           <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            <div className="w-2 h-2 rounded-full bg-red-500" />
             <span className="text-[10px] text-muted-foreground">{t('dashboard.expenses', 'Troškovi')}</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            <div className="w-2 h-2 rounded-full bg-green-500" />
             <span className="text-[10px] text-muted-foreground">{t('dashboard.income', 'Prihodi')}</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+            <div className="w-2 h-2 rounded-full bg-orange-400" />
             <span className="text-[10px] text-muted-foreground">{t('calendar.event', 'Događaj')}</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+            <div className="w-2 h-2 rounded-full bg-blue-400" />
             <span className="text-[10px] text-muted-foreground">{t('calendar.recurring', 'Ponavljajuća')}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-purple-500" />
+            <span className="text-[10px] text-muted-foreground">{t('calendar.holiday', 'Praznik')}</span>
           </div>
         </div>
       </div>

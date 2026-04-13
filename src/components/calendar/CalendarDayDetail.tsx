@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { getCategoryInfo } from '@/types/expense';
 import { cn } from '@/lib/utils';
-import { Check, Trash2, Cake, CreditCard, AlertTriangle, CalendarDays, RefreshCw, CalendarPlus } from 'lucide-react';
+import { Check, Trash2, Cake, CreditCard, AlertTriangle, CalendarDays, RefreshCw, CalendarPlus, Star } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -26,6 +26,7 @@ const typeIcons: Record<string, any> = {
   deadline: AlertTriangle,
   reminder: CalendarDays,
   custom: CalendarDays,
+  holiday: Star,
 };
 
 const typeColors: Record<string, string> = {
@@ -36,6 +37,7 @@ const typeColors: Record<string, string> = {
   birthday: 'text-pink-500',
   planned_expense: 'text-amber-500',
   deadline: 'text-red-600',
+  holiday: 'text-purple-500',
 };
 
 export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleComplete, onDelete }: Props) => {
@@ -99,6 +101,7 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
             const isTransaction = event.source === 'expense';
             const isRecurring = event.source === 'recurring';
             const isReminder = event.source === 'reminder';
+            const isHoliday = event.source === 'holiday';
             const catInfo = event.category ? getCategoryInfo(event.category as any) : null;
             const Icon = isRecurring ? RefreshCw : typeIcons[event.type] || CalendarDays;
 
