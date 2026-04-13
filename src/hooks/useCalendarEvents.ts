@@ -9,8 +9,8 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
-  type: 'expense' | 'income' | 'transfer' | 'reminder' | 'birthday' | 'planned_expense' | 'deadline';
-  source: 'expense' | 'reminder' | 'recurring';
+  type: 'expense' | 'income' | 'transfer' | 'reminder' | 'birthday' | 'planned_expense' | 'deadline' | 'holiday';
+  source: 'expense' | 'reminder' | 'recurring' | 'holiday';
   amount?: number;
   category?: string;
   description?: string;

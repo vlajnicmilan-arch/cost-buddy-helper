@@ -380,7 +380,10 @@
       "sat": "Su",
       "sun": "Ne",
       "print": "Ispis",
-      "net": "Neto"
+      "net": "Neto",
+      "holiday": "Praznik",
+      "publicHoliday": "Državni praznik",
+      "alternativeInstall": "Alternativna instalacija"
     },
     "cashflow": {
       "title": "Cashflow prognoza (8 tjedana)",

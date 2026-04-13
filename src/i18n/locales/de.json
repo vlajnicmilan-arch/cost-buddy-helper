@@ -271,7 +271,10 @@
       "sat": "Sa",
       "sun": "So",
       "print": "Drucken",
-      "net": "Netto"
+      "net": "Netto",
+      "holiday": "Feiertag",
+      "publicHoliday": "Gesetzlicher Feiertag",
+      "alternativeInstall": "Alternative Installation"
     },
     "cashflow": {
       "title": "Cashflow-Prognose (8 Wochen)",

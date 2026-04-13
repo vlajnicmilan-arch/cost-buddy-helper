@@ -380,7 +380,10 @@
       "sat": "Sa",
       "sun": "Su",
       "print": "Print",
-      "net": "Net"
+      "net": "Net",
+      "holiday": "Holiday",
+      "publicHoliday": "Public Holiday",
+      "alternativeInstall": "Alternative installation"
     },
     "cashflow": {
       "title": "Cashflow Forecast (8 weeks)",
