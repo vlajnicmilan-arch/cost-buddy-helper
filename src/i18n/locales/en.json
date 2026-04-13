@@ -1919,7 +1919,44 @@
       "legal": "Legal",
       "privacy": "Privacy Policy",
       "account": "Account",
-      "rights": "All rights reserved."
+    "rights": "All rights reserved."
+    }
+  },
+  "timeClock": {
+    "title": "Time Clock",
+    "today": "Today",
+    "notArrived": "Not arrived",
+    "working": "Working",
+    "onBreak": "On break",
+    "finished": "Finished",
+    "absent": "Absent",
+    "in": "Clock In",
+    "out": "Clock Out",
+    "endBreak": "Resume",
+    "breakMin": "break",
+    "arrivedAt": "Arrived at",
+    "clockedIn": "Clock-in recorded",
+    "clockedOut": "Clock-out recorded",
+    "breakStarted": "Break started",
+    "breakEnded": "Break ended",
+    "absenceAdded": "Absence recorded",
+    "entryDeleted": "Entry deleted",
+    "addAbsence": "Record absence",
+    "absenceType": "Absence type",
+    "selectAbsence": "Select...",
+    "note": "Note",
+    "notePlaceholder": "Optional note...",
+    "saveAbsence": "Save absence",
+    "noWorkers": "No workers on project",
+    "absence": {
+      "annual_leave": "Annual leave",
+      "sick_employer": "Sick leave (employer)",
+      "sick_hzzo": "Sick leave (HZZO)",
+      "paid_leave": "Paid leave",
+      "unpaid_leave": "Unpaid leave",
+      "parental": "Parental leave",
+      "pregnancy_complication": "Pregnancy complication",
+      "work_stoppage": "Work stoppage"
     }
   }
 }
