@@ -1,38 +1,39 @@
 
 
-# Plan: Zamjena hero slike na landing stranici
+# Plan: Popravak prikaza izvještaja na mobitelu (Vinkini bugovi)
 
-## Trenutno stanje
-- `hero-receipt-scan.webp` (27 KB) — generička slika skeniranja računa
-- Koristi se u hero sekciji (desktop i mobile)
+## Problemi koje Vinka prijavljuje
 
-## Nova slika
-**Pexels #6693631** — "Smartphone Calculator and Dollar Bills on Papers on Table Top"
-- Autor: Tima Miroshnichenko
-- Licenca: Pexels (Free to use, no attribution required)
-- URL: `https://images.pexels.com/photos/6693631/pexels-photo-6693631.jpeg`
-- Flat lay stil: mobitel s kalkulatorom, novčanice, financijski papiri na stolu
+Svi problemi su u `src/components/reports/ReportsDialog.tsx`:
 
-## Koraci
+1. **Odsječeni iznosi u proširenim kategorijama** — Kad klikne na kategoriju (npr. Zdravlje) da vidi transakcije, iznosi desno su odsječeni (-7 umjesto -7,50 €, -105 umjesto -105,00 €). Uzrok: `ml-5` + `pl-3` na transakcijskom kontejneru smanjuju dostupan prostor, a na 384px ekranu nema mjesta za cijeli iznos.
 
-### 1. Preuzeti i komprimirati sliku
-- Preuzeti original s Pexels-a
-- Resize na 1200px širine (dovoljno za hero)
-- Konvertirati u WebP (kvaliteta 80%)
-- Spremiti kao `src/assets/hero-receipt-scan.webp` (zamjena postojeće)
+2. **Pie chart labele izlaze van ekrana** — Imena kategorija oko donut charta (npr. "Obrazov...", "Odjeća 6%") su odsječena desno. Uzrok: `label` prop renderira puno ime + postotak izvan granica `outerRadius`, a `ResponsiveContainer` ne može skratiti SVG tekst.
 
-### 2. Bez promjena koda
-- Postojeći import (`import heroImage from '@/assets/hero-receipt-scan.webp'`) ostaje isti
-- Alt tekst promijeniti u nešto prikladnije za novu sliku
+3. **Stupci (bar chart) se ne mogu prikazati** — Toggle tipke za pie/bar su premale za dodir na mobitelu. Tipke imaju `h-7 px-2` (28px visine) — ispod minimuma od 44px.
 
-## Datoteke za promjenu
-| Datoteka | Akcija |
-|---|---|
-| `src/assets/hero-receipt-scan.webp` | Zamjena novom slikom |
-| `src/pages/Landing.tsx` | Ažurirati alt tekst na img tagovima (2 mjesta) |
+## Promjene
+
+### Datoteka: `src/components/reports/ReportsDialog.tsx`
+
+**1. Proširene transakcije — smanjiti lijevi margin (linija ~986)**
+- Smanjiti `ml-5 pl-3` na `ml-3 pl-2` kako bi transakcije imale više prostora desno
+- Dodati `overflow-hidden` na roditeljski kontejner
+
+**2. Pie chart labele — skratiti na mobilnom (linija ~905)**
+- Zamijeniti inline label s kraćim formatom: prikazati samo postotak (`${(percent*100).toFixed(0)}%`) umjesto punog imena
+- Alternativno: ukloniti `label` prop i osloniti se na Tooltip za detalje
+
+**3. Toggle tipke — povećati touch target (linija ~873-889)**
+- Povećati tipke na `min-h-[44px] min-w-[44px]` za mobilni dodir
+- Dodati `touch-manipulation` klasu
+
+**4. Dialog širina na mobilnom (linija ~658)**
+- Dodati `w-[calc(100vw-1rem)]` za mobilni kako bi dialog koristio puni ekran
 
 ## Očekivani rezultat
-- Profesionalnija hero slika koja bolje komunicira financijsko praćenje
-- Ista ili manja veličina datoteke (WebP kompresija)
-- Nema utjecaja na performanse ili bundle
+- Iznosi u proširenim kategorijama vidljivi u cijelosti (s centima i €)
+- Pie chart labele se ne odsijecaju
+- Toggle pie/bar radi na dodir
+- Bolje iskorištenje prostora na 384px ekranu
 
