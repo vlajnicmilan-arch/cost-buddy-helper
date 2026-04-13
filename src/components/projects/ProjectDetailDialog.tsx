@@ -27,6 +27,7 @@ import { ProjectMembersTab } from './ProjectMembersTab';
 import { ProjectTransactionsTab } from './ProjectTransactionsTab';
 import { ProjectTimelineTab } from './ProjectTimelineTab';
 import { ProjectReportsDialog } from './ProjectReportsDialog';
+import { TimeClockTab } from '../timeclock/TimeClockTab';
 
 interface ProjectDetailDialogProps {
   open: boolean;
