@@ -1,39 +1,101 @@
 
 
-# Plan: Popravak prikaza izvještaja na mobitelu (Vinkini bugovi)
+# Audit: Mobile Responsiveness problemi (360px ekrani)
 
-## Problemi koje Vinka prijavljuje
+## Pronađeni problemi po kategorijama
 
-Svi problemi su u `src/components/reports/ReportsDialog.tsx`:
+### 1. Premali touch targeti (ispod 44px minimuma)
 
-1. **Odsječeni iznosi u proširenim kategorijama** — Kad klikne na kategoriju (npr. Zdravlje) da vidi transakcije, iznosi desno su odsječeni (-7 umjesto -7,50 €, -105 umjesto -105,00 €). Uzrok: `ml-5` + `pl-3` na transakcijskom kontejneru smanjuju dostupan prostor, a na 384px ekranu nema mjesta za cijeli iznos.
+| Datoteka | Problem | Trenutno |
+|---|---|---|
+| `WorkCalendarOverview.tsx` (L820,823) | Edit/Delete gumbi | `h-7 w-7` (28px) |
+| `BusinessDebtTracker.tsx` (L215,218,238) | Označi plaćeno / Obriši | `h-7 w-7` (28px) |
+| `BusinessProfileDialog.tsx` (L511) | Back gumb | `h-7 w-7` (28px) |
+| `NotificationsDropdown.tsx` (L272,284) | Dismiss/Delete | `h-6 w-6` (24px) |
+| `BackupRestore.tsx` (L288,299,535,548) | Restore/Delete/Settings | `h-8 w-8` (32px) |
+| `BudgetMembersTab.tsx` (L258,298) | Remove member | `h-8 w-8` (32px) |
+| `ReportsDialog.tsx` (L1111,1119,1135,1143) | Income toggle tipke | `h-7 px-2/3` (28px) |
+| `settings/ProfileSection.tsx` (L48) | Edit name | `h-8 w-8` (32px) |
 
-2. **Pie chart labele izlaze van ekrana** — Imena kategorija oko donut charta (npr. "Obrazov...", "Odjeća 6%") su odsječena desno. Uzrok: `label` prop renderira puno ime + postotak izvan granica `outerRadius`, a `ResponsiveContainer` ne može skratiti SVG tekst.
+**Ukupno: ~20 gumba na 8 datoteka**
 
-3. **Stupci (bar chart) se ne mogu prikazati** — Toggle tipke za pie/bar su premale za dodir na mobitelu. Tipke imaju `h-7 px-2` (28px visine) — ispod minimuma od 44px.
+### 2. Fiksni margini koji kradu prostor na 360px
 
-## Promjene
+| Datoteka | Problem |
+|---|---|
+| `ReportsDialog.tsx` (L1009) | `ml-5` na "Nema transakcija" tekstu |
+| `ManualExpenseForm.tsx` (L686) | `ml-6` na hint tekstu |
+| `ScannedDataPreview.tsx` (L576) | `ml-6` na hint tekstu |
+| `LoanDetectionDialog.tsx` (L109) | `ml-6` na formi unutar expandera |
 
-### Datoteka: `src/components/reports/ReportsDialog.tsx`
+### 3. Tekst koji se može odrezati (nedostaje `truncate` ili `min-w-0`)
 
-**1. Proširene transakcije — smanjiti lijevi margin (linija ~986)**
-- Smanjiti `ml-5 pl-3` na `ml-3 pl-2` kako bi transakcije imale više prostora desno
-- Dodati `overflow-hidden` na roditeljski kontejner
+| Datoteka | Problem |
+|---|---|
+| `LoanDetectionDialog.tsx` (L92-101) | Badge-ovi s tekstom u flex redu — nema wrapa, odu van ekrana |
+| `CategoryTransactionsDialog.tsx` (L298) | Payment info tekst nema `truncate` |
+| `BudgetFullScreenView.tsx` (L217) | `grid-cols-4` TabsList — na 360px 4 taba se zgušnjaju |
+| `BusinessDashboard.tsx` (L73,85) | "vs prošli mj." tekst uz postotke — može se odrezati |
 
-**2. Pie chart labele — skratiti na mobilnom (linija ~905)**
-- Zamijeniti inline label s kraćim formatom: prikazati samo postotak (`${(percent*100).toFixed(0)}%`) umjesto punog imena
-- Alternativno: ukloniti `label` prop i osloniti se na Tooltip za detalje
+### 4. Dijalozi bez mobile-optimizirane širine
 
-**3. Toggle tipke — povećati touch target (linija ~873-889)**
-- Povećati tipke na `min-h-[44px] min-w-[44px]` za mobilni dodir
-- Dodati `touch-manipulation` klasu
+| Datoteka | Problem |
+|---|---|
+| `CustomCategoryDialog.tsx` | `max-w-md` bez `w-[calc(100vw-1rem)]` |
+| `TimeClockQuickEntryDialog.tsx` | `max-w-md` bez responsive width |
+| `ProjectBudgetHistoryDialog.tsx` | `max-w-md` bez responsive width |
+| `ProjectCollaboratorDialog.tsx` | `max-w-md` bez responsive width |
+| `TimeClockAbsenceDialog.tsx` | `max-w-md` bez responsive width |
 
-**4. Dialog širina na mobilnom (linija ~658)**
-- Dodati `w-[calc(100vw-1rem)]` za mobilni kako bi dialog koristio puni ekran
+### 5. `text-[9px]` i `text-[10px]` — na granici čitljivosti
 
-## Očekivani rezultat
-- Iznosi u proširenim kategorijama vidljivi u cijelosti (s centima i €)
-- Pie chart labele se ne odsijecaju
-- Toggle pie/bar radi na dodir
-- Bolje iskorištenje prostora na 384px ekranu
+| Datoteka | Koliko mjesta |
+|---|---|
+| `LoanDetectionDialog.tsx` | 5 mjesta (badges + labele) |
+| `BusinessDashboard.tsx` | 4 mjesta |
+| `BusinessMore.tsx` | 1 mjesto |
+| `BusinessModuleSettings.tsx` | 1 mjesto |
+| `CategoryBreakdown.tsx` | 1 mjesto |
+
+---
+
+## Plan popravka
+
+### Korak 1: Touch targeti → min 44px (8 datoteka)
+Dodati `min-h-[44px] min-w-[44px]` na sve gumbe koji su ispod 44px. Ne mijenjati vizualnu veličinu ikone, samo povećati hit area.
+
+### Korak 2: Fiksni margini → manji (4 datoteke)
+- `ml-6` → `ml-4`
+- `ml-5` → `ml-3`
+
+### Korak 3: Dijalozi → responsive širina (5 datoteka)
+Dodati `w-[calc(100vw-1rem)] sm:w-auto` na `DialogContent` koji koriste samo `max-w-md`.
+
+### Korak 4: Overflow zaštita (3 datoteke)
+- `LoanDetectionDialog.tsx`: dodati `flex-wrap` na badge kontejner
+- `CategoryTransactionsDialog.tsx`: dodati `truncate` na payment info
+- `BudgetFullScreenView.tsx`: tab tekst već ima `hidden sm:inline` — OK
+
+### Korak 5: Income sekcija ReportsDialog (1 datoteka)
+Primijeniti isti `min-h-[44px]` popravak na income toggle tipke (L1111-1143) kao što je već napravljeno za expense toggle.
+
+---
+
+## Datoteke za promjenu (ukupno ~13)
+
+1. `src/components/projects/WorkCalendarOverview.tsx`
+2. `src/components/business/BusinessDebtTracker.tsx`
+3. `src/components/BusinessProfileDialog.tsx`
+4. `src/components/NotificationsDropdown.tsx`
+5. `src/components/BackupRestore.tsx`
+6. `src/components/budget/BudgetMembersTab.tsx`
+7. `src/components/reports/ReportsDialog.tsx`
+8. `src/components/settings/ProfileSection.tsx`
+9. `src/components/add-expense/ManualExpenseForm.tsx`
+10. `src/components/add-expense/ScannedDataPreview.tsx`
+11. `src/components/business/LoanDetectionDialog.tsx`
+12. `src/components/CategoryTransactionsDialog.tsx`
+13. `src/components/timeclock/TimeClockAbsenceDialog.tsx` + ostali dijalozi (batch)
+
+Nema promjena baze, migracija ni RLS-a.
 
