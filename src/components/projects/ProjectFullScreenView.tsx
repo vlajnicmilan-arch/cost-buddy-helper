@@ -18,7 +18,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
-  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History
+  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock
 } from 'lucide-react';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
@@ -32,6 +32,7 @@ import { ProjectTimelineTab } from './ProjectTimelineTab';
 import { ProjectReportsDialog } from './ProjectReportsDialog';
 import { ProjectWorkersTab } from './ProjectWorkersTab';
 import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
+import { TimeClockTab } from '../timeclock/TimeClockTab';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProjectFullScreenViewProps {
@@ -309,6 +310,12 @@ export const ProjectFullScreenView = ({
                         {t('projects.transactions', 'Transakcije')}
                       </TabsTrigger>
                       )}
+                      {canAccessBusinessTabs && (
+                      <TabsTrigger value="timeclock" className="gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground">
+                        <Clock className="w-3.5 h-3.5" />
+                        {t('timeClock.title', 'Šihterica')}
+                      </TabsTrigger>
+                      )}
                     </TabsList>
                   </div>
                   {/* Fade hint za scroll */}
@@ -478,6 +485,15 @@ export const ProjectFullScreenView = ({
                       refetchStats();
                       refetchMilestones();
                     }}
+                  />
+                </TabsContent>
+                )}
+
+                {canAccessBusinessTabs && (
+                <TabsContent value="timeclock" className="m-0">
+                  <TimeClockTab
+                    projectId={project.id}
+                    isManager={isManager}
                   />
                 </TabsContent>
                 )}
