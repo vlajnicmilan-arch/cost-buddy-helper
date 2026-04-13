@@ -1,34 +1,52 @@
 
 
-# Plan: Iznos kao obavezan kriterij za duplikate (ručni unos)
+# Plan: Optimizacija performansi — kompresija slika, lazy loading, fontovi
 
-## Problem
-Funkcija `checkDuplicate` (ručni unos) i dalje koristi čisti "2-od-3" sustav. Vinka je dobila lažno upozorenje jer su se poklopili datum i dio opisa ("Marino"), ali iznosi su bili potpuno različiti (7,23€ vs 50€).
+## Trenutno stanje
+- **3.3 MB slika** u `src/assets/` — ulaze u JS bundle
+- `ai-avatar.png` = 2.1 MB (najveći krivac)
+- `app-mockup-dashboard.png` = 462 KB, `app-mockup-budget.png` = 414 KB
+- JetBrains Mono font se učitava zajedno s Interom iako se rijetko koristi
 
-## Promjena
+## Koraci
 
-**Datoteka:** `src/hooks/useExpenses.ts`, linije 186-187
+### 1. Kompresija slika u WebP (očekivano smanjenje ~90%)
+Konvertirati sve velike PNG/JPG u WebP koristeći `cwebp`:
 
-Zamijeniti:
-```typescript
-// Return match if score >= 2 (2-of-3 criteria met)
-return bestScore >= 2 ? bestMatch : null;
-```
+| Slika | Trenutno | Cilj |
+|---|---|---|
+| `ai-avatar.png` | 2.1 MB | ~100 KB |
+| `app-mockup-dashboard.png` | 462 KB | ~60 KB |
+| `app-mockup-budget.png` | 414 KB | ~60 KB |
+| `cards-floating.png` | 49 KB | ~15 KB |
+| `hero-receipt-scan.jpg` | 69 KB | ~25 KB |
+| `vm_balance_ghost_avatar_enhanced_224.png` | 84 KB | ~20 KB |
+| `vm_balance_avatar.png` | 64 KB | ~15 KB |
 
-S:
-```typescript
-// Amount match is mandatory — without it, no duplicate warning
-if (bestScore >= 2 && bestMatch) {
-  const amountDiff = Math.abs(Number(bestMatch.amount) - transaction.amount) / Math.max(Math.abs(transaction.amount), 0.01);
-  const sameType = bestMatch.type === transaction.type;
-  if (!sameType || amountDiff > 0.01) return null;
-}
-return bestScore >= 2 ? bestMatch : null;
-```
+Ažurirati sve importove u 11 datoteka da koriste `.webp` umjesto `.png/.jpg`.
 
-`findDuplicates` (CSV import) ostaje nepromijenjen — tamo batch pregled ima smisla s 2-od-3.
+### 2. Lazy loading za FinancialAssistantDialog
+- `FinancialAssistantDialog.tsx` importira `ai-avatar.png` (2.1 MB) — lazy loadati komponentu ako već nije
+- Na `Landing.tsx` dodati `loading="lazy"` na `<img>` tagove za mockup slike
+
+### 3. Font optimizacija
+- Razdvojiti JetBrains Mono u zaseban neblokirajući link (učitava se samo kad je potreban)
+- Inter ostaje s postojećom preload strategijom
+
+### Datoteke za promjenu
 
 | Datoteka | Promjena |
 |---|---|
-| `src/hooks/useExpenses.ts` | Dodati provjeru iznosa kao obavezan uvjet u `checkDuplicate` |
+| `src/assets/*` | Kompresija u WebP format |
+| `src/pages/Landing.tsx` | WebP importi + `loading="lazy"` |
+| `src/components/FinancialAssistantDialog.tsx` | WebP import |
+| `src/components/PageHeader.tsx` | WebP import (logo ostaje PNG — mali) |
+| `src/pages/Auth.tsx`, `Install.tsx`, `Onboarding.tsx`, `Paywall.tsx`, `ResetPassword.tsx`, `StorageSetup.tsx` | WebP import za logo ako se komprimira |
+| `src/components/home/HomeHeader.tsx`, `LockScreen.tsx` | WebP import |
+| `index.html` | Razdvojiti JetBrains Mono font |
+
+### Očekivani rezultat
+- Bundle manji za ~3 MB
+- Značajno bolji LCP i FCP
+- Viši Lighthouse score na mobilnim uređajima
 
