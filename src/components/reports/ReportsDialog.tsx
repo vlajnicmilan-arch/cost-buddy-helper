@@ -655,7 +655,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
           {t('bulk.reports')}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto w-[calc(100vw-1rem)] sm:w-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <FileText className="w-5 h-5" />
@@ -874,7 +874,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                     <Button
                       variant={chartType === 'pie' ? 'secondary' : 'ghost'}
                       size="sm"
-                      className="h-7 px-2"
+                      className="min-h-[44px] min-w-[44px] h-7 px-2 touch-manipulation"
                       onClick={() => setChartType('pie')}
                     >
                       <PieChartIcon className="w-4 h-4" />
@@ -882,7 +882,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                     <Button
                       variant={chartType === 'bar' ? 'secondary' : 'ghost'}
                       size="sm"
-                      className="h-7 px-2"
+                      className="min-h-[44px] min-w-[44px] h-7 px-2 touch-manipulation"
                       onClick={() => setChartType('bar')}
                     >
                       <BarChart3 className="w-4 h-4" />
@@ -902,7 +902,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
                           outerRadius={80}
                           paddingAngle={2}
                           dataKey="value"
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                           labelLine={false}
                         >
                           {chartData.map((entry, index) => (
@@ -983,7 +983,7 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
 
                         {/* Transaction list for selected category */}
                         {isSelected && selectedCategoryTransactions.length > 0 && (
-                          <div className="ml-5 mt-1 mb-2 space-y-1 border-l-2 pl-3" style={{ borderColor: item.color }}>
+                          <div className="ml-3 mt-1 mb-2 space-y-1 border-l-2 pl-2 overflow-hidden" style={{ borderColor: item.color }}>
                             {selectedCategoryTransactions.map((expense) => (
                               <div key={expense.id} className="flex items-center gap-2 py-1.5 text-xs">
                                 <span className="text-muted-foreground shrink-0">
