@@ -8,7 +8,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
 import { cn } from '@/lib/utils';
 import { initLocalDB } from '@/lib/storage/indexedDB';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.webp';
 import { useTranslation } from 'react-i18next';
 
 const StorageSetup = () => {

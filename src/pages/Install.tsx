@@ -18,7 +18,7 @@ import {
   Package
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.webp';
 import { APP_VERSION } from '@/lib/version';
 
 interface BeforeInstallPromptEvent extends Event {

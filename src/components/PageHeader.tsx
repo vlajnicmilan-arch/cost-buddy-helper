@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LogOut, Smartphone, Cloud } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.webp';
 
 interface PageHeaderProps {
   title: string;

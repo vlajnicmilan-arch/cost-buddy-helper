@@ -13,7 +13,7 @@ import { OnboardingPaymentSourceCard } from '@/components/onboarding/OnboardingP
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 import { CustomPaymentSource, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
 import { ChevronRight, ChevronLeft, User, Wallet, CreditCard, Briefcase, Gift, Sparkles, Check, Plus, ScanLine } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.webp';
 import { showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 
