@@ -285,7 +285,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 min-h-[44px] min-w-[44px] touch-manipulation"
               onClick={() => {
                 loadAutoBackups();
                 setHistoryOpen(true);
@@ -296,7 +296,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 min-h-[44px] min-w-[44px] touch-manipulation"
               onClick={() => setSettingsOpen(true)}
             >
               <Settings2 className="w-4 h-4" />
@@ -532,7 +532,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 min-h-[44px] min-w-[44px] touch-manipulation"
                             onClick={() => handleRestoreBackup(backup)}
                             disabled={isRestoring}
                           >
@@ -545,7 +545,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            className="h-8 w-8 min-h-[44px] min-w-[44px] touch-manipulation text-destructive hover:text-destructive"
                             onClick={() => handleDeleteBackup(backup.id)}
                           >
                             <AlertCircle className="w-4 h-4" />

@@ -45,7 +45,7 @@ export const ProfileSection = ({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 min-h-[44px] min-w-[44px] touch-manipulation"
               onClick={() => setEditingName(true)}
             >
               <Pencil className="w-4 h-4" />

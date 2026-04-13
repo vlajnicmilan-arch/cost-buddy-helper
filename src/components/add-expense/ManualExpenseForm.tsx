@@ -683,7 +683,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             </label>
           </div>
           {props.saveReceipt && (
-            <p className="text-xs text-muted-foreground/70 ml-6 mt-1">{t('scanner.saveImageHint')}</p>
+            <p className="text-xs text-muted-foreground/70 ml-4 mt-1">{t('scanner.saveImageHint')}</p>
           )}
         </div>
       )}

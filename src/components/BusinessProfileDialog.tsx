@@ -508,7 +508,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {view === 'edit' && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setView('list')}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation rounded-lg" onClick={() => setView('list')}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             )}

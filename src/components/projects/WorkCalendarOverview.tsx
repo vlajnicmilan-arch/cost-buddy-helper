@@ -817,10 +817,10 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
                           </div>
                           <div className="flex items-center gap-1">
                             <Badge variant="outline" className="text-xs">{worker.position}</Badge>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartEdit(entry)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleStartEdit(entry)}>
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEntry(entry.id)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleDeleteEntry(entry.id)}>
                               <Trash2 className="w-3.5 h-3.5 text-destructive" />
                             </Button>
                           </div>
