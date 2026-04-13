@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import {
   LogIn, LogOut, Coffee, CoffeeIcon, AlertCircle, Clock,
-  Trash2, User
+  Trash2, User, PenLine
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +18,7 @@ interface TimeClockDailyViewProps {
   onStartBreak: (entryId: string) => void;
   onEndBreak: (entryId: string) => void;
   onAddAbsence: (workerId: string) => void;
+  onQuickEntry: (workerId: string) => void;
   onDeleteEntry: (entryId: string) => void;
   isManager: boolean;
 }
@@ -37,6 +38,7 @@ export const TimeClockDailyView = ({
   onStartBreak,
   onEndBreak,
   onAddAbsence,
+  onQuickEntry,
   onDeleteEntry,
   isManager
 }: TimeClockDailyViewProps) => {
@@ -82,6 +84,23 @@ export const TimeClockDailyView = ({
                     )}
                   </p>
                 )}
+                {/* Show legal breakdown for completed entries */}
+                {ws.entry && ws.status === 'finished' && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {Number(ws.entry.regular_hours) > 0 && (
+                      <span className="text-xs text-muted-foreground">R:{ws.entry.regular_hours}h</span>
+                    )}
+                    {Number(ws.entry.overtime_hours) > 0 && (
+                      <span className="text-xs text-orange-600 dark:text-orange-400">P:{ws.entry.overtime_hours}h</span>
+                    )}
+                    {Number(ws.entry.night_hours) > 0 && (
+                      <span className="text-xs text-muted-foreground">N:{ws.entry.night_hours}h</span>
+                    )}
+                    {Number(ws.entry.sunday_hours) > 0 && (
+                      <span className="text-xs text-muted-foreground">Ned:{ws.entry.sunday_hours}h</span>
+                    )}
+                  </div>
+                )}
                 {ws.entry?.absence_type && (
                   <p className="text-xs text-muted-foreground">
                     {t(`timeClock.absence.${ws.entry.absence_type}`, ws.entry.absence_type)}
@@ -97,6 +116,9 @@ export const TimeClockDailyView = ({
                       <Button size="sm" variant="default" onClick={() => onClockIn(ws.workerId)}>
                         <LogIn className="w-4 h-4 mr-1" />
                         {t('timeClock.in', 'Dolazak')}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => onQuickEntry(ws.workerId)} title={t('timeClock.quickEntry', 'Brzi unos')}>
+                        <PenLine className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => onAddAbsence(ws.workerId)}>
                         <AlertCircle className="w-4 h-4" />
