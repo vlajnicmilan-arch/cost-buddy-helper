@@ -1919,7 +1919,44 @@
       "legal": "Rechtliches",
       "privacy": "Datenschutz",
       "account": "Konto",
-      "rights": "Alle Rechte vorbehalten."
+    "rights": "Alle Rechte vorbehalten."
+    }
+  },
+  "timeClock": {
+    "title": "Stempeluhr",
+    "today": "Heute",
+    "notArrived": "Nicht erschienen",
+    "working": "Arbeitet",
+    "onBreak": "In Pause",
+    "finished": "Fertig",
+    "absent": "Abwesend",
+    "in": "Kommen",
+    "out": "Gehen",
+    "endBreak": "Fortsetzen",
+    "breakMin": "Pause",
+    "arrivedAt": "Angekommen um",
+    "clockedIn": "Ankunft erfasst",
+    "clockedOut": "Abgang erfasst",
+    "breakStarted": "Pause gestartet",
+    "breakEnded": "Pause beendet",
+    "absenceAdded": "Abwesenheit erfasst",
+    "entryDeleted": "Eintrag gelöscht",
+    "addAbsence": "Abwesenheit erfassen",
+    "absenceType": "Abwesenheitsart",
+    "selectAbsence": "Auswählen...",
+    "note": "Notiz",
+    "notePlaceholder": "Optionale Notiz...",
+    "saveAbsence": "Abwesenheit speichern",
+    "noWorkers": "Keine Arbeiter im Projekt",
+    "absence": {
+      "annual_leave": "Jahresurlaub",
+      "sick_employer": "Krankenstand (Arbeitgeber)",
+      "sick_hzzo": "Krankenstand (HZZO)",
+      "paid_leave": "Bezahlter Urlaub",
+      "unpaid_leave": "Unbezahlter Urlaub",
+      "parental": "Elternzeit",
+      "pregnancy_complication": "Schwangerschaftskomplikation",
+      "work_stoppage": "Arbeitsunterbrechung"
     }
   }
 }
