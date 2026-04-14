@@ -1990,5 +1990,67 @@
       "pregnancy_complication": "Komplikacije u trudnoći",
       "work_stoppage": "Zastoj u radu"
     }
+  },
+  "tos": {
+    "back": "Natrag",
+    "title": "Uvjeti korištenja",
+    "lastUpdated": "Zadnja izmjena: travanj 2026.",
+    "allRightsReserved": "Sva prava pridržana.",
+    "s1": {
+      "title": "1. Uvod",
+      "p1": "V&M Balance (\"aplikacija\", \"mi\", \"naš\") je aplikacija za upravljanje osobnim i poslovnim financijama. Korištenjem aplikacije pristajete na ove uvjete korištenja. Ako se ne slažete s uvjetima, molimo vas da prestanete koristiti aplikaciju."
+    },
+    "s2": {
+      "title": "2. Korištenje usluge",
+      "p1": "Za korištenje aplikacije morate imati najmanje 16 godina. Registracijom potvrđujete da su vaši podaci točni. Zabranjeno je:",
+      "l1": "Korištenje aplikacije u nezakonite svrhe",
+      "l2": "Pokušaj neovlaštenog pristupa tuđim podacima",
+      "l3": "Dijeljenje računa s trećim osobama",
+      "l4": "Automatsko prikupljanje podataka (scraping, botovi)"
+    },
+    "s3": {
+      "title": "3. Pretplate i plaćanje",
+      "p1": "Aplikacija nudi tri razine korištenja:",
+      "free": "Ograničeno na 30 transakcija mjesečno, 1 novčanik, 1 budžet",
+      "pro": "Neograničene transakcije, napredne značajke, prioritetna podrška",
+      "business": "Sve iz Pro plana + poslovni moduli, fakturiranje, inventar",
+      "p2": "Novi korisnici dobivaju 7-dnevni besplatni probni period s pristupom svim značajkama. Nakon isteka probnog perioda, pristup se ograničava na Free razinu osim ako ne aktivirate pretplatu.",
+      "p3": "Plaćanje se obrađuje putem Stripe platforme. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje). Godišnji planovi uključuju 17% popusta."
+    },
+    "s4": {
+      "title": "4. Otkazivanje i povrat",
+      "p1": "Pretplatu možete otkazati u bilo kojem trenutku putem postavki aplikacije. Nakon otkazivanja:",
+      "l1": "Pristup premium značajkama traje do kraja plaćenog razdoblja",
+      "l2": "Vaši podaci ostaju sačuvani i dostupni na Free razini",
+      "l3": "Možete izvesti sve podatke putem funkcije sigurnosne kopije (backup)",
+      "p2": "U skladu s EU zakonodavstvom, imate pravo na povrat sredstava unutar 14 dana od početka pretplate, pod uvjetom da uslugu niste značajno koristili. Za povrat kontaktirajte nas putem emaila."
+    },
+    "s5": {
+      "title": "5. Ograničenje odgovornosti",
+      "p1": "Aplikacija se pruža \"takva kakva jest\" (as is). Ne jamčimo neprekidan rad ili potpunu točnost podataka. V&M Balance nije financijski savjetnik i ne daje investicijske ili porezne savjete.",
+      "p2": "Ne odgovaramo za financijske odluke donesene na temelju podataka prikazanih u aplikaciji, niti za gubitak podataka uzrokovan okolnostima izvan naše kontrole."
+    },
+    "s6": {
+      "title": "6. GDPR prava",
+      "p1": "U skladu s Općom uredbom o zaštiti podataka (GDPR), imate sljedeća prava:",
+      "access": "Pristup",
+      "accessDesc": "Pravo uvida u sve podatke koje pohranjujemo o vama",
+      "rectification": "Ispravak",
+      "rectificationDesc": "Pravo ispravka netočnih ili nepotpunih podataka",
+      "erasure": "Brisanje",
+      "erasureDesc": "Pravo brisanja računa i svih vaših podataka (\"pravo na zaborav\")",
+      "portability": "Prenosivost",
+      "portabilityDesc": "Pravo izvoza vaših podataka u strojno čitljivom formatu",
+      "objection": "Prigovor",
+      "objectionDesc": "Pravo prigovora na određenu obradu vaših podataka"
+    },
+    "s7": {
+      "title": "7. Izmjene uvjeta",
+      "p1": "Zadržavamo pravo izmjene ovih uvjeta korištenja. O značajnim promjenama bit ćete obaviješteni putem aplikacije ili emaila najmanje 30 dana prije stupanja na snagu. Nastavkom korištenja nakon izmjena smatrat će se da prihvaćate nove uvjete."
+    },
+    "s8": {
+      "title": "8. Kontakt",
+      "p1": "Za sva pitanja vezana uz uvjete korištenja, kontaktirajte nas na:"
+    }
   }
 }

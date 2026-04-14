@@ -40,6 +40,7 @@ const Family = lazy(() => import("./pages/Family"));
 const JoinFamily = lazy(() => import("./pages/JoinFamily"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Paywall = lazy(() => import("./pages/Paywall"));
@@ -126,6 +127,7 @@ const AppRoutes = () => {
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -151,7 +153,8 @@ const AppRoutes = () => {
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
       </Suspense>
@@ -170,6 +173,7 @@ const AppRoutes = () => {
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -206,6 +210,7 @@ const AppRoutes = () => {
       <Route path="/join-budget/:token" element={<Suspense fallback={<PageLoader />}><JoinBudget /></Suspense>} />
       <Route path="/paywall" element={<Suspense fallback={<PageLoader />}><Paywall /></Suspense>} />
       <Route path="/privacy-policy" element={<Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
+      <Route path="/terms-of-service" element={<Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
