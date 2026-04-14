@@ -2052,5 +2052,31 @@
       "title": "8. Contact",
       "p1": "For any questions regarding these Terms of Service, contact us at:"
     }
+  },
+  "onboarding": {
+    "presets": {
+      "bank": "Bank",
+      "bankDesc": "Main bank account",
+      "cash": "Cash",
+      "cashDesc": "Cash in wallet",
+      "savings": "Savings",
+      "savingsDesc": "Savings account",
+      "paypal": "PayPal",
+      "paypalDesc": "PayPal account",
+      "revolut": "Revolut",
+      "revolutDesc": "Revolut card",
+      "salary": "Salary",
+      "freelance": "Freelance",
+      "reward": "Reward",
+      "investment": "Investment"
+    }
+  },
+  "form": {
+    "moreOptions": "More options",
+    "lessOptions": "Less options"
+  },
+  "summary": {
+    "trendUp": "+{{percent}}% ↑",
+    "trendDown": "-{{percent}}% ↓"
   }
 }

@@ -56,6 +56,11 @@ interface BusinessModeViewProps {
   convert: (amount: number, from: string, to: string) => number;
   netWorth: number;
   formatAmount: (amount: number) => string;
+  // Trend
+  prevMonthIncome?: number;
+  prevMonthExpenses?: number;
+  curMonthIncome?: number;
+  curMonthExpenses?: number;
   // Recurring
   activeRecurringCount: number;
   // Filters & selection
@@ -196,6 +201,10 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               recurringCount={props.activeRecurringCount}
               isLocalMode={props.isLocalMode}
               simpleModeEnabled={false}
+              prevMonthIncome={props.prevMonthIncome ?? 0}
+              prevMonthExpenses={props.prevMonthExpenses ?? 0}
+              curMonthIncome={props.curMonthIncome ?? 0}
+              curMonthExpenses={props.curMonthExpenses ?? 0}
               onIncomeClick={() => props.onIncomeDialogChange(true)}
               onExpenseClick={() => props.onExpenseDialogChange(true)}
               onTransferClick={() => props.onTransferDialogChange(true)}

@@ -17,6 +17,10 @@ interface SummarySectionProps {
   recurringCount: number;
   isLocalMode: boolean;
   simpleModeEnabled: boolean;
+  prevMonthIncome: number;
+  prevMonthExpenses: number;
+  curMonthIncome: number;
+  curMonthExpenses: number;
   onIncomeClick: () => void;
   onExpenseClick: () => void;
   onTransferClick: () => void;
@@ -35,6 +39,10 @@ export const SummarySection = React.memo(({
   recurringCount,
   isLocalMode,
   simpleModeEnabled,
+  prevMonthIncome,
+  prevMonthExpenses,
+  curMonthIncome,
+  curMonthExpenses,
   onIncomeClick,
   onExpenseClick,
   onTransferClick,
@@ -42,6 +50,14 @@ export const SummarySection = React.memo(({
 }: SummarySectionProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+
+  // Trend calculations
+  const incomeTrendPercent = prevMonthIncome > 0
+    ? Math.round(((curMonthIncome - prevMonthIncome) / prevMonthIncome) * 100)
+    : null;
+  const expenseTrendPercent = prevMonthExpenses > 0
+    ? Math.round(((curMonthExpenses - prevMonthExpenses) / prevMonthExpenses) * 100)
+    : null;
 
   return (
     <>
@@ -109,6 +125,11 @@ export const SummarySection = React.memo(({
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalIncome')}</span>
           </div>
           <p className="relative text-base sm:text-xl font-bold text-income">{formatAmount(totalIncome)}</p>
+          {incomeTrendPercent !== null && (
+            <span className={`relative text-[10px] sm:text-xs font-medium ${incomeTrendPercent >= 0 ? 'text-income' : 'text-destructive'}`}>
+              {incomeTrendPercent >= 0 ? `+${incomeTrendPercent}% ↑` : `${incomeTrendPercent}% ↓`}
+            </span>
+          )}
         </motion.div>
 
         <motion.div
@@ -130,6 +151,11 @@ export const SummarySection = React.memo(({
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
           </div>
           <p className="relative text-base sm:text-xl font-bold text-destructive">{formatAmount(totalExpenses)}</p>
+          {expenseTrendPercent !== null && (
+            <span className={`relative text-[10px] sm:text-xs font-medium ${expenseTrendPercent <= 0 ? 'text-income' : 'text-destructive'}`}>
+              {expenseTrendPercent >= 0 ? `+${expenseTrendPercent}% ↑` : `${expenseTrendPercent}% ↓`}
+            </span>
+          )}
         </motion.div>
       </div>
 

@@ -26,19 +26,19 @@ interface PaymentSourceSetup {
   cards: { card_name: string; last_four_digits: string; card_type?: string }[];
 }
 
-const PRESET_SOURCES = [
-  { id: 'bank', name: 'Banka', icon: '🏦', color: '#3b82f6', description: 'Glavni bankovni račun' },
-  { id: 'cash', name: 'Gotovina', icon: '💵', color: '#22c55e', description: 'Novac u novčaniku' },
-  { id: 'savings', name: 'Štednja', icon: '🏧', color: '#8b5cf6', description: 'Štedni račun' },
-  { id: 'paypal', name: 'PayPal', icon: '🅿️', color: '#003087', description: 'PayPal račun' },
-  { id: 'revolut', name: 'Revolut', icon: '💳', color: '#0666eb', description: 'Revolut kartica' },
+const getPresetSources = (t: (key: string) => string) => [
+  { id: 'bank', name: t('onboarding.presets.bank'), icon: '🏦', color: '#3b82f6', description: t('onboarding.presets.bankDesc') },
+  { id: 'cash', name: t('onboarding.presets.cash'), icon: '💵', color: '#22c55e', description: t('onboarding.presets.cashDesc') },
+  { id: 'savings', name: t('onboarding.presets.savings'), icon: '🏧', color: '#8b5cf6', description: t('onboarding.presets.savingsDesc') },
+  { id: 'paypal', name: t('onboarding.presets.paypal'), icon: '🅿️', color: '#003087', description: t('onboarding.presets.paypalDesc') },
+  { id: 'revolut', name: t('onboarding.presets.revolut'), icon: '💳', color: '#0666eb', description: t('onboarding.presets.revolutDesc') },
 ];
 
-const INCOME_SOURCES = [
-  { id: 'salary', name: 'Plaća', icon: '💼', color: '#22c55e' },
-  { id: 'freelance', name: 'Honorar', icon: '💻', color: '#6366f1' },
-  { id: 'reward', name: 'Nagrada', icon: '🎁', color: '#f59e0b' },
-  { id: 'investment', name: 'Investicija', icon: '📈', color: '#10b981' },
+const getIncomeSources = (t: (key: string) => string) => [
+  { id: 'salary', name: t('onboarding.presets.salary'), icon: '💼', color: '#22c55e' },
+  { id: 'freelance', name: t('onboarding.presets.freelance'), icon: '💻', color: '#6366f1' },
+  { id: 'reward', name: t('onboarding.presets.reward'), icon: '🎁', color: '#f59e0b' },
+  { id: 'investment', name: t('onboarding.presets.investment'), icon: '📈', color: '#10b981' },
 ];
 
 const Onboarding = () => {
@@ -46,6 +46,8 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const { storageMode } = useStorage();
   const { user } = useAuth();
+  const PRESET_SOURCES = getPresetSources(t);
+  const INCOME_SOURCES = getIncomeSources(t);
   const { addCustomPaymentSource, addCard } = useCustomPaymentSources();
   const { setOnboardingCompleted, setDisplayName: setContextDisplayName } = useAppState();
   

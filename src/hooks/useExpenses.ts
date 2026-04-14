@@ -192,12 +192,11 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     return bestScore >= 2 ? bestMatch : null;
   }, [expenses, scoreDuplicate]);
 
-  // Derived totals (computed from filtered dashboardExpenses)
-  const now = new Date();
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
   const totals = useMemo(() => {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
     const totalExpenses = dashboardExpenses
       .filter(e => e.type === 'expense' && (e.expense_nature as string) !== 'correction')
       .reduce((sum, e) => sum + Number(e.amount), 0);
@@ -242,9 +241,33 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dashboardExpenses]);
 
+  // Trend data: compare current month vs previous month using RAW expenses
+  const trendData = useMemo(() => {
+    const now = new Date();
+    const curStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const curEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    const curMonthIncome = expenses
+      .filter(e => e.type === 'income' && e.date >= curStart && e.date <= curEnd && (e.expense_nature as string) !== 'correction')
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+    const curMonthExpenses = expenses
+      .filter(e => e.type === 'expense' && e.date >= curStart && e.date <= curEnd && (e.expense_nature as string) !== 'correction')
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+    const prevMonthIncome = expenses
+      .filter(e => e.type === 'income' && e.date >= prevStart && e.date <= prevEnd && (e.expense_nature as string) !== 'correction')
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+    const prevMonthExpenses = expenses
+      .filter(e => e.type === 'expense' && e.date >= prevStart && e.date <= prevEnd && (e.expense_nature as string) !== 'correction')
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+
+    return { prevMonthIncome, prevMonthExpenses, curMonthIncome, curMonthExpenses };
+  }, [expenses]);
+
   return {
-    expenses: dashboardExpenses, // filtered — for dashboard display
-    allExpenses: expenses,       // raw — for income source panels
+    expenses: dashboardExpenses,
+    allExpenses: expenses,
     loading,
     isLocalMode,
     addExpense,
@@ -256,5 +279,6 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     checkDuplicate,
     refetch,
     ...totals,
+    ...trendData,
   };
 };

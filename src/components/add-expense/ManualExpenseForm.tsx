@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Plus, FolderKanban, PiggyBank, MapPin, X, Smartphone } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Loader2, Plus, FolderKanban, PiggyBank, MapPin, X, Smartphone, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { Category, CATEGORIES, PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS, ReceiptItem, TransactionType, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
@@ -105,6 +107,7 @@ interface ManualExpenseFormProps {
 
 export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
   const { t } = useTranslation();
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
     <form onSubmit={props.onSubmit} className="space-y-5 pb-4">

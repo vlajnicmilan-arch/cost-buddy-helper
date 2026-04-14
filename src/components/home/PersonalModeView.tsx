@@ -55,6 +55,11 @@ interface PersonalModeViewProps {
   currencyCode: string;
   convert: (amount: number, from: string, to: string) => number;
   netWorth: number;
+  // Trend
+  prevMonthIncome?: number;
+  prevMonthExpenses?: number;
+  curMonthIncome?: number;
+  curMonthExpenses?: number;
   // Budgets & projects
   budgetsCount: number;
   budgetsForAssistant: any[];
@@ -214,6 +219,10 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           recurringCount={props.activeRecurringCount}
           isLocalMode={props.isLocalMode}
           simpleModeEnabled={props.simpleModeEnabled}
+          prevMonthIncome={props.prevMonthIncome ?? 0}
+          prevMonthExpenses={props.prevMonthExpenses ?? 0}
+          curMonthIncome={props.curMonthIncome ?? 0}
+          curMonthExpenses={props.curMonthExpenses ?? 0}
           onIncomeClick={() => props.onIncomeDialogChange(true)}
           onExpenseClick={() => props.onExpenseDialogChange(true)}
           onTransferClick={() => props.onTransferDialogChange(true)}
