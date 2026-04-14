@@ -1990,5 +1990,67 @@
       "pregnancy_complication": "Schwangerschaftskomplikation",
       "work_stoppage": "Arbeitsunterbrechung"
     }
+  },
+  "tos": {
+    "back": "Zurück",
+    "title": "Nutzungsbedingungen",
+    "lastUpdated": "Letzte Änderung: April 2026.",
+    "allRightsReserved": "Alle Rechte vorbehalten.",
+    "s1": {
+      "title": "1. Einleitung",
+      "p1": "V&M Balance (\"App\", \"wir\", \"unser\") ist eine Anwendung zur Verwaltung persönlicher und geschäftlicher Finanzen. Durch die Nutzung der App stimmen Sie diesen Nutzungsbedingungen zu. Wenn Sie nicht einverstanden sind, stellen Sie bitte die Nutzung der Anwendung ein."
+    },
+    "s2": {
+      "title": "2. Nutzung des Dienstes",
+      "p1": "Sie müssen mindestens 16 Jahre alt sein, um die App zu nutzen. Mit der Registrierung bestätigen Sie, dass Ihre Angaben korrekt sind. Folgendes ist untersagt:",
+      "l1": "Nutzung der App für illegale Zwecke",
+      "l2": "Versuch des unbefugten Zugriffs auf Daten anderer Nutzer",
+      "l3": "Teilen Ihres Kontos mit Dritten",
+      "l4": "Automatisierte Datenerfassung (Scraping, Bots)"
+    },
+    "s3": {
+      "title": "3. Abonnements und Zahlungen",
+      "p1": "Die App bietet drei Stufen:",
+      "free": "Begrenzt auf 30 Transaktionen/Monat, 1 Wallet, 1 Budget",
+      "pro": "Unbegrenzte Transaktionen, erweiterte Funktionen, Prioritäts-Support",
+      "business": "Alles aus Pro + Geschäftsmodule, Rechnungsstellung, Inventar",
+      "p2": "Neue Benutzer erhalten eine 7-tägige kostenlose Testphase mit vollem Zugang zu allen Funktionen. Nach Ablauf der Testphase wird der Zugang auf die Free-Stufe beschränkt, es sei denn, Sie aktivieren ein Abonnement.",
+      "p3": "Zahlungen werden über Stripe abgewickelt. Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums (monatlich oder jährlich). Jahrespläne beinhalten 17% Rabatt."
+    },
+    "s4": {
+      "title": "4. Kündigung und Erstattung",
+      "p1": "Sie können Ihr Abonnement jederzeit über die App-Einstellungen kündigen. Nach der Kündigung:",
+      "l1": "Der Zugang zu Premium-Funktionen bleibt bis zum Ende des bezahlten Zeitraums bestehen",
+      "l2": "Ihre Daten bleiben gespeichert und auf der Free-Stufe zugänglich",
+      "l3": "Sie können alle Daten über die Backup-Funktion exportieren",
+      "p2": "Gemäß EU-Gesetzgebung haben Sie das Recht auf Erstattung innerhalb von 14 Tagen nach Beginn eines Abonnements, sofern Sie den Dienst nicht wesentlich genutzt haben. Kontaktieren Sie uns per E-Mail für Erstattungen."
+    },
+    "s5": {
+      "title": "5. Haftungsbeschränkung",
+      "p1": "Die App wird \"wie besehen\" bereitgestellt. Wir garantieren keinen unterbrechungsfreien Betrieb oder vollständige Datengenauigkeit. V&M Balance ist kein Finanzberater und gibt keine Anlage- oder Steuerberatung.",
+      "p2": "Wir haften nicht für finanzielle Entscheidungen, die auf Grundlage der in der App angezeigten Daten getroffen werden, noch für Datenverluste durch Umstände außerhalb unserer Kontrolle."
+    },
+    "s6": {
+      "title": "6. DSGVO-Rechte",
+      "p1": "Gemäß der Datenschutz-Grundverordnung (DSGVO) haben Sie folgende Rechte:",
+      "access": "Auskunft",
+      "accessDesc": "Recht auf Einsicht in alle Daten, die wir über Sie speichern",
+      "rectification": "Berichtigung",
+      "rectificationDesc": "Recht auf Korrektur unrichtiger oder unvollständiger Daten",
+      "erasure": "Löschung",
+      "erasureDesc": "Recht auf Löschung Ihres Kontos und aller Ihrer Daten (\"Recht auf Vergessenwerden\")",
+      "portability": "Datenübertragbarkeit",
+      "portabilityDesc": "Recht auf Export Ihrer Daten in einem maschinenlesbaren Format",
+      "objection": "Widerspruch",
+      "objectionDesc": "Recht auf Widerspruch gegen bestimmte Verarbeitungen Ihrer Daten"
+    },
+    "s7": {
+      "title": "7. Änderungen der Bedingungen",
+      "p1": "Wir behalten uns das Recht vor, diese Nutzungsbedingungen zu ändern. Über wesentliche Änderungen werden Sie mindestens 30 Tage vor Inkrafttreten per App oder E-Mail benachrichtigt. Die fortgesetzte Nutzung nach Änderungen gilt als Annahme der neuen Bedingungen."
+    },
+    "s8": {
+      "title": "8. Kontakt",
+      "p1": "Bei Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns unter:"
+    }
   }
 }

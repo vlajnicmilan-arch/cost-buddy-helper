@@ -1990,5 +1990,67 @@
       "pregnancy_complication": "Pregnancy complication",
       "work_stoppage": "Work stoppage"
     }
+  },
+  "tos": {
+    "back": "Back",
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated: April 2026.",
+    "allRightsReserved": "All rights reserved.",
+    "s1": {
+      "title": "1. Introduction",
+      "p1": "V&M Balance (\"app\", \"we\", \"our\") is a personal and business finance management application. By using the app, you agree to these Terms of Service. If you do not agree, please stop using the application."
+    },
+    "s2": {
+      "title": "2. Use of Service",
+      "p1": "You must be at least 16 years old to use the app. By registering, you confirm that your information is accurate. The following is prohibited:",
+      "l1": "Using the app for illegal purposes",
+      "l2": "Attempting unauthorized access to other users' data",
+      "l3": "Sharing your account with third parties",
+      "l4": "Automated data collection (scraping, bots)"
+    },
+    "s3": {
+      "title": "3. Subscriptions & Payments",
+      "p1": "The app offers three tiers:",
+      "free": "Limited to 30 transactions/month, 1 wallet, 1 budget",
+      "pro": "Unlimited transactions, advanced features, priority support",
+      "business": "Everything in Pro + business modules, invoicing, inventory",
+      "p2": "New users receive a 7-day free trial with full access to all features. After the trial expires, access is limited to the Free tier unless you activate a subscription.",
+      "p3": "Payments are processed via Stripe. Subscriptions automatically renew at the end of each billing period (monthly or annually). Annual plans include a 17% discount."
+    },
+    "s4": {
+      "title": "4. Cancellation & Refunds",
+      "p1": "You can cancel your subscription at any time through the app settings. After cancellation:",
+      "l1": "Access to premium features continues until the end of the paid period",
+      "l2": "Your data remains saved and accessible at the Free tier",
+      "l3": "You can export all data using the backup function",
+      "p2": "In accordance with EU legislation, you have the right to a refund within 14 days of starting a subscription, provided you have not significantly used the service. Contact us via email for refunds."
+    },
+    "s5": {
+      "title": "5. Limitation of Liability",
+      "p1": "The app is provided \"as is\". We do not guarantee uninterrupted operation or complete data accuracy. V&M Balance is not a financial advisor and does not provide investment or tax advice.",
+      "p2": "We are not liable for financial decisions made based on data displayed in the app, nor for data loss caused by circumstances beyond our control."
+    },
+    "s6": {
+      "title": "6. GDPR Rights",
+      "p1": "In accordance with the General Data Protection Regulation (GDPR), you have the following rights:",
+      "access": "Access",
+      "accessDesc": "Right to view all data we store about you",
+      "rectification": "Rectification",
+      "rectificationDesc": "Right to correct inaccurate or incomplete data",
+      "erasure": "Erasure",
+      "erasureDesc": "Right to delete your account and all your data (\"right to be forgotten\")",
+      "portability": "Portability",
+      "portabilityDesc": "Right to export your data in a machine-readable format",
+      "objection": "Objection",
+      "objectionDesc": "Right to object to certain processing of your data"
+    },
+    "s7": {
+      "title": "7. Changes to Terms",
+      "p1": "We reserve the right to modify these Terms of Service. You will be notified of significant changes via the app or email at least 30 days before they take effect. Continued use after changes constitutes acceptance of the new terms."
+    },
+    "s8": {
+      "title": "8. Contact",
+      "p1": "For any questions regarding these Terms of Service, contact us at:"
+    }
   }
 }
