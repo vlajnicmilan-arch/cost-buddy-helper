@@ -20,6 +20,7 @@ import {
 import { motion } from 'framer-motion';
 import logo from '@/assets/logo.webp';
 import { APP_VERSION } from '@/lib/version';
+import { downloadApk } from '@/lib/downloadApk';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk`;
@@ -323,12 +324,10 @@ const Install = () => {
                 <CardContent className="space-y-4">
                   <Button
                     className="w-full gap-2 rounded-xl h-12 text-base"
-                    asChild
+                    onClick={() => void downloadApk(apkUrl)}
                   >
-                    <a href={apkUrl} download="vm-balance.apk">
-                      <Download className="w-5 h-5" />
-                      Preuzmi APK
-                    </a>
+                    <Download className="w-5 h-5" />
+                    Preuzmi APK
                   </Button>
                   <ol className="space-y-2">
                     <li className="flex items-start gap-3">
