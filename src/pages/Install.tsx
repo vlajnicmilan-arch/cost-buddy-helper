@@ -324,7 +324,7 @@ const Install = () => {
                 <CardContent className="space-y-4">
                   <Button
                     className="w-full gap-2 rounded-xl h-12 text-base"
-                    onClick={() => void downloadApk(apkUrl)}
+                    onClick={() => downloadApk(apkUrl)}
                   >
                     <Download className="w-5 h-5" />
                     Preuzmi APK

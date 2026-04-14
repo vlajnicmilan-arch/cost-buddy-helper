@@ -523,7 +523,7 @@ const APKDownloadSection = ({ referralCode }: { referralCode: string }) => {
         >
           <button
             type="button"
-            onClick={() => void downloadApk(apkUrl)}
+            onClick={() => downloadApk(apkUrl)}
             className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all font-semibold"
           >
             <Download className="w-6 h-6" />
