@@ -47,6 +47,14 @@ export const SummarySection = React.memo(({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
 
+  // Trend calculations
+  const incomeTrendPercent = prevMonthIncome > 0
+    ? Math.round(((curMonthIncome - prevMonthIncome) / prevMonthIncome) * 100)
+    : null;
+  const expenseTrendPercent = prevMonthExpenses > 0
+    ? Math.round(((curMonthExpenses - prevMonthExpenses) / prevMonthExpenses) * 100)
+    : null;
+
   return (
     <>
       {/* Summary Cards */}
