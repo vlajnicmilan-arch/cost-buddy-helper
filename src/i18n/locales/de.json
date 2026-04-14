@@ -522,7 +522,6 @@
     "trendDown": "-{{percent}}% ↓",
     "vsLastMonth": "im Vergleich zum Vormonat"
   },
-  },
   "backup": {
     "title": "Backup",
     "export": "Daten exportieren (JSON)",
