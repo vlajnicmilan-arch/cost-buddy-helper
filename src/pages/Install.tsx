@@ -323,8 +323,9 @@ const Install = () => {
                 <CardContent className="space-y-4">
                   <Button
                     className="w-full gap-2 rounded-xl h-12 text-base"
-                    onClick={() => window.open(apkUrl, '_blank')}
+                    asChild
                   >
+                    <a href={apkUrl} download="vm-balance.apk">
                     <Download className="w-5 h-5" />
                     Preuzmi APK
                   </Button>
