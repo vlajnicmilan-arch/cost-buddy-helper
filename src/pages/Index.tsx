@@ -161,7 +161,11 @@ const Index = () => {
     balance,
     expensesByCategory,
     isLocalMode,
-    refetch
+    refetch,
+    prevMonthIncome,
+    prevMonthExpenses,
+    curMonthIncome,
+    curMonthExpenses,
   } = useExpenses({ onBalanceUpdated: refetchPaymentSources });
 
   // Handle notification click → open transaction detail
@@ -449,6 +453,10 @@ const Index = () => {
     isLocalMode,
     expensesByCategory,
     activeRecurringCount: recurringTransactions.filter(r => r.is_active).length,
+    prevMonthIncome,
+    prevMonthExpenses,
+    curMonthIncome,
+    curMonthExpenses,
   };
 
   if (isBusinessMode) {
