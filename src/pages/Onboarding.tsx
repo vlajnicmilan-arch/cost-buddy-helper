@@ -46,6 +46,8 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const { storageMode } = useStorage();
   const { user } = useAuth();
+  const PRESET_SOURCES = getPresetSources(t);
+  const INCOME_SOURCES = getIncomeSources(t);
   const { addCustomPaymentSource, addCard } = useCustomPaymentSources();
   const { setOnboardingCompleted, setDisplayName: setContextDisplayName } = useAppState();
   
