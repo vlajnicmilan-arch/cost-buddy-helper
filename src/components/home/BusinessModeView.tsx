@@ -56,6 +56,11 @@ interface BusinessModeViewProps {
   convert: (amount: number, from: string, to: string) => number;
   netWorth: number;
   formatAmount: (amount: number) => string;
+  // Trend
+  prevMonthIncome?: number;
+  prevMonthExpenses?: number;
+  curMonthIncome?: number;
+  curMonthExpenses?: number;
   // Recurring
   activeRecurringCount: number;
   // Filters & selection

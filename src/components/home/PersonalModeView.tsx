@@ -55,6 +55,11 @@ interface PersonalModeViewProps {
   currencyCode: string;
   convert: (amount: number, from: string, to: string) => number;
   netWorth: number;
+  // Trend
+  prevMonthIncome?: number;
+  prevMonthExpenses?: number;
+  curMonthIncome?: number;
+  curMonthExpenses?: number;
   // Budgets & projects
   budgetsCount: number;
   budgetsForAssistant: any[];
