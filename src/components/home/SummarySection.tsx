@@ -17,6 +17,10 @@ interface SummarySectionProps {
   recurringCount: number;
   isLocalMode: boolean;
   simpleModeEnabled: boolean;
+  prevMonthIncome: number;
+  prevMonthExpenses: number;
+  curMonthIncome: number;
+  curMonthExpenses: number;
   onIncomeClick: () => void;
   onExpenseClick: () => void;
   onTransferClick: () => void;
