@@ -323,7 +323,7 @@ const Install = () => {
                 <CardContent className="space-y-4">
                   <Button
                     className="w-full gap-2 rounded-xl h-12 text-base"
-                    onClick={() => window.open('https://cost-buddy-helper.lovable.app/vm-balance.apk', '_blank')}
+                    onClick={() => window.open(apkUrl, '_blank')}
                   >
                     <Download className="w-5 h-5" />
                     Preuzmi APK
