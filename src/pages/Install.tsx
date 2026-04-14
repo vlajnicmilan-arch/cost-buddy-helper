@@ -22,7 +22,7 @@ import logo from '@/assets/logo.webp';
 import { APP_VERSION } from '@/lib/version';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk`;
+const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk`;
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
