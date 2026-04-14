@@ -1,42 +1,33 @@
 
 
-# Popravak trend indikatora
+# Popravak APK preuzimanja na Install stranici
 
 ## Problem
-Trend badge prikazuje samo goli postotak (npr. `-100% ↓`) bez konteksta — korisnik ne zna na što se odnosi. Boje su već ispravne (linija 155: pad troškova = `text-income` = zeleno), ali nedostaje label.
-
-## Promjene
-
-### `src/components/home/SummarySection.tsx`
-- Dodati `t('summary.vsLastMonth')` label ispod postotka u oba trend badgea (income i expense)
-- Sakriti trend badge potpuno ako je postotak `-100%` (znači nema podataka za tekući mjesec — nije informativno)
-- Struktura badgea:
+Gumb "Preuzmi APK" na `/install` stranici koristi krivi URL:
 ```
-+12% ↑
-vs prošli mj.
+https://cost-buddy-helper.lovable.app/vm-balance.apk
 ```
+Ta datoteka ne postoji na tom serveru. Landing stranica koristi ispravan URL iz Supabase Storagea.
 
-### `src/i18n/locales/hr.json`
-- Dodati u `summary` objekt: `"vsLastMonth": "vs prošli mj."`
+## Popravak
 
-### `src/i18n/locales/en.json`
-- Dodati: `"vsLastMonth": "vs last month"`
+**Datoteka:** `src/pages/Install.tsx`
 
-### `src/i18n/locales/de.json`
-- Dodati: `"vsLastMonth": "vs letzten Monat"`
+Zamijeniti hardkodirani URL s dinamičkim Supabase Storage URL-om (isti pristup kao u Landing.tsx):
 
-## Detalj implementacije (linije 128-132 i 154-158)
-Zamjenjujem svaki trend badge s:
 ```tsx
-{incomeTrendPercent !== null && Math.abs(incomeTrendPercent) < 100 && (
-  <div className="relative flex flex-col items-center">
-    <span className={`text-[10px] sm:text-xs font-medium ${incomeTrendPercent >= 0 ? 'text-income' : 'text-destructive'}`}>
-      {incomeTrendPercent >= 0 ? `+${incomeTrendPercent}%` : `${incomeTrendPercent}%`}
-      {incomeTrendPercent >= 0 ? ' ↑' : ' ↓'}
-    </span>
-    <span className="text-[9px] text-muted-foreground">{t('summary.vsLastMonth')}</span>
-  </div>
-)}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk`;
 ```
-Ista logika za expense (s invertiranim bojama koje su već ispravne).
+
+Zatim na liniji 323 zamijeniti:
+```tsx
+onClick={() => window.open('https://cost-buddy-helper.lovable.app/vm-balance.apk', '_blank')}
+```
+s:
+```tsx
+onClick={() => window.open(apkUrl, '_blank')}
+```
+
+Jedna linija promjene + jedna linija za varijablu. Nema drugih promjena.
 
