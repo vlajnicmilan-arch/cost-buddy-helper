@@ -349,150 +349,164 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         />
       </div>
 
-      {/* Installment Toggle */}
-      {props.type !== 'transfer' && (
-        <InstallmentToggle
-          enabled={props.isInstallment}
-          onEnabledChange={props.onIsInstallmentChange}
-          installmentCount={props.installmentCount}
-          onInstallmentCountChange={props.onInstallmentCountChange}
-          firstPaymentDate={props.firstPaymentDate}
-          onFirstPaymentDateChange={props.onFirstPaymentDateChange}
-          totalAmount={parseFloat(props.amount) || 0}
-        />
-      )}
-
-      {/* Project Assignment */}
-      {props.projects.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <FolderKanban className="w-4 h-4" />
-            {t('transactions.assignToProject')}
-          </Label>
-          <Select 
-            value={props.selectedProjectId || 'none'} 
-            onValueChange={(v) => props.onSelectedProjectIdChange(v === 'none' ? null : v)}
-          >
-            <SelectTrigger className="h-12 rounded-xl bg-background">
-              <SelectValue placeholder={t('transactions.noProject')} />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-50">
-              <SelectItem value="none">
-                <span className="text-muted-foreground">{t('transactions.noProject')}</span>
-              </SelectItem>
-              {props.projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  <span className="flex items-center gap-2">
-                    <span 
-                      className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                      style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
-                    >
-                      {project.icon || '📁'}
-                    </span>
-                    <span>{project.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Budget Assignment */}
-      {props.type === 'expense' && props.budgets.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <PiggyBank className="w-4 h-4" />
-            {t('transactions.assignToBudget', 'Pridruži budžetu')}
-          </Label>
-          <Select 
-            value={props.selectedBudgetId || 'none'} 
-            onValueChange={(v) => props.onSelectedBudgetIdChange(v === 'none' ? null : v)}
-          >
-            <SelectTrigger className="h-12 rounded-xl bg-background">
-              <SelectValue placeholder={t('transactions.noBudget', 'Bez budžeta')} />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-50">
-              <SelectItem value="none">
-                <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
-              </SelectItem>
-              {props.budgets.filter(b => b.is_active).map((budget) => (
-                <SelectItem key={budget.id} value={budget.id}>
-                  <span className="flex items-center gap-2">
-                    <span 
-                      className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                      style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
-                    >
-                      {budget.icon || '💰'}
-                    </span>
-                    <span>{budget.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Expense Nature */}
-      {(props.selectedProjectId || props.selectedBudgetId) && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">{t('transactions.expenseNature', 'Vrsta troška')}</Label>
-          <div className="flex gap-2 p-1 bg-muted rounded-xl">
-            <button
-              type="button"
-              onClick={() => props.onExpenseNatureChange('regular')}
-              className={cn(
-                "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
-                props.expenseNature === 'regular'
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {t('transactions.regular', 'Redovan')}
-            </button>
-            <button
-              type="button"
-              onClick={() => props.onExpenseNatureChange('extraordinary')}
-              className={cn(
-                "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
-                props.expenseNature === 'extraordinary'
-                  ? "bg-amber-500 text-white shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {t('transactions.extraordinary', 'Vanredan')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Location toggle */}
-      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl">
-        <button
-          type="button"
-          onClick={props.onGetLocation}
-          className="flex items-center gap-2 text-sm"
-        >
-          <MapPin className={cn("w-4 h-4", props.locationName ? "text-primary" : "text-muted-foreground")} />
-          {props.locationLoading ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : props.locationName ? (
-            <span className="text-primary text-xs truncate max-w-[200px]">{props.locationName}</span>
-          ) : (
-            <span className="text-muted-foreground text-xs">{t('transactions.addLocation', 'Dodaj lokaciju')}</span>
-          )}
-        </button>
-        {props.locationName && (
+      {/* Advanced Options - Collapsible */}
+      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+        <CollapsibleTrigger asChild>
           <button
             type="button"
-            onClick={props.onClearLocation}
-            className="text-muted-foreground hover:text-foreground"
+            className="w-full flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <X className="w-3 h-3" />
+            <ChevronDown className={cn("w-4 h-4 transition-transform", showAdvanced && "rotate-180")} />
+            {showAdvanced ? t('form.lessOptions') : t('form.moreOptions')}
           </button>
-        )}
-      </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-5">
+          {/* Installment Toggle */}
+          {props.type !== 'transfer' && (
+            <InstallmentToggle
+              enabled={props.isInstallment}
+              onEnabledChange={props.onIsInstallmentChange}
+              installmentCount={props.installmentCount}
+              onInstallmentCountChange={props.onInstallmentCountChange}
+              firstPaymentDate={props.firstPaymentDate}
+              onFirstPaymentDateChange={props.onFirstPaymentDateChange}
+              totalAmount={parseFloat(props.amount) || 0}
+            />
+          )}
+
+          {/* Project Assignment */}
+          {props.projects.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <FolderKanban className="w-4 h-4" />
+                {t('transactions.assignToProject')}
+              </Label>
+              <Select 
+                value={props.selectedProjectId || 'none'} 
+                onValueChange={(v) => props.onSelectedProjectIdChange(v === 'none' ? null : v)}
+              >
+                <SelectTrigger className="h-12 rounded-xl bg-background">
+                  <SelectValue placeholder={t('transactions.noProject')} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">{t('transactions.noProject')}</span>
+                  </SelectItem>
+                  {props.projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      <span className="flex items-center gap-2">
+                        <span 
+                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                          style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
+                        >
+                          {project.icon || '📁'}
+                        </span>
+                        <span>{project.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Budget Assignment */}
+          {props.type === 'expense' && props.budgets.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <PiggyBank className="w-4 h-4" />
+                {t('transactions.assignToBudget', 'Pridruži budžetu')}
+              </Label>
+              <Select 
+                value={props.selectedBudgetId || 'none'} 
+                onValueChange={(v) => props.onSelectedBudgetIdChange(v === 'none' ? null : v)}
+              >
+                <SelectTrigger className="h-12 rounded-xl bg-background">
+                  <SelectValue placeholder={t('transactions.noBudget', 'Bez budžeta')} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
+                  </SelectItem>
+                  {props.budgets.filter(b => b.is_active).map((budget) => (
+                    <SelectItem key={budget.id} value={budget.id}>
+                      <span className="flex items-center gap-2">
+                        <span 
+                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
+                          style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
+                        >
+                          {budget.icon || '💰'}
+                        </span>
+                        <span>{budget.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Expense Nature */}
+          {(props.selectedProjectId || props.selectedBudgetId) && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('transactions.expenseNature', 'Vrsta troška')}</Label>
+              <div className="flex gap-2 p-1 bg-muted rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => props.onExpenseNatureChange('regular')}
+                  className={cn(
+                    "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
+                    props.expenseNature === 'regular'
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t('transactions.regular', 'Redovan')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => props.onExpenseNatureChange('extraordinary')}
+                  className={cn(
+                    "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
+                    props.expenseNature === 'extraordinary'
+                      ? "bg-amber-500 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t('transactions.extraordinary', 'Vanredan')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Location toggle */}
+          <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl">
+            <button
+              type="button"
+              onClick={props.onGetLocation}
+              className="flex items-center gap-2 text-sm"
+            >
+              <MapPin className={cn("w-4 h-4", props.locationName ? "text-primary" : "text-muted-foreground")} />
+              {props.locationLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : props.locationName ? (
+                <span className="text-primary text-xs truncate max-w-[200px]">{props.locationName}</span>
+              ) : (
+                <span className="text-muted-foreground text-xs">{t('transactions.addLocation', 'Dodaj lokaciju')}</span>
+              )}
+            </button>
+            {props.locationName && (
+              <button
+                type="button"
+                onClick={props.onClearLocation}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Items */}
       {props.type === 'expense' && (
