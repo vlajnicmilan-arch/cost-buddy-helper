@@ -21,6 +21,9 @@ import { motion } from 'framer-motion';
 import logo from '@/assets/logo.webp';
 import { APP_VERSION } from '@/lib/version';
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk`;
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -320,7 +323,7 @@ const Install = () => {
                 <CardContent className="space-y-4">
                   <Button
                     className="w-full gap-2 rounded-xl h-12 text-base"
-                    onClick={() => window.open('https://cost-buddy-helper.lovable.app/vm-balance.apk', '_blank')}
+                    onClick={() => window.open(apkUrl, '_blank')}
                   >
                     <Download className="w-5 h-5" />
                     Preuzmi APK
