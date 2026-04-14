@@ -151,6 +151,11 @@ export const SummarySection = React.memo(({
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
           </div>
           <p className="relative text-base sm:text-xl font-bold text-destructive">{formatAmount(totalExpenses)}</p>
+          {expenseTrendPercent !== null && (
+            <span className={`relative text-[10px] sm:text-xs font-medium ${expenseTrendPercent <= 0 ? 'text-income' : 'text-destructive'}`}>
+              {expenseTrendPercent >= 0 ? `+${expenseTrendPercent}% ↑` : `${expenseTrendPercent}% ↓`}
+            </span>
+          )}
         </motion.div>
       </div>
 
