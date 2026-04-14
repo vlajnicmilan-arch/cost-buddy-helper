@@ -9,6 +9,7 @@ import {
   Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { downloadApk } from '@/lib/downloadApk';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import logo from '@/assets/logo.webp';
