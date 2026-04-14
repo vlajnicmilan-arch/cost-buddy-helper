@@ -107,6 +107,7 @@ interface ManualExpenseFormProps {
 
 export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
   const { t } = useTranslation();
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
     <form onSubmit={props.onSubmit} className="space-y-5 pb-4">
