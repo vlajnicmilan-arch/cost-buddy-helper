@@ -1,26 +1,15 @@
-import { exportFile } from '@/lib/fileExport';
-
-const APK_FILE_NAME = 'vm-balance.apk';
-
-export async function downloadApk(apkUrl: string): Promise<void> {
-  try {
-    const response = await fetch(apkUrl, {
-      mode: 'cors',
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch APK: ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    if (!blob.size) {
-      throw new Error('APK blob is empty');
-    }
-
-    await exportFile(blob, APK_FILE_NAME);
-  } catch (error) {
-    console.error('APK download failed, falling back to direct download.', error);
-    window.location.assign(apkUrl);
-  }
+/**
+ * Triggers a native browser download for the APK file by creating
+ * a temporary anchor element. This avoids fetch/blob issues and
+ * Service Worker interception on mobile browsers.
+ */
+export function downloadApk(apkUrl: string): void {
+  const a = document.createElement('a');
+  a.href = apkUrl;
+  a.download = 'vm-balance.apk';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  // Clean up after a short delay to ensure the click registers
+  setTimeout(() => document.body.removeChild(a), 100);
 }
