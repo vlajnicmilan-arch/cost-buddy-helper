@@ -266,8 +266,8 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   }, [expenses]);
 
   return {
-    expenses: dashboardExpenses, // filtered — for dashboard display
-    allExpenses: expenses,       // raw — for income source panels
+    expenses: dashboardExpenses,
+    allExpenses: expenses,
     loading,
     isLocalMode,
     addExpense,
@@ -279,5 +279,6 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     checkDuplicate,
     refetch,
     ...totals,
+    ...trendData,
   };
 };
