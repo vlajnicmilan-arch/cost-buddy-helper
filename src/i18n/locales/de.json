@@ -2052,5 +2052,31 @@
       "title": "8. Kontakt",
       "p1": "Bei Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns unter:"
     }
+  },
+  "onboarding": {
+    "presets": {
+      "bank": "Bank",
+      "bankDesc": "Hauptbankkonto",
+      "cash": "Bargeld",
+      "cashDesc": "Bargeld im Portemonnaie",
+      "savings": "Sparen",
+      "savingsDesc": "Sparkonto",
+      "paypal": "PayPal",
+      "paypalDesc": "PayPal-Konto",
+      "revolut": "Revolut",
+      "revolutDesc": "Revolut-Karte",
+      "salary": "Gehalt",
+      "freelance": "Honorar",
+      "reward": "Prämie",
+      "investment": "Investition"
+    }
+  },
+  "form": {
+    "moreOptions": "Mehr Optionen",
+    "lessOptions": "Weniger Optionen"
+  },
+  "summary": {
+    "trendUp": "+{{percent}}% ↑",
+    "trendDown": "-{{percent}}% ↓"
   }
 }

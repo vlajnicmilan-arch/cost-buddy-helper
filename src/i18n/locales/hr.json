@@ -2052,5 +2052,31 @@
       "title": "8. Kontakt",
       "p1": "Za sva pitanja vezana uz uvjete korištenja, kontaktirajte nas na:"
     }
+  },
+  "onboarding": {
+    "presets": {
+      "bank": "Banka",
+      "bankDesc": "Glavni bankovni račun",
+      "cash": "Gotovina",
+      "cashDesc": "Novac u novčaniku",
+      "savings": "Štednja",
+      "savingsDesc": "Štedni račun",
+      "paypal": "PayPal",
+      "paypalDesc": "PayPal račun",
+      "revolut": "Revolut",
+      "revolutDesc": "Revolut kartica",
+      "salary": "Plaća",
+      "freelance": "Honorar",
+      "reward": "Nagrada",
+      "investment": "Investicija"
+    }
+  },
+  "form": {
+    "moreOptions": "Više opcija",
+    "lessOptions": "Manje opcija"
+  },
+  "summary": {
+    "trendUp": "+{{percent}}% ↑",
+    "trendDown": "-{{percent}}% ↓"
   }
 }
