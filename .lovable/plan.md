@@ -1,101 +1,89 @@
+U pravu si. Pregledao sam stvarne datoteke i problem nije “dojam” nego konkretna regresija: nema runtime crasha, ali su i18n i wiring promjene polovično spojene, pa je UI razbijen.
 
+## Što je potvrđeno pokvareno
 
-# Provjera plana — pronađeni problemi i korekcije
+1. `src/i18n/locales/hr.json`, `en.json`, `de.json`
+- na dnu su dodani DRUGI top-level objekti `summary` i `onboarding`
+- kod JSON objekata zadnji ključ pobjeđuje, pa su postojeći prijevodi za `summary.balance`, `summary.netWorth`, `summary.totalIncome`, `summary.recurring` i svi stari `onboarding.*` ključevi praktično prebrisani
+- zato na početnoj vidiš raw ključeve tipa `summary.balance`
 
-## Potvrđeno ispravno
-- **Paginacija**: Već implementirana (useExpenseFetch.ts, linije 74-91) — `.range()` petlja. Nema promjene.
-- **Onboarding preseti**: Hardkodirani na HR (linije 29-42). Plan lokalizacije je ispravan.
-- **Progressive disclosure**: Polja Installments/Project/Budget/Nature/Location su između Date i Amount (linije 349-492). Collapsible wrapper NE zahtijeva reordering — čista promjena.
-- **Items** već imaju vlastiti show/hide toggle (`showItems` prop) — ne treba ih stavljati u "Više opcija".
+2. `src/hooks/useExpenses.ts`
+- prethodna pretpostavka da je `dashboardExpenses` “user-filtered” bila pogrešna
+- stvarni UI filteri se primjenjuju tek kasnije u `src/pages/Index.tsx` preko `applyFilters(...)`
+- zato trend NE treba koristiti sirovi `expenses`, nego `dashboardExpenses`, jer on poštuje business/personal kontekst i access pravila za shared payment sources
 
-## Pronađeni problemi u prethodnom planu
+3. `src/pages/Index.tsx`
+- `prevMonthIncome`, `prevMonthExpenses`, `curMonthIncome`, `curMonthExpenses` se uopće ne destructuriraju iz `useExpenses()`
+- rezultat: trend podaci nikad ne dođu do `SummarySection`
 
-### Problem 1: Trend MORA biti odvojen useMemo
-Prethodni plan kaže "dodati prevMonth unutar istog useMemo". ALI:
-- `totals` useMemo koristi `dashboardExpenses` (filtrirane)
-- Trend mora koristiti `expenses` (raw/sve)
-- **Miješanje u isti useMemo** bi značilo da se trend rekalkulira kad se filteri promijene, ali s krivim nizom
+4. `src/components/add-expense/ManualExpenseForm.tsx`
+- dodani su `showAdvanced`, `Collapsible` importi i ikona, ali nema stvarnog triggera ni collapsible sekcije
+- dakle “Više opcija” nije implementirano; ostao je samo mrtav kod
 
-**Ispravak:** Kreirati **zasebni** `useMemo` za trend koji ovisi o `[expenses]`.
+## Plan popravka
 
-### Problem 2: `now` u useMemo — edge case ali bezopasan
-`now/currentMonthStart/currentMonthEnd` su izvan useMemo (linije 196-198). Tehnički se rekreiraju na svakom renderu, ali useMemo se ne rekalkulira jer dependency je `[dashboardExpenses]`. To znači da se **ne** koriste zastarjele vrijednosti — svaki put kad se dashboardExpenses promijeni, `now` se ionako rekreira. Premještanje unutra je kozmetičko, ali ću ga napraviti radi čistoće.
+### 1. Sanirati locale datoteke
+U sva 3 locale fajla:
+- spojiti nove ključeve u POSTOJEĆE `summary` i `onboarding` objekte
+- ukloniti duplicirane top-level `summary` i `onboarding` blokove
+- zadržati `form.moreOptions` / `form.lessOptions`
+- dodati `summary.vsLastMonth` u postojeći `summary` blok da trend ima jasan kontekst
 
-### Problem 3: Collapsible u ManualExpenseForm — Note ostaje vidljiv
-Note je čest input (korisnici dodaju bilješku na mnoge transakcije). Plan ga je stavio u "Više opcija" — **krivo**. Note ostaje vidljiv.
+### 2. Ispraviti trend logiku
+U `src/hooks/useExpenses.ts`:
+- računati current/previous month trend iz `dashboardExpenses`, ne iz `expenses`
+- zadržati izuzeće `expense_nature === 'correction'`
+- ne prikazivati trend kad je prethodni mjesec 0
 
-Konačno, evo što ide u collapsible:
-- Installments (rate)
-- Project assignment
-- Budget assignment  
-- Expense nature (regular/extraordinary)
-- Location
+### 3. Stvarno proslijediti trend podatke
+U `src/pages/Index.tsx`:
+- destructurirati 4 trend vrijednosti iz `useExpenses()`
+- proslijediti ih kroz `sharedDialogProps`
+- postojeći propovi u `PersonalModeView` i `BusinessModeView` su već pripremljeni, pa tu trebaju samo minimalne korekcije ako budu potrebne
 
-Ostaje vidljivo: Receipt, Type, Merchant, Payment Source, Transfer flow, Date, Items, Amount, Description, Category, Note, Save Receipt.
+### 4. Završiti Summary UI
+U `src/components/home/SummarySection.tsx`:
+- zamijeniti inline `+12% ↑` / `-5% ↓` sa `t('summary.trendUp')` i `t('summary.trendDown')`
+- ispod badgea prikazati `t('summary.vsLastMonth')`
+- zadržati ispravnu boju:
+  - prihod raste = zeleno
+  - trošak pada = zeleno
 
----
+### 5. Stvarno implementirati “Više opcija”
+U `src/components/add-expense/ManualExpenseForm.tsx`:
+- uvesti pravi `Collapsible` s triggerom
+- u collapsible staviti:
+  - Installments
+  - Project
+  - Budget
+  - Expense nature
+  - Location
+- uvijek vidljivo ostaviti:
+  - receipt capture
+  - type
+  - merchant
+  - payment source / transfer flow
+  - date
+  - items
+  - amount
+  - description
+  - category
+  - note
+  - save receipt
+- usput lokalizirati preostale hardkodirane stringove u transfer destination dijelu
 
-## Finalni plan implementacije
+## Datoteke
+- `src/i18n/locales/hr.json`
+- `src/i18n/locales/en.json`
+- `src/i18n/locales/de.json`
+- `src/hooks/useExpenses.ts`
+- `src/pages/Index.tsx`
+- `src/components/home/SummarySection.tsx`
+- `src/components/add-expense/ManualExpenseForm.tsx`
 
-### 1. Lokalizacija onboarding preseta
-**Datoteka:** `src/pages/Onboarding.tsx`
-- Pretvoriti `PRESET_SOURCES` i `INCOME_SOURCES` u funkcije `getPresetSources(t)` i `getIncomeSources(t)` koje vraćaju lokalizirane nizove
-- Koristiti `t('onboarding.presets.bank')` itd.
-
-### 2. Progressive disclosure u ManualExpenseForm
-**Datoteka:** `src/components/add-expense/ManualExpenseForm.tsx`
-- Dodati `showAdvanced` state
-- Omotati Installments + Project + Budget + Nature + Location u `Collapsible` s toggleom "Više opcija" / "Manje opcija"
-- Sve ostalo ostaje vidljivo
-
-### 3. Trend indikator — ODVOJENI useMemo
-**Datoteka:** `src/hooks/useExpenses.ts`
-- Premjestiti `now/currentMonthStart/currentMonthEnd` unutar postojećeg `totals` useMemo
-- Dodati NOVI `trendData` useMemo koji koristi `expenses` (raw):
-```typescript
-const trendData = useMemo(() => {
-  const now = new Date();
-  const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-  const prevMonthExpenses = expenses
-    .filter(e => e.type === 'expense' && e.date >= prevStart && e.date <= prevEnd && (e.expense_nature as string) !== 'correction')
-    .reduce((sum, e) => sum + Number(e.amount), 0);
-  const prevMonthIncome = expenses
-    .filter(e => e.type === 'income' && e.date >= prevStart && e.date <= prevEnd && (e.expense_nature as string) !== 'correction')
-    .reduce((sum, e) => sum + Number(e.amount), 0);
-  return { prevMonthIncome, prevMonthExpenses };
-}, [expenses]);
-```
-- Spread `trendData` u return objekt
-
-**Datoteka:** `src/components/home/SummarySection.tsx`
-- Dodati `prevMonthIncome` i `prevMonthExpenses` u props
-- Ispod Income kartice: badge s % razlikom (zeleno ako porastao, crveno ako pao)
-- Ispod Expense kartice: badge s % razlikom (zeleno ako PAO, crveno ako porastao — invertirana logika)
-- Ne prikazivati badge ako je prošli mjesec 0
-
-**Datoteke:** `PersonalModeView.tsx`, `Index.tsx`
-- Proslijediti `prevMonthIncome` i `prevMonthExpenses` kroz props chain
-
-### 4. i18n ključevi
-**Datoteke:** `hr.json`, `en.json`, `de.json`
-- `onboarding.presets.*` (bank, cash, savings, paypal, revolut + opisi; salary, freelance, reward, investment)
-- `form.moreOptions` / `form.lessOptions`
-- `summary.vsLastMonth`, `summary.trendUp`, `summary.trendDown`
-
-## Datoteke za promjenu
-
-| Datoteka | Promjena |
-|---|---|
-| `src/pages/Onboarding.tsx` | i18n preseti |
-| `src/components/add-expense/ManualExpenseForm.tsx` | Progressive disclosure collapsible |
-| `src/hooks/useExpenses.ts` | now u useMemo + odvojeni trendData useMemo |
-| `src/components/home/SummarySection.tsx` | Trend badge |
-| `src/components/home/PersonalModeView.tsx` | Props forwarding |
-| `src/pages/Index.tsx` | Props forwarding |
-| `src/i18n/locales/hr.json` | Novi ključevi |
-| `src/i18n/locales/en.json` | Novi ključevi |
-| `src/i18n/locales/de.json` | Novi ključevi |
-
-Nema promjena baze ni backend-a.
-
+## QA nakon popravka
+- `/index` na 384px: nema više raw ključeva `summary.*`
+- onboarding ekran: nema raw ključeva `onboarding.*`
+- add expense: “Više opcija” stvarno otvara/zatvara napredna polja bez gubitka unosa
+- trend badge pokazuje smislen rezultat i skriva se kad nema prošlog mjeseca
+- provjera u osobnom i poslovnom modu
