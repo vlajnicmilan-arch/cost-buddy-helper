@@ -626,7 +626,10 @@
     "recurring": "Ponavljajuće transakcije",
     "recurringNone": "Nema aktivnih",
     "recurringActive": "{{count}} aktivnih",
-    "recurringManage": "Upravljaj →"
+    "recurringManage": "Upravljaj →",
+    "trendUp": "+{{percent}}% ↑",
+    "trendDown": "-{{percent}}% ↓",
+    "vsLastMonth": "u odnosu na prošli mjesec"
   },
   "backup": {
     "title": "Backup",
@@ -817,6 +820,22 @@
     "welcomeDescription": "Kako vas možemo zvati?",
     "yourName": "Vaše ime",
     "namePlaceholder": "npr. Marko",
+    "presets": {
+      "bank": "Banka",
+      "bankDesc": "Glavni bankovni račun",
+      "cash": "Gotovina",
+      "cashDesc": "Novac u novčaniku",
+      "savings": "Štednja",
+      "savingsDesc": "Štedni račun",
+      "paypal": "PayPal",
+      "paypalDesc": "PayPal račun",
+      "revolut": "Revolut",
+      "revolutDesc": "Revolut kartica",
+      "salary": "Plaća",
+      "freelance": "Honorar",
+      "reward": "Nagrada",
+      "investment": "Investicija"
+    },
     "nameUsage": "Ovo ime će se koristiti za personalizirane poruke u aplikaciji.",
     "nameRequired": "Molimo unesite svoje ime",
     "sourcesTitle": "Postavite izvore plaćanja",
@@ -2053,30 +2072,8 @@
       "p1": "Za sva pitanja vezana uz uvjete korištenja, kontaktirajte nas na:"
     }
   },
-  "onboarding": {
-    "presets": {
-      "bank": "Banka",
-      "bankDesc": "Glavni bankovni račun",
-      "cash": "Gotovina",
-      "cashDesc": "Novac u novčaniku",
-      "savings": "Štednja",
-      "savingsDesc": "Štedni račun",
-      "paypal": "PayPal",
-      "paypalDesc": "PayPal račun",
-      "revolut": "Revolut",
-      "revolutDesc": "Revolut kartica",
-      "salary": "Plaća",
-      "freelance": "Honorar",
-      "reward": "Nagrada",
-      "investment": "Investicija"
-    }
-  },
   "form": {
     "moreOptions": "Više opcija",
     "lessOptions": "Manje opcija"
-  },
-  "summary": {
-    "trendUp": "+{{percent}}% ↑",
-    "trendDown": "-{{percent}}% ↓"
   }
 }
