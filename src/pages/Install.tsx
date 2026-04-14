@@ -324,12 +324,10 @@ const Install = () => {
                 <CardContent className="space-y-4">
                   <Button
                     className="w-full gap-2 rounded-xl h-12 text-base"
-                    asChild
+                    onClick={() => void downloadApk(apkUrl)}
                   >
-                    <a href={apkUrl} download="vm-balance.apk">
-                      <Download className="w-5 h-5" />
-                      Preuzmi APK
-                    </a>
+                    <Download className="w-5 h-5" />
+                    Preuzmi APK
                   </Button>
                   <ol className="space-y-2">
                     <li className="flex items-start gap-3">

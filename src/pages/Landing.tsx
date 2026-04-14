@@ -521,14 +521,14 @@ const APKDownloadSection = ({ referralCode }: { referralCode: string }) => {
           className="space-y-4"
           initial="hidden" animate="visible" variants={fadeUp} custom={3}
         >
-          <a
-            href={apkUrl}
-            download
+          <button
+            type="button"
+            onClick={() => void downloadApk(apkUrl)}
             className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all font-semibold"
           >
             <Download className="w-6 h-6" />
             {t('landing.apk.download', 'Preuzmi APK za Android')}
-          </a>
+          </button>
 
           <div className="bg-muted/50 rounded-xl p-4 text-left space-y-2">
             <p className="text-sm font-medium text-foreground">
