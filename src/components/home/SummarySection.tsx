@@ -125,10 +125,14 @@ export const SummarySection = React.memo(({
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalIncome')}</span>
           </div>
           <p className="relative text-base sm:text-xl font-bold text-income">{formatAmount(totalIncome)}</p>
-          {incomeTrendPercent !== null && (
-            <span className={`relative text-[10px] sm:text-xs font-medium ${incomeTrendPercent >= 0 ? 'text-income' : 'text-destructive'}`}>
-              {incomeTrendPercent >= 0 ? `+${incomeTrendPercent}% ↑` : `${incomeTrendPercent}% ↓`}
-            </span>
+          {incomeTrendPercent !== null && Math.abs(incomeTrendPercent) < 100 && (
+            <div className="relative flex flex-col items-center">
+              <span className={`text-[10px] sm:text-xs font-medium ${incomeTrendPercent >= 0 ? 'text-income' : 'text-destructive'}`}>
+                {incomeTrendPercent >= 0 ? `+${incomeTrendPercent}%` : `${incomeTrendPercent}%`}
+                {incomeTrendPercent >= 0 ? ' ↑' : ' ↓'}
+              </span>
+              <span className="text-[9px] text-muted-foreground">{t('summary.vsLastMonth')}</span>
+            </div>
           )}
         </motion.div>
 
@@ -151,10 +155,14 @@ export const SummarySection = React.memo(({
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
           </div>
           <p className="relative text-base sm:text-xl font-bold text-destructive">{formatAmount(totalExpenses)}</p>
-          {expenseTrendPercent !== null && (
-            <span className={`relative text-[10px] sm:text-xs font-medium ${expenseTrendPercent <= 0 ? 'text-income' : 'text-destructive'}`}>
-              {expenseTrendPercent >= 0 ? `+${expenseTrendPercent}% ↑` : `${expenseTrendPercent}% ↓`}
-            </span>
+          {expenseTrendPercent !== null && Math.abs(expenseTrendPercent) < 100 && (
+            <div className="relative flex flex-col items-center">
+              <span className={`text-[10px] sm:text-xs font-medium ${expenseTrendPercent <= 0 ? 'text-income' : 'text-destructive'}`}>
+                {expenseTrendPercent >= 0 ? `+${expenseTrendPercent}%` : `${expenseTrendPercent}%`}
+                {expenseTrendPercent >= 0 ? ' ↑' : ' ↓'}
+              </span>
+              <span className="text-[9px] text-muted-foreground">{t('summary.vsLastMonth')}</span>
+            </div>
           )}
         </motion.div>
       </div>
