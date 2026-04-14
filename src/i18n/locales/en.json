@@ -626,7 +626,10 @@
     "recurring": "Recurring Transactions",
     "recurringNone": "No active",
     "recurringActive": "{{count}} active",
-    "recurringManage": "Manage →"
+    "recurringManage": "Manage →",
+    "trendUp": "+{{percent}}% ↑",
+    "trendDown": "-{{percent}}% ↓",
+    "vsLastMonth": "vs last month"
   },
   "backup": {
     "title": "Backup",
@@ -817,6 +820,22 @@
     "welcomeDescription": "What should we call you?",
     "yourName": "Your name",
     "namePlaceholder": "e.g. John",
+    "presets": {
+      "bank": "Bank",
+      "bankDesc": "Main bank account",
+      "cash": "Cash",
+      "cashDesc": "Cash in wallet",
+      "savings": "Savings",
+      "savingsDesc": "Savings account",
+      "paypal": "PayPal",
+      "paypalDesc": "PayPal account",
+      "revolut": "Revolut",
+      "revolutDesc": "Revolut card",
+      "salary": "Salary",
+      "freelance": "Freelance",
+      "reward": "Reward",
+      "investment": "Investment"
+    },
     "nameUsage": "This name will be used for personalized messages in the app.",
     "nameRequired": "Please enter your name",
     "sourcesTitle": "Set up payment sources",
@@ -2053,30 +2072,8 @@
       "p1": "For any questions regarding these Terms of Service, contact us at:"
     }
   },
-  "onboarding": {
-    "presets": {
-      "bank": "Bank",
-      "bankDesc": "Main bank account",
-      "cash": "Cash",
-      "cashDesc": "Cash in wallet",
-      "savings": "Savings",
-      "savingsDesc": "Savings account",
-      "paypal": "PayPal",
-      "paypalDesc": "PayPal account",
-      "revolut": "Revolut",
-      "revolutDesc": "Revolut card",
-      "salary": "Salary",
-      "freelance": "Freelance",
-      "reward": "Reward",
-      "investment": "Investment"
-    }
-  },
   "form": {
     "moreOptions": "More options",
     "lessOptions": "Less options"
-  },
-  "summary": {
-    "trendUp": "+{{percent}}% ↑",
-    "trendDown": "-{{percent}}% ↓"
   }
 }

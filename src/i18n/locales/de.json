@@ -517,7 +517,11 @@
     "recurring": "Wiederkehrende Transaktionen",
     "recurringNone": "Keine aktiven",
     "recurringActive": "{{count}} aktive",
-    "recurringManage": "Verwalten →"
+    "recurringManage": "Verwalten →",
+    "trendUp": "+{{percent}}% ↑",
+    "trendDown": "-{{percent}}% ↓",
+    "vsLastMonth": "im Vergleich zum Vormonat"
+  },
   },
   "backup": {
     "title": "Backup",
@@ -708,6 +712,22 @@
     "welcomeDescription": "Wie sollen wir Sie nennen?",
     "yourName": "Ihr Name",
     "namePlaceholder": "z.B. Max",
+    "presets": {
+      "bank": "Bank",
+      "bankDesc": "Hauptbankkonto",
+      "cash": "Bargeld",
+      "cashDesc": "Bargeld im Portemonnaie",
+      "savings": "Sparen",
+      "savingsDesc": "Sparkonto",
+      "paypal": "PayPal",
+      "paypalDesc": "PayPal-Konto",
+      "revolut": "Revolut",
+      "revolutDesc": "Revolut-Karte",
+      "salary": "Gehalt",
+      "freelance": "Honorar",
+      "reward": "Prämie",
+      "investment": "Investition"
+    },
     "nameUsage": "Dieser Name wird für personalisierte Nachrichten in der App verwendet.",
     "nameRequired": "Bitte geben Sie Ihren Namen ein",
     "sourcesTitle": "Zahlungsquellen einrichten",
@@ -2053,30 +2073,8 @@
       "p1": "Bei Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns unter:"
     }
   },
-  "onboarding": {
-    "presets": {
-      "bank": "Bank",
-      "bankDesc": "Hauptbankkonto",
-      "cash": "Bargeld",
-      "cashDesc": "Bargeld im Portemonnaie",
-      "savings": "Sparen",
-      "savingsDesc": "Sparkonto",
-      "paypal": "PayPal",
-      "paypalDesc": "PayPal-Konto",
-      "revolut": "Revolut",
-      "revolutDesc": "Revolut-Karte",
-      "salary": "Gehalt",
-      "freelance": "Honorar",
-      "reward": "Prämie",
-      "investment": "Investition"
-    }
-  },
   "form": {
     "moreOptions": "Mehr Optionen",
     "lessOptions": "Weniger Optionen"
-  },
-  "summary": {
-    "trendUp": "+{{percent}}% ↑",
-    "trendDown": "-{{percent}}% ↓"
   }
 }
