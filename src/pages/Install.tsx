@@ -326,8 +326,9 @@ const Install = () => {
                     asChild
                   >
                     <a href={apkUrl} download="vm-balance.apk">
-                    <Download className="w-5 h-5" />
-                    Preuzmi APK
+                      <Download className="w-5 h-5" />
+                      Preuzmi APK
+                    </a>
                   </Button>
                   <ol className="space-y-2">
                     <li className="flex items-start gap-3">
