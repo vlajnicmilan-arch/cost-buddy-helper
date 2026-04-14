@@ -486,7 +486,7 @@ const APKDownloadSection = ({ referralCode }: { referralCode: string }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk`;
+  const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk`;
 
   return (
     <section className="pt-28 pb-16 px-4 relative overflow-hidden">
