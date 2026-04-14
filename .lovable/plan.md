@@ -1,89 +1,42 @@
-U pravu si. Pregledao sam stvarne datoteke i problem nije “dojam” nego konkretna regresija: nema runtime crasha, ali su i18n i wiring promjene polovično spojene, pa je UI razbijen.
 
-## Što je potvrđeno pokvareno
 
-1. `src/i18n/locales/hr.json`, `en.json`, `de.json`
-- na dnu su dodani DRUGI top-level objekti `summary` i `onboarding`
-- kod JSON objekata zadnji ključ pobjeđuje, pa su postojeći prijevodi za `summary.balance`, `summary.netWorth`, `summary.totalIncome`, `summary.recurring` i svi stari `onboarding.*` ključevi praktično prebrisani
-- zato na početnoj vidiš raw ključeve tipa `summary.balance`
+# Popravak trend indikatora
 
-2. `src/hooks/useExpenses.ts`
-- prethodna pretpostavka da je `dashboardExpenses` “user-filtered” bila pogrešna
-- stvarni UI filteri se primjenjuju tek kasnije u `src/pages/Index.tsx` preko `applyFilters(...)`
-- zato trend NE treba koristiti sirovi `expenses`, nego `dashboardExpenses`, jer on poštuje business/personal kontekst i access pravila za shared payment sources
+## Problem
+Trend badge prikazuje samo goli postotak (npr. `-100% ↓`) bez konteksta — korisnik ne zna na što se odnosi. Boje su već ispravne (linija 155: pad troškova = `text-income` = zeleno), ali nedostaje label.
 
-3. `src/pages/Index.tsx`
-- `prevMonthIncome`, `prevMonthExpenses`, `curMonthIncome`, `curMonthExpenses` se uopće ne destructuriraju iz `useExpenses()`
-- rezultat: trend podaci nikad ne dođu do `SummarySection`
+## Promjene
 
-4. `src/components/add-expense/ManualExpenseForm.tsx`
-- dodani su `showAdvanced`, `Collapsible` importi i ikona, ali nema stvarnog triggera ni collapsible sekcije
-- dakle “Više opcija” nije implementirano; ostao je samo mrtav kod
+### `src/components/home/SummarySection.tsx`
+- Dodati `t('summary.vsLastMonth')` label ispod postotka u oba trend badgea (income i expense)
+- Sakriti trend badge potpuno ako je postotak `-100%` (znači nema podataka za tekući mjesec — nije informativno)
+- Struktura badgea:
+```
++12% ↑
+vs prošli mj.
+```
 
-## Plan popravka
+### `src/i18n/locales/hr.json`
+- Dodati u `summary` objekt: `"vsLastMonth": "vs prošli mj."`
 
-### 1. Sanirati locale datoteke
-U sva 3 locale fajla:
-- spojiti nove ključeve u POSTOJEĆE `summary` i `onboarding` objekte
-- ukloniti duplicirane top-level `summary` i `onboarding` blokove
-- zadržati `form.moreOptions` / `form.lessOptions`
-- dodati `summary.vsLastMonth` u postojeći `summary` blok da trend ima jasan kontekst
+### `src/i18n/locales/en.json`
+- Dodati: `"vsLastMonth": "vs last month"`
 
-### 2. Ispraviti trend logiku
-U `src/hooks/useExpenses.ts`:
-- računati current/previous month trend iz `dashboardExpenses`, ne iz `expenses`
-- zadržati izuzeće `expense_nature === 'correction'`
-- ne prikazivati trend kad je prethodni mjesec 0
+### `src/i18n/locales/de.json`
+- Dodati: `"vsLastMonth": "vs letzten Monat"`
 
-### 3. Stvarno proslijediti trend podatke
-U `src/pages/Index.tsx`:
-- destructurirati 4 trend vrijednosti iz `useExpenses()`
-- proslijediti ih kroz `sharedDialogProps`
-- postojeći propovi u `PersonalModeView` i `BusinessModeView` su već pripremljeni, pa tu trebaju samo minimalne korekcije ako budu potrebne
+## Detalj implementacije (linije 128-132 i 154-158)
+Zamjenjujem svaki trend badge s:
+```tsx
+{incomeTrendPercent !== null && Math.abs(incomeTrendPercent) < 100 && (
+  <div className="relative flex flex-col items-center">
+    <span className={`text-[10px] sm:text-xs font-medium ${incomeTrendPercent >= 0 ? 'text-income' : 'text-destructive'}`}>
+      {incomeTrendPercent >= 0 ? `+${incomeTrendPercent}%` : `${incomeTrendPercent}%`}
+      {incomeTrendPercent >= 0 ? ' ↑' : ' ↓'}
+    </span>
+    <span className="text-[9px] text-muted-foreground">{t('summary.vsLastMonth')}</span>
+  </div>
+)}
+```
+Ista logika za expense (s invertiranim bojama koje su već ispravne).
 
-### 4. Završiti Summary UI
-U `src/components/home/SummarySection.tsx`:
-- zamijeniti inline `+12% ↑` / `-5% ↓` sa `t('summary.trendUp')` i `t('summary.trendDown')`
-- ispod badgea prikazati `t('summary.vsLastMonth')`
-- zadržati ispravnu boju:
-  - prihod raste = zeleno
-  - trošak pada = zeleno
-
-### 5. Stvarno implementirati “Više opcija”
-U `src/components/add-expense/ManualExpenseForm.tsx`:
-- uvesti pravi `Collapsible` s triggerom
-- u collapsible staviti:
-  - Installments
-  - Project
-  - Budget
-  - Expense nature
-  - Location
-- uvijek vidljivo ostaviti:
-  - receipt capture
-  - type
-  - merchant
-  - payment source / transfer flow
-  - date
-  - items
-  - amount
-  - description
-  - category
-  - note
-  - save receipt
-- usput lokalizirati preostale hardkodirane stringove u transfer destination dijelu
-
-## Datoteke
-- `src/i18n/locales/hr.json`
-- `src/i18n/locales/en.json`
-- `src/i18n/locales/de.json`
-- `src/hooks/useExpenses.ts`
-- `src/pages/Index.tsx`
-- `src/components/home/SummarySection.tsx`
-- `src/components/add-expense/ManualExpenseForm.tsx`
-
-## QA nakon popravka
-- `/index` na 384px: nema više raw ključeva `summary.*`
-- onboarding ekran: nema raw ključeva `onboarding.*`
-- add expense: “Više opcija” stvarno otvara/zatvara napredna polja bez gubitka unosa
-- trend badge pokazuje smislen rezultat i skriva se kad nema prošlog mjeseca
-- provjera u osobnom i poslovnom modu
