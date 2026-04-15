@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Check, Lock, Loader2 } from 'lucide-react';
 import { useStorage } from '@/contexts/StorageContext';
