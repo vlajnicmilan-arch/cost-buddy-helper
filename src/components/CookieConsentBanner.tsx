@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 const CONSENT_KEY = 'gdpr_consent_accepted';
@@ -14,15 +14,22 @@ export const CookieConsentBanner = () => {
   const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const location = useLocation();
+
+  const isSetupPage = location.pathname === '/setup';
 
   useEffect(() => {
+    if (isSetupPage) {
+      setVisible(false);
+      return;
+    }
     const timer = setTimeout(() => {
       if (!hasGdprConsent()) {
         setVisible(true);
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isSetupPage]);
 
   const handleAccept = () => {
     localStorage.setItem(CONSENT_KEY, 'true');
