@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Check, Lock, Loader2 } from 'lucide-react';
 import { useStorage } from '@/contexts/StorageContext';
@@ -89,54 +89,51 @@ const StorageSetup = () => {
 
         {/* Storage Options */}
         <div className="space-y-3 mb-8">
-          <AnimatePresence>
-            {STORAGE_OPTIONS.map((option, index) => (
-              <motion.button
-                key={option.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                onClick={() => option.available && setSelectedMode(option.id)}
-                disabled={!option.available}
-                className={cn(
-                  "w-full p-4 rounded-2xl border-2 text-left transition-all relative overflow-hidden",
-                  selectedMode === option.id
-                    ? "border-primary bg-primary/5"
-                    : option.available
-                    ? "border-border/50 bg-muted/30 hover:bg-muted/50 hover:border-border"
-                    : "border-border/30 bg-muted/20 opacity-60 cursor-not-allowed"
-                )}
-              >
-                <div className="flex items-start gap-4">
-                  <span className="text-3xl">{option.icon}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground">
-                        {option.name}
+          {STORAGE_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => {
+                if (option.available) {
+                  console.log('[StorageSetup] Selected:', option.id);
+                  setSelectedMode(option.id);
+                }
+              }}
+              disabled={!option.available}
+              className={cn(
+                "w-full p-4 rounded-2xl border-2 text-left transition-all relative",
+                selectedMode === option.id
+                  ? "border-primary bg-primary/5"
+                  : option.available
+                  ? "border-border/50 bg-muted/30 hover:bg-muted/50 hover:border-border"
+                  : "border-border/30 bg-muted/20 opacity-60 cursor-not-allowed"
+              )}
+            >
+              <div className="flex items-start gap-4">
+                <span className="text-3xl">{option.icon}</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">
+                      {option.name}
+                    </span>
+                    {option.comingSoon && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        {t('storage.comingSoon', 'Uskoro')}
                       </span>
-                      {option.comingSoon && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                          {t('storage.comingSoon', 'Uskoro')}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {option.description}
-                    </p>
+                    )}
                   </div>
-                  {selectedMode === option.id && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-6 h-6 rounded-full bg-primary flex items-center justify-center"
-                    >
-                      <Check className="w-4 h-4 text-primary-foreground" />
-                    </motion.div>
-                  )}
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {option.description}
+                  </p>
                 </div>
-              </motion.button>
-            ))}
-          </AnimatePresence>
+                {selectedMode === option.id && (
+                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                    <Check className="w-4 h-4 text-primary-foreground" />
+                  </div>
+                )}
+              </div>
+            </button>
+          ))}
         </div>
 
         {/* Privacy Notice */}
