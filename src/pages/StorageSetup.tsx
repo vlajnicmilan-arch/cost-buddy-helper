@@ -57,7 +57,7 @@ const StorageSetup = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-background flex flex-col items-center justify-center p-6">
+    <div className="min-h-dvh bg-background flex flex-col items-center justify-start overflow-y-auto p-6 pb-24 pt-safe">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
