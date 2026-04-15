@@ -1,39 +1,26 @@
-<final-text>Da — postoji konkretno objašnjenje, i moj je propust što ga nisam ranije sažeo u jasan prijedlog.
 
-Što sam sada potvrdio
-- APK datoteka postoji i javni URL vraća stvarni APK binarni sadržaj, dakle problem nije u tome da datoteka “ne postoji”.
-- Problem je u trenutnoj web implementaciji preuzimanja:
-  - `src/lib/downloadApk.ts` radi `fetch(apkUrl) -> blob -> exportFile(...)`
-  - ako to padne, radi `window.location.assign(apkUrl)`
-- To vrlo dobro objašnjava simptome koje si opisao:
-  - kratko otvaranje/zatvaranje prozora
-  - povratak na landing page
-  - Samsung Internet poruku “Prikaz izvanmrežne kopije stranice”
 
-Zašto nisi dobio rezultat ranije
-- Bio sam u read-only/plan modu i trebao sam odmah dati zaključak + konkretan plan, umjesto da ostanem u “istražujem” fazi. To je moj propust, ne tvoj.
+## Problem Analysis
 
-Plan popravka
-1. Maknuti `fetch -> blob -> exportFile` flow za APK iz `src/lib/downloadApk.ts`.
-2. Zamijeniti ga direktnim browser downloadom iz korisničkog klika:
-   - pravi `<a href="...apk...">` / sinkroni anchor click
-   - bez `window.location.assign` fallbacka
-3. Ažurirati gumbe koji pozivaju download u:
-   - `src/pages/Install.tsx`
-   - `src/pages/Landing.tsx`
-4. Ostaviti PWA instalaciju kao rezervnu opciju, ali odvojenu od APK downloada da se flowovi ne miješaju.
-5. Po potrebi dodatno pooštriti PWA routing zaštitu, ali to mi je sekundarni korak — primarni kvar je trenutni JS način downloada.
+The StorageSetup page (`/setup`) loads correctly, but on a fresh APK install, two issues likely combine to make it seem like "nothing happens":
 
-Tehnički detalji
-- Problematični dio: `src/lib/downloadApk.ts:5-24`
-- Pozivi:
-  - `src/pages/Install.tsx:325-327`
-  - `src/pages/Landing.tsx:524-526`
-- `vite.config.ts` ima PWA setup, ali po onome što sam potvrdio glavni problem nije sam APK URL nego način na koji ga frontend pokušava preuzeti.
+1. **GDPR Cookie Consent Banner blocks the Continue button**: On fresh install, `CookieConsentBanner` appears at `z-[9999]` fixed to the bottom of the screen. The StorageSetup page has the "Nastavi" (Continue) button near the bottom. The banner overlays and blocks the button, making it untappable.
 
-Očekivani rezultat nakon izmjene
-- klik na “Preuzmi APK” više neće raditi privremeni redirect
-- download će ići kao pravi browser download
-- nestat će “otvori pa zatvori” ponašanje koje sada vidiš
+2. **Subtle selection feedback**: When a user taps a storage option, only a small checkmark and border color change occur. If the Continue button is hidden behind the GDPR banner, the user has no way to proceed, making it feel like "nothing works."
 
-Ako odobriš, sljedeći korak je da to odmah implementiram upravo na ta 3 mjesta.</final-text>
+## Fix Plan
+
+### 1. Hide GDPR banner on StorageSetup page
+- In `CookieConsentBanner.tsx`, check the current route. If on `/setup`, don't render the banner (or delay it until the user leaves setup).
+
+### 2. Adjust StorageSetup layout for small screens  
+- Add bottom padding (`pb-24`) to the StorageSetup container so the Continue button isn't hidden behind any overlapping elements.
+- Ensure the page scrolls properly on small devices (`overflow-y-auto` instead of centering everything with `justify-center` which can clip content).
+
+### 3. Add console.log for debugging
+- Add a temporary `console.log` in the storage option `onClick` handler to confirm taps are registering, in case the issue persists.
+
+### Files to modify
+- `src/components/CookieConsentBanner.tsx` — suppress on `/setup` route
+- `src/pages/StorageSetup.tsx` — fix layout for small screens with bottom padding
+
