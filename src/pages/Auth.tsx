@@ -12,7 +12,6 @@ import { z } from 'zod';
 import logo from '@/assets/logo.webp';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { useStorage } from '@/contexts/StorageContext';
-import { useNativeOAuth } from '@/hooks/useNativeOAuth';
 import { lovable } from '@/integrations/lovable/index';
 
 const authSchema = z.object({
@@ -42,8 +41,7 @@ const Auth = () => {
   const location = useLocation();
   const { storageMode, setStorageMode } = useStorage();
   const { t } = useTranslation();
-  const { signInWithOAuth: nativeOAuth, isNative } = useNativeOAuth();
-  
+
   // Auto-switch to signup mode if navigated with mode: 'signup'
   useEffect(() => {
     if ((location.state as any)?.mode === 'signup') setIsLogin(false);
