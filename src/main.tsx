@@ -4,6 +4,13 @@ import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { logDiagnostic } from "./lib/diagnosticLogger";
+
+// Boot diagnostic event — first thing logged from the JS bundle.
+logDiagnostic('boot_start', {
+  href: window.location.href,
+  pathname: window.location.pathname,
+});
 
 // Aggressively kill any leftover Service Worker + PWA caches.
 // The Capacitor APK loads vmbalance.com, so a previously registered PWA
@@ -59,12 +66,17 @@ try {
   try {
     const cap = (window as any).Capacitor;
     if (cap?.isNativePlatform?.()) {
+      logDiagnostic('splash_hide_attempt');
       const { SplashScreen } = await import('@capacitor/splash-screen');
       await SplashScreen.hide({ fadeOutDuration: 0 });
       console.log('[Boot] Splash screen hidden');
+      logDiagnostic('splash_hide_success');
+    } else {
+      logDiagnostic('splash_skip_not_native');
     }
   } catch (e) {
     console.warn('[Boot] SplashScreen.hide failed (non-fatal):', e);
+    logDiagnostic('splash_hide_error', { message: (e as Error)?.message });
   }
 })();
 

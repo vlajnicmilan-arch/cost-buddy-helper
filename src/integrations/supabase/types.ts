@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_diagnostics_logs: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          details: Json | null
+          device_info: Json | null
+          event: string
+          id: string
+          route: string | null
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          details?: Json | null
+          device_info?: Json | null
+          event: string
+          id?: string
+          route?: string | null
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          details?: Json | null
+          device_info?: Json | null
+          event?: string
+          id?: string
+          route?: string | null
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           key: string
@@ -3110,6 +3146,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_chat_messages: { Args: never; Returns: undefined }
+      cleanup_old_diagnostic_logs: { Args: never; Returns: undefined }
       cleanup_old_login_logs: { Args: never; Returns: undefined }
       consume_invitation_token: {
         Args: { _invitation_type: string; _token: string }

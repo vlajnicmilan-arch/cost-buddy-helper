@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { StorageMode, StorageConfig } from '@/lib/storage/types';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface StorageContextType {
   storageMode: StorageMode | null;
@@ -45,10 +46,11 @@ export const StorageProvider = ({ children }: { children: ReactNode }) => {
       mode,
       lastSync: new Date().toISOString()
     };
-    
+
     localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(newConfig));
     setConfig(newConfig);
     setStorageModeState(mode);
+    logDiagnostic('storage_mode_set', { mode });
   }, []);
 
   const contextValue = useMemo(() => ({
