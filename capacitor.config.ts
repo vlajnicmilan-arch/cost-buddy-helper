@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'V&M Balance',
   webDir: 'dist',
   server: {
-    url: 'https://vmbalance.com?forceHideBadge=true',
+    url: 'https://vmbalance.com/app?forceHideBadge=true',
     cleartext: true,
     allowNavigation: ['vmbalance.com', 'www.vmbalance.com', 'cost-buddy-helper.lovable.app', 'accounts.google.com', 'appleid.apple.com'],
   },
