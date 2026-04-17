@@ -1,77 +1,48 @@
 
 
-Cilj: Dodati pouzdano logiranje iz APK-a u Supabase tablicu kako bismo iz Lovablea u realnom vremenu vidjeli što se događa na korisnikovom uređaju, bez nagađanja.
+Korisnik želi Opciju 1: promijeniti `server.url` u `capacitor.config.ts` tako da APK odmah ide na pravu stranicu umjesto na Landing.
 
-## Što planiram napraviti
+Trenutno: `server.url: 'https://vmbalance.com?forceHideBadge=true'` → otvara Landing page.
 
-### 1. Nova tablica `app_diagnostics_logs`
-Jednostavna tablica koja prima logove sa svih uređaja:
-- `id` (uuid)
-- `session_id` (text) — generiran pri pokretanju, grupira logove jedne sesije
-- `user_id` (uuid, nullable) — ako je korisnik prijavljen
-- `event` (text) — npr. `boot_start`, `splash_hidden`, `route_change`, `touch_received`, `storage_init`, `error`
-- `route` (text) — trenutna ruta
-- `details` (jsonb) — slobodan prostor za dodatne podatke
-- `device_info` (jsonb) — UA, platforma, je li Capacitor, viewport
-- `app_version` (text)
-- `created_at` (timestamptz)
+Trebam vidjeti kako se odlučuje između Landinga i app-a. Pretpostavljam da `/` vodi na Landing u browseru, a APK treba ići direktno na `/app` ili `/storage-setup`.
 
-RLS:
-- INSERT dozvoljen svima (anon i authenticated) — da app može logirati i prije prijave
-- SELECT samo za admin role (vidljivo u admin dashboardu)
+Iz konteksta:
+- `publicRoutes.ts` lista `/app` kao "transient redirect target"
+- Postoji `/storage-setup` ruta
+- Mem `pwa-routing-and-sync-logic` kaže: "/ redirects to /app, auto restoration"
 
-### 2. Diagnostic logger (`src/lib/diagnosticLogger.ts`)
-Mali modul koji:
-- Generira `session_id` jednom po pokretanju
-- Funkcija `logDiagnostic(event, details?)` — non-blocking insert u Supabase
-- Buffer + flush svakih 2s ili kad ima 5+ eventova (da ne radi 50 zahtjeva)
-- Tihi failover — ako insert padne, ne ruši app
-- Automatski hvata: `unhandledrejection`, `error` na window
-- Loguje i u console (kao i sad)
+Najsigurnija opcija je `/app` jer već postoji redirect logika koja odlučuje gdje korisnika poslati (storage setup, auth, ili home) na temelju stanja.
 
-### 3. Instrumentacija ključnih točaka
-Dodati `logDiagnostic()` pozive na:
-- `src/main.tsx`: `boot_start`, `splash_hide_attempt`, `splash_hide_success/fail`
-- `src/App.tsx` ili AppRoutes: `route_change` (sa starom i novom rutom)
-- `src/pages/StorageSetup.tsx`: 
-  - `screen_mounted`
-  - `touch_received` na svaki klik na opciju (čak i ako je disabled)
-  - globalni `pointerdown` listener na cijeli ekran (da vidimo dolaze li uopće touch eventovi)
-  - `storage_init_start`, `storage_init_success`, `storage_init_error`
-- `src/contexts/StorageContext.tsx`: promjene `storageMode`
+## Plan
 
-### 4. Admin pregled logova
-U `src/pages/Admin.tsx` (već postoji) dodati novi tab/sekciju **"Diagnostic Logs"**:
-- Lista zadnjih sesija (grupirano po `session_id`)
-- Klik na sesiju → vremenska linija eventova
-- Filter po `event` tipu i korisniku
-- Auto-refresh svakih 5s
-- Realtime subscription na novu tablicu (da vidim eventove dok se događaju)
+**1. Izmjena `capacitor.config.ts`**
 
-Korisnik (ti) ćeš moći otvoriti Admin → Diagnostic Logs i u realnom vremenu vidjeti što tvoj telefon javlja kad pokreneš APK.
+Promijeniti `server.url` s:
+```
+https://vmbalance.com?forceHideBadge=true
+```
+na:
+```
+https://vmbalance.com/app?forceHideBadge=true
+```
 
-### 5. Bez izmjena native sloja
-Ovo je čisti TypeScript/React + nova DB tablica. **Ne mijenja se `capacitor.config.ts`, ne dodaju se nativni pluginovi.** To znači:
-- **Nije potreban novi APK build** — postojeći APK će preko Live Sync-a (vmbalance.com) pokupiti novi kod
-- Samo trebaš zatvoriti i ponovno otvoriti app nakon što izmjene budu deployane
+Time APK preskače Landing page i odmah ulazi u app routing logiku (`/app` → automatski preusmjerava na storage-setup, auth, ili home — ovisno o stanju korisnika).
 
-## Što time dobivamo
+**2. Što ovo NE mijenja**
+- Live Sync nastavlja raditi normalno
+- Sve buduće Lovable promjene se i dalje vide odmah na mobitelu nakon Publish
+- Web verzija (Chrome) i dalje radi kao prije
 
-Konkretno ćemo vidjeti:
-- Pokrene li se uopće JS bundle u tvom APK-u (`boot_start` event)
-- Sakriva li se splash uspješno
-- Stiže li StorageSetup do `screen_mounted`
-- Stižu li **bilo kakvi** touch eventovi do React sloja (najvažnije pitanje)
-- Kakva greška se javlja, ako se javlja
+**3. Što korisnik mora napraviti nakon izmjene**
+- Napraviti **jedan zadnji** APK build (`npx cap sync android` + build u Android Studiju)
+- Instalirati novi APK na telefon
+- Nakon toga: sve buduće promjene idu automatski preko Live Synca, **bez novih APK buildova**
 
-Ako vidimo `screen_mounted` ali nikad `touch_received` → problem je nativni overlay koji guta touch.
-Ako vidimo `touch_received` ali ne i `storage_init_start` → problem je u logici onClicka.
-Ako ne vidimo ni `boot_start` → problem je još dublje (WebView ne učitava bundle).
+**4. Verifikacija**
+Nakon instalacije novog APK-a:
+- APK se otvara → odmah ide u app (ne na Landing)
+- Klikovi rade na storage-setup ekranu
+- U `app_diagnostics_logs` tablici počnu se pojavljivati Android događaji (boot_start, storage_init_start)
 
-Bilo koji od ovih ishoda nam **konačno daje pravi smjer** umjesto nagađanja.
-
-## Tehnički detalji (za zapis)
-- Tablica je low-cost (nema FK na auth.users da insert ne padne za neprijavljene)
-- Logger koristi `navigator.sendBeacon` kao fallback pri unloadu
-- Cleanup: dodati cron koji briše logove starije od 7 dana (da tablica ne raste beskonačno)
+Ako i dalje ne radi nakon ove izmjene, prebacit ćemo se na Opciju 2 (lokalni bundle).
 
