@@ -487,7 +487,9 @@ const APKDownloadSection = ({ referralCode }: { referralCode: string }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk`;
+  // Cache-busting: rotate every 5 min so new APK uploads propagate quickly past CDN
+  const cacheBust = Math.floor(Date.now() / (5 * 60 * 1000));
+  const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk&v=${cacheBust}`;
 
   return (
     <section className="pt-28 pb-16 px-4 relative overflow-hidden">
