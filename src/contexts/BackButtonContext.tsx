@@ -1,13 +1,21 @@
 import { createContext, useContext, useRef, useCallback, useEffect, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { isPublicRoute, isRootAppRoute } from '@/lib/publicRoutes';
 
 /**
  * Global Back Button Manager
- * 
+ *
  * Handles the Android/browser back button centrally:
- * 1. If any dialog/overlay is registered as open → closes the most recently opened one
- * 2. If on a sub-page (/projects, /budgets, /wallet) → navigates to /
- * 3. If already on root page → pushes state back (prevents accidental app exit on web)
+ * 1. If on a public route (/auth, /setup, /install, /, …) → DO NOTHING.
+ *    The back button must behave normally so the user can leave / navigate
+ *    back through the natural history stack. Intercepting back here was
+ *    the cause of the "have to press back twice and screen stays frozen"
+ *    bug on the Android APK.
+ * 2. If any dialog/overlay is registered as open → closes the most
+ *    recently opened one (LIFO).
+ * 3. If on an authenticated app sub-page → navigates to /home.
+ * 4. If already on a root app page → re-push state to prevent the WebView
+ *    from leaving the app accidentally.
  */
 
 type BackHandler = {
@@ -25,29 +33,28 @@ type BackButtonContextType = {
 
 const BackButtonContext = createContext<BackButtonContextType | null>(null);
 
-const ROOT_PAGES = ['/home', '/dashboard', '/'];
-
 export function BackButtonProvider({ children }: { children: ReactNode }) {
   const handlersRef = useRef<Map<string, BackHandler>>(new Map());
   const navigate = useNavigate();
   const locationRef = useRef<string>('/');
+  const initialStatePushedRef = useRef(false);
 
   const location = useLocation();
   useEffect(() => {
     locationRef.current = location.pathname;
+    if (import.meta.env.DEV) {
+      console.log('[BackButton] route changed:', location.pathname, 'public:', isPublicRoute(location.pathname));
+    }
   }, [location.pathname]);
 
   const register = useCallback((id: string, isOpen: boolean, onClose: () => void, priority = 0) => {
     const existing = handlersRef.current.get(id);
     const wasOpen = existing?.isOpen ?? false;
 
-    if (isOpen && !wasOpen) {
-      // Just opened → push a dummy history entry so back fires popstate
+    // Never push synthetic history entries on public routes — it traps the user.
+    if (isOpen && !wasOpen && !isPublicRoute(locationRef.current)) {
       window.history.pushState({ backButtonId: id }, '');
     }
-    // Note: when closing programmatically, the popstate handler triggered by
-    // history.back() inside the hook's useEffect will be ignored because
-    // the handler is already marked closed before it fires.
 
     handlersRef.current.set(id, {
       id,
@@ -63,40 +70,59 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handlePopState = useCallback(() => {
+    const currentPath = locationRef.current;
+
+    // PUBLIC ROUTES: do not intercept anything. Let the WebView/browser handle
+    // the back navigation naturally. This is critical for the auth/setup flow
+    // on Android, where intercepting was leaving the user on a frozen screen.
+    if (isPublicRoute(currentPath)) {
+      if (import.meta.env.DEV) {
+        console.log('[BackButton] popstate on public route — ignored:', currentPath);
+      }
+      return;
+    }
+
     // Collect all currently open handlers
     const openHandlers = Array.from(handlersRef.current.values())
       .filter(h => h.isOpen)
-      // Sort: highest priority first, then most recently opened first (LIFO)
       .sort((a, b) => b.priority - a.priority || b.openedAt - a.openedAt);
 
     if (openHandlers.length > 0) {
-      // Close the topmost dialog
       const handler = openHandlers[0];
-      // Mark as closed immediately so re-entrant popstate doesn't double-fire
       handler.isOpen = false;
       handler.onClose();
       return;
     }
 
-    // No dialogs open — handle page-level back navigation
-    const currentPath = locationRef.current;
-    if (!ROOT_PAGES.includes(currentPath)) {
+    // No dialogs open — handle page-level back navigation in app area
+    if (!isRootAppRoute(currentPath)) {
       navigate('/home', { replace: false });
       return;
     }
 
-    // Already on root — re-push state to prevent browser from leaving the app
+    // Already on a root app route — re-push state so the WebView doesn't exit
     window.history.pushState(null, '');
   }, [navigate]);
 
   useEffect(() => {
     window.addEventListener('popstate', handlePopState);
-    // Push an initial state so the very first back press doesn't immediately close the tab
-    window.history.pushState(null, '');
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [handlePopState]);
+
+  // Push the initial guard state ONLY once we're inside the authenticated app,
+  // never on public routes (otherwise back from /auth or /setup gets trapped).
+  useEffect(() => {
+    if (
+      !initialStatePushedRef.current &&
+      !isPublicRoute(location.pathname) &&
+      isRootAppRoute(location.pathname)
+    ) {
+      window.history.pushState(null, '');
+      initialStatePushedRef.current = true;
+    }
+  }, [location.pathname]);
 
   return (
     <BackButtonContext.Provider value={{ register, unregister }}>

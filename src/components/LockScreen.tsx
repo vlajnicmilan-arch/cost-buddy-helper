@@ -6,6 +6,7 @@ import logo from '@/assets/logo.webp';
 import { useTranslation } from 'react-i18next';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useLocation } from 'react-router-dom';
+import { isPublicRoute } from '@/lib/publicRoutes';
 
 export const LockScreen = () => {
   const { isLocked, unlock, unlockBiometric, biometricEnabled, biometricType, loading } = useAppLock();
@@ -16,16 +17,7 @@ export const LockScreen = () => {
   const { t } = useTranslation();
   const biometricAttempted = useRef(false);
   const { lightTap, errorVibration } = useHaptics();
-  const isPublicRoute = [
-    '/',
-    '/auth',
-    '/setup',
-    '/reset-password',
-    '/install',
-    '/privacy-policy',
-    '/terms-of-service',
-    '/unsubscribe',
-  ].includes(location.pathname);
+  const onPublicRoute = isPublicRoute(location.pathname);
 
   // Try biometric on mount
   useEffect(() => {
@@ -70,7 +62,7 @@ export const LockScreen = () => {
     setError(false);
   };
 
-  if (!isLocked || loading || isPublicRoute) return null;
+  if (!isLocked || loading || onPublicRoute) return null;
 
   const BiometricIcon = biometricType === 'face' ? ScanFace : Fingerprint;
 
