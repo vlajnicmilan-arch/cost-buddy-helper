@@ -17,6 +17,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { useStatusBar } from "@/hooks/useStatusBar";
 import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
+import { isPublicRoute } from "@/lib/publicRoutes";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
 import StatusFeedback from "@/components/StatusFeedback";
@@ -91,18 +92,10 @@ const RootRoute = () => {
 
 const RouteAwareGlobalOverlays = () => {
   const location = useLocation();
-  const isPublicRoute = [
-    "/",
-    "/auth",
-    "/setup",
-    "/reset-password",
-    "/install",
-    "/privacy-policy",
-    "/terms-of-service",
-    "/unsubscribe",
-  ].includes(location.pathname);
-
-  if (isPublicRoute) {
+  if (isPublicRoute(location.pathname)) {
+    if (import.meta.env.DEV) {
+      console.log('[Overlays] suppressed on public route:', location.pathname);
+    }
     return null;
   }
 
