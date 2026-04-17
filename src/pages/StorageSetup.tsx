@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type TouchEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,18 @@ const StorageSetup = () => {
     } else {
       navigate(-1);
     }
+  };
+
+  const handleTouchAction = (event: TouchEvent<HTMLElement>, action: () => void) => {
+    event.preventDefault();
+    event.stopPropagation();
+    action();
+  };
+
+  const handleSelectMode = (mode: StorageMode, available: boolean) => {
+    if (!available) return;
+    console.log('[StorageSetup] Selected:', mode);
+    setSelectedMode(mode);
   };
 
   const handleContinue = async () => {
@@ -59,8 +71,11 @@ const StorageSetup = () => {
         >
           {isChangingMode && (
             <button
+              type="button"
               onClick={handleGoBack}
+              onTouchEnd={(event) => handleTouchAction(event, handleGoBack)}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
+              style={{ touchAction: 'manipulation' }}
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="text-sm">{t('storage.back', 'Natrag')}</span>
@@ -86,12 +101,8 @@ const StorageSetup = () => {
               <button
                 key={option.id}
                 type="button"
-                onClick={() => {
-                  if (option.available) {
-                    console.log('[StorageSetup] Selected:', option.id);
-                    setSelectedMode(option.id);
-                  }
-                }}
+                onClick={() => handleSelectMode(option.id, option.available)}
+                onTouchEnd={(event) => handleTouchAction(event, () => handleSelectMode(option.id, option.available))}
                 disabled={!option.available}
                 className={cn(
                   'w-full p-3.5 rounded-2xl border-2 text-left transition-all relative',
@@ -101,6 +112,7 @@ const StorageSetup = () => {
                     ? 'border-border/50 bg-muted/30 hover:bg-muted/50 hover:border-border'
                     : 'border-border/30 bg-muted/20 opacity-60 cursor-not-allowed'
                 )}
+                style={{ touchAction: 'manipulation' }}
               >
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">{option.icon}</span>
@@ -137,9 +149,12 @@ const StorageSetup = () => {
 
           {/* Continue Button */}
           <Button
-            onClick={handleContinue}
+            type="button"
+            onClick={() => void handleContinue()}
+            onTouchEnd={(event) => handleTouchAction(event, () => void handleContinue())}
             disabled={!selectedMode || isLoading || (isChangingMode && selectedMode === currentMode)}
             className="w-full h-12 rounded-xl text-base font-medium gap-2"
+            style={{ touchAction: 'manipulation' }}
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
             {isLoading
@@ -153,18 +168,27 @@ const StorageSetup = () => {
           {/* Skip/Cancel */}
           {isChangingMode ? (
             <button
+              type="button"
               onClick={handleGoBack}
+              onTouchEnd={(event) => handleTouchAction(event, handleGoBack)}
               className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              style={{ touchAction: 'manipulation' }}
             >
               {t('common.cancel', 'Odustani')}
             </button>
           ) : (
             <button
+              type="button"
               onClick={() => {
                 setStorageMode('local');
                 navigate('/home');
               }}
+              onTouchEnd={(event) => handleTouchAction(event, () => {
+                setStorageMode('local');
+                navigate('/home');
+              })}
               className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              style={{ touchAction: 'manipulation' }}
             >
               {t('storage.skipForNow', 'Preskoči za sada (lokalna pohrana)')}
             </button>
