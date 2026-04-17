@@ -39,6 +39,18 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
   }
 })();
 
+// Boot diagnostics — these always log so we can see them in `chrome://inspect`
+// when the APK is connected. Helps confirm which bundle/route is active.
+try {
+  console.log('[Boot] V&M Balance starting', {
+    href: window.location.href,
+    pathname: window.location.pathname,
+    isCapacitor: !!(window as any).Capacitor?.isNativePlatform?.(),
+    standalone: window.matchMedia('(display-mode: standalone)').matches,
+    ua: navigator.userAgent,
+  });
+} catch {}
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ErrorBoundary>
