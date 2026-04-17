@@ -23,7 +23,9 @@ import { APP_VERSION } from '@/lib/version';
 import { downloadApk } from '@/lib/downloadApk';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk`;
+// Cache-busting: rotate every 5 min so new APK uploads propagate quickly past CDN
+const cacheBust = Math.floor(Date.now() / (5 * 60 * 1000));
+const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk&v=${cacheBust}`;
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
