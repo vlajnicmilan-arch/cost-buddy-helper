@@ -5,15 +5,27 @@ import { Fingerprint, Delete, Lock, ScanFace } from 'lucide-react';
 import logo from '@/assets/logo.webp';
 import { useTranslation } from 'react-i18next';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useLocation } from 'react-router-dom';
 
 export const LockScreen = () => {
   const { isLocked, unlock, unlockBiometric, biometricEnabled, biometricType, loading } = useAppLock();
+  const location = useLocation();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
   const { t } = useTranslation();
   const biometricAttempted = useRef(false);
   const { lightTap, errorVibration } = useHaptics();
+  const isPublicRoute = [
+    '/',
+    '/auth',
+    '/setup',
+    '/reset-password',
+    '/install',
+    '/privacy-policy',
+    '/terms-of-service',
+    '/unsubscribe',
+  ].includes(location.pathname);
 
   // Try biometric on mount
   useEffect(() => {
@@ -58,7 +70,7 @@ export const LockScreen = () => {
     setError(false);
   };
 
-  if (!isLocked || loading) return null;
+  if (!isLocked || loading || isPublicRoute) return null;
 
   const BiometricIcon = biometricType === 'face' ? ScanFace : Fingerprint;
 
