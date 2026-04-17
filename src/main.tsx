@@ -51,6 +51,23 @@ try {
   });
 } catch {}
 
+// CRITICAL: Force-hide the Capacitor splash screen as soon as JS boots.
+// Without this, the native splash can linger as an invisible overlay on
+// some Android WebView versions, swallowing every touch event and making
+// the StorageSetup / Auth screens look frozen.
+(async () => {
+  try {
+    const cap = (window as any).Capacitor;
+    if (cap?.isNativePlatform?.()) {
+      const { SplashScreen } = await import('@capacitor/splash-screen');
+      await SplashScreen.hide({ fadeOutDuration: 0 });
+      console.log('[Boot] Splash screen hidden');
+    }
+  } catch (e) {
+    console.warn('[Boot] SplashScreen.hide failed (non-fatal):', e);
+  }
+})();
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ErrorBoundary>
