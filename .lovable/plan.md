@@ -1,89 +1,77 @@
 
-Cilj: prije novog APK-a još jednom suziti problem na ono što je najvjerojatnije stvarni uzrok i napraviti set sigurnih popravaka koji ciljaju upravo početni/public flow (`/`, `/app`, `/setup`, `/auth`).
 
-Što sam pronašao
-1. Najjači sumnjivac više nije service worker.
-   - U kodu već postoji agresivno gašenje starih service workera i cacheva (`index.html`, `src/main.tsx`, `public/sw.js`).
-   - Zbog toga mislim da je “stari bundle” sada manje vjerojatan nego prije.
+Cilj: Dodati pouzdano logiranje iz APK-a u Supabase tablicu kako bismo iz Lovablea u realnom vremenu vidjeli što se događa na korisnikovom uređaju, bez nagađanja.
 
-2. Najjači novi sumnjivac je globalni Android back manager.
-   - `src/contexts/BackButtonContext.tsx` globalno gura lažne history unose čim se app učita.
-   - Na back pritisku, ako ruta nije `/home`, `/dashboard` ili `/`, on uvijek radi `navigate('/home')`.
-   - To je loše za javne ekrane kao `/auth` i `/setup`, jer tamo back ne bi smio gurati korisnika na `/home`.
-   - To vrlo dobro objašnjava tvoje simptome: čudno vraćanje, potrebu da “dva puta izađeš”, i osjećaj da app zapne u krivom ekranu.
+## Što planiram napraviti
 
-3. Public-route zaštita je popravljena, ali je još krhka.
-   - `App.tsx` i `LockScreen.tsx` imaju ručne liste public ruta.
-   - To je duplirana logika i lako se raziđe.
-   - Uz to se provjerava točno podudaranje putanje; to je osjetljivo na trailing slash i slične edge caseove.
+### 1. Nova tablica `app_diagnostics_logs`
+Jednostavna tablica koja prima logove sa svih uređaja:
+- `id` (uuid)
+- `session_id` (text) — generiran pri pokretanju, grupira logove jedne sesije
+- `user_id` (uuid, nullable) — ako je korisnik prijavljen
+- `event` (text) — npr. `boot_start`, `splash_hidden`, `route_change`, `touch_received`, `storage_init`, `error`
+- `route` (text) — trenutna ruta
+- `details` (jsonb) — slobodan prostor za dodatne podatke
+- `device_info` (jsonb) — UA, platforma, je li Capacitor, viewport
+- `app_version` (text)
+- `created_at` (timestamptz)
 
-4. Još uvijek postoje globalni fixed layeri koje treba dodatno “otupiti”.
-   - Radix toast viewport je već zaštićen.
-   - Ali i dalje postoji globalni Sonner toaster i još nekoliko fixed overlay komponenti.
-   - Ne tvrdim da je to glavni uzrok, ali za Android WebView želim ih dodatno osigurati da nikad ne gutaju tapove kad nemaju aktivan sadržaj.
+RLS:
+- INSERT dozvoljen svima (anon i authenticated) — da app može logirati i prije prijave
+- SELECT samo za admin role (vidljivo u admin dashboardu)
 
-5. APK koji skidaš nakon Publisha nije automatski “novi native build”.
-   - Publish mijenja web sadržaj koji postojeći instalirani app učitava.
-   - Novi APK treba tek ako je problem u samom native shellu ili ako želimo ugraditi native promjene.
+### 2. Diagnostic logger (`src/lib/diagnosticLogger.ts`)
+Mali modul koji:
+- Generira `session_id` jednom po pokretanju
+- Funkcija `logDiagnostic(event, details?)` — non-blocking insert u Supabase
+- Buffer + flush svakih 2s ili kad ima 5+ eventova (da ne radi 50 zahtjeva)
+- Tihi failover — ako insert padne, ne ruši app
+- Automatski hvata: `unhandledrejection`, `error` na window
+- Loguje i u console (kao i sad)
 
-Plan popravka
-1. Ojačati i ograničiti back-button logiku samo na stvarni app dio
-   - Uvesti jedinstvenu helper funkciju za razlikovanje public ruta i app ruta.
-   - Onemogućiti globalno `pushState` ponašanje na public ekranima.
-   - Spriječiti da back s `/auth`, `/setup`, `/install`, `/reset-password`, policy stranica i sličnih ruta radi redirect na `/home`.
-   - Na public ekranima back treba ili vratiti natrag normalno, ili pustiti izlaz iz appa.
+### 3. Instrumentacija ključnih točaka
+Dodati `logDiagnostic()` pozive na:
+- `src/main.tsx`: `boot_start`, `splash_hide_attempt`, `splash_hide_success/fail`
+- `src/App.tsx` ili AppRoutes: `route_change` (sa starom i novom rutom)
+- `src/pages/StorageSetup.tsx`: 
+  - `screen_mounted`
+  - `touch_received` na svaki klik na opciju (čak i ako je disabled)
+  - globalni `pointerdown` listener na cijeli ekran (da vidimo dolaze li uopće touch eventovi)
+  - `storage_init_start`, `storage_init_success`, `storage_init_error`
+- `src/contexts/StorageContext.tsx`: promjene `storageMode`
 
-2. Centralizirati public-route logiku
-   - Jedan shared helper koristiti u:
-     - `src/App.tsx`
-     - `src/components/LockScreen.tsx`
-     - `src/components/CookieConsentBanner.tsx`
-     - po potrebi još gdje postoji route-based overlay ponašanje
-   - U helperu normalizirati path (npr. trailing slash) da ne ostane rupa.
+### 4. Admin pregled logova
+U `src/pages/Admin.tsx` (već postoji) dodati novi tab/sekciju **"Diagnostic Logs"**:
+- Lista zadnjih sesija (grupirano po `session_id`)
+- Klik na sesiju → vremenska linija eventova
+- Filter po `event` tipu i korisniku
+- Auto-refresh svakih 5s
+- Realtime subscription na novu tablicu (da vidim eventove dok se događaju)
 
-3. Dodatno “otupiti” globalne overlaye
-   - Provjeriti i po potrebi postaviti `pointer-events: none` na globalne fixed kontejnere koji ne bi smjeli blokirati ekran kad su prazni.
-   - Posebno:
-     - Sonner toaster
-     - eventualni globalni update prompt/container slojevi
-     - sve top-level fixed layere na public ekranima
+Korisnik (ti) ćeš moći otvoriti Admin → Diagnostic Logs i u realnom vremenu vidjeti što tvoj telefon javlja kad pokreneš APK.
 
-4. Dodati ciljanu dijagnostiku za idući pokušaj
-   - U native/public flow ubaciti kratke, ciljane console logove:
-     - koja je ruta aktivna
-     - je li back manager aktivan
-     - je li neki globalni overlay renderiran
-     - zaključava li se app lock i na kojoj ruti
-   - To će nam, ako i dalje ne proradi, odmah pokazati je li problem routing/back ili stvarno neki overlay.
+### 5. Bez izmjena native sloja
+Ovo je čisti TypeScript/React + nova DB tablica. **Ne mijenja se `capacitor.config.ts`, ne dodaju se nativni pluginovi.** To znači:
+- **Nije potreban novi APK build** — postojeći APK će preko Live Sync-a (vmbalance.com) pokupiti novi kod
+- Samo trebaš zatvoriti i ponovno otvoriti app nakon što izmjene budu deployane
 
-5. Pojačati start-up ponašanje u native appu
-   - Dodati zaštitu da na početnom loadu native app ne ostane u “polu-javnom / polu-app” stanju.
-   - Ako treba, uvesti jasnije preusmjeravanje za native start tako da public flow bude determinističan.
+## Što time dobivamo
 
-6. Tek nakon toga odlučiti treba li novi APK
-   - Ako problem nestane nakon web promjena i Publisha: ne treba novi native build.
-   - Ako i dalje ostane isto unatoč ciljanim popravcima i logovima: onda je opravdano raditi novi APK, jer ćemo imati puno jači dokaz da je problem u native shellu/WebView ponašanju.
+Konkretno ćemo vidjeti:
+- Pokrene li se uopće JS bundle u tvom APK-u (`boot_start` event)
+- Sakriva li se splash uspješno
+- Stiže li StorageSetup do `screen_mounted`
+- Stižu li **bilo kakvi** touch eventovi do React sloja (najvažnije pitanje)
+- Kakva greška se javlja, ako se javlja
 
-Datoteke koje bih dirao
-- `src/contexts/BackButtonContext.tsx`
-- `src/App.tsx`
-- `src/components/LockScreen.tsx`
-- `src/components/CookieConsentBanner.tsx`
-- `src/components/ui/sonner.tsx` i/ili globalni CSS
-- novi shared helper, npr. za public route provjeru
-- po potrebi `src/main.tsx` za dodatnu boot dijagnostiku
+Ako vidimo `screen_mounted` ali nikad `touch_received` → problem je nativni overlay koji guta touch.
+Ako vidimo `touch_received` ali ne i `storage_init_start` → problem je u logici onClicka.
+Ako ne vidimo ni `boot_start` → problem je još dublje (WebView ne učitava bundle).
 
-Tehnička procjena prioriteta
-- Prioritet 1: `BackButtonContext.tsx`
-- Prioritet 2: centralni public-route helper + overlay guardovi
-- Prioritet 3: Sonner/global fixed layer hardening
-- Prioritet 4: dijagnostički logovi
-- Prioritet 5: odluka o novom APK-u tek nakon retesta
+Bilo koji od ovih ishoda nam **konačno daje pravi smjer** umjesto nagađanja.
 
-Zaključak
-Da znam što je problem? Ne 100%, ali sada je krug puno uži. Najvjerojatniji stvarni uzrok više mi nije cache/service worker, nego kombinacija:
-- globalnog back intercepta na public ekranima
-- krhke public-route zaštite
-- mogućeg globalnog fixed layera koji u Android WebView okruženju još uvijek može blokirati interakciju
+## Tehnički detalji (za zapis)
+- Tablica je low-cost (nema FK na auth.users da insert ne padne za neprijavljene)
+- Logger koristi `navigator.sendBeacon` kao fallback pri unloadu
+- Cleanup: dodati cron koji briše logove starije od 7 dana (da tablica ne raste beskonačno)
 
-Ako odobriš, sljedeći korak bi bio da implementiram ovaj set popravaka ciljano na public/auth/setup flow, bez čekanja na novi APK.
