@@ -603,26 +603,17 @@ const Auth = () => {
             onClick={async () => {
               setLoading(true);
               try {
-                if (isNative) {
-                  // Native: use in-app browser + deep link callback
-                  const { error } = await nativeOAuth('google');
-                  if (error) {
-                    if (!error.message.includes('cancelled')) {
-                      showError('Greška pri Google prijavi');
-                      console.error('Google OAuth error:', error);
-                    }
-                  } else {
-                    if (!storageMode) setStorageMode('cloud');
-                  }
-                } else {
-                  // Web: use Lovable managed OAuth
-                  const { error } = await lovable.auth.signInWithOAuth("google", {
-                    redirect_uri: window.location.origin,
-                  });
-                  if (error) {
-                    showError('Greška pri Google prijavi');
-                    console.error('Google OAuth error:', error);
-                  }
+                // Both web and native use Lovable managed OAuth.
+                // On native, the app runs inside a WebView pointing at vmbalance.com,
+                // so window.location.origin works the same as on web.
+                const { error } = await lovable.auth.signInWithOAuth("google", {
+                  redirect_uri: window.location.origin,
+                });
+                if (error) {
+                  showError('Greška pri Google prijavi');
+                  console.error('Google OAuth error:', error);
+                } else if (!storageMode) {
+                  setStorageMode('cloud');
                 }
               } catch (err) {
                 showError('Greška pri Google prijavi');
@@ -650,24 +641,14 @@ const Auth = () => {
             onClick={async () => {
               setLoading(true);
               try {
-                if (isNative) {
-                  const { error } = await nativeOAuth('apple');
-                  if (error) {
-                    if (!error.message.includes('cancelled')) {
-                      showError('Greška pri Apple prijavi');
-                      console.error('Apple OAuth error:', error);
-                    }
-                  } else {
-                    if (!storageMode) setStorageMode('cloud');
-                  }
-                } else {
-                  const { error } = await lovable.auth.signInWithOAuth("apple", {
-                    redirect_uri: window.location.origin,
-                  });
-                  if (error) {
-                    showError('Greška pri Apple prijavi');
-                    console.error('Apple OAuth error:', error);
-                  }
+                const { error } = await lovable.auth.signInWithOAuth("apple", {
+                  redirect_uri: window.location.origin,
+                });
+                if (error) {
+                  showError('Greška pri Apple prijavi');
+                  console.error('Apple OAuth error:', error);
+                } else if (!storageMode) {
+                  setStorageMode('cloud');
                 }
               } catch (err) {
                 showError('Greška pri Apple prijavi');
