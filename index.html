@@ -71,6 +71,31 @@
         }
       })();
     </script>
+    <script>
+      // Kill any lingering Service Worker + cached PWA bundle.
+      // This is critical for the Capacitor APK that loads vmbalance.com:
+      // older PWA installs registered a SW that intercepts /setup and serves
+      // a stale JS bundle, which makes buttons appear unresponsive.
+      (function () {
+        try {
+          var ua = (navigator.userAgent || '').toLowerCase();
+          var isCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+          var isAndroidWebView = /\bwv\b/.test(ua) || /; wv\)/.test(ua);
+          var isProdHost = location.hostname === 'vmbalance.com' || location.hostname === 'www.vmbalance.com';
+          var shouldKillSW = isCapacitor || isAndroidWebView || isProdHost;
+          if (shouldKillSW && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              regs.forEach(function (r) { try { r.unregister(); } catch (e) {} });
+            }).catch(function () {});
+          }
+          if (shouldKillSW && window.caches && caches.keys) {
+            caches.keys().then(function (keys) {
+              keys.forEach(function (k) { try { caches.delete(k); } catch (e) {} });
+            }).catch(function () {});
+          }
+        } catch (e) { /* no-op */ }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
