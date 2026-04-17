@@ -91,9 +91,18 @@ const RootRoute = () => {
 
 const RouteAwareGlobalOverlays = () => {
   const location = useLocation();
-  const isSetupRoute = location.pathname === "/setup";
+  const isPublicRoute = [
+    "/",
+    "/auth",
+    "/setup",
+    "/reset-password",
+    "/install",
+    "/privacy-policy",
+    "/terms-of-service",
+    "/unsubscribe",
+  ].includes(location.pathname);
 
-  if (isSetupRoute) {
+  if (isPublicRoute) {
     return null;
   }
 
