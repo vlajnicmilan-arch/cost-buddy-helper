@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { initLocalDB } from '@/lib/storage/indexedDB';
 import logo from '@/assets/logo.webp';
 import { useTranslation } from 'react-i18next';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 const storageOptionIcons: Record<StorageMode, LucideIcon> = {
   local: Smartphone,
