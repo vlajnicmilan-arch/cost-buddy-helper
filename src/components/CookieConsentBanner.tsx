@@ -4,6 +4,7 @@ import { Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { isPublicRoute } from '@/lib/publicRoutes';
 
 const CONSENT_KEY = 'gdpr_consent_accepted';
 const CONSENT_DATE_KEY = 'gdpr_consent_date';
@@ -16,10 +17,10 @@ export const CookieConsentBanner = () => {
   const { t } = useTranslation();
   const location = useLocation();
 
-  const isSetupPage = location.pathname === '/setup';
+  const onPublicRoute = isPublicRoute(location.pathname);
 
   useEffect(() => {
-    if (isSetupPage) {
+    if (onPublicRoute) {
       setVisible(false);
       return;
     }
@@ -29,7 +30,7 @@ export const CookieConsentBanner = () => {
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, [isSetupPage]);
+  }, [onPublicRoute]);
 
   const handleAccept = () => {
     localStorage.setItem(CONSENT_KEY, 'true');
