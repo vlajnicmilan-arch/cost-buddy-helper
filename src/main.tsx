@@ -5,26 +5,39 @@ import "./index.css";
 import "./i18n";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
-// Deregister Service Workers in Capacitor native shell to prevent PWA behavior
-if ((window as any).Capacitor?.isNativePlatform?.()) {
-  navigator.serviceWorker?.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
-}
+// Aggressively kill any leftover Service Worker + PWA caches.
+// The Capacitor APK loads vmbalance.com, so a previously registered PWA
+// service worker can intercept /setup and serve a stale bundle that
+// blocks taps. We purge it on every load in any non-trusted context.
+(() => {
+  const ua = (navigator.userAgent || "").toLowerCase();
+  const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+  const isAndroidWebView = /\bwv\b/.test(ua) || /; wv\)/.test(ua);
+  const isInIframe = (() => {
+    try { return window.self !== window.top; } catch { return true; }
+  })();
+  const isPreviewHost =
+    window.location.hostname.includes("id-preview--") ||
+    window.location.hostname.includes("lovableproject.com");
+  const isProdHost =
+    window.location.hostname === "vmbalance.com" ||
+    window.location.hostname === "www.vmbalance.com";
 
-// Also deregister in iframe/preview contexts
-const isInIframe = (() => {
-  try { return window.self !== window.top; } catch { return true; }
+  const shouldKillSW =
+    isCapacitor || isAndroidWebView || isInIframe || isPreviewHost || isProdHost;
+
+  if (shouldKillSW) {
+    navigator.serviceWorker?.getRegistrations().then((regs) => {
+      regs.forEach((r) => r.unregister().catch(() => undefined));
+    }).catch(() => undefined);
+
+    if (typeof caches !== "undefined" && caches?.keys) {
+      caches.keys().then((keys) => {
+        keys.forEach((k) => caches.delete(k).catch(() => undefined));
+      }).catch(() => undefined);
+    }
+  }
 })();
-const isPreviewHost =
-  window.location.hostname.includes("id-preview--") ||
-  window.location.hostname.includes("lovableproject.com");
-
-if (isPreviewHost || isInIframe) {
-  navigator.serviceWorker?.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
-}
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
