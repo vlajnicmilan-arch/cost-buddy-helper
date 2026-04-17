@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Check, Lock, Loader2 } from 'lucide-react';
 import { useStorage } from '@/contexts/StorageContext';
-// useAuth no longer needed here — routing is centralized
 import { STORAGE_OPTIONS, StorageMode } from '@/lib/storage/types';
 import { cn } from '@/lib/utils';
 import { initLocalDB } from '@/lib/storage/indexedDB';
@@ -18,11 +17,9 @@ const StorageSetup = () => {
   const [selectedMode, setSelectedMode] = useState<StorageMode | null>(currentMode);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if user came from settings (has existing mode)
   const isChangingMode = !!currentMode;
 
   const handleGoBack = () => {
-    // Always go back to home when changing mode from settings
     if (isChangingMode) {
       navigate('/home');
     } else {
@@ -32,9 +29,7 @@ const StorageSetup = () => {
 
   const handleContinue = async () => {
     if (!selectedMode) return;
-
     setIsLoading(true);
-
     try {
       if (selectedMode === 'local') {
         await initLocalDB();
@@ -42,10 +37,8 @@ const StorageSetup = () => {
         navigate('/home');
       } else if (selectedMode === 'cloud') {
         setStorageMode('cloud');
-        // Routing to /auth or /home is handled by App.tsx centrally
         navigate('/auth');
       } else {
-        // Google Drive / iCloud - coming soon
         setStorageMode(selectedMode);
         navigate('/home');
       }
@@ -57,123 +50,127 @@ const StorageSetup = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-background flex flex-col items-center justify-start overflow-y-auto p-6 pb-24 pt-safe">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        {/* Back button - only show when changing mode */}
-        {isChangingMode && (
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">{t('storage.back', 'Natrag')}</span>
-          </button>
-        )}
-
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4">
-            <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
-          <p className="text-muted-foreground mt-2">
-            {isChangingMode 
-              ? t('storage.changeMode', 'Promijeni način pohrane podataka')
-              : t('storage.whereToStore', 'Gdje želiš spremati svoje podatke?')}
-          </p>
-        </div>
-
-        {/* Storage Options */}
-        <div className="space-y-3 mb-8">
-          {STORAGE_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => {
-                if (option.available) {
-                  console.log('[StorageSetup] Selected:', option.id);
-                  setSelectedMode(option.id);
-                }
-              }}
-              disabled={!option.available}
-              className={cn(
-                "w-full p-4 rounded-2xl border-2 text-left transition-all relative",
-                selectedMode === option.id
-                  ? "border-primary bg-primary/5"
-                  : option.available
-                  ? "border-border/50 bg-muted/30 hover:bg-muted/50 hover:border-border"
-                  : "border-border/30 bg-muted/20 opacity-60 cursor-not-allowed"
-              )}
-            >
-              <div className="flex items-start gap-4">
-                <span className="text-3xl">{option.icon}</span>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">
-                      {option.name}
-                    </span>
-                    {option.comingSoon && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        {t('storage.comingSoon', 'Uskoro')}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {option.description}
-                  </p>
-                </div>
-                {selectedMode === option.id && (
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                    <Check className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Privacy Notice */}
-        <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl mb-6">
-          <Lock className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground">
-            {t('storage.privacyNotice', 'Tvoji financijski podaci su privatni. Lokalna pohrana nikad ne napušta tvoj uređaj. Cloud opcije koriste enkripciju za zaštitu podataka.')}
-          </p>
-        </div>
-
-        {/* Continue Button */}
-        <Button
-          onClick={handleContinue}
-          disabled={!selectedMode || isLoading || (isChangingMode && selectedMode === currentMode)}
-          className="w-full h-14 rounded-xl text-lg font-medium gap-2"
+    <div className="min-h-dvh bg-background overflow-y-auto safe-area-top safe-area-bottom">
+      <div className="flex flex-col items-center px-6 pt-6 pb-10 min-h-dvh">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
         >
-          {isLoading ? t('storage.setting', 'Postavljam...') : isChangingMode ? t('storage.saveChanges', 'Spremi promjene') : t('storage.continue', 'Nastavi')}
-          <ArrowRight className="w-5 h-5" />
-        </Button>
+          {isChangingMode && (
+            <button
+              onClick={handleGoBack}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm">{t('storage.back', 'Natrag')}</span>
+            </button>
+          )}
 
-        {/* Skip/Cancel button */}
-        {isChangingMode ? (
-          <button
-            onClick={handleGoBack}
-            className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          {/* Kompaktni header */}
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto mb-3">
+              <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">V&M Balance</h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {isChangingMode
+                ? t('storage.changeMode', 'Promijeni način pohrane podataka')
+                : t('storage.whereToStore', 'Gdje želiš spremati svoje podatke?')}
+            </p>
+          </div>
+
+          {/* Storage Options */}
+          <div className="space-y-2.5 mb-5">
+            {STORAGE_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  if (option.available) {
+                    console.log('[StorageSetup] Selected:', option.id);
+                    setSelectedMode(option.id);
+                  }
+                }}
+                disabled={!option.available}
+                className={cn(
+                  'w-full p-3.5 rounded-2xl border-2 text-left transition-all relative',
+                  selectedMode === option.id
+                    ? 'border-primary bg-primary/5'
+                    : option.available
+                    ? 'border-border/50 bg-muted/30 hover:bg-muted/50 hover:border-border'
+                    : 'border-border/30 bg-muted/20 opacity-60 cursor-not-allowed'
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">{option.icon}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground text-sm">{option.name}</span>
+                      {option.comingSoon && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          {t('storage.comingSoon', 'Uskoro')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                      {option.description}
+                    </p>
+                  </div>
+                  {selectedMode === option.id && (
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Privacy Notice - kompaktno */}
+          <div className="flex items-start gap-2.5 p-3 bg-muted/30 rounded-xl mb-4">
+            <Lock className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              {t('storage.privacyNotice', 'Tvoji financijski podaci su privatni. Lokalna pohrana nikad ne napušta tvoj uređaj. Cloud opcije koriste enkripciju za zaštitu podataka.')}
+            </p>
+          </div>
+
+          {/* Continue Button */}
+          <Button
+            onClick={handleContinue}
+            disabled={!selectedMode || isLoading || (isChangingMode && selectedMode === currentMode)}
+            className="w-full h-12 rounded-xl text-base font-medium gap-2"
           >
-            Odustani
-          </button>
-        ) : (
-          <button
-            onClick={() => {
-              setStorageMode('local');
-              navigate('/home');
-            }}
-            className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Preskoči za sada (lokalna pohrana)
-          </button>
-        )}
-      </motion.div>
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoading
+              ? t('storage.setting', 'Postavljam...')
+              : isChangingMode
+              ? t('storage.saveChanges', 'Spremi promjene')
+              : t('storage.continue', 'Nastavi')}
+            {!isLoading && <ArrowRight className="w-4 h-4" />}
+          </Button>
+
+          {/* Skip/Cancel */}
+          {isChangingMode ? (
+            <button
+              onClick={handleGoBack}
+              className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t('common.cancel', 'Odustani')}
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setStorageMode('local');
+                navigate('/home');
+              }}
+              className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t('storage.skipForNow', 'Preskoči za sada (lokalna pohrana)')}
+            </button>
+          )}
+        </motion.div>
+      </div>
     </div>
   );
 };
