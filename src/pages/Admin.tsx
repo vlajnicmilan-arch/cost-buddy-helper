@@ -406,7 +406,7 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-5 h-9">
+          <TabsList className="w-full grid grid-cols-6 h-9">
             <TabsTrigger value="stats" className="text-xs gap-1 px-1">
               <BarChart3 className="w-3 h-3 shrink-0" />
               <span className="hidden sm:inline">Statistika</span>
@@ -431,6 +431,11 @@ const Admin = () => {
               <Bell className="w-3 h-3 shrink-0" />
               <span className="hidden sm:inline">Obavijesti</span>
               <span className="sm:hidden">Slanje</span>
+            </TabsTrigger>
+            <TabsTrigger value="diagnostics" className="text-xs gap-1 px-1">
+              <Activity className="w-3 h-3 shrink-0" />
+              <span className="hidden sm:inline">Dijagnostika</span>
+              <span className="sm:hidden">Diag</span>
             </TabsTrigger>
           </TabsList>
 
@@ -828,6 +833,11 @@ const Admin = () => {
             <p className="text-xs text-muted-foreground text-center">
               Obavijest će biti poslana svim registriranim korisnicima i pojavit će se u njihovim push obavijestima.
             </p>
+          </TabsContent>
+
+          {/* DIAGNOSTICS TAB */}
+          <TabsContent value="diagnostics" className="space-y-3 mt-4">
+            <DiagnosticLogsTab />
           </TabsContent>
         </Tabs>
       </div>

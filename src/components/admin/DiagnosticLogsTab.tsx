@@ -210,7 +210,7 @@ export const DiagnosticLogsTab = () => {
 
       <div className="text-xs text-muted-foreground">
         {filteredSessions.length} sesija · {logs.length} eventova
-        {autoRefresh && <span className="ml-2 inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> uživo</span>}
+        {autoRefresh && <span className="ml-2 inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> uživo</span>}
       </div>
 
       {loading && logs.length === 0 ? (
