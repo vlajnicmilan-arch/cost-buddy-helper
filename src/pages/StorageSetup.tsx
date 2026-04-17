@@ -60,6 +60,38 @@ const StorageSetup = () => {
 
   const isChangingMode = !!currentMode;
 
+  // Diagnostic instrumentation: confirm the screen mounted and capture
+  // every pointer/touch event reaching the React layer. If we never see
+  // pointer events here on the APK, something native is intercepting them.
+  useEffect(() => {
+    logDiagnostic('storage_setup_mounted', { isChangingMode });
+
+    const onPointer = (e: PointerEvent) => {
+      logDiagnostic('pointer_received', {
+        type: e.type,
+        x: Math.round(e.clientX),
+        y: Math.round(e.clientY),
+        target: (e.target as HTMLElement)?.tagName,
+        pointerType: e.pointerType,
+      });
+    };
+    const onTouch = (e: TouchEvent) => {
+      logDiagnostic('touch_received', {
+        type: e.type,
+        touches: e.touches.length,
+      });
+    };
+
+    window.addEventListener('pointerdown', onPointer, { passive: true });
+    window.addEventListener('touchstart', onTouch, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', onPointer);
+      window.removeEventListener('touchstart', onTouch);
+      logDiagnostic('storage_setup_unmounted');
+    };
+  }, [isChangingMode]);
+
   const handleGoBack = () => {
     if (isChangingMode) {
       navigate('/home');
@@ -69,21 +101,38 @@ const StorageSetup = () => {
   };
 
   const handleModeSelection = async (mode: StorageMode, available: boolean) => {
-    if (!available || loadingMode || currentMode === mode) return;
+    logDiagnostic('storage_option_clicked', {
+      mode,
+      available,
+      currentlyLoading: loadingMode,
+      currentMode,
+    });
+
+    if (!available || loadingMode || currentMode === mode) {
+      logDiagnostic('storage_option_blocked', {
+        mode,
+        reason: !available ? 'not_available' : loadingMode ? 'already_loading' : 'same_mode',
+      });
+      return;
+    }
 
     setError(null);
     setLoadingMode(mode);
 
     try {
       if (mode === 'local') {
+        logDiagnostic('storage_init_start', { mode });
         await initLocalDB();
+        logDiagnostic('storage_init_success', { mode });
         setStorageMode('local');
         navigate('/app');
         return;
       }
 
       if (mode === 'cloud') {
+        logDiagnostic('storage_init_start', { mode });
         setStorageMode('cloud');
+        logDiagnostic('storage_init_success', { mode });
         navigate('/auth');
         return;
       }
@@ -92,6 +141,10 @@ const StorageSetup = () => {
       navigate('/app');
     } catch (caughtError) {
       console.error('[StorageSetup] Error setting up storage:', caughtError);
+      logDiagnostic('storage_init_error', {
+        mode,
+        message: (caughtError as Error)?.message,
+      });
       setError(t('storage.localInitError'));
     } finally {
       setLoadingMode(null);
