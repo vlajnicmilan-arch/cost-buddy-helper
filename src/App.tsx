@@ -17,6 +17,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { useStatusBar } from "@/hooks/useStatusBar";
 import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
+import { DiagnosticRouteTracker } from "@/components/DiagnosticRouteTracker";
 import { isPublicRoute } from "@/lib/publicRoutes";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -257,6 +258,7 @@ const App = () => (
                   <BrowserRouter>
                     <BackButtonProvider>
                       <DeepLinkInit />
+                      <DiagnosticRouteTracker />
                       <RouteAwareGlobalOverlays />
                       <AppRoutes />
                     </BackButtonProvider>

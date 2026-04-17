@@ -93,7 +93,7 @@ const flush = async () => {
   buffer = [];
 
   try {
-    const { error } = await supabase.from('app_diagnostics_logs').insert(batch);
+    const { error } = await supabase.from('app_diagnostics_logs').insert(batch as any);
     if (error) {
       // Don't retry — keep the logger lightweight. Just log to console.
       console.warn('[Diagnostics] flush failed:', error.message);
