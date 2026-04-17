@@ -93,12 +93,16 @@ const RouteAwareGlobalOverlays = () => {
   const location = useLocation();
   const isSetupRoute = location.pathname === "/setup";
 
+  if (isSetupRoute) {
+    return null;
+  }
+
   return (
     <>
       <OfflineBanner />
       <StatusFeedback />
-      {!isSetupRoute && <PWAUpdatePrompt />}
-      {!isSetupRoute && <TutorialOverlay />}
+      <PWAUpdatePrompt />
+      <TutorialOverlay />
       <LockScreen />
       <CookieConsentBanner />
     </>
