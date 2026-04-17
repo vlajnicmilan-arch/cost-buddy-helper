@@ -303,6 +303,15 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 
+  /* Defensive: ensure the root div always receives touch events on
+     Android WebView. Some Capacitor builds leave a transparent native
+     splash overlay that swallows pointer events; explicitly enabling
+     pointer-events on the React root mitigates that class of issue. */
+  #root {
+    pointer-events: auto;
+    min-height: 100dvh;
+  }
+
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }

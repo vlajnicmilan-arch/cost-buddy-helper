@@ -11,14 +11,17 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
+      // Keep splash short and let JS hide it explicitly once React mounts.
+      // launchAutoHide=false + manual hide() prevents the "ghost overlay"
+      // bug where the splash stays as a transparent layer blocking taps
+      // on certain Android WebView versions.
+      launchShowDuration: 0,
+      launchAutoHide: false,
       backgroundColor: '#0f172a',
-      showSpinner: true,
-      spinnerColor: '#3b82f6',
+      showSpinner: false,
       androidScaleType: 'CENTER_CROP',
-      splashFullScreen: true,
-      splashImmersive: true,
+      splashFullScreen: false,
+      splashImmersive: false,
     },
     Camera: {
       presentationStyle: 'fullscreen',
