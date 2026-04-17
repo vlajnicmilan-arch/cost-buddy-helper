@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { StorageProvider, useStorage } from "@/contexts/StorageContext";
 import { BackButtonProvider } from "@/contexts/BackButtonContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
@@ -87,6 +87,22 @@ const RootRoute = () => {
     return <Navigate to="/app" replace />;
   }
   return <Landing />;
+};
+
+const RouteAwareGlobalOverlays = () => {
+  const location = useLocation();
+  const isSetupRoute = location.pathname === "/setup";
+
+  return (
+    <>
+      <OfflineBanner />
+      <StatusFeedback />
+      {!isSetupRoute && <PWAUpdatePrompt />}
+      {!isSetupRoute && <TutorialOverlay />}
+      <LockScreen />
+      <CookieConsentBanner />
+    </>
+  );
 };
 
 const AppRoutes = () => {
@@ -230,18 +246,13 @@ const App = () => (
               <SubscriptionProvider>
                 <TutorialProvider>
                   <NativeInit />
-                  <OfflineBanner />
-                  <StatusFeedback />
                   <Toaster />
                   <Sonner />
-                  <PWAUpdatePrompt />
-                  <TutorialOverlay />
-                  <LockScreen />
                   <BrowserRouter>
                     <BackButtonProvider>
                       <DeepLinkInit />
+                      <RouteAwareGlobalOverlays />
                       <AppRoutes />
-                      <CookieConsentBanner />
                     </BackButtonProvider>
                   </BrowserRouter>
                 </TutorialProvider>
