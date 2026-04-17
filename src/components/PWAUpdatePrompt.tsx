@@ -1,5 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
+// We no longer ship a Service Worker (the legacy PWA SW was caching a stale
+// bundle and breaking the Capacitor APK on /setup). The local stub keeps the
+// existing update UI happy without registering anything.
+import { useRegisterSW } from '@/lib/pwa-register-stub';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
