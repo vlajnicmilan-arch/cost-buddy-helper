@@ -373,6 +373,10 @@ export const ProjectFullScreenView = ({
                             <FolderOpen className="w-3.5 h-3.5" />
                             {t('projects.documents.tab', 'Dokumenti')}
                           </TabsTrigger>
+                          <TabsTrigger value="documents" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            {t('projects.documents.tab', 'Dokumenti')}
+                          </TabsTrigger>
                           <TabsTrigger value="activity" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                             <Activity className="w-3.5 h-3.5" />
                             {t('projects.activity.tab', 'Aktivnost')}
@@ -446,6 +450,9 @@ export const ProjectFullScreenView = ({
                             <TabsTrigger value="transactions" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                               <FileText className="w-3.5 h-3.5" />
                               {t('projects.transactions', 'Transakcije')}
+                              {expenses.length > 0 && (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
+                              )}
                             </TabsTrigger>
                           )}
                         </>
