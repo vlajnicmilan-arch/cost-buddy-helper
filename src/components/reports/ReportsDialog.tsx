@@ -644,8 +644,9 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button 
+          variant="outline"
           className={cn(
-            'gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700',
+            'gap-2 rounded-xl border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300',
             triggerClassName,
           )}
           onClick={(e) => {
