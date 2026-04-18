@@ -510,6 +510,8 @@
   },
   "summary": {
     "balance": "Saldo",
+    "available": "Verfügbar",
+    "availableHint": "über alle Konten",
     "netWorth": "Nettovermögen",
     "totalIncome": "Gesamteinnahmen",
     "totalExpenses": "Gesamtausgaben",
@@ -521,7 +523,9 @@
     "recurringManage": "Verwalten →",
     "trendUp": "+{{percent}}% ↑",
     "trendDown": "-{{percent}}% ↓",
-    "vsLastMonth": "im Vergleich zum Vormonat"
+    "vsLastMonth": "im Vergleich zum Vormonat",
+    "lessThanLastMonth": "weniger als Vormonat ✓",
+    "moreThanLastMonth": "mehr als Vormonat"
   },
   "backup": {
     "title": "Backup",
