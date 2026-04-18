@@ -206,6 +206,20 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
   const handlePushToggle = async (enabled: boolean) => {
     if (enabled) {
+      // Try native push first (Capacitor); falls back to web on browser
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { registerNativePush } = await import('@/lib/nativePush');
+        const ok = await registerNativePush();
+        if (ok) {
+          setPushEnabled(true);
+          setPushNotificationsEnabled(true);
+          showSuccess(t('settings.pushEnabled', 'Push obavijesti uključene'));
+        } else {
+          showError(t('settings.pushDenied', 'Dozvola odbijena'));
+        }
+        return;
+      }
       const granted = await requestNotificationPermission();
       if (granted) {
         setPushEnabled(true);
@@ -215,6 +229,11 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         showError(t('settings.pushDenied', 'Preglednik je blokirao push obavijesti'));
       }
     } else {
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { unregisterNativePush } = await import('@/lib/nativePush');
+        await unregisterNativePush();
+      }
       setPushEnabled(false);
       setPushNotificationsEnabled(false);
       toast.info(t('settings.pushDisabled', 'Push obavijesti isključene'));
