@@ -918,7 +918,12 @@
       "apply": "Arbeitszeiten speichern",
       "applied_one": "{{count}} Arbeitseintrag gespeichert",
       "applied_other": "{{count}} Arbeitseinträge gespeichert",
-      "nothingToApply": "Keine Arbeitsstunden zum Speichern."
+      "nothingToApply": "Keine Arbeitsstunden zum Speichern.",
+      "permissionDenied": "Mikrofonzugriff verweigert. Erlauben Sie das Mikrofon in den Browsereinstellungen.",
+      "recordingStarted": "Aufnahme gestartet — sprechen Sie jetzt...",
+      "recordingStopped": "Aufnahme gestoppt",
+      "iosNotSupported": "Spracheingabe funktioniert nicht auf iPhone Safari. Verwenden Sie die Tastatur.",
+      "startFailed": "Aufnahme konnte nicht gestartet werden. Bitte erneut versuchen."
     },
     "deleteConfirmDescription": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "noProjectsBusiness": "Erstellen Sie ein neues Projekt oder importieren Sie aus den persönlichen Finanzen.",

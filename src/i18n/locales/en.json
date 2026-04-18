@@ -104,7 +104,12 @@
       "apply": "Save work entries",
       "applied_one": "{{count}} work entry saved",
       "applied_other": "{{count}} work entries saved",
-      "nothingToApply": "No work hours to save."
+      "nothingToApply": "No work hours to save.",
+      "permissionDenied": "Microphone access denied. Allow microphone in browser settings.",
+      "recordingStarted": "Recording started — speak now...",
+      "recordingStopped": "Recording stopped",
+      "iosNotSupported": "Voice input doesn't work on iPhone Safari. Use the keyboard.",
+      "startFailed": "Could not start recording. Please try again."
     },
     "deleteConfirmDescription": "This action cannot be undone.",
     "noProjectsBusiness": "Create a new project or import from personal finances.",

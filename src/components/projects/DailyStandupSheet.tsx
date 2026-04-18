@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,11 +27,19 @@ type SpeechRecognitionLike = {
   lang: string;
   interimResults: boolean;
   continuous: boolean;
+  onstart: (() => void) | null;
   onresult: (e: any) => void;
   onerror: (e: any) => void;
   onend: () => void;
   start: () => void;
   stop: () => void;
+  abort: () => void;
+};
+
+const isIOS = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
 };
 
 const getRecognition = (): SpeechRecognitionLike | null => {
@@ -66,7 +74,9 @@ export const DailyStandupSheet = ({
   const { t } = useTranslation();
   const [text, setText] = useState('');
   const [recording, setRecording] = useState(false);
-  const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const manualStopRef = useRef(false);
+  const textBufferRef = useRef('');
   const [aiLoading, setAiLoading] = useState(false);
   const [projectId, setProjectId] = useState<string>('');
   const [parsed, setParsed] = useState<ParsedResult | null>(null);
@@ -105,35 +115,92 @@ export const DailyStandupSheet = ({
 
   const selectedProject = useMemo(() => projects.find(p => p.id === projectId), [projects, projectId]);
 
-  const startRecording = () => {
+  const startRecording = async () => {
+    // iOS Safari has webkitSpeechRecognition shim that doesn't actually work reliably
+    if (isIOS()) {
+      showError(t('projects.standup.iosNotSupported', 'Glasovni unos ne radi na iPhone Safariju. Koristi tipkovnicu.'));
+      return;
+    }
+
     const r = getRecognition();
     if (!r) {
       showError(t('projects.standup.noVoice', 'Glasovni unos nije podržan na ovom uređaju.'));
       return;
     }
-    let buffer = text ? text + ' ' : '';
+
+    // Explicitly request mic permission so the user gets a clear native prompt
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately stop the tracks — SpeechRecognition manages its own audio
+        stream.getTracks().forEach(track => track.stop());
+      }
+    } catch (err: any) {
+      console.error('Mic permission error:', err);
+      showError(t('projects.standup.permissionDenied', 'Pristup mikrofonu odbijen. Dopusti mikrofon u postavkama preglednika.'));
+      return;
+    }
+
+    textBufferRef.current = text ? text.trim() + ' ' : '';
+    manualStopRef.current = false;
+
+    r.onstart = () => {
+      setRecording(true);
+      showSuccess(t('projects.standup.recordingStarted', 'Snimanje pokrenuto — govori...'));
+    };
     r.onresult = (e: any) => {
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const s = e.results[i];
-        if (s.isFinal) buffer += s[0].transcript + ' ';
+        if (s.isFinal) textBufferRef.current += s[0].transcript + ' ';
         else interim += s[0].transcript;
       }
-      setText((buffer + interim).replace(/\s+/g, ' '));
+      setText((textBufferRef.current + interim).replace(/\s+/g, ' '));
     };
-    r.onerror = () => setRecording(false);
-    r.onend = () => setRecording(false);
+    r.onerror = (e: any) => {
+      const errorType = e?.error || 'unknown';
+      console.warn('SpeechRecognition error:', errorType);
+      // Ignore transient errors that should not stop recording
+      if (errorType === 'no-speech' || errorType === 'aborted') return;
+      if (errorType === 'not-allowed' || errorType === 'service-not-allowed') {
+        manualStopRef.current = true;
+        showError(t('projects.standup.permissionDenied', 'Pristup mikrofonu odbijen. Dopusti mikrofon u postavkama preglednika.'));
+        setRecording(false);
+        return;
+      }
+      // Other errors: stop gracefully
+      manualStopRef.current = true;
+      setRecording(false);
+    };
+    r.onend = () => {
+      // Auto-restart if user didn't manually stop (Chrome auto-stops after silence)
+      if (!manualStopRef.current) {
+        try {
+          r.start();
+          return;
+        } catch {
+          // fall through to stop
+        }
+      }
+      setRecording(false);
+    };
+
     try {
       r.start();
-      setRecognition(r);
-      setRecording(true);
-    } catch {
+      recognitionRef.current = r;
+    } catch (err) {
+      console.error('Failed to start recognition:', err);
+      showError(t('projects.standup.startFailed', 'Snimanje nije moglo započeti. Pokušaj ponovno.'));
       setRecording(false);
     }
   };
 
   const stopRecording = () => {
-    try { recognition?.stop(); } catch { /* noop */ }
+    manualStopRef.current = true;
+    const r = recognitionRef.current;
+    if (r) {
+      try { r.stop(); } catch { /* noop */ }
+    }
     setRecording(false);
   };
 
@@ -280,8 +347,9 @@ export const DailyStandupSheet = ({
               {t('projects.standup.startVoice', 'Snimaj')}
             </Button>
           ) : (
-            <Button variant="destructive" onClick={stopRecording} className="gap-2">
-              <MicOff className="w-4 h-4" />
+            <Button variant="destructive" onClick={stopRecording} className="gap-2 relative">
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white animate-pulse" />
+              <MicOff className="w-4 h-4 ml-3" />
               {t('projects.standup.stopVoice', 'Zaustavi')}
             </Button>
           )}
