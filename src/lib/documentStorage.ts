@@ -154,6 +154,20 @@ export const deleteCloud = async (storagePath: string): Promise<void> => {
 
 // --- UNIFIED API ---
 
+/**
+ * Convert a base64 data URL (e.g. "data:image/jpeg;base64,...") into a File.
+ * Useful for converting camera captures into uploadable files.
+ */
+export const dataUrlToFile = (dataUrl: string, fileName: string): File => {
+  const [header, base64] = dataUrl.split(',');
+  const mimeMatch = header.match(/data:([^;]+);base64/);
+  const mime = mimeMatch?.[1] || 'image/jpeg';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], fileName, { type: mime });
+};
+
 export const saveDocument = async (
   projectId: string,
   file: File,
