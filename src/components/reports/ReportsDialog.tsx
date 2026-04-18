@@ -70,6 +70,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 interface ReportsDialogProps {
   expenses: Expense[];
+  triggerClassName?: string;
 }
 
 type PeriodPreset = 'this-month' | 'last-month' | 'this-year' | 'last-year' | 'all' | 'custom';
