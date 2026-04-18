@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useProjectEstimates, ProjectEstimate, EstimateItem } from '@/hooks/useProjectEstimates';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useAppState } from '@/contexts/AppStateContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Plus, Trash2, Loader2, Info } from 'lucide-react';
 
 interface EstimateDialogProps {
   open: boolean;
@@ -15,12 +17,31 @@ interface EstimateDialogProps {
   estimate: ProjectEstimate | null;
 }
 
-const VAT_RATE = 0.25;
-
 export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogProps) => {
   const { t } = useTranslation();
   const { currency } = useCurrency();
+  const { activeBusinessProfileId } = useAppState();
   const { addEstimate, updateEstimate } = useProjectEstimates();
+  const [isVatPayer, setIsVatPayer] = useState<boolean>(true);
+  const [vatExemptionNote, setVatExemptionNote] = useState<string>('');
+
+  // Resolve whether the active business is a VAT payer (drives default vat_rate = 0)
+  useEffect(() => {
+    if (!activeBusinessProfileId) return;
+    supabase
+      .from('business_profiles')
+      .select('is_vat_payer, vat_exemption_note')
+      .eq('id', activeBusinessProfileId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setIsVatPayer(!!data.is_vat_payer);
+          setVatExemptionNote(data.vat_exemption_note || '');
+        }
+      });
+  }, [activeBusinessProfileId]);
+
+  const DEFAULT_VAT = isVatPayer ? 25 : 0;
 
   const [clientName, setClientName] = useState('');
   const [clientOib, setClientOib] = useState('');
