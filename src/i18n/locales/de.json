@@ -13,7 +13,16 @@
       "cloud": "Cloud",
       "analyze": "KI-Analyse",
       "noDocuments": "Keine Dokumente",
-      "noDocumentsHint": "Lade Belege, Verträge oder Bilder für das Projekt hoch"
+      "noDocumentsHint": "Lade Belege, Verträge oder Bilder für das Projekt hoch",
+      "takePhoto": "Fotografieren",
+      "gallery": "Galerie",
+      "file": "Datei",
+      "saveTo": "Speichern in",
+      "modeLocal": "Lokal",
+      "modeCloud": "Cloud",
+      "modeHint": "Lokal = nur auf diesem Gerät · Cloud = mit allen Mitgliedern geteilt",
+      "cameraError": "Kamerafehler",
+      "galleryError": "Galeriefehler"
     },
     "templates": {
       "startFrom": "Aus Vorlage starten (optional)",
