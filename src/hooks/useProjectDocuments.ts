@@ -4,6 +4,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { saveDocument, deleteDocument, ProjectDocumentRow, StorageMode } from '@/lib/documentStorage';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
+export type DocumentKind = 'document' | 'progress_photo' | 'receipt';
+
+export interface UploadOptions {
+  mode?: StorageMode;
+  tags?: string[];
+  documentKind?: DocumentKind;
+  locationCoords?: string | null;
+  locationName?: string | null;
+  capturedAt?: string | null;
+}
+
 export const useProjectDocuments = (projectId: string | null) => {
   const { user } = useAuth();
   const [documents, setDocuments] = useState<ProjectDocumentRow[]>([]);
@@ -33,26 +44,41 @@ export const useProjectDocuments = (projectId: string | null) => {
 
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
 
-  const uploadDocument = async (file: File, mode: StorageMode = 'local', tags: string[] = []) => {
+  const uploadDocument = async (file: File, modeOrOptions: StorageMode | UploadOptions = 'local', tagsArg: string[] = []) => {
     if (!projectId || !user) return null;
+
+    const opts: UploadOptions = typeof modeOrOptions === 'string'
+      ? { mode: modeOrOptions, tags: tagsArg }
+      : modeOrOptions;
+
+    const mode: StorageMode = opts.mode || 'local';
+    const tags: string[] = opts.tags || [];
+    const documentKind: DocumentKind = opts.documentKind || 'document';
+
     try {
       const { storage_path, size_bytes, storage_mode } = await saveDocument(projectId, file, mode);
+      const insertPayload: any = {
+        project_id: projectId,
+        name: file.name,
+        mime_type: file.type || 'application/octet-stream',
+        size_bytes,
+        storage_mode,
+        storage_path,
+        tags,
+        document_kind: documentKind,
+        uploaded_by: user.id,
+      };
+      if (opts.locationCoords) insertPayload.location_coords = opts.locationCoords;
+      if (opts.locationName) insertPayload.location_name = opts.locationName;
+      if (opts.capturedAt) insertPayload.captured_at = opts.capturedAt;
+
       const { data, error } = await (supabase
         .from('project_documents') as any)
-        .insert({
-          project_id: projectId,
-          name: file.name,
-          mime_type: file.type || 'application/octet-stream',
-          size_bytes,
-          storage_mode,
-          storage_path,
-          tags,
-          uploaded_by: user.id,
-        })
+        .insert(insertPayload)
         .select()
         .single();
       if (error) throw error;
-      showSuccess('Dokument dodan');
+      showSuccess(documentKind === 'progress_photo' ? 'Fotografija dodana' : 'Dokument dodan');
       await fetchDocuments();
       return data as ProjectDocumentRow;
     } catch (err: any) {
@@ -70,7 +96,7 @@ export const useProjectDocuments = (projectId: string | null) => {
         .delete()
         .eq('id', doc.id);
       if (error) throw error;
-      showSuccess('Dokument obrisan');
+      showSuccess('Obrisano');
       await fetchDocuments();
     } catch (err: any) {
       console.error('removeDocument failed', err);
