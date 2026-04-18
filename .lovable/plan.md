@@ -1,68 +1,46 @@
 
 
-User wants Croatian. Confirmed status: secrets list shows NO `FCM_SERVICE_ACCOUNT` and NO `FCM_SERVER_KEY`. Memory says we should be on FCM HTTP v1 with OAuth2/RS256. Need to check push_tokens table existence and where register is called.
+## Uzrok problema
 
-Key gaps:
-1. No FCM credentials at all → push se ne može slati
-2. send-push koristi LEGACY API (deprecated lipanj 2024)
-3. Trebam provjeriti je li `usePushNotifications.register()` ikad pozvan
+U `src/components/guards/BusinessModeGuard.tsx` postoji guard koji **automatski gasi poslovni način** ako korisnik nema `business_module` pristup. Logika je:
 
-## Stanje Push obavijesti — pregled
+```ts
+if (loading) return;  // čeka subscription
+if (businessModeEnabled && !hasAccess('business_module')) {
+  setBusinessModeEnabled(false);  // GASI poslovni mod
+}
+```
 
-### Što JE napravljeno ✅
-- **Frontend hook**: `src/hooks/usePushNotifications.ts` — registrira FCM token, sprema u `push_tokens` tablicu
-- **Edge funkcija**: `supabase/functions/send-push/index.ts` — šalje notifikaciju
-- **Capacitor config**: `PushNotifications` plugin konfiguriran u `capacitor.config.ts`
-- **Pozivajuća logika**: `check-milestone-deadlines` već zove `send-push` kad faza istječe
-- **Toggle u postavkama**: `pushEnabled` switch postoji u `NotificationsSection.tsx`
+**Problem**: Kod ponovnog otvaranja aplikacije (osobito nativne/PWA), `SubscriptionContext.checkSubscription()` ima race condition:
 
-### Što NEDOSTAJE ❌ (3 kritična problema)
+1. `useEffect` se okida odmah kad nema `session.access_token` → postavlja `setLoading(false)` i izlazi (red 45-49 u SubscriptionContext.tsx)
+2. `tier` ostaje na inicijalnom `'free'`, `trialActive` ostaje `false`
+3. `BusinessModeGuard` vidi `loading=false` + `tier='free'` → zaključuje da nema pristupa → **gasi business mode i briše ga iz localStoragea**
+4. Sekundu kasnije, kad sesija stigne, subscription se osvježi na pravi tier — ali poslovni mod je već ugašen
 
-**1. Nema FCM kredencijala u Secrets**
-Provjerio sam — nema ni `FCM_SERVER_KEY` ni `FCM_SERVICE_ACCOUNT`. Bez toga edge funkcija vraća error `"FCM_SERVER_KEY not configured"` i nijedna obavijest se ne šalje.
+Kratko: **guard reagira prebrzo, prije nego što je sesija stvarno učitana**, na temelju lažnog "free" stanja.
 
-**2. `send-push` koristi DEPRECATED API**
-Kod koristi `https://fcm.googleapis.com/fcm/send` (Legacy API) koji je Google **ugasio u lipnju 2024**. Treba migrirati na **FCM HTTP v1** (`https://fcm.googleapis.com/v1/projects/{project_id}/messages:send`) koji koristi OAuth2 s service account JSON-om (RS256 JWT).
+Dodatni rizik: čak i pravim Pro/Business korisnicima, ako jedan `check-subscription` poziv padne (mreža, JWT), `tier` može pasti natrag na `free` (red 84-94), a guard bi opet ugasio mod.
 
-**3. `register()` se vjerojatno nikad ne poziva**
-Hook postoji ali ga moram provjeriti — treba se pozvati nakon što se korisnik prijavi i nakon što uključi push toggle. Inače token nikad ne dođe u bazu.
+## Plan popravka
 
-**4. Nedostaje `google-services.json` u Android projektu**
-Bez toga Firebase ne može izdati FCM token na uređaju.
+**1) Popraviti `SubscriptionContext.tsx`**
+- Razlikovati "loading" od "resolved": `loading` ostaje `true` dok stvarno ne dobijemo odgovor s backenda. Ako nema sesije, ne postavljati `loading=false` odmah — ostati u "neodređenom" stanju dok se auth ne resolva.
+- Kod greške (catch blok) **ne mijenjati** `tier` na free — zadržati prethodnu vrijednost da prolazni mrežni problem ne utječe na pristup.
 
----
+**2) Pojačati `BusinessModeGuard.tsx`**
+- Čekati i `useAuth` (`user` mora postojati) prije bilo kakve odluke.
+- Čekati da `subscribed || trialActive` budu jasno utvrđeni — ne gasiti samo na temelju `tier='free'` ako je to možda inicijalna vrijednost.
+- Dodati malo "debounce" / sigurnosno kašnjenje (npr. zahtijevati 2 uzastopna ciklusa s "nema pristupa" prije gašenja), tako da prolazni 1. ciklus bez sesije ne ugasi mod.
+- Bolje: gasiti **samo** ako je `source` postavljen (`'stripe' | 'admin'`) ili je trial nedvojbeno istekao — što znači da je odgovor stvarno stigao s backenda, a ne da smo na inicijalnim defaultima.
 
-## Plan: Kompletiranje Push obavijesti
+**3) (Opcionalno) Sanity check u `AppStateContext`**
+- Pri inicijalnom čitanju `business_mode_enabled` iz localStoragea — ne mijenjati ništa, ali dodati log ako se vrijednost mijenja iz `true` u `false` da se može pratiti uzrok u dijagnostici.
 
-### Korak 1: Ti napraviš Firebase setup (jednom, ~15 min)
-1. Idi na https://console.firebase.google.com → kreiraj projekt "V&M Balance" (ili koristi postojeći)
-2. **Add app → Android** → package name: `app.lovable.costbuddy`
-3. Skini `google-services.json` → spremi u `android/app/google-services.json` lokalno
-4. **Project Settings → Service accounts → Generate new private key** → skini JSON file (to je `FCM_SERVICE_ACCOUNT`)
-5. Kopiraj cijeli sadržaj tog JSON-a → spremit ćeš u Lovable Cloud kao secret
+## Rezultat
 
-### Korak 2: JA napravim (kod izmjene)
-- **Migrirati `send-push/index.ts`** s Legacy API na FCM HTTP v1:
-  - Parse service account JSON iz secreta
-  - Generirati OAuth2 access token (RS256 JWT → razmijena za Bearer token)
-  - Slati POST na `v1/projects/{project_id}/messages:send` s pravom strukturom
-- **Tražit ću tebe da dodaš secret** `FCM_SERVICE_ACCOUNT` (cijeli JSON service accounta)
-- **Provjeriti i pozvati `usePushNotifications.register()`** na pravom mjestu (vjerojatno u `App.tsx` ili nakon login-a kad je `pushEnabled === true`)
-- **Dodati `push_tokens` tablicu** ako ne postoji (s RLS politikama)
-- **Test endpoint** za slanje test obavijesti iz UI-ja (gumb "Pošalji test push" u Postavkama)
-
-### Korak 3: Ti napraviš lokalno (uz onaj APK build)
-- Stavi `google-services.json` u `android/app/`
-- Provjeri da `android/build.gradle` ima Google Services plugin (Capacitor sync to obično dodaje, ali možda treba ručno)
-- `npx cap sync android` → build APK → instaliraj
-
-### Što ću točno mijenjati u kodu
-- `supabase/functions/send-push/index.ts` — kompletno prepisati za FCM v1 API
-- `src/App.tsx` ili `src/hooks/useAuth.ts` — pozvati `register()` nakon login-a
-- `src/components/settings/NotificationsSection.tsx` — kad korisnik uključi push toggle, pozvati `register()`; kad isključi, `unregister()`
-- Migracija — kreirati `push_tokens` tablicu ako ne postoji + RLS
-- (Opcionalno) gumb za test push u admin panelu
-
-### Što odgađamo za kasnije
-- Slanje pusha za druge događaje (nove transakcije, podsjetnici, family chat) — to dodajemo postupno nakon što osnovni flow radi
+Nakon popravka:
+- Poslovni način ostaje uključen između sesija za Pro/Business korisnike i za korisnike u trialu.
+- Guard gasi mod **samo** kad je 100% potvrđeno da korisnik nema pristup (nakon stvarnog odgovora s backenda), ne na osnovu lažnog inicijalnog `free` stanja.
+- Otporno na prolazne mrežne greške i spore auth resolve cikluse.
 
