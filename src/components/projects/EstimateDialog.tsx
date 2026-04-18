@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useProjectEstimates, ProjectEstimate, EstimateItem } from '@/hooks/useProjectEstimates';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useAppState } from '@/contexts/AppStateContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Plus, Trash2, Loader2, Info } from 'lucide-react';
 
 interface EstimateDialogProps {
   open: boolean;
@@ -15,17 +17,36 @@ interface EstimateDialogProps {
   estimate: ProjectEstimate | null;
 }
 
-const VAT_RATE = 0.25;
-
 export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogProps) => {
   const { t } = useTranslation();
   const { currency } = useCurrency();
+  const { activeBusinessProfileId } = useAppState();
   const { addEstimate, updateEstimate } = useProjectEstimates();
+  const [isVatPayer, setIsVatPayer] = useState<boolean>(true);
+  const [vatExemptionNote, setVatExemptionNote] = useState<string>('');
+
+  // Resolve whether the active business is a VAT payer (drives default vat_rate = 0)
+  useEffect(() => {
+    if (!activeBusinessProfileId) return;
+    supabase
+      .from('business_profiles')
+      .select('is_vat_payer, vat_exemption_note')
+      .eq('id', activeBusinessProfileId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setIsVatPayer(!!data.is_vat_payer);
+          setVatExemptionNote(data.vat_exemption_note || '');
+        }
+      });
+  }, [activeBusinessProfileId]);
+
+  const DEFAULT_VAT = isVatPayer ? 25 : 0;
 
   const [clientName, setClientName] = useState('');
   const [clientOib, setClientOib] = useState('');
   const [clientAddress, setClientAddress] = useState('');
-  const [items, setItems] = useState<EstimateItem[]>([{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: VAT_RATE * 100 }]);
+  const [items, setItems] = useState<EstimateItem[]>([{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: DEFAULT_VAT }]);
   const [validUntil, setValidUntil] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -35,24 +56,24 @@ export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogP
       setClientName(estimate.client_name);
       setClientOib(estimate.client_oib || '');
       setClientAddress(estimate.client_address || '');
-      setItems(estimate.items.length > 0 ? estimate.items : [{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: VAT_RATE * 100 }]);
+      setItems(estimate.items.length > 0 ? estimate.items : [{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: DEFAULT_VAT }]);
       setValidUntil(estimate.valid_until || '');
       setNotes(estimate.notes || '');
     } else if (open) {
       setClientName('');
       setClientOib('');
       setClientAddress('');
-      setItems([{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: VAT_RATE * 100 }]);
+      setItems([{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: DEFAULT_VAT }]);
       setValidUntil('');
-      setNotes('');
+      setNotes(!isVatPayer && vatExemptionNote ? vatExemptionNote : '');
     }
-  }, [open, estimate]);
+  }, [open, estimate, DEFAULT_VAT, isVatPayer, vatExemptionNote]);
 
   const updateItem = (idx: number, patch: Partial<EstimateItem>) => {
     setItems(items.map((it, i) => i === idx ? { ...it, ...patch } : it));
   };
 
-  const addItem = () => setItems([...items, { description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: VAT_RATE * 100 }]);
+  const addItem = () => setItems([...items, { description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: DEFAULT_VAT }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
 
   const subtotal = items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0), 0);
@@ -98,6 +119,14 @@ export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogP
           <DialogTitle>{estimate ? t('estimates.edit', 'Uredi ponudu') : t('estimates.add', 'Nova ponuda')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {!isVatPayer && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-muted/60 border border-border text-xs">
+              <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-primary" />
+              <span className="text-muted-foreground">
+                {t('estimates.nonVatPreset', 'Niste obveznik PDV-a — sve stavke imaju 0% PDV-a, a napomena o izuzeću automatski je dodana.')}
+              </span>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>{t('estimates.clientName', 'Naziv klijenta')} *</Label>
