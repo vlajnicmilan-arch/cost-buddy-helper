@@ -119,6 +119,14 @@ export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogP
           <DialogTitle>{estimate ? t('estimates.edit', 'Uredi ponudu') : t('estimates.add', 'Nova ponuda')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {!isVatPayer && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-muted/60 border border-border text-xs">
+              <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-primary" />
+              <span className="text-muted-foreground">
+                {t('estimates.nonVatPreset', 'Niste obveznik PDV-a — sve stavke imaju 0% PDV-a, a napomena o izuzeću automatski je dodana.')}
+              </span>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>{t('estimates.clientName', 'Naziv klijenta')} *</Label>
