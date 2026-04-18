@@ -89,6 +89,8 @@ export const ProjectFullScreenView = ({
   const canSeeTab = (tabKey: string) => {
     // Workers and collaborators only visible in business view
     if ((tabKey === 'workers' || tabKey === 'collaborators') && !canAccessBusinessTabs) return false;
+    // Documents always visible to project members
+    if (tabKey === 'documents') return true;
     return isManager || isTabVisible(tabKey);
   };
 
