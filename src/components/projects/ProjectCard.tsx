@@ -1,5 +1,5 @@
 import { Project, ProjectWithOwnership, PROJECT_STATUS_LABELS, PROJECT_ROLE_LABELS } from '@/types/project';
-import { Pencil, Trash2, Users, Calendar, Target, Briefcase } from 'lucide-react';
+import { Pencil, Trash2, Users, Calendar, Target, Briefcase, Activity, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
+import { useMemo } from 'react';
 
 interface ProjectCardProps {
   project: ProjectWithOwnership;
@@ -16,6 +18,7 @@ interface ProjectCardProps {
   income: number;
   memberCount: number;
   milestoneCount: number;
+  milestones?: Array<{ status: any; due_date?: string | null }>;
   onEdit: (project: Project) => void;
   onDelete: (id: string) => void;
   onClick: (project: ProjectWithOwnership) => void;
@@ -28,6 +31,7 @@ export const ProjectCard = ({
   income,
   memberCount,
   milestoneCount,
+  milestones = [],
   onEdit,
   onDelete,
   onClick,
@@ -43,6 +47,29 @@ export const ProjectCard = ({
   const budgetUsed = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
   const remaining = budget - spent;
   const netBalance = income - spent;
+
+  const health = useMemo(() => calculateProjectHealth({
+    spent,
+    budget,
+    startDate: project.start_date,
+    endDate: project.end_date,
+    milestones: milestones as any,
+  }), [spent, budget, project.start_date, project.end_date, milestones]);
+
+  const healthLabel = t(`projects.health.${health.level}`,
+    health.level === 'on_track' ? 'Na vrijeme' :
+    health.level === 'at_risk' ? 'Pod rizikom' :
+    health.level === 'critical' ? 'Kritično' : 'Nepoznato'
+  );
+
+  const remainingDaysLabel = (() => {
+    if (health.daysRemaining === null) return null;
+    if (health.daysRemaining < 0) {
+      return t('projects.health.overdueDays', { count: Math.abs(health.daysRemaining), defaultValue: '{{count}} d kašnjenja' });
+    }
+    if (health.daysRemaining === 0) return t('projects.health.dueToday', 'Rok danas');
+    return t('projects.health.daysLeft', { count: health.daysRemaining, defaultValue: '{{count}} d do roka' });
+  })();
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -88,11 +115,21 @@ export const ProjectCard = ({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="font-semibold truncate">{project.name}</h3>
             <Badge variant={getStatusBadgeVariant(project.status)} className="text-xs">
               {t(`projectStatus.${project.status}`, PROJECT_STATUS_LABELS[project.status])}
             </Badge>
+            {health.level !== 'unknown' && (
+              <Badge
+                variant="outline"
+                className={cn("text-[10px] gap-1 h-5 border", getHealthBgClass(health.level))}
+                title={`${t('projects.health.score', 'Stanje projekta')}: ${health.score}/100`}
+              >
+                <Activity className="w-2.5 h-2.5" />
+                {healthLabel} · {health.score}
+              </Badge>
+            )}
           </div>
           
           {project.description && (
@@ -155,11 +192,21 @@ export const ProjectCard = ({
           )}
 
           {/* Meta info */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
             {project.start_date && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 {format(new Date(project.start_date), 'd. MMM yyyy', { locale: dateLocale })}
+              </div>
+            )}
+            {remainingDaysLabel && (
+              <div className={cn(
+                "flex items-center gap-1 font-medium",
+                health.daysRemaining !== null && health.daysRemaining < 0 ? "text-destructive" :
+                health.daysRemaining !== null && health.daysRemaining <= 7 ? "text-warning" : ""
+              )}>
+                <Clock className="w-3 h-3" />
+                {remainingDaysLabel}
               </div>
             )}
             <div className="flex items-center gap-1">
@@ -176,6 +223,26 @@ export const ProjectCard = ({
               </Badge>
             )}
           </div>
+
+          {/* Timeline progress (only when there's a deadline) */}
+          {health.timeProgressPct !== null && budget > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex-1 h-1 rounded-full bg-muted/50 overflow-hidden">
+                <div
+                  className="h-full transition-all"
+                  style={{
+                    width: `${Math.min(100, health.timeProgressPct)}%`,
+                    backgroundColor: health.daysRemaining !== null && health.daysRemaining < 0
+                      ? 'hsl(var(--destructive))'
+                      : projectColor + '99'
+                  }}
+                />
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {Math.round(health.timeProgressPct)}% {t('projects.health.timeUsed', 'vremena')}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Actions - Only show for owners */}
