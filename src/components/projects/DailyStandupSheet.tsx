@@ -11,6 +11,8 @@ import { Mic, MicOff, Sparkles, Loader2, Send, Users, Package } from 'lucide-rea
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import type { ProjectWithOwnership } from '@/types/project';
+import { Capacitor } from '@capacitor/core';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 interface DailyStandupSheetProps {
   open: boolean;
