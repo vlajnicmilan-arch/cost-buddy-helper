@@ -410,6 +410,7 @@
   },
   "common": {
     "save": "Spremi",
+    "tapToExpand": "klikni za prikaz",
     "cancel": "Odustani",
     "delete": "Obriši",
     "edit": "Uredi",

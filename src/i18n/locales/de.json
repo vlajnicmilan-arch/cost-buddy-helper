@@ -378,6 +378,7 @@
     "greeting": "Hallo, {{name}}!",
     "daysLeft": "Tage",
     "finances": "Finanzen",
+    "tapToExpand": "tippen zum Anzeigen",
     "account": "Konto",
     "accounts": "Konten",
     "reorderMode": "Neuordnung",
