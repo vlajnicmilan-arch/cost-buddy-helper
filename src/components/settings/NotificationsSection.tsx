@@ -1,9 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Volume2, Bell, Bot, Sparkles, Users, Building2 } from 'lucide-react';
+import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { showSuccess } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationsSectionProps {
   soundEnabled: boolean;
@@ -32,6 +34,9 @@ export const NotificationsSection = ({
   onShowBusinessProfile, isLocalMode
 }: NotificationsSectionProps) => {
   const { t } = useTranslation();
+  const { hasAccess } = useFeatureAccess();
+  const navigate = useNavigate();
+  const canUseBusiness = hasAccess('business_module');
 
   return (
     <div className="space-y-4">
@@ -159,28 +164,39 @@ export const NotificationsSection = ({
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Building2 className="w-4 h-4 text-primary" />
               </div>
-              <div>
-                <Label htmlFor="business-mode" className="text-sm font-medium cursor-pointer">
-                  {t('settings.businessMode', 'Poslovni način')}
-                </Label>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="business-mode" className="text-sm font-medium cursor-pointer">
+                    {t('settings.businessMode', 'Poslovni način')}
+                  </Label>
+                  {!canUseBusiness && <Lock className="w-3 h-3 text-muted-foreground" />}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {t('settings.businessModeDesc', 'Poslovna terminologija i profil tvrtke')}
+                  {canUseBusiness
+                    ? t('settings.businessModeDesc', 'Poslovna terminologija i profil tvrtke')
+                    : t('settings.businessModeLocked', 'Dostupno uz Business pretplatu')}
                 </p>
               </div>
             </div>
             <Switch
               id="business-mode"
-              checked={businessModeEnabled}
+              checked={businessModeEnabled && canUseBusiness}
               onCheckedChange={(checked) => {
+                if (!canUseBusiness) {
+                  // Block toggle and route to paywall
+                  showError(t('settings.businessModeLocked', 'Dostupno uz Business pretplatu'));
+                  navigate('/paywall');
+                  return;
+                }
                 onBusinessModeChange(checked);
-                showSuccess(checked 
-                  ? t('settings.businessModeEnabled', 'Poslovni način uključen') 
+                showSuccess(checked
+                  ? t('settings.businessModeEnabled', 'Poslovni način uključen')
                   : t('settings.businessModeDisabled', 'Osobni način vraćen')
                 );
               }}
             />
           </div>
-          {businessModeEnabled && (
+          {businessModeEnabled && canUseBusiness && (
             <Button variant="outline" className="w-full" onClick={onShowBusinessProfile}>
               <Building2 className="w-4 h-4 mr-2" />
               {t('business.companies', 'Tvrtke')}
