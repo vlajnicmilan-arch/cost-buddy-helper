@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap } from 'lucide-react';
+import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap, Mic } from 'lucide-react';
+import { DailyStandupSheet } from '@/components/projects/DailyStandupSheet';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -55,6 +56,8 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [quickPhotoOpen, setQuickPhotoOpen] = useState(false);
   const [quickPhotoUploading, setQuickPhotoUploading] = useState(false);
   const [quickPhotoSource, setQuickPhotoSource] = useState<'camera' | 'gallery' | null>(null);
+  const [standupOpen, setStandupOpen] = useState(false);
+  const [standupProject, setStandupProject] = useState<ProjectWithOwnership | null>(null);
 
   // Filter only business projects for this profile (memoized)
   const businessProjects = useMemo(
@@ -251,6 +254,18 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {businessProjects.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-xl"
+              onClick={() => { setStandupProject(businessProjects[0]); setStandupOpen(true); }}
+              title={t('projects.standup.title', 'Dnevni izvještaj')}
+            >
+              <Mic className="w-4 h-4" />
+              {t('projects.standup.button', 'Dnevni izvještaj')}
+            </Button>
           )}
           <Button
             variant="outline"

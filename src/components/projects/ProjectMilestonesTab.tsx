@@ -14,7 +14,9 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3 } from 'lucide-react';
+import { MilestoneKanban } from './MilestoneKanban';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showError } from '@/hooks/useStatusFeedback';
@@ -41,6 +43,7 @@ export const ProjectMilestonesTab = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   
   // Form state
   const [name, setName] = useState('');
@@ -155,13 +158,36 @@ export const ProjectMilestonesTab = ({
 
   return (
     <div className="space-y-4">
-      {isManager && (
-        <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)} size="sm">
+          <ToggleGroupItem value="list" className="h-8 px-2.5 gap-1.5 text-xs">
+            <List className="w-3.5 h-3.5" />
+            {t('projects.kanban.list', 'Lista')}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="kanban" className="h-8 px-2.5 gap-1.5 text-xs">
+            <Columns3 className="w-3.5 h-3.5" />
+            {t('projects.kanban.board', 'Ploča')}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        {isManager && (
           <Button onClick={() => openDialog()} size="sm">
             <Plus className="w-4 h-4 mr-2" />
             {t('projects.addMilestone')}
           </Button>
-        </div>
+        )}
+      </div>
+
+      {viewMode === 'kanban' && milestones.length > 0 && (
+        <MilestoneKanban
+          milestones={milestones}
+          isManager={isManager}
+          onEdit={(m) => openDialog(m)}
+          onDelete={handleDelete}
+          onStatusChange={async (m, newStatus) => {
+            await updateMilestone({ ...m, status: newStatus });
+            onRefetch();
+          }}
+        />
       )}
 
       {milestones.length === 0 ? (
@@ -169,7 +195,7 @@ export const ProjectMilestonesTab = ({
           <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>{t('projects.noMilestones')}</p>
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="space-y-3">
           {milestones.map((milestone) => {
             const budgetUsed = milestone.budget > 0 
@@ -270,7 +296,7 @@ export const ProjectMilestonesTab = ({
             );
           })}
         </div>
-      )}
+      ) : null}
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
