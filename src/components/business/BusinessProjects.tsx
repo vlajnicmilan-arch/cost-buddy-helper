@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { AnimatePresence, motion } from 'framer-motion';
+import { applyTemplateToProject } from '@/lib/projectTemplateApply';
 
 interface BusinessProjectsProps {
   onRefreshExpenses?: () => void;
@@ -223,11 +224,14 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         project={editingProject}
-        onSave={async (projectData) => {
+        onSave={async (projectData, template) => {
           if (editingProject) {
             await updateProject({ ...editingProject, ...projectData });
           } else {
-            await addProject({ ...projectData, business_profile_id: activeBusinessProfileId } as any);
+            const created = await addProject({ ...projectData, business_profile_id: activeBusinessProfileId } as any);
+            if (created && template) {
+              await applyTemplateToProject(created.id, template, created.start_date || null);
+            }
           }
           setDialogOpen(false);
           setEditingProject(null);
