@@ -1,4 +1,30 @@
 {
+  "projects": {
+    "tabs": { "work": "Arbeit", "people": "Personen", "money": "Geld" },
+    "tooltips": {
+      "team": "Andere App-Benutzer mit Projektzugriff",
+      "workers": "Deine Mitarbeiter (du verwaltest und bezahlst sie, Stundenerfassung)",
+      "collaborators": "Externe Subunternehmer (andere Firmen mit vereinbartem Betrag)"
+    },
+    "documents": {
+      "tab": "Dokumente",
+      "upload": "Dokument hochladen",
+      "local": "Lokal",
+      "cloud": "Cloud",
+      "analyze": "KI-Analyse",
+      "noDocuments": "Keine Dokumente",
+      "noDocumentsHint": "Lade Belege, Verträge oder Bilder für das Projekt hoch"
+    },
+    "templates": {
+      "startFrom": "Aus Vorlage starten (optional)",
+      "phases": "Phasen",
+      "willCreatePhases": "Wird automatisch erstellt"
+    }
+  },
+  "estimates": {
+    "title": "Angebote & Kostenvoranschläge",
+    "menuDesc": "Angebot erstellen und in ein Projekt umwandeln"
+  },
   "settings": {
     "title": "Einstellungen",
     "language": "Sprache",

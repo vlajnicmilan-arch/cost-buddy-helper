@@ -14,12 +14,17 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { ProjectTemplatePicker } from './ProjectTemplatePicker';
+import { ProjectTemplate } from '@/hooks/useProjectTemplates';
 
 interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project?: Project | null;
-  onSave: (project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSave: (
+    project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    template?: ProjectTemplate | null
+  ) => Promise<void>;
   onUpdate?: (project: Project) => Promise<void>;
 }
 
@@ -33,7 +38,7 @@ export const ProjectDialog = ({
   const { t } = useTranslation();
   const { currency } = useCurrency();
   const [saving, setSaving] = useState(false);
-  
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('📁');
@@ -42,6 +47,9 @@ export const ProjectDialog = ({
   const [totalBudget, setTotalBudget] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+
+  const isEdit = !!project;
 
   useEffect(() => {
     if (open && project) {
@@ -53,6 +61,7 @@ export const ProjectDialog = ({
       setTotalBudget(project.total_budget?.toString() || '');
       setStartDate(project.start_date ? new Date(project.start_date) : undefined);
       setEndDate(project.end_date ? new Date(project.end_date) : undefined);
+      setSelectedTemplate(null);
     } else if (open) {
       setName('');
       setDescription('');
@@ -62,8 +71,19 @@ export const ProjectDialog = ({
       setTotalBudget('');
       setStartDate(undefined);
       setEndDate(undefined);
+      setSelectedTemplate(null);
     }
   }, [open, project]);
+
+  const handleTemplateSelect = (tpl: ProjectTemplate | null) => {
+    setSelectedTemplate(tpl);
+    if (tpl) {
+      if (!name.trim()) setName(tpl.name);
+      if (tpl.icon) setIcon(tpl.icon);
+      if (tpl.color) setColor(tpl.color);
+      if (!description.trim() && tpl.description) setDescription(tpl.description);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +105,7 @@ export const ProjectDialog = ({
       if (project && onUpdate) {
         await onUpdate({ ...project, ...projectData });
       } else {
-        await onSave(projectData);
+        await onSave(projectData, selectedTemplate);
       }
       onOpenChange(false);
     } finally {
@@ -103,6 +123,16 @@ export const ProjectDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Template picker - only for new projects */}
+          {!isEdit && (
+            <div className="p-3 rounded-lg border border-dashed bg-muted/30">
+              <ProjectTemplatePicker
+                selectedId={selectedTemplate?.id || null}
+                onSelect={handleTemplateSelect}
+              />
+            </div>
+          )}
+
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">{t('projects.name')}</Label>
@@ -261,6 +291,11 @@ export const ProjectDialog = ({
                 <p className="text-xs text-muted-foreground">{description || t('projects.noDescription')}</p>
               </div>
             </div>
+            {selectedTemplate && selectedTemplate.default_milestones?.length > 0 && (
+              <p className="text-[10px] text-primary mt-2">
+                {t('projects.templates.willCreatePhases', 'Bit će automatski kreirano')}: {selectedTemplate.default_milestones.length} {t('projects.templates.phases', 'faza')}
+              </p>
+            )}
           </div>
 
           {/* Actions */}

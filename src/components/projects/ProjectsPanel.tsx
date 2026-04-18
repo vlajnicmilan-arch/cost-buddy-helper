@@ -18,6 +18,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppState } from '@/contexts/AppStateContext';
+import { applyTemplateToProject } from '@/lib/projectTemplateApply';
+import type { ProjectTemplate } from '@/hooks/useProjectTemplates';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
@@ -184,8 +186,14 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     fetchAllStats();
   };
 
-  const handleSave = async (projectData: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    await addProject(projectData);
+  const handleSave = async (
+    projectData: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    template?: ProjectTemplate | null
+  ) => {
+    const created = await addProject(projectData);
+    if (created && template) {
+      await applyTemplateToProject(created.id, template, created.start_date || null);
+    }
   };
 
   const handleUpdate = async (project: Project) => {
