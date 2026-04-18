@@ -105,7 +105,12 @@
       "applied_one": "{{count}} unos rada spremljen",
       "applied_few": "{{count}} unosa rada spremljena",
       "applied_other": "{{count}} unosa rada spremljeno",
-      "nothingToApply": "Nema radnih sati za spremanje."
+      "nothingToApply": "Nema radnih sati za spremanje.",
+      "permissionDenied": "Pristup mikrofonu odbijen. Dopusti mikrofon u postavkama preglednika.",
+      "recordingStarted": "Snimanje pokrenuto — govori...",
+      "recordingStopped": "Snimanje zaustavljeno",
+      "iosNotSupported": "Glasovni unos ne radi na iPhone Safariju. Koristi tipkovnicu.",
+      "startFailed": "Snimanje nije moglo započeti. Pokušaj ponovno."
     },
     "deleteConfirmDescription": "Ova radnja je nepovratna.",
     "noProjectsBusiness": "Kreirajte novi projekt ili uvezite iz osobnih financija.",
