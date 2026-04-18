@@ -1,43 +1,29 @@
 
-Korisnik kaže: iako sam zaključao gumb iza paywalla, korisnik koji ga je već uključio prije (i nema Business pretplatu) ima i dalje uključen poslovni način — jer je `business_mode_enabled = true` u njegovom localStorage.
+Korisnik kaže: predomislio se. Korisnik je uredno instalirao app, u postavkama uključio poslovni mod, dodao tvrtku — i to je OK. Pita: "to zvuči kao opcija C, zar ne?"
 
-Trebam dodati **automatsko isključivanje** poslovnog načina kada korisnik nema pristup `business_module`.
+**Provjera mojih opcija:**
+- A = Pro u trialu, Business uvijek zaključan
+- B = sve otključano u trialu (status quo)
+- C = hibrid: Pro automatski, gumb "Pokreni Business trial" za eksplicitno otključavanje Business
+
+**Što korisnik zapravo opisuje:** korisnik je sam svjesno uključio poslovni mod (gumb u Postavkama) i dodao tvrtku. To NIJE C u mom prethodnom opisu — jer C zahtijeva poseban "Pokreni Business trial" gumb na paywallu.
+
+Ono što korisnik opisuje je zapravo **trenutno ponašanje (B)** u kojem je gumb za poslovni mod u Postavkama dostupan svima u trialu (jer trial = Business tier). On to sad smatra prihvatljivim — korisnik je svjesno aktivirao značajku.
+
+**Zaključak:** korisnik se vraća na status quo (B). Nema potrebe za izmjenom koda.
+
+Ali — i dalje postoji mali problem: **`BusinessModeGuard` koji sam dodao u prethodnoj iteraciji ne radi ništa štetno** jer trial korisnici imaju `business` tier, pa guard ne aktivira. Kad istekne trial bez plaćanja Business plana, guard će automatski isključiti poslovni mod. To je dobro ponašanje.
 
 ## Plan
 
-**1. Auto-disable u `AppStateContext.tsx`**
+**Ne mijenjam ništa u kodu.** Trenutno stanje (B + guard) zapravo savršeno odgovara onome što korisnik želi:
 
-Dodati `useEffect` koji prati `businessModeEnabled` i poziva `useFeatureAccess`. Ako je `businessModeEnabled === true` ALI `hasAccess('business_module') === false`, automatski:
-- Postavi `businessModeEnabled` na `false`
-- Obriši `active_business_profile_id` 
-- Obriši iz localStoragea
+1. Tijekom 7-dnevnog triala: korisnik može uključiti poslovni mod, dodati tvrtku, sve isprobati
+2. Nakon isteka triala (ako ne kupi Business): `BusinessModeGuard` automatski isključi poslovni mod, tvrtka ostaje u bazi (ali skrivena), korisnik vidi paywall
 
-Problem: `AppStateContext` se ne može direktno okačiti na `useFeatureAccess` jer bi stvorio cirkularnu ovisnost (FeatureAccess vjerojatno koristi context). Moram provjeriti.
+**Što ću samo potvrditi korisniku:**
+- Da, opcija B (trenutno stanje) odgovara tome što opisuje
+- Guard koji sam dodao već pokriva edge case (istek triala bez plaćanja)
+- Za `vinkabalance@gmail.com`: legitimno koristi tijekom triala, automatski će se ograničiti nakon 7 dana ako ne plati
 
-**Alternativa (sigurnije):** Dodati provjeru u komponentu koja sigurno ima pristup oba — npr. u `App.tsx` ili `Index.tsx` (top-level), kao mali "guard" effect:
-
-```tsx
-const { businessModeEnabled, setBusinessModeEnabled } = useAppState();
-const { hasAccess } = useFeatureAccess();
-
-useEffect(() => {
-  if (businessModeEnabled && !hasAccess('business_module')) {
-    setBusinessModeEnabled(false);
-  }
-}, [businessModeEnabled, hasAccess, setBusinessModeEnabled]);
-```
-
-**2. Lokacija guarda**
-
-Najbolje mjesto: novi mali komponent `<BusinessModeGuard />` montiran u `App.tsx` unutar provider stack-a (nakon `AppStateProvider` i `SubscriptionProvider`). Render-a `null`, samo izvršava effect.
-
-**3. Što provjeriti prije implementacije**
-
-- Kako `useFeatureAccess` radi (čeka li loading state subscriptiona?). Ako vraća `false` dok se subscription učitava, mogli bismo greškom isključiti business mode legitimnom Business korisniku. Treba dodati guard: čekati dok subscription nije učitan (`!loading`).
-
-## Izmjene
-
-- **Novi file:** `src/components/guards/BusinessModeGuard.tsx` — null-rendering komponent, isključuje business mode ako nema pristupa, čeka subscription loading
-- **Edit:** `src/App.tsx` — montirati `<BusinessModeGuard />` unutar provider tree-a
-
-Nakon odobrenja prebacujem se u default mode i implementiram.
+Nema potrebe za promjenom koda. Završeno.
