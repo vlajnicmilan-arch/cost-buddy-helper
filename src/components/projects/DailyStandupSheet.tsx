@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -84,6 +85,7 @@ export const DailyStandupSheet = ({
   const [projectWorkers, setProjectWorkers] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const [applying, setApplying] = useState(false);
   const [workDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [showPermissionHelp, setShowPermissionHelp] = useState(false);
 
   // Reset on close
   useEffect(() => {
@@ -137,7 +139,7 @@ export const DailyStandupSheet = ({
       }
     } catch (err: any) {
       console.error('Mic permission error:', err);
-      showError(t('projects.standup.permissionDenied', 'Pristup mikrofonu odbijen. Dopusti mikrofon u postavkama preglednika.'));
+      setShowPermissionHelp(true);
       return;
     }
 
@@ -164,7 +166,7 @@ export const DailyStandupSheet = ({
       if (errorType === 'no-speech' || errorType === 'aborted') return;
       if (errorType === 'not-allowed' || errorType === 'service-not-allowed') {
         manualStopRef.current = true;
-        showError(t('projects.standup.permissionDenied', 'Pristup mikrofonu odbijen. Dopusti mikrofon u postavkama preglednika.'));
+        setShowPermissionHelp(true);
         setRecording(false);
         return;
       }
@@ -440,6 +442,54 @@ export const DailyStandupSheet = ({
           </div>
         )}
       </SheetContent>
+
+      <AlertDialog open={showPermissionHelp} onOpenChange={setShowPermissionHelp}>
+        <AlertDialogContent className="max-w-[92vw] sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-base">
+              <MicOff className="w-4 h-4 text-destructive" />
+              {t('projects.standup.permissionTitle', 'Mikrofon je blokiran')}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-foreground">
+                <p className="text-muted-foreground">
+                  {t('projects.standup.permissionIntro', 'Da bi snimanje radilo, moraš dopustiti pristup mikrofonu. Evo kako:')}
+                </p>
+
+                <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
+                  <p className="font-semibold text-xs uppercase tracking-wide text-primary">
+                    {t('projects.standup.permissionAndroid', 'Android (Chrome / V&M Balance app)')}
+                  </p>
+                  <ol className="list-decimal pl-4 space-y-1 text-xs">
+                    <li>{t('projects.standup.permAndroid1', 'Otvori Postavke telefona → Aplikacije.')}</li>
+                    <li>{t('projects.standup.permAndroid2', 'Pronađi "V&M Balance" (ili "Chrome" ako koristiš preglednik).')}</li>
+                    <li>{t('projects.standup.permAndroid3', 'Otvori Dozvole → Mikrofon → odaberi "Dopusti".')}</li>
+                    <li>{t('projects.standup.permAndroid4', 'Vrati se u aplikaciju i klikni Snimaj ponovno.')}</li>
+                  </ol>
+                </div>
+
+                <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
+                  <p className="font-semibold text-xs uppercase tracking-wide text-primary">
+                    {t('projects.standup.permissionChromeWeb', 'Chrome (web preglednik)')}
+                  </p>
+                  <ol className="list-decimal pl-4 space-y-1 text-xs">
+                    <li>{t('projects.standup.permChrome1', 'Klikni ikonu lokota 🔒 lijevo od adrese stranice.')}</li>
+                    <li>{t('projects.standup.permChrome2', 'Pronađi "Mikrofon" i postavi na "Dopusti".')}</li>
+                    <li>{t('projects.standup.permChrome3', 'Osvježi stranicu i pokušaj ponovno.')}</li>
+                  </ol>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  {t('projects.standup.permissionFallback', 'Ako i dalje ne radi, jednostavno upiši izvještaj rukom u polje iznad — AI će ga svejedno strukturirati.')}
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>{t('common.understood', 'Razumijem')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 };
