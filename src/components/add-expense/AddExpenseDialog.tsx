@@ -208,6 +208,27 @@ export const AddExpenseDialog = ({
     }
   }, [open, customPaymentSources]);
 
+  // Auto-launch scan when dialog opens with autoScan=true
+  const autoScanTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      autoScanTriggeredRef.current = false;
+      return;
+    }
+    if (autoScan && !autoScanTriggeredRef.current && !scanning && !showScannedPreview) {
+      autoScanTriggeredRef.current = true;
+      // Small delay so the dialog is fully mounted before launching the camera
+      const t = setTimeout(() => {
+        if (isNative) {
+          handleNativeCapture('camera', false);
+        } else {
+          cameraInputRef.current?.click();
+        }
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [open, autoScan, isNative, scanning, showScannedPreview]);
+
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
     if (multiMode || showMultiImageCollector) {
       setReceiptImages(prev => [...prev, base64]);
@@ -679,9 +700,17 @@ export const AddExpenseDialog = ({
       }
     }}>
       <DialogTrigger asChild>
-        <Button className="gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-          <Plus className="w-5 h-5" />
-          {t('common.add')}
+        <Button
+          className={cn(
+            'gap-2 rounded-xl shadow-lg',
+            triggerVariant === 'scan'
+              ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-600/20 dark:bg-violet-500 dark:hover:bg-violet-600'
+              : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20',
+            triggerClassName,
+          )}
+        >
+          {triggerIcon ?? (triggerVariant === 'scan' ? <ScanLine className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
+          {triggerLabel ?? t('common.add')}
         </Button>
       </DialogTrigger>
       <DialogContent 
