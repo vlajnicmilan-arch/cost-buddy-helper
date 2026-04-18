@@ -260,7 +260,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
               variant="outline"
               size="sm"
               className="gap-1.5 rounded-xl"
-              onClick={() => { setStandupProject(businessProjects[0]); setStandupOpen(true); }}
+              onClick={() => { setStandupProject(null); setStandupOpen(true); }}
               title={t('projects.standup.title', 'Dnevni izvještaj')}
             >
               <Mic className="w-4 h-4" />
