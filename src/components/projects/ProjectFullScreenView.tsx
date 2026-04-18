@@ -18,7 +18,8 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
-  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock
+  Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
+  Briefcase, FolderOpen, HelpCircle
 } from 'lucide-react';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
@@ -32,8 +33,12 @@ import { ProjectTimelineTab } from './ProjectTimelineTab';
 import { ProjectReportsDialog } from './ProjectReportsDialog';
 import { ProjectWorkersTab } from './ProjectWorkersTab';
 import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
+import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { TimeClockTab } from '../timeclock/TimeClockTab';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
+
+type TabGroup = 'work' | 'people' | 'money';
 
 interface ProjectFullScreenViewProps {
   open: boolean;
