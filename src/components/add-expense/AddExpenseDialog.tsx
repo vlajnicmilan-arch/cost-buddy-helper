@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Save } from 'lucide-react';
+import { Plus, Save, ScanLine } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Category, Expense, PaymentSource, ReceiptItem, TransactionType, IncomeCategory } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
@@ -43,6 +44,16 @@ interface AddExpenseDialogProps {
     category?: string;
     merchant_name?: string;
   }) => Expense | null;
+  /** When true, automatically launches the camera/scan flow when the dialog opens. */
+  autoScan?: boolean;
+  /** Optional className applied to the trigger button (for grid layouts). */
+  triggerClassName?: string;
+  /** Optional override for the trigger button label. */
+  triggerLabel?: string;
+  /** Optional override for the trigger button icon. */
+  triggerIcon?: ReactNode;
+  /** Visual variant of the trigger button. */
+  triggerVariant?: 'default' | 'scan';
 }
 
 interface ScannedData {
@@ -67,7 +78,15 @@ interface ScannedData {
   vat_amount?: number | null;
 }
 
-export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
+export const AddExpenseDialog = ({
+  onAdd,
+  checkDuplicate,
+  autoScan = false,
+  triggerClassName,
+  triggerLabel,
+  triggerIcon,
+  triggerVariant = 'default',
+}: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
   const { successVibration } = useHaptics();
