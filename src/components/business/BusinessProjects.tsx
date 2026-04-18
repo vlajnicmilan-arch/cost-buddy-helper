@@ -260,7 +260,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
               variant="outline"
               size="sm"
               className="gap-1.5 rounded-xl"
-              onClick={() => { setStandupProject(businessProjects[0]); setStandupOpen(true); }}
+              onClick={() => { setStandupProject(null); setStandupOpen(true); }}
               title={t('projects.standup.title', 'Dnevni izvještaj')}
             >
               <Mic className="w-4 h-4" />
@@ -475,6 +475,15 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Daily Standup Sheet */}
+      <DailyStandupSheet
+        open={standupOpen}
+        onOpenChange={setStandupOpen}
+        projects={businessProjects}
+        initialProjectId={standupProject?.id || null}
+        onApplied={() => { fetchAllStats(); onRefreshExpenses?.(); }}
+      />
     </div>
   );
 };
