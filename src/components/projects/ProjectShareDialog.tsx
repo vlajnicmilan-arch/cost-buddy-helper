@@ -105,7 +105,7 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName 
             <div className="space-y-2">
               {links.map(link => {
                 const expired = link.expires_at && new Date(link.expires_at) < new Date();
-                const inactive = expired || link.revoked_at;
+                const inactive = Boolean(expired) || Boolean(link.revoked_at);
                 return (
                   <div key={link.id} className="p-2.5 rounded-md border bg-card text-sm space-y-1.5">
                     <div className="flex items-center gap-2">
