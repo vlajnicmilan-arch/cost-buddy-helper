@@ -43,6 +43,7 @@ export const ProjectMilestonesTab = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   
   // Form state
   const [name, setName] = useState('');
