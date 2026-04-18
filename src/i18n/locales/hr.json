@@ -106,7 +106,35 @@
     "ofAvailableFunds": "raspoloživih sredstava",
     "milestoneOverBudget": "Prekretnica je premašila budžet",
     "milestonesOverBudget": "Prekretnice su premašile budžet",
-    "overBudgetBy": "Prekoračenje"
+    "overBudgetBy": "Prekoračenje",
+    "tabs": {
+      "work": "Posao",
+      "people": "Ljudi",
+      "money": "Novac"
+    },
+    "tooltips": {
+      "team": "Drugi korisnici aplikacije s pristupom projektu",
+      "workers": "Tvoji zaposlenici (vodiš ih ti, plaćaš ih, evidencija sati)",
+      "collaborators": "Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)"
+    },
+    "documents": {
+      "tab": "Dokumenti",
+      "upload": "Učitaj dokument",
+      "local": "Lokalno",
+      "cloud": "Oblak",
+      "analyze": "AI analiza",
+      "noDocuments": "Nema dokumenata",
+      "noDocumentsHint": "Učitaj račune, ugovore ili slike za projekt"
+    },
+    "templates": {
+      "startFrom": "Započni iz šablone (opcionalno)",
+      "phases": "faza",
+      "willCreatePhases": "Bit će automatski kreirano"
+    }
+  },
+  "estimates": {
+    "title": "Ponude i predračuni",
+    "menuDesc": "Pripremi ponudu i pretvori je u projekt"
   },
   "settings": {
     "title": "Postavke",

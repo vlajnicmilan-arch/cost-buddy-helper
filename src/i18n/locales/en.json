@@ -106,7 +106,31 @@
     "ofAvailableFunds": "of available funds",
     "milestoneOverBudget": "Milestone has exceeded budget",
     "milestonesOverBudget": "Milestones have exceeded budget",
-    "overBudgetBy": "Over budget by"
+    "overBudgetBy": "Over budget by",
+    "tabs": { "work": "Work", "people": "People", "money": "Money" },
+    "tooltips": {
+      "team": "Other app users with access to the project",
+      "workers": "Your employees (you manage them, pay them, track hours)",
+      "collaborators": "External subcontractors (other companies with agreed amounts)"
+    },
+    "documents": {
+      "tab": "Documents",
+      "upload": "Upload document",
+      "local": "Local",
+      "cloud": "Cloud",
+      "analyze": "AI analysis",
+      "noDocuments": "No documents",
+      "noDocumentsHint": "Upload receipts, contracts or images for the project"
+    },
+    "templates": {
+      "startFrom": "Start from a template (optional)",
+      "phases": "phases",
+      "willCreatePhases": "Will be auto-created"
+    }
+  },
+  "estimates": {
+    "title": "Quotes & Estimates",
+    "menuDesc": "Prepare a quote and convert it into a project"
   },
   "settings": {
     "title": "Settings",
