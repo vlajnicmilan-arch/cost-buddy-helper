@@ -39,6 +39,10 @@
     --warning: 43 96% 56%;
     --warning-foreground: 30 60% 20%;
 
+    /* AI / Smart-scan accent (violet) */
+    --ai: 262 83% 58%;
+    --ai-foreground: 0 0% 100%;
+
     --border: 170 25% 88%;
     --input: 170 25% 88%;
     --ring: 172 66% 40%;
@@ -221,6 +225,10 @@
     --category-charity: 0 72% 62%;
     --category-other: 170 15% 60%;
     --foreground: 0 0% 100%;
+
+    /* AI / Smart-scan accent (violet) — dark mode */
+    --ai: 262 90% 70%;
+    --ai-foreground: 0 0% 100%;
 
     /* #111F34 - primary cards */
     --card: 216 51% 14%;
