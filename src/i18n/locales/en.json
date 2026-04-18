@@ -120,7 +120,16 @@
       "cloud": "Cloud",
       "analyze": "AI analysis",
       "noDocuments": "No documents",
-      "noDocumentsHint": "Upload receipts, contracts or images for the project"
+      "noDocumentsHint": "Upload receipts, contracts or images for the project",
+      "takePhoto": "Take photo",
+      "gallery": "Gallery",
+      "file": "File",
+      "saveTo": "Save to",
+      "modeLocal": "Local",
+      "modeCloud": "Cloud",
+      "modeHint": "Local = this device only · Cloud = shared with all members",
+      "cameraError": "Camera error",
+      "galleryError": "Gallery error"
     },
     "templates": {
       "startFrom": "Start from a template (optional)",

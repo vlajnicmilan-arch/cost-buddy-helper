@@ -4,17 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjectDocuments } from '@/hooks/useProjectDocuments';
-import { readDocument, getDocumentBase64, ProjectDocumentRow, StorageMode } from '@/lib/documentStorage';
+import { readDocument, getDocumentBase64, dataUrlToFile, ProjectDocumentRow, StorageMode } from '@/lib/documentStorage';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import {
   Upload, FileText, Image as ImageIcon, Trash2, Sparkles,
-  Smartphone, Cloud, Eye, Loader2, FileType
+  Smartphone, Cloud, Eye, Loader2, FileType, Camera as CameraIcon, ImagePlus, ChevronDown
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/EmptyState';
 
 interface ProjectDocumentsTabProps {
@@ -25,6 +27,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { documents, loading, uploadDocument, removeDocument, updateAnalysis } = useProjectDocuments(projectId);
+  const { takePhoto, pickFromGallery, cameraInputRef, galleryInputRef } = useNativeCamera();
 
   const [previewDoc, setPreviewDoc] = useState<ProjectDocumentRow | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
@@ -33,9 +36,37 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
   const [uploadingMode, setUploadingMode] = useState<StorageMode>('local');
   const [uploading, setUploading] = useState(false);
 
-  const handleFile = async (mode: StorageMode) => {
+  const triggerFilePicker = (mode: StorageMode) => {
     setUploadingMode(mode);
     fileInputRef.current?.click();
+  };
+
+  const handleCamera = async (mode: StorageMode) => {
+    try {
+      const dataUrl = await takePhoto();
+      if (!dataUrl) return;
+      const file = dataUrlToFile(dataUrl, `photo_${Date.now()}.jpg`);
+      setUploading(true);
+      await uploadDocument(file, mode);
+    } catch (err: any) {
+      showError(err?.message || t('projects.documents.cameraError', 'Greška kamere'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleGallery = async (mode: StorageMode) => {
+    try {
+      const dataUrl = await pickFromGallery();
+      if (!dataUrl) return;
+      const file = dataUrlToFile(dataUrl, `image_${Date.now()}.jpg`);
+      setUploading(true);
+      await uploadDocument(file, mode);
+    } catch (err: any) {
+      showError(err?.message || t('projects.documents.galleryError', 'Greška galerije'));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const onFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,53 +141,99 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
           className="hidden"
           onChange={onFileChosen}
         />
+        {/* Web-fallback inputs for camera & gallery (used by useNativeCamera on web) */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+        />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+        />
 
-        {/* Upload buttons */}
-        <div className="grid grid-cols-2 gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
+        {/* Upload buttons: Camera / Gallery / File — each with local/cloud choice */}
+        <div className="grid grid-cols-3 gap-2">
+          {/* Slikaj */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="default"
                 className="h-auto py-3 flex-col gap-1"
-                onClick={() => handleFile('local')}
                 disabled={uploading}
               >
-                <div className="flex items-center gap-2">
-                  <Smartphone className="w-4 h-4" />
-                  <span className="font-medium">{t('projects.documents.uploadLocal', 'Lokalno')}</span>
-                </div>
-                <span className="text-[10px] opacity-80">{t('projects.documents.uploadLocalHint', 'Samo na ovom uređaju')}</span>
+                <CameraIcon className="w-5 h-5" />
+                <span className="text-xs font-medium">{t('projects.documents.takePhoto', 'Slikaj')}</span>
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs max-w-[200px]">
-                {t('projects.documents.tooltipLocal', 'Dokument se sprema na uređaj — ne zauzima prostor u oblaku, ne dijeli se s drugima.')}
-              </p>
-            </TooltipContent>
-          </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="z-[70]">
+              <DropdownMenuLabel className="text-xs">{t('projects.documents.saveTo', 'Spremi u')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleCamera('local')}>
+                <Smartphone className="w-4 h-4 mr-2" /> {t('projects.documents.modeLocal', 'Lokalno')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCamera('cloud')}>
+                <Cloud className="w-4 h-4 mr-2" /> {t('projects.documents.modeCloud', 'Oblak')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
+          {/* Galerija */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 className="h-auto py-3 flex-col gap-1"
-                onClick={() => handleFile('cloud')}
                 disabled={uploading}
               >
-                <div className="flex items-center gap-2">
-                  <Cloud className="w-4 h-4" />
-                  <span className="font-medium">{t('projects.documents.uploadCloud', 'U oblak')}</span>
-                </div>
-                <span className="text-[10px] opacity-80">{t('projects.documents.uploadCloudHint', 'Sinkronizacija + dijeljenje')}</span>
+                <ImagePlus className="w-5 h-5" />
+                <span className="text-xs font-medium">{t('projects.documents.gallery', 'Galerija')}</span>
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs max-w-[200px]">
-                {t('projects.documents.tooltipCloud', 'Dostupno svim članovima projekta na svim uređajima.')}
-              </p>
-            </TooltipContent>
-          </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="z-[70]">
+              <DropdownMenuLabel className="text-xs">{t('projects.documents.saveTo', 'Spremi u')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleGallery('local')}>
+                <Smartphone className="w-4 h-4 mr-2" /> {t('projects.documents.modeLocal', 'Lokalno')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleGallery('cloud')}>
+                <Cloud className="w-4 h-4 mr-2" /> {t('projects.documents.modeCloud', 'Oblak')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Datoteka */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-auto py-3 flex-col gap-1"
+                disabled={uploading}
+              >
+                <Upload className="w-5 h-5" />
+                <span className="text-xs font-medium">{t('projects.documents.file', 'Datoteka')}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="z-[70]">
+              <DropdownMenuLabel className="text-xs">{t('projects.documents.saveTo', 'Spremi u')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => triggerFilePicker('local')}>
+                <Smartphone className="w-4 h-4 mr-2" /> {t('projects.documents.modeLocal', 'Lokalno')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => triggerFilePicker('cloud')}>
+                <Cloud className="w-4 h-4 mr-2" /> {t('projects.documents.modeCloud', 'Oblak')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        <p className="text-[11px] text-muted-foreground text-center">
+          {t('projects.documents.modeHint', 'Lokalno = samo na ovom uređaju · Oblak = dijeljeno sa svim članovima')}
+        </p>
 
         {uploading && (
           <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">

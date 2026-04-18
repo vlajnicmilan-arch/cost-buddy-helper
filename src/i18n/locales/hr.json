@@ -124,7 +124,16 @@
       "cloud": "Oblak",
       "analyze": "AI analiza",
       "noDocuments": "Nema dokumenata",
-      "noDocumentsHint": "Učitaj račune, ugovore ili slike za projekt"
+      "noDocumentsHint": "Učitaj račune, ugovore ili slike za projekt",
+      "takePhoto": "Slikaj",
+      "gallery": "Galerija",
+      "file": "Datoteka",
+      "saveTo": "Spremi u",
+      "modeLocal": "Lokalno",
+      "modeCloud": "Oblak",
+      "modeHint": "Lokalno = samo na ovom uređaju · Oblak = dijeljeno sa svim članovima",
+      "cameraError": "Greška pri korištenju kamere",
+      "galleryError": "Greška pri odabiru slike"
     },
     "templates": {
       "startFrom": "Započni iz šablone (opcionalno)",
