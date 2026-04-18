@@ -2079,6 +2079,134 @@ export type Database = {
           },
         ]
       }
+      project_documents: {
+        Row: {
+          ai_analysis: Json | null
+          created_at: string
+          id: string
+          mime_type: string
+          name: string
+          project_id: string
+          size_bytes: number
+          storage_mode: string
+          storage_path: string
+          tags: string[]
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          created_at?: string
+          id?: string
+          mime_type?: string
+          name: string
+          project_id: string
+          size_bytes?: number
+          storage_mode?: string
+          storage_path: string
+          tags?: string[]
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          created_at?: string
+          id?: string
+          mime_type?: string
+          name?: string
+          project_id?: string
+          size_bytes?: number
+          storage_mode?: string
+          storage_path?: string
+          tags?: string[]
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_estimates: {
+        Row: {
+          accepted_project_id: string | null
+          business_profile_id: string
+          client_address: string | null
+          client_name: string
+          client_oib: string | null
+          created_at: string
+          estimate_number: string
+          id: string
+          items: Json
+          notes: string | null
+          status: string
+          subtotal: number
+          total_amount: number
+          updated_at: string
+          user_id: string
+          valid_until: string | null
+          vat_amount: number
+        }
+        Insert: {
+          accepted_project_id?: string | null
+          business_profile_id: string
+          client_address?: string | null
+          client_name: string
+          client_oib?: string | null
+          created_at?: string
+          estimate_number: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+          valid_until?: string | null
+          vat_amount?: number
+        }
+        Update: {
+          accepted_project_id?: string | null
+          business_profile_id?: string
+          client_address?: string | null
+          client_name?: string
+          client_oib?: string | null
+          created_at?: string
+          estimate_number?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+          valid_until?: string | null
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_estimates_accepted_project_id_fkey"
+            columns: ["accepted_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_estimates_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_funding: {
         Row: {
           allocated_amount: number
@@ -2318,6 +2446,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      project_templates: {
+        Row: {
+          category: string | null
+          color: string
+          created_at: string
+          created_by: string | null
+          default_milestones: Json
+          description: string | null
+          icon: string
+          id: string
+          is_public: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          default_milestones?: Json
+          description?: string | null
+          icon?: string
+          id?: string
+          is_public?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          default_milestones?: Json
+          description?: string | null
+          icon?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       project_work_entries: {
         Row: {
