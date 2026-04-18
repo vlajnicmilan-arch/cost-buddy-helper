@@ -38,7 +38,7 @@ export const BusinessMore = ({ expenses }: Props) => {
     { id: 'profile', icon: Building2, label: t('business.more.companyData', 'Podaci o tvrtki'), desc: t('business.more.companyDataDesc', 'Naziv, OIB, adresa, IBAN i ostali podaci') },
     { id: 'modules', icon: Settings2, label: t('business.more.modulesAndIndustry', 'Djelatnost i moduli'), desc: t('business.more.modulesAndIndustryDesc', 'Odaberite djelatnost i prilagodite module') },
     { id: 'estimates', icon: FileSignature, label: t('estimates.title', 'Ponude i predračuni'), desc: t('estimates.menuDesc', 'Pripremi ponudu i pretvori je u projekt') },
-    { id: 'debts', icon: Receipt, label: t('business.more.debtsAndReceivables', 'Dugovanja i potraživanja'), desc: t('business.more.debtsAndReceivablesDesc', 'Praćenje tko vam duguje i kome vi dugujete') },
+    { id: 'debts', icon: Receipt, label: t('business.more.openInvoices', 'Otvoreni računi'), desc: t('business.more.openInvoicesDesc', 'Praćenje neplaćenih računa i potraživanja') },
     { id: 'recurring', icon: RefreshCw, label: t('business.more.recurringObligations', 'Ponavljajuće obveze'), desc: t('business.more.recurringObligationsDesc', 'Najam, pretplate, leasing i ostalo') },
   ];
 

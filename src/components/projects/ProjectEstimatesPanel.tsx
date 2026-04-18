@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectEstimates, ProjectEstimate, EstimateStatus } from '@/hooks/useProjectEstimates';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/EmptyState';
-import { EstimateDialog } from './EstimateDialog';
 import { Plus, FileText, Loader2, Edit, Trash2, FolderPlus, Send } from 'lucide-react';
+
+// Lazy-load heavy dialog only when needed
+const EstimateDialog = lazy(() => import('./EstimateDialog').then(m => ({ default: m.EstimateDialog })));
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
