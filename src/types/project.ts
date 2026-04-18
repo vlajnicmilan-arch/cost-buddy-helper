@@ -14,6 +14,7 @@ export interface Project {
   start_date?: string | null;
   end_date?: string | null;
   business_profile_id?: string | null;
+  archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }

@@ -1,5 +1,5 @@
 import { Project, ProjectWithOwnership, PROJECT_STATUS_LABELS, PROJECT_ROLE_LABELS } from '@/types/project';
-import { Pencil, Trash2, Users, Calendar, Target, Briefcase, Activity, Clock } from 'lucide-react';
+import { Pencil, Trash2, Users, Calendar, Target, Briefcase, Activity, Clock, Archive, ArchiveRestore } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -21,6 +21,8 @@ interface ProjectCardProps {
   milestones?: Array<{ status: any; due_date?: string | null }>;
   onEdit: (project: Project) => void;
   onDelete: (id: string) => void;
+  onArchive?: (id: string) => void;
+  isArchived?: boolean;
   onClick: (project: ProjectWithOwnership) => void;
   onMigrateToBusiness?: (project: ProjectWithOwnership) => void;
 }
@@ -34,6 +36,8 @@ export const ProjectCard = ({
   milestones = [],
   onEdit,
   onDelete,
+  onArchive,
+  isArchived,
   onClick,
   onMigrateToBusiness
 }: ProjectCardProps) => {
@@ -263,6 +267,20 @@ export const ProjectCard = ({
                 title={t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
               >
                 <Briefcase className="w-4 h-4" />
+              </Button>
+            )}
+            {onArchive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onArchive(project.id);
+                }}
+                title={isArchived ? t('projects.unarchive', 'Vrati iz arhive') : t('projects.archive', 'Arhiviraj')}
+              >
+                {isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
               </Button>
             )}
             <Button

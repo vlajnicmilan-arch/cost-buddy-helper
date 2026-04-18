@@ -28,7 +28,7 @@ interface ProjectsPanelProps {
 export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { projects, loading, addProject, updateProject, deleteProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
+  const { projects, loading, addProject, updateProject, deleteProject, archiveProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
   const { formatAmount } = useCurrency();
   const { businessModeEnabled } = useAppState();
   
@@ -45,6 +45,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null);
   const [migrateConfirmOpen, setMigrateConfirmOpen] = useState(false);
   const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   // Handle navigation from notification click
   useEffect(() => {
@@ -197,21 +198,36 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     );
   }
 
+  const visibleProjects = projects.filter(p => showArchived ? !!p.archived_at : !p.archived_at);
+  const archivedCount = projects.filter(p => !!p.archived_at).length;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-semibold flex items-center gap-2">
           <FolderKanban className="w-5 h-5" />
           {t('projects.title')}
         </h3>
-        <Button onClick={() => { setEditingProject(null); setDialogOpen(true); }} size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          {t('projects.add')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {archivedCount > 0 && (
+            <Button
+              variant={showArchived ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setShowArchived(v => !v)}
+              className="text-xs"
+            >
+              {showArchived ? t('projects.showActive', 'Aktivni') : t('projects.showArchived', `Arhiva (${archivedCount})`)}
+            </Button>
+          )}
+          <Button onClick={() => { setEditingProject(null); setDialogOpen(true); }} size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            {t('projects.add')}
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
-      {projects.length > 0 && (
+      {visibleProjects.length > 0 && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -231,17 +247,17 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
         </div>
       )}
 
-      {projects.length === 0 ? (
+      {visibleProjects.length === 0 ? (
         <EmptyState
           variant="projects"
-          title={t('projects.noProjects')}
-          description={t('projects.noProjectsHint')}
-          action={{ label: t('projects.add'), onClick: () => { setEditingProject(null); setDialogOpen(true); } }}
+          title={showArchived ? t('projects.noArchived', 'Nema arhiviranih projekata') : t('projects.noProjects')}
+          description={showArchived ? '' : t('projects.noProjectsHint')}
+          action={showArchived ? undefined : { label: t('projects.add'), onClick: () => { setEditingProject(null); setDialogOpen(true); } }}
         />
       ) : (
         <AnimatePresence mode="popLayout">
           <div className="space-y-3">
-            {projects
+            {visibleProjects
               .filter(p => !searchTerm.trim() || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description?.toLowerCase().includes(searchTerm.toLowerCase()))
               .map((project) => (
               <motion.div
@@ -260,6 +276,8 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
                   milestones={projectStats[project.id]?.milestones || []}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onArchive={(id) => archiveProject(id, !project.archived_at)}
+                  isArchived={!!project.archived_at}
                   onClick={handleProjectClick}
                   onMigrateToBusiness={canMigrateToBusiness ? handleMigrateToBusiness : undefined}
                 />

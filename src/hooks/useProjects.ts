@@ -307,12 +307,41 @@ export const useProjects = () => {
     return projects.find(p => p.id === id);
   };
 
+  const archiveProject = async (id: string, archive: boolean = true): Promise<void> => {
+    try {
+      if (isLocalMode) {
+        const updated = projects.map(p =>
+          p.id === id ? { ...p, archived_at: archive ? new Date().toISOString() : null } : p
+        );
+        localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
+        setProjects(updated);
+        showSuccess(archive ? t('projects.archived', 'Projekt arhiviran') : t('projects.unarchived', 'Projekt vraćen'));
+        return;
+      }
+
+      const { error } = await (supabase.from('projects') as any)
+        .update({ archived_at: archive ? new Date().toISOString() : null })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProjects(prev => prev.map(p =>
+        p.id === id ? { ...p, archived_at: archive ? new Date().toISOString() : null } : p
+      ));
+      showSuccess(archive ? t('projects.archived', 'Projekt arhiviran') : t('projects.unarchived', 'Projekt vraćen'));
+    } catch (error) {
+      console.error('Error archiving project:', error);
+      showError(t('common.error'));
+    }
+  };
+
   return {
     projects,
     loading,
     addProject,
     updateProject,
     deleteProject,
+    archiveProject,
     migrateToBusinessMode,
     getProjectById,
     refetch: fetchProjects,

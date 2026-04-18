@@ -6,6 +6,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import { ProjectStatusBoard } from './ProjectStatusBoard';
 
 interface Props {
   expenses: Expense[];
@@ -106,6 +107,9 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable }: P
           </div>
         </CardContent>
       </Card>
+
+      {/* Project Status Board */}
+      <ProjectStatusBoard />
 
       {(totalReceivable > 0 || totalPayable > 0) && (
         <div className="grid grid-cols-2 gap-3">

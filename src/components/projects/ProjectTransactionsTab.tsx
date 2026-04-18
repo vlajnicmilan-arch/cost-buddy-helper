@@ -45,6 +45,7 @@ interface ProjectExpense {
   submitted_by?: string | null;
   expense_nature?: string | null;
   payment_source?: string | null;
+  work_type?: 'material' | 'labor' | 'equipment' | 'other' | null;
 }
 
 interface ProjectTransactionsTabProps {
@@ -157,6 +158,7 @@ export const ProjectTransactionsTab = ({
   const [filterPaymentSource, setFilterPaymentSource] = useState<string>('all');
   const [filterExpenseNature, setFilterExpenseNature] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterWorkType, setFilterWorkType] = useState<string>('all');
 
   const dateLocale = i18n?.language === 'de' ? de : i18n?.language === 'en' ? enUS : hr;
   
@@ -390,16 +392,19 @@ export const ProjectTransactionsTab = ({
       if (filterPaymentSource !== 'all' && e.payment_source !== filterPaymentSource) return false;
       if (filterExpenseNature !== 'all' && e.expense_nature !== filterExpenseNature) return false;
       if (filterCategory !== 'all' && e.category !== filterCategory) return false;
+      if (filterWorkType !== 'all' && e.work_type !== filterWorkType) return false;
       return true;
     });
-  }, [expenses, searchTerm, filterMilestoneId, filterDateRange, filterPaymentSource, filterExpenseNature, filterCategory]);
+  }, [expenses, searchTerm, filterMilestoneId, filterDateRange, filterPaymentSource, filterExpenseNature, filterCategory, filterWorkType]);
 
-  const hasActiveFilters = searchTerm.trim() || filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || filterExpenseNature !== 'all' || filterCategory !== 'all';
+  const hasActiveFilters = searchTerm.trim() || filterMilestoneId !== 'all' || filterDateRange?.from || filterPaymentSource !== 'all' || filterExpenseNature !== 'all' || filterCategory !== 'all' || filterWorkType !== 'all';
 
   const filteredTotals = useMemo(() => {
     const totalExpenses = filteredExpenses.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
     const totalIncome = filteredExpenses.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
-    return { totalExpenses, totalIncome, net: totalIncome - totalExpenses };
+    const totalMaterial = filteredExpenses.filter(e => e.type === 'expense' && e.work_type === 'material').reduce((s, e) => s + e.amount, 0);
+    const totalLabor = filteredExpenses.filter(e => e.type === 'expense' && e.work_type === 'labor').reduce((s, e) => s + e.amount, 0);
+    return { totalExpenses, totalIncome, net: totalIncome - totalExpenses, totalMaterial, totalLabor };
   }, [filteredExpenses]);
 
   const handlePrintFiltered = () => {
@@ -707,6 +712,24 @@ export const ProjectTransactionsTab = ({
                   <SelectItem value="all">{t('filters.allNatures', 'Sve vrste')}</SelectItem>
                   <SelectItem value="regular">{t('projects.regular', 'Redovni')}</SelectItem>
                   <SelectItem value="extraordinary">{t('projects.extraordinary', 'Vanredni')}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Work Type Filter (Material vs Labor) */}
+              <Select
+                value={filterWorkType}
+                onValueChange={setFilterWorkType}
+              >
+                <SelectTrigger className="w-[160px] h-8 text-xs">
+                  <Filter className="w-3.5 h-3.5 mr-1.5" />
+                  <SelectValue placeholder={t('filters.allWorkTypes', 'Materijal/Rad')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('filters.allWorkTypes', 'Materijal/Rad')}</SelectItem>
+                  <SelectItem value="material">🧱 {t('workType.material', 'Materijal')}</SelectItem>
+                  <SelectItem value="labor">👷 {t('workType.labor', 'Rad')}</SelectItem>
+                  <SelectItem value="equipment">🛠️ {t('workType.equipment', 'Oprema')}</SelectItem>
+                  <SelectItem value="other">📦 {t('workType.other', 'Ostalo')}</SelectItem>
                 </SelectContent>
               </Select>
 
