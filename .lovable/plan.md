@@ -1,42 +1,49 @@
 
-User found the "Snimaj" button in DailyStandupSheet but reports it doesn't work. They want toggle behavior (click to start, click again to stop) — not press-and-hold.
+## Plan: Native govor-u-tekst preko Capacitor plugina
 
-Looking at the existing code in `src/components/projects/DailyStandupSheet.tsx`:
-- The button already IS toggle-style (separate `startRecording` / `stopRecording` handlers, swaps between Mic/MicOff buttons based on `recording` state).
-- So the "moram držati" perception likely comes from: recognition silently failing → `onerror`/`onend` fires immediately → `recording` flips back to false → user thinks they need to hold.
+### Što ćemo napraviti
+Zamijeniti trenutni Web Speech API (koji ne radi pouzdano u Android WebView-u) s nativnim **`@capacitor-community/speech-recognition`** pluginom. On koristi Android sustavski govor-u-tekst i automatski traži dozvole na nativnoj razini.
 
-Likely root causes for "ne radi":
-1. **No mic permission** — `r.start()` throws or `onerror` fires with `not-allowed`; we silently set `recording=false` with no user feedback.
-2. **iOS / unsupported browser** — `webkitSpeechRecognition` may exist but fail; no error shown.
-3. **`continuous=true` + auto-stop** — some browsers stop after silence; we don't auto-restart.
-4. **State race** — `recognition` stored in state but `stopRecording` may run before state is set.
+### Kako će raditi
+1. Klik na "Snimaj" → plugin provjeri dozvolu → ako nema, **iskače nativni Android prompt** ("Allow V&M Balance to record audio?")
+2. Korisnik dopusti → snimanje kreće preko Android Speech Recognizera (hr-HR)
+3. Tekst se popunjava u Textarea u real-time (partialResults)
+4. U PWA / pregledniku → automatski fallback na postojeći Web Speech API
 
-## Plan
+### Tehničke izmjene
 
-**File:** `src/components/projects/DailyStandupSheet.tsx`
+**1. Dodati npm paket**
+- `@capacitor-community/speech-recognition` (~v6/v7, kompatibilan s Capacitor 8)
 
-1. **Robust toggle with proper error feedback**
-   - Add explicit `navigator.mediaDevices.getUserMedia({ audio: true })` permission request before starting recognition → triggers native mic prompt clearly.
-   - Show `showError` with translated message on permission denial / no support / start failure (instead of silent fail).
-   - Show `showSuccess` ("Snimanje pokrenuto") when recording actually starts (`onstart` handler).
+**2. Refaktorirati `src/components/projects/DailyStandupSheet.tsx`**
+- Detektirati platformu pomoću `Capacitor.isNativePlatform()`
+- Native grana: `SpeechRecognition.requestPermissions()` → `SpeechRecognition.start({ language: 'hr-HR', partialResults: true, popup: false })`
+- Listener: `SpeechRecognition.addListener('partialResults', ...)` puni textarea
+- Web grana: zadržati postojeći `webkitSpeechRecognition` kod
+- Pozivati `SpeechRecognition.stop()` i ukloniti listenere u `stopRecording` + na zatvaranju sheeta
 
-2. **Reliable start/stop toggle**
-   - Move `recognition` to `useRef` instead of `useState` (avoids stale closures, ensures `stopRecording` always sees current instance).
-   - On `onend`: if user hasn't manually stopped (track via `manualStopRef`), auto-restart to keep continuous dictation working on Chrome/Android (which auto-stops after pause).
-   - On `onerror`: distinguish `no-speech` (ignore, keep going) from `not-allowed`/`audio-capture` (stop + show error).
+**3. Bolje poruke za korisnika**
+- Ako korisnik odbije dozvolu → toast: "Dopusti mikrofon u Postavke → Aplikacije → V&M Balance → Dopuštenja"
+- Help dijalog (`showPermissionHelp`) ažurirati za nativne upute
 
-3. **Visual recording indicator**
-   - Add pulsing red dot on the "Zaustavi" button while recording so it's obvious it's listening.
-   - Add small live transcription preview hint already exists via Textarea — keep, but make sure interim text is visible immediately.
+### Što TI moraš napraviti na računalu nakon ovog (jednom!)
 
-4. **iOS guidance**
-   - On iOS Safari (no Web Speech API), show clearer message: "Glasovni unos nije podržan na iPhone-u. Koristi tipkovnicu ili Chrome na Androidu."
+Ovo Lovable ne može — moraš ručno:
 
-5. **i18n keys** — add to `hr.json`, `en.json`, `de.json`:
-   - `projects.standup.permissionDenied` — "Pristup mikrofonu odbijen. Dopusti mikrofon u postavkama preglednika."
-   - `projects.standup.recordingStarted` — "Snimanje pokrenuto — govori..."
-   - `projects.standup.recordingStopped` — "Snimanje zaustavljeno"
-   - `projects.standup.iosNotSupported` — "Glasovni unos ne radi na iPhone Safariju. Koristi tipkovnicu."
-   - `projects.standup.startFailed` — "Snimanje nije moglo započeti. Pokušaj ponovno."
+```bash
+git pull
+npm install --legacy-peer-deps
+npx cap sync android
+npx cap open android
+```
 
-**No DB changes, no new dependencies.** Pure UX fix in one component + 3 locale files.
+Plugin **automatski dodaje** `RECORD_AUDIO` permission u `AndroidManifest.xml` kroz `cap sync`, pa nećeš ručno ništa editirati. Onda u Android Studiju → **Build → Generate Signed App Bundle/APK** → instaliraj novi APK na mobitel.
+
+### Rizik / fallback
+- Ako plugin ne podržava hr-HR na starijem Androidu (rijetko), pluš se vrati na engleski automatski
+- Ako instalacija plugina ne uspije zbog peer-dep konflikta s Capacitor 8, koristit ćemo `--legacy-peer-deps` (već koristiš)
+
+### Datoteke koje će se mijenjati
+- `package.json` (+1 paket)
+- `src/components/projects/DailyStandupSheet.tsx` (refaktor `startRecording`/`stopRecording`)
+- `src/i18n/locales/{hr,en,de}.json` (par novih poruka za dozvole)
