@@ -95,30 +95,13 @@ export const DailyStandupSheet = ({
     if (!trimmed) return;
     setAiLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('financial-assistant', {
-        body: {
-          messages: [
-            {
-              role: 'system',
-              content: `Ti si asistent koji strukturira dnevne radne izvještaje s gradilišta. Korisnik diktira što je danas rađeno na projektu "${projectName}". Vrati STRIKTNO JSON (bez markdowna) s poljima: { "summary": "kratki sažetak u 1-2 rečenice", "workers": [{"name": "ime", "hours": broj, "task": "što je radio"}], "materials": [{"name": "stavka", "quantity": broj, "unit": "kom/m2/..."}], "notes": "ostalo" }. Ako podatak nije naveden, koristi null ili praznu listu.`,
-            },
-            { role: 'user', content: trimmed },
-          ],
-        },
+      const { data, error } = await supabase.functions.invoke('parse-standup', {
+        body: { text: trimmed, project_name: projectName },
       });
 
       if (error) throw error;
 
-      // financial-assistant returns { reply: string }
-      const reply: string = data?.reply || data?.content || '';
-      const cleaned = reply.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      let parsed: any = null;
-      try {
-        parsed = JSON.parse(cleaned);
-      } catch {
-        parsed = { summary: cleaned, workers: [], materials: [], notes: null };
-      }
-
+      const parsed = data?.result || {};
       onResult?.(parsed);
       showSuccess(t('projects.standup.processed', 'Izvještaj strukturiran'));
       setText('');
