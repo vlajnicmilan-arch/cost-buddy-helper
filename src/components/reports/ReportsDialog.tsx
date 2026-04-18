@@ -170,7 +170,7 @@ const calculateStats = (expenseList: Expense[]) => {
   };
 };
 
-export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
+export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
   
@@ -644,7 +644,10 @@ export const ReportsDialog = ({ expenses }: ReportsDialogProps) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button 
-          className="gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700"
+          className={cn(
+            'gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700',
+            triggerClassName,
+          )}
           onClick={(e) => {
             if (!hasAccess('reports')) {
               e.preventDefault();
