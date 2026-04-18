@@ -99,7 +99,29 @@ Deno.serve(async (req) => {
         .from("notifications")
         .insert(notifications);
 
-      if (!insertError) notificationsCreated += notifications.length;
+      if (!insertError) {
+        notificationsCreated += notifications.length;
+
+        // Send push notifications to project managers
+        for (const userId of userIds) {
+          try {
+            await supabase.functions.invoke("send-push", {
+              body: {
+                user_id: userId,
+                title,
+                body: message,
+                data: {
+                  type: "milestone_deadline",
+                  milestone_id: milestone.id,
+                  project_id: milestone.project_id,
+                },
+              },
+            });
+          } catch (pushErr) {
+            console.warn("Push send failed for user", userId, pushErr);
+          }
+        }
+      }
     }
 
     return new Response(
