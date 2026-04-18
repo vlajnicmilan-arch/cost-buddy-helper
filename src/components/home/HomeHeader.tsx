@@ -129,10 +129,27 @@ export const HomeHeader = ({
         </div>
       )}
 
-      {/* Bottom row: Action buttons */}
-      <div className="flex flex-wrap items-center gap-2" data-tutorial="add-buttons">
-        {!simpleModeEnabled && <ReportsDialog expenses={reportsExpenses} />}
-        <AddExpenseDialog onAdd={onAddExpense} checkDuplicate={onCheckDuplicate} />
+      {/* Bottom row: Action buttons — equal width grid */}
+      <div
+        className={`grid ${simpleModeEnabled ? 'grid-cols-2' : 'grid-cols-3'} gap-2`}
+        data-tutorial="add-buttons"
+      >
+        {!simpleModeEnabled && (
+          <ReportsDialog expenses={reportsExpenses} triggerClassName="w-full h-11 justify-center" />
+        )}
+        <AddExpenseDialog
+          onAdd={onAddExpense}
+          checkDuplicate={onCheckDuplicate}
+          autoScan
+          triggerVariant="scan"
+          triggerLabel={t('common.scan', 'Skeniraj')}
+          triggerClassName="w-full h-11 justify-center"
+        />
+        <AddExpenseDialog
+          onAdd={onAddExpense}
+          checkDuplicate={onCheckDuplicate}
+          triggerClassName="w-full h-11 justify-center"
+        />
       </div>
     </header>
   );

@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Save } from 'lucide-react';
+import { Plus, Save, ScanLine } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Category, Expense, PaymentSource, ReceiptItem, TransactionType, IncomeCategory } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
@@ -43,6 +44,16 @@ interface AddExpenseDialogProps {
     category?: string;
     merchant_name?: string;
   }) => Expense | null;
+  /** When true, automatically launches the camera/scan flow when the dialog opens. */
+  autoScan?: boolean;
+  /** Optional className applied to the trigger button (for grid layouts). */
+  triggerClassName?: string;
+  /** Optional override for the trigger button label. */
+  triggerLabel?: string;
+  /** Optional override for the trigger button icon. */
+  triggerIcon?: ReactNode;
+  /** Visual variant of the trigger button. */
+  triggerVariant?: 'default' | 'scan';
 }
 
 interface ScannedData {
@@ -67,7 +78,15 @@ interface ScannedData {
   vat_amount?: number | null;
 }
 
-export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProps) => {
+export const AddExpenseDialog = ({
+  onAdd,
+  checkDuplicate,
+  autoScan = false,
+  triggerClassName,
+  triggerLabel,
+  triggerIcon,
+  triggerVariant = 'default',
+}: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
   const { successVibration } = useHaptics();
@@ -188,6 +207,27 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
     }
   }, [open, customPaymentSources]);
+
+  // Auto-launch scan when dialog opens with autoScan=true
+  const autoScanTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      autoScanTriggeredRef.current = false;
+      return;
+    }
+    if (autoScan && !autoScanTriggeredRef.current && !scanning && !showScannedPreview) {
+      autoScanTriggeredRef.current = true;
+      // Small delay so the dialog is fully mounted before launching the camera
+      const t = setTimeout(() => {
+        if (isNative) {
+          handleNativeCapture('camera', false);
+        } else {
+          cameraInputRef.current?.click();
+        }
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [open, autoScan, isNative, scanning, showScannedPreview]);
 
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
     if (multiMode || showMultiImageCollector) {
@@ -660,9 +700,17 @@ export const AddExpenseDialog = ({ onAdd, checkDuplicate }: AddExpenseDialogProp
       }
     }}>
       <DialogTrigger asChild>
-        <Button className="gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-          <Plus className="w-5 h-5" />
-          {t('common.add')}
+        <Button
+          className={cn(
+            'gap-2 rounded-xl shadow-lg',
+            triggerVariant === 'scan'
+              ? 'bg-ai hover:bg-ai/90 text-ai-foreground shadow-ai/20'
+              : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20',
+            triggerClassName,
+          )}
+        >
+          {triggerIcon ?? (triggerVariant === 'scan' ? <ScanLine className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
+          {triggerLabel ?? t('common.add')}
         </Button>
       </DialogTrigger>
       <DialogContent 
