@@ -61,7 +61,7 @@ project_id = "fzalxjretvtvokiotvkf"
   [functions.project-insights]
     verify_jwt = true
   [functions.parse-standup]
-    verify_jwt = true
+    verify_jwt = false
 
 [studio]
   enabled = true
