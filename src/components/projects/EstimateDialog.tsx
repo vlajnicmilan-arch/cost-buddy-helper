@@ -46,7 +46,7 @@ export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogP
   const [clientName, setClientName] = useState('');
   const [clientOib, setClientOib] = useState('');
   const [clientAddress, setClientAddress] = useState('');
-  const [items, setItems] = useState<EstimateItem[]>([{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: VAT_RATE * 100 }]);
+  const [items, setItems] = useState<EstimateItem[]>([{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: DEFAULT_VAT }]);
   const [validUntil, setValidUntil] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -56,24 +56,24 @@ export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogP
       setClientName(estimate.client_name);
       setClientOib(estimate.client_oib || '');
       setClientAddress(estimate.client_address || '');
-      setItems(estimate.items.length > 0 ? estimate.items : [{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: VAT_RATE * 100 }]);
+      setItems(estimate.items.length > 0 ? estimate.items : [{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: DEFAULT_VAT }]);
       setValidUntil(estimate.valid_until || '');
       setNotes(estimate.notes || '');
     } else if (open) {
       setClientName('');
       setClientOib('');
       setClientAddress('');
-      setItems([{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: VAT_RATE * 100 }]);
+      setItems([{ description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: DEFAULT_VAT }]);
       setValidUntil('');
-      setNotes('');
+      setNotes(!isVatPayer && vatExemptionNote ? vatExemptionNote : '');
     }
-  }, [open, estimate]);
+  }, [open, estimate, DEFAULT_VAT, isVatPayer, vatExemptionNote]);
 
   const updateItem = (idx: number, patch: Partial<EstimateItem>) => {
     setItems(items.map((it, i) => i === idx ? { ...it, ...patch } : it));
   };
 
-  const addItem = () => setItems([...items, { description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: VAT_RATE * 100 }]);
+  const addItem = () => setItems([...items, { description: '', quantity: 1, unit_price: 0, unit: 'kom', vat_rate: DEFAULT_VAT }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
 
   const subtotal = items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0), 0);
