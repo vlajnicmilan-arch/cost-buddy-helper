@@ -4,17 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjectDocuments } from '@/hooks/useProjectDocuments';
-import { readDocument, getDocumentBase64, ProjectDocumentRow, StorageMode } from '@/lib/documentStorage';
+import { readDocument, getDocumentBase64, dataUrlToFile, ProjectDocumentRow, StorageMode } from '@/lib/documentStorage';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import {
   Upload, FileText, Image as ImageIcon, Trash2, Sparkles,
-  Smartphone, Cloud, Eye, Loader2, FileType
+  Smartphone, Cloud, Eye, Loader2, FileType, Camera as CameraIcon, ImagePlus, ChevronDown
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/EmptyState';
 
 interface ProjectDocumentsTabProps {
@@ -25,6 +27,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { documents, loading, uploadDocument, removeDocument, updateAnalysis } = useProjectDocuments(projectId);
+  const { takePhoto, pickFromGallery, cameraInputRef, galleryInputRef } = useNativeCamera();
 
   const [previewDoc, setPreviewDoc] = useState<ProjectDocumentRow | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
@@ -33,9 +36,37 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
   const [uploadingMode, setUploadingMode] = useState<StorageMode>('local');
   const [uploading, setUploading] = useState(false);
 
-  const handleFile = async (mode: StorageMode) => {
+  const triggerFilePicker = (mode: StorageMode) => {
     setUploadingMode(mode);
     fileInputRef.current?.click();
+  };
+
+  const handleCamera = async (mode: StorageMode) => {
+    try {
+      const dataUrl = await takePhoto();
+      if (!dataUrl) return;
+      const file = dataUrlToFile(dataUrl, `photo_${Date.now()}.jpg`);
+      setUploading(true);
+      await uploadDocument(file, mode);
+    } catch (err: any) {
+      showError(err?.message || t('projects.documents.cameraError', 'Greška kamere'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleGallery = async (mode: StorageMode) => {
+    try {
+      const dataUrl = await pickFromGallery();
+      if (!dataUrl) return;
+      const file = dataUrlToFile(dataUrl, `image_${Date.now()}.jpg`);
+      setUploading(true);
+      await uploadDocument(file, mode);
+    } catch (err: any) {
+      showError(err?.message || t('projects.documents.galleryError', 'Greška galerije'));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const onFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
