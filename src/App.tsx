@@ -24,6 +24,7 @@ import { lazy, Suspense } from "react";
 import StatusFeedback from "@/components/StatusFeedback";
 import { useAuth } from "@/hooks/useAuth";
 import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
+import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
 
 const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
@@ -259,6 +260,7 @@ const App = () => (
                     <BackButtonProvider>
                       <DeepLinkInit />
                       <DiagnosticRouteTracker />
+                      <BusinessModeGuard />
                       <RouteAwareGlobalOverlays />
                       <AppRoutes />
                     </BackButtonProvider>
