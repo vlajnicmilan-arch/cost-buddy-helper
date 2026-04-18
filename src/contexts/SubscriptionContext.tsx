@@ -43,8 +43,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const checkSubscription = useCallback(async () => {
     if (!session?.access_token) {
-      console.log('[Subscription] No session, skipping check');
-      setLoading(false);
+      // No session yet — stay in "loading" state to avoid downstream guards
+      // reacting to a provisional 'free' tier before auth has resolved.
+      console.log('[Subscription] No session yet, keeping loading=true until auth resolves');
       return;
     }
 
@@ -53,8 +54,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Get fresh token to avoid stale JWT issues
       const freshToken = await getFreshAccessToken();
       if (!freshToken) {
-        console.log('[Subscription] No fresh token available, skipping');
-        setLoading(false);
+        console.log('[Subscription] No fresh token available, will retry next cycle');
         return;
       }
 
@@ -81,16 +81,19 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setTrialExpired(false);
         setTrialDaysRemaining(0);
       }
+      // Mark resolved only after a real backend response
+      setLoading(false);
     } catch (err) {
       // Silently handle auth/JWT errors — they'll resolve on next cycle
+      // IMPORTANT: do NOT reset tier/subscribed to defaults — preserve last known
+      // good state so transient errors don't strip access (and disable business mode).
       const errMsg = String((err as any)?.message || err);
       if (/jwt|token.*expir|unauthorized/i.test(errMsg)) {
         console.log('[Subscription] Transient auth error, will retry next cycle');
       } else {
         console.error('Error checking subscription:', err);
       }
-    } finally {
-      setLoading(false);
+      // Do not flip loading=false here — keep guards waiting until we get a real answer.
     }
   }, [session?.access_token, user?.created_at]);
 
