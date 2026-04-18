@@ -14,8 +14,9 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3 } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks } from 'lucide-react';
 import { MilestoneKanban } from './MilestoneKanban';
+import { MilestoneChecklist } from './MilestoneChecklist';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -274,6 +275,18 @@ export const ProjectMilestonesTab = ({
                         </span>
                       )}
                     </div>
+
+                    <details className="mt-3 group/check">
+                      <summary className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer hover:text-foreground select-none">
+                        <ListChecks className="w-3.5 h-3.5" />
+                        {t('projects.checklist.title', 'Koraci za izvođenje')}
+                      </summary>
+                      <MilestoneChecklist
+                        milestoneId={milestone.id}
+                        milestoneName={milestone.name}
+                        canEdit={isManager}
+                      />
+                    </details>
                   </div>
 
                   {isManager && (

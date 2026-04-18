@@ -19,8 +19,9 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  Briefcase, FolderOpen, HelpCircle
+  Briefcase, FolderOpen, HelpCircle, Share2
 } from 'lucide-react';
+import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
 import { format } from 'date-fns';
@@ -62,6 +63,7 @@ export const ProjectFullScreenView = ({
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -198,6 +200,17 @@ export const ProjectFullScreenView = ({
                   )}
                 </div>
 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShareOpen(true)}
+                  className="shrink-0"
+                  title={t('projects.share.title', 'Podijeli s klijentom')}
+                >
+                  <Share2 className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">{t('projects.share.button', 'Podijeli')}</span>
+                </Button>
+
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -209,6 +222,13 @@ export const ProjectFullScreenView = ({
                 </Button>
               </div>
             </div>
+
+            <ProjectShareDialog
+              open={shareOpen}
+              onOpenChange={setShareOpen}
+              projectId={project.id}
+              projectName={project.name}
+            />
 
             {/* Reports Dialog */}
             <ProjectReportsDialog

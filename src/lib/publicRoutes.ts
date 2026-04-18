@@ -29,6 +29,7 @@ const PUBLIC_ROUTE_PREFIXES: ReadonlyArray<string> = [
   "/join-project/",
   "/join-budget/",
   "/join-family/",
+  "/p/",
 ];
 
 /** Normalize a pathname so trailing slashes / casing don't create gaps. */
