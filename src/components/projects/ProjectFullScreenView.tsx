@@ -58,6 +58,7 @@ export const ProjectFullScreenView = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [activeTab, setActiveTab] = useState(initialTab || 'timeline');
+  const [activeGroup, setActiveGroup] = useState<TabGroup>('work');
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
