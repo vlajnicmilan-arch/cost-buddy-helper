@@ -63,51 +63,40 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
     }
   }, [location.state, projects]);
 
-  // Fetch stats for all projects - unified logic: spent = sum of completed milestones budgets
-  const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
+  // Fetch stats for all projects (parallel batch query)
+  const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number; milestones: Array<{ status: any; due_date?: string | null }> }>>({});
 
   const fetchAllStats = useCallback(async () => {
     if (projects.length === 0) return;
     const projectIds = projects.map(p => p.id);
 
-    // 1 BATCH QUERY for all expenses
-    const { data: allExpenses } = await (supabase
-      .from('expenses')
-      .select('project_id, amount, type, status, expense_nature') as any)
-      .in('project_id', projectIds);
+    const [expensesRes, fundingRes, milestonesRes, membersRes] = await Promise.all([
+      (supabase.from('expenses').select('project_id, amount, type, status, expense_nature') as any).in('project_id', projectIds),
+      supabase.from('project_funding').select('project_id, allocated_amount').in('project_id', projectIds),
+      supabase.from('project_milestones').select('project_id, budget, status, due_date').in('project_id', projectIds),
+      (supabase.from('project_members') as any).select('project_id').in('project_id', projectIds),
+    ]);
 
-    // 1 BATCH QUERY for all funding
-    const { data: allFunding } = await supabase
-      .from('project_funding')
-      .select('project_id, allocated_amount')
-      .in('project_id', projectIds);
-
-    // 1 BATCH QUERY for all milestones
-    const { data: allMilestones } = await supabase
-      .from('project_milestones')
-      .select('project_id, budget, status')
-      .in('project_id', projectIds);
-
-    // 1 BATCH QUERY for member counts (group manually)
-    const { data: allMembers } = await (supabase
-      .from('project_members') as any)
-      .select('project_id')
-      .in('project_id', projectIds);
+    const allExpenses = expensesRes.data || [];
+    const allFunding = fundingRes.data || [];
+    const allMilestones = milestonesRes.data || [];
+    const allMembers = membersRes.data || [];
 
     const { calculateProjectSpent, calculateProjectIncome } = await import('@/lib/projectCalculations');
-    const stats: Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }> = {};
+    const stats: typeof projectStats = {};
 
     for (const project of projects) {
-      const projExpenses = (allExpenses || []).filter((e: any) => e.project_id === project.id);
-      const projFunding = (allFunding || []).filter((f: any) => f.project_id === project.id);
-      const projMilestones = (allMilestones || []).filter((m: any) => m.project_id === project.id);
-      const memberCount = (allMembers || []).filter((m: any) => m.project_id === project.id).length;
+      const projExpenses = allExpenses.filter((e: any) => e.project_id === project.id);
+      const projFunding = allFunding.filter((f: any) => f.project_id === project.id);
+      const projMilestones = allMilestones.filter((m: any) => m.project_id === project.id);
+      const memberCount = allMembers.filter((m: any) => m.project_id === project.id).length;
 
       stats[project.id] = {
         spent: calculateProjectSpent(projExpenses),
         income: calculateProjectIncome(projExpenses, projFunding),
         memberCount,
         milestoneCount: projMilestones.length,
+        milestones: projMilestones.map((m: any) => ({ status: m.status, due_date: m.due_date })),
       };
     }
 
@@ -268,6 +257,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
                   income={projectStats[project.id]?.income || 0}
                   memberCount={projectStats[project.id]?.memberCount || 0}
                   milestoneCount={projectStats[project.id]?.milestoneCount || 0}
+                  milestones={projectStats[project.id]?.milestones || []}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onClick={handleProjectClick}
