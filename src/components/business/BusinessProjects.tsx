@@ -475,6 +475,15 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Daily Standup Sheet */}
+      <DailyStandupSheet
+        open={standupOpen}
+        onOpenChange={setStandupOpen}
+        projects={businessProjects}
+        initialProjectId={standupProject?.id || null}
+        onApplied={() => { fetchAllStats(); onRefreshExpenses?.(); }}
+      />
     </div>
   );
 };
