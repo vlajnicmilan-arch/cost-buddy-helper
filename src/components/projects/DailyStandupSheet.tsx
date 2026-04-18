@@ -138,7 +138,7 @@ export const DailyStandupSheet = ({
       }
     } catch (err: any) {
       console.error('Mic permission error:', err);
-      showError(t('projects.standup.permissionDenied', 'Pristup mikrofonu odbijen. Dopusti mikrofon u postavkama preglednika.'));
+      setShowPermissionHelp(true);
       return;
     }
 
