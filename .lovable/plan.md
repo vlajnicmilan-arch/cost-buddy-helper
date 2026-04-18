@@ -1,49 +1,63 @@
 
-## Plan: Native govor-u-tekst preko Capacitor plugina
+Da, točno tako. Kod je 100% spreman u repozitoriju, ali nativni dio (Android plugin + `RECORD_AUDIO` permission u `AndroidManifest.xml`) mora se "uplesti" u APK na tvom računalu jer se `android/` mapa ne nalazi u repozitoriju.
 
-### Što ćemo napraviti
-Zamijeniti trenutni Web Speech API (koji ne radi pouzdano u Android WebView-u) s nativnim **`@capacitor-community/speech-recognition`** pluginom. On koristi Android sustavski govor-u-tekst i automatski traži dozvole na nativnoj razini.
+## Što ti trebaš napraviti (5 koraka, ~10 min)
 
-### Kako će raditi
-1. Klik na "Snimaj" → plugin provjeri dozvolu → ako nema, **iskače nativni Android prompt** ("Allow V&M Balance to record audio?")
-2. Korisnik dopusti → snimanje kreće preko Android Speech Recognizera (hr-HR)
-3. Tekst se popunjava u Textarea u real-time (partialResults)
-4. U PWA / pregledniku → automatski fallback na postojeći Web Speech API
-
-### Tehničke izmjene
-
-**1. Dodati npm paket**
-- `@capacitor-community/speech-recognition` (~v6/v7, kompatibilan s Capacitor 8)
-
-**2. Refaktorirati `src/components/projects/DailyStandupSheet.tsx`**
-- Detektirati platformu pomoću `Capacitor.isNativePlatform()`
-- Native grana: `SpeechRecognition.requestPermissions()` → `SpeechRecognition.start({ language: 'hr-HR', partialResults: true, popup: false })`
-- Listener: `SpeechRecognition.addListener('partialResults', ...)` puni textarea
-- Web grana: zadržati postojeći `webkitSpeechRecognition` kod
-- Pozivati `SpeechRecognition.stop()` i ukloniti listenere u `stopRecording` + na zatvaranju sheeta
-
-**3. Bolje poruke za korisnika**
-- Ako korisnik odbije dozvolu → toast: "Dopusti mikrofon u Postavke → Aplikacije → V&M Balance → Dopuštenja"
-- Help dijalog (`showPermissionHelp`) ažurirati za nativne upute
-
-### Što TI moraš napraviti na računalu nakon ovog (jednom!)
-
-Ovo Lovable ne može — moraš ručno:
-
+### 1. Povuci najnoviji kod
+U terminalu, u korijenu projekta:
 ```bash
 git pull
-npm install --legacy-peer-deps
-npx cap sync android
-npx cap open android
 ```
 
-Plugin **automatski dodaje** `RECORD_AUDIO` permission u `AndroidManifest.xml` kroz `cap sync`, pa nećeš ručno ništa editirati. Onda u Android Studiju → **Build → Generate Signed App Bundle/APK** → instaliraj novi APK na mobitel.
+### 2. Instaliraj novi plugin
+```bash
+npm install --legacy-peer-deps
+```
+Ovo će instalirati `@capacitor-community/speech-recognition` koji smo dodali u `package.json`.
 
-### Rizik / fallback
-- Ako plugin ne podržava hr-HR na starijem Androidu (rijetko), pluš se vrati na engleski automatski
-- Ako instalacija plugina ne uspije zbog peer-dep konflikta s Capacitor 8, koristit ćemo `--legacy-peer-deps` (već koristiš)
+### 3. Sinkroniziraj s Androidom (KLJUČNI KORAK)
+```bash
+npm run build
+npx cap sync android
+```
+Ova naredba **automatski**:
+- kopira plugin u `android/` mapu
+- dodaje `<uses-permission android:name="android.permission.RECORD_AUDIO" />` u `AndroidManifest.xml`
+- dodaje `<queries>` za `RECOGNIZE_SPEECH` intent
 
-### Datoteke koje će se mijenjati
-- `package.json` (+1 paket)
-- `src/components/projects/DailyStandupSheet.tsx` (refaktor `startRecording`/`stopRecording`)
-- `src/i18n/locales/{hr,en,de}.json` (par novih poruka za dozvole)
+Ne moraš ručno editirati nijednu Android datoteku.
+
+### 4. Otvori Android Studio i napravi APK
+```bash
+npx cap open android
+```
+U Android Studiju:
+- **Build → Generate Signed App Bundle / APK**
+- Odaberi **APK**
+- Koristi svoj postojeći keystore (isti kao i prošli put)
+- Build varijanta: **release**
+
+### 5. Instaliraj APK na mobitel
+- Pošalji APK na mobitel (Drive/Email/USB)
+- Otvori datoteku na mobitelu → Instaliraj
+- **Pri prvom kliku na mikrofon u Daily Standupu** iskočit će nativni Android prompt: *"Allow V&M Balance to record audio?"* → klikni **Allow**
+
+## Kako provjeriti da je uspjelo
+1. Otvori projekt → Daily Standup → klikni mikrofon
+2. Trebao bi se pojaviti **sustavski Android dialog** za dozvolu (nije isti kao web)
+3. Nakon dopuštenja, govori hrvatski → tekst se popunjava u textarea u real-time
+
+## Ako nešto pukne
+- **`npm install` greška**: probaj `npm install --force` umjesto `--legacy-peer-deps`
+- **`cap sync` greška o nedostajućem android folderu**: pokreni `npx cap add android` pa opet `npx cap sync android`
+- **Mikrofon i dalje ne traži dozvolu**: javi mi, provjerit ćemo `AndroidManifest.xml` (možeš ga otvoriti u Android Studiju pod `app/manifests/`)
+
+## Što JA ne mogu napraviti
+- Pokrenuti `npx cap sync` (nema Android SDK u sandboxu)
+- Generirati potpisani APK (nema tvojeg keystorea)
+- Instalirati APK na tvoj mobitel
+
+## Što JA mogu napraviti ako zatreba
+- Dodati waveform animaciju dok snima
+- Poboljšati error poruke
+- Dodati gumb "Otvori postavke aplikacije" ako korisnik trajno odbije dozvolu
