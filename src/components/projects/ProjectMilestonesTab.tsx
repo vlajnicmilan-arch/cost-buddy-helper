@@ -195,7 +195,7 @@ export const ProjectMilestonesTab = ({
           <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>{t('projects.noMilestones')}</p>
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="space-y-3">
           {milestones.map((milestone) => {
             const budgetUsed = milestone.budget > 0 
