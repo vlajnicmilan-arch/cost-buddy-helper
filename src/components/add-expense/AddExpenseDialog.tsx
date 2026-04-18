@@ -704,7 +704,7 @@ export const AddExpenseDialog = ({
           className={cn(
             'gap-2 rounded-xl shadow-lg',
             triggerVariant === 'scan'
-              ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-600/20 dark:bg-violet-500 dark:hover:bg-violet-600'
+              ? 'bg-ai hover:bg-ai/90 text-ai-foreground shadow-ai/20'
               : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20',
             triggerClassName,
           )}
