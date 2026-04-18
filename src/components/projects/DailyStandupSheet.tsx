@@ -165,7 +165,7 @@ export const DailyStandupSheet = ({
       if (errorType === 'no-speech' || errorType === 'aborted') return;
       if (errorType === 'not-allowed' || errorType === 'service-not-allowed') {
         manualStopRef.current = true;
-        showError(t('projects.standup.permissionDenied', 'Pristup mikrofonu odbijen. Dopusti mikrofon u postavkama preglednika.'));
+        setShowPermissionHelp(true);
         setRecording(false);
         return;
       }
