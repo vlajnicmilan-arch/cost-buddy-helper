@@ -619,6 +619,8 @@
   },
   "summary": {
     "balance": "Stanje",
+    "available": "Slobodno",
+    "availableHint": "po svim računima",
     "netWorth": "Neto vrijednost",
     "totalIncome": "Ukupni prihodi",
     "totalExpenses": "Ukupni troškovi",
@@ -630,7 +632,9 @@
     "recurringManage": "Upravljaj →",
     "trendUp": "+{{percent}}% ↑",
     "trendDown": "-{{percent}}% ↓",
-    "vsLastMonth": "u odnosu na prošli mjesec"
+    "vsLastMonth": "u odnosu na prošli mjesec",
+    "lessThanLastMonth": "manje nego prošli mj. ✓",
+    "moreThanLastMonth": "više nego prošli mj."
   },
   "backup": {
     "title": "Backup",
