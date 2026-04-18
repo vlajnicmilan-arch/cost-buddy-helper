@@ -487,6 +487,7 @@
     "transfersNoImpact": "Transfers don't affect balances",
     "daysLeft": "days",
     "finances": "Finances",
+    "tapToExpand": "tap to expand",
     "account": "account",
     "accounts": "accounts",
     "reorderMode": "Reorder",
@@ -619,6 +620,8 @@
   },
   "summary": {
     "balance": "Balance",
+    "available": "Available",
+    "availableHint": "across all accounts",
     "netWorth": "Net Worth",
     "totalIncome": "Total Income",
     "totalExpenses": "Total Expenses",
@@ -630,7 +633,9 @@
     "recurringManage": "Manage →",
     "trendUp": "+{{percent}}% ↑",
     "trendDown": "-{{percent}}% ↓",
-    "vsLastMonth": "vs last month"
+    "vsLastMonth": "vs last month",
+    "lessThanLastMonth": "less than last month ✓",
+    "moreThanLastMonth": "more than last month"
   },
   "backup": {
     "title": "Backup",

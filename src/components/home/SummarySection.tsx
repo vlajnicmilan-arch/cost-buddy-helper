@@ -77,11 +77,12 @@ export const SummarySection = React.memo(({
           <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-[0.06] pointer-events-none" style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)' }} />
           <div className="relative flex items-center justify-center gap-2 mb-1">
             <Wallet className="w-4 h-4 text-primary" />
-            <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.balance')}</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.available', 'Slobodno')}</span>
           </div>
           <p className={`relative text-base sm:text-xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
             {formatAmount(balance)}
           </p>
+          <p className="text-[9px] text-muted-foreground mt-0.5">{t('summary.availableHint', 'po svim računima')}</p>
         </motion.div>
 
         <motion.div
@@ -155,13 +156,17 @@ export const SummarySection = React.memo(({
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
           </div>
           <p className="relative text-base sm:text-xl font-bold text-destructive">{formatAmount(totalExpenses)}</p>
-          {expenseTrendPercent !== null && Math.abs(expenseTrendPercent) < 100 && (
+          {expenseTrendPercent !== null && Math.abs(expenseTrendPercent) < 1000 && (
             <div className="relative flex flex-col items-center">
               <span className={`text-[10px] sm:text-xs font-medium ${expenseTrendPercent <= 0 ? 'text-income' : 'text-destructive'}`}>
                 {expenseTrendPercent >= 0 ? `+${expenseTrendPercent}%` : `${expenseTrendPercent}%`}
                 {expenseTrendPercent >= 0 ? ' ↑' : ' ↓'}
               </span>
-              <span className="text-[9px] text-muted-foreground">{t('summary.vsLastMonth')}</span>
+              <span className="text-[9px] text-muted-foreground">
+                {expenseTrendPercent <= 0
+                  ? t('summary.lessThanLastMonth', 'manje nego prošli mj. ✓')
+                  : t('summary.moreThanLastMonth', 'više nego prošli mj.')}
+              </span>
             </div>
           )}
         </motion.div>

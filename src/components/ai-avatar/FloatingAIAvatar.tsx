@@ -186,7 +186,7 @@ export const FloatingAIAvatar = ({
       {/* Avatar container */}
       <motion.button
         className={cn(
-          "relative w-[112px] h-[112px] cursor-pointer select-none touch-none bg-transparent",
+          "relative w-[72px] h-[72px] cursor-pointer select-none touch-none bg-transparent",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
         style={{ background: 'transparent' }}
@@ -220,7 +220,7 @@ export const FloatingAIAvatar = ({
             >
               <GhostAvatar
                 mood={mood}
-                size={112}
+                size={72}
                 isBlinking={isBlinking}
                 eyePosition={eyePosition}
               />
