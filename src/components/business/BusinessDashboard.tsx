@@ -110,6 +110,8 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable }: P
 
       {/* Project Status Board */}
       <ProjectStatusBoard />
+
+      {(totalReceivable > 0 || totalPayable > 0) && (
         <div className="grid grid-cols-2 gap-3">
           <Card className="border-none shadow-sm bg-income/5">
             <CardContent className="p-3">
