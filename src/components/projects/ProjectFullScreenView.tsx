@@ -96,8 +96,29 @@ export const ProjectFullScreenView = ({
   useEffect(() => {
     if (!open) {
       setActiveTab('timeline');
+      setActiveGroup('work');
     }
   }, [open, project?.id]);
+
+  // Map tab to its group (for auto-switching group when initialTab is set)
+  const TAB_TO_GROUP: Record<string, TabGroup> = {
+    overview: 'work',
+    timeline: 'work',
+    milestones: 'work',
+    documents: 'work',
+    members: 'people',
+    workers: 'people',
+    collaborators: 'people',
+    funding: 'money',
+    transactions: 'money',
+    timeclock: 'people',
+  };
+
+  useEffect(() => {
+    const grp = TAB_TO_GROUP[activeTab];
+    if (grp && grp !== activeGroup) setActiveGroup(grp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   // Handle browser back button
   useEffect(() => {
