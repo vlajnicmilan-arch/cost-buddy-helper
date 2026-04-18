@@ -95,8 +95,23 @@ export const DailyStandupSheet = ({
       setText('');
       setParsed(null);
       setWorkerSelections({});
+      // Ensure native listeners are cleaned when sheet closes
+      if (Capacitor.isNativePlatform()) {
+        SpeechRecognition.stop().catch(() => { /* noop */ });
+        SpeechRecognition.removeAllListeners().catch(() => { /* noop */ });
+      }
     }
   }, [open]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (Capacitor.isNativePlatform()) {
+        SpeechRecognition.stop().catch(() => { /* noop */ });
+        SpeechRecognition.removeAllListeners().catch(() => { /* noop */ });
+      }
+    };
+  }, []);
 
   // Set default project
   useEffect(() => {
