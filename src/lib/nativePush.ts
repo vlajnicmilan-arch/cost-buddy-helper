@@ -79,7 +79,7 @@ export async function unregisterNativePush(): Promise<void> {
 export async function autoRegisterIfEnabled(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    const enabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
+    const enabled = localStorage.getItem('vm-push-notifications-enabled') === 'true';
     if (!enabled) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
