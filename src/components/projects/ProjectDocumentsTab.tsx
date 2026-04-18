@@ -172,7 +172,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
           </div>
         ) : documents.length === 0 ? (
           <EmptyState
-            variant="default"
+            variant="generic"
             title={t('projects.documents.noDocuments', 'Nema dokumenata')}
             description={t('projects.documents.noDocumentsHint', 'Dodajte račune, ugovore, slike ili druge datoteke.')}
           />

@@ -48,46 +48,42 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   // Fetch stats for all business projects
   const fetchAllStats = useCallback(async () => {
     if (businessProjects.length === 0) return;
+    const projectIds = businessProjects.map(p => p.id);
+
+    const { data: allExpenses } = await (supabase
+      .from('expenses')
+      .select('project_id, amount, type, status, expense_nature') as any)
+      .in('project_id', projectIds);
+
+    const { data: allFunding } = await supabase
+      .from('project_funding')
+      .select('project_id, allocated_amount')
+      .in('project_id', projectIds);
+
+    const { data: allMilestones } = await supabase
+      .from('project_milestones')
+      .select('project_id')
+      .in('project_id', projectIds);
+
+    const { data: allMembers } = await (supabase
+      .from('project_members') as any)
+      .select('project_id')
+      .in('project_id', projectIds);
+
+    const { calculateProjectSpent, calculateProjectIncome } = await import('@/lib/projectCalculations');
     const stats: Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }> = {};
-    
+
     for (const project of businessProjects) {
-      const { data: expenses } = await (supabase
-        .from('expenses')
-        .select('amount, type, status') as any)
-        .eq('project_id', project.id);
-
-      const approvedIncomes = (expenses || []).filter(
-        (e: any) => e.type === 'income' && (!e.status || e.status === 'approved')
-      );
-      const income = approvedIncomes.reduce((sum: number, e: any) => sum + Number(e.amount), 0);
-
-      const { data: fundingData } = await supabase
-        .from('project_funding')
-        .select('allocated_amount')
-        .eq('project_id', project.id);
-      const fundingTotal = (fundingData || []).reduce((sum, f) => sum + Number(f.allocated_amount || 0), 0);
-
-      const { data: milestones } = await supabase
-        .from('project_milestones')
-        .select('budget, status')
-        .eq('project_id', project.id);
-
-      // Calculate spent from actual approved expense transactions
-      const approvedExpenses = (expenses || []).filter(
-        (e: any) => e.type === 'expense' && (!e.status || e.status === 'approved')
-      );
-      const spent = approvedExpenses.reduce((sum: number, e: any) => sum + Number(e.amount), 0);
-
-      const { count: memberCount } = await (supabase
-        .from('project_members') as any)
-        .select('*', { count: 'exact', head: true })
-        .eq('project_id', project.id);
+      const projExpenses = (allExpenses || []).filter((e: any) => e.project_id === project.id);
+      const projFunding = (allFunding || []).filter((f: any) => f.project_id === project.id);
+      const milestoneCount = (allMilestones || []).filter((m: any) => m.project_id === project.id).length;
+      const memberCount = (allMembers || []).filter((m: any) => m.project_id === project.id).length;
 
       stats[project.id] = {
-        spent,
-        income: income + fundingTotal,
-        memberCount: memberCount || 0,
-        milestoneCount: (milestones || []).length,
+        spent: calculateProjectSpent(projExpenses),
+        income: calculateProjectIncome(projExpenses, projFunding),
+        memberCount,
+        milestoneCount,
       };
     }
     setProjectStats(stats);

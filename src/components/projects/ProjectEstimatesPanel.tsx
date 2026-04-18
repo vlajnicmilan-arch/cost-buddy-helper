@@ -52,7 +52,7 @@ export const ProjectEstimatesPanel = () => {
         </div>
       ) : estimates.length === 0 ? (
         <EmptyState
-          variant="default"
+          variant="generic"
           title={t('estimates.empty', 'Nema ponuda')}
           description={t('estimates.emptyHint', 'Kreirajte ponudu i pošaljite je klijentu. Po prihvaćanju je možete pretvoriti u projekt.')}
         />
