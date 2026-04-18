@@ -125,9 +125,9 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName 
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {link.revoked_at && <Badge variant="destructive" className="text-[10px] h-4 px-1">{t('projects.share.revoked', 'Opozvan')}</Badge>}
                       {expired && !link.revoked_at && <Badge variant="destructive" className="text-[10px] h-4 px-1">{t('projects.share.expired', 'Istekao')}</Badge>}
-                      {link.show_financials && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.fin', 'Fin.')}</Badge>}
-                      {link.show_photos && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.ph', 'Foto')}</Badge>}
-                      {link.show_milestones && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.ms', 'Faze')}</Badge>}
+                      {!!link.show_financials && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.fin', 'Fin.')}</Badge>}
+                      {!!link.show_photos && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.ph', 'Foto')}</Badge>}
+                      {!!link.show_milestones && <Badge variant="outline" className="text-[10px] h-4 px-1">{t('projects.share.ms', 'Faze')}</Badge>}
                       <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1">
                         <Eye className="w-3 h-3" /> {link.view_count}
                       </span>

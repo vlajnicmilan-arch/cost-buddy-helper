@@ -50,6 +50,7 @@ const Paywall = lazy(() => import("./pages/Paywall"));
 const Landing = lazy(() => import("./pages/Landing"));
 const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const PublicProject = lazy(() => import("./pages/PublicProject"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -155,6 +156,7 @@ const AppRoutes = () => {
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
+          <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -201,6 +203,7 @@ const AppRoutes = () => {
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
+          <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/auth" replace />} />
         </Routes>
@@ -239,6 +242,7 @@ const AppRoutes = () => {
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
       <Route path="/unsubscribe" element={<Suspense fallback={<PageLoader />}><Unsubscribe /></Suspense>} />
+      <Route path="/p/:token" element={<Suspense fallback={<PageLoader />}><PublicProject /></Suspense>} />
       <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
     </Routes>
   );
