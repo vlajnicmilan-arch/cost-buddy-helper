@@ -84,6 +84,7 @@ export const DailyStandupSheet = ({
   const [projectWorkers, setProjectWorkers] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const [applying, setApplying] = useState(false);
   const [workDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [showPermissionHelp, setShowPermissionHelp] = useState(false);
 
   // Reset on close
   useEffect(() => {
