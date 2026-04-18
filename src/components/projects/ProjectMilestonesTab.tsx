@@ -158,13 +158,36 @@ export const ProjectMilestonesTab = ({
 
   return (
     <div className="space-y-4">
-      {isManager && (
-        <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)} size="sm">
+          <ToggleGroupItem value="list" className="h-8 px-2.5 gap-1.5 text-xs">
+            <List className="w-3.5 h-3.5" />
+            {t('projects.kanban.list', 'Lista')}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="kanban" className="h-8 px-2.5 gap-1.5 text-xs">
+            <Columns3 className="w-3.5 h-3.5" />
+            {t('projects.kanban.board', 'Ploča')}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        {isManager && (
           <Button onClick={() => openDialog()} size="sm">
             <Plus className="w-4 h-4 mr-2" />
             {t('projects.addMilestone')}
           </Button>
-        </div>
+        )}
+      </div>
+
+      {viewMode === 'kanban' && milestones.length > 0 && (
+        <MilestoneKanban
+          milestones={milestones}
+          isManager={isManager}
+          onEdit={(m) => openDialog(m)}
+          onDelete={handleDelete}
+          onStatusChange={async (m, newStatus) => {
+            await updateMilestone({ ...m, status: newStatus });
+            onRefetch();
+          }}
+        />
       )}
 
       {milestones.length === 0 ? (
