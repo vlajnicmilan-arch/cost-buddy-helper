@@ -141,53 +141,99 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
           className="hidden"
           onChange={onFileChosen}
         />
+        {/* Web-fallback inputs for camera & gallery (used by useNativeCamera on web) */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+        />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+        />
 
-        {/* Upload buttons */}
-        <div className="grid grid-cols-2 gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
+        {/* Upload buttons: Camera / Gallery / File — each with local/cloud choice */}
+        <div className="grid grid-cols-3 gap-2">
+          {/* Slikaj */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="default"
                 className="h-auto py-3 flex-col gap-1"
-                onClick={() => handleFile('local')}
                 disabled={uploading}
               >
-                <div className="flex items-center gap-2">
-                  <Smartphone className="w-4 h-4" />
-                  <span className="font-medium">{t('projects.documents.uploadLocal', 'Lokalno')}</span>
-                </div>
-                <span className="text-[10px] opacity-80">{t('projects.documents.uploadLocalHint', 'Samo na ovom uređaju')}</span>
+                <CameraIcon className="w-5 h-5" />
+                <span className="text-xs font-medium">{t('projects.documents.takePhoto', 'Slikaj')}</span>
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs max-w-[200px]">
-                {t('projects.documents.tooltipLocal', 'Dokument se sprema na uređaj — ne zauzima prostor u oblaku, ne dijeli se s drugima.')}
-              </p>
-            </TooltipContent>
-          </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="z-[70]">
+              <DropdownMenuLabel className="text-xs">{t('projects.documents.saveTo', 'Spremi u')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleCamera('local')}>
+                <Smartphone className="w-4 h-4 mr-2" /> {t('projects.documents.modeLocal', 'Lokalno')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCamera('cloud')}>
+                <Cloud className="w-4 h-4 mr-2" /> {t('projects.documents.modeCloud', 'Oblak')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
+          {/* Galerija */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 className="h-auto py-3 flex-col gap-1"
-                onClick={() => handleFile('cloud')}
                 disabled={uploading}
               >
-                <div className="flex items-center gap-2">
-                  <Cloud className="w-4 h-4" />
-                  <span className="font-medium">{t('projects.documents.uploadCloud', 'U oblak')}</span>
-                </div>
-                <span className="text-[10px] opacity-80">{t('projects.documents.uploadCloudHint', 'Sinkronizacija + dijeljenje')}</span>
+                <ImagePlus className="w-5 h-5" />
+                <span className="text-xs font-medium">{t('projects.documents.gallery', 'Galerija')}</span>
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs max-w-[200px]">
-                {t('projects.documents.tooltipCloud', 'Dostupno svim članovima projekta na svim uređajima.')}
-              </p>
-            </TooltipContent>
-          </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="z-[70]">
+              <DropdownMenuLabel className="text-xs">{t('projects.documents.saveTo', 'Spremi u')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleGallery('local')}>
+                <Smartphone className="w-4 h-4 mr-2" /> {t('projects.documents.modeLocal', 'Lokalno')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleGallery('cloud')}>
+                <Cloud className="w-4 h-4 mr-2" /> {t('projects.documents.modeCloud', 'Oblak')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Datoteka */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-auto py-3 flex-col gap-1"
+                disabled={uploading}
+              >
+                <Upload className="w-5 h-5" />
+                <span className="text-xs font-medium">{t('projects.documents.file', 'Datoteka')}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="z-[70]">
+              <DropdownMenuLabel className="text-xs">{t('projects.documents.saveTo', 'Spremi u')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => triggerFilePicker('local')}>
+                <Smartphone className="w-4 h-4 mr-2" /> {t('projects.documents.modeLocal', 'Lokalno')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => triggerFilePicker('cloud')}>
+                <Cloud className="w-4 h-4 mr-2" /> {t('projects.documents.modeCloud', 'Oblak')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        <p className="text-[11px] text-muted-foreground text-center">
+          {t('projects.documents.modeHint', 'Lokalno = samo na ovom uređaju · Oblak = dijeljeno sa svim članovima')}
+        </p>
 
         {uploading && (
           <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
