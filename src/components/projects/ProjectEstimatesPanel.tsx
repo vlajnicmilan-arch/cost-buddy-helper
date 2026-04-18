@@ -107,11 +107,15 @@ export const ProjectEstimatesPanel = () => {
         </div>
       )}
 
-      <EstimateDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        estimate={editingEstimate}
-      />
+      {dialogOpen && (
+        <Suspense fallback={null}>
+          <EstimateDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            estimate={editingEstimate}
+          />
+        </Suspense>
+      )}
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
