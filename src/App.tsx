@@ -20,11 +20,12 @@ import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { DiagnosticRouteTracker } from "@/components/DiagnosticRouteTracker";
 import { isPublicRoute } from "@/lib/publicRoutes";
 import { Loader2 } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import StatusFeedback from "@/components/StatusFeedback";
 import { useAuth } from "@/hooks/useAuth";
 import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
+import { autoRegisterIfEnabled } from "@/lib/nativePush";
 
 const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
@@ -70,6 +71,16 @@ const NativeInit = () => {
 
 const DeepLinkInit = () => {
   useDeepLinks();
+  return null;
+};
+
+const PushAutoRegister = () => {
+  const { user, authReady } = useAuth();
+  useEffect(() => {
+    if (authReady && user) {
+      autoRegisterIfEnabled();
+    }
+  }, [authReady, user?.id]);
   return null;
 };
 
