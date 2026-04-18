@@ -274,6 +274,7 @@ const App = () => (
                   <BrowserRouter>
                     <BackButtonProvider>
                       <DeepLinkInit />
+                      <PushAutoRegister />
                       <DiagnosticRouteTracker />
                       <BusinessModeGuard />
                       <RouteAwareGlobalOverlays />
