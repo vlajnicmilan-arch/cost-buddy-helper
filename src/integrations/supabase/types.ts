@@ -887,6 +887,7 @@ export type Database = {
           user_id: string
           vat_amount: number | null
           vat_rate: number | null
+          work_type: Database["public"]["Enums"]["expense_work_type"] | null
         }
         Insert: {
           ai_extracted?: boolean | null
@@ -919,6 +920,7 @@ export type Database = {
           user_id: string
           vat_amount?: number | null
           vat_rate?: number | null
+          work_type?: Database["public"]["Enums"]["expense_work_type"] | null
         }
         Update: {
           ai_extracted?: boolean | null
@@ -951,6 +953,7 @@ export type Database = {
           user_id?: string
           vat_amount?: number | null
           vat_rate?: number | null
+          work_type?: Database["public"]["Enums"]["expense_work_type"] | null
         }
         Relationships: [
           {
@@ -2082,8 +2085,12 @@ export type Database = {
       project_documents: {
         Row: {
           ai_analysis: Json | null
+          captured_at: string | null
           created_at: string
+          document_kind: string | null
           id: string
+          location_coords: string | null
+          location_name: string | null
           mime_type: string
           name: string
           project_id: string
@@ -2096,8 +2103,12 @@ export type Database = {
         }
         Insert: {
           ai_analysis?: Json | null
+          captured_at?: string | null
           created_at?: string
+          document_kind?: string | null
           id?: string
+          location_coords?: string | null
+          location_name?: string | null
           mime_type?: string
           name: string
           project_id: string
@@ -2110,8 +2121,12 @@ export type Database = {
         }
         Update: {
           ai_analysis?: Json | null
+          captured_at?: string | null
           created_at?: string
+          document_kind?: string | null
           id?: string
+          location_coords?: string | null
+          location_name?: string | null
           mime_type?: string
           name?: string
           project_id?: string
@@ -2615,6 +2630,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          archived_at: string | null
           business_profile_id: string | null
           color: string | null
           created_at: string
@@ -2630,6 +2646,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           business_profile_id?: string | null
           color?: string | null
           created_at?: string
@@ -2645,6 +2662,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           business_profile_id?: string | null
           color?: string | null
           created_at?: string
@@ -3407,6 +3425,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      expense_work_type:
+        | "material"
+        | "labor"
+        | "equipment"
+        | "permit"
+        | "subcontractor"
+        | "other"
       income_source_role: "owner" | "member"
       milestone_status: "pending" | "in_progress" | "completed" | "overdue"
       project_role: "manager" | "member" | "viewer"
@@ -3541,6 +3566,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      expense_work_type: [
+        "material",
+        "labor",
+        "equipment",
+        "permit",
+        "subcontractor",
+        "other",
+      ],
       income_source_role: ["owner", "member"],
       milestone_status: ["pending", "in_progress", "completed", "overdue"],
       project_role: ["manager", "member", "viewer"],

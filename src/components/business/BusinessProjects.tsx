@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,17 +9,28 @@ import { ProjectDialog } from '@/components/projects/ProjectDialog';
 import { ProjectFullScreenView } from '@/components/projects/ProjectFullScreenView';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, FolderKanban, Download, Loader2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { AnimatePresence, motion } from 'framer-motion';
 import { applyTemplateToProject } from '@/lib/projectTemplateApply';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
+import { dataUrlToFile, saveDocument } from '@/lib/documentStorage';
 
 interface BusinessProjectsProps {
   onRefreshExpenses?: () => void;
+}
+
+interface ProjectStat {
+  spent: number;
+  income: number;
+  memberCount: number;
+  milestoneCount: number;
+  milestones: Array<{ status: any; due_date?: string | null }>;
 }
 
 export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) => {
@@ -28,6 +39,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const { activeBusinessProfileId } = useAppState();
   const { formatAmount } = useCurrency();
   const { projects, loading, addProject, updateProject, deleteProject, refetch } = useProjects();
+  const { takePhoto, pickFromGallery, cameraInputRef, galleryInputRef } = useNativeCamera();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -39,56 +51,63 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [personalProjects, setPersonalProjects] = useState<any[]>([]);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
-  const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
+  const [projectStats, setProjectStats] = useState<Record<string, ProjectStat>>({});
+  const [quickPhotoOpen, setQuickPhotoOpen] = useState(false);
+  const [quickPhotoUploading, setQuickPhotoUploading] = useState(false);
+  const [quickPhotoSource, setQuickPhotoSource] = useState<'camera' | 'gallery' | null>(null);
 
-  // Filter only business projects for this profile
-  const businessProjects = projects.filter(p => 
-    (p as any).business_profile_id === activeBusinessProfileId
+  // Filter only business projects for this profile (memoized)
+  const businessProjects = useMemo(
+    () => projects.filter(p => (p as any).business_profile_id === activeBusinessProfileId),
+    [projects, activeBusinessProfileId]
   );
 
-  // Fetch stats for all business projects
+  // Stable key for stats refetch dependency
+  const projectIdsKey = useMemo(
+    () => businessProjects.map(p => p.id).sort().join(','),
+    [businessProjects]
+  );
+
+  // Fetch stats for all business projects (parallel batch query)
   const fetchAllStats = useCallback(async () => {
-    if (businessProjects.length === 0) return;
+    if (businessProjects.length === 0) {
+      setProjectStats({});
+      return;
+    }
     const projectIds = businessProjects.map(p => p.id);
 
-    const { data: allExpenses } = await (supabase
-      .from('expenses')
-      .select('project_id, amount, type, status, expense_nature') as any)
-      .in('project_id', projectIds);
+    const [expensesRes, fundingRes, milestonesRes, membersRes] = await Promise.all([
+      (supabase.from('expenses').select('project_id, amount, type, status, expense_nature') as any).in('project_id', projectIds),
+      supabase.from('project_funding').select('project_id, allocated_amount').in('project_id', projectIds),
+      supabase.from('project_milestones').select('project_id, status, due_date').in('project_id', projectIds),
+      (supabase.from('project_members') as any).select('project_id').in('project_id', projectIds),
+    ]);
 
-    const { data: allFunding } = await supabase
-      .from('project_funding')
-      .select('project_id, allocated_amount')
-      .in('project_id', projectIds);
-
-    const { data: allMilestones } = await supabase
-      .from('project_milestones')
-      .select('project_id')
-      .in('project_id', projectIds);
-
-    const { data: allMembers } = await (supabase
-      .from('project_members') as any)
-      .select('project_id')
-      .in('project_id', projectIds);
+    const allExpenses = expensesRes.data || [];
+    const allFunding = fundingRes.data || [];
+    const allMilestones = milestonesRes.data || [];
+    const allMembers = membersRes.data || [];
 
     const { calculateProjectSpent, calculateProjectIncome } = await import('@/lib/projectCalculations');
-    const stats: Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }> = {};
+    const stats: Record<string, ProjectStat> = {};
 
     for (const project of businessProjects) {
-      const projExpenses = (allExpenses || []).filter((e: any) => e.project_id === project.id);
-      const projFunding = (allFunding || []).filter((f: any) => f.project_id === project.id);
-      const milestoneCount = (allMilestones || []).filter((m: any) => m.project_id === project.id).length;
-      const memberCount = (allMembers || []).filter((m: any) => m.project_id === project.id).length;
+      const projExpenses = allExpenses.filter((e: any) => e.project_id === project.id);
+      const projFunding = allFunding.filter((f: any) => f.project_id === project.id);
+      const projMilestones = allMilestones.filter((m: any) => m.project_id === project.id);
+      const memberCount = allMembers.filter((m: any) => m.project_id === project.id).length;
 
       stats[project.id] = {
         spent: calculateProjectSpent(projExpenses),
         income: calculateProjectIncome(projExpenses, projFunding),
         memberCount,
-        milestoneCount,
+        milestoneCount: projMilestones.length,
+        milestones: projMilestones.map((m: any) => ({ status: m.status, due_date: m.due_date })),
       };
     }
     setProjectStats(stats);
-  }, [businessProjects.map(p => p.id).join(',')]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectIdsKey]);
 
   useEffect(() => { fetchAllStats(); }, [fetchAllStats]);
 
@@ -148,6 +167,43 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
     fetchAllStats();
   };
 
+  // Quick FAB: capture/upload a receipt photo and attach to a project
+  const openQuickPhoto = (source: 'camera' | 'gallery') => {
+    setQuickPhotoSource(source);
+    setQuickPhotoOpen(true);
+  };
+
+  const handleQuickPhotoForProject = async (projectId: string) => {
+    if (!quickPhotoSource) return;
+    try {
+      const dataUrl = quickPhotoSource === 'camera' ? await takePhoto() : await pickFromGallery();
+      if (!dataUrl) return;
+      setQuickPhotoUploading(true);
+      const file = dataUrlToFile(dataUrl, `racun_${Date.now()}.jpg`);
+      const { storage_path, size_bytes, storage_mode } = await saveDocument(projectId, file, 'local');
+      const { error } = await (supabase.from('project_documents') as any).insert({
+        project_id: projectId,
+        name: file.name,
+        mime_type: file.type || 'image/jpeg',
+        size_bytes,
+        storage_mode,
+        storage_path,
+        document_kind: 'receipt',
+        captured_at: new Date().toISOString(),
+        uploaded_by: user?.id,
+      });
+      if (error) throw error;
+      showSuccess(t('projects.quickPhoto.saved', 'Račun spremljen u projekt'));
+      setQuickPhotoOpen(false);
+      setQuickPhotoSource(null);
+    } catch (err: any) {
+      console.error(err);
+      showError(err?.message || t('common.error', 'Greška'));
+    } finally {
+      setQuickPhotoUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-12 flex items-center justify-center">
@@ -158,13 +214,44 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
 
   return (
     <div className="space-y-4">
+      {/* Hidden inputs used by useNativeCamera on web */}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" />
+      <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FolderKanban className="w-5 h-5 text-primary" />
           {t('nav.projects', 'Projekti')}
         </h2>
         <div className="flex items-center gap-2">
+          {businessProjects.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 rounded-xl border-primary/40 text-primary hover:bg-primary/10"
+                  title={t('projects.quickPhoto.title', 'Brzi unos računa')}
+                >
+                  <Zap className="w-4 h-4" />
+                  {t('projects.quickPhoto.button', 'Brzi račun')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="z-[70]">
+                <DropdownMenuLabel className="text-xs">{t('projects.quickPhoto.source', 'Izvor')}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => openQuickPhoto('camera')}>
+                  <CameraIcon className="w-4 h-4 mr-2" />
+                  {t('projects.documents.takePhoto', 'Slikaj')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openQuickPhoto('gallery')}>
+                  <ImagePlus className="w-4 h-4 mr-2" />
+                  {t('projects.documents.gallery', 'Galerija')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -209,6 +296,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
                   income={projectStats[project.id]?.income || 0}
                   memberCount={projectStats[project.id]?.memberCount || 0}
                   milestoneCount={projectStats[project.id]?.milestoneCount || 0}
+                  milestones={projectStats[project.id]?.milestones || []}
                   onEdit={(p) => { setEditingProject(p); setDialogOpen(true); }}
                   onDelete={(id) => { setProjectToDelete(id); setDeleteConfirmOpen(true); }}
                   onClick={(p) => { setSelectedProject(p); setDetailDialogOpen(true); }}
@@ -274,6 +362,50 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Quick Photo: pick project */}
+      <Dialog open={quickPhotoOpen} onOpenChange={(o) => { if (!o) { setQuickPhotoOpen(false); setQuickPhotoSource(null); } }}>
+        <DialogContent className="max-w-md max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              {t('projects.quickPhoto.pickProject', 'Odaberi projekt za račun')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('projects.quickPhoto.hint', 'Račun će biti spremljen lokalno na tvom uređaju.')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
+            {quickPhotoUploading ? (
+              <div className="py-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {t('projects.documents.uploading', 'Učitavanje...')}
+              </div>
+            ) : (
+              businessProjects.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => handleQuickPhotoForProject(p.id)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:bg-accent/50 hover:border-primary/40 transition-colors text-left"
+                >
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                    style={{ background: `${p.color || '#3b82f6'}20` }}
+                  >
+                    {p.icon || '📁'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{p.name}</p>
+                    {p.description && (
+                      <p className="text-xs text-muted-foreground truncate">{p.description}</p>
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Import from Personal Dialog */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
