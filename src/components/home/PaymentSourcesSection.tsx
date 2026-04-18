@@ -28,7 +28,7 @@ export const PaymentSourcesSection = React.memo(({ customPaymentSources, onSourc
   }, 0);
 
   return (
-    <Collapsible className="mb-4" data-tutorial="payment-sources">
+    <Collapsible className="mb-4 group" data-tutorial="payment-sources">
       <CollapsibleTrigger asChild>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -41,22 +41,22 @@ export const PaymentSourcesSection = React.memo(({ customPaymentSources, onSourc
           }}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <Wallet className="w-5 h-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm sm:text-base font-semibold">{t('common.finances', 'Financije')}</p>
                 <p className="text-xs text-muted-foreground">
-                  {customPaymentSources.length} {customPaymentSources.length === 1 ? t('common.account', 'račun') : t('common.accounts', 'računa')}
+                  {customPaymentSources.length} {customPaymentSources.length === 1 ? t('common.account', 'račun') : t('common.accounts', 'računa')} · {t('common.tapToExpand', 'klikni za prikaz')}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <p className={`text-base sm:text-xl font-bold ${totalBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
                 {formatAmount(totalBalance)}
               </p>
-              <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
             </div>
           </div>
         </motion.div>
