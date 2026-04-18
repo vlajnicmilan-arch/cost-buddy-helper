@@ -347,8 +347,9 @@ export const DailyStandupSheet = ({
               {t('projects.standup.startVoice', 'Snimaj')}
             </Button>
           ) : (
-            <Button variant="destructive" onClick={stopRecording} className="gap-2">
-              <MicOff className="w-4 h-4" />
+            <Button variant="destructive" onClick={stopRecording} className="gap-2 relative">
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white animate-pulse" />
+              <MicOff className="w-4 h-4 ml-3" />
               {t('projects.standup.stopVoice', 'Zaustavi')}
             </Button>
           )}
