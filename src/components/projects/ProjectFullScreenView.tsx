@@ -546,7 +546,11 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
                 )}
 
-                {canSeeTab('funding') && (
+                <TabsContent value="documents" className="m-0">
+                  <ProjectDocumentsTab projectId={project.id} />
+                </TabsContent>
+
+
                 <TabsContent value="funding" className="m-0">
                   <ProjectFundingTab
                     projectId={project.id}
