@@ -11,6 +11,8 @@ import { Mic, MicOff, Sparkles, Loader2, Send, Users, Package } from 'lucide-rea
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import type { ProjectWithOwnership } from '@/types/project';
+import { Capacitor } from '@capacitor/core';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 interface DailyStandupSheetProps {
   open: boolean;
@@ -93,8 +95,23 @@ export const DailyStandupSheet = ({
       setText('');
       setParsed(null);
       setWorkerSelections({});
+      // Ensure native listeners are cleaned when sheet closes
+      if (Capacitor.isNativePlatform()) {
+        SpeechRecognition.stop().catch(() => { /* noop */ });
+        SpeechRecognition.removeAllListeners().catch(() => { /* noop */ });
+      }
     }
   }, [open]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (Capacitor.isNativePlatform()) {
+        SpeechRecognition.stop().catch(() => { /* noop */ });
+        SpeechRecognition.removeAllListeners().catch(() => { /* noop */ });
+      }
+    };
+  }, []);
 
   // Set default project
   useEffect(() => {
@@ -118,6 +135,66 @@ export const DailyStandupSheet = ({
   const selectedProject = useMemo(() => projects.find(p => p.id === projectId), [projects, projectId]);
 
   const startRecording = async () => {
+    // === NATIVE PATH (Android/iOS via Capacitor plugin) ===
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const available = await SpeechRecognition.available();
+        if (!available.available) {
+          showError(t('projects.standup.noVoice', 'Glasovni unos nije podržan na ovom uređaju.'));
+          return;
+        }
+
+        // Check & request permission (triggers native Android prompt)
+        const permStatus = await SpeechRecognition.checkPermissions();
+        if (permStatus.speechRecognition !== 'granted') {
+          const req = await SpeechRecognition.requestPermissions();
+          if (req.speechRecognition !== 'granted') {
+            setShowPermissionHelp(true);
+            return;
+          }
+        }
+
+        textBufferRef.current = text ? text.trim() + ' ' : '';
+        manualStopRef.current = false;
+
+        // Remove any stale listeners then attach new one
+        await SpeechRecognition.removeAllListeners();
+        await SpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
+          const transcript = data?.matches?.[0] || '';
+          setText((textBufferRef.current + transcript).replace(/\s+/g, ' '));
+        });
+        await SpeechRecognition.addListener('listeningState' as any, (data: any) => {
+          if (data?.status === 'stopped' && !manualStopRef.current) {
+            // Auto-restart on silence timeout (Android stops after a pause)
+            SpeechRecognition.start({
+              language: 'hr-HR',
+              partialResults: true,
+              popup: false,
+            }).catch(() => setRecording(false));
+          }
+        });
+
+        await SpeechRecognition.start({
+          language: 'hr-HR',
+          partialResults: true,
+          popup: false,
+        });
+        setRecording(true);
+        showSuccess(t('projects.standup.recordingStarted', 'Snimanje pokrenuto — govori...'));
+      } catch (err: any) {
+        console.error('Native speech recognition error:', err);
+        const msg = String(err?.message || err);
+        if (/permission|denied/i.test(msg)) {
+          setShowPermissionHelp(true);
+        } else {
+          showError(t('projects.standup.startFailed', 'Snimanje nije moglo započeti. Pokušaj ponovno.'));
+        }
+        setRecording(false);
+      }
+      return;
+    }
+
+    // === WEB PATH (PWA / browser) ===
     // iOS Safari has webkitSpeechRecognition shim that doesn't actually work reliably
     if (isIOS()) {
       showError(t('projects.standup.iosNotSupported', 'Glasovni unos ne radi na iPhone Safariju. Koristi tipkovnicu.'));
@@ -199,6 +276,14 @@ export const DailyStandupSheet = ({
 
   const stopRecording = () => {
     manualStopRef.current = true;
+    // Native stop
+    if (Capacitor.isNativePlatform()) {
+      SpeechRecognition.stop().catch(() => { /* noop */ });
+      SpeechRecognition.removeAllListeners().catch(() => { /* noop */ });
+      setRecording(false);
+      return;
+    }
+    // Web stop
     const r = recognitionRef.current;
     if (r) {
       try { r.stop(); } catch { /* noop */ }
