@@ -66,6 +66,10 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        ai: {
+          DEFAULT: "hsl(var(--ai))",
+          foreground: "hsl(var(--ai-foreground))",
+        },
         category: {
           food: "hsl(var(--category-food))",
           transport: "hsl(var(--category-transport))",
