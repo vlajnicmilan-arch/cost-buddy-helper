@@ -296,7 +296,7 @@ export const ProjectMilestonesTab = ({
             );
           })}
         </div>
-      )}
+      ) : null}
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
