@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { TransactionItemsExpander } from '@/components/TransactionItemsExpander';
 import { DateRange } from 'react-day-picker';
 import { enUS, de } from 'date-fns/locale';
+import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 
 interface ProjectExpense {
   id: string;
