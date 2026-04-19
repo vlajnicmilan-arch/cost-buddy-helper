@@ -328,8 +328,23 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                 >
                   <span>{source.icon}</span>
                 </div>
-                <div className="min-w-0">
-                  <span className="font-medium block">{source.name}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-medium">{source.name}</span>
+                    {((source.isOwned && (source.memberCount || 0) > 0) || source.isOwned === false) && (
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground text-[10px] font-medium"
+                        title={
+                          source.isOwned === false
+                            ? t('paymentSources.sharedWithYou', { owner: source.ownerName || '—', defaultValue: 'Dijeli: {{owner}}' })
+                            : t('paymentSources.sharedByYou', { count: source.memberCount || 0, defaultValue: 'Dijelite s {{count}} osoba' })
+                        }
+                      >
+                        <Users className="w-2.5 h-2.5" />
+                        {t('paymentSources.shared', 'Dijeljeno')}
+                      </span>
+                    )}
+                  </div>
                   {source.description && (
                     <p className="text-xs text-muted-foreground">{source.description}</p>
                   )}
