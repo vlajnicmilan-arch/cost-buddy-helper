@@ -215,6 +215,8 @@
     "incomeSourceLabel": "Einnahmequelle",
     "selectPaymentMethod": "Zahlungsmethode auswählen",
     "myMethods": "Meine Methoden",
+    "ownerLoanBadge": "Darlehen",
+    "ownerLoanTooltip": "Geschäftsausgabe von einem persönlichen Konto bezahlt — Inhaberdarlehen erstellt",
     "selectCardLabel": "Karte auswählen",
     "merchantStore": "Geschäft / Name",
     "merchantSource": "Quelle",

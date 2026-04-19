@@ -414,6 +414,8 @@
     "incomeSourceLabel": "Income source",
     "selectPaymentMethod": "Select payment method",
     "myMethods": "My methods",
+    "ownerLoanBadge": "Loan",
+    "ownerLoanTooltip": "Business expense paid from a personal account — owner loan created",
     "selectCardLabel": "Select card",
     "merchantStore": "Store / Name",
     "merchantSource": "Source",

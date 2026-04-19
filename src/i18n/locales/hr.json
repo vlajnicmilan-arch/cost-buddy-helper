@@ -421,6 +421,8 @@
     "incomeSourceLabel": "Izvor prihoda",
     "selectPaymentMethod": "Odaberi način plaćanja",
     "myMethods": "Moji načini",
+    "ownerLoanBadge": "Pozajmica",
+    "ownerLoanTooltip": "Poslovni trošak plaćen iz osobnog računa — kreirana pozajmica vlasnika",
     "selectCardLabel": "Odaberi karticu",
     "merchantStore": "Trgovina / Naziv",
     "merchantSource": "Izvor",
