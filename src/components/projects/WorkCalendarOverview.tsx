@@ -18,6 +18,7 @@ import { hr } from 'date-fns/locale';
 import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2, CheckSquare, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface WorkEntry {
   id: string;
@@ -685,7 +686,10 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
             {/* Note */}
             <div className="space-y-1.5">
               <Label className="text-xs">{t('workers.note', 'Napomena')}</Label>
-              <Textarea value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')} rows={2} />
+              <div className="relative">
+                <Textarea value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')} rows={2} className="pr-12" />
+                <VoiceInputButton value={bulkNote} onChange={setBulkNote} className="absolute bottom-2 right-2" />
+              </div>
             </div>
 
             {/* Actions */}
@@ -792,7 +796,10 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
 
                         <div className="space-y-1.5">
                           <Label className="text-xs">{t('workers.note', 'Napomena')}</Label>
-                          <Textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')} rows={2} />
+                          <div className="relative">
+                            <Textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')} rows={2} className="pr-12" />
+                            <VoiceInputButton value={editNote} onChange={setEditNote} className="absolute bottom-2 right-2" />
+                          </div>
                         </div>
 
                         <div className="flex gap-2">
@@ -966,12 +973,16 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
                 {/* Note */}
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t('workers.note', 'Napomena')}</Label>
-                  <Textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')}
-                    rows={2}
-                  />
+                  <div className="relative">
+                    <Textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder={t('workers.notePlaceholder', 'Opcionalna napomena...')}
+                      rows={2}
+                      className="pr-12"
+                    />
+                    <VoiceInputButton value={note} onChange={setNote} className="absolute bottom-2 right-2" />
+                  </div>
                 </div>
 
                 {/* Actions */}

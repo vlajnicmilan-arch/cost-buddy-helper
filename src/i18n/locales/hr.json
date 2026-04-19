@@ -2225,5 +2225,13 @@
   "form": {
     "moreOptions": "Više opcija",
     "lessOptions": "Manje opcija"
+  },
+  "voice": {
+    "start": "Diktiraj",
+    "stop": "Zaustavi snimanje",
+    "recording": "Snimanje...",
+    "notSupported": "Glasovni unos nije podržan na ovom uređaju",
+    "permissionTitle": "Dopustite pristup mikrofonu",
+    "permissionBody": "Za diktiranje teksta potreban je pristup mikrofonu. Otvorite postavke uređaja ili preglednika i dopustite pristup mikrofonu za ovu aplikaciju."
   }
 }

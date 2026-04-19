@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 import { Cake, CreditCard, AlertTriangle, CalendarDays } from 'lucide-react';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface Props {
   open: boolean;
@@ -97,12 +98,20 @@ export const CalendarEventDialog = ({ open, onOpenChange, onSave, defaultDate }:
 
           <div>
             <Label>{t('common.description', 'Opis')}</Label>
-            <Textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder={t('calendar.descPlaceholder', 'Opcionalni opis...')}
-              rows={2}
-            />
+            <div className="relative">
+              <Textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder={t('calendar.descPlaceholder', 'Opcionalni opis...')}
+                rows={2}
+                className="pr-12"
+              />
+              <VoiceInputButton
+                value={description}
+                onChange={setDescription}
+                className="absolute bottom-2 right-2"
+              />
+            </div>
           </div>
 
           <Button onClick={handleSave} disabled={saving || !title.trim()} className="w-full">

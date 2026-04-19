@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface TransactionNote {
   id: string;
@@ -278,19 +279,26 @@ export const TransactionNotesThread = ({
 
       {/* New note input */}
       <div className="flex gap-2">
-        <Textarea
-          value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
-          placeholder={t('transactions.writeNote', 'Napiši napomenu...')}
-          rows={2}
-          className="resize-none flex-1"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSendNote();
-            }
-          }}
-        />
+        <div className="relative flex-1">
+          <Textarea
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            placeholder={t('transactions.writeNote', 'Napiši napomenu...')}
+            rows={2}
+            className="resize-none pr-12"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendNote();
+              }
+            }}
+          />
+          <VoiceInputButton
+            value={newNote}
+            onChange={setNewNote}
+            className="absolute bottom-2 right-2"
+          />
+        </div>
         <Button
           onClick={handleSendNote}
           disabled={!newNote.trim() || sending}
