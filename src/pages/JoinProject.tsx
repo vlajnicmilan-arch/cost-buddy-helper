@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 import { Loader2, CheckCircle, XCircle, FolderKanban, LogIn, User, Briefcase } from 'lucide-react';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface ProjectData {
   id: string;
