@@ -75,6 +75,13 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
   const [projectFullScreenOpen, setProjectFullScreenOpen] = useState(false);
   const chatSectionRef = useRef<HTMLElement>(null);
 
+  // Reset scroll to top on mount (when entering detail view)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   // Auto-scroll to chat when opened from notification
   useEffect(() => {
     if (initialOpenChat && chatSectionRef.current) {
