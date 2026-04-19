@@ -78,7 +78,7 @@ export const ProjectTransactionsTab = ({
   const { user } = useAuth();
   const { customCategories } = useCustomCategories();
   const { activeBusinessProfileId } = useAppState();
-  const { customPaymentSources } = useCustomPaymentSources();
+  const { customPaymentSources } = useCustomPaymentSources({ includePersonal: true });
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated: onRefetch });
   // Pending transactions hook
   const { 
@@ -286,6 +286,19 @@ export const ProjectTransactionsTab = ({
         await updateBalance(paymentSourceForInsert, parsedAmount, expenseType);
       }
 
+      // Owner-loan auto-creation: business project expense paid from personal source
+      if (activeBusinessProfileId && inserted && status === 'approved' && expenseType === 'expense') {
+        const { createOwnerLoanIfCrossMode } = await import('@/lib/ownerLoanLogic');
+        createOwnerLoanIfCrossMode({
+          expenseId: (inserted as any).id,
+          userId: user.id,
+          businessProfileId: activeBusinessProfileId,
+          paymentSource: paymentSourceForInsert,
+          amount: parsedAmount,
+          description: description.trim(),
+        }).catch(e => console.error('Owner-loan creation failed:', e));
+      }
+
       if (needsApproval) {
         showSuccess(t('projects.expenseSubmitted', 'Transakcija poslana na odobrenje'));
       } else {
@@ -332,6 +345,10 @@ export const ProjectTransactionsTab = ({
     if (!expenseToDelete) return;
 
     try {
+      // Delete linked owner-loan first (best-effort)
+      const { deleteOwnerLoanForExpense } = await import('@/lib/ownerLoanLogic');
+      deleteOwnerLoanForExpense(expenseToDelete).catch(e => console.error('Owner-loan delete failed:', e));
+
       const { error } = await supabase
         .from('expenses')
         .delete()
@@ -400,6 +417,19 @@ export const ProjectTransactionsTab = ({
         newAmount,
         editType
       );
+
+      // Sync owner-loan after edit
+      if (activeBusinessProfileId && editType === 'expense' && user) {
+        const { syncOwnerLoanForExpense } = await import('@/lib/ownerLoanLogic');
+        syncOwnerLoanForExpense({
+          expenseId: editingExpense.id,
+          userId: user.id,
+          businessProfileId: activeBusinessProfileId,
+          paymentSource: newPaymentSource,
+          amount: newAmount,
+          description: editDescription.trim(),
+        }).catch(e => console.error('Owner-loan sync failed:', e));
+      }
 
       showSuccess(t('common.saved', 'Spremljeno'));
       setEditDialogOpen(false);

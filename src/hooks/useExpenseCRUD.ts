@@ -18,6 +18,7 @@ import {
   saveLocalReceiptItems,
   getLocalExpenses,
 } from '@/lib/storage/indexedDB';
+import { createOwnerLoanIfCrossMode, syncOwnerLoanForExpense, deleteOwnerLoanForExpense } from '@/lib/ownerLoanLogic';
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
@@ -114,6 +115,19 @@ export const useExpenseCRUD = ({
             unit_price: item.unit_price || null,
             total_price: item.total_price
           })));
+        }
+
+        // Owner-loan auto-creation: business expense paid from a personal source
+        const expenseBpId = (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null;
+        if (expenseBpId && data && !isPendingMemberTransaction) {
+          createOwnerLoanIfCrossMode({
+            expenseId: data.id,
+            userId: user.id,
+            businessProfileId: expenseBpId,
+            paymentSource: normalizedExpense.payment_source,
+            amount: normalizedExpense.amount,
+            description: normalizedExpense.description,
+          }).catch(e => console.error('Owner-loan creation failed:', e));
         }
 
         // Notifications (fire-and-forget, don't block)
@@ -256,6 +270,19 @@ export const useExpenseCRUD = ({
           }).catch(e => console.error('Notification error:', e));
         }
 
+        // Sync owner-loan when business expense edited
+        const updatedBpId = (expense as any).business_profile_id || activeBusinessProfileId || null;
+        if (updatedBpId && user) {
+          syncOwnerLoanForExpense({
+            expenseId: expense.id,
+            userId: user.id,
+            businessProfileId: updatedBpId,
+            paymentSource: expense.payment_source,
+            amount: expense.amount,
+            description: expense.description,
+          }).catch(e => console.error('Owner-loan sync failed:', e));
+        }
+
         showSuccess(t('feedback.updated'));
       }
     } catch (error) {
@@ -320,6 +347,8 @@ export const useExpenseCRUD = ({
       if (isLocalMode) {
         await deleteLocalExpense(id);
       } else {
+        // Delete linked owner-loan first (if any)
+        deleteOwnerLoanForExpense(id).catch(e => console.error('Owner-loan delete failed:', e));
         const { error } = await supabase.from('expenses').delete().eq('id', id);
         if (error) throw error;
       }

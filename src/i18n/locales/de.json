@@ -215,6 +215,8 @@
     "incomeSourceLabel": "Einnahmequelle",
     "selectPaymentMethod": "Zahlungsmethode auswählen",
     "myMethods": "Meine Methoden",
+    "ownerLoanBadge": "Darlehen",
+    "ownerLoanTooltip": "Geschäftsausgabe von einem persönlichen Konto bezahlt — Inhaberdarlehen erstellt",
     "selectCardLabel": "Karte auswählen",
     "merchantStore": "Geschäft / Name",
     "merchantSource": "Quelle",
@@ -1283,6 +1285,14 @@
     "noSavings": "Keine Sparziele hinzugefügt"
   },
   "business": {
+    "payment": {
+      "businessAccountsGroup": "Geschäftskonten",
+      "personalAccountsGroup": "Persönliche Konten (Darlehen)"
+    },
+    "debt": {
+      "ownerLoanContact": "Inhaber (Darlehen)",
+      "autoCreatedFromPersonal": "Automatisch aus persönlicher Zahlung erstellt"
+    },
     "wallet": {
       "emptyTitle": "Erstes Geschäftskonto hinzufügen",
       "emptyHint": "Z. B. Geschäftskonto, Kasse, Fremdwährungskonto. Ohne Zahlungsquelle wird der Saldo nicht automatisch aktualisiert."

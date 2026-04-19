@@ -8,7 +8,17 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 
 
-export const useCustomPaymentSources = () => {
+interface UseCustomPaymentSourcesOptions {
+  /**
+   * When true and the user is in business mode, also returns personal payment sources
+   * (sources with business_profile_id = null). Used for owner-loan flows where a
+   * business expense can be paid from a personal account.
+   */
+  includePersonal?: boolean;
+}
+
+export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions = {}) => {
+  const { includePersonal = false } = options;
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -46,12 +56,19 @@ export const useCustomPaymentSources = () => {
         .order('sort_order', { ascending: true });
 
       if (activeBusinessProfileId) {
-        ownQuery = ownQuery.eq('business_profile_id', activeBusinessProfileId);
+        if (includePersonal) {
+          // Business mode + cross-mode flow: include both business + personal sources
+          ownQuery = ownQuery.or(`business_profile_id.eq.${activeBusinessProfileId},business_profile_id.is.null`);
+        } else {
+          ownQuery = ownQuery.eq('business_profile_id', activeBusinessProfileId);
+        }
       } else {
         ownQuery = ownQuery.is('business_profile_id', null);
       }
 
       const { data: ownSources, error: ownError } = await ownQuery;
+
+      if (ownError) throw ownError;
 
       if (ownError) throw ownError;
 
@@ -154,7 +171,7 @@ export const useCustomPaymentSources = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode, activeBusinessProfileId]);
+  }, [user, isLocalMode, activeBusinessProfileId, includePersonal]);
 
   useEffect(() => {
     fetchCustomPaymentSources();

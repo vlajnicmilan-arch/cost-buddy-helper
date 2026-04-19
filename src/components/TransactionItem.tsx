@@ -103,6 +103,15 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
     return PAYMENT_SOURCES.some(s => s.id === sourceId);
   }, [expense.payment_source]);
 
+  // Owner-loan: business expense paid from a personal source
+  const isOwnerLoan = useMemo(() => {
+    return Boolean(
+      (expense as any).business_profile_id &&
+      customSource &&
+      !(customSource as any).business_profile_id
+    );
+  }, [expense, customSource]);
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('hr-HR', {
       day: 'numeric',
@@ -227,6 +236,18 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   <p className="text-xs">{t('installments.payInInstallments', 'Plaćanje na rate')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {isOwnerLoan && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="text-[9px] py-0 px-1 h-4 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
+                    🪙 {t('transactions.ownerLoanBadge', 'Pozajmica')}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">{t('transactions.ownerLoanTooltip', 'Poslovni trošak plaćen iz osobnog računa — kreirana pozajmica vlasnika')}</p>
                 </TooltipContent>
               </Tooltip>
             )}
