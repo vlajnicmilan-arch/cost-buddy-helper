@@ -18,6 +18,7 @@ import {
 import { CATEGORIES } from '@/types/expense';
 import { Plus, Trash2, Loader2, Repeat, CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface BudgetDialogProps {
   budget?: BudgetWithStats | null;
@@ -204,13 +205,21 @@ export const BudgetDialog = ({
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">{t('common.description', 'Opis')}</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('budget.descriptionPlaceholder', 'Opcionalni opis...')}
-              rows={2}
-            />
+            <div className="relative">
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t('budget.descriptionPlaceholder', 'Opcionalni opis...')}
+                rows={2}
+                className="pr-12"
+              />
+              <VoiceInputButton
+                value={description}
+                onChange={setDescription}
+                className="absolute bottom-2 right-2"
+              />
+            </div>
           </div>
 
           {/* Period & Amount */}

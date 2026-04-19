@@ -21,6 +21,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showError } from '@/hooks/useStatusFeedback';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
@@ -328,7 +329,19 @@ export const ProjectMilestonesTab = ({
 
             <div className="space-y-2">
               <Label>{t('projects.description')}</Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+              <div className="relative">
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                  className="pr-12"
+                />
+                <VoiceInputButton
+                  value={description}
+                  onChange={setDescription}
+                  className="absolute bottom-2 right-2"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

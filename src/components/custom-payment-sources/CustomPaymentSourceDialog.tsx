@@ -10,6 +10,7 @@ import { Plus, X, CreditCard, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 interface CardInput {
   id?: string;
   card_name: string;
@@ -236,12 +237,20 @@ export const CustomPaymentSourceDialog = ({
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">{t('common.description')}</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-            />
+            <div className="relative">
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                className="pr-12"
+              />
+              <VoiceInputButton
+                value={description}
+                onChange={setDescription}
+                className="absolute bottom-2 right-2"
+              />
+            </div>
           </div>
 
           {/* Cards Section */}

@@ -16,6 +16,7 @@ import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ProjectTemplatePicker } from './ProjectTemplatePicker';
 import { ProjectTemplate } from '@/hooks/useProjectTemplates';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface ProjectDialogProps {
   open: boolean;
@@ -148,13 +149,21 @@ export const ProjectDialog = ({
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">{t('projects.description')}</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('projects.descriptionPlaceholder')}
-              rows={2}
-            />
+            <div className="relative">
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t('projects.descriptionPlaceholder')}
+                rows={2}
+                className="pr-12"
+              />
+              <VoiceInputButton
+                value={description}
+                onChange={setDescription}
+                className="absolute bottom-2 right-2"
+              />
+            </div>
           </div>
 
           {/* Icon & Color */}

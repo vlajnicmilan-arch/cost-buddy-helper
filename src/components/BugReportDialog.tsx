@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { APP_VERSION } from '@/lib/version';
 import { useTranslation } from 'react-i18next';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface BugReportDialogProps {
   open: boolean;
@@ -96,14 +97,22 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
 
           <div className="space-y-2">
             <Label htmlFor="bug-description">Opis problema</Label>
-            <Textarea
-              id="bug-description"
-              placeholder={t('placeholders.describeProblem')}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={5}
-              maxLength={2000}
-            />
+            <div className="relative">
+              <Textarea
+                id="bug-description"
+                placeholder={t('placeholders.describeProblem')}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={5}
+                maxLength={2000}
+                className="pr-12"
+              />
+              <VoiceInputButton
+                value={description}
+                onChange={setDescription}
+                className="absolute bottom-2 right-2"
+              />
+            </div>
             <p className="text-xs text-muted-foreground text-right">
               {description.length}/2000
             </p>

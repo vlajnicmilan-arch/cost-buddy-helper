@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ENTRY_TYPES, distributeHours, EntryType } from '@/types/timeClock';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface TimeClockQuickEntryDialogProps {
   open: boolean;
@@ -140,12 +141,20 @@ export const TimeClockQuickEntryDialog = ({
 
           <div>
             <Label>{t('timeClock.note', 'Bilješka')}</Label>
-            <Textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t('timeClock.notePlaceholder', 'Opcionalna bilješka...')}
-              rows={2}
-            />
+            <div className="relative">
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t('timeClock.notePlaceholder', 'Opcionalna bilješka...')}
+                rows={2}
+                className="pr-12"
+              />
+              <VoiceInputButton
+                value={note}
+                onChange={setNote}
+                className="absolute bottom-2 right-2"
+              />
+            </div>
           </div>
 
           <Button onClick={handleSubmit} disabled={hours <= 0} className="w-full">

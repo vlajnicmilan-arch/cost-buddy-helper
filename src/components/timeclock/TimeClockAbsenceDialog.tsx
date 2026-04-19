@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ABSENCE_TYPES } from '@/types/timeClock';
 import { useTranslation } from 'react-i18next';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface TimeClockAbsenceDialogProps {
   open: boolean;
@@ -60,12 +61,20 @@ export const TimeClockAbsenceDialog = ({
 
           <div>
             <Label>{t('timeClock.note', 'Bilješka')}</Label>
-            <Textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t('timeClock.notePlaceholder', 'Opcionalna bilješka...')}
-              rows={2}
-            />
+            <div className="relative">
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t('timeClock.notePlaceholder', 'Opcionalna bilješka...')}
+                rows={2}
+                className="pr-12"
+              />
+              <VoiceInputButton
+                value={note}
+                onChange={setNote}
+                className="absolute bottom-2 right-2"
+              />
+            </div>
           </div>
 
           <Button onClick={handleSubmit} disabled={!absenceType} className="w-full">

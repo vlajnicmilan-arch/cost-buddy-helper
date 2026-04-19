@@ -22,6 +22,7 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 import { showError } from '@/hooks/useStatusFeedback';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -296,12 +297,20 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">{t('common.description')}</Label>
-            <Input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('transactions.descriptionPlaceholder')}
-            />
+            <div className="relative">
+              <Input
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t('transactions.descriptionPlaceholder')}
+                className="pr-12"
+              />
+              <VoiceInputButton
+                value={description}
+                onChange={setDescription}
+                className="absolute top-1/2 -translate-y-1/2 right-1.5"
+              />
+            </div>
           </div>
 
           {/* Category - Different label and options for income */}

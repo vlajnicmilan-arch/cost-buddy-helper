@@ -17,6 +17,7 @@ import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { ExpenseItemsList } from './ExpenseItemsList';
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface ManualExpenseFormProps {
   // Type
@@ -546,13 +547,20 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
       {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="description" className="text-sm font-medium">{t('common.description')}</Label>
-        <Input
-          id="description"
-          placeholder={t('transactions.descriptionPlaceholder')}
-          value={props.description}
-          onChange={(e) => props.onDescriptionChange(e.target.value)}
-          className="h-12 rounded-xl"
-        />
+        <div className="relative">
+          <Input
+            id="description"
+            placeholder={t('transactions.descriptionPlaceholder')}
+            value={props.description}
+            onChange={(e) => props.onDescriptionChange(e.target.value)}
+            className="h-12 rounded-xl pr-12"
+          />
+          <VoiceInputButton
+            value={props.description}
+            onChange={props.onDescriptionChange}
+            className="absolute top-1/2 -translate-y-1/2 right-2"
+          />
+        </div>
       </div>
 
       {/* Category - expense */}

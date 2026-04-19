@@ -10,6 +10,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Trash2, Loader2, Info } from 'lucide-react';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 
 interface EstimateDialogProps {
   open: boolean;
@@ -155,11 +156,19 @@ export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogP
                 const lineTotal = (Number(item.quantity) || 0) * (Number(item.unit_price) || 0);
                 return (
                   <div key={idx} className="p-2 rounded border space-y-2">
-                    <Input
-                      placeholder={t('estimates.itemDescription', 'Opis')}
-                      value={item.description}
-                      onChange={(e) => updateItem(idx, { description: e.target.value })}
-                    />
+                    <div className="relative">
+                      <Input
+                        placeholder={t('estimates.itemDescription', 'Opis')}
+                        value={item.description}
+                        onChange={(e) => updateItem(idx, { description: e.target.value })}
+                        className="pr-12"
+                      />
+                      <VoiceInputButton
+                        value={item.description}
+                        onChange={(v) => updateItem(idx, { description: v })}
+                        className="absolute top-1/2 -translate-y-1/2 right-1.5"
+                      />
+                    </div>
                     <div className="grid grid-cols-12 gap-1">
                       <Input className="col-span-3" type="number" placeholder="Kol" value={item.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} />
                       <Input className="col-span-2" placeholder="Jed" value={item.unit || 'kom'} onChange={(e) => updateItem(idx, { unit: e.target.value })} />
@@ -194,7 +203,14 @@ export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogP
 
           <div className="space-y-1">
             <Label>{t('estimates.notes', 'Napomena')}</Label>
-            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <div className="relative">
+              <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="pr-12" />
+              <VoiceInputButton
+                value={notes}
+                onChange={setNotes}
+                className="absolute bottom-2 right-2"
+              />
+            </div>
           </div>
 
           <div className="flex gap-2 pt-2">
