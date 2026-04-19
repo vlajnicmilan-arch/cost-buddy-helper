@@ -1,87 +1,107 @@
 
+## Plan: Učiniti push sustav vidljivim i kad `send-push` uopće ne bude pozvan
 
-## Plan: Centralizirani sustav praćenja push obavijesti
+### Što sam utvrdio
+Trenutni logovi nastaju prekasno:
+- `push_delivery_logs` se upisuje tek unutar funkcije `send-push`
+- ako `_shared/sendPushNotification.ts` ne uspije napraviti HTTP poziv prema `send-push`, ne nastaje nikakav zapis
+- zato korisnik može dobiti samo in-app obavijest iz `notifications`, a u push logu ostane potpuno prazno
 
-### Problem
-Kada push obavijest ne stigne na uređaj, trenutno nemamo načina vidjeti ZAŠTO. Moramo ručno preglédati edge function logove, kombinirati ih s in-app notifikacijama i FCM odgovorima — to je sporo i nepouzdano.
+Točno to objašnjava vaš slučaj: obavijest je spremljena u aplikaciju, ali nema ni pusha ni traga zašto ga nije bilo.
 
-### Rješenje: tablica `push_delivery_logs` + admin UI za pregled
+### Što ću napraviti
+#### 1. Dodati “raniji” zapis pokušaja
+Proširit ću praćenje tako da se zapis radi već u `_shared/sendPushNotification.ts`, prije poziva `send-push`.
 
-#### 1. Nova tablica `push_delivery_logs`
-Migracija dodaje tablicu koja bilježi SVAKI pokušaj slanja push obavijesti:
+Za svaki pokušaj zabilježit će se:
+- kome se pokušalo poslati
+- iz koje funkcije (`notify-project-transaction`, `notify-note-added`, itd.)
+- naslov i tekst
+- vrijeme pokušaja
+- status poziva prema `send-push`:
+  - `dispatch_started`
+  - `dispatch_http_error`
+  - `dispatch_network_error`
+  - `dispatch_ok`
 
+#### 2. Uvesti zajednički `request_id`
+Svaki push pokušaj dobit će svoj `request_id` kako bismo mogli povezati:
+- zapis iz helpera (`_shared/sendPushNotification.ts`)
+- zapis iz `send-push`
+- konačni FCM rezultat
+
+Tako ćemo za jedan događaj vidjeti cijeli put:
+```text
+notify-project-transaction
+  -> dispatch_started
+  -> send-push reached
+  -> tokens found / no tokens
+  -> FCM success / error
 ```
-- id (uuid)
-- created_at (timestamptz)
-- user_id (uuid)            -- primatelj
-- source_function (text)    -- npr. "notify-project-transaction"
-- title (text)
-- body (text)
-- token_count (int)         -- koliko tokena je pronađeno
-- success_count (int)       -- koliko je FCM prihvatio
-- failure_count (int)
-- fcm_error_codes (jsonb)   -- npr. ["UNREGISTERED"] ili null
-- request_payload (jsonb)   -- title/body/data za debug
-- response_summary (jsonb)  -- sažetak FCM odgovora
-- duration_ms (int)
-```
 
-RLS: samo admin (`has_role(auth.uid(), 'admin')`) može čitati. Service role piše.
+#### 3. Nadograditi postojeću tablicu umjesto nagađanja po više mjesta
+Umjesto da admin mora spajati više tragova ručno, proširit ću postojeći sustav logiranja tako da jedan zapis ili povezani zapisi pokrivaju obje faze:
+- fazu slanja prema `send-push`
+- fazu stvarnog slanja prema FCM-u
 
-#### 2. Izmjena `send-push` edge funkcije
-Na kraju svake invokacije, BEZ obzira na uspjeh ili neuspjeh, upisuje zapis u `push_delivery_logs`. Hvata:
-- broj pronađenih tokena
-- broj uspješno poslanih
-- pojedinačne FCM error kodove (UNREGISTERED, INVALID_ARGUMENT, itd.)
-- trajanje
-- source_function (iz novog opcijalnog parametra body-ja koji svaki notify-* prosljeđuje)
+Ako bude čišće za pregled, dodat ću pomoćna polja poput:
+- `request_id`
+- `dispatch_status`
+- `dispatch_error`
+- `send_push_http_status`
+- `lifecycle_stage`
 
-#### 3. Izmjena `_shared/sendPushNotification.ts`
-Dodaje opcijski parametar `source` koji se proslijeđuje u `send-push` body. Tako svaki notify-* zapisuje koja je funkcija pokušala poslati.
+#### 4. Ojačati `send-push` logove
+Unutar `send-push` ću zadržati postojeće podatke i dopuniti ih s:
+- potvrdom da je funkcija stvarno dosegnuta
+- brojem tokena
+- FCM ishodom
+- razlogom ako nema tokena
+- eventualnim cleanupom nevažećih tokena
 
-#### 4. Novi tab u Admin panelu: "Push Logs"
-**Datoteka**: `src/components/admin/PushLogsTab.tsx` + dodati tab u `src/pages/Admin.tsx`
+#### 5. Doraditi Admin “Push Logs” tab
+Admin prikaz ću pretvoriti iz običnog popisa u pravi dijagnostički pregled:
+- jasno odvojene faze: “poziv krenuo”, “send-push dosegnut”, “FCM odgovor”
+- crveni status ako je poziv pukao prije `send-push`
+- žuti status ako nema tokena
+- zeleni status ako je FCM prihvatio poruku
+- filter po funkciji i korisniku
+- prošireni detalji s greškom u ljudskom jeziku
 
-Prikazuje tablicu zadnjih 200 zapisa sa stupcima:
-- Vrijeme
-- Korisnik (display_name + email)
-- Source funkcija
-- Naslov / tijelo (skraćeno)
-- Status (✓ uspjeh / ✗ greška / ⚠ djelomično)
-- Token count → success / fail
-- FCM error code (badge)
-- Trajanje (ms)
+#### 6. Dodati jasan fallback za “nema ni loga”
+Ako helper ne uspije doći do `send-push`, to više neće ostati tiho:
+- upisat će fallback zapis u bazu
+- u adminu će se vidjeti da je problem bio prije same push funkcije
 
-Filteri:
-- Po korisniku (search)
-- Po source funkciji (dropdown)
-- Po statusu (samo greške / sve)
-- Po vremenu (zadnjih 24h / 7 dana)
+### Datoteke koje bih mijenjao
+- `supabase/functions/_shared/sendPushNotification.ts`
+- `supabase/functions/send-push/index.ts`
+- nova migracija za proširenje logiranja
+- `src/components/admin/PushLogsTab.tsx`
+- po potrebi `src/pages/Admin.tsx`
+- `src/i18n/locales/hr.json`
+- `src/i18n/locales/en.json`
+- `src/i18n/locales/de.json`
 
-Klik na red → expand s punim payloadom (request + response JSON).
+### Tehnički pristup
+- zadržavam postojeći push mehanizam
+- ne diram registraciju tokena dok ne dobijemo potpuni trag događaja
+- ne diram korisnički flow za obične obavijesti u aplikaciji
+- fokus je prvo na “observability”, da svaki neuspjeh ostavi trag
 
-#### 5. Auto-cleanup
-Dodati `cleanup_old_push_logs()` funkciju (briše >30 dana) i pozvati je sporadično iz `maybe_cleanup_push_logs` triggera (kao postojeći cleanup_old_chat_messages).
+### Kako ćemo onda razlikovati kvarove
+Nakon ove izmjene moći ćemo odmah vidjeti:
+- obavijest stvorena, ali push helper nije ni uspio pozvati `send-push`
+- `send-push` je pozvan, ali korisnik nema token
+- token postoji, ali FCM vraća grešku
+- FCM prihvati poruku, ali problem je na uređaju / Android kanalu / dozvolama
 
-### Što NE diram
-- Postojeću push logiku (radi)
-- `_shared/sendPushNotification.ts` interface (samo dodajem opcionalni parametar)
-- RLS politike na `push_tokens`, `notifications`
+### Test nakon implementacije
+1. Kreirati novu dijeljenu transakciju
+2. Otvoriti Admin → Push Logs
+3. Provjeriti da postoji zapis čak i ako push ne stigne
+4. Vidjeti točnu fazu gdje je stalo
+5. Po tome onda rješavati stvarni uzrok, bez nagađanja
 
-### Datoteke
-- **Migracija**: nova tablica `push_delivery_logs` + RLS + cleanup funkcija
-- **Izmjena**: `supabase/functions/send-push/index.ts` — log na kraju
-- **Izmjena**: `supabase/functions/_shared/sendPushNotification.ts` — opcionalni `source` parametar
-- **Izmjena (14 funkcija)**: svaka notify-* prosljeđuje `source: 'notify-xxx'`
-- **Nova**: `src/components/admin/PushLogsTab.tsx`
-- **Izmjena**: `src/pages/Admin.tsx` — novi tab
-- **Izmjena**: `src/i18n/locales/{hr,en,de}.json` — admin tab labele
-
-### Test plan
-1. Kreiraj testnu transakciju
-2. Otvori Admin → Push Logs
-3. Vidiš novi zapis: source, broj tokena, status, FCM error (ako ga ima)
-4. Ako je `UNREGISTERED` → znamo da je token istekao
-5. Ako je `success_count = 0, token_count = 0` → korisnik nema registriran token
-6. Ako uopće nema zapisa → `send-push` nije pozvan (problem u notify-* funkciji)
-
+### Očekivani rezultat
+Nakon ovoga više nećemo imati situaciju “ništa nije stiglo i nema ničega u logu”. Svaki pokušaj će ostaviti trag, čak i kad sustav pukne prije stvarnog push slanja.
