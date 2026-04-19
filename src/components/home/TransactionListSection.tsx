@@ -18,6 +18,7 @@ interface TransactionListSectionProps {
   onFiltersChange: (filters: FilterState) => void;
   filteredExpenses: Expense[];
   totalExpensesCount: number;
+  monthlyTransactionsCount: number;
   expensesLoading: boolean;
   visibleCount: number;
   onShowMore: () => void;
@@ -48,6 +49,7 @@ export const TransactionListSection = ({
   onFiltersChange,
   filteredExpenses,
   totalExpensesCount,
+  monthlyTransactionsCount,
   expensesLoading,
   visibleCount,
   onShowMore,
@@ -66,11 +68,29 @@ export const TransactionListSection = ({
   className,
   dataTutorial,
 }: TransactionListSectionProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const dateLocale = i18n.language === 'en' ? enUS : i18n.language === 'de' ? deLocale : hrLocale;
+  const currentMonthLabel = format(new Date(), 'LLLL yyyy', { locale: dateLocale });
+
+  // Detect if any filter is active (other than scope='all' default)
+  const hasActiveFilters = Boolean(
+    filters.searchTerm ||
+    filters.dateRange ||
+    filters.minAmount !== undefined ||
+    filters.maxAmount !== undefined ||
+    filters.memberId ||
+    filters.cardId ||
+    filters.categoryId ||
+    (filters.scope && filters.scope !== 'all')
+  );
 
   return (
     <Collapsible open={transactionsOpen} onOpenChange={onTransactionsOpenChange} className={className}>
-      <div className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 ${transactionsOpen ? 'p-6' : 'p-4'}`}>
+      <div
+        className={`glass-card rounded-2xl animate-fade-in transition-all duration-200 border-l-[3px] ${transactionsOpen ? 'p-6' : 'p-4'}`}
+        style={{ borderLeftColor: 'hsl(var(--destructive))' }}
+      >
         <CollapsibleTrigger asChild>
           <button
             className="w-full flex items-center justify-between hover:opacity-80 transition-opacity"
@@ -81,10 +101,10 @@ export const TransactionListSection = ({
               {t('transactions.recent', 'Nedavno')}
             </h2>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {filteredExpenses.length !== totalExpensesCount
+              <span className="text-sm text-muted-foreground capitalize">
+                {hasActiveFilters
                   ? t('transactions.transactionsCountFiltered', { filtered: filteredExpenses.length, total: totalExpensesCount })
-                  : t('transactions.transactionsCount', { count: totalExpensesCount })}
+                  : `${t('transactions.transactionsCount', { count: monthlyTransactionsCount })} · ${currentMonthLabel}`}
               </span>
               <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${transactionsOpen ? 'rotate-180' : ''}`} />
             </div>
