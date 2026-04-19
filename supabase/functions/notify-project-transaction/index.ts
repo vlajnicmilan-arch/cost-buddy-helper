@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { sendPushNotificationToMany } from '../_shared/sendPushNotification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -165,6 +166,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    await sendPushNotificationToMany(Array.from(usersToNotify), {
+      title: `Transakcija u projektu "${project.name}"`,
+      body: `${submitterName} je ${actionText} ${transactionType} "${expense.description}" (${formattedAmount})`,
+      data: { expense_id: expense.id, project_id: project.id, type: 'project_transaction' },
+    });
 
     console.log(`Notifications sent to ${usersToNotify.size} user(s) for project transaction by ${submitterName}`);
 

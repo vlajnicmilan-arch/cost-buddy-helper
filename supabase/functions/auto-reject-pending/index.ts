@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { sendPushNotification } from '../_shared/sendPushNotification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,6 +76,18 @@ Deno.serve(async (req) => {
         console.error('Error sending notifications:', notifyError);
         // Don't throw, notifications are not critical
       }
+
+      // Best-effort push fan-out
+      await Promise.all(
+        notifications.map((n) =>
+          sendPushNotification({
+            user_id: n.user_id,
+            title: n.title,
+            body: n.message,
+            data: { ...n.data, type: 'transaction_auto_rejected' },
+          })
+        )
+      );
     }
 
     return new Response(

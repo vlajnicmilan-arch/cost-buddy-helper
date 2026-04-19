@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendPushNotification } from "../_shared/sendPushNotification.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -223,6 +224,18 @@ serve(async (req) => {
     if (notificationError) {
       console.error("Error creating notification:", notificationError);
     }
+
+    // Best-effort push to invited user
+    await sendPushNotification({
+      user_id: invitedUser.id,
+      title: titleMap[type],
+      body: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
+      data: {
+        invitation_id: invitation.id,
+        target_id: targetId,
+        type: notificationTypeMap[type],
+      },
+    });
 
     console.log(`Invitation sent to ${invitedEmail} for ${type} ${targetId}`);
 

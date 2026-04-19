@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { sendPushNotification } from "../_shared/sendPushNotification.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,10 +52,13 @@ serve(async (req) => {
         custom: "⏰",
       }[reminder.type] || "⏰";
 
+      const notifTitle = `${typeEmoji} ${reminder.title}`;
+      const notifBody = reminder.description || `Podsjetnik: ${reminder.title}`;
+
       const { error: notifErr } = await supabase.from("notifications").insert({
         user_id: reminder.user_id,
-        title: `${typeEmoji} ${reminder.title}`,
-        message: reminder.description || `Podsjetnik: ${reminder.title}`,
+        title: notifTitle,
+        message: notifBody,
         type: "reminder",
         data: {
           reminder_id: reminder.id,
@@ -67,6 +71,14 @@ serve(async (req) => {
         console.error(`Error creating notification for reminder ${reminder.id}:`, notifErr);
         continue;
       }
+
+      // Best-effort push
+      await sendPushNotification({
+        user_id: reminder.user_id,
+        title: notifTitle,
+        body: notifBody,
+        data: { reminder_id: reminder.id, type: "reminder" },
+      });
 
       // Mark as notified
       await supabase

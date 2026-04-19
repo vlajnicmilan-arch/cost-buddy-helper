@@ -1,11 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock } from 'lucide-react';
+import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 
 interface NotificationsSectionProps {
   soundEnabled: boolean;
@@ -37,6 +38,7 @@ export const NotificationsSection = ({
   const { hasAccess } = useFeatureAccess();
   const navigate = useNavigate();
   const canUseBusiness = hasAccess('business_module');
+  const isNative = Capacitor.isNativePlatform();
 
   return (
     <div className="space-y-4">
@@ -61,21 +63,34 @@ export const NotificationsSection = ({
         <Switch id="sound-notifications" checked={soundEnabled} onCheckedChange={onSoundToggle} />
       </div>
 
-      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Bell className="w-4 h-4 text-primary" />
+      <div className="space-y-1">
+        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Bell className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <Label htmlFor="push-notifications" className="text-sm font-medium cursor-pointer">
+                {t('settings.pushNotifications', 'Push obavijesti')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('settings.pushNotificationsDesc', 'Prikaži obavijesti kada je aplikacija u pozadini')}
+              </p>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="push-notifications" className="text-sm font-medium cursor-pointer">
-              {t('settings.pushNotifications', 'Push obavijesti')}
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              {t('settings.pushNotificationsDesc', 'Prikaži obavijesti kada je aplikacija u pozadini')}
-            </p>
-          </div>
+          <Switch id="push-notifications" checked={pushEnabled} onCheckedChange={onPushToggle} />
         </div>
-        <Switch id="push-notifications" checked={pushEnabled} onCheckedChange={onPushToggle} />
+        {!isNative && (
+          <p className="text-[11px] text-muted-foreground flex items-start gap-1.5 px-3">
+            <Info className="w-3 h-3 mt-0.5 shrink-0" />
+            <span>
+              {t(
+                'settings.pushNotificationsWebHint',
+                'Push obavijesti dostupne su u Android aplikaciji'
+              )}
+            </span>
+          </p>
+        )}
       </div>
 
       {!isLocalMode && (

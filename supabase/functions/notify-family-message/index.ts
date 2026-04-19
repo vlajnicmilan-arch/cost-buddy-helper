@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendPushNotificationToMany } from "../_shared/sendPushNotification.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,6 +77,16 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Best-effort push fan-out
+    await sendPushNotificationToMany(
+      members.map((m) => m.user_id),
+      {
+        title: `💬 ${senderName} u ${groupName}`,
+        body: truncated,
+        data: { group_id, message_id, type: "family_message" },
+      }
+    );
 
     return new Response(JSON.stringify({ ok: true, notified: members.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
