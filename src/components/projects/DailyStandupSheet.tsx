@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,7 @@ import { Mic, MicOff, Sparkles, Loader2, Send, Users, Package } from 'lucide-rea
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import type { ProjectWithOwnership } from '@/types/project';
-import { Capacitor } from '@capacitor/core';
-import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { useVoiceDictation } from '@/hooks/useVoiceDictation';
 
 interface DailyStandupSheetProps {
   open: boolean;
@@ -24,37 +23,6 @@ interface DailyStandupSheetProps {
   /** Called after work entries are persisted so caller can refresh stats */
   onApplied?: (projectId: string) => void;
 }
-
-// Simple SpeechRecognition typing
-type SpeechRecognitionLike = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onstart: (() => void) | null;
-  onresult: (e: any) => void;
-  onerror: (e: any) => void;
-  onend: () => void;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-};
-
-const isIOS = (): boolean => {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  return /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
-};
-
-const getRecognition = (): SpeechRecognitionLike | null => {
-  if (typeof window === 'undefined') return null;
-  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  if (!SR) return null;
-  const r: SpeechRecognitionLike = new SR();
-  r.lang = 'hr-HR';
-  r.interimResults = true;
-  r.continuous = true;
-  return r;
-};
 
 interface ParsedWorker { name?: string; hours?: number; task?: string }
 interface ParsedMaterial { name?: string; quantity?: number; unit?: string }
