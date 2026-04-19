@@ -79,6 +79,7 @@ export const NotificationsDropdown = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { setBusinessModeEnabled, setActiveBusinessProfileId } = useAppState();
   const {
     notifications,
     unreadCount,
