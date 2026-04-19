@@ -106,7 +106,22 @@ export const PaymentSourcesSection = React.memo(({ customPaymentSources, onSourc
                   >
                     {source.icon}
                   </span>
-                  <span className="text-xs sm:text-sm font-semibold truncate flex-1 text-foreground/90">{source.name}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs sm:text-sm font-semibold truncate block text-foreground/90">{source.name}</span>
+                    {((source.isOwned && (source.memberCount || 0) > 0) || source.isOwned === false) && (
+                      <span
+                        className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-full bg-secondary/70 text-secondary-foreground text-[9px] font-medium"
+                        title={
+                          source.isOwned === false
+                            ? t('paymentSources.sharedWithYou', { owner: source.ownerName || '—', defaultValue: 'Dijeli: {{owner}}' })
+                            : t('paymentSources.sharedByYou', { count: source.memberCount || 0, defaultValue: 'Dijelite s {{count}} osoba' })
+                        }
+                      >
+                        <Users className="w-2.5 h-2.5" />
+                        {t('paymentSources.shared', 'Dijeljeno')}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <p className="relative text-base sm:text-lg font-bold font-mono tracking-tight">
                   <span className={source.balance < 0 ? 'text-destructive' : ''} style={{ color: source.balance >= 0 ? source.color : undefined }}>
