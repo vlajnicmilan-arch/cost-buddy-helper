@@ -13,7 +13,6 @@ import { Plus, Trash2, Loader2, Info } from 'lucide-react';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { showError } from '@/hooks/useStatusFeedback';
-import { useTranslation } from 'react-i18next';
 
 interface EstimateDialogProps {
   open: boolean;
