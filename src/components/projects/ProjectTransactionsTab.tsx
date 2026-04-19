@@ -1391,6 +1391,15 @@ export const ProjectTransactionsTab = ({
               </Select>
             </div>
 
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleSaveEdit}
+                disabled={saving || !editAmount || !editDescription.trim()}
+              >
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save')}
               </Button>
