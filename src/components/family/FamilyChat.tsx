@@ -120,9 +120,16 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
     };
   }, [groupId]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom INSIDE the chat container only (not the page)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = scrollRef.current;
+    if (!el) return;
+    if (!hasInitialScrolled.current) {
+      el.scrollTop = el.scrollHeight;
+      hasInitialScrolled.current = true;
+    } else {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
   }, [messages]);
 
   const handleSend = async () => {
