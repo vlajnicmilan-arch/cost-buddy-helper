@@ -10,6 +10,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { TransferTransactionItem } from './TransferTransactionItem';
 
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
@@ -343,7 +344,13 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   );
 };
 
-export const TransactionItem = React.memo(TransactionItemInner, (prev, next) => {
+export const TransactionItem = React.memo((props: TransactionItemProps) => {
+  // Route transfers to the dedicated component that shows "from → to"
+  if (props.expense.type === 'transfer') {
+    return <TransferTransactionItem {...props} />;
+  }
+  return <TransactionItemInner {...props} />;
+}, (prev, next) => {
   return (
     prev.expense.id === next.expense.id &&
     prev.expense.amount === next.expense.amount &&
@@ -352,6 +359,7 @@ export const TransactionItem = React.memo(TransactionItemInner, (prev, next) => 
     prev.expense.type === next.expense.type &&
     prev.expense.payment_source === next.expense.payment_source &&
     prev.expense.payment_source_card_id === next.expense.payment_source_card_id &&
+    prev.expense.income_source_id === next.expense.income_source_id &&
     prev.expense.note === next.expense.note &&
     prev.expense.merchant_name === next.expense.merchant_name &&
     prev.expense.budget_id === next.expense.budget_id &&
