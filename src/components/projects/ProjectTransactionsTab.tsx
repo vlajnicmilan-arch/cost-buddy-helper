@@ -78,7 +78,7 @@ export const ProjectTransactionsTab = ({
   const { user } = useAuth();
   const { customCategories } = useCustomCategories();
   const { activeBusinessProfileId } = useAppState();
-  const { customPaymentSources } = useCustomPaymentSources();
+  const { customPaymentSources } = useCustomPaymentSources({ includePersonal: true });
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated: onRefetch });
   // Pending transactions hook
   const { 
@@ -284,6 +284,19 @@ export const ProjectTransactionsTab = ({
       // Update payment source balance if approved (pending shouldn't affect balance)
       if (status === 'approved' && paymentSourceForInsert) {
         await updateBalance(paymentSourceForInsert, parsedAmount, expenseType);
+      }
+
+      // Owner-loan auto-creation: business project expense paid from personal source
+      if (activeBusinessProfileId && inserted && status === 'approved' && expenseType === 'expense') {
+        const { createOwnerLoanIfCrossMode } = await import('@/lib/ownerLoanLogic');
+        createOwnerLoanIfCrossMode({
+          expenseId: (inserted as any).id,
+          userId: user.id,
+          businessProfileId: activeBusinessProfileId,
+          paymentSource: paymentSourceForInsert,
+          amount: parsedAmount,
+          description: description.trim(),
+        }).catch(e => console.error('Owner-loan creation failed:', e));
       }
 
       if (needsApproval) {
