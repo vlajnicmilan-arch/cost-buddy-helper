@@ -2,6 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Wallet, TrendingUp, TrendingDown, ArrowLeftRight, PiggyBank, Repeat } from 'lucide-react';
+import { format } from 'date-fns';
+import { hr as hrLocale, enUS, de as deLocale } from 'date-fns/locale';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Expense } from '@/types/expense';
 
