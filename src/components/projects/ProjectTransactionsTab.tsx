@@ -1084,9 +1084,30 @@ export const ProjectTransactionsTab = ({
               </Popover>
             </div>
 
-            {/* Expense Nature Toggle */}
+            {/* Payment source */}
             <div className="space-y-2">
-              <Label>{t('transactions.expenseNature', 'Vrsta troška')}</Label>
+              <Label className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t('paymentSources.paymentSource', 'Izvor plaćanja')}
+              </Label>
+              <Select value={paymentSourceValue} onValueChange={setPaymentSourceValue}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('projects.noPaymentSource', 'Bez izvora')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('projects.noPaymentSource', 'Bez izvora')}</SelectItem>
+                  {customPaymentSources.map((src) => (
+                    <SelectItem key={src.id} value={`custom:${src.id}`}>
+                      <span className="flex items-center gap-2">
+                        <span>{src.icon}</span>
+                        <span>{src.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
               <div className="flex gap-2">
                 <Button
                   type="button"
