@@ -2363,6 +2363,7 @@ export type Database = {
           project_id: string
           role: string
           status: string
+          suggested_context: string
           token: string
           used_at: string | null
         }
@@ -2376,6 +2377,7 @@ export type Database = {
           project_id: string
           role?: string
           status?: string
+          suggested_context?: string
           token?: string
           used_at?: string | null
         }
@@ -2389,6 +2391,7 @@ export type Database = {
           project_id?: string
           role?: string
           status?: string
+          suggested_context?: string
           token?: string
           used_at?: string | null
         }
@@ -2446,6 +2449,8 @@ export type Database = {
           display_name: string | null
           id: string
           joined_at: string
+          member_business_profile_id: string | null
+          member_context: string
           project_id: string
           role: string
           user_id: string
@@ -2455,6 +2460,8 @@ export type Database = {
           display_name?: string | null
           id?: string
           joined_at?: string
+          member_business_profile_id?: string | null
+          member_context?: string
           project_id: string
           role?: string
           user_id: string
@@ -2464,11 +2471,20 @@ export type Database = {
           display_name?: string | null
           id?: string
           joined_at?: string
+          member_business_profile_id?: string | null
+          member_context?: string
           project_id?: string
           role?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_members_member_business_profile_id_fkey"
+            columns: ["member_business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_members_project_id_fkey"
             columns: ["project_id"]

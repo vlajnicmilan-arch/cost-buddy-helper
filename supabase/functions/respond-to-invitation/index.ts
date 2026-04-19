@@ -36,7 +36,7 @@ serve(async (req) => {
       );
     }
 
-    const { type, invitationId, action } = await req.json();
+    const { type, invitationId, action, memberContext, memberBusinessProfileId } = await req.json();
 
     if (!type || !invitationId || !action) {
       return new Response(
@@ -138,9 +138,29 @@ serve(async (req) => {
         role: invitation.role,
       };
 
-      // For project_members, add display_name
+      // For project_members, add display_name + per-member context
       if (type === "project") {
         memberData.display_name = profile?.display_name || null;
+
+        let resolvedContext: 'personal' | 'business' = 'personal';
+        let resolvedBusinessProfileId: string | null = null;
+
+        if (memberContext === 'business' && memberBusinessProfileId) {
+          // Validate business profile belongs to accepting user
+          const { data: bp } = await adminClient
+            .from('business_profiles')
+            .select('id')
+            .eq('id', memberBusinessProfileId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (bp) {
+            resolvedContext = 'business';
+            resolvedBusinessProfileId = memberBusinessProfileId;
+          }
+        }
+
+        memberData.member_context = resolvedContext;
+        memberData.member_business_profile_id = resolvedBusinessProfileId;
       }
 
       const { error: memberError } = await adminClient

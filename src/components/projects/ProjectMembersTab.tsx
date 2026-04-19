@@ -7,7 +7,7 @@ import { ProjectMember, ProjectInvitation, ProjectRole, PROJECT_ROLE_LABELS } fr
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield } from 'lucide-react';
+import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield, User, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,12 +45,13 @@ export const ProjectMembersTab = ({
   const [inviteRole, setInviteRole] = useState<ProjectRole>('member');
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [suggestedContext, setSuggestedContext] = useState<'personal' | 'business'>('personal');
   const [permDialog, setPermDialog] = useState<PermDialogState>({ open: false, userId: '', memberName: '' });
 
   const handleGenerateLink = async () => {
     setGeneratingLink(true);
     try {
-      const link = await generateInviteLink(inviteRole);
+      const link = await generateInviteLink(inviteRole, suggestedContext);
       if (link) {
         setInviteLink(link);
       }
@@ -80,6 +81,7 @@ export const ProjectMembersTab = ({
           targetId: projectId,
           invitedEmail: inviteEmail.trim(),
           role: inviteRole,
+          suggestedContext,
         },
       });
 
@@ -143,7 +145,41 @@ export const ProjectMembersTab = ({
             <UserPlus className="w-4 h-4" />
             <span className="font-medium">{t('projects.inviteMembers')}</span>
           </div>
-          
+
+          {/* Context picker — where the project will appear for the invitee */}
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              {t('projects.suggestedContext', 'Gdje će član vidjeti projekt?')}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={suggestedContext === 'personal' ? 'default' : 'outline'}
+                size="sm"
+                className="h-9 justify-start"
+                onClick={() => setSuggestedContext('personal')}
+              >
+                <User className="w-4 h-4 mr-2" />
+                {t('projects.contextPersonal', 'Osobne financije')}
+              </Button>
+              <Button
+                type="button"
+                variant={suggestedContext === 'business' ? 'default' : 'outline'}
+                size="sm"
+                className="h-9 justify-start"
+                onClick={() => setSuggestedContext('business')}
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                {t('projects.contextBusiness', 'Poslovni mod')}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {suggestedContext === 'business'
+                ? t('projects.contextBusinessHint', 'Član će prilikom prihvaćanja odabrati svoj poslovni profil.')
+                : t('projects.contextPersonalHint', 'Projekt će se kod člana pojaviti u Osobnim financijama.')}
+            </p>
+          </div>
+
           {/* Email invitation */}
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{t('projects.inviteByEmail', 'Pozovi putem emaila')}</p>

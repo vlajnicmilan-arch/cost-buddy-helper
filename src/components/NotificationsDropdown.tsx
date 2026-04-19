@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock, User, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -18,7 +18,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -74,6 +76,7 @@ const parseNotificationData = (data: unknown): Record<string, unknown> => {
 
 export const NotificationsDropdown = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const {
     notifications,
@@ -91,6 +94,40 @@ export const NotificationsDropdown = () => {
     invitationType: 'project' | 'budget' | 'payment_source' | 'family';
     invitationId: string;
   } | null>(null);
+
+  // Project-invitation context picker state
+  const [chosenContext, setChosenContext] = useState<'personal' | 'business'>('personal');
+  const [businessProfiles, setBusinessProfiles] = useState<Array<{ id: string; company_name: string }>>([]);
+  const [chosenBusinessProfileId, setChosenBusinessProfileId] = useState<string>('');
+  const [suggestedContext, setSuggestedContext] = useState<'personal' | 'business'>('personal');
+
+  // When project invitation dialog opens, load suggestion + user's business profiles
+  useEffect(() => {
+    const loadProjectContext = async () => {
+      if (!invitationDialog || invitationDialog.invitationType !== 'project' || !user) return;
+
+      const { data: inv } = await supabase
+        .from('project_invitations')
+        .select('suggested_context')
+        .eq('id', invitationDialog.invitationId)
+        .maybeSingle();
+
+      const suggested = ((inv as any)?.suggested_context === 'business' ? 'business' : 'personal') as 'personal' | 'business';
+      setSuggestedContext(suggested);
+      setChosenContext(suggested);
+
+      const { data: profiles } = await supabase
+        .from('business_profiles')
+        .select('id, company_name')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      const list = (profiles || []) as Array<{ id: string; company_name: string }>;
+      setBusinessProfiles(list);
+      if (list.length > 0) setChosenBusinessProfileId(list[0].id);
+    };
+    loadProjectContext();
+  }, [invitationDialog, user]);
 
   const getNavigationTarget = (type: string, data: Record<string, unknown>) => {
     switch (type) {
@@ -150,16 +187,32 @@ export const NotificationsDropdown = () => {
   const handleRespondToInvitation = async (action: 'accept' | 'decline') => {
     if (!invitationDialog) return;
     const { notification, invitationType, invitationId } = invitationDialog;
-    
+
+    // Validate context choice for project accept
+    if (
+      action === 'accept' &&
+      invitationType === 'project' &&
+      chosenContext === 'business' &&
+      !chosenBusinessProfileId
+    ) {
+      showError(t('projects.selectBusinessProfile', 'Odaberite poslovni profil ili odaberite Osobne financije.'));
+      return;
+    }
+
     setRespondingTo(notification.id);
     try {
-      const { data, error } = await supabase.functions.invoke('respond-to-invitation', {
-        body: {
-          type: invitationType,
-          invitationId,
-          action,
-        },
-      });
+      const body: Record<string, unknown> = {
+        type: invitationType,
+        invitationId,
+        action,
+      };
+
+      if (action === 'accept' && invitationType === 'project') {
+        body.memberContext = chosenContext;
+        body.memberBusinessProfileId = chosenContext === 'business' ? chosenBusinessProfileId : null;
+      }
+
+      const { data, error } = await supabase.functions.invoke('respond-to-invitation', { body });
 
       if (error) throw error;
 
@@ -310,6 +363,60 @@ export const NotificationsDropdown = () => {
               {invitationDialog?.notification.message}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {invitationDialog?.invitationType === 'project' && (
+            <div className="space-y-2 py-2">
+              <p className="text-sm font-medium">
+                {t('projects.whereToShow', 'Gdje želite vidjeti ovaj projekt?')}
+              </p>
+              {suggestedContext === 'business' && (
+                <p className="text-xs text-muted-foreground">
+                  {t('projects.ownerSuggestedBusiness', 'Vlasnik je predložio: Poslovni mod')}
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={chosenContext === 'personal' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-9 justify-start"
+                  onClick={() => setChosenContext('personal')}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  {t('projects.contextPersonal', 'Osobne financije')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={chosenContext === 'business' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-9 justify-start"
+                  onClick={() => setChosenContext('business')}
+                  disabled={businessProfiles.length === 0}
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  {t('projects.contextBusiness', 'Poslovni mod')}
+                </Button>
+              </div>
+              {chosenContext === 'business' && businessProfiles.length > 0 && (
+                <Select value={chosenBusinessProfileId} onValueChange={setChosenBusinessProfileId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('projects.selectProfile', 'Odaberite profil')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {businessProfiles.map(bp => (
+                      <SelectItem key={bp.id} value={bp.id}>{bp.company_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {chosenContext === 'business' && businessProfiles.length === 0 && (
+                <p className="text-xs text-destructive">
+                  {t('projects.noBusinessProfiles', 'Nemate poslovnih profila. Odaberite Osobne financije.')}
+                </p>
+              )}
+            </div>
+          )}
+
           <AlertDialogFooter className="flex-row gap-2">
             <Button
               variant="outline"

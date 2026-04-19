@@ -38,8 +38,8 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { type, targetId, invitedEmail, role } = body;
-    console.log("[SEND-MEMBER-INVITATION] Request body:", { type, targetId, invitedEmail, role });
+    const { type, targetId, invitedEmail, role, suggestedContext } = body;
+    console.log("[SEND-MEMBER-INVITATION] Request body:", { type, targetId, invitedEmail, role, suggestedContext });
 
     if (!type || !targetId || !invitedEmail || !role) {
       return new Response(
@@ -162,6 +162,11 @@ serve(async (req) => {
       invited_by: user.id,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
+
+    // For project invitations, add suggested context (personal | business)
+    if (type === "project" && suggestedContext) {
+      insertData.suggested_context = suggestedContext === "business" ? "business" : "personal";
+    }
 
     // All invitation types now store invited_user_id for proper RLS scoping
     // (project, budget, payment_source all support invited_user_id column)
