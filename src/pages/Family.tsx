@@ -37,6 +37,11 @@ const Family = () => {
     }
   }, [user, authLoading, navigate, storageMode]);
 
+  // Reset scroll position when entering/leaving group detail view
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [selectedGroup?.id]);
+
   // Handle deep-link from notifications
   useEffect(() => {
     const state = location.state as { openGroupId?: string; openChat?: boolean } | null;
