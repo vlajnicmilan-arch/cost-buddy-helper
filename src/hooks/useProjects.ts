@@ -47,31 +47,35 @@ export const useProjects = () => {
 
         if (ownedError) throw ownedError;
 
-        // 2. Fetch projects where user is a member
+        // 2. Fetch projects where user is a member (with their per-member context)
         const { data: membershipData, error: membershipError } = await supabase
           .from('project_members')
-          .select('project_id, role')
+          .select('project_id, role, member_context, member_business_profile_id')
           .eq('user_id', user.id);
 
         if (membershipError) throw membershipError;
 
-        const memberProjectIds = membershipData
-          ?.filter(m => !ownedProjects?.some(p => p.id === m.project_id))
-          .map(m => m.project_id) || [];
+        // Filter memberships by current view context (Personal vs Business profile)
+        const filteredMemberships = (membershipData || []).filter((m: any) => {
+          if (activeBusinessProfileId) {
+            // Business view: include only memberships marked business + matching profile
+            return m.member_context === 'business' && m.member_business_profile_id === activeBusinessProfileId;
+          }
+          // Personal view: include only memberships marked personal
+          return m.member_context !== 'business';
+        });
+
+        const memberProjectIds = filteredMemberships
+          .filter(m => !ownedProjects?.some(p => p.id === m.project_id))
+          .map(m => m.project_id);
 
         let sharedProjects: Project[] = [];
         if (memberProjectIds.length > 0) {
-          let sharedQuery = supabase
+          // No business_profile_id filter on project itself — context is per-member
+          const { data: shared, error: sharedError } = await supabase
             .from('projects')
             .select('*')
             .in('id', memberProjectIds);
-
-          if (activeBusinessProfileId) {
-            sharedQuery = sharedQuery.eq('business_profile_id', activeBusinessProfileId);
-          }
-          // Personal mode: show ALL shared projects too
-
-          const { data: shared, error: sharedError } = await sharedQuery;
 
           if (!sharedError && shared) {
             sharedProjects = shared.map(p => ({
@@ -83,7 +87,7 @@ export const useProjects = () => {
         }
 
         // Combine and mark ownership
-        const memberRoleMap = new Map(membershipData?.map(m => [m.project_id, m.role as ProjectRole]));
+        const memberRoleMap = new Map(filteredMemberships.map(m => [m.project_id, m.role as ProjectRole]));
         
         const allProjects: ProjectWithOwnership[] = [
           ...(ownedProjects || []).map(p => ({ 
