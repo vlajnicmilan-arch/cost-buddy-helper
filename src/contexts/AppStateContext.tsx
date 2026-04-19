@@ -48,64 +48,25 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('family_mode_enabled') !== 'false'
   );
-  const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(
-    () => localStorage.getItem('business_mode_enabled') === 'true'
-  );
-  const [activeBusinessProfileId, setActiveBusinessProfileIdState] = useState<string | null>(
-    () => localStorage.getItem('active_business_profile_id') || null
-  );
+  // Always start each session in Personal mode (per user preference).
+  // The previously selected business profile is forgotten on reload so the
+  // user has to explicitly switch via the BusinessProfileSwitcher.
+  const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(() => {
+    // Clear any persisted business state so reloads always land in Personal.
+    localStorage.setItem('business_mode_enabled', 'false');
+    localStorage.removeItem('active_business_profile_id');
+    return false;
+  });
+  const [activeBusinessProfileId, setActiveBusinessProfileIdState] = useState<string | null>(null);
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
   const [appStateReady, setAppStateReady] = useState(false);
 
-  // Resolve business mode context (active profile or shared business membership)
-  // Runs once per session as soon as user is known. Prevents race conditions where
-  // useProjects() in different components fetches with stale activeBusinessProfileId=null.
+  // Auto-select for invitation-acceptance flow runs only WITHIN the session
+  // (acceptance code calls the setters directly). On cold start we never
+  // resurrect business mode — user explicitly opts in via the switcher.
   useEffect(() => {
-    const resolveBusinessContext = async (userId: string) => {
-      // Only act if business mode is currently on but no active profile is set
-      const currentBusinessMode = localStorage.getItem('business_mode_enabled') === 'true';
-      const currentActiveId = localStorage.getItem('active_business_profile_id');
-      if (!currentBusinessMode || currentActiveId) return;
-
-      try {
-        // Check shared business memberships
-        const { data: memberships } = await supabase
-          .from('project_members')
-          .select('member_business_profile_id')
-          .eq('user_id', userId)
-          .eq('member_context', 'business')
-          .limit(1);
-
-        // Load own active business profiles
-        const { data: profiles } = await supabase
-          .from('business_profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('is_active', true)
-          .order('created_at', { ascending: true });
-
-        const sharedProfileId = memberships?.[0]?.member_business_profile_id;
-        const ownProfileId = profiles?.[0]?.id;
-        // Prefer the profile referenced by the shared membership; fall back to user's own
-        const targetId = sharedProfileId || ownProfileId;
-
-        if (targetId) {
-          console.log('[AppState] Auto-activating business profile:', targetId);
-          setActiveBusinessProfileIdState(targetId);
-          localStorage.setItem('active_business_profile_id', targetId);
-        } else {
-          // No business context anywhere — disable business mode
-          console.log('[AppState] No business context found, disabling business mode');
-          setBusinessModeEnabledState(false);
-          localStorage.setItem('business_mode_enabled', 'false');
-        }
-      } catch (e) {
-        console.error('[AppState] Failed to resolve business context:', e);
-      }
-    };
-
     const resolveOnboarding = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -114,10 +75,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         setAppStateReady(true);
         return;
       }
-
-      // Resolve business mode context (active profile or shared membership)
-      // Run in parallel — non-blocking side effect.
-      resolveBusinessContext(session.user.id);
 
       // User exists — restore cloud storage config if missing
       const hasStorageConfig = localStorage.getItem('finmate-storage-config');
