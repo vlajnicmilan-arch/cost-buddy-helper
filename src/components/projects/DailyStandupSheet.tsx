@@ -44,10 +44,6 @@ export const DailyStandupSheet = ({
 }: DailyStandupSheetProps) => {
   const { t } = useTranslation();
   const [text, setText] = useState('');
-  const [recording, setRecording] = useState(false);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const manualStopRef = useRef(false);
-  const textBufferRef = useRef('');
   const [aiLoading, setAiLoading] = useState(false);
   const [projectId, setProjectId] = useState<string>('');
   const [parsed, setParsed] = useState<ParsedResult | null>(null);
@@ -55,7 +51,27 @@ export const DailyStandupSheet = ({
   const [projectWorkers, setProjectWorkers] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const [applying, setApplying] = useState(false);
   const [workDate] = useState<string>(new Date().toISOString().slice(0, 10));
-  const [showPermissionHelp, setShowPermissionHelp] = useState(false);
+
+  // Centralized voice dictation — append transcripts onto current text
+  const {
+    recording,
+    start: startVoice,
+    stop: stopVoice,
+    supported: voiceSupported,
+    showPermissionHelp,
+    setShowPermissionHelp,
+  } = useVoiceDictation({
+    onTranscript: (transcript, isFinal) => {
+      setText(prev => {
+        const base = prev.trim();
+        const next = base ? `${base} ${transcript}` : transcript;
+        return next.replace(/\s+/g, ' ');
+      });
+      if (isFinal) {
+        // small UX hint on first final
+      }
+    },
+  });
 
   // Reset on close
   useEffect(() => {
@@ -63,23 +79,9 @@ export const DailyStandupSheet = ({
       setText('');
       setParsed(null);
       setWorkerSelections({});
-      // Ensure native listeners are cleaned when sheet closes
-      if (Capacitor.isNativePlatform()) {
-        SpeechRecognition.stop().catch(() => { /* noop */ });
-        SpeechRecognition.removeAllListeners().catch(() => { /* noop */ });
-      }
+      stopVoice();
     }
-  }, [open]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (Capacitor.isNativePlatform()) {
-        SpeechRecognition.stop().catch(() => { /* noop */ });
-        SpeechRecognition.removeAllListeners().catch(() => { /* noop */ });
-      }
-    };
-  }, []);
+  }, [open, stopVoice]);
 
   // Set default project
   useEffect(() => {
@@ -103,160 +105,18 @@ export const DailyStandupSheet = ({
   const selectedProject = useMemo(() => projects.find(p => p.id === projectId), [projects, projectId]);
 
   const startRecording = async () => {
-    // === NATIVE PATH (Android/iOS via Capacitor plugin) ===
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const available = await SpeechRecognition.available();
-        if (!available.available) {
-          showError(t('projects.standup.noVoice', 'Glasovni unos nije podržan na ovom uređaju.'));
-          return;
-        }
-
-        // Check & request permission (triggers native Android prompt)
-        const permStatus = await SpeechRecognition.checkPermissions();
-        if (permStatus.speechRecognition !== 'granted') {
-          const req = await SpeechRecognition.requestPermissions();
-          if (req.speechRecognition !== 'granted') {
-            setShowPermissionHelp(true);
-            return;
-          }
-        }
-
-        textBufferRef.current = text ? text.trim() + ' ' : '';
-        manualStopRef.current = false;
-
-        // Remove any stale listeners then attach new one
-        await SpeechRecognition.removeAllListeners();
-        await SpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
-          const transcript = data?.matches?.[0] || '';
-          setText((textBufferRef.current + transcript).replace(/\s+/g, ' '));
-        });
-        await SpeechRecognition.addListener('listeningState' as any, (data: any) => {
-          if (data?.status === 'stopped' && !manualStopRef.current) {
-            // Auto-restart on silence timeout (Android stops after a pause)
-            SpeechRecognition.start({
-              language: 'hr-HR',
-              partialResults: true,
-              popup: false,
-            }).catch(() => setRecording(false));
-          }
-        });
-
-        await SpeechRecognition.start({
-          language: 'hr-HR',
-          partialResults: true,
-          popup: false,
-        });
-        setRecording(true);
-        showSuccess(t('projects.standup.recordingStarted', 'Snimanje pokrenuto — govori...'));
-      } catch (err: any) {
-        console.error('Native speech recognition error:', err);
-        const msg = String(err?.message || err);
-        if (/permission|denied/i.test(msg)) {
-          setShowPermissionHelp(true);
-        } else {
-          showError(t('projects.standup.startFailed', 'Snimanje nije moglo započeti. Pokušaj ponovno.'));
-        }
-        setRecording(false);
-      }
-      return;
-    }
-
-    // === WEB PATH (PWA / browser) ===
-    // iOS Safari has webkitSpeechRecognition shim that doesn't actually work reliably
-    if (isIOS()) {
-      showError(t('projects.standup.iosNotSupported', 'Glasovni unos ne radi na iPhone Safariju. Koristi tipkovnicu.'));
-      return;
-    }
-
-    const r = getRecognition();
-    if (!r) {
+    if (!voiceSupported) {
       showError(t('projects.standup.noVoice', 'Glasovni unos nije podržan na ovom uređaju.'));
       return;
     }
-
-    // Explicitly request mic permission so the user gets a clear native prompt
-    try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Immediately stop the tracks — SpeechRecognition manages its own audio
-        stream.getTracks().forEach(track => track.stop());
-      }
-    } catch (err: any) {
-      console.error('Mic permission error:', err);
-      setShowPermissionHelp(true);
-      return;
-    }
-
-    textBufferRef.current = text ? text.trim() + ' ' : '';
-    manualStopRef.current = false;
-
-    r.onstart = () => {
-      setRecording(true);
+    await startVoice();
+    if (recording) {
       showSuccess(t('projects.standup.recordingStarted', 'Snimanje pokrenuto — govori...'));
-    };
-    r.onresult = (e: any) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const s = e.results[i];
-        if (s.isFinal) textBufferRef.current += s[0].transcript + ' ';
-        else interim += s[0].transcript;
-      }
-      setText((textBufferRef.current + interim).replace(/\s+/g, ' '));
-    };
-    r.onerror = (e: any) => {
-      const errorType = e?.error || 'unknown';
-      console.warn('SpeechRecognition error:', errorType);
-      // Ignore transient errors that should not stop recording
-      if (errorType === 'no-speech' || errorType === 'aborted') return;
-      if (errorType === 'not-allowed' || errorType === 'service-not-allowed') {
-        manualStopRef.current = true;
-        setShowPermissionHelp(true);
-        setRecording(false);
-        return;
-      }
-      // Other errors: stop gracefully
-      manualStopRef.current = true;
-      setRecording(false);
-    };
-    r.onend = () => {
-      // Auto-restart if user didn't manually stop (Chrome auto-stops after silence)
-      if (!manualStopRef.current) {
-        try {
-          r.start();
-          return;
-        } catch {
-          // fall through to stop
-        }
-      }
-      setRecording(false);
-    };
-
-    try {
-      r.start();
-      recognitionRef.current = r;
-    } catch (err) {
-      console.error('Failed to start recognition:', err);
-      showError(t('projects.standup.startFailed', 'Snimanje nije moglo započeti. Pokušaj ponovno.'));
-      setRecording(false);
     }
   };
 
   const stopRecording = () => {
-    manualStopRef.current = true;
-    // Native stop
-    if (Capacitor.isNativePlatform()) {
-      SpeechRecognition.stop().catch(() => { /* noop */ });
-      SpeechRecognition.removeAllListeners().catch(() => { /* noop */ });
-      setRecording(false);
-      return;
-    }
-    // Web stop
-    const r = recognitionRef.current;
-    if (r) {
-      try { r.stop(); } catch { /* noop */ }
-    }
-    setRecording(false);
+    stopVoice();
   };
 
   const sendToAI = async () => {
