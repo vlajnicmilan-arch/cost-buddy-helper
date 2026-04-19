@@ -1,57 +1,87 @@
 
 
-## Plan: Popravak push obavijesti — funkcije nisu deployani s novim kodom
+## Plan: Centralizirani sustav praćenja push obavijesti
 
-### Dijagnoza (potvrđeno iz logova)
+### Problem
+Kada push obavijest ne stigne na uređaj, trenutno nemamo načina vidjeti ZAŠTO. Moramo ručno preglédati edge function logove, kombinirati ih s in-app notifikacijama i FCM odgovorima — to je sporo i nepouzdano.
 
-1. **In-app notifikacije rade** — u `notifications` tablici postoje nove zapisi (npr. "Transakcija u projektu Duje Grčić" u 13:39)
-2. **`notify-project-transaction` se uspješno poziva** (HTTP 200, 1042ms execution)
-3. **ALI `send-push` nema NIJEDAN log** — što znači da `sendPushNotification(...)` poziv unutar deployanih funkcija **nikad ne pošalje HTTP zahtjev**
-4. **Korisnik IMA registriran token** u `push_tokens` (1 zapis, Android)
+### Rješenje: tablica `push_delivery_logs` + admin UI za pregled
 
-### Uzrok
+#### 1. Nova tablica `push_delivery_logs`
+Migracija dodaje tablicu koja bilježi SVAKI pokušaj slanja push obavijesti:
 
-Edge funkcije referenciraju `import { sendPushNotificationToMany } from '../_shared/sendPushNotification.ts'`. Kod je u repo-u **ispravan**, ali deployani build vjerojatno ne uključuje `_shared/` helper iz dva moguća razloga:
+```
+- id (uuid)
+- created_at (timestamptz)
+- user_id (uuid)            -- primatelj
+- source_function (text)    -- npr. "notify-project-transaction"
+- title (text)
+- body (text)
+- token_count (int)         -- koliko tokena je pronađeno
+- success_count (int)       -- koliko je FCM prihvatio
+- failure_count (int)
+- fcm_error_codes (jsonb)   -- npr. ["UNREGISTERED"] ili null
+- request_payload (jsonb)   -- title/body/data za debug
+- response_summary (jsonb)  -- sažetak FCM odgovora
+- duration_ms (int)
+```
 
-- **Najvjerojatnije**: funkcije nisu redeployani nakon dodavanja shared helpera. Promjena `_shared/sendPushNotification.ts` ne triggera automatski redeploy onih 13 funkcija koje ga uvoze (jer se redeployaju samo funkcije čiji se `index.ts` mijenja).
-- **Manje vjerojatno**: deploy bundler ne pokupi datoteke iz `_shared/` (no Supabase normalno pokupi relativne importe)
+RLS: samo admin (`has_role(auth.uid(), 'admin')`) može čitati. Service role piše.
 
-### Rješenje
+#### 2. Izmjena `send-push` edge funkcije
+Na kraju svake invokacije, BEZ obzira na uspjeh ili neuspjeh, upisuje zapis u `push_delivery_logs`. Hvata:
+- broj pronađenih tokena
+- broj uspješno poslanih
+- pojedinačne FCM error kodove (UNREGISTERED, INVALID_ARGUMENT, itd.)
+- trajanje
+- source_function (iz novog opcijalnog parametra body-ja koji svaki notify-* prosljeđuje)
 
-**Force redeploy svih 13 notifikacijskih funkcija** koje koriste push helper, koristeći `supabase--deploy_edge_functions`:
+#### 3. Izmjena `_shared/sendPushNotification.ts`
+Dodaje opcijski parametar `source` koji se proslijeđuje u `send-push` body. Tako svaki notify-* zapisuje koja je funkcija pokušala poslati.
 
-1. `notify-project-transaction`
-2. `notify-payment-source-transaction`
-3. `notify-pending-transaction`
-4. `notify-note-added`
-5. `notify-family-message`
-6. `broadcast-notification`
-7. `check-reminders`
-8. `check-budget-alerts`
-9. `check-milestone-deadlines`
-10. `send-member-invitation`
-11. `accept-project-invitation`
-12. `respond-to-invitation`
-13. `track-referral`
+#### 4. Novi tab u Admin panelu: "Push Logs"
+**Datoteka**: `src/components/admin/PushLogsTab.tsx` + dodati tab u `src/pages/Admin.tsx`
 
-Plus za sigurnost i sam `send-push`.
+Prikazuje tablicu zadnjih 200 zapisa sa stupcima:
+- Vrijeme
+- Korisnik (display_name + email)
+- Source funkcija
+- Naslov / tijelo (skraćeno)
+- Status (✓ uspjeh / ✗ greška / ⚠ djelomično)
+- Token count → success / fail
+- FCM error code (badge)
+- Trajanje (ms)
 
-### Dodatne provjere nakon redeploya
+Filteri:
+- Po korisniku (search)
+- Po source funkciji (dropdown)
+- Po statusu (samo greške / sve)
+- Po vremenu (zadnjih 24h / 7 dana)
 
-Nakon redeploya, trigerirati testnu transakciju i provjeriti:
-- `send-push` logove — mora se pojaviti `Listening` + uspješna FCM poruka
-- Da li FCM vrati `OK` ili neku grešku (npr. neispravan token, pogrešan project_id)
+Klik na red → expand s punim payloadom (request + response JSON).
+
+#### 5. Auto-cleanup
+Dodati `cleanup_old_push_logs()` funkciju (briše >30 dana) i pozvati je sporadično iz `maybe_cleanup_push_logs` triggera (kao postojeći cleanup_old_chat_messages).
 
 ### Što NE diram
+- Postojeću push logiku (radi)
+- `_shared/sendPushNotification.ts` interface (samo dodajem opcionalni parametar)
+- RLS politike na `push_tokens`, `notifications`
 
-- Frontend kod (radi ispravno)
-- `_shared/sendPushNotification.ts` (kod je točan)
-- `usePushNotifications.ts` / `nativePush.ts` (token je registriran)
-- `push_tokens` tablicu i RLS
+### Datoteke
+- **Migracija**: nova tablica `push_delivery_logs` + RLS + cleanup funkcija
+- **Izmjena**: `supabase/functions/send-push/index.ts` — log na kraju
+- **Izmjena**: `supabase/functions/_shared/sendPushNotification.ts` — opcionalni `source` parametar
+- **Izmjena (14 funkcija)**: svaka notify-* prosljeđuje `source: 'notify-xxx'`
+- **Nova**: `src/components/admin/PushLogsTab.tsx`
+- **Izmjena**: `src/pages/Admin.tsx` — novi tab
+- **Izmjena**: `src/i18n/locales/{hr,en,de}.json` — admin tab labele
 
-### Test plan nakon deploya
-
-1. Iz drugog uređaja/računa kreirati transakciju na dijeljenom računu korisnika `e78ee9bd-094e...`
-2. Provjeriti `send-push` logove — mora postojati zapis o pozivu na FCM
-3. Provjeriti dolaze li push obavijesti **na zaključan ekran s zvukom** na Androidu
+### Test plan
+1. Kreiraj testnu transakciju
+2. Otvori Admin → Push Logs
+3. Vidiš novi zapis: source, broj tokena, status, FCM error (ako ga ima)
+4. Ako je `UNREGISTERED` → znamo da je token istekao
+5. Ako je `success_count = 0, token_count = 0` → korisnik nema registriran token
+6. Ako uopće nema zapisa → `send-push` nije pozvan (problem u notify-* funkciji)
 
