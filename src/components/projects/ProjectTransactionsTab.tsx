@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { TransactionItemsExpander } from '@/components/TransactionItemsExpander';
 import { DateRange } from 'react-day-picker';
 import { enUS, de } from 'date-fns/locale';
+import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 
 interface ProjectExpense {
   id: string;
@@ -192,6 +193,16 @@ export const ProjectTransactionsTab = ({
   const [date, setDate] = useState<Date>(new Date());
   const [milestoneId, setMilestoneId] = useState<string>('none');
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
+
+  // Calendar popover open states (auto-close on select)
+  const [filterDateOpen, setFilterDateOpen] = useState(false);
+  const [addDateOpen, setAddDateOpen] = useState(false);
+  const [editDateOpen, setEditDateOpen] = useState(false);
+
+  // Date ranges per transaction type (expense vs income)
+  const addDateRangeLimits = useMemo(() => getDateRange('transactionDynamic', expenseType as 'expense' | 'income'), [expenseType]);
+  const editDateRangeLimits = useMemo(() => getDateRange('transactionDynamic', editType as 'expense' | 'income'), [editType]);
+  const reportDateLimits = useMemo(() => getDateRange('report'), []);
 
   // Check if viewer can add transactions (needs approval)
   const canAddTransaction = isManager || userRole === 'member' || userRole === 'viewer';
@@ -637,7 +648,7 @@ export const ProjectTransactionsTab = ({
               )}
 
               {/* Date Range */}
-              <Popover>
+              <Popover open={filterDateOpen} onOpenChange={setFilterDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -666,9 +677,13 @@ export const ProjectTransactionsTab = ({
                   <Calendar
                     mode="range"
                     selected={filterDateRange}
-                    onSelect={setFilterDateRange}
+                    onSelect={(range) => {
+                      setFilterDateRange(range);
+                      if (range?.from && range?.to) setFilterDateOpen(false);
+                    }}
                     numberOfMonths={1}
                     locale={dateLocale}
+                    disabled={makeCalendarDisabled(reportDateLimits)}
                     initialFocus
                   />
                 </PopoverContent>
@@ -1012,7 +1027,7 @@ export const ProjectTransactionsTab = ({
             {/* Date */}
             <div className="space-y-2">
               <Label>{t('common.date')}</Label>
-              <Popover>
+              <Popover open={addDateOpen} onOpenChange={setAddDateOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1023,7 +1038,8 @@ export const ProjectTransactionsTab = ({
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={(d) => d && setDate(d)}
+                    onSelect={(d) => { if (d) { setDate(d); setAddDateOpen(false); } }}
+                    disabled={makeCalendarDisabled(addDateRangeLimits)}
                     initialFocus
                   />
                 </PopoverContent>
@@ -1269,7 +1285,7 @@ export const ProjectTransactionsTab = ({
             {/* Date */}
             <div className="space-y-2">
               <Label>{t('common.date')}</Label>
-              <Popover>
+              <Popover open={editDateOpen} onOpenChange={setEditDateOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start font-normal">
                     <CalendarIcon className="w-4 h-4 mr-2" />
@@ -1280,7 +1296,8 @@ export const ProjectTransactionsTab = ({
                   <Calendar
                     mode="single"
                     selected={editDate}
-                    onSelect={(d) => d && setEditDate(d)}
+                    onSelect={(d) => { if (d) { setEditDate(d); setEditDateOpen(false); } }}
+                    disabled={makeCalendarDisabled(editDateRangeLimits)}
                     initialFocus
                     locale={hr}
                   />
