@@ -28,6 +28,15 @@ export const PaymentSourceSelector = ({
 }: PaymentSourceSelectorProps) => {
   const { t } = useTranslation();
   const { currency: primaryCurrency } = useCurrency();
+  const { activeBusinessProfileId } = useAppState();
+
+  // In business mode, split custom sources into business-owned vs personal (cross-mode/loan)
+  const businessSources = activeBusinessProfileId
+    ? customPaymentSources.filter(s => s.business_profile_id === activeBusinessProfileId)
+    : customPaymentSources;
+  const personalLoanSources = activeBusinessProfileId
+    ? customPaymentSources.filter(s => !s.business_profile_id)
+    : [];
 
   return (
     <div className="space-y-3">
