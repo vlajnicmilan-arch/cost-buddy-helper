@@ -87,7 +87,16 @@ export const useProjects = () => {
         }
 
         // Combine and mark ownership
-        const memberRoleMap = new Map(filteredMemberships.map(m => [m.project_id, m.role as ProjectRole]));
+        const memberMetaMap = new Map(
+          filteredMemberships.map(m => [
+            m.project_id,
+            {
+              role: m.role as ProjectRole,
+              member_context: (m.member_context === 'business' ? 'business' : 'personal') as 'personal' | 'business',
+              member_business_profile_id: m.member_business_profile_id ?? null,
+            },
+          ])
+        );
         
         const allProjects: ProjectWithOwnership[] = [
           ...(ownedProjects || []).map(p => ({ 
@@ -100,7 +109,9 @@ export const useProjects = () => {
           ...sharedProjects.map(p => ({ 
             ...p, 
             isOwner: false, 
-            role: memberRoleMap.get(p.id) || 'member' as ProjectRole,
+            role: memberMetaMap.get(p.id)?.role || 'member' as ProjectRole,
+            member_context: memberMetaMap.get(p.id)?.member_context,
+            member_business_profile_id: memberMetaMap.get(p.id)?.member_business_profile_id ?? null,
             total_budget: Number(p.total_budget) || 0
           })),
         ];

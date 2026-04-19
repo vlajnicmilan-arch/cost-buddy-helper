@@ -59,9 +59,14 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [standupOpen, setStandupOpen] = useState(false);
   const [standupProject, setStandupProject] = useState<ProjectWithOwnership | null>(null);
 
-  // Filter only business projects for this profile (memoized)
+  // Show owned projects assigned to this profile + shared projects joined under this profile.
   const businessProjects = useMemo(
-    () => projects.filter(p => (p as any).business_profile_id === activeBusinessProfileId),
+    () => projects.filter((p) => {
+      if (!activeBusinessProfileId) return false;
+      const isOwnedBusinessProject = p.business_profile_id === activeBusinessProfileId;
+      const isSharedBusinessProject = !p.isOwner && p.member_context === 'business' && p.member_business_profile_id === activeBusinessProfileId;
+      return isOwnedBusinessProject || isSharedBusinessProject;
+    }),
     [projects, activeBusinessProfileId]
   );
 
