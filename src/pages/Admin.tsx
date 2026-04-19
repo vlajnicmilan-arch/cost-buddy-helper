@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck, Bell, Send, MessageSquareReply, CreditCard, Crown, Briefcase, Star, Activity, Package } from 'lucide-react';
+import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck, Bell, Send, MessageSquareReply, CreditCard, Crown, Briefcase, Star, Activity, Package, BellRing } from 'lucide-react';
 import { DiagnosticLogsTab } from '@/components/admin/DiagnosticLogsTab';
 import { APKManagerTab } from '@/components/admin/APKManagerTab';
+import { PushLogsTab } from '@/components/admin/PushLogsTab';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -407,7 +408,7 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-7 h-9">
+          <TabsList className="w-full grid grid-cols-8 h-9">
             <TabsTrigger value="stats" className="text-xs gap-1 px-1">
               <BarChart3 className="w-3 h-3 shrink-0" />
               <span className="hidden sm:inline">Statistika</span>
@@ -432,6 +433,11 @@ const Admin = () => {
               <Bell className="w-3 h-3 shrink-0" />
               <span className="hidden sm:inline">Obavijesti</span>
               <span className="sm:hidden">Slanje</span>
+            </TabsTrigger>
+            <TabsTrigger value="pushlogs" className="text-xs gap-1 px-1">
+              <BellRing className="w-3 h-3 shrink-0" />
+              <span className="hidden sm:inline">Push log</span>
+              <span className="sm:hidden">Push</span>
             </TabsTrigger>
             <TabsTrigger value="apk" className="text-xs gap-1 px-1">
               <Package className="w-3 h-3 shrink-0" />
@@ -839,6 +845,11 @@ const Admin = () => {
             <p className="text-xs text-muted-foreground text-center">
               Obavijest će biti poslana svim registriranim korisnicima i pojavit će se u njihovim push obavijestima.
             </p>
+          </TabsContent>
+
+          {/* PUSH LOGS TAB */}
+          <TabsContent value="pushlogs" className="space-y-3 mt-4">
+            <PushLogsTab />
           </TabsContent>
 
           {/* APK TAB */}

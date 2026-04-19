@@ -143,6 +143,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       title: 'Nova transakcija na čekanju',
       body: `${submitterName} je dodao ${transactionType} "${expense.description}" (${formattedAmount})`,
       data: { expense_id: expense.id, income_source_id: source.id, type: 'pending_transaction' },
+      source: 'notify-pending-transaction',
     });
 
     console.log(`Notification sent to owner ${source.user_id} for pending transaction from ${submitterName}`);

@@ -233,6 +233,7 @@ serve(async (req) => {
         title: "Pozivnica prihvaćena",
         body: `${userName} se pridružio/la ${targetLabel} "${targetName}"`,
         data: { target_id: targetId, type: "invitation_accepted" },
+        source: "respond-to-invitation",
       });
 
       console.log(`User ${user.id} accepted invitation ${invitationId} for ${type} ${targetId}`);

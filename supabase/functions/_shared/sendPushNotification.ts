@@ -8,6 +8,8 @@ interface SendPushArgs {
   title: string;
   body: string;
   data?: Record<string, unknown>;
+  /** Name of the calling edge function — used for delivery log tracking */
+  source?: string;
 }
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -31,6 +33,7 @@ export async function sendPushNotification(args: SendPushArgs): Promise<void> {
         title: args.title,
         body: args.body,
         data: args.data ?? {},
+        source: args.source ?? "unknown",
       }),
     });
 

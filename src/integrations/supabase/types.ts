@@ -2857,6 +2857,54 @@ export type Database = {
           },
         ]
       }
+      push_delivery_logs: {
+        Row: {
+          body: string | null
+          created_at: string
+          duration_ms: number | null
+          failure_count: number
+          fcm_error_codes: Json | null
+          id: string
+          request_payload: Json | null
+          response_summary: Json | null
+          source_function: string | null
+          success_count: number
+          title: string | null
+          token_count: number
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          failure_count?: number
+          fcm_error_codes?: Json | null
+          id?: string
+          request_payload?: Json | null
+          response_summary?: Json | null
+          source_function?: string | null
+          success_count?: number
+          title?: string | null
+          token_count?: number
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          failure_count?: number
+          fcm_error_codes?: Json | null
+          id?: string
+          request_payload?: Json | null
+          response_summary?: Json | null
+          source_function?: string | null
+          success_count?: number
+          title?: string | null
+          token_count?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string
@@ -3506,6 +3554,7 @@ export type Database = {
       cleanup_old_chat_messages: { Args: never; Returns: undefined }
       cleanup_old_diagnostic_logs: { Args: never; Returns: undefined }
       cleanup_old_login_logs: { Args: never; Returns: undefined }
+      cleanup_old_push_logs: { Args: never; Returns: undefined }
       consume_invitation_token: {
         Args: { _invitation_type: string; _token: string }
         Returns: {

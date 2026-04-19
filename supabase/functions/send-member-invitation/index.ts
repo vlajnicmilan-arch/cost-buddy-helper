@@ -235,6 +235,7 @@ serve(async (req) => {
         target_id: targetId,
         type: notificationTypeMap[type],
       },
+      source: "send-member-invitation",
     });
 
     console.log(`Invitation sent to ${invitedEmail} for ${type} ${targetId}`);

@@ -154,6 +154,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         payment_source_id: paymentSource.id,
         type: 'payment_source_transaction',
       },
+      source: 'notify-payment-source-transaction',
     });
 
     console.log(`Notifications sent to ${usersToNotify.size} user(s) for payment source transaction`);

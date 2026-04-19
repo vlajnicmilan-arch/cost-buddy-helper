@@ -171,6 +171,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       title: `Transakcija u projektu "${project.name}"`,
       body: `${submitterName} je ${actionText} ${transactionType} "${expense.description}" (${formattedAmount})`,
       data: { expense_id: expense.id, project_id: project.id, type: 'project_transaction' },
+      source: 'notify-project-transaction',
     });
 
     console.log(`Notifications sent to ${usersToNotify.size} user(s) for project transaction by ${submitterName}`);
