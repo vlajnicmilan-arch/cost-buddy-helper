@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 import { Loader2, CheckCircle, XCircle, FolderKanban, LogIn, User, Briefcase } from 'lucide-react';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface ProjectData {
   id: string;
@@ -26,6 +27,7 @@ const JoinProject = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { setBusinessModeEnabled, setActiveBusinessProfileId } = useAppState();
 
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
@@ -127,21 +129,25 @@ const JoinProject = () => {
             });
         }
 
-        // If user joined as business, auto-enable business mode + activate the chosen profile
-        // so the project becomes immediately visible after redirect.
+        // If user joined as business, sync context state + localStorage so the project becomes
+        // immediately visible after redirect. Use context setters (not just localStorage) since
+        // AppStateContext only reads localStorage on mount.
         if (chosenContext === 'business' && chosenBusinessProfileId) {
+          setBusinessModeEnabled(true);
+          setActiveBusinessProfileId(chosenBusinessProfileId);
           localStorage.setItem('business_mode_enabled', 'true');
           localStorage.setItem('active_business_profile_id', chosenBusinessProfileId);
         } else if (chosenContext === 'personal') {
-          // Ensure business mode is off so personal-context project shows up
+          setBusinessModeEnabled(false);
+          setActiveBusinessProfileId(null);
           localStorage.setItem('business_mode_enabled', 'false');
           localStorage.removeItem('active_business_profile_id');
         }
 
         setTimeout(() => {
-          // Full reload so AppStateContext picks up the new business mode flags
-          window.location.href = '/home';
-        }, 2000);
+          // Force a full reload (replace) so AppStateContext re-initializes from localStorage.
+          window.location.replace('/home');
+        }, 1500);
       }
     } catch (err: any) {
       console.error('Error accepting invitation:', err);

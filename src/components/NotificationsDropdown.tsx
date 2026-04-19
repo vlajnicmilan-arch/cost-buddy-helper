@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { Notification } from '@/types/notification';
+import { useAppState } from '@/contexts/AppStateContext';
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -78,6 +79,7 @@ export const NotificationsDropdown = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { setBusinessModeEnabled, setActiveBusinessProfileId } = useAppState();
   const {
     notifications,
     unreadCount,
@@ -222,13 +224,17 @@ export const NotificationsDropdown = () => {
       }
 
       if (action === 'accept') {
-        // If the invitee chose Business, auto-enable business mode + activate the chosen profile
-        // so the project becomes visible immediately. Personal: ensure business mode is off.
+        // Sync business mode via context setters AND localStorage so both the live state
+        // (current session) and any subsequent reload pick up the right view.
         if (invitationType === 'project') {
           if (chosenContext === 'business' && chosenBusinessProfileId) {
+            setBusinessModeEnabled(true);
+            setActiveBusinessProfileId(chosenBusinessProfileId);
             localStorage.setItem('business_mode_enabled', 'true');
             localStorage.setItem('active_business_profile_id', chosenBusinessProfileId);
           } else if (chosenContext === 'personal') {
+            setBusinessModeEnabled(false);
+            setActiveBusinessProfileId(null);
             localStorage.setItem('business_mode_enabled', 'false');
             localStorage.removeItem('active_business_profile_id');
           }
@@ -241,9 +247,11 @@ export const NotificationsDropdown = () => {
       await deleteNotification(notification.id);
       refetch();
 
-      // Full reload for project-business so AppStateContext re-reads localStorage and switches view
-      if (action === 'accept' && invitationType === 'project' && chosenContext === 'business') {
-        setTimeout(() => { window.location.href = '/projects'; }, 600);
+      // Force a full reload (replace) so AppStateContext re-initializes from localStorage
+      // and BusinessModeGuard re-evaluates with the new shared-business membership.
+      if (action === 'accept' && invitationType === 'project') {
+        const target = chosenContext === 'business' ? '/projects' : '/projects';
+        setTimeout(() => { window.location.replace(target); }, 600);
       }
     } catch (error) {
       console.error('Error responding to invitation:', error);

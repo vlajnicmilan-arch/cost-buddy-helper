@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Auto-disables business mode for users who lost (or never had) Business access.
@@ -23,6 +24,35 @@ export const BusinessModeGuard = () => {
   const noAccessStreak = useRef(0);
   const REQUIRED_STREAK = 2;
 
+  // Cache: does the user have a shared business-context project membership?
+  // null = unknown/loading, true/false = resolved.
+  const [hasSharedBusinessProject, setHasSharedBusinessProject] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setHasSharedBusinessProject(null);
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase
+        .from('project_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('member_context', 'business')
+        .limit(1);
+      if (cancelled) return;
+      if (error) {
+        // On error, default to true (don't punish the user by disabling business mode)
+        console.warn('[BusinessModeGuard] Failed to check shared business projects:', error.message);
+        setHasSharedBusinessProject(true);
+        return;
+      }
+      setHasSharedBusinessProject((data?.length ?? 0) > 0);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
   useEffect(() => {
     // Bail if business mode isn't even on — nothing to disable.
     if (!businessModeEnabled) {
@@ -35,8 +65,13 @@ export const BusinessModeGuard = () => {
       return;
     }
 
-    // Has access if subscribed (any tier) OR currently on trial.
-    const hasBusinessAccess = subscribed || trialActive;
+    // Wait for shared-business lookup to resolve.
+    if (hasSharedBusinessProject === null) {
+      return;
+    }
+
+    // Has access if subscribed OR on trial OR is a guest member of a shared business project.
+    const hasBusinessAccess = subscribed || trialActive || hasSharedBusinessProject;
     if (hasBusinessAccess) {
       noAccessStreak.current = 0;
       return;
@@ -53,12 +88,12 @@ export const BusinessModeGuard = () => {
     noAccessStreak.current += 1;
     if (noAccessStreak.current >= REQUIRED_STREAK) {
       console.log('[BusinessModeGuard] Disabling business mode after confirmed no-access', {
-        tier, subscribed, trialActive, trialExpired, source,
+        tier, subscribed, trialActive, trialExpired, source, hasSharedBusinessProject,
       });
       setBusinessModeEnabled(false);
       noAccessStreak.current = 0;
     }
-  }, [businessModeEnabled, user, loading, subscribed, trialActive, trialExpired, source, tier, setBusinessModeEnabled]);
+  }, [businessModeEnabled, user, loading, subscribed, trialActive, trialExpired, source, tier, hasSharedBusinessProject, setBusinessModeEnabled]);
 
   return null;
 };
