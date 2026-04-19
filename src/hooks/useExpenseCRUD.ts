@@ -270,6 +270,19 @@ export const useExpenseCRUD = ({
           }).catch(e => console.error('Notification error:', e));
         }
 
+        // Sync owner-loan when business expense edited
+        const updatedBpId = (expense as any).business_profile_id || activeBusinessProfileId || null;
+        if (updatedBpId && user) {
+          syncOwnerLoanForExpense({
+            expenseId: expense.id,
+            userId: user.id,
+            businessProfileId: updatedBpId,
+            paymentSource: expense.payment_source,
+            amount: expense.amount,
+            description: expense.description,
+          }).catch(e => console.error('Owner-loan sync failed:', e));
+        }
+
         showSuccess(t('feedback.updated'));
       }
     } catch (error) {
@@ -334,6 +347,8 @@ export const useExpenseCRUD = ({
       if (isLocalMode) {
         await deleteLocalExpense(id);
       } else {
+        // Delete linked owner-loan first (if any)
+        deleteOwnerLoanForExpense(id).catch(e => console.error('Owner-loan delete failed:', e));
         const { error } = await supabase.from('expenses').delete().eq('id', id);
         if (error) throw error;
       }
