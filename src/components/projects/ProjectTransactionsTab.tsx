@@ -287,16 +287,11 @@ export const ProjectTransactionsTab = ({
         await updateBalance(paymentSourceForInsert, parsedAmount, expenseType);
       }
 
-      // Notify project members (fire-and-forget). Pending transactions notify on approval instead.
+      // Notify project members (fire-and-forget) for directly approved transactions.
       if (inserted && status === 'approved') {
         invokeNotifyFunction({
           functionName: 'notify-project-transaction',
           body: { expense_id: (inserted as any).id, project_id: projectId, action: 'created' },
-        });
-      } else if (inserted && status === 'pending') {
-        invokeNotifyFunction({
-          functionName: 'notify-pending-transaction',
-          body: { expense_id: (inserted as any).id, project_id: projectId },
         });
       }
 
