@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Wallet, ChevronDown } from 'lucide-react';
+import { Wallet, ChevronDown, Users } from 'lucide-react';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
