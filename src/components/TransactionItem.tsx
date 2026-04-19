@@ -103,6 +103,15 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
     return PAYMENT_SOURCES.some(s => s.id === sourceId);
   }, [expense.payment_source]);
 
+  // Owner-loan: business expense paid from a personal source
+  const isOwnerLoan = useMemo(() => {
+    return Boolean(
+      (expense as any).business_profile_id &&
+      customSource &&
+      !customSource.business_profile_id
+    );
+  }, [expense, customSource]);
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('hr-HR', {
       day: 'numeric',
