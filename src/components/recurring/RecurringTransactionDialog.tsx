@@ -10,6 +10,8 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { RecurringTransaction, RecurringTransactionInsert } from '@/hooks/useRecurringTransactions';
 import { Save, X } from 'lucide-react';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
+import { showError } from '@/hooks/useStatusFeedback';
 
 interface RecurringTransactionDialogProps {
   open: boolean;
@@ -271,12 +273,28 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
           {/* Next due date */}
           <div className="space-y-1.5">
             <Label className="text-sm">{t('recurring.nextDueDate')}</Label>
-            <Input
-              type="date"
-              value={nextDueDate}
-              onChange={e => setNextDueDate(e.target.value)}
-              className="h-11 rounded-xl"
-            />
+            {(() => {
+              const r = getDateRange('recurring');
+              return (
+                <Input
+                  type="date"
+                  value={nextDueDate}
+                  min={toInputDate(r.min)}
+                  max={toInputDate(r.max)}
+                  onChange={e => setNextDueDate(e.target.value)}
+                  onBlur={(e) => {
+                    const v = e.target.value;
+                    if (!v) return;
+                    const errKey = getDateValidationKey(v, r);
+                    if (errKey) {
+                      setNextDueDate(clampInputDate(v, r));
+                      showError(t(errKey));
+                    }
+                  }}
+                  className="h-11 rounded-xl"
+                />
+              );
+            })()}
           </div>
 
           {/* Note */}

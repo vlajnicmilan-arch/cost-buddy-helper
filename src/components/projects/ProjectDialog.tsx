@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { ProjectTemplatePicker } from './ProjectTemplatePicker';
 import { ProjectTemplate } from '@/hooks/useProjectTemplates';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 
 interface ProjectDialogProps {
   open: boolean;
@@ -49,6 +50,8 @@ export const ProjectDialog = ({
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
 
   const isEdit = !!project;
 
@@ -247,7 +250,7 @@ export const ProjectDialog = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t('projects.startDate')}</Label>
-              <Popover>
+              <Popover open={startOpen} onOpenChange={setStartOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -258,8 +261,13 @@ export const ProjectDialog = ({
                   <Calendar
                     mode="single"
                     selected={startDate}
-                    onSelect={setStartDate}
+                    onSelect={(d) => {
+                      setStartDate(d);
+                      if (d) setStartOpen(false);
+                    }}
+                    disabled={makeCalendarDisabled(getDateRange('budget'))}
                     initialFocus
+                    className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -267,7 +275,7 @@ export const ProjectDialog = ({
 
             <div className="space-y-2">
               <Label>{t('projects.endDate')}</Label>
-              <Popover>
+              <Popover open={endOpen} onOpenChange={setEndOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -278,8 +286,18 @@ export const ProjectDialog = ({
                   <Calendar
                     mode="single"
                     selected={endDate}
-                    onSelect={setEndDate}
+                    onSelect={(d) => {
+                      setEndDate(d);
+                      if (d) setEndOpen(false);
+                    }}
+                    disabled={(date) => {
+                      const r = getDateRange('budget');
+                      if (date < r.min || date > r.max) return true;
+                      if (startDate && date < startDate) return true;
+                      return false;
+                    }}
                     initialFocus
+                    className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>

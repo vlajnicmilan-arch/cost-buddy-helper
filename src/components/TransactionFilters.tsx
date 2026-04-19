@@ -57,6 +57,7 @@ export const TransactionFilters = ({
 }: TransactionFiltersProps) => {
   const { t, i18n } = useTranslation();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   const { customCategories } = useCustomCategories();
 
   // Build combined category list: default + custom
@@ -233,7 +234,7 @@ export const TransactionFilters = ({
       {showAdvanced && (
         <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-muted/50 border">
           {/* Date Range */}
-          <Popover>
+          <Popover open={dateOpen} onOpenChange={setDateOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -262,10 +263,14 @@ export const TransactionFilters = ({
               <Calendar
                 mode="range"
                 selected={filters.dateRange}
-                onSelect={(range) => updateFilter('dateRange', range)}
+                onSelect={(range) => {
+                  updateFilter('dateRange', range);
+                  if (range?.from && range?.to) setDateOpen(false);
+                }}
                 numberOfMonths={1}
                 locale={dateLocale}
                 initialFocus
+                className="p-3 pointer-events-auto"
               />
             </PopoverContent>
           </Popover>

@@ -22,6 +22,7 @@ import {
   ChevronDown, ChevronUp, AlertCircle, Flag, Calendar as CalendarWeekIcon
 } from 'lucide-react';
 import { WeeklyWorkEntryForm } from './WeeklyWorkEntryForm';
+import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 
 interface WorkerScheduleDialogProps {
   open: boolean;
@@ -61,6 +62,7 @@ export const WorkerScheduleDialog = ({
   const [editingEntry, setEditingEntry] = useState<ProjectWorkEntry | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showWeeklyForm, setShowWeeklyForm] = useState(false);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
   // Calculate default scheduled hours from work times
   useEffect(() => {
@@ -267,7 +269,7 @@ export const WorkerScheduleDialog = ({
             {!editingEntry && (
               <div className="space-y-2">
                 <Label>{t('workers.date', 'Datum')}</Label>
-                <Popover>
+                <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -287,7 +289,8 @@ export const WorkerScheduleDialog = ({
                     <Calendar
                       mode="single"
                       selected={selectedDate}
-                      onSelect={setSelectedDate}
+                      onSelect={(d) => { setSelectedDate(d); if (d) setDatePopoverOpen(false); }}
+                      disabled={makeCalendarDisabled(getDateRange('budget'))}
                       locale={hr}
                       className="p-3 pointer-events-auto"
                       modifiers={{ hasEntry: entryDates.map(d => parseISO(d)) }}

@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
@@ -57,6 +58,8 @@ export const ProjectMilestonesTab = ({
   const [color, setColor] = useState('#3b82f6');
   const [dependsOn, setDependsOn] = useState<string>('');
   const [reminderDays, setReminderDays] = useState('3');
+  const [startOpen, setStartOpen] = useState(false);
+  const [dueOpen, setDueOpen] = useState(false);
 
   const MILESTONE_COLORS = [
     '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', 
@@ -380,7 +383,7 @@ export const ProjectMilestonesTab = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('projects.startDate')}</Label>
-                <Popover>
+                <Popover open={startOpen} onOpenChange={setStartOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start">
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -388,14 +391,20 @@ export const ProjectMilestonesTab = ({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={startDate} onSelect={setStartDate} />
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={(d) => { setStartDate(d); if (d) setStartOpen(false); }}
+                      disabled={makeCalendarDisabled(getDateRange('budget'))}
+                      className="p-3 pointer-events-auto"
+                    />
                   </PopoverContent>
                 </Popover>
               </div>
 
               <div className="space-y-2">
                 <Label>{t('projects.dueDate')}</Label>
-                <Popover>
+                <Popover open={dueOpen} onOpenChange={setDueOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start">
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -403,7 +412,18 @@ export const ProjectMilestonesTab = ({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={dueDate} onSelect={setDueDate} />
+                    <Calendar
+                      mode="single"
+                      selected={dueDate}
+                      onSelect={(d) => { setDueDate(d); if (d) setDueOpen(false); }}
+                      disabled={(date) => {
+                        const r = getDateRange('budget');
+                        if (date < r.min || date > r.max) return true;
+                        if (startDate && date < startDate) return true;
+                        return false;
+                      }}
+                      className="p-3 pointer-events-auto"
+                    />
                   </PopoverContent>
                 </Popover>
               </div>

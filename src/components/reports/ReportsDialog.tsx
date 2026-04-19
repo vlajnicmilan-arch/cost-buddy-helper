@@ -62,6 +62,7 @@ import {
   IncomeReportData 
 } from '@/lib/reportExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
@@ -721,28 +722,55 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                   </SelectContent>
                 </Select>
 
-                {periodPreset === 'custom' && (
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <Label className="text-xs text-muted-foreground">{t('reports.from', 'Od')}</Label>
-                      <Input
-                        type="date"
-                        value={customStart}
-                        onChange={(e) => setCustomStart(e.target.value)}
-                        className="rounded-xl"
-                      />
+                {periodPreset === 'custom' && (() => {
+                  const r = getDateRange('report');
+                  const minStr = toInputDate(r.min);
+                  const maxStr = toInputDate(r.max);
+                  return (
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <Label className="text-xs text-muted-foreground">{t('reports.from', 'Od')}</Label>
+                        <Input
+                          type="date"
+                          value={customStart}
+                          min={minStr}
+                          max={customEnd || maxStr}
+                          onChange={(e) => setCustomStart(e.target.value)}
+                          onBlur={(e) => {
+                            const v = e.target.value;
+                            if (!v) return;
+                            const errKey = getDateValidationKey(v, r);
+                            if (errKey) {
+                              setCustomStart(clampInputDate(v, r));
+                              showError(t(errKey));
+                            }
+                          }}
+                          className="rounded-xl"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Label className="text-xs text-muted-foreground">{t('reports.to', 'Do')}</Label>
+                        <Input
+                          type="date"
+                          value={customEnd}
+                          min={customStart || minStr}
+                          max={maxStr}
+                          onChange={(e) => setCustomEnd(e.target.value)}
+                          onBlur={(e) => {
+                            const v = e.target.value;
+                            if (!v) return;
+                            const errKey = getDateValidationKey(v, r);
+                            if (errKey) {
+                              setCustomEnd(clampInputDate(v, r));
+                              showError(t(errKey));
+                            }
+                          }}
+                          className="rounded-xl"
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <Label className="text-xs text-muted-foreground">{t('reports.to', 'Do')}</Label>
-                      <Input
-                        type="date"
-                        value={customEnd}
-                        onChange={(e) => setCustomEnd(e.target.value)}
-                        className="rounded-xl"
-                      />
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Include/Exclude toggles */}
@@ -1430,44 +1458,69 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                 </SelectContent>
               </Select>
 
-              {comparePreset === 'custom' && (
-                <div className="space-y-4">
-                  <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
-                    <Label className="text-xs font-medium text-primary mb-2 block">{t('reports.period1', 'Razdoblje 1')}</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="date"
-                        value={customCompare1Start}
-                        onChange={(e) => setCustomCompare1Start(e.target.value)}
-                        className="rounded-lg text-sm"
-                      />
-                      <Input
-                        type="date"
-                        value={customCompare1End}
-                        onChange={(e) => setCustomCompare1End(e.target.value)}
-                        className="rounded-lg text-sm"
-                      />
+              {comparePreset === 'custom' && (() => {
+                const r = getDateRange('report');
+                const minStr = toInputDate(r.min);
+                const maxStr = toInputDate(r.max);
+                const handleBlur = (val: string, setter: (v: string) => void) => {
+                  if (!val) return;
+                  const errKey = getDateValidationKey(val, r);
+                  if (errKey) {
+                    setter(clampInputDate(val, r));
+                    showError(t(errKey));
+                  }
+                };
+                return (
+                  <div className="space-y-4">
+                    <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                      <Label className="text-xs font-medium text-primary mb-2 block">{t('reports.period1', 'Razdoblje 1')}</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="date"
+                          value={customCompare1Start}
+                          min={minStr}
+                          max={customCompare1End || maxStr}
+                          onChange={(e) => setCustomCompare1Start(e.target.value)}
+                          onBlur={(e) => handleBlur(e.target.value, setCustomCompare1Start)}
+                          className="rounded-lg text-sm"
+                        />
+                        <Input
+                          type="date"
+                          value={customCompare1End}
+                          min={customCompare1Start || minStr}
+                          max={maxStr}
+                          onChange={(e) => setCustomCompare1End(e.target.value)}
+                          onBlur={(e) => handleBlur(e.target.value, setCustomCompare1End)}
+                          className="rounded-lg text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/50 border">
+                      <Label className="text-xs font-medium text-muted-foreground mb-2 block">{t('reports.period2', 'Razdoblje 2')}</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="date"
+                          value={customCompare2Start}
+                          min={minStr}
+                          max={customCompare2End || maxStr}
+                          onChange={(e) => setCustomCompare2Start(e.target.value)}
+                          onBlur={(e) => handleBlur(e.target.value, setCustomCompare2Start)}
+                          className="rounded-lg text-sm"
+                        />
+                        <Input
+                          type="date"
+                          value={customCompare2End}
+                          min={customCompare2Start || minStr}
+                          max={maxStr}
+                          onChange={(e) => setCustomCompare2End(e.target.value)}
+                          onBlur={(e) => handleBlur(e.target.value, setCustomCompare2End)}
+                          className="rounded-lg text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-muted/50 border">
-                    <Label className="text-xs font-medium text-muted-foreground mb-2 block">{t('reports.period2', 'Razdoblje 2')}</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="date"
-                        value={customCompare2Start}
-                        onChange={(e) => setCustomCompare2Start(e.target.value)}
-                        className="rounded-lg text-sm"
-                      />
-                      <Input
-                        type="date"
-                        value={customCompare2End}
-                        onChange={(e) => setCustomCompare2End(e.target.value)}
-                        className="rounded-lg text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Comparison Summary */}

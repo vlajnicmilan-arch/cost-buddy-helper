@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -50,6 +51,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
   
   const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
   
   const { customPaymentSources } = useCustomPaymentSources();
@@ -502,7 +504,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           {/* Date */}
           <div className="space-y-2">
             <Label>{t('common.date')}</Label>
-            <Popover>
+            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -519,8 +521,15 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(d) => d && setDate(d)}
+                  onSelect={(d) => {
+                    if (d) {
+                      setDate(d);
+                      setDatePopoverOpen(false);
+                    }
+                  }}
+                  disabled={makeCalendarDisabled(getDateRange('transactionDynamic', type as any))}
                   locale={dateLocale}
+                  className="p-3 pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>

@@ -532,6 +532,12 @@
     "signOut": "Sign Out",
     "signIn": "Sign In"
   },
+  "validation": {
+    "dateOutOfRange": "Date is outside the allowed range",
+    "dateInFuture": "Date cannot be too far in the future",
+    "dateTooFar": "Date is too far away",
+    "dateAdjusted": "Date was automatically corrected"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

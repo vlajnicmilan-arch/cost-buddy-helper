@@ -539,6 +539,12 @@
     "signOut": "Odjava",
     "signIn": "Prijava"
   },
+  "validation": {
+    "dateOutOfRange": "Datum nije unutar dopuštenog raspona",
+    "dateInFuture": "Datum ne smije biti previše u budućnosti",
+    "dateTooFar": "Datum je previše udaljen",
+    "dateAdjusted": "Datum je automatski ispravljen"
+  },
   "common": {
     "save": "Spremi",
     "tapToExpand": "klikni za prikaz",
