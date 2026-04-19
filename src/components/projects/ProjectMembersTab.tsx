@@ -7,7 +7,7 @@ import { ProjectMember, ProjectInvitation, ProjectRole, PROJECT_ROLE_LABELS } fr
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield } from 'lucide-react';
+import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield, User, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,12 +45,13 @@ export const ProjectMembersTab = ({
   const [inviteRole, setInviteRole] = useState<ProjectRole>('member');
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [suggestedContext, setSuggestedContext] = useState<'personal' | 'business'>('personal');
   const [permDialog, setPermDialog] = useState<PermDialogState>({ open: false, userId: '', memberName: '' });
 
   const handleGenerateLink = async () => {
     setGeneratingLink(true);
     try {
-      const link = await generateInviteLink(inviteRole);
+      const link = await generateInviteLink(inviteRole, suggestedContext);
       if (link) {
         setInviteLink(link);
       }
@@ -80,6 +81,7 @@ export const ProjectMembersTab = ({
           targetId: projectId,
           invitedEmail: inviteEmail.trim(),
           role: inviteRole,
+          suggestedContext,
         },
       });
 
