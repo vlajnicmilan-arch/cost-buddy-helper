@@ -10,6 +10,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 import { Cake, CreditCard, AlertTriangle, CalendarDays } from 'lucide-react';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 
 interface Props {
   open: boolean;
@@ -93,7 +94,27 @@ export const CalendarEventDialog = ({ open, onOpenChange, onSave, defaultDate }:
 
           <div>
             <Label>{t('common.date', 'Datum')}</Label>
-            <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+            {(() => {
+              const r = getDateRange('event');
+              return (
+                <Input
+                  type="date"
+                  value={date}
+                  min={toInputDate(r.min)}
+                  max={toInputDate(r.max)}
+                  onChange={e => setDate(e.target.value)}
+                  onBlur={(e) => {
+                    const v = e.target.value;
+                    if (!v) return;
+                    const errKey = getDateValidationKey(v, r);
+                    if (errKey) {
+                      setDate(clampInputDate(v, r));
+                      showError(t(errKey));
+                    }
+                  }}
+                />
+              );
+            })()}
           </div>
 
           <div>

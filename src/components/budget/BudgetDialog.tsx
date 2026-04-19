@@ -19,6 +19,8 @@ import { CATEGORIES } from '@/types/expense';
 import { Plus, Trash2, Loader2, Repeat, CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
+import { showError } from '@/hooks/useStatusFeedback';
 
 interface BudgetDialogProps {
   budget?: BudgetWithStats | null;
@@ -270,28 +272,56 @@ export const BudgetDialog = ({
           )}
 
           {/* Dates - show for non-recurring, custom, and one_time */}
-          {(periodType === 'custom' || periodType === 'one_time' || !isRecurring) && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">{t('common.startDate', 'Početak')}</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
+          {(periodType === 'custom' || periodType === 'one_time' || !isRecurring) && (() => {
+            const r = getDateRange('budget');
+            const startMax = endDate || toInputDate(r.max);
+            const endMin = startDate || toInputDate(r.min);
+            const { t: tt } = { t };
+            return (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">{t('common.startDate', 'Početak')}</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    min={toInputDate(r.min)}
+                    max={startMax}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    onBlur={(e) => {
+                      const v = e.target.value;
+                      if (!v) return;
+                      const errKey = getDateValidationKey(v, r);
+                      if (errKey) {
+                        setStartDate(clampInputDate(v, r));
+                        showError(t(errKey));
+                      }
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">{t('common.endDate', 'Kraj')}</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    min={endMin}
+                    max={toInputDate(r.max)}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    onBlur={(e) => {
+                      const v = e.target.value;
+                      if (!v) return;
+                      const errKey = getDateValidationKey(v, r);
+                      if (errKey) {
+                        setEndDate(clampInputDate(v, r));
+                        showError(t(errKey));
+                      }
+                    }}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="endDate">{t('common.endDate', 'Kraj')}</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Category Limits */}
           <div className="space-y-3">

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SavingsGoal } from '@/hooks/useSavingsGoals';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
+import { showError } from '@/hooks/useStatusFeedback';
 
 interface SavingsGoalDialogProps {
   open: boolean;
@@ -77,7 +79,27 @@ export const SavingsGoalDialog = ({ open, onOpenChange, onSave, editGoal }: Savi
 
           <div>
             <Label>{t('savingsGoals.targetDate')}</Label>
-            <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
+            {(() => {
+              const r = getDateRange('savings');
+              return (
+                <Input
+                  type="date"
+                  value={targetDate}
+                  min={toInputDate(r.min)}
+                  max={toInputDate(r.max)}
+                  onChange={e => setTargetDate(e.target.value)}
+                  onBlur={(e) => {
+                    const v = e.target.value;
+                    if (!v) return;
+                    const errKey = getDateValidationKey(v, r);
+                    if (errKey) {
+                      setTargetDate(clampInputDate(v, r));
+                      showError(t(errKey));
+                    }
+                  }}
+                />
+              );
+            })()}
           </div>
 
           <div>

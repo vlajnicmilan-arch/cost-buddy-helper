@@ -18,6 +18,7 @@ import { LoanDetectionDialog } from './LoanDetectionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 
 export const BusinessDebtTracker = () => {
   const { formatAmount } = useCurrency();
@@ -280,7 +281,28 @@ export const BusinessDebtTracker = () => {
               </div>
               <div>
                 <Label className="text-xs">{t('business.debts.dueDateOptional', 'Rok (opcionalno)')}</Label>
-                <Input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} className="h-9" />
+                {(() => {
+                  const r = getDateRange('debt');
+                  return (
+                    <Input
+                      type="date"
+                      value={formDueDate}
+                      min={toInputDate(r.min)}
+                      max={toInputDate(r.max)}
+                      onChange={e => setFormDueDate(e.target.value)}
+                      onBlur={(e) => {
+                        const v = e.target.value;
+                        if (!v) return;
+                        const errKey = getDateValidationKey(v, r);
+                        if (errKey) {
+                          setFormDueDate(clampInputDate(v, r));
+                          showError(t(errKey));
+                        }
+                      }}
+                      className="h-9"
+                    />
+                  );
+                })()}
               </div>
             </div>
           </div>
