@@ -648,7 +648,7 @@ export const ProjectTransactionsTab = ({
               )}
 
               {/* Date Range */}
-              <Popover>
+              <Popover open={filterDateOpen} onOpenChange={setFilterDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -677,9 +677,13 @@ export const ProjectTransactionsTab = ({
                   <Calendar
                     mode="range"
                     selected={filterDateRange}
-                    onSelect={setFilterDateRange}
+                    onSelect={(range) => {
+                      setFilterDateRange(range);
+                      if (range?.from && range?.to) setFilterDateOpen(false);
+                    }}
                     numberOfMonths={1}
                     locale={dateLocale}
+                    disabled={makeCalendarDisabled(reportDateLimits)}
                     initialFocus
                   />
                 </PopoverContent>
