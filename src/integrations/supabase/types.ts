@@ -2355,6 +2355,7 @@ export type Database = {
       project_invitations: {
         Row: {
           created_at: string
+          default_permissions: Json
           email: string
           expires_at: string
           id: string
@@ -2369,6 +2370,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_permissions?: Json
           email: string
           expires_at?: string
           id?: string
@@ -2383,6 +2385,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_permissions?: Json
           email?: string
           expires_at?: string
           id?: string
