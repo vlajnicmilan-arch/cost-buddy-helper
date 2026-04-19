@@ -1,54 +1,41 @@
 
 
-## Što se točno dogodilo (potvrda iz baze)
+## Što se događa
 
-Pozvani korisnik (`vinkabalance@gmail.com`, ID `e78ee9bd...`) prihvatio je pozivnicu i u bazi je sve **ispravno spremljeno**:
+Kad korisnik klikne **"Osobno"** u `BusinessProfileSwitcher`, poziva se samo `setActiveBusinessProfileId(null)` — ali **`businessModeEnabled` ostaje `true`** u `localStorage` i u kontekstu.
 
+Zatim se aktivira novi auto-select fallback iz `useProjects.ts` (linije 130-149) koji sam dodao u prošlom krugu:
+
+```ts
+if (!user || !businessModeEnabled || activeBusinessProfileId) return;
+// → Učitava prvi business profil i poziva setActiveBusinessProfileId(firstId)
 ```
-project_members.member_context             = 'business'
-project_members.member_business_profile_id = be60a880-... (Mjugh d.o.o.)
-```
 
-Njegov poslovni profil "Mjugh" postoji i aktivan je. **Backend je 100% točan.**
+Pošto je `businessModeEnabled === true` i `activeBusinessProfileId === null` (jer ga je korisnik upravo nullao), fallback **odmah ponovno aktivira prvi poslovni profil** — i korisnik je vraćen u Business mod. Beskonačna petlja iz korisničke perspektive.
 
-## Gdje je bug
+## Što ću popraviti (2 mala fixa)
 
-U `src/pages/JoinProject.tsx` (linija 132-138) i `NotificationsDropdown.tsx` (linija 227-234) postavljamo `localStorage.setItem('business_mode_enabled', 'true')` **prije redirecta**. Ali:
+### 1) `BusinessProfileSwitcher` — kad korisnik klikne "Osobno", ugasiti i `businessModeEnabled`
 
-1. **`AppStateContext` čita `localStorage` samo jednom pri mountu** (`useState(() => localStorage.getItem(...))`) — ne re-čita pri promjeni vrijednosti.
-2. Hard reload bi to riješio, ali u zadnjem fixu koristimo `navigate(...)` ili `window.location.href = '/'` koji za PWA na nekim platformama **ne pokreće punu reload sekvencu**, samo SPA navigaciju.
-3. **Još veći problem**: `BusinessModeGuard.tsx` (kojeg smo nedavno popravili) gleda korisnikovu pretplatu. Pozvani korisnik je **Free** — guard onda **automatski gasi `business_mode_enabled` natrag na `false`** nakon 2 ciklusa, jer pridruženi član nema vlastiti Pro/Business pretplatu.
+Klik na Personal sada poziva i `setBusinessModeEnabled(false)` zajedno s `setActiveBusinessProfileId(null)`. Klik na konkretan poslovni profil pali oboje (`true` + ID).
 
-To je glavna prepreka: pozvani korisnik dobiva projekt u svoj Business profil, ali **ne smije ući u Business mode** jer nema Pro tier — pa guard sve ugasi i projekt nestane (jer `useProjects` ovisi o `activeBusinessProfileId` koji je `null` u Personal modu).
+### 2) `useProjects` auto-select fallback — sužen okidač
 
-## Kako popraviti — 3 koraka
+Auto-select smije reagirati **samo nakon prihvaćanja shared business projekta** (race condition iz prošlog krugа), a ne svaki put kad korisnik svjesno klikne "Osobno".
 
-### 1) `BusinessModeGuard` mora dozvoliti Business mode kad korisnik ima ≥1 dijeljen projekt s `member_context = 'business'`
+Rješenje: dodati guard koji aktivira fallback samo ako postoji barem jedna `project_members` row s `member_context = 'business'` za trenutnog korisnika **I** `activeBusinessProfileId === null` **I** `businessModeEnabled === true`. Time:
+- Vlasnici Pro/Business pretplate koji ručno kliknu "Osobno" → fallback se neće aktivirati jer `businessModeEnabled` je sad `false` (točka 1).
+- Pridruženi članovi koji upravo prihvate business projekt → fallback i dalje radi jer je `businessModeEnabled` ostao `true` iz acceptance flowa.
 
-Logika postaje: korisnik može biti u Business modu ako:
-- ima vlastitu Pro/Business pretplatu, **ILI**
-- je član barem jednog projekta s `member_context = 'business'` (gost u tuđem poslu)
+Dodatno: ako iz nekog razloga `businessModeEnabled` ostane `true` a korisnik nema niti jedan business profile niti shared business project, **ugasiti `businessModeEnabled`** kao saniranje stanja.
 
-Dodajemo lookup u `project_members` za trenutnog korisnika i preskačemo gašenje ako ima takav red.
+## Datoteke koje mijenjam
 
-### 2) `useProjects` fallback — ako u Business modu nema `activeBusinessProfileId`, prikaži sve dijeljene business projekte
+- `src/components/BusinessProfileSwitcher.tsx` — koristiti `setBusinessModeEnabled` iz konteksta pri kliku na Personal/Business
+- `src/hooks/useProjects.ts` — auto-select fallback samo kad postoji shared business membership
 
-Trenutno u Business modu strogo filtriramo po `member_business_profile_id === activeBusinessProfileId`. Ako iz nekog razloga `activeBusinessProfileId` nije postavljen (race condition pri loadu), član ne vidi ništa. Dodati: ako je `business_mode_enabled = true` i nema aktivnog profila, automatski aktivirati prvi profil korisnika.
+## Što NE mijenjam
 
-### 3) Redirect logika u `JoinProject.tsx` i `NotificationsDropdown.tsx` — prisilni full reload
-
-Umjesto `navigate('/')` ili soft `window.location.href`, koristiti `window.location.replace('/')` + osigurati da se prije toga pozovu setteri iz `AppStateContext` (`setBusinessModeEnabled(true)`, `setActiveBusinessProfileId(profileId)`) — ne samo `localStorage`, nego i state u kontekstu, da bude trenutno vidljivo i ako reload nešto zabrlja.
-
-## Bonus: očistiti dvostruke pozivnice
-
-U bazi ima 5 prihvaćenih pozivnica za isti projekt/email — trebale bi se brisati nakon prvog uspješnog prihvaćanja, ili `INSERT` u `project_members` ima `ON CONFLICT DO NOTHING` pa se sljedeće samo "pojedu". Provjerit ću u Edge funkciji jesmo li ostavili stare invitationse u "pending" stanju ili "accepted" — i očistit ćemo logiku da se duplikati ne stvaraju.
-
-## Redoslijed
-
-1. Update `BusinessModeGuard.tsx` — dodati provjeru `project_members` za business kontekst
-2. Update `useProjects.ts` — auto-select prvog poslovnog profila ako business mode on a `activeBusinessProfileId === null`
-3. Update `JoinProject.tsx` + `NotificationsDropdown.tsx` — koristiti context settere + `window.location.replace('/')`
-4. Provjera Edge funkcije `accept-project-invitation` — duplicate prevencija
-
-Ne diramo bazu (RLS je već OK), ne diramo migracije.
+- `BusinessModeGuard.tsx` — radi ispravno
+- Bazu, RLS, Edge funkcije — sve je OK
 
