@@ -523,7 +523,10 @@
     "standardSources": "Standardquellen",
     "noCard": "Keine Karte",
     "cards": "Karten",
-    "digitalWallets": "Digitale Geldbörsen"
+    "digitalWallets": "Digitale Geldbörsen",
+    "shared": "Geteilt",
+    "sharedByYou": "Geteilt mit {{count}} Personen",
+    "sharedWithYou": "Geteilt von: {{owner}}"
   },
   "incomeSources": {
     "title": "Quellen",
