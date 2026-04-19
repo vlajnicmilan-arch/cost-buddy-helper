@@ -199,14 +199,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     console.log('Member added successfully');
 
-    // Initialize default permissions (all optional tabs hidden)
+    // Initialize permissions: use invitation.default_permissions if present, otherwise all hidden
     if (type === 'project') {
-      const optionalTabs = ['timeline', 'milestones', 'workers', 'collaborators', 'funding', 'transactions'];
+      const optionalTabs = ['overview', 'milestones', 'workers', 'collaborators', 'funding', 'transactions'];
+
+      // Read default_permissions from the invitation row
+      const { data: invRow } = await supabaseAdmin
+        .from('project_invitations')
+        .select('default_permissions')
+        .eq('id', invitation.invitation_id)
+        .maybeSingle();
+
+      const defaults = (invRow?.default_permissions ?? {}) as Record<string, boolean>;
+      const hasDefaults = defaults && Object.keys(defaults).length > 0;
+
       const permRows = optionalTabs.map(tab_key => ({
         project_id: invitation.target_id,
         user_id: user.id,
         tab_key,
-        visible: false,
+        visible: hasDefaults ? defaults[tab_key] === true : false,
       }));
 
       const { error: permError } = await supabaseAdmin
@@ -216,7 +227,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (permError) {
         console.log('Error initializing permissions:', permError.message);
       } else {
-        console.log('Default permissions initialized');
+        console.log('Default permissions initialized (hasDefaults=', hasDefaults, ')');
       }
     }
 

@@ -38,8 +38,8 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { type, targetId, invitedEmail, role, suggestedContext } = body;
-    console.log("[SEND-MEMBER-INVITATION] Request body:", { type, targetId, invitedEmail, role, suggestedContext });
+    const { type, targetId, invitedEmail, role, suggestedContext, defaultPermissions } = body;
+    console.log("[SEND-MEMBER-INVITATION] Request body:", { type, targetId, invitedEmail, role, suggestedContext, defaultPermissions });
 
     if (!type || !targetId || !invitedEmail || !role) {
       return new Response(
@@ -163,9 +163,14 @@ serve(async (req) => {
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    // For project invitations, add suggested context (personal | business)
-    if (type === "project" && suggestedContext) {
-      insertData.suggested_context = suggestedContext === "business" ? "business" : "personal";
+    // For project invitations, add suggested context (personal | business) and default permissions
+    if (type === "project") {
+      if (suggestedContext) {
+        insertData.suggested_context = suggestedContext === "business" ? "business" : "personal";
+      }
+      if (defaultPermissions && typeof defaultPermissions === "object") {
+        insertData.default_permissions = defaultPermissions;
+      }
     }
 
     // All invitation types now store invited_user_id for proper RLS scoping

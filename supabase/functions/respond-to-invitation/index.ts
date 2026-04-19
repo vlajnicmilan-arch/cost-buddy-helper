@@ -172,6 +172,28 @@ serve(async (req) => {
         throw memberError;
       }
 
+      // For projects: initialize per-tab permissions from invitation.default_permissions
+      if (type === "project") {
+        const optionalTabs = ['overview', 'milestones', 'workers', 'collaborators', 'funding', 'transactions'];
+        const defaults = ((invitation as any).default_permissions ?? {}) as Record<string, boolean>;
+        const hasDefaults = defaults && Object.keys(defaults).length > 0;
+
+        const permRows = optionalTabs.map((tab_key) => ({
+          project_id: targetId,
+          user_id: user.id,
+          tab_key,
+          visible: hasDefaults ? defaults[tab_key] === true : false,
+        }));
+
+        const { error: permError } = await adminClient
+          .from("project_member_permissions")
+          .upsert(permRows, { onConflict: "project_id,user_id,tab_key" });
+
+        if (permError) {
+          console.log("Error initializing permissions:", permError.message);
+        }
+      }
+
       // Update invitation status
       await adminClient
         .from(invitationTable)

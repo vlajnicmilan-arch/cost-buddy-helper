@@ -410,9 +410,31 @@ export const NotificationsDropdown = () => {
                 </Select>
               )}
               {chosenContext === 'business' && businessProfiles.length === 0 && (
-                <p className="text-xs text-destructive">
-                  {t('projects.noBusinessProfiles', 'Nemate poslovnih profila. Odaberite Osobne financije.')}
-                </p>
+                <div className="space-y-2 p-3 rounded-md border border-dashed bg-muted/40">
+                  <p className="text-xs text-foreground">
+                    {t('projects.ownerSuggestedBusinessNoProfile', 'Voditelj predlaže poslovni mod, ali nemaš poslovni profil.')}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setChosenContext('personal')}
+                    >
+                      {t('projects.fallbackToPersonal', 'Stavi u Osobne financije')}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setInvitationDialog(null);
+                        navigate('/business?createProfile=1');
+                      }}
+                    >
+                      {t('projects.createBusinessProfile', 'Kreiraj poslovni profil')}
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           )}
