@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Expense, getPaymentSourceInfo, PAYMENT_SOURCES } from '@/types/expense';
+import { Expense } from '@/types/expense';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { resolveTransferEndpoints } from '@/lib/transferMatching';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { ArrowRight, ArrowLeftRight, Calendar } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 interface TransferListDialogProps {
@@ -15,105 +16,6 @@ interface TransferListDialogProps {
   transfers: Expense[];
   totalAmount: number;
 }
-
-// Helper to detect source and destination from description
-function parseTransferDetails(description: string, paymentSource?: string): {
-  from: { name: string; icon: string };
-  to: { name: string; icon: string };
-} {
-  const desc = description.toLowerCase();
-  
-  // Default values
-  let fromSource = paymentSource || 'other';
-  let toSource = 'other';
-  
-  // Detect patterns like "Uplata na Aircash - Visa *** 7262"
-  if (desc.includes('uplata na aircash') || desc.includes('aircash nadoplata') || desc.includes('aircash top up')) {
-    toSource = 'aircash';
-    if (desc.includes('visa') || desc.includes('mastercard') || desc.includes('maestro')) {
-      fromSource = 'bank';
-    } else if (desc.includes('gotovina') || desc.includes('tisak')) {
-      fromSource = 'cash';
-    }
-  }
-  
-  // Revolut top-ups
-  if (desc.includes('revolut top') || desc.includes('to revolut') || desc.includes('revolut nadoplata')) {
-    toSource = 'revolut';
-    if (desc.includes('visa') || desc.includes('mastercard') || desc.includes('bank')) {
-      fromSource = 'bank';
-    }
-  }
-  
-  // From Revolut to bank
-  if (desc.includes('from revolut') || desc.includes('revolut withdrawal')) {
-    fromSource = 'revolut';
-    toSource = 'bank';
-  }
-  
-  // ATM withdrawals
-  if (desc.includes('bankomat') || desc.includes('atm') || desc.includes('podizanje gotovine')) {
-    fromSource = 'bank';
-    toSource = 'cash';
-  }
-  
-  // Cash deposits
-  if (desc.includes('polog gotovine') || desc.includes('cash deposit') || desc.includes('uplata gotovine')) {
-    fromSource = 'cash';
-    toSource = desc.includes('aircash') ? 'aircash' : 'bank';
-  }
-  
-  // Crypto transfers
-  if (desc.includes('crypto') || desc.includes('bitcoin') || desc.includes('ethereum')) {
-    if (desc.includes('buy') || desc.includes('kupovina')) {
-      fromSource = 'bank';
-      toSource = 'crypto';
-    } else if (desc.includes('sell') || desc.includes('prodaja')) {
-      fromSource = 'crypto';
-      toSource = 'bank';
-    }
-  }
-  
-  // Exchange operations
-  if (desc.includes('exchange') || desc.includes('mjenjačnica') || desc.includes('konverzija')) {
-    toSource = fromSource;
-  }
-  
-  // Bank to bank transfers
-  if (desc.includes('prijenos') && !toSource) {
-    toSource = 'bank';
-  }
-  
-  const fromInfo = PAYMENT_SOURCES.find(s => s.id === fromSource) || PAYMENT_SOURCES[5];
-  const toInfo = PAYMENT_SOURCES.find(s => s.id === toSource) || PAYMENT_SOURCES[5];
-  
-  return {
-    from: { name: fromInfo.name, icon: fromInfo.icon },
-    to: { name: toInfo.name, icon: toInfo.icon }
-  };
-}
-
-export const TransferListDialog = ({
-  open,
-  onOpenChange,
-  transfers,
-  totalAmount
-}: TransferListDialogProps) => {
-  const { t, i18n } = useTranslation();
-  const [filters, setFilters] = useState<FilterState>(defaultFilters);
-  const { formatAmount } = useCurrency();
-
-  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
-
-  // Apply filters
-  const filteredTransfers = useMemo(() => {
-    return applyFilters(transfers, filters);
-  }, [transfers, filters]);
-
-  const filteredTotal = useMemo(() => 
-    filteredTransfers.reduce((sum, t) => sum + Number(t.amount), 0),
-    [filteredTransfers]
-  );
 
 
   // Group transfers by month
