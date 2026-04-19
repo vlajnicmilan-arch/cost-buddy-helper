@@ -22,6 +22,10 @@ export interface CustomPaymentSource {
   created_at: string;
   updated_at: string;
   cards?: PaymentSourceCard[];
+  // Sharing metadata (computed client-side)
+  isOwned?: boolean;
+  memberCount?: number; // number of OTHER members (excluding owner)
+  ownerName?: string | null; // display name of owner when source is shared with current user
 }
 
 export const DEFAULT_PAYMENT_ICONS = [

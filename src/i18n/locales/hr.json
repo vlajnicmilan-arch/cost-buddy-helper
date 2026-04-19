@@ -728,7 +728,10 @@
     "standardSources": "Standardni izvori",
     "noCard": "Bez kartice",
     "cards": "Kartice",
-    "digitalWallets": "Digitalni novčanici"
+    "digitalWallets": "Digitalni novčanici",
+    "shared": "Dijeljeno",
+    "sharedByYou": "Dijelite s {{count}} osoba",
+    "sharedWithYou": "Dijeli: {{owner}}"
   },
   "incomeSources": {
     "title": "Izvori",

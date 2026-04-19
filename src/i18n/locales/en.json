@@ -721,7 +721,10 @@
     "standardSources": "Standard Sources",
     "noCard": "No card",
     "cards": "Cards",
-    "digitalWallets": "Digital Wallets"
+    "digitalWallets": "Digital Wallets",
+    "shared": "Shared",
+    "sharedByYou": "Shared with {{count}} people",
+    "sharedWithYou": "Shared by: {{owner}}"
   },
   "incomeSources": {
     "title": "Sources",
