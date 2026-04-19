@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Calendar, CreditCard, Hash } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
+import { showError } from '@/hooks/useStatusFeedback';
 
 interface InstallmentToggleProps {
   enabled: boolean;
@@ -84,13 +86,29 @@ export const InstallmentToggle = ({
                     <Calendar className="w-3 h-3" />
                     {t('installments.firstPaymentDate', 'Prva rata')}
                   </Label>
-                  <Input
-                    id="first-payment-date"
-                    type="date"
-                    value={firstPaymentDate}
-                    onChange={(e) => onFirstPaymentDateChange(e.target.value)}
-                    className="h-9 rounded-lg"
-                  />
+                  {(() => {
+                    const r = getDateRange('recurring');
+                    return (
+                      <Input
+                        id="first-payment-date"
+                        type="date"
+                        value={firstPaymentDate}
+                        min={toInputDate(r.min)}
+                        max={toInputDate(r.max)}
+                        onChange={(e) => onFirstPaymentDateChange(e.target.value)}
+                        onBlur={(e) => {
+                          const v = e.target.value;
+                          if (!v) return;
+                          const errKey = getDateValidationKey(v, r);
+                          if (errKey) {
+                            onFirstPaymentDateChange(clampInputDate(v, r));
+                            showError(t(errKey));
+                          }
+                        }}
+                        className="h-9 rounded-lg"
+                      />
+                    );
+                  })()}
                 </div>
               </div>
               

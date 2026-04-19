@@ -199,7 +199,27 @@ export const EstimateDialog = ({ open, onOpenChange, estimate }: EstimateDialogP
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>{t('estimates.validUntil', 'Vrijedi do')}</Label>
-              <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+              {(() => {
+                const r = getDateRange('estimate');
+                return (
+                  <Input
+                    type="date"
+                    value={validUntil}
+                    min={toInputDate(r.min)}
+                    max={toInputDate(r.max)}
+                    onChange={(e) => setValidUntil(e.target.value)}
+                    onBlur={(e) => {
+                      const v = e.target.value;
+                      if (!v) return;
+                      const errKey = getDateValidationKey(v, r);
+                      if (errKey) {
+                        setValidUntil(clampInputDate(v, r));
+                        showError(t(errKey));
+                      }
+                    }}
+                  />
+                );
+              })()}
             </div>
           </div>
 
