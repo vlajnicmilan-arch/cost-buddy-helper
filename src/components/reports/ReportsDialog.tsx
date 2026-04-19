@@ -62,6 +62,7 @@ import {
   IncomeReportData 
 } from '@/lib/reportExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
@@ -721,28 +722,55 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                   </SelectContent>
                 </Select>
 
-                {periodPreset === 'custom' && (
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <Label className="text-xs text-muted-foreground">{t('reports.from', 'Od')}</Label>
-                      <Input
-                        type="date"
-                        value={customStart}
-                        onChange={(e) => setCustomStart(e.target.value)}
-                        className="rounded-xl"
-                      />
+                {periodPreset === 'custom' && (() => {
+                  const r = getDateRange('report');
+                  const minStr = toInputDate(r.min);
+                  const maxStr = toInputDate(r.max);
+                  return (
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <Label className="text-xs text-muted-foreground">{t('reports.from', 'Od')}</Label>
+                        <Input
+                          type="date"
+                          value={customStart}
+                          min={minStr}
+                          max={customEnd || maxStr}
+                          onChange={(e) => setCustomStart(e.target.value)}
+                          onBlur={(e) => {
+                            const v = e.target.value;
+                            if (!v) return;
+                            const errKey = getDateValidationKey(v, r);
+                            if (errKey) {
+                              setCustomStart(clampInputDate(v, r));
+                              showError(t(errKey));
+                            }
+                          }}
+                          className="rounded-xl"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Label className="text-xs text-muted-foreground">{t('reports.to', 'Do')}</Label>
+                        <Input
+                          type="date"
+                          value={customEnd}
+                          min={customStart || minStr}
+                          max={maxStr}
+                          onChange={(e) => setCustomEnd(e.target.value)}
+                          onBlur={(e) => {
+                            const v = e.target.value;
+                            if (!v) return;
+                            const errKey = getDateValidationKey(v, r);
+                            if (errKey) {
+                              setCustomEnd(clampInputDate(v, r));
+                              showError(t(errKey));
+                            }
+                          }}
+                          className="rounded-xl"
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <Label className="text-xs text-muted-foreground">{t('reports.to', 'Do')}</Label>
-                      <Input
-                        type="date"
-                        value={customEnd}
-                        onChange={(e) => setCustomEnd(e.target.value)}
-                        className="rounded-xl"
-                      />
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Include/Exclude toggles */}
