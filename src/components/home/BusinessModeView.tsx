@@ -67,6 +67,7 @@ interface BusinessModeViewProps {
   dashboardFilters: FilterState;
   onDashboardFiltersChange: (filters: FilterState) => void;
   filteredDashboardExpenses: Expense[];
+  monthlyTransactionsCount: number;
   visibleCount: number;
   onShowMore: () => void;
   selectedTransactionIds: Set<string>;
@@ -233,6 +234,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               onFiltersChange={props.onDashboardFiltersChange}
               filteredExpenses={props.filteredDashboardExpenses}
               totalExpensesCount={props.expenses.length}
+              monthlyTransactionsCount={props.monthlyTransactionsCount}
               expensesLoading={props.expensesLoading}
               visibleCount={props.visibleCount}
               onShowMore={props.onShowMore}

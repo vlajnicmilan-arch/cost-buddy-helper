@@ -71,6 +71,7 @@ interface PersonalModeViewProps {
   dashboardFilters: FilterState;
   onDashboardFiltersChange: (filters: FilterState) => void;
   filteredDashboardExpenses: Expense[];
+  monthlyTransactionsCount: number;
   visibleCount: number;
   onShowMore: () => void;
   selectedTransactionIds: Set<string>;
@@ -258,6 +259,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             onFiltersChange={props.onDashboardFiltersChange}
             filteredExpenses={props.filteredDashboardExpenses}
             totalExpensesCount={props.expenses.length}
+            monthlyTransactionsCount={props.monthlyTransactionsCount}
             expensesLoading={props.expensesLoading}
             visibleCount={props.visibleCount}
             onShowMore={props.onShowMore}
