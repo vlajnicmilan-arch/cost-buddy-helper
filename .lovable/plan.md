@@ -1,45 +1,64 @@
 
 
-## Trenutna logika i prijedlog
+## Problem
+Kad korisnik radi prijenos između računa, AI mu automatski dodjeljuje kategoriju (npr. "Hrana", "Režije") na osnovu opisa. To je **konceptualno pogrešno** — prijenos NIJE trošak ni prihod, to je **interna tranzicija novca**. Kategorija "Hrana" za prijenos s tekućeg na štedni račun nema smisla.
 
-### Što sam pronašao
-Na glavnom dashboardu (`src/pages/Index.tsx` → `src/components/home/PersonalModeView.tsx` → `SummarySection.tsx`) prikazuju se 3 kartice: **Saldo**, **Prihodi**, **Rashodi**.
+## Što sam pronašao u kodu
 
-Logika računanja je u `src/hooks/useExpenses.ts` (ili sličnom agregatoru) i **trenutno zbraja SVE transakcije** koje su učitane u trenutnom prikazu — bez filtera po mjesecu. To znači:
-- "Prihodi" = svi prihodi ikad zabilježeni
-- "Rashodi" = svi rashodi ikad zabilježeni
+**1. AI kategorizacija (`useAICategorization.ts`)**
+- Poziva se iz `ManualExpenseForm.tsx` na osnovu opisa + trgovca
+- **Ne provjerava `type === 'transfer'`** — pa kategorizira i prijenose
 
-### Zašto je tako (povijesno)
-Dashboard je izvorno bio zamišljen kao "pregled svih podataka" jer je `useExpenseFetch` već paginirano dohvaćao sve transakcije za korisnika, pa je suma bila trivijalna. Filter po mjesecu nije nikad eksplicitno dodan — vjerojatno propust iz ranih verzija.
+**2. Spremanje prijenosa (`AddExpenseDialog.tsx` + `useExpenseCRUD.ts`)**
+- Prijenos se sprema kao 1 zapis s `type: 'transfer'`, `payment_source` (izvor) i `income_source_id` (odredište)
+- Polje `category` se i dalje popunjava — često ostane od AI-a
 
-### Zašto Vinkin osjećaj ima smisla
-"Saldo" je trenutno stanje računa (kumulativ ima smisla). Ali "Prihodi" i "Rashodi" kao **kumulativ od početka vremena** ne govore ništa korisno — broj samo raste i nema kontekst. Standard u financijskim aplikacijama (Revolut, Wallet, YNAB) je **mjesečni prikaz**.
+**3. Prikaz**
+- `TransferTransactionItem` već IGNORIRA kategoriju i prikazuje `Iz → U` s ikonom `ArrowLeftRight`
+- Ali u `TransactionDetailDialog`, izvještajima (`ReportsDialog`, `CategoryBreakdown`), filteru po kategoriji — kategorija se i dalje koristi
+- U `Reports`/`CategoryBreakdown` već postoji filter koji isključuje transfere iz suma, ali ne svuda konzistentno
 
-### Prijedlog
+## Rješenje
 
-**1. Prihodi i Rashodi → samo tekući mjesec**
-- Filter: `date >= startOfMonth(now) && date <= endOfMonth(now)`
-- Saldo OSTAJE kumulativ (zbroj salda svih aktivnih izvora — to je već ispravno)
+### 1. Uvesti rezerviranu sistemsku kategoriju `"transfer"`
+- Dodati u `src/types/expense.ts` u `getCategoryInfo()`:
+  - `transfer` → ikona `ArrowLeftRight`, naziv iz i18n (`categories.transfer` = "Prijenos"), neutralna boja (muted/teal-secondary)
+- Ova kategorija se NE pojavljuje u dropdownima za biranje (skrivena iz `CATEGORIES` liste)
+- Koristi se isključivo interno za sve `type === 'transfer'` transakcije
 
-**2. Vizualna oznaka da je mjesečno**
-- Ispod naslova "Prihodi" / "Rashodi" mali tekst: **"travanj 2026"** (ili `format(now, 'LLLL yyyy')` lokalizirano)
-- Diskretno, sivo, manjim fontom
+### 2. Force-set kategoriju na `"transfer"` pri spremanju
+- U `useExpenseCRUD.ts` (create + update): ako `type === 'transfer'`, **uvijek** override `category = 'transfer'`, bez obzira što je AI predložio ili korisnik odabrao
+- Isto za masovne edite (`BulkCategoryDialog`) — blokirati promjenu kategorije za transfere
 
-**3. Usporedba s prošlim mjesecom (bonus)**
-- Mali postotak ispod iznosa: `+12% vs ožujak` ili `-5% vs ožujak`
-- Zelena ako prihodi rastu / rashodi padaju, crvena obrnuto
-- Isti pattern već postoji u `BusinessDashboard.tsx` — preuzimam logiku
+### 3. Spriječiti AI kategorizaciju za prijenose
+- U `ManualExpenseForm.tsx`: NE pozivati `categorize()` ako je `type === 'transfer'`
+- Ovo štedi i Lovable AI pozive
 
-**4. Što NE diram**
-- Saldo karticu (ostaje kumulativ aktivnih računa)
-- Filter transakcija ispod (lista i dalje pokazuje sve, korisnik ima zasebne filtere)
-- Izračun grafova, kategorija, budgeta — to već imaju vlastite filtere
-- Bazu, RLS, edge funkcije
+### 4. Razdvojiti opis od kategorije (UI poruka)
+- U `AddExpenseDialog` formi za prijenos: ispod polja "Opis" diskretni helper tekst:
+  > _"Opišite svrhu prijenosa (npr. 'Štednja za odmor'). Kategorija se automatski postavlja na Prijenos."_
+- Ukloniti polje za biranje kategorije iz forme prijenosa (ako još postoji)
+
+### 5. Backfill postojećih prijenosa
+- Migracija: `UPDATE expenses SET category = 'transfer' WHERE type = 'transfer'`
+- Korisničin originalni opis (npr. "Štednja za auto") OSTAJE u `description` polju — ne dira se
+
+### 6. Filter/izvještaji
+- `CategoryBreakdown`, `ReportsDialog`, `CategoryTransactionsDialog`: prijenose s kategorijom `"transfer"` **prikazati u zasebnoj sekciji** ili potpuno isključiti iz "Top kategorije" (već se djelomično radi za `type === 'transfer'`, sad je konzistentno)
+- U detalju transakcije za prijenos: ne prikazivati "Kategorija: Prijenos" kao posebno polje — već je vidljivo iz `Iz → U` prikaza
 
 ### Datoteke za izmjenu
-- `src/components/home/SummarySection.tsx` — dodati mjesečni filter za income/expense + UI oznaka mjeseca + delta vs prošli mj.
-- `src/i18n/locales/{hr,en,de}.json` — ključevi `summary.thisMonth`, `summary.vsLastMonth`
+- `src/types/expense.ts` — dodati sistemsku kategoriju `transfer`
+- `src/hooks/useExpenseCRUD.ts` — force `category = 'transfer'` za type=transfer
+- `src/components/add-expense/ManualExpenseForm.tsx` — preskočiti AI za transfere + helper tekst
+- `src/components/add-expense/AddExpenseDialog.tsx` — sakriti category picker za transfere
+- `src/components/BulkCategoryDialog.tsx` — blokirati promjenu kategorije za transfere
+- `src/components/TransactionDetailDialog.tsx` — sakriti redak "Kategorija" za prijenose
+- `src/i18n/locales/{hr,en,de}.json` — `categories.transfer`, helper tekst
+- **Migracija**: backfill `category = 'transfer'` za sve postojeće prijenose
 
-### Pitanje prije implementacije
-Imam jedno pitanje o opsegu — samo da budem siguran što Vinka želi.
+### Što NE diram
+- `TransferTransactionItem` (već ispravno prikazuje)
+- Logiku salda, RLS, sortiranje, `expenses` tablicu (samo update postojećih redaka)
+- Korisnikov `description` (ostaje njegov originalni opis svrhe)
 
