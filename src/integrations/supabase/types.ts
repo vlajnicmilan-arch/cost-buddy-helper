@@ -332,6 +332,7 @@ export type Database = {
           due_date: string | null
           id: string
           paid_amount: number
+          source_expense_id: string | null
           status: string
           type: string
           updated_at: string
@@ -346,6 +347,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           paid_amount?: number
+          source_expense_id?: string | null
           status?: string
           type?: string
           updated_at?: string
@@ -360,6 +362,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           paid_amount?: number
+          source_expense_id?: string | null
           status?: string
           type?: string
           updated_at?: string
@@ -371,6 +374,13 @@ export type Database = {
             columns: ["business_profile_id"]
             isOneToOne: false
             referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_debts_source_expense_id_fkey"
+            columns: ["source_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
         ]
