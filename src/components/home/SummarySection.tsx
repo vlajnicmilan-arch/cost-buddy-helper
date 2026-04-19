@@ -162,9 +162,10 @@ export const SummarySection = React.memo(({
             <TrendingDown className="w-4 h-4 text-destructive" />
             <span className="text-xs sm:text-sm text-muted-foreground">{t('summary.totalExpenses')}</span>
           </div>
-          <p className="relative text-base sm:text-xl font-bold text-destructive">{formatAmount(totalExpenses)}</p>
+          <p className="relative text-base sm:text-xl font-bold text-destructive">{formatAmount(curMonthExpenses)}</p>
+          <p className="relative text-[9px] text-muted-foreground mt-0.5 capitalize">{currentMonthLabel}</p>
           {expenseTrendPercent !== null && Math.abs(expenseTrendPercent) < 1000 && (
-            <div className="relative flex flex-col items-center">
+            <div className="relative flex flex-col items-center mt-0.5">
               <span className={`text-[10px] sm:text-xs font-medium ${expenseTrendPercent <= 0 ? 'text-income' : 'text-destructive'}`}>
                 {expenseTrendPercent >= 0 ? `+${expenseTrendPercent}%` : `${expenseTrendPercent}%`}
                 {expenseTrendPercent >= 0 ? ' ↑' : ' ↓'}
