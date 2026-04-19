@@ -1,42 +1,40 @@
 
-## Plan: Obiteljska grupa se mora otvoriti na vrhu
 
-### Što je stvarni problem
-Problem nije više u samom `Family` ekranu nego u chatu unutar detalja grupe.
+## Plan: Oznaka "Dijeljeno" na karticama računa
 
-Kad se grupa otvori:
-- `FamilyGroupDetailView` pokuša otići na vrh
-- ali `FamilyChat` nakon učitavanja poruka radi `bottomRef.scrollIntoView(...)`
-- to ne skrola samo chat nego povuče i cijelu stranicu prema dolje
+### Cilj
+Dodati vizualnu oznaku (badge) "Dijeljeno" na svaki račun u Novčaniku koji je dijeljen s drugim korisnicima — bilo da ga **ja dijelim s drugima** (vlasnik) ili je **netko drugi podijelio sa mnom** (član).
 
-Zato ekran završi “na polovici” ili niže.
+### Gdje se prikazuje
+1. **Novčanik** — kartice u `CustomPaymentSourcesPanel`
+2. **Početna (Dashboard)** — kartice u `PaymentSourcesSection` (collapsible "Financije")
 
-### Rješenje
-Popravak ću napraviti ovako:
+### Logika prepoznavanja
+Račun je "dijeljen" ako:
+- ja sam vlasnik i račun ima barem jednog člana u `payment_source_members`, ILI
+- ja nisam vlasnik (`source.user_id !== currentUser.id`) → znači netko ga je podijelio sa mnom
 
-1. **`src/components/family/FamilyChat.tsx`**
-   - maknuti `bottomRef.scrollIntoView(...)`
-   - chat skrolati **samo unutar svojeg vlastitog scroll kontejnera**
-   - koristiti `scrollRef.current.scrollTop = scrollRef.current.scrollHeight`
-   - na prvo učitavanje bez animacije, na nove poruke može ostati smooth samo unutar chata
+`useCustomPaymentSources` već razlikuje `ownedPaymentSources` i `sharedPaymentSources`, pa za drugi slučaj već imam podatak. Za prvi slučaj (ja dijelim s drugima) dohvatit ću broj članova po `payment_source_id` u istom hooku i izložiti `memberCount` polje.
 
-2. **`src/components/family/FamilyGroupDetailView.tsx`**
-   - ostaviti/pojačati reset na vrh pri mountu detalja grupe
-   - po potrebi ga prebaciti u robusniji oblik (`useLayoutEffect` ili `requestAnimationFrame`) da se izvrši nakon rendera, ali prije nego korisnik vidi pomak
+### Vizualno
+Mali badge u gornjem desnom kutu kartice ili pored imena računa:
+- ikona `Users` (Lucide) + tekst "Dijeljeno"
+- diskretna boja (muted/secondary), ne smije nadjačati boju računa
+- na hover/tap tooltip: "Vlasnik: X" ili "Dijelite s N osoba"
 
-### Rezultat
-Kad korisnik klikne grupu u Obitelji:
-- detalj grupe se otvara normalno
-- vrh ekrana ostaje na vrhu
-- chat i dalje može skrolati svoje poruke unutar svog okvira
-- stranica se više neće sama povlačiti dolje
+### i18n ključevi (HR/EN/DE)
+- `paymentSources.shared` → "Dijeljeno" / "Shared" / "Geteilt"
+- `paymentSources.sharedByYou` → "Dijelite s {{count}} osoba"
+- `paymentSources.sharedWithYou` → "Dijeli: {{owner}}"
 
 ### Datoteke
-- `src/components/family/FamilyChat.tsx`
-- `src/components/family/FamilyGroupDetailView.tsx`
+- **Izmjena**: `src/hooks/useCustomPaymentSources.ts` — dodati `memberCount` i `isOwned` na svaki source
+- **Izmjena**: `src/components/custom-payment-sources/CustomPaymentSourcesPanel.tsx` — prikaz badge-a
+- **Izmjena**: `src/components/home/PaymentSourcesSection.tsx` — prikaz badge-a
+- **Izmjena**: `src/i18n/locales/hr.json`, `en.json`, `de.json` — novi ključevi
 
-### Što ne diram
-- logiku grupa
-- navigaciju
-- back gumb
-- globalni `ScrollToTop`
+### Što NE diram
+- RLS politike, balance logiku, vidljivost transakcija
+- `payment_source_members` tablicu i invitation flow
+- Selector u dijalogu za dodavanje transakcije
+
