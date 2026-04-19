@@ -105,6 +105,10 @@ async function logDelivery(
     request_payload: any;
     response_summary: any;
     duration_ms: number;
+    request_id?: string | null;
+    dispatch_status?: string | null;
+    dispatch_error?: string | null;
+    lifecycle_stage?: string | null;
   }
 ) {
   try {
@@ -120,6 +124,10 @@ async function logDelivery(
       request_payload: entry.request_payload,
       response_summary: entry.response_summary,
       duration_ms: entry.duration_ms,
+      request_id: entry.request_id ?? null,
+      dispatch_status: entry.dispatch_status ?? null,
+      dispatch_error: entry.dispatch_error ?? null,
+      lifecycle_stage: entry.lifecycle_stage ?? "send_push",
     });
   } catch (e) {
     console.error("[send-push] Failed to write delivery log:", e);
@@ -140,6 +148,7 @@ Deno.serve(async (req) => {
   let body: string | null = null;
   let data: any = null;
   let source: string | null = null;
+  let request_id: string | null = null;
 
   try {
     const parsed = await req.json();
@@ -148,6 +157,7 @@ Deno.serve(async (req) => {
     body = parsed.body ?? null;
     data = parsed.data ?? null;
     source = parsed.source ?? "unknown";
+    request_id = parsed.request_id ?? crypto.randomUUID();
 
     if (!user_id || !title || !body) {
       await logDelivery(supabase, {
@@ -157,6 +167,9 @@ Deno.serve(async (req) => {
         request_payload: { user_id, title, body, data },
         response_summary: { error: "user_id, title, and body are required" },
         duration_ms: Date.now() - startedAt,
+        request_id, dispatch_status: "send_push_bad_request",
+        dispatch_error: "missing required fields",
+        lifecycle_stage: "send_push",
       });
       return new Response(
         JSON.stringify({ error: "user_id, title, and body are required" }),
@@ -172,6 +185,9 @@ Deno.serve(async (req) => {
         request_payload: { title, body, data },
         response_summary: { error: "FCM_SERVICE_ACCOUNT not configured" },
         duration_ms: Date.now() - startedAt,
+        request_id, dispatch_status: "send_push_misconfigured",
+        dispatch_error: "FCM_SERVICE_ACCOUNT secret missing",
+        lifecycle_stage: "send_push",
       });
       return new Response(
         JSON.stringify({ error: "FCM_SERVICE_ACCOUNT not configured" }),
@@ -190,6 +206,9 @@ Deno.serve(async (req) => {
         request_payload: { title, body, data },
         response_summary: { error: "FCM_SERVICE_ACCOUNT is not valid JSON" },
         duration_ms: Date.now() - startedAt,
+        request_id, dispatch_status: "send_push_misconfigured",
+        dispatch_error: "FCM_SERVICE_ACCOUNT not valid JSON",
+        lifecycle_stage: "send_push",
       });
       return new Response(
         JSON.stringify({ error: "FCM_SERVICE_ACCOUNT is not valid JSON" }),
@@ -206,6 +225,9 @@ Deno.serve(async (req) => {
         request_payload: { title, body, data },
         response_summary: { error: "Service account missing project_id" },
         duration_ms: Date.now() - startedAt,
+        request_id, dispatch_status: "send_push_misconfigured",
+        dispatch_error: "service account missing project_id",
+        lifecycle_stage: "send_push",
       });
       return new Response(
         JSON.stringify({ error: "Service account missing project_id" }),
@@ -226,6 +248,10 @@ Deno.serve(async (req) => {
         request_payload: { title, body, data },
         response_summary: { reason: "no tokens found", error: error?.message },
         duration_ms: Date.now() - startedAt,
+        request_id,
+        dispatch_status: error ? "send_push_token_query_error" : "send_push_no_tokens",
+        dispatch_error: error?.message ?? (error ? "token query failed" : "user has no registered push tokens"),
+        lifecycle_stage: "send_push",
       });
       return new Response(
         JSON.stringify({ sent: 0, reason: "no tokens found" }),
@@ -291,6 +317,11 @@ Deno.serve(async (req) => {
       }
     }
 
+    let dispatchStatus: string;
+    if (sent === tokens.length) dispatchStatus = "fcm_success";
+    else if (sent > 0) dispatchStatus = "fcm_partial";
+    else dispatchStatus = "fcm_all_failed";
+
     await logDelivery(supabase, {
       user_id, source_function: source, title, body,
       token_count: tokens.length,
@@ -300,10 +331,13 @@ Deno.serve(async (req) => {
       request_payload: { title, body, data },
       response_summary: { sent, total: tokens.length, errors },
       duration_ms: Date.now() - startedAt,
+      request_id, dispatch_status: dispatchStatus,
+      dispatch_error: errors.length ? errors.join(", ") : null,
+      lifecycle_stage: "fcm",
     });
 
     return new Response(
-      JSON.stringify({ sent, total: tokens.length, errors }),
+      JSON.stringify({ sent, total: tokens.length, errors, request_id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
@@ -315,6 +349,9 @@ Deno.serve(async (req) => {
       request_payload: { title, body, data },
       response_summary: { error: e instanceof Error ? e.message : String(e) },
       duration_ms: Date.now() - startedAt,
+      request_id, dispatch_status: "send_push_exception",
+      dispatch_error: e instanceof Error ? e.message : String(e),
+      lifecycle_stage: "send_push",
     });
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),
