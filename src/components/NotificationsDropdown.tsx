@@ -363,6 +363,60 @@ export const NotificationsDropdown = () => {
               {invitationDialog?.notification.message}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {invitationDialog?.invitationType === 'project' && (
+            <div className="space-y-2 py-2">
+              <p className="text-sm font-medium">
+                {t('projects.whereToShow', 'Gdje želite vidjeti ovaj projekt?')}
+              </p>
+              {suggestedContext === 'business' && (
+                <p className="text-xs text-muted-foreground">
+                  {t('projects.ownerSuggestedBusiness', 'Vlasnik je predložio: Poslovni mod')}
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={chosenContext === 'personal' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-9 justify-start"
+                  onClick={() => setChosenContext('personal')}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  {t('projects.contextPersonal', 'Osobne financije')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={chosenContext === 'business' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-9 justify-start"
+                  onClick={() => setChosenContext('business')}
+                  disabled={businessProfiles.length === 0}
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  {t('projects.contextBusiness', 'Poslovni mod')}
+                </Button>
+              </div>
+              {chosenContext === 'business' && businessProfiles.length > 0 && (
+                <Select value={chosenBusinessProfileId} onValueChange={setChosenBusinessProfileId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('projects.selectProfile', 'Odaberite profil')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {businessProfiles.map(bp => (
+                      <SelectItem key={bp.id} value={bp.id}>{bp.company_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {chosenContext === 'business' && businessProfiles.length === 0 && (
+                <p className="text-xs text-destructive">
+                  {t('projects.noBusinessProfiles', 'Nemate poslovnih profila. Odaberite Osobne financije.')}
+                </p>
+              )}
+            </div>
+          )}
+
           <AlertDialogFooter className="flex-row gap-2">
             <Button
               variant="outline"
