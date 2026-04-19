@@ -1,56 +1,54 @@
 
 
-## Što gradimo (3 stvari u jednom tijeku)
+## Što se točno dogodilo (potvrda iz baze)
 
-### 1) Premjesti projekt — pridruženi član može sam mijenjati kontekst
+Pozvani korisnik (`vinkabalance@gmail.com`, ID `e78ee9bd...`) prihvatio je pozivnicu i u bazi je sve **ispravno spremljeno**:
 
-Nakon prihvaćanja, član mora moći reći: "ovo želim u Personal" ili "premjesti u moj poslovni profil X". Trenutno: jednom prihvaćeno = zauvijek tu.
+```
+project_members.member_context             = 'business'
+project_members.member_business_profile_id = be60a880-... (Mjugh d.o.o.)
+```
 
-**Gdje**: u `ProjectMembersTab.tsx` (i/ili `ProjectDetailDialog`), za **trenutnog korisnika** (red ispod njegovog imena u listi članova), dodajemo mali "Lokacija kod mene" picker:
-- Radio/segment: Personal / Business
-- Ako Business → dropdown svojih `business_profiles`
-- Spremanje u `project_members.member_context` + `member_business_profile_id` (sam svoj red)
+Njegov poslovni profil "Mjugh" postoji i aktivan je. **Backend je 100% točan.**
 
-**Backend**: postojeća RLS pravila moraju dozvoliti članu da update-a **samo svoj** red u `project_members` za polja `member_context` i `member_business_profile_id`. Provjerit ćemo i po potrebi dodati RLS politiku (`UPDATE` na vlastiti red).
+## Gdje je bug
 
-### 2) Handle slučaj kad član nema poslovni profil
+U `src/pages/JoinProject.tsx` (linija 132-138) i `NotificationsDropdown.tsx` (linija 227-234) postavljamo `localStorage.setItem('business_mode_enabled', 'true')` **prije redirecta**. Ali:
 
-U `JoinProject.tsx` i `NotificationsDropdown.tsx` (gdje već postoji izbor konteksta pri prihvaćanju):
-- Ako vlasnik je predložio **Business**, a član nema niti jedan business profile → prikazujemo info poruku: *"Voditelj predlaže poslovni mod, ali ti nemaš poslovni profil."*
-- Dva CTA gumba:
-  - **"Stavi u Osobne financije"** (fallback) — prihvati s `member_context = 'personal'`
-  - **"Kreiraj poslovni profil"** — vodi na kreiranje (ili otvara mali dijalog za brzo kreiranje), pa nakon toga nastavlja prihvaćanje
-- Isto logika i za istu situaciju nakon prihvaćanja u "Premjesti projekt" pickeru iz točke 1.
+1. **`AppStateContext` čita `localStorage` samo jednom pri mountu** (`useState(() => localStorage.getItem(...))`) — ne re-čita pri promjeni vrijednosti.
+2. Hard reload bi to riješio, ali u zadnjem fixu koristimo `navigate(...)` ili `window.location.href = '/'` koji za PWA na nekim platformama **ne pokreće punu reload sekvencu**, samo SPA navigaciju.
+3. **Još veći problem**: `BusinessModeGuard.tsx` (kojeg smo nedavno popravili) gleda korisnikovu pretplatu. Pozvani korisnik je **Free** — guard onda **automatski gasi `business_mode_enabled` natrag na `false`** nakon 2 ciklusa, jer pridruženi član nema vlastiti Pro/Business pretplatu.
 
-### 3) Spoji ulogu + početne tab-dozvole u jedan poziv (vlasnikov tijek)
+To je glavna prepreka: pozvani korisnik dobiva projekt u svoj Business profil, ali **ne smije ući u Business mode** jer nema Pro tier — pa guard sve ugasi i projekt nestane (jer `useProjects` ovisi o `activeBusinessProfileId` koji je `null` u Personal modu).
 
-Trenutno: vlasnik bira ulogu pri pozivu, ali **tab-dozvole** postavlja zasebno preko Shield ikone tek **nakon** što član prihvati. To je dva koraka i lako se zaboravi.
+## Kako popraviti — 3 koraka
 
-Promjena u `ProjectMembersTab.tsx` (sekcija "Pozovi članove"):
-- Ispod izbora uloge dodajemo mali **collapsible/accordion** "Početne dozvole (opcionalno)" s checkboxima za optional tab-ove (`overview`, `milestones`, `workers`, `collaborators`, `funding`, `transactions`)
-- Pametni defaulti po ulozi:
-  - `member` → sve true
-  - `viewer` → samo `overview` + `milestones` true, ostalo false
-- Kad vlasnik klikne **"Pošalji pozivnicu"** ili **"Generiraj link"**, šaljemo i `default_permissions` JSON u `project_invitations`
-- Pri prihvaćanju (u `accept-project-invitation` Edge funkciji) — odmah bulk-insertaj te permissions u `project_member_permissions` umjesto da Shield dialog kasnije
+### 1) `BusinessModeGuard` mora dozvoliti Business mode kad korisnik ima ≥1 dijeljen projekt s `member_context = 'business'`
 
-**Dodaci u bazi**:
-- Nova kolona `project_invitations.default_permissions jsonb` (default `{}`)
+Logika postaje: korisnik može biti u Business modu ako:
+- ima vlastitu Pro/Business pretplatu, **ILI**
+- je član barem jednog projekta s `member_context = 'business'` (gost u tuđem poslu)
 
-**Update Edge funkcija**:
-- `send-member-invitation` i `useProjectMembers.generateInviteLink` šalju `default_permissions`
-- `accept-project-invitation` i `respond-to-invitation` čitaju `default_permissions` i bulk-upsertaju u `project_member_permissions`
+Dodajemo lookup u `project_members` za trenutnog korisnika i preskačemo gašenje ako ima takav red.
 
-## Kratko o redoslijedu
+### 2) `useProjects` fallback — ako u Business modu nema `activeBusinessProfileId`, prikaži sve dijeljene business projekte
 
-1. Migracija: `project_invitations.default_permissions` + RLS update na `project_members` (član može updateati svoj `member_context`/`member_business_profile_id`)
-2. UI vlasnika: collapsible "Početne dozvole" u poziv-sekciji
-3. Edge funkcije: prijenos i primjena `default_permissions`
-4. UI člana: "Lokacija kod mene" picker + "premjesti" funkcija
-5. UI prihvaćanja: handling kad nema business profila (poruka + 2 CTA)
+Trenutno u Business modu strogo filtriramo po `member_business_profile_id === activeBusinessProfileId`. Ako iz nekog razloga `activeBusinessProfileId` nije postavljen (race condition pri loadu), član ne vidi ništa. Dodati: ako je `business_mode_enabled = true` i nema aktivnog profila, automatski aktivirati prvi profil korisnika.
 
-## Što ostaje neriješeno (svjesno)
+### 3) Redirect logika u `JoinProject.tsx` i `NotificationsDropdown.tsx` — prisilni full reload
 
-- Ne diramo postojeći Shield dialog — ostaje za naknadne izmjene
-- Ne radimo "prebaci sve projekte iz Personal u Business" bulk akciju — to je drugi zahtjev
+Umjesto `navigate('/')` ili soft `window.location.href`, koristiti `window.location.replace('/')` + osigurati da se prije toga pozovu setteri iz `AppStateContext` (`setBusinessModeEnabled(true)`, `setActiveBusinessProfileId(profileId)`) — ne samo `localStorage`, nego i state u kontekstu, da bude trenutno vidljivo i ako reload nešto zabrlja.
+
+## Bonus: očistiti dvostruke pozivnice
+
+U bazi ima 5 prihvaćenih pozivnica za isti projekt/email — trebale bi se brisati nakon prvog uspješnog prihvaćanja, ili `INSERT` u `project_members` ima `ON CONFLICT DO NOTHING` pa se sljedeće samo "pojedu". Provjerit ću u Edge funkciji jesmo li ostavili stare invitationse u "pending" stanju ili "accepted" — i očistit ćemo logiku da se duplikati ne stvaraju.
+
+## Redoslijed
+
+1. Update `BusinessModeGuard.tsx` — dodati provjeru `project_members` za business kontekst
+2. Update `useProjects.ts` — auto-select prvog poslovnog profila ako business mode on a `activeBusinessProfileId === null`
+3. Update `JoinProject.tsx` + `NotificationsDropdown.tsx` — koristiti context settere + `window.location.replace('/')`
+4. Provjera Edge funkcije `accept-project-invitation` — duplicate prevencija
+
+Ne diramo bazu (RLS je već OK), ne diramo migracije.
 
