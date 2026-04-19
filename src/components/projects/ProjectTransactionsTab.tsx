@@ -194,6 +194,16 @@ export const ProjectTransactionsTab = ({
   const [milestoneId, setMilestoneId] = useState<string>('none');
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
 
+  // Calendar popover open states (auto-close on select)
+  const [filterDateOpen, setFilterDateOpen] = useState(false);
+  const [addDateOpen, setAddDateOpen] = useState(false);
+  const [editDateOpen, setEditDateOpen] = useState(false);
+
+  // Date ranges per transaction type (expense vs income)
+  const addDateRangeLimits = useMemo(() => getDateRange('transactionDynamic', expenseType as 'expense' | 'income'), [expenseType]);
+  const editDateRangeLimits = useMemo(() => getDateRange('transactionDynamic', editType as 'expense' | 'income'), [editType]);
+  const reportDateLimits = useMemo(() => getDateRange('report'), []);
+
   // Check if viewer can add transactions (needs approval)
   const canAddTransaction = isManager || userRole === 'member' || userRole === 'viewer';
   const needsApproval = userRole === 'viewer';
