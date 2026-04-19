@@ -38,8 +38,8 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { type, targetId, invitedEmail, role, suggestedContext } = body;
-    console.log("[SEND-MEMBER-INVITATION] Request body:", { type, targetId, invitedEmail, role, suggestedContext });
+    const { type, targetId, invitedEmail, role, suggestedContext, defaultPermissions } = body;
+    console.log("[SEND-MEMBER-INVITATION] Request body:", { type, targetId, invitedEmail, role, suggestedContext, defaultPermissions });
 
     if (!type || !targetId || !invitedEmail || !role) {
       return new Response(
