@@ -136,7 +136,8 @@ export const useProjectMembers = (projectId: string | null) => {
 
   const generateInviteLink = async (
     role: ProjectRole = 'member',
-    suggestedContext: 'personal' | 'business' = 'personal'
+    suggestedContext: 'personal' | 'business' = 'personal',
+    defaultPermissions?: Record<string, boolean>
   ): Promise<string | null> => {
     if (!projectId || !user) return null;
 
@@ -149,16 +150,21 @@ export const useProjectMembers = (projectId: string | null) => {
         .eq('email', 'link-invite');
 
       // Create new invitation
+      const insertPayload: Record<string, unknown> = {
+        project_id: projectId,
+        email: 'link-invite',
+        role: role,
+        invited_by: user.id,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
+        suggested_context: suggestedContext,
+      };
+      if (defaultPermissions && Object.keys(defaultPermissions).length > 0) {
+        insertPayload.default_permissions = defaultPermissions;
+      }
+
       const { data, error } = await supabase
         .from('project_invitations')
-        .insert({
-          project_id: projectId,
-          email: 'link-invite',
-          role: role,
-          invited_by: user.id,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
-          suggested_context: suggestedContext,
-        } as any)
+        .insert(insertPayload as any)
         .select()
         .single();
 
@@ -173,6 +179,45 @@ export const useProjectMembers = (projectId: string | null) => {
     }
   };
 
+  /**
+   * Allow the current member to relocate the project on their side
+   * (Personal vs a specific Business profile of theirs).
+   * Updates the member's own row only — RLS enforces this.
+   */
+  const updateMemberContext = async (
+    memberContext: 'personal' | 'business',
+    businessProfileId: string | null
+  ): Promise<boolean> => {
+    if (!projectId || !user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('project_members')
+        .update({
+          member_context: memberContext,
+          member_business_profile_id: memberContext === 'business' ? businessProfileId : null,
+        } as any)
+        .eq('project_id', projectId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Update local cache
+      setMembers(prev => prev.map(m =>
+        m.user_id === user.id
+          ? { ...m, member_context: memberContext, member_business_profile_id: memberContext === 'business' ? businessProfileId : null }
+          : m
+      ));
+
+      showSuccess(t('projects.contextUpdated', 'Lokacija projekta ažurirana'));
+      return true;
+    } catch (error) {
+      console.error('Error updating member context:', error);
+      showError(t('common.error'));
+      return false;
+    }
+  };
+
   return {
     members,
     invitations,
@@ -182,6 +227,7 @@ export const useProjectMembers = (projectId: string | null) => {
     removeMember,
     cancelInvitation,
     generateInviteLink,
+    updateMemberContext,
     refetch: fetchMembers
   };
 };
