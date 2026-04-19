@@ -11,7 +11,7 @@ const LOCAL_PROJECTS_KEY = 'finmate.projects';
 export const useProjects = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const { emitAvatarEvent, activeBusinessProfileId, businessModeEnabled, setActiveBusinessProfileId } = useAppState();
+  const { emitAvatarEvent, activeBusinessProfileId, businessModeEnabled, setActiveBusinessProfileId, setBusinessModeEnabled } = useAppState();
   const [projects, setProjects] = useState<ProjectWithOwnership[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -124,29 +124,52 @@ export const useProjects = () => {
     fetchProjects();
   }, [fetchProjects]);
 
-  // Auto-select first business profile if business mode is on but none is active.
-  // This handles race conditions after accepting a shared business project, when
-  // the user may have just been bumped into business mode without an active profile.
+  // Auto-select first business profile ONLY when user has at least one shared
+  // business membership AND business mode is on AND no active profile is set.
+  // This handles race conditions after accepting a shared business project,
+  // without overriding a user's deliberate switch back to Personal mode.
   useEffect(() => {
     if (!user || !businessModeEnabled || activeBusinessProfileId) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      // 1. Check if user has any shared business memberships
+      const { data: memberships } = await supabase
+        .from('project_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('member_context', 'business')
+        .limit(1);
+
+      // 2. Load user's own business profiles
+      const { data: profiles } = await supabase
         .from('business_profiles')
         .select('id')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1);
+        .order('created_at', { ascending: true });
+
       if (cancelled) return;
-      const firstId = data?.[0]?.id;
-      if (firstId) {
-        console.log('[useProjects] Auto-activating first business profile:', firstId);
-        setActiveBusinessProfileId(firstId);
+
+      const hasSharedBusiness = (memberships?.length || 0) > 0;
+      const firstProfileId = profiles?.[0]?.id;
+
+      // Sanity: if business mode is on but user has neither own business profile
+      // nor any shared business membership, turn business mode off.
+      if (!hasSharedBusiness && !firstProfileId) {
+        console.log('[useProjects] No business context found, disabling business mode');
+        setBusinessModeEnabled(false);
+        return;
+      }
+
+      // Only auto-activate when triggered by a shared business membership
+      // (i.e. just accepted a business project invitation).
+      if (hasSharedBusiness && firstProfileId) {
+        console.log('[useProjects] Auto-activating first business profile:', firstProfileId);
+        setActiveBusinessProfileId(firstProfileId);
       }
     })();
     return () => { cancelled = true; };
-  }, [user, businessModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId]);
+  }, [user, businessModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId, setBusinessModeEnabled]);
 
   const addProject = async (
     project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>
