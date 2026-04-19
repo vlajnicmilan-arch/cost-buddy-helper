@@ -17,6 +17,25 @@ interface TransferListDialogProps {
   totalAmount: number;
 }
 
+export const TransferListDialog = ({
+  open,
+  onOpenChange,
+  transfers,
+  totalAmount,
+}: TransferListDialogProps) => {
+  const { t, i18n } = useTranslation();
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const { formatAmount } = useCurrency();
+  const { customPaymentSources } = useCustomPaymentSources();
+
+  const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+
+  const filteredTransfers = useMemo(() => applyFilters(transfers, filters), [transfers, filters]);
+
+  const filteredTotal = useMemo(
+    () => filteredTransfers.reduce((sum, t) => sum + Number(t.amount), 0),
+    [filteredTransfers]
+  );
 
   // Group transfers by month
   const groupedTransfers = filteredTransfers.reduce((acc, transfer) => {
@@ -102,10 +121,9 @@ interface TransferListDialogProps {
                     {/* Transfers in Month */}
                     <div className="space-y-2">
                       {group.items.map((transfer) => {
-                        const details = parseTransferDetails(
-                          transfer.description,
-                          transfer.payment_source
-                        );
+                        const endpoints = resolveTransferEndpoints(transfer, customPaymentSources as any);
+                        const from = endpoints?.from ?? { name: '?', icon: '💰' };
+                        const to = endpoints?.to ?? { name: '?', icon: '💰' };
 
                         return (
                           <div
@@ -114,24 +132,44 @@ interface TransferListDialogProps {
                           >
                             {/* Transfer Flow */}
                             <div className="flex items-center justify-center gap-3 mb-3">
-                              <div className="flex flex-col items-center">
-                                <span className="text-2xl">{details.from.icon}</span>
-                                <span className="text-xs text-muted-foreground mt-1">
-                                  {details.from.name}
+                              <div className="flex flex-col items-center max-w-[120px]">
+                                <div
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                                  style={from.color ? { backgroundColor: `${from.color}20`, color: from.color } : { backgroundColor: 'hsl(var(--muted))' }}
+                                >
+                                  {from.icon}
+                                </div>
+                                <span className="text-xs text-muted-foreground mt-1 text-center truncate max-w-full">
+                                  {from.name}
                                 </span>
+                                {from.cardLast4 && (
+                                  <span className="text-[10px] font-mono text-muted-foreground/70">
+                                    ••{from.cardLast4}
+                                  </span>
+                                )}
                               </div>
-                              
+
                               <div className="flex items-center gap-1 px-3">
                                 <div className="h-px w-8 bg-border" />
                                 <ArrowRight className="w-4 h-4 text-primary" />
                                 <div className="h-px w-8 bg-border" />
                               </div>
-                              
-                              <div className="flex flex-col items-center">
-                                <span className="text-2xl">{details.to.icon}</span>
-                                <span className="text-xs text-muted-foreground mt-1">
-                                  {details.to.name}
+
+                              <div className="flex flex-col items-center max-w-[120px]">
+                                <div
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                                  style={to.color ? { backgroundColor: `${to.color}20`, color: to.color } : { backgroundColor: 'hsl(var(--muted))' }}
+                                >
+                                  {to.icon}
+                                </div>
+                                <span className="text-xs text-muted-foreground mt-1 text-center truncate max-w-full">
+                                  {to.name}
                                 </span>
+                                {to.cardLast4 && (
+                                  <span className="text-[10px] font-mono text-muted-foreground/70">
+                                    ••{to.cardLast4}
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -142,19 +180,15 @@ interface TransferListDialogProps {
                               </span>
                             </div>
 
-                            {/* Date and Description */}
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                <span>
-                                  {format(transfer.date, 'dd.MM.yyyy.', { locale: dateLocale })}
-                                </span>
-                              </div>
+                            {/* Date */}
+                            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                              <Calendar className="w-3 h-3" />
+                              <span>{format(transfer.date, 'dd.MM.yyyy.', { locale: dateLocale })}</span>
                             </div>
 
-                            {/* Description if exists */}
-                            {transfer.description && (
-                              <p className="mt-2 text-sm text-muted-foreground truncate">
+                            {/* Description if meaningful */}
+                            {transfer.description && transfer.description !== 'Prijenos' && (
+                              <p className="mt-2 text-sm text-muted-foreground truncate text-center">
                                 {transfer.description}
                               </p>
                             )}
