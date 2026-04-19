@@ -105,6 +105,10 @@ async function logDelivery(
     request_payload: any;
     response_summary: any;
     duration_ms: number;
+    request_id?: string | null;
+    dispatch_status?: string | null;
+    dispatch_error?: string | null;
+    lifecycle_stage?: string | null;
   }
 ) {
   try {
@@ -120,6 +124,10 @@ async function logDelivery(
       request_payload: entry.request_payload,
       response_summary: entry.response_summary,
       duration_ms: entry.duration_ms,
+      request_id: entry.request_id ?? null,
+      dispatch_status: entry.dispatch_status ?? null,
+      dispatch_error: entry.dispatch_error ?? null,
+      lifecycle_stage: entry.lifecycle_stage ?? "send_push",
     });
   } catch (e) {
     console.error("[send-push] Failed to write delivery log:", e);
