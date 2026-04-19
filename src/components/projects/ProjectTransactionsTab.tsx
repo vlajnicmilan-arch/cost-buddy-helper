@@ -15,6 +15,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getCategoryInfo, CATEGORIES, Category, TransactionType } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useBalanceUpdater } from '@/hooks/useBalanceUpdater';
+import { useAppState } from '@/contexts/AppStateContext';
 import { resolveCategory, getCategoryBgStyle } from '@/hooks/useResolvedCategory';
 import { ProjectMilestone, ProjectRole } from '@/types/project';
 import { useProjectPendingTransactions } from '@/hooks/useProjectPendingTransactions';
@@ -74,7 +77,9 @@ export const ProjectTransactionsTab = ({
   const { formatAmount, currency } = useCurrency();
   const { user } = useAuth();
   const { customCategories } = useCustomCategories();
-
+  const { activeBusinessProfileId } = useAppState();
+  const { customPaymentSources } = useCustomPaymentSources();
+  const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated: onRefetch });
   // Pending transactions hook
   const { 
     pendingTransactions, 
@@ -192,6 +197,8 @@ export const ProjectTransactionsTab = ({
   const [category, setCategory] = useState<Category>('other');
   const [date, setDate] = useState<Date>(new Date());
   const [milestoneId, setMilestoneId] = useState<string>('none');
+  const [paymentSourceValue, setPaymentSourceValue] = useState<string>('none');
+  const [editPaymentSourceValue, setEditPaymentSourceValue] = useState<string>('none');
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
 
   // Calendar popover open states (auto-close on select)
@@ -215,6 +222,7 @@ export const ProjectTransactionsTab = ({
     setCategory('other');
     setDate(new Date());
     setMilestoneId('none');
+    setPaymentSourceValue('none');
     setExpenseNature('regular');
   };
 
@@ -248,14 +256,18 @@ export const ProjectTransactionsTab = ({
     try {
       // Viewers submit with 'pending' status, managers/members submit as 'approved'
       const status = needsApproval ? 'pending' : 'approved';
-      
-      const { error } = await supabase
+      const paymentSourceForInsert = paymentSourceValue !== 'none' ? paymentSourceValue : null;
+      const parsedAmount = parseFloat(amount);
+
+      const { data: inserted, error } = await supabase
         .from('expenses')
         .insert({
           user_id: user.id,
           project_id: projectId,
           milestone_id: milestoneId !== 'none' ? milestoneId : null,
-          amount: parseFloat(amount),
+          business_profile_id: activeBusinessProfileId || null,
+          payment_source: paymentSourceForInsert,
+          amount: parsedAmount,
           description: description.trim(),
           category,
           type: expenseType,
@@ -263,9 +275,16 @@ export const ProjectTransactionsTab = ({
           status,
           submitted_by: needsApproval ? user.id : null,
           expense_nature: expenseNature
-        } as any);
+        } as any)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Update payment source balance if approved (pending shouldn't affect balance)
+      if (status === 'approved' && paymentSourceForInsert) {
+        await updateBalance(paymentSourceForInsert, parsedAmount, expenseType);
+      }
 
       if (needsApproval) {
         showSuccess(t('projects.expenseSubmitted', 'Transakcija poslana na odobrenje'));
@@ -340,6 +359,7 @@ export const ProjectTransactionsTab = ({
     setEditCategory(expense.category as Category);
     setEditDate(new Date(expense.date));
     setEditMilestoneId(expense.milestone_id || 'none');
+    setEditPaymentSourceValue(expense.payment_source || 'none');
     setEditDialogOpen(true);
   };
 
@@ -349,19 +369,37 @@ export const ProjectTransactionsTab = ({
 
     setSaving(true);
     try {
+      const newPaymentSource = editPaymentSourceValue !== 'none' ? editPaymentSourceValue : null;
+      const newAmount = parseFloat(editAmount);
+      const oldPaymentSource = editingExpense.payment_source || undefined;
+      const oldAmount = editingExpense.amount;
+      const oldType = editingExpense.type as TransactionType;
+
       const { error } = await supabase
         .from('expenses')
         .update({
           type: editType,
-          amount: parseFloat(editAmount),
+          amount: newAmount,
           description: editDescription.trim(),
           category: editCategory,
           date: editDate.toISOString(),
-          milestone_id: editMilestoneId !== 'none' ? editMilestoneId : null
+          milestone_id: editMilestoneId !== 'none' ? editMilestoneId : null,
+          business_profile_id: activeBusinessProfileId || null,
+          payment_source: newPaymentSource
         } as any)
         .eq('id', editingExpense.id);
 
       if (error) throw error;
+
+      // Sync balances: reverse old, apply new
+      await handleTransactionUpdate(
+        oldPaymentSource,
+        oldAmount,
+        oldType,
+        newPaymentSource || undefined,
+        newAmount,
+        editType
+      );
 
       showSuccess(t('common.saved', 'Spremljeno'));
       setEditDialogOpen(false);
@@ -1046,6 +1084,30 @@ export const ProjectTransactionsTab = ({
               </Popover>
             </div>
 
+            {/* Payment source */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t('paymentSources.paymentSource', 'Izvor plaćanja')}
+              </Label>
+              <Select value={paymentSourceValue} onValueChange={setPaymentSourceValue}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('projects.noPaymentSource', 'Bez izvora')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('projects.noPaymentSource', 'Bez izvora')}</SelectItem>
+                  {customPaymentSources.map((src) => (
+                    <SelectItem key={src.id} value={`custom:${src.id}`}>
+                      <span className="flex items-center gap-2">
+                        <span>{src.icon}</span>
+                        <span>{src.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Expense Nature Toggle */}
             <div className="space-y-2">
               <Label>{t('transactions.expenseNature', 'Vrsta troška')}</Label>
@@ -1303,6 +1365,30 @@ export const ProjectTransactionsTab = ({
                   />
                 </PopoverContent>
               </Popover>
+            </div>
+
+            {/* Payment source */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t('paymentSources.paymentSource', 'Izvor plaćanja')}
+              </Label>
+              <Select value={editPaymentSourceValue} onValueChange={setEditPaymentSourceValue}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('projects.noPaymentSource', 'Bez izvora')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('projects.noPaymentSource', 'Bez izvora')}</SelectItem>
+                  {customPaymentSources.map((src) => (
+                    <SelectItem key={src.id} value={`custom:${src.id}`}>
+                      <span className="flex items-center gap-2">
+                        <span>{src.icon}</span>
+                        <span>{src.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Actions */}

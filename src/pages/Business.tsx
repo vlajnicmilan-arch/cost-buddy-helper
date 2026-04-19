@@ -12,6 +12,7 @@ import { BusinessTransactions } from '@/components/business/BusinessTransactions
 import { BusinessReports } from '@/components/business/BusinessReports';
 import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
+import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { Expense } from '@/types/expense';
 import { useBackButton } from '@/hooks/useBackButton';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
@@ -125,15 +126,23 @@ const Business = () => {
           <BusinessWallet />
         )}
         {activeTab === 'transactions' && (
-          <BusinessTransactions
-            expenses={dashboardExpenses}
-            onAddClick={() => {}}
-            onEditExpense={handleEditExpense}
-            onDeleteExpense={deleteExpense}
-            onImportCSV={importFromCSV}
-            findDuplicates={findDuplicates}
-            existingExpenses={allExpenses}
-          />
+          <>
+            <BusinessTransactions
+              expenses={dashboardExpenses}
+              onAddClick={() => {
+                const btn = document.querySelector<HTMLButtonElement>('[data-business-add-expense-trigger] button');
+                btn?.click();
+              }}
+              onEditExpense={handleEditExpense}
+              onDeleteExpense={deleteExpense}
+              onImportCSV={importFromCSV}
+              findDuplicates={findDuplicates}
+              existingExpenses={allExpenses}
+            />
+            <div data-business-add-expense-trigger className="hidden">
+              <AddExpenseDialog onAdd={addExpense} />
+            </div>
+          </>
         )}
         {activeTab === 'reports' && (
           <BusinessReports

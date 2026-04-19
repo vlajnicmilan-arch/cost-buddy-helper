@@ -1,5 +1,6 @@
 {
   "projects": {
+    "noPaymentSource": "Bez izvora",
     "title": "Projekti",
     "add": "Novi projekt",
     "edit": "Uredi projekt",
@@ -1287,6 +1288,10 @@
     "noSavings": "Nema dodanih ciljeva štednje"
   },
   "business": {
+    "wallet": {
+      "emptyTitle": "Dodajte prvi poslovni račun",
+      "emptyHint": "Npr. Žiroračun tvrtke, Blagajna, Devizni račun. Bez izvora plaćanja saldo se ne ažurira automatski."
+    },
     "title": "Poslovni profil",
     "editProfile": "Uredi poslovni profil",
     "basicInfo": "Osnovni podaci",
