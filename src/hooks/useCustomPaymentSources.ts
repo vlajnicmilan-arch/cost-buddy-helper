@@ -94,11 +94,46 @@ export const useCustomPaymentSources = () => {
         cards = cardsData || [];
       }
 
-      // Map cards to their sources
-      const sourcesWithCards = (sources || []).map((source: any) => ({
-        ...source,
-        cards: (cards || []).filter((card: any) => card.payment_source_id === source.id)
-      }));
+      // Fetch member counts for all sources (used to show "Shared" badge)
+      let allMemberships: any[] = [];
+      if (sourceIds.length > 0) {
+        const { data: membersData } = await supabase
+          .from('payment_source_members' as any)
+          .select('payment_source_id, user_id')
+          .in('payment_source_id', sourceIds);
+        allMemberships = membersData || [];
+      }
+
+      // Fetch owner display names for shared sources (where I'm not the owner)
+      const sharedOwnerIds = Array.from(
+        new Set(sharedSources.map((s: any) => s.user_id).filter(Boolean))
+      );
+      let ownerProfiles: any[] = [];
+      if (sharedOwnerIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles' as any)
+          .select('user_id, display_name')
+          .in('user_id', sharedOwnerIds);
+        ownerProfiles = profilesData || [];
+      }
+
+      // Map cards + sharing metadata to their sources
+      const sourcesWithCards = (sources || []).map((source: any) => {
+        const sourceMembers = allMemberships.filter((m: any) => m.payment_source_id === source.id);
+        // memberCount = members other than the owner
+        const memberCount = sourceMembers.filter((m: any) => m.user_id !== source.user_id).length;
+        const isOwned = source.user_id === user.id;
+        const ownerName = !isOwned
+          ? (ownerProfiles.find((p: any) => p.user_id === source.user_id)?.display_name || null)
+          : null;
+        return {
+          ...source,
+          cards: (cards || []).filter((card: any) => card.payment_source_id === source.id),
+          isOwned,
+          memberCount,
+          ownerName,
+        };
+      });
 
       setCustomPaymentSources(sourcesWithCards as CustomPaymentSource[]);
     } catch (error) {
