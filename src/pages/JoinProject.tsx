@@ -127,8 +127,20 @@ const JoinProject = () => {
             });
         }
 
+        // If user joined as business, auto-enable business mode + activate the chosen profile
+        // so the project becomes immediately visible after redirect.
+        if (chosenContext === 'business' && chosenBusinessProfileId) {
+          localStorage.setItem('business_mode_enabled', 'true');
+          localStorage.setItem('active_business_profile_id', chosenBusinessProfileId);
+        } else if (chosenContext === 'personal') {
+          // Ensure business mode is off so personal-context project shows up
+          localStorage.setItem('business_mode_enabled', 'false');
+          localStorage.removeItem('active_business_profile_id');
+        }
+
         setTimeout(() => {
-          navigate('/home');
+          // Full reload so AppStateContext picks up the new business mode flags
+          window.location.href = '/home';
         }, 2000);
       }
     } catch (err: any) {
