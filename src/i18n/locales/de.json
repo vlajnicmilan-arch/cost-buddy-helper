@@ -44,6 +44,7 @@
     "soundNotificationsDesc": "Ton für neue Benachrichtigungen abspielen",
     "pushNotifications": "Push-Benachrichtigungen",
     "pushNotificationsDesc": "Benachrichtigungen anzeigen, wenn die App im Hintergrund ist",
+    "pushNotificationsWebHint": "Push-Benachrichtigungen sind in der Android-App verfügbar",
     "soundEnabled": "Tonbenachrichtigungen aktiviert",
     "soundDisabled": "Tonbenachrichtigungen deaktiviert",
     "pushEnabled": "Push-Benachrichtigungen aktiviert",

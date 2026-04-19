@@ -242,6 +242,7 @@
     "soundNotificationsDesc": "Play a sound for new notifications",
     "pushNotifications": "Push notifications",
     "pushNotificationsDesc": "Show notifications when the app is in background",
+    "pushNotificationsWebHint": "Push notifications are available in the Android app",
     "soundEnabled": "Sound notifications enabled",
     "soundDisabled": "Sound notifications disabled",
     "pushEnabled": "Push notifications enabled",

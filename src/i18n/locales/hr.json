@@ -249,6 +249,7 @@
     "soundNotificationsDesc": "Reproduciraj zvuk za nove obavijesti",
     "pushNotifications": "Push obavijesti",
     "pushNotificationsDesc": "Prikaži obavijesti kada je aplikacija u pozadini",
+    "pushNotificationsWebHint": "Push obavijesti dostupne su u Android aplikaciji",
     "soundEnabled": "Zvučne obavijesti uključene",
     "soundDisabled": "Zvučne obavijesti isključene",
     "pushEnabled": "Push obavijesti uključene",
