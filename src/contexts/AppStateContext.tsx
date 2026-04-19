@@ -115,6 +115,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // Resolve business mode context (active profile or shared membership)
+      // Run in parallel — non-blocking side effect.
+      resolveBusinessContext(session.user.id);
+
       // User exists — restore cloud storage config if missing
       const hasStorageConfig = localStorage.getItem('finmate-storage-config');
       if (!hasStorageConfig) {
