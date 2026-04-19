@@ -830,6 +830,7 @@
     "autoHide": "Automatisch in einem Moment ausblenden..."
   },
   "projects": {
+    "noPaymentSource": "Keine Quelle",
     "title": "Projekte",
     "add": "Neues Projekt",
     "edit": "Projekt bearbeiten",
@@ -1282,6 +1283,10 @@
     "noSavings": "Keine Sparziele hinzugefügt"
   },
   "business": {
+    "wallet": {
+      "emptyTitle": "Erstes Geschäftskonto hinzufügen",
+      "emptyHint": "Z. B. Geschäftskonto, Kasse, Fremdwährungskonto. Ohne Zahlungsquelle wird der Saldo nicht automatisch aktualisiert."
+    },
     "title": "Firmenprofil",
     "editProfile": "Firmenprofil bearbeiten",
     "basicInfo": "Grunddaten",
