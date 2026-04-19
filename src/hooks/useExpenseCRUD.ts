@@ -117,6 +117,19 @@ export const useExpenseCRUD = ({
           })));
         }
 
+        // Owner-loan auto-creation: business expense paid from a personal source
+        const expenseBpId = (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null;
+        if (expenseBpId && data && !isPendingMemberTransaction) {
+          createOwnerLoanIfCrossMode({
+            expenseId: data.id,
+            userId: user.id,
+            businessProfileId: expenseBpId,
+            paymentSource: normalizedExpense.payment_source,
+            amount: normalizedExpense.amount,
+            description: normalizedExpense.description,
+          }).catch(e => console.error('Owner-loan creation failed:', e));
+        }
+
         // Notifications (fire-and-forget, don't block)
         if (isPendingMemberTransaction && normalizedExpense.income_source_id && data) {
           supabase.functions.invoke('notify-pending-transaction', {
