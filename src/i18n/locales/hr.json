@@ -734,9 +734,6 @@
     "sharedByYou": "Dijelite s {{count}} osoba",
     "sharedWithYou": "Dijeli: {{owner}}"
   },
-  "projectsExtra": {
-    "_comment": "extension keys merged into projects via dot notation"
-  },
   "incomeSources": {
     "title": "Izvori",
     "addSource": "Dodaj",
