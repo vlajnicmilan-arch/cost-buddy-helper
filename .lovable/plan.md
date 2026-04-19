@@ -1,98 +1,57 @@
 
 
-## Plan: Knjiženje poslovnih troškova s osobnih računa kao "pozajmica vlasnika tvrtki"
+## Plan: Popravak push obavijesti — funkcije nisu deployani s novim kodom
 
-### Koncept
-Kada vlasnik plati poslovni trošak iz **osobnog** računa (npr. privatnom karticom), aplikacija to knjiži kao:
-1. **Poslovni rashod** (kako i treba — vidljiv u poslovnom izvještaju)
-2. **Saldo osobnog računa** se umanjuje (kao i kod osobnog troška)
-3. **Automatski se kreira `business_debts` zapis tipa `payable`** — tvrtka duguje vlasniku iznos te transakcije
+### Dijagnoza (potvrđeno iz logova)
 
-To je standardni računovodstveni pristup ("pozajmica vlasnika" / *owner loan to company*) i točno odgovara zahtjevu.
+1. **In-app notifikacije rade** — u `notifications` tablici postoje nove zapisi (npr. "Transakcija u projektu Duje Grčić" u 13:39)
+2. **`notify-project-transaction` se uspješno poziva** (HTTP 200, 1042ms execution)
+3. **ALI `send-push` nema NIJEDAN log** — što znači da `sendPushNotification(...)` poziv unutar deployanih funkcija **nikad ne pošalje HTTP zahtjev**
+4. **Korisnik IMA registriran token** u `push_tokens` (1 zapis, Android)
 
----
+### Uzrok
 
-### Promjene
+Edge funkcije referenciraju `import { sendPushNotificationToMany } from '../_shared/sendPushNotification.ts'`. Kod je u repo-u **ispravan**, ali deployani build vjerojatno ne uključuje `_shared/` helper iz dva moguća razloga:
 
-#### 1. Mješoviti izbor izvora plaćanja u poslovnom modu
-**Datoteke**: `useCustomPaymentSources.ts`, `PaymentSourceSelector.tsx`
+- **Najvjerojatnije**: funkcije nisu redeployani nakon dodavanja shared helpera. Promjena `_shared/sendPushNotification.ts` ne triggera automatski redeploy onih 13 funkcija koje ga uvoze (jer se redeployaju samo funkcije čiji se `index.ts` mijenja).
+- **Manje vjerojatno**: deploy bundler ne pokupi datoteke iz `_shared/` (no Supabase normalno pokupi relativne importe)
 
-- Dodati novi parametar/varijantu hooke `useCustomPaymentSources({ includePersonal: true })` koja u poslovnom modu vraća **i** poslovne **i** osobne izvore tog korisnika.
-- U `PaymentSourceSelector` razdvojiti opcije u dvije grupe (`SelectGroup` + `SelectLabel`):
-  - **"Poslovni računi"** (default, prvo)
-  - **"Osobni računi (pozajmica)"** s vizualnom oznakom (badge `Pozajmica` + ikona 🪙)
-- Vrijednosti ostaju standardne `custom:{uuid}` — bez promjene formata u bazi.
+### Rješenje
 
-#### 2. Detekcija "cross-mode" transakcije i auto-kreiranje pozajmice
-**Datoteke**: novi helper `src/lib/ownerLoanLogic.ts`, integracija u `useExpenseCRUD.ts` i `ProjectTransactionsTab.tsx`
+**Force redeploy svih 13 notifikacijskih funkcija** koje koriste push helper, koristeći `supabase--deploy_edge_functions`:
 
-Nakon uspješnog INSERT-a poslovnog troška (`business_profile_id` postavljen) provjeriti:
-- Ima li `payment_source` referencu na izvor čiji `business_profile_id` **NIJE** isti (ili je `null` = osobni)?
-- Ako da → automatski:
-  ```ts
-  await supabase.from('business_debts').insert({
-    user_id, business_profile_id,
-    type: 'payable',
-    contact_name: 'Vlasnik (pozajmica)',
-    description: `Plaćeno iz osobnog računa: ${expense.description}`,
-    amount: expense.amount,
-    paid_amount: 0,
-    status: 'active',
-    // novi opcionalni link na expense:
-    source_expense_id: expense.id,
-  });
-  ```
-- Saldo osobnog računa se umanjuje normalno (postojeći `useBalanceUpdater` to već radi).
+1. `notify-project-transaction`
+2. `notify-payment-source-transaction`
+3. `notify-pending-transaction`
+4. `notify-note-added`
+5. `notify-family-message`
+6. `broadcast-notification`
+7. `check-reminders`
+8. `check-budget-alerts`
+9. `check-milestone-deadlines`
+10. `send-member-invitation`
+11. `accept-project-invitation`
+12. `respond-to-invitation`
+13. `track-referral`
 
-#### 3. Mali schema dodatak — link između trošak i pozajmica
-**Migracija**:
-- `business_debts` dobiva opcionalnu kolonu `source_expense_id uuid` (nullable, FK na `expenses.id` ON DELETE SET NULL)
-- Razlog: ako se izvorni trošak obriše ili izmijeni, znamo koju pozajmicu ažurirati / obrisati. Također omogućuje grupiranje "Auto pozajmice" vs "Ručno unesene".
+Plus za sigurnost i sam `send-push`.
 
-#### 4. UI prikaz na transakciji
-**Datoteke**: `TransactionItem.tsx` ili `TransactionDetailDialog.tsx`
+### Dodatne provjere nakon redeploya
 
-- Ako je trošak knjižen u poslovnom kontekstu, ali iz osobnog izvora → prikazati mali badge **"Pozajmica vlasnika"** (žuto/teal).
-- U detalju transakcije link/info "Kreirana pozajmica u iznosu X €" s gumbom "Otvori".
-
-#### 5. Otplata pozajmice → smanjuje dug
-Već postoji `markAsPaid` u `BusinessDebtTracker`. Dodatno:
-- Kad korisnik označi pozajmicu kao plaćenu (ili djelomično), prikazati hint: *"Stvorite transfer iz poslovnog računa na osobni za stvarnu otplatu"* — opcionalno, kasnije.
-- Za sada: ručno otpisivanje preko postojećeg sučelja je dovoljno.
-
-#### 6. Lokalizacija
-HR/EN/DE ključevi:
-- `business.payment.personalAccountsGroup` → "Osobni računi (pozajmica)"
-- `business.payment.businessAccountsGroup` → "Poslovni računi"
-- `business.debt.ownerLoanContact` → "Vlasnik (pozajmica)"
-- `business.debt.autoCreatedFromPersonal` → "Automatski iz osobnog plaćanja"
-- `transactions.ownerLoanBadge` → "Pozajmica vlasnika"
-
----
+Nakon redeploya, trigerirati testnu transakciju i provjeriti:
+- `send-push` logove — mora se pojaviti `Listening` + uspješna FCM poruka
+- Da li FCM vrati `OK` ili neku grešku (npr. neispravan token, pogrešan project_id)
 
 ### Što NE diram
-- RLS politike (postojeće `expenses` i `business_debts` policy već dozvoljavaju ovaj scenarij — `user_id = auth.uid()` u oba slučaja)
-- Saldo logiku (`useBalanceUpdater` radi ispravno bez izmjena)
-- Format `custom:{uuid}` za payment_source
-- Osobni mod — tamo se osobni izvori koriste kao i prije, bez ikakve "pozajmica" logike
 
----
+- Frontend kod (radi ispravno)
+- `_shared/sendPushNotification.ts` (kod je točan)
+- `usePushNotifications.ts` / `nativePush.ts` (token je registriran)
+- `push_tokens` tablicu i RLS
 
-### Datoteke
-- **Migracija**: `business_debts` + `source_expense_id` kolona
-- **Izmjena**: `src/hooks/useCustomPaymentSources.ts` — opcioni `includePersonal` flag
-- **Izmjena**: `src/components/add-expense/PaymentSourceSelector.tsx` — grupirani prikaz
-- **Izmjena**: `src/components/add-expense/AddExpenseDialog.tsx` — proslijediti `includePersonal` u poslovnom modu
-- **Izmjena**: `src/components/projects/ProjectTransactionsTab.tsx` — isto + auto loan
-- **Nova**: `src/lib/ownerLoanLogic.ts` — `createOwnerLoanIfCrossMode(expense)` helper
-- **Izmjena**: `src/hooks/useExpenseCRUD.ts` — pozvati helper nakon INSERT/UPDATE/DELETE poslovnog troška
-- **Izmjena**: `src/components/TransactionItem.tsx` ili detalj — badge "Pozajmica vlasnika"
-- **Izmjena**: `src/i18n/locales/{hr,en,de}.json`
+### Test plan nakon deploya
 
-### Test plan nakon implementacije
-1. Aktivirati poslovni profil
-2. Dodati trošak (npr. 50 €), izabrati osobni račun iz nove grupe "Osobni računi (pozajmica)"
-3. Provjeriti: poslovni izvještaj prikazuje trošak; osobni saldo umanjen za 50 €; u "Dugovanja" tabu nova `payable` stavka 50 € s kontaktom "Vlasnik"
-4. Obrisati izvorni trošak → vezana pozajmica se briše/označava kao otkazana
-5. Označiti pozajmicu kao plaćenu → status `paid`
+1. Iz drugog uređaja/računa kreirati transakciju na dijeljenom računu korisnika `e78ee9bd-094e...`
+2. Provjeriti `send-push` logove — mora postojati zapis o pozivu na FCM
+3. Provjeriti dolaze li push obavijesti **na zaključan ekran s zvukom** na Androidu
 
