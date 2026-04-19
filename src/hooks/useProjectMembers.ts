@@ -54,6 +54,8 @@ export const useProjectMembers = (projectId: string | null) => {
       setMembers((membersData || []).map(m => ({
         ...m,
         role: m.role as ProjectRole,
+        member_context: ((m as any).member_context === 'business' ? 'business' : 'personal') as 'personal' | 'business',
+        member_business_profile_id: (m as any).member_business_profile_id ?? null,
         display_name: profilesMap.get(m.user_id) || 'Nepoznato'
       })));
 
