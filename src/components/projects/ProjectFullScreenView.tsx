@@ -84,8 +84,11 @@ export const ProjectFullScreenView = ({
   const { activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
 
-  // Business view = project has business_profile_id AND we're viewing in business mode
-  const isBusinessView = !!activeBusinessProfileId && project?.business_profile_id === activeBusinessProfileId;
+  // Business view supports both owned business projects and shared projects joined under this business profile.
+  const isBusinessView = !!activeBusinessProfileId && (
+    project?.business_profile_id === activeBusinessProfileId ||
+    (project?.member_context === 'business' && project?.member_business_profile_id === activeBusinessProfileId)
+  );
   const canAccessBusinessTabs = isBusinessView && hasAccess('workforce');
 
   // Determine if current user can see a tab (with business-level filtering)

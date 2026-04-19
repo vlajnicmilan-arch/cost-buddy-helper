@@ -22,6 +22,8 @@ export interface Project {
 export interface ProjectWithOwnership extends Project {
   isOwner: boolean;
   role: ProjectRole;
+  member_context?: 'personal' | 'business';
+  member_business_profile_id?: string | null;
 }
 
 export interface ProjectMember {
