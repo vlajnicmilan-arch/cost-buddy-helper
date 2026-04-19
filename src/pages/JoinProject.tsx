@@ -5,14 +5,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { OPTIONAL_TABS } from '@/hooks/useProjectMemberPermissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
-import { Loader2, CheckCircle, XCircle, FolderKanban, LogIn } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FolderKanban, LogIn, User, Briefcase } from 'lucide-react';
 
 interface ProjectData {
   id: string;
   name: string;
   icon?: string;
   color?: string;
+}
+
+interface BusinessProfileLite {
+  id: string;
+  company_name: string;
 }
 
 const JoinProject = () => {
@@ -27,26 +33,71 @@ const JoinProject = () => {
   const [success, setSuccess] = useState(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
 
+  // Context choice for the invitee
+  const [suggestedContext, setSuggestedContext] = useState<'personal' | 'business'>('personal');
+  const [chosenContext, setChosenContext] = useState<'personal' | 'business'>('personal');
+  const [businessProfiles, setBusinessProfiles] = useState<BusinessProfileLite[]>([]);
+  const [chosenBusinessProfileId, setChosenBusinessProfileId] = useState<string>('');
+
   useEffect(() => {
     if (!token) {
       setError(t('join.invalidLink', 'Link nije valjan'));
       setLoading(false);
       return;
     }
-
-    // For now, just validate the token exists - actual validation happens on accept
     setLoading(false);
   }, [token]);
 
+  // Load invitation suggested context + user's business profiles
+  useEffect(() => {
+    const loadContext = async () => {
+      if (!user || !token) return;
+
+      // Read invitation hint (RLS allows invited_user_id = auth.uid OR by token via owner)
+      const { data: inv } = await supabase
+        .from('project_invitations')
+        .select('suggested_context')
+        .eq('token', token)
+        .maybeSingle();
+
+      const suggested = ((inv as any)?.suggested_context === 'business' ? 'business' : 'personal') as 'personal' | 'business';
+      setSuggestedContext(suggested);
+      setChosenContext(suggested);
+
+      // Load user's business profiles
+      const { data: profiles } = await supabase
+        .from('business_profiles')
+        .select('id, company_name')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      const list = (profiles || []) as BusinessProfileLite[];
+      setBusinessProfiles(list);
+      if (list.length > 0) setChosenBusinessProfileId(list[0].id);
+    };
+    loadContext();
+  }, [user, token]);
+
   const handleAccept = async () => {
     if (!token || !user) return;
+
+    // Validation: if business chosen, a profile must be selected
+    if (chosenContext === 'business' && !chosenBusinessProfileId) {
+      setError(t('projects.selectBusinessProfile', 'Odaberite poslovni profil ili odaberite Osobne financije.'));
+      return;
+    }
 
     setAccepting(true);
     setError(null);
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke('accept-project-invitation', {
-        body: { token, type: 'project' }
+        body: {
+          token,
+          type: 'project',
+          memberContext: chosenContext,
+          memberBusinessProfileId: chosenContext === 'business' ? chosenBusinessProfileId : null,
+        },
       });
 
       if (fnError) {
@@ -57,7 +108,6 @@ const JoinProject = () => {
         setError(data.error);
       } else if (data?.success) {
         setSuccess(true);
-        // Use 'target' from unified response, fallback to 'project' for backward compat
         const target = data.target || data.project;
         setProjectData(target);
 
@@ -76,8 +126,7 @@ const JoinProject = () => {
               if (permErr) console.log('Permissions init fallback error:', permErr.message);
             });
         }
-        
-        // Redirect after short delay
+
         setTimeout(() => {
           navigate('/home');
         }, 2000);
@@ -91,7 +140,6 @@ const JoinProject = () => {
   };
 
   const handleLoginRedirect = () => {
-    // Store return URL
     sessionStorage.setItem('returnUrl', `/join-project/${token}`);
     navigate('/auth');
   };
@@ -118,20 +166,18 @@ const JoinProject = () => {
             )}
           </div>
           <CardTitle>
-            {success 
+            {success
               ? t('projects.joinSuccess', 'Pridružili ste se projektu!')
-              : error 
+              : error
                 ? t('common.error')
-                : t('projects.joinProject', 'Pridruživanje projektu')
-            }
+                : t('projects.joinProject', 'Pridruživanje projektu')}
           </CardTitle>
           <CardDescription>
             {success && projectData
               ? `${projectData.icon || '📁'} ${projectData.name}`
-              : error 
+              : error
                 ? error
-                : t('projects.joinDescription', 'Pozvani ste da se pridružite projektu')
-            }
+                : t('projects.joinDescription', 'Pozvani ste da se pridružite projektu')}
           </CardDescription>
         </CardHeader>
 
@@ -141,11 +187,7 @@ const JoinProject = () => {
               {t('projects.redirecting', 'Preusmjeravanje...')}
             </p>
           ) : error ? (
-            <Button 
-              onClick={() => navigate('/home')} 
-              variant="outline" 
-              className="w-full"
-            >
+            <Button onClick={() => navigate('/home')} variant="outline" className="w-full">
               {t('common.back')}
             </Button>
           ) : !user ? (
@@ -159,24 +201,80 @@ const JoinProject = () => {
               </Button>
             </>
           ) : (
-            <div className="space-y-3">
-              <Button 
-                onClick={handleAccept} 
-                className="w-full"
-                disabled={accepting}
-              >
-                {accepting ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : null}
-                {t('projects.acceptInvitation', 'Prihvati pozivnicu')}
-              </Button>
-              <Button 
-                onClick={() => navigate('/home')} 
-                variant="outline" 
-                className="w-full"
-              >
-                {t('common.cancel')}
-              </Button>
+            <div className="space-y-4">
+              {/* Context picker for the invitee */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {t('projects.whereToShow', 'Gdje želite vidjeti ovaj projekt?')}
+                </p>
+                {suggestedContext === 'business' && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('projects.ownerSuggestedBusiness', 'Vlasnik je predložio: Poslovni mod')}
+                  </p>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={chosenContext === 'personal' ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-10 justify-start"
+                    onClick={() => setChosenContext('personal')}
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    {t('projects.contextPersonal', 'Osobne financije')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={chosenContext === 'business' ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-10 justify-start"
+                    onClick={() => setChosenContext('business')}
+                    disabled={businessProfiles.length === 0}
+                  >
+                    <Briefcase className="w-4 h-4 mr-2" />
+                    {t('projects.contextBusiness', 'Poslovni mod')}
+                  </Button>
+                </div>
+
+                {chosenContext === 'business' && businessProfiles.length > 0 && (
+                  <Select value={chosenBusinessProfileId} onValueChange={setChosenBusinessProfileId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('projects.selectProfile', 'Odaberite profil')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {businessProfiles.map(bp => (
+                        <SelectItem key={bp.id} value={bp.id}>
+                          {bp.company_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {chosenContext === 'business' && businessProfiles.length === 0 && (
+                  <p className="text-xs text-destructive">
+                    {t('projects.noBusinessProfiles', 'Nemate poslovnih profila. Odaberite Osobne financije.')}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  onClick={handleAccept}
+                  className="w-full"
+                  disabled={accepting}
+                >
+                  {accepting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  {t('projects.acceptInvitation', 'Prihvati pozivnicu')}
+                </Button>
+                <Button
+                  onClick={() => navigate('/home')}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {t('common.cancel')}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
