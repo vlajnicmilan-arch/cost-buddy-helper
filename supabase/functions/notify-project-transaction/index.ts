@@ -25,21 +25,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // Get the authorization header to identify the user
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'Nedostaje autorizacija' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create client with user's token to get their info
+    // Create client with user's token and validate JWT claims
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Get the current user
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
+    const userId = claimsData?.claims?.sub;
+    const userEmail = claimsData?.claims?.email;
+
+    if (claimsError || !userId) {
+      console.error('JWT validation error in notify-project-transaction:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Neautorizirani pristup' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -93,10 +97,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('display_name')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
-    const submitterName = profile?.display_name || user.email?.split('@')[0] || 'Član';
+    const submitterName = profile?.display_name || userEmail?.split('@')[0] || 'Član';
     const transactionType = expense.type === 'income' ? 'prihod' : 'trošak';
     const actionText = action === 'created' ? 'dodao/la' : 'ažurirao/la';
     const formattedAmount = new Intl.NumberFormat('hr-HR', {
@@ -109,7 +113,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .from('project_members')
       .select('user_id')
       .eq('project_id', project_id)
-      .neq('user_id', user.id);
+      .neq('user_id', userId);
 
     if (membersError) {
       console.error('Error fetching project members:', membersError);
@@ -122,7 +126,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Also notify the project owner if they're not the current user
     const usersToNotify = new Set<string>();
     
-    if (project.user_id !== user.id) {
+    if (project.user_id !== userId) {
       usersToNotify.add(project.user_id);
     }
     
