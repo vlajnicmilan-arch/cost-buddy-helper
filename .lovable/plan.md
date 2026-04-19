@@ -1,25 +1,25 @@
 
 
-## Plan: Kartica "Prijenosi" → samo tekući mjesec
+## Plan: Kartica "Nedavno" — crveni rub + mjesečni brojač
 
-### Lokacija (potvrđeno)
-Kartica se nalazi u **`src/components/home/SummarySection.tsx`**, linija ~210-213, gdje se prikazuje `formatAmount(totalTransfers)` (kumulativno).
+### Promjene
 
-Vrijednosti `monthlyTransfers` i `monthlyTransferCount` već se računaju u `useExpenses.ts` i prosljeđuju kroz `Index.tsx → PersonalModeView/BusinessModeView → SummarySection` — samo ih treba iskoristiti.
+**1. `src/components/home/TransactionListSection.tsx`**
+- Wrapper: dodati lijevi crveni rub (`borderLeftWidth: 3`, `borderLeftColor: 'hsl(var(--destructive))'`) uz postojeći `glass-card` (sjenčenje ostaje kao kod ostalih kartica).
+- Brojač transakcija: kad NEMA aktivnih filtera, prikazati `monthlyTransactionsCount` + oznaku tekućeg mjeseca (npr. "12 transakcija · travanj 2026"). Kad SU filteri aktivni, ostaje `filtered / total` (logično za korisnika koji vidi rezultat filtera).
+- Nova prop: `monthlyTransactionsCount: number`.
 
-### Izmjena
-U `SummarySection.tsx`:
-1. Veliki iznos: `totalTransfers` → `monthlyTransfers`
-2. Brojač iznad ("X prijenosa"): `allTransfers.length` → `monthlyTransferCount`
-3. Dodati malu oznaku tekućeg mjeseca ispod iznosa (npr. "travanj 2026"), konzistentno s Prihodima/Rashodima — već postoji varijabla `currentMonthLabel` u istoj komponenti
-4. Ukloniti redundantnu donju sekciju "Ovaj mjesec: X prijenosa" jer postaje glavni prikaz
+**2. `src/pages/Index.tsx` (ili `PersonalModeView` / `BusinessModeView`)**
+- Izračunati `monthlyTransactionsCount` iz `allExpenses` filterom po tekućem mjesecu (svi tipovi: expense + income + transfer) i proslijediti u `TransactionListSection`.
+
+### Pretpostavka (na osnovu konteksta)
+"Broj transakcija" = **svi tipovi zajedno** (rashodi + prihodi + prijenosi), jer se kartica zove "Nedavno" i lista prikazuje sve tipove. Ako želiš samo rashode, reci prije implementacije.
 
 ### Što NE diram
-- `useExpenses.ts` (vrijednosti već postoje)
-- `Index.tsx`, `PersonalModeView`, `BusinessModeView`, `SharedDialogs` — `totalTransfers` i dalje treba za `TransferListDialog` (lista prikazuje sve prijenose s vlastitim filterima)
-- `Dashboard.tsx` — to je druga stranica (stari dashboard), ne tiče se ovog zahtjeva
-- `PaymentSourceTransactionsDialog` — ima vlastitu logiku po izvoru
+- `useExpenses.ts`, logiku filtera, sortiranja, salda
+- `TransactionItem`, `BulkActionsToolbar`, ostale kartice
 
 ### Datoteke
-- `src/components/home/SummarySection.tsx` — jedina izmjena
+- `src/components/home/TransactionListSection.tsx`
+- `src/pages/Index.tsx` (ili `PersonalModeView`/`BusinessModeView` — potvrdit ću pri implementaciji)
 
