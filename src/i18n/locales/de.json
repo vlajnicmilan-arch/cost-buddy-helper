@@ -334,6 +334,12 @@
     "signOut": "Abmelden",
     "signIn": "Anmelden"
   },
+  "validation": {
+    "dateOutOfRange": "Datum liegt außerhalb des zulässigen Bereichs",
+    "dateInFuture": "Datum darf nicht zu weit in der Zukunft liegen",
+    "dateTooFar": "Datum liegt zu weit entfernt",
+    "dateAdjusted": "Datum wurde automatisch korrigiert"
+  },
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
