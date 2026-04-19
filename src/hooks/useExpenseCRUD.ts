@@ -74,6 +74,34 @@ export const useExpenseCRUD = ({
       } else {
         if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
+        // Diagnostic trail BEFORE insert — captures whether project_id was passed in
+        // (helps debug "transaction saved without project" reports). Best-effort.
+        try {
+          await supabase.from('app_diagnostics_logs').insert([{
+            session_id: 'expense-crud',
+            event: 'expense_insert_attempt',
+            route: typeof window !== 'undefined' ? window.location.pathname : null,
+            user_id: user.id,
+            app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
+            device_info: {
+              userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+            },
+            details: {
+              has_project_id: !!normalizedExpense.project_id,
+              project_id: normalizedExpense.project_id ?? null,
+              has_income_source: !!normalizedExpense.income_source_id,
+              income_source_id: normalizedExpense.income_source_id ?? null,
+              has_budget_id: !!normalizedExpense.budget_id,
+              type: normalizedExpense.type,
+              amount: normalizedExpense.amount,
+              description_preview: (normalizedExpense.description || '').slice(0, 60),
+              is_pending: !!isPendingMemberTransaction,
+            },
+          }]);
+        } catch {
+          // Best-effort: never block insert because of diagnostics.
+        }
+
         const { data, error } = await supabase
           .from('expenses')
           .insert({
@@ -106,7 +134,7 @@ export const useExpenseCRUD = ({
           console.error('Supabase insert error details:', { error, code: error.code, message: error.message, details: error.details });
           throw error;
         }
-        console.log('✅ Expense saved to DB:', data?.id);
+        console.log('✅ Expense saved to DB:', data?.id, 'project_id:', data?.project_id ?? 'NULL');
 
         if (items && items.length > 0 && data) {
           await supabase.from('receipt_items').insert(items.map(item => ({
