@@ -2861,12 +2861,17 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string
+          dispatch_error: string | null
+          dispatch_status: string | null
           duration_ms: number | null
           failure_count: number
           fcm_error_codes: Json | null
           id: string
+          lifecycle_stage: string | null
+          request_id: string | null
           request_payload: Json | null
           response_summary: Json | null
+          send_push_http_status: number | null
           source_function: string | null
           success_count: number
           title: string | null
@@ -2876,12 +2881,17 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string
+          dispatch_error?: string | null
+          dispatch_status?: string | null
           duration_ms?: number | null
           failure_count?: number
           fcm_error_codes?: Json | null
           id?: string
+          lifecycle_stage?: string | null
+          request_id?: string | null
           request_payload?: Json | null
           response_summary?: Json | null
+          send_push_http_status?: number | null
           source_function?: string | null
           success_count?: number
           title?: string | null
@@ -2891,12 +2901,17 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string
+          dispatch_error?: string | null
+          dispatch_status?: string | null
           duration_ms?: number | null
           failure_count?: number
           fcm_error_codes?: Json | null
           id?: string
+          lifecycle_stage?: string | null
+          request_id?: string | null
           request_payload?: Json | null
           response_summary?: Json | null
+          send_push_http_status?: number | null
           source_function?: string | null
           success_count?: number
           title?: string | null
