@@ -359,6 +359,7 @@ export const ProjectTransactionsTab = ({
     setEditCategory(expense.category as Category);
     setEditDate(new Date(expense.date));
     setEditMilestoneId(expense.milestone_id || 'none');
+    setEditPaymentSourceValue(expense.payment_source || 'none');
     setEditDialogOpen(true);
   };
 
@@ -368,19 +369,37 @@ export const ProjectTransactionsTab = ({
 
     setSaving(true);
     try {
+      const newPaymentSource = editPaymentSourceValue !== 'none' ? editPaymentSourceValue : null;
+      const newAmount = parseFloat(editAmount);
+      const oldPaymentSource = editingExpense.payment_source || undefined;
+      const oldAmount = editingExpense.amount;
+      const oldType = editingExpense.type as TransactionType;
+
       const { error } = await supabase
         .from('expenses')
         .update({
           type: editType,
-          amount: parseFloat(editAmount),
+          amount: newAmount,
           description: editDescription.trim(),
           category: editCategory,
           date: editDate.toISOString(),
-          milestone_id: editMilestoneId !== 'none' ? editMilestoneId : null
+          milestone_id: editMilestoneId !== 'none' ? editMilestoneId : null,
+          business_profile_id: activeBusinessProfileId || null,
+          payment_source: newPaymentSource
         } as any)
         .eq('id', editingExpense.id);
 
       if (error) throw error;
+
+      // Sync balances: reverse old, apply new
+      await handleTransactionUpdate(
+        oldPaymentSource,
+        oldAmount,
+        oldType,
+        newPaymentSource || undefined,
+        newAmount,
+        editType
+      );
 
       showSuccess(t('common.saved', 'Spremljeno'));
       setEditDialogOpen(false);
