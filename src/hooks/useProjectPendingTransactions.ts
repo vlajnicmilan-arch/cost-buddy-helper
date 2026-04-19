@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { invokeNotifyFunction } from '@/lib/notifyHelper';
 
 export interface ProjectPendingTransaction {
   id: string;
@@ -82,6 +83,14 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         .eq('id', transactionId);
 
       if (error) throw error;
+
+      // Notify project members that an approved transaction now exists (fire-and-forget).
+      if (projectId) {
+        invokeNotifyFunction({
+          functionName: 'notify-project-transaction',
+          body: { expense_id: transactionId, project_id: projectId, action: 'created' },
+        });
+      }
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
       showSuccess(t('projects.transactionApproved', 'Transakcija odobrena'));

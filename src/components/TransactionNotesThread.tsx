@@ -10,6 +10,7 @@ import { hr, enUS, de } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { invokeNotifyFunction } from '@/lib/notifyHelper';
 
 interface TransactionNote {
   id: string;
@@ -129,47 +130,38 @@ export const TransactionNotesThread = ({
 
       // Notify about new comment - for income sources
       if (incomeSourceId) {
-        try {
-          await supabase.functions.invoke('notify-note-added', {
-            body: {
-              expense_id: expenseId,
-              income_source_id: incomeSourceId,
-              note: newNote.trim()
-            }
-          });
-        } catch (notifyError) {
-          console.error('Error sending notification:', notifyError);
-        }
+        invokeNotifyFunction({
+          functionName: 'notify-note-added',
+          body: {
+            expense_id: expenseId,
+            income_source_id: incomeSourceId,
+            note: newNote.trim(),
+          },
+        });
       }
-      
+
       // Notify about new comment - for projects
       if (projectId) {
-        try {
-          await supabase.functions.invoke('notify-note-added', {
-            body: {
-              expense_id: expenseId,
-              project_id: projectId,
-              note: newNote.trim()
-            }
-          });
-        } catch (notifyError) {
-          console.error('Error sending project notification:', notifyError);
-        }
+        invokeNotifyFunction({
+          functionName: 'notify-note-added',
+          body: {
+            expense_id: expenseId,
+            project_id: projectId,
+            note: newNote.trim(),
+          },
+        });
       }
 
       // Notify about new comment - for payment sources
       if (paymentSourceId) {
-        try {
-          await supabase.functions.invoke('notify-note-added', {
-            body: {
-              expense_id: expenseId,
-              payment_source_id: paymentSourceId,
-              note: newNote.trim()
-            }
-          });
-        } catch (notifyError) {
-          console.error('Error sending payment source notification:', notifyError);
-        }
+        invokeNotifyFunction({
+          functionName: 'notify-note-added',
+          body: {
+            expense_id: expenseId,
+            payment_source_id: paymentSourceId,
+            note: newNote.trim(),
+          },
+        });
       }
 
       onNoteAdded?.();
