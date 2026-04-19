@@ -134,7 +134,10 @@ export const useProjectMembers = (projectId: string | null) => {
     }
   };
 
-  const generateInviteLink = async (role: ProjectRole = 'member'): Promise<string | null> => {
+  const generateInviteLink = async (
+    role: ProjectRole = 'member',
+    suggestedContext: 'personal' | 'business' = 'personal'
+  ): Promise<string | null> => {
     if (!projectId || !user) return null;
 
     try {
@@ -153,8 +156,9 @@ export const useProjectMembers = (projectId: string | null) => {
           email: 'link-invite',
           role: role,
           invited_by: user.id,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
-        })
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
+          suggested_context: suggestedContext,
+        } as any)
         .select()
         .single();
 
