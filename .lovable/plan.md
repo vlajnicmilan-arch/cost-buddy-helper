@@ -1,19 +1,18 @@
 
 
-## Plan: Reset scroll pozicije pri promjeni rute
+## Problem
+Klikom na obiteljsku grupu unutar `/family`, prikaz detalja grupe se otvara ali je scroll pozicija na dnu umjesto na vrhu.
 
-### Problem
-Kad korisnik s `/home` (dugačka stranica) klikne "Obitelj", `/family` se otvori s istom scroll pozicijom kao prethodna ruta umjesto na vrhu.
+## Uzrok
+Otvaranje detalja grupe **NIJE promjena rute** — vjerojatno je to in-page state (npr. `selectedGroup`) ili dijalog/full-screen view unutar iste `/family` rute. Zato globalna `ScrollToTop` (koja sluša `pathname`) ne reagira.
 
-### Rješenje
-Globalna `ScrollToTop` komponenta koja na svaku promjenu `pathname` poziva `window.scrollTo(0, 0)`. Rješava problem za sve rute odjednom (Wallet, Budgets, Calendar, Family, Projects).
+## Rješenje
+U `src/pages/Family.tsx` dodati `useEffect` koji resetira `window.scrollTo(0, 0)` kad se promijeni stanje odabrane grupe (kad korisnik uđe u detalj grupe).
 
 ### Datoteke
-- **Nova**: `src/components/ScrollToTop.tsx` — sluša `useLocation().pathname`, resetira scroll
-- **Izmjena**: `src/App.tsx` — montirati `<ScrollToTop />` unutar `<BrowserRouter>` prije `<Routes>`
+- **Izmjena**: `src/pages/Family.tsx` — `useEffect` na promjenu odabrane grupe → scroll to top
 
 ### Što NE diram
-- BackButtonContext, BottomNav, deep-link handling
-- Pojedinačne stranice
-- Scroll unutar dijaloga/sheetova (oni nisu rute)
+- `FamilyGroupDetailView`, `FamilyGroupCard`, logiku odabira grupe
+- Ostale stranice, globalni `ScrollToTop`
 
