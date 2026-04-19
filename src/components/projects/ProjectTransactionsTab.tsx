@@ -345,6 +345,10 @@ export const ProjectTransactionsTab = ({
     if (!expenseToDelete) return;
 
     try {
+      // Delete linked owner-loan first (best-effort)
+      const { deleteOwnerLoanForExpense } = await import('@/lib/ownerLoanLogic');
+      deleteOwnerLoanForExpense(expenseToDelete).catch(e => console.error('Owner-loan delete failed:', e));
+
       const { error } = await supabase
         .from('expenses')
         .delete()
@@ -413,6 +417,19 @@ export const ProjectTransactionsTab = ({
         newAmount,
         editType
       );
+
+      // Sync owner-loan after edit
+      if (activeBusinessProfileId && editType === 'expense' && user) {
+        const { syncOwnerLoanForExpense } = await import('@/lib/ownerLoanLogic');
+        syncOwnerLoanForExpense({
+          expenseId: editingExpense.id,
+          userId: user.id,
+          businessProfileId: activeBusinessProfileId,
+          paymentSource: newPaymentSource,
+          amount: newAmount,
+          description: editDescription.trim(),
+        }).catch(e => console.error('Owner-loan sync failed:', e));
+      }
 
       showSuccess(t('common.saved', 'Spremljeno'));
       setEditDialogOpen(false);
