@@ -1,75 +1,66 @@
 
 
-## Plan: Validacija datuma + auto-zatvaranje kalendara
+## Plan: Jasniji prikaz prijenosa između računa
 
-### Pravila po tipu datuma
+### Problem
+Trenutno se prijenosi (`type: 'transfer'`) prikazuju kao obični redovi — korisnica ne vidi jasno **odakle → kamo** je novac išao.
 
-| Tip | Min | Max |
-|---|---|---|
-| Datum transakcije (trošak) | danas - 10g | **danas** |
-| Datum prihoda | danas - 10g | **danas + 1 mjesec** |
-| Sljedeća rata / Recurring | danas - 1g | **danas + 5g** |
-| Rok plaćanja duga | danas | **danas + 10g** |
-| Ciljni datum štednje | danas | **danas + 20g** |
-| Početak/kraj budžeta | danas - 1g | **danas + 5g** |
-| Datum događaja kalendara | danas - 1g | danas + 5g |
-| Vrijedi do (estimate) | danas | danas + 5g |
-| Custom raspon (izvješća) | 1900 | danas |
+### Kako prijenosi rade u bazi (istraženo)
+Svaki prijenos = **2 zapisa** u `expenses` tablici s istim opisom i datumom:
+- jedan s `type: 'transfer'` koji oduzima s **izvornog** računa (`payment_source` ili `payment_source_card_id`)
+- drugi koji dodaje na **odredišni** račun
 
-### 1. Centralna logika
-Stvaram `src/lib/dateValidation.ts`:
-```ts
-export const DATE_LIMITS = {
-  expense: { minYearsAgo: 10, maxDaysAhead: 0 },
-  income: { minYearsAgo: 10, maxDaysAhead: 30 },
-  recurring: { minYearsAgo: 1, maxYearsAhead: 5 },
-  debt: { minDaysAgo: 0, maxYearsAhead: 10 },
-  savings: { minDaysAgo: 0, maxYearsAhead: 20 },
-  budget: { minYearsAgo: 1, maxYearsAhead: 5 },
-  event: { minYearsAgo: 1, maxYearsAhead: 5 },
-  estimate: { minDaysAgo: 0, maxYearsAhead: 5 },
-} as const;
+Trenutno `TransactionItem` prikazuje samo jedan izvor — onaj zapisan na tom retku — pa korisnica vidi pola priče.
 
-export const getDateRange = (type) => ({ min: ..., max: ... });
-export const clampDate = (date, type) => ...;
-```
+### Rješenje: Pair-matching + vizualni prikaz "Iz → U"
 
-**Posebno za transakcije**: pravila se mijenjaju ovisno o `type` polju (`expense` vs `income`) — kad korisnik prebaci na "Prihod", max postaje danas+30 dana.
+**1. Helper `src/lib/transferMatching.ts`** (novo)
+- Funkcija `matchTransferPairs(expenses)` koja grupira parove prijenosa po ključu: `description + amount + date (±60s) + user_id`
+- Vraća `Map<expenseId, { fromSource, toSource, fromCardId?, toCardId? }>`
+- Radi i za **postojeće** prijenose — bez migracije baze
 
-### 2. Auto-zatvaranje kalendara
-Sve `Popover` + `Calendar` komponente prelaze na controlled state:
-```tsx
-const [open, setOpen] = useState(false);
-<Popover open={open} onOpenChange={setOpen}>
-  <Calendar onSelect={(d) => { setDate(d); setOpen(false); }} />
-</Popover>
-```
-Za `mode="range"`: zatvori tek kad postoje oba datuma.
+**2. Nova komponenta `src/components/TransferTransactionItem.tsx`**
+- Prikazuje prijenos u jednom retku s jasnim layoutom:
+  ```
+  🔄  Prijenos između računa            -50,00 €
+      💳 Visa Gold  →  💵 Gotovina      19. tra
+  ```
+- Koristi `ArrowRight` ikonu, ikone/imena izvora iz `getPaymentSourceInfo` + custom payment sources
+- Boja iznosa: neutralna (ne crvena/zelena) jer je interna tranzicija
+- Klik otvara `TransactionDetailDialog` (postojeći)
 
-### 3. Native `<input type="date">`
-Dodajem `min` / `max` atribute + on-blur clamp koji vraća na zadnji važeći + StatusFeedback poruku.
+**3. Dedup u listama** — `src/components/home/TransactionListSection.tsx` + `VirtualTransactionList`
+- Kad se prikazuje par prijenosa, prikazujemo **samo jedan red** (onaj s `type: 'transfer'` ili prvi po ID-u)
+- Drugi zapis para se filtrira iz prikaza (ali ostaje u bazi za korektnost salda)
+- Counter "X transakcija" računa parove kao 1
 
-### 4. Datoteke koje mijenjam
+**4. `TransactionItem.tsx` routing**
+- Ako je `expense.type === 'transfer'` i postoji par → renderira `TransferTransactionItem`
+- Inače → postojeći prikaz
 
-**Calendar popover (auto-close + disabled):**
-- `EditTransactionDialog.tsx` (dinamički prema type)
-- `ProjectDialog.tsx`, `ProjectMilestonesTab.tsx`, `ProjectTransactionsTab.tsx`
-- `WorkerScheduleDialog.tsx`, `WeeklyWorkEntryForm.tsx`
-- `TransactionFilters.tsx` (range mode)
+**5. `TransactionDetailDialog`** — proširenje za prijenose
+- Sekcija "Detalji prijenosa": Iz računa, U račun, Iznos, Datum
+- Brisanje prijenosa briše **oba** zapisa (već postoji slična logika za parove)
 
-**Native date input (min/max):**
-- `add-expense/ManualExpenseForm.tsx` (dinamički expense/income)
-- `calendar/CalendarEventDialog.tsx`
-- `budget/BudgetDialog.tsx` (start + end, end ≥ start)
-- `savings/SavingsGoalDialog.tsx`
-- `recurring/RecurringTransactionDialog.tsx`
-- `business/BusinessDebtTracker.tsx`
-- `projects/EstimateDialog.tsx`
-- `installments/InstallmentToggle.tsx`
-- `reports/ReportsDialog.tsx`
-
-**i18n:** Dodajem `validation.dateOutOfRange`, `validation.dateInFuture`, `validation.dateTooFar` u `hr.json`, `en.json`, `de.json`.
+**6. i18n ključevi**
+- `transactions.transfer.from` ("Iz"), `.to` ("U"), `.title` ("Prijenos između računa")
+- HR / EN / DE
 
 ### Što NE diram
-Bazu, RLS, edge funkcije, sortiranje, postojeće zapise (CAKE SYMPHONY 2028 ostaje — korisnik ga ručno editira). Pregledne kalendare na stranicama (Calendar.tsx).
+- Bazu, RLS, postojeće zapise (radi automatski na svim postojećim prijenosima)
+- Logiku spremanja prijenosa u `AddExpenseDialog`
+- Sortiranje, filtere, izračun salda
+- Bulk akcije (par se tretira kao 2 zapisa pri brisanju)
+
+### Datoteke
+**Novo:**
+- `src/lib/transferMatching.ts`
+- `src/components/TransferTransactionItem.tsx`
+
+**Izmjena:**
+- `src/components/TransactionItem.tsx` (routing)
+- `src/components/home/TransactionListSection.tsx` (dedup)
+- `src/components/VirtualTransactionList.tsx` (dedup)
+- `src/components/TransactionDetailDialog.tsx` (sekcija prijenosa)
+- `src/i18n/locales/{hr,en,de}.json`
 
