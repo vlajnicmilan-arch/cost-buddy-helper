@@ -56,12 +56,19 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         .order('sort_order', { ascending: true });
 
       if (activeBusinessProfileId) {
-        ownQuery = ownQuery.eq('business_profile_id', activeBusinessProfileId);
+        if (includePersonal) {
+          // Business mode + cross-mode flow: include both business + personal sources
+          ownQuery = ownQuery.or(`business_profile_id.eq.${activeBusinessProfileId},business_profile_id.is.null`);
+        } else {
+          ownQuery = ownQuery.eq('business_profile_id', activeBusinessProfileId);
+        }
       } else {
         ownQuery = ownQuery.is('business_profile_id', null);
       }
 
       const { data: ownSources, error: ownError } = await ownQuery;
+
+      if (ownError) throw ownError;
 
       if (ownError) throw ownError;
 
