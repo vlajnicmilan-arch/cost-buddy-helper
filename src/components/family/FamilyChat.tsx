@@ -224,7 +224,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
             );
           })
         )}
-        <div ref={bottomRef} />
+        
       </div>
 
       {/* Input */}

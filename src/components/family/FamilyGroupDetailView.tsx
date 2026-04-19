@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { FamilyGroup, FAMILY_ROLE_LABELS, FamilyRole } from '@/types/family';
 import { useFamilyMembers, useFamilySharedResources, useFamilyActivity } from '@/hooks/useFamilyGroups';
 import { useTranslation } from 'react-i18next';
@@ -75,11 +75,24 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
   const [projectFullScreenOpen, setProjectFullScreenOpen] = useState(false);
   const chatSectionRef = useRef<HTMLElement>(null);
 
-  // Reset scroll to top on mount (when entering detail view)
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+  // Reset scroll to top on mount (when entering detail view).
+  // Use useLayoutEffect + rAF to win against any child component (e.g. FamilyChat)
+  // that may scroll after its data loads.
+  useLayoutEffect(() => {
+    const reset = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    reset();
+    const r1 = requestAnimationFrame(reset);
+    const r2 = requestAnimationFrame(() => requestAnimationFrame(reset));
+    const t = setTimeout(reset, 200);
+    return () => {
+      cancelAnimationFrame(r1);
+      cancelAnimationFrame(r2);
+      clearTimeout(t);
+    };
   }, []);
 
   // Auto-scroll to chat when opened from notification
