@@ -40,18 +40,20 @@ async function writeFrontendDiagnostic(
   userId: string | null,
 ): Promise<void> {
   try {
-    await supabase.from("app_diagnostics_logs").insert({
-      session_id: getSessionId(),
-      event,
-      route: typeof window !== "undefined" ? window.location.pathname : null,
-      user_id: userId,
-      app_version: (import.meta as any).env?.VITE_APP_VERSION ?? "unknown",
-      device_info: {
-        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-        platform: typeof navigator !== "undefined" ? navigator.platform : null,
+    await supabase.from("app_diagnostics_logs").insert([
+      {
+        session_id: getSessionId(),
+        event,
+        route: typeof window !== "undefined" ? window.location.pathname : null,
+        user_id: userId,
+        app_version: (import.meta as any).env?.VITE_APP_VERSION ?? "unknown",
+        device_info: {
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+          platform: typeof navigator !== "undefined" ? navigator.platform : null,
+        },
+        details: details as any,
       },
-      details,
-    });
+    ]);
   } catch {
     // Best-effort. Ne smije ništa srušiti.
   }

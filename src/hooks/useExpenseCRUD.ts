@@ -19,6 +19,7 @@ import {
   getLocalExpenses,
 } from '@/lib/storage/indexedDB';
 import { createOwnerLoanIfCrossMode, syncOwnerLoanForExpense, deleteOwnerLoanForExpense } from '@/lib/ownerLoanLogic';
+import { invokeNotifyFunction } from '@/lib/notifyHelper';
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
@@ -130,21 +131,24 @@ export const useExpenseCRUD = ({
           }).catch(e => console.error('Owner-loan creation failed:', e));
         }
 
-        // Notifications (fire-and-forget, don't block)
+        // Notifications (fire-and-forget, don't block) — uses notifyHelper for reliable delivery + diagnostic trail
         if (isPendingMemberTransaction && normalizedExpense.income_source_id && data) {
-          supabase.functions.invoke('notify-pending-transaction', {
-            body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id }
-          }).catch(e => console.error('Notification error:', e));
+          invokeNotifyFunction({
+            functionName: 'notify-pending-transaction',
+            body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id },
+          });
         }
         if (normalizedExpense.project_id && data) {
-          supabase.functions.invoke('notify-project-transaction', {
-            body: { expense_id: data.id, project_id: normalizedExpense.project_id, action: 'created' }
-          }).catch(e => console.error('Notification error:', e));
+          invokeNotifyFunction({
+            functionName: 'notify-project-transaction',
+            body: { expense_id: data.id, project_id: normalizedExpense.project_id, action: 'created' },
+          });
         }
         if (normalizedExpense.note && normalizedExpense.income_source_id && data) {
-          supabase.functions.invoke('notify-note-added', {
-            body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id, note: normalizedExpense.note }
-          }).catch(e => console.error('Notification error:', e));
+          invokeNotifyFunction({
+            functionName: 'notify-note-added',
+            body: { expense_id: data.id, income_source_id: normalizedExpense.income_source_id, note: normalizedExpense.note },
+          });
         }
 
         const newExpense: Expense = {
@@ -254,20 +258,22 @@ export const useExpenseCRUD = ({
           console.warn('Could not find old expense for balance update:', expense.id);
         }
 
-        // Notifications (fire-and-forget)
+        // Notifications (fire-and-forget) — uses notifyHelper for reliable delivery + diagnostic trail
         const projectChanged = expense.project_id !== oldExpense?.project_id;
         const significantChange = expense.amount !== oldExpense?.amount ||
           expense.description !== oldExpense?.description || expense.type !== oldExpense?.type;
         if (expense.project_id && (projectChanged || significantChange)) {
-          supabase.functions.invoke('notify-project-transaction', {
-            body: { expense_id: expense.id, project_id: expense.project_id, action: 'updated' }
-          }).catch(e => console.error('Notification error:', e));
+          invokeNotifyFunction({
+            functionName: 'notify-project-transaction',
+            body: { expense_id: expense.id, project_id: expense.project_id, action: 'updated' },
+          });
         }
         const noteWasAdded = expense.note && (!oldExpense?.note || oldExpense.note !== expense.note);
         if (noteWasAdded && expense.income_source_id) {
-          supabase.functions.invoke('notify-note-added', {
-            body: { expense_id: expense.id, income_source_id: expense.income_source_id, note: expense.note }
-          }).catch(e => console.error('Notification error:', e));
+          invokeNotifyFunction({
+            functionName: 'notify-note-added',
+            body: { expense_id: expense.id, income_source_id: expense.income_source_id, note: expense.note },
+          });
         }
 
         // Sync owner-loan when business expense edited
