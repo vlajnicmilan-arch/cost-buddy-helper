@@ -204,6 +204,13 @@ const Index = () => {
     [expenses, dashboardFilters, user?.id]
   );
 
+  const monthlyTransactionsCount = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    return expenses.filter(e => e.date >= start && e.date <= end).length;
+  }, [expenses]);
+
   const budgetsForAssistant = useMemo(() =>
     budgetsWithStats.map(b => ({
       name: b.name,
@@ -434,6 +441,7 @@ const Index = () => {
     dashboardFilters,
     onDashboardFiltersChange: handleDashboardFiltersChange,
     filteredDashboardExpenses,
+    monthlyTransactionsCount,
     visibleCount,
     onShowMore: handleShowMore,
     selectedTransactionIds,
