@@ -18,6 +18,8 @@ import { ExpenseItemsList } from './ExpenseItemsList';
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
+import { showError } from '@/hooks/useStatusFeedback';
 
 interface ManualExpenseFormProps {
   // Type
@@ -341,13 +343,30 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
       {/* Date */}
       <div className="space-y-2">
         <Label htmlFor="date" className="text-sm font-medium">{t('common.date')}</Label>
-        <Input
-          id="date"
-          type="date"
-          value={props.expenseDate}
-          onChange={(e) => props.onExpenseDateChange(e.target.value)}
-          className="h-12 rounded-xl"
-        />
+        {(() => {
+          const dateRange = getDateRange('transactionDynamic', props.type as any);
+          return (
+            <Input
+              id="date"
+              type="date"
+              value={props.expenseDate}
+              min={toInputDate(dateRange.min)}
+              max={toInputDate(dateRange.max)}
+              onChange={(e) => props.onExpenseDateChange(e.target.value)}
+              onBlur={(e) => {
+                const v = e.target.value;
+                if (!v) return;
+                const errKey = getDateValidationKey(v, dateRange);
+                if (errKey) {
+                  const clamped = clampInputDate(v, dateRange);
+                  props.onExpenseDateChange(clamped);
+                  showError(t(errKey));
+                }
+              }}
+              className="h-12 rounded-xl"
+            />
+          );
+        })()}
       </div>
 
       {/* Advanced Options - Collapsible */}
