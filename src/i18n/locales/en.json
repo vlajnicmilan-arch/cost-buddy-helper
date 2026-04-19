@@ -1409,6 +1409,14 @@
     "noSavings": "No savings goals added"
   },
   "business": {
+    "payment": {
+      "businessAccountsGroup": "Business accounts",
+      "personalAccountsGroup": "Personal accounts (loan)"
+    },
+    "debt": {
+      "ownerLoanContact": "Owner (loan)",
+      "autoCreatedFromPersonal": "Auto-created from personal payment"
+    },
     "wallet": {
       "emptyTitle": "Add your first business account",
       "emptyHint": "E.g. company current account, cash register, foreign currency account. Without a payment source the balance is not updated automatically."

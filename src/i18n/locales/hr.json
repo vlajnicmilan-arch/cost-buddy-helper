@@ -1290,6 +1290,14 @@
     "noSavings": "Nema dodanih ciljeva štednje"
   },
   "business": {
+    "payment": {
+      "businessAccountsGroup": "Poslovni računi",
+      "personalAccountsGroup": "Osobni računi (pozajmica)"
+    },
+    "debt": {
+      "ownerLoanContact": "Vlasnik (pozajmica)",
+      "autoCreatedFromPersonal": "Automatski iz osobnog plaćanja"
+    },
     "wallet": {
       "emptyTitle": "Dodajte prvi poslovni račun",
       "emptyHint": "Npr. Žiroračun tvrtke, Blagajna, Devizni račun. Bez izvora plaćanja saldo se ne ažurira automatski."
