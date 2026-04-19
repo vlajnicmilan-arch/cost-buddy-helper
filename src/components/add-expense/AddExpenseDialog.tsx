@@ -169,7 +169,8 @@ export const AddExpenseDialog = ({
 
   const handleMerchantChange = useCallback((value: string) => {
     setMerchantName(value);
-    if (value.trim().length >= 2 && type !== 'income') {
+    // Skip AI categorization for transfers — category is system-reserved
+    if (value.trim().length >= 2 && type !== 'income' && type !== 'transfer') {
       const suggested = getSuggestedCategory(value);
       if (suggested) {
         setCategory(suggested as Category);
@@ -188,7 +189,8 @@ export const AddExpenseDialog = ({
 
   const handleDescriptionChange = useCallback((value: string) => {
     setDescription(value);
-    if (value.trim().length >= 3 && type !== 'income' && !userManuallySetCategory.current) {
+    // Skip AI categorization for transfers — category is system-reserved
+    if (value.trim().length >= 3 && type !== 'income' && type !== 'transfer' && !userManuallySetCategory.current) {
       const suggested = getSuggestedCategory(merchantName);
       if (!suggested) {
         setAiSuggesting(true);
