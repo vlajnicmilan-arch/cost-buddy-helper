@@ -11,7 +11,7 @@ const LOCAL_PROJECTS_KEY = 'finmate.projects';
 export const useProjects = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
+  const { emitAvatarEvent, activeBusinessProfileId, businessModeEnabled, setActiveBusinessProfileId } = useAppState();
   const [projects, setProjects] = useState<ProjectWithOwnership[]>([]);
   const [loading, setLoading] = useState(true);
 
