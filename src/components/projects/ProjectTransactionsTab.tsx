@@ -256,14 +256,18 @@ export const ProjectTransactionsTab = ({
     try {
       // Viewers submit with 'pending' status, managers/members submit as 'approved'
       const status = needsApproval ? 'pending' : 'approved';
-      
-      const { error } = await supabase
+      const paymentSourceForInsert = paymentSourceValue !== 'none' ? paymentSourceValue : null;
+      const parsedAmount = parseFloat(amount);
+
+      const { data: inserted, error } = await supabase
         .from('expenses')
         .insert({
           user_id: user.id,
           project_id: projectId,
           milestone_id: milestoneId !== 'none' ? milestoneId : null,
-          amount: parseFloat(amount),
+          business_profile_id: activeBusinessProfileId || null,
+          payment_source: paymentSourceForInsert,
+          amount: parsedAmount,
           description: description.trim(),
           category,
           type: expenseType,
@@ -271,9 +275,16 @@ export const ProjectTransactionsTab = ({
           status,
           submitted_by: needsApproval ? user.id : null,
           expense_nature: expenseNature
-        } as any);
+        } as any)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Update payment source balance if approved (pending shouldn't affect balance)
+      if (status === 'approved' && paymentSourceForInsert) {
+        await updateBalance(paymentSourceForInsert, parsedAmount, expenseType);
+      }
 
       if (needsApproval) {
         showSuccess(t('projects.expenseSubmitted', 'Transakcija poslana na odobrenje'));
