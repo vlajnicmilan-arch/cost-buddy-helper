@@ -1,66 +1,45 @@
 
 
-## Plan: Jasniji prikaz prijenosa između računa
+## Trenutna logika i prijedlog
 
-### Problem
-Trenutno se prijenosi (`type: 'transfer'`) prikazuju kao obični redovi — korisnica ne vidi jasno **odakle → kamo** je novac išao.
+### Što sam pronašao
+Na glavnom dashboardu (`src/pages/Index.tsx` → `src/components/home/PersonalModeView.tsx` → `SummarySection.tsx`) prikazuju se 3 kartice: **Saldo**, **Prihodi**, **Rashodi**.
 
-### Kako prijenosi rade u bazi (istraženo)
-Svaki prijenos = **2 zapisa** u `expenses` tablici s istim opisom i datumom:
-- jedan s `type: 'transfer'` koji oduzima s **izvornog** računa (`payment_source` ili `payment_source_card_id`)
-- drugi koji dodaje na **odredišni** račun
+Logika računanja je u `src/hooks/useExpenses.ts` (ili sličnom agregatoru) i **trenutno zbraja SVE transakcije** koje su učitane u trenutnom prikazu — bez filtera po mjesecu. To znači:
+- "Prihodi" = svi prihodi ikad zabilježeni
+- "Rashodi" = svi rashodi ikad zabilježeni
 
-Trenutno `TransactionItem` prikazuje samo jedan izvor — onaj zapisan na tom retku — pa korisnica vidi pola priče.
+### Zašto je tako (povijesno)
+Dashboard je izvorno bio zamišljen kao "pregled svih podataka" jer je `useExpenseFetch` već paginirano dohvaćao sve transakcije za korisnika, pa je suma bila trivijalna. Filter po mjesecu nije nikad eksplicitno dodan — vjerojatno propust iz ranih verzija.
 
-### Rješenje: Pair-matching + vizualni prikaz "Iz → U"
+### Zašto Vinkin osjećaj ima smisla
+"Saldo" je trenutno stanje računa (kumulativ ima smisla). Ali "Prihodi" i "Rashodi" kao **kumulativ od početka vremena** ne govore ništa korisno — broj samo raste i nema kontekst. Standard u financijskim aplikacijama (Revolut, Wallet, YNAB) je **mjesečni prikaz**.
 
-**1. Helper `src/lib/transferMatching.ts`** (novo)
-- Funkcija `matchTransferPairs(expenses)` koja grupira parove prijenosa po ključu: `description + amount + date (±60s) + user_id`
-- Vraća `Map<expenseId, { fromSource, toSource, fromCardId?, toCardId? }>`
-- Radi i za **postojeće** prijenose — bez migracije baze
+### Prijedlog
 
-**2. Nova komponenta `src/components/TransferTransactionItem.tsx`**
-- Prikazuje prijenos u jednom retku s jasnim layoutom:
-  ```
-  🔄  Prijenos između računa            -50,00 €
-      💳 Visa Gold  →  💵 Gotovina      19. tra
-  ```
-- Koristi `ArrowRight` ikonu, ikone/imena izvora iz `getPaymentSourceInfo` + custom payment sources
-- Boja iznosa: neutralna (ne crvena/zelena) jer je interna tranzicija
-- Klik otvara `TransactionDetailDialog` (postojeći)
+**1. Prihodi i Rashodi → samo tekući mjesec**
+- Filter: `date >= startOfMonth(now) && date <= endOfMonth(now)`
+- Saldo OSTAJE kumulativ (zbroj salda svih aktivnih izvora — to je već ispravno)
 
-**3. Dedup u listama** — `src/components/home/TransactionListSection.tsx` + `VirtualTransactionList`
-- Kad se prikazuje par prijenosa, prikazujemo **samo jedan red** (onaj s `type: 'transfer'` ili prvi po ID-u)
-- Drugi zapis para se filtrira iz prikaza (ali ostaje u bazi za korektnost salda)
-- Counter "X transakcija" računa parove kao 1
+**2. Vizualna oznaka da je mjesečno**
+- Ispod naslova "Prihodi" / "Rashodi" mali tekst: **"travanj 2026"** (ili `format(now, 'LLLL yyyy')` lokalizirano)
+- Diskretno, sivo, manjim fontom
 
-**4. `TransactionItem.tsx` routing**
-- Ako je `expense.type === 'transfer'` i postoji par → renderira `TransferTransactionItem`
-- Inače → postojeći prikaz
+**3. Usporedba s prošlim mjesecom (bonus)**
+- Mali postotak ispod iznosa: `+12% vs ožujak` ili `-5% vs ožujak`
+- Zelena ako prihodi rastu / rashodi padaju, crvena obrnuto
+- Isti pattern već postoji u `BusinessDashboard.tsx` — preuzimam logiku
 
-**5. `TransactionDetailDialog`** — proširenje za prijenose
-- Sekcija "Detalji prijenosa": Iz računa, U račun, Iznos, Datum
-- Brisanje prijenosa briše **oba** zapisa (već postoji slična logika za parove)
+**4. Što NE diram**
+- Saldo karticu (ostaje kumulativ aktivnih računa)
+- Filter transakcija ispod (lista i dalje pokazuje sve, korisnik ima zasebne filtere)
+- Izračun grafova, kategorija, budgeta — to već imaju vlastite filtere
+- Bazu, RLS, edge funkcije
 
-**6. i18n ključevi**
-- `transactions.transfer.from` ("Iz"), `.to` ("U"), `.title` ("Prijenos između računa")
-- HR / EN / DE
+### Datoteke za izmjenu
+- `src/components/home/SummarySection.tsx` — dodati mjesečni filter za income/expense + UI oznaka mjeseca + delta vs prošli mj.
+- `src/i18n/locales/{hr,en,de}.json` — ključevi `summary.thisMonth`, `summary.vsLastMonth`
 
-### Što NE diram
-- Bazu, RLS, postojeće zapise (radi automatski na svim postojećim prijenosima)
-- Logiku spremanja prijenosa u `AddExpenseDialog`
-- Sortiranje, filtere, izračun salda
-- Bulk akcije (par se tretira kao 2 zapisa pri brisanju)
-
-### Datoteke
-**Novo:**
-- `src/lib/transferMatching.ts`
-- `src/components/TransferTransactionItem.tsx`
-
-**Izmjena:**
-- `src/components/TransactionItem.tsx` (routing)
-- `src/components/home/TransactionListSection.tsx` (dedup)
-- `src/components/VirtualTransactionList.tsx` (dedup)
-- `src/components/TransactionDetailDialog.tsx` (sekcija prijenosa)
-- `src/i18n/locales/{hr,en,de}.json`
+### Pitanje prije implementacije
+Imam jedno pitanje o opsegu — samo da budem siguran što Vinka želi.
 
