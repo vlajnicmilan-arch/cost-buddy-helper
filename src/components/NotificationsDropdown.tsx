@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { Notification } from '@/types/notification';
+import { useAppState } from '@/contexts/AppStateContext';
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
