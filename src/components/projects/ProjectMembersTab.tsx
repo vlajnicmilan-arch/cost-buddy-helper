@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ProjectMember, ProjectInvitation, ProjectRole, PROJECT_ROLE_LABELS } from '@/types/project';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield, User, Briefcase } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Shield,
+  User, Briefcase, ChevronDown, MapPin, Save,
+} from 'lucide-react';
 import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog';
+import { OPTIONAL_TABS, TAB_LABELS } from '@/hooks/useProjectMemberPermissions';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProjectMembersTabProps {
   projectId: string;
@@ -27,7 +33,19 @@ interface PermDialogState {
   memberName: string;
 }
 
+interface BusinessProfileLite {
+  id: string;
+  company_name: string;
+}
 
+// Smart defaults per role
+const defaultPermsForRole = (role: ProjectRole): Record<string, boolean> => {
+  if (role === 'viewer') {
+    return { overview: true, milestones: true, workers: false, collaborators: false, funding: false, transactions: false };
+  }
+  // member (and manager — but manager not invitable here)
+  return { overview: true, milestones: true, workers: true, collaborators: true, funding: true, transactions: true };
+};
 
 export const ProjectMembersTab = ({
   projectId,
@@ -38,8 +56,9 @@ export const ProjectMembersTab = ({
   onRefetch
 }: ProjectMembersTabProps) => {
   const { t } = useTranslation();
-  const { updateMemberRole, removeMember, cancelInvitation, generateInviteLink } = useProjectMembers(projectId);
-  
+  const { user } = useAuth();
+  const { updateMemberRole, removeMember, cancelInvitation, generateInviteLink, updateMemberContext } = useProjectMembers(projectId);
+
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [inviteRole, setInviteRole] = useState<ProjectRole>('member');
@@ -48,10 +67,72 @@ export const ProjectMembersTab = ({
   const [suggestedContext, setSuggestedContext] = useState<'personal' | 'business'>('personal');
   const [permDialog, setPermDialog] = useState<PermDialogState>({ open: false, userId: '', memberName: '' });
 
+  // Initial permissions UI state (owner-side, sent with invitation)
+  const [permsOpen, setPermsOpen] = useState(false);
+  const [initialPerms, setInitialPerms] = useState<Record<string, boolean>>(() => defaultPermsForRole('member'));
+
+  // When inviteRole changes, reset perms to smart defaults for that role (only if user hasn't customized)
+  const [permsTouched, setPermsTouched] = useState(false);
+  useEffect(() => {
+    if (!permsTouched) {
+      setInitialPerms(defaultPermsForRole(inviteRole));
+    }
+  }, [inviteRole, permsTouched]);
+
+  // Current member (self) — for "Move project" picker
+  const currentMember = useMemo(
+    () => members.find(m => m.user_id === user?.id),
+    [members, user?.id]
+  );
+  const isOwnerInList = currentMember?.role === 'manager';
+
+  // Self-relocation state
+  const [businessProfiles, setBusinessProfiles] = useState<BusinessProfileLite[]>([]);
+  const [selfContext, setSelfContext] = useState<'personal' | 'business'>('personal');
+  const [selfBusinessProfileId, setSelfBusinessProfileId] = useState<string>('');
+  const [savingContext, setSavingContext] = useState(false);
+
+  // Load member's business profiles + initialize self context picker
+  useEffect(() => {
+    const loadProfiles = async () => {
+      if (!user || isOwnerInList || !currentMember) return;
+      const { data } = await supabase
+        .from('business_profiles')
+        .select('id, company_name')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+      const list = (data || []) as BusinessProfileLite[];
+      setBusinessProfiles(list);
+
+      const ctx = (currentMember.member_context === 'business' ? 'business' : 'personal') as 'personal' | 'business';
+      setSelfContext(ctx);
+      const bpId = currentMember.member_business_profile_id || (list[0]?.id ?? '');
+      setSelfBusinessProfileId(bpId);
+    };
+    loadProfiles();
+  }, [user, currentMember, isOwnerInList]);
+
+  const handleSaveSelfContext = async () => {
+    if (selfContext === 'business' && !selfBusinessProfileId) {
+      showError(t('projects.selectBusinessProfile', 'Odaberite poslovni profil ili odaberite Osobne financije.'));
+      return;
+    }
+    setSavingContext(true);
+    try {
+      const ok = await updateMemberContext(
+        selfContext,
+        selfContext === 'business' ? selfBusinessProfileId : null
+      );
+      if (ok) onRefetch();
+    } finally {
+      setSavingContext(false);
+    }
+  };
+
   const handleGenerateLink = async () => {
     setGeneratingLink(true);
     try {
-      const link = await generateInviteLink(inviteRole, suggestedContext);
+      const link = await generateInviteLink(inviteRole, suggestedContext, initialPerms);
       if (link) {
         setInviteLink(link);
       }
@@ -82,11 +163,12 @@ export const ProjectMembersTab = ({
           invitedEmail: inviteEmail.trim(),
           role: inviteRole,
           suggestedContext,
+          defaultPermissions: initialPerms,
         },
       });
 
       if (error) throw error;
-      
+
       if (data.error) {
         if (data.error === 'user_not_found') {
           showError(t('projects.userNotFound', t('toasts.userNotFound')));
@@ -138,6 +220,78 @@ export const ProjectMembersTab = ({
 
   return (
     <div className="space-y-6">
+      {/* Self relocation card — non-owner members only */}
+      {currentMember && !isOwnerInList && (
+        <div className="p-4 rounded-lg border bg-muted/30 space-y-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
+            <span className="font-medium text-sm">
+              {t('projects.yourLocation', 'Lokacija projekta kod tebe')}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t('projects.yourLocationHint', 'Odaberi gdje želiš da se ovaj projekt prikazuje u tvojoj aplikaciji.')}
+          </p>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={selfContext === 'personal' ? 'default' : 'outline'}
+              size="sm"
+              className="h-9 justify-start"
+              onClick={() => setSelfContext('personal')}
+            >
+              <User className="w-4 h-4 mr-2" />
+              {t('projects.contextPersonal', 'Osobne financije')}
+            </Button>
+            <Button
+              type="button"
+              variant={selfContext === 'business' ? 'default' : 'outline'}
+              size="sm"
+              className="h-9 justify-start"
+              onClick={() => setSelfContext('business')}
+              disabled={businessProfiles.length === 0}
+            >
+              <Briefcase className="w-4 h-4 mr-2" />
+              {t('projects.contextBusiness', 'Poslovni mod')}
+            </Button>
+          </div>
+
+          {selfContext === 'business' && businessProfiles.length > 0 && (
+            <Select value={selfBusinessProfileId} onValueChange={setSelfBusinessProfileId}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('projects.selectProfile', 'Odaberite profil')} />
+              </SelectTrigger>
+              <SelectContent>
+                {businessProfiles.map(bp => (
+                  <SelectItem key={bp.id} value={bp.id}>{bp.company_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {selfContext === 'business' && businessProfiles.length === 0 && (
+            <p className="text-xs text-destructive">
+              {t('projects.noBusinessProfilesShort', 'Nemate poslovnih profila. Kreirajte ga u Postavkama.')}
+            </p>
+          )}
+
+          <Button
+            onClick={handleSaveSelfContext}
+            disabled={savingContext}
+            size="sm"
+            className="w-full"
+          >
+            {savingContext ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            {t('projects.saveLocation', 'Spremi lokaciju')}
+          </Button>
+        </div>
+      )}
+
       {/* Invite section - managers only */}
       {isManager && (
         <div className="p-4 rounded-lg border bg-muted/50 space-y-4">
@@ -179,6 +333,54 @@ export const ProjectMembersTab = ({
                 : t('projects.contextPersonalHint', 'Projekt će se kod člana pojaviti u Osobnim financijama.')}
             </p>
           </div>
+
+          {/* Initial permissions collapsible */}
+          <Collapsible open={permsOpen} onOpenChange={setPermsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full justify-between">
+                <span className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  {t('projects.initialPermissions', 'Početne dozvole (opcionalno)')}
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${permsOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-3 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                {t('projects.initialPermissionsHint', 'Odaberi koje će kartice novi član vidjeti odmah po pristupu. Možeš mijenjati kasnije.')}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {OPTIONAL_TABS.map(tab => (
+                  <div key={tab} className="flex items-center gap-2 p-2 rounded border bg-card">
+                    <Checkbox
+                      id={`init-perm-${tab}`}
+                      checked={initialPerms[tab] ?? false}
+                      onCheckedChange={(checked) => {
+                        setPermsTouched(true);
+                        setInitialPerms(prev => ({ ...prev, [tab]: !!checked }));
+                      }}
+                    />
+                    <label htmlFor={`init-perm-${tab}`} className="text-sm cursor-pointer flex-1">
+                      {t(`projects.tab_${tab}`, TAB_LABELS[tab])}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {permsTouched && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPermsTouched(false);
+                    setInitialPerms(defaultPermsForRole(inviteRole));
+                  }}
+                  className="text-xs"
+                >
+                  {t('projects.resetToDefaults', 'Vrati na zadane za ulogu')}
+                </Button>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Email invitation */}
           <div className="space-y-2">
@@ -226,7 +428,7 @@ export const ProjectMembersTab = ({
                   <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Button onClick={handleGenerateLink} disabled={generatingLink} variant="outline" className="flex-1">
                 {generatingLink ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
