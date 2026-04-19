@@ -77,7 +77,9 @@ export const ProjectTransactionsTab = ({
   const { formatAmount, currency } = useCurrency();
   const { user } = useAuth();
   const { customCategories } = useCustomCategories();
-
+  const { activeBusinessProfileId } = useAppState();
+  const { customPaymentSources } = useCustomPaymentSources();
+  const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated: onRefetch });
   // Pending transactions hook
   const { 
     pendingTransactions, 
@@ -195,6 +197,8 @@ export const ProjectTransactionsTab = ({
   const [category, setCategory] = useState<Category>('other');
   const [date, setDate] = useState<Date>(new Date());
   const [milestoneId, setMilestoneId] = useState<string>('none');
+  const [paymentSourceValue, setPaymentSourceValue] = useState<string>('none');
+  const [editPaymentSourceValue, setEditPaymentSourceValue] = useState<string>('none');
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
 
   // Calendar popover open states (auto-close on select)
@@ -218,6 +222,7 @@ export const ProjectTransactionsTab = ({
     setCategory('other');
     setDate(new Date());
     setMilestoneId('none');
+    setPaymentSourceValue('none');
     setExpenseNature('regular');
   };
 
