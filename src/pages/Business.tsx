@@ -140,7 +140,7 @@ const Business = () => {
               existingExpenses={allExpenses}
             />
             <div data-business-add-expense-trigger className="hidden">
-              <AddExpenseDialog onAdd={addExpense} findDuplicates={undefined} />
+              <AddExpenseDialog onAdd={addExpense} />
             </div>
           </>
         )}
