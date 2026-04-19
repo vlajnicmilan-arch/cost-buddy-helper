@@ -8,7 +8,17 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 
 
-export const useCustomPaymentSources = () => {
+interface UseCustomPaymentSourcesOptions {
+  /**
+   * When true and the user is in business mode, also returns personal payment sources
+   * (sources with business_profile_id = null). Used for owner-loan flows where a
+   * business expense can be paid from a personal account.
+   */
+  includePersonal?: boolean;
+}
+
+export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions = {}) => {
+  const { includePersonal = false } = options;
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
