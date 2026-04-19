@@ -222,6 +222,17 @@ export const NotificationsDropdown = () => {
       }
 
       if (action === 'accept') {
+        // If the invitee chose Business, auto-enable business mode + activate the chosen profile
+        // so the project becomes visible immediately. Personal: ensure business mode is off.
+        if (invitationType === 'project') {
+          if (chosenContext === 'business' && chosenBusinessProfileId) {
+            localStorage.setItem('business_mode_enabled', 'true');
+            localStorage.setItem('active_business_profile_id', chosenBusinessProfileId);
+          } else if (chosenContext === 'personal') {
+            localStorage.setItem('business_mode_enabled', 'false');
+            localStorage.removeItem('active_business_profile_id');
+          }
+        }
         showSuccess(t('notifications.invitationAccepted', 'Pozivnica prihvaćena'));
       } else {
         showSuccess(t('notifications.invitationDeclined', 'Pozivnica odbijena'));
@@ -229,6 +240,11 @@ export const NotificationsDropdown = () => {
 
       await deleteNotification(notification.id);
       refetch();
+
+      // Full reload for project-business so AppStateContext re-reads localStorage and switches view
+      if (action === 'accept' && invitationType === 'project' && chosenContext === 'business') {
+        setTimeout(() => { window.location.href = '/projects'; }, 600);
+      }
     } catch (error) {
       console.error('Error responding to invitation:', error);
       showError(t('common.error'));
