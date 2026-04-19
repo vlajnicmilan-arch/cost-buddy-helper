@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Auto-disables business mode for users who lost (or never had) Business access.
