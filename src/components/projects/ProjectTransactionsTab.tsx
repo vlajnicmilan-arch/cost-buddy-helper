@@ -1108,6 +1108,9 @@ export const ProjectTransactionsTab = ({
               </Select>
             </div>
 
+            {/* Expense Nature Toggle */}
+            <div className="space-y-2">
+              <Label>{t('transactions.expenseNature', 'Vrsta troška')}</Label>
               <div className="flex gap-2">
                 <Button
                   type="button"
