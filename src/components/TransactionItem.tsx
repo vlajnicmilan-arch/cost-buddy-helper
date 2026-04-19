@@ -108,7 +108,7 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
     return Boolean(
       (expense as any).business_profile_id &&
       customSource &&
-      !customSource.business_profile_id
+      !(customSource as any).business_profile_id
     );
   }, [expense, customSource]);
 
