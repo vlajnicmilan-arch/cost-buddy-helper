@@ -1027,7 +1027,7 @@ export const ProjectTransactionsTab = ({
             {/* Date */}
             <div className="space-y-2">
               <Label>{t('common.date')}</Label>
-              <Popover>
+              <Popover open={addDateOpen} onOpenChange={setAddDateOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1038,7 +1038,8 @@ export const ProjectTransactionsTab = ({
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={(d) => d && setDate(d)}
+                    onSelect={(d) => { if (d) { setDate(d); setAddDateOpen(false); } }}
+                    disabled={makeCalendarDisabled(addDateRangeLimits)}
                     initialFocus
                   />
                 </PopoverContent>
