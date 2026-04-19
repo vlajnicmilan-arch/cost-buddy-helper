@@ -145,7 +145,41 @@ export const ProjectMembersTab = ({
             <UserPlus className="w-4 h-4" />
             <span className="font-medium">{t('projects.inviteMembers')}</span>
           </div>
-          
+
+          {/* Context picker — where the project will appear for the invitee */}
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              {t('projects.suggestedContext', 'Gdje će član vidjeti projekt?')}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={suggestedContext === 'personal' ? 'default' : 'outline'}
+                size="sm"
+                className="h-9 justify-start"
+                onClick={() => setSuggestedContext('personal')}
+              >
+                <User className="w-4 h-4 mr-2" />
+                {t('projects.contextPersonal', 'Osobne financije')}
+              </Button>
+              <Button
+                type="button"
+                variant={suggestedContext === 'business' ? 'default' : 'outline'}
+                size="sm"
+                className="h-9 justify-start"
+                onClick={() => setSuggestedContext('business')}
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                {t('projects.contextBusiness', 'Poslovni mod')}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {suggestedContext === 'business'
+                ? t('projects.contextBusinessHint', 'Član će prilikom prihvaćanja odabrati svoj poslovni profil.')
+                : t('projects.contextPersonalHint', 'Projekt će se kod člana pojaviti u Osobnim financijama.')}
+            </p>
+          </div>
+
           {/* Email invitation */}
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{t('projects.inviteByEmail', 'Pozovi putem emaila')}</p>
