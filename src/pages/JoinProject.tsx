@@ -27,6 +27,7 @@ const JoinProject = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { setBusinessModeEnabled, setActiveBusinessProfileId } = useAppState();
 
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
