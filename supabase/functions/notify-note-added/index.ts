@@ -171,6 +171,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         title: `Novi komentar u projektu "${project.name}"`,
         body: `${memberName}: ${truncatedNote}`,
         data: { expense_id: expense.id, project_id: project.id, type: 'project_note_added' },
+        source: 'notify-note-added',
       });
 
       console.log(`Project note notifications sent to ${usersToNotify.size} user(s) from ${memberName}`);
@@ -239,6 +240,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         title: 'Nova napomena na transakciji',
         body: `${memberName}: ${truncatedNote}`,
         data: { expense_id: expense.id, income_source_id: source.id, type: 'note_added' },
+        source: 'notify-note-added',
       });
 
       console.log(`Note notification sent to owner ${source.user_id} from ${memberName}`);
@@ -321,6 +323,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         title: `Novi komentar na računu "${source.name}"`,
         body: `${memberName}: ${truncatedNote}`,
         data: { expense_id: expense.id, payment_source_id: source.id, type: 'payment_source_note_added' },
+        source: 'notify-note-added',
       });
 
       console.log(`Payment source note notifications sent to ${usersToNotify.size} user(s)`);

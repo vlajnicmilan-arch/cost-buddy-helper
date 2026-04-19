@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
         title: `💬 ${senderName} u ${groupName}`,
         body: truncated,
         data: { group_id, message_id, type: "family_message" },
+        source: "notify-family-message",
       }
     );
 

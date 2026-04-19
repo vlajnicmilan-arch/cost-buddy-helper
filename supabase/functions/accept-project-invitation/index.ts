@@ -280,6 +280,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
           target_id: invitation.target_id,
           type: type === 'project' ? 'member_joined_project' : 'member_joined_budget',
         },
+        source: 'accept-project-invitation',
       });
     }
 

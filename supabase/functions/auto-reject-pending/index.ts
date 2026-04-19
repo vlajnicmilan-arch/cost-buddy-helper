@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
             title: n.title,
             body: n.message,
             data: { ...n.data, type: 'transaction_auto_rejected' },
+            source: 'auto-reject-pending',
           })
         )
       );

@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
         title,
         body: message,
         data: { type: "system" },
+        source: "broadcast-notification",
       });
 
       return new Response(
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
     // Best-effort push broadcast
     await sendPushNotificationToMany(
       users.map((u: any) => u.id),
-      { title, body: message, data: { type: "system" } }
+      { title, body: message, data: { type: "system" }, source: "broadcast-notification" }
     );
 
     return new Response(

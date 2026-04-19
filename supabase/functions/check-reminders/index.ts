@@ -78,6 +78,7 @@ serve(async (req) => {
         title: notifTitle,
         body: notifBody,
         data: { reminder_id: reminder.id, type: "reminder" },
+        source: "check-reminders",
       });
 
       // Mark as notified

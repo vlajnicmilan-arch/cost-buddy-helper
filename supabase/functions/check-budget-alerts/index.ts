@@ -207,6 +207,7 @@ serve(async (req) => {
           title,
           body: message,
           data: { budget_id: budget.id, threshold: targetThreshold, type: "budget_alert" },
+          source: "check-budget-alerts",
         });
 
         alerts.push({
