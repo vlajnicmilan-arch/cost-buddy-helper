@@ -1,5 +1,6 @@
 {
   "projects": {
+    "noPaymentSource": "No source",
     "title": "Projects",
     "add": "New Project",
     "edit": "Edit Project",
@@ -1406,6 +1407,10 @@
     "noSavings": "No savings goals added"
   },
   "business": {
+    "wallet": {
+      "emptyTitle": "Add your first business account",
+      "emptyHint": "E.g. company current account, cash register, foreign currency account. Without a payment source the balance is not updated automatically."
+    },
     "title": "Business Profile",
     "editProfile": "Edit business profile",
     "basicInfo": "Basic Information",
