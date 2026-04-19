@@ -1367,15 +1367,30 @@ export const ProjectTransactionsTab = ({
               </Popover>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button
-                onClick={handleSaveEdit}
-                disabled={saving || !editAmount || !editDescription.trim()}
-              >
+            {/* Payment source */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t('paymentSources.paymentSource', 'Izvor plaćanja')}
+              </Label>
+              <Select value={editPaymentSourceValue} onValueChange={setEditPaymentSourceValue}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('projects.noPaymentSource', 'Bez izvora')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('projects.noPaymentSource', 'Bez izvora')}</SelectItem>
+                  {customPaymentSources.map((src) => (
+                    <SelectItem key={src.id} value={`custom:${src.id}`}>
+                      <span className="flex items-center gap-2">
+                        <span>{src.icon}</span>
+                        <span>{src.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save')}
               </Button>
