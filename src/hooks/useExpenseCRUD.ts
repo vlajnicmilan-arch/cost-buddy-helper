@@ -18,6 +18,7 @@ import {
   saveLocalReceiptItems,
   getLocalExpenses,
 } from '@/lib/storage/indexedDB';
+import { createOwnerLoanIfCrossMode, syncOwnerLoanForExpense, deleteOwnerLoanForExpense } from '@/lib/ownerLoanLogic';
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
