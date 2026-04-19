@@ -124,6 +124,30 @@ export const useProjects = () => {
     fetchProjects();
   }, [fetchProjects]);
 
+  // Auto-select first business profile if business mode is on but none is active.
+  // This handles race conditions after accepting a shared business project, when
+  // the user may have just been bumped into business mode without an active profile.
+  useEffect(() => {
+    if (!user || !businessModeEnabled || activeBusinessProfileId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('business_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      if (cancelled) return;
+      const firstId = data?.[0]?.id;
+      if (firstId) {
+        console.log('[useProjects] Auto-activating first business profile:', firstId);
+        setActiveBusinessProfileId(firstId);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, businessModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId]);
+
   const addProject = async (
     project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>
   ): Promise<ProjectWithOwnership | null> => {
