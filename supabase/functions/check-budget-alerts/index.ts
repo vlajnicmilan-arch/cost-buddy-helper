@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendPushNotification } from "../_shared/sendPushNotification.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -200,6 +201,14 @@ serve(async (req) => {
       if (notifError) {
         console.error("Error creating notification:", notifError);
       } else {
+        // Best-effort push
+        await sendPushNotification({
+          user_id: userId,
+          title,
+          body: message,
+          data: { budget_id: budget.id, threshold: targetThreshold, type: "budget_alert" },
+        });
+
         alerts.push({
           budget_id: budget.id,
           budget_name: budget.name,

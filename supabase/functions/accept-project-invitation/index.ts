@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { sendPushNotification } from '../_shared/sendPushNotification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -269,6 +270,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (notifyError) {
         console.log('Error sending notification:', notifyError.message);
       }
+
+      // Best-effort push to owner
+      await sendPushNotification({
+        user_id: ownerId,
+        title: type === 'project' ? 'Novi član projekta' : 'Novi član budžeta',
+        body: `${memberName} se pridružio/la "${invitation.target_name}"`,
+        data: {
+          target_id: invitation.target_id,
+          type: type === 'project' ? 'member_joined_project' : 'member_joined_budget',
+        },
+      });
     }
 
     console.log('Accept invitation completed successfully');
