@@ -32,6 +32,8 @@ export interface ProjectMember {
   joined_at?: string;
   created_at?: string;
   display_name?: string;
+  member_context?: 'personal' | 'business';
+  member_business_profile_id?: string | null;
 }
 
 export interface ProjectMilestone {
