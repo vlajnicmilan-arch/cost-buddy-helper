@@ -50,6 +50,8 @@ export const useExpenseCRUD = ({
     const normalizedExpense = {
       ...expense,
       description: normalizedDescription,
+      // Force system-reserved category for transfers
+      category: expense.type === 'transfer' ? ('transfer' as any) : expense.category,
     };
 
     try {
@@ -205,7 +207,8 @@ export const useExpenseCRUD = ({
           .update({
             amount: expense.amount,
             description: expense.description,
-            category: expense.category,
+            // Force system-reserved category for transfers
+            category: expense.type === 'transfer' ? 'transfer' : expense.category,
             type: expense.type,
             date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
             payment_source: expense.payment_source || 'cash',
