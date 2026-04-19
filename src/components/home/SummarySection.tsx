@@ -50,8 +50,12 @@ export const SummarySection = React.memo(({
   onTransferClick,
   onRecurringClick,
 }: SummarySectionProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
+
+  // Localized current month label (e.g. "travanj 2026")
+  const dateLocale = i18n.language === 'en' ? enUS : i18n.language === 'de' ? deLocale : hrLocale;
+  const currentMonthLabel = format(new Date(), 'LLLL yyyy', { locale: dateLocale });
 
   // Trend calculations
   const incomeTrendPercent = prevMonthIncome > 0
