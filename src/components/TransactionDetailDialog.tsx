@@ -405,30 +405,69 @@ export const TransactionDetailDialog = ({
             </div>
           )}
 
-          {/* Payment Source - Highlighted */}
-          <div 
-            className="p-4 rounded-xl border"
-            style={paymentInfo.color ? {
-              backgroundColor: `${paymentInfo.color}10`,
-              borderColor: `${paymentInfo.color}40`
-            } : undefined}
-          >
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                style={paymentInfo.color ? {
-                  backgroundColor: `${paymentInfo.color}20`,
-                  color: paymentInfo.color
-                } : undefined}
-              >
-                {paymentInfo.icon}
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t('transactions.paymentSource')}</p>
-                <p className="font-semibold text-lg">{paymentInfo.name}</p>
+          {/* Payment Source — for transfer: show From → To, otherwise single source */}
+          {expense.type === 'transfer' ? (
+            (() => {
+              const transfer = resolveTransferEndpoints(expense, customPaymentSources as any);
+              if (!transfer) return null;
+              const renderEndpoint = (info: typeof transfer.from, label: string) => (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-1">{label}</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0"
+                      style={info.color ? { backgroundColor: `${info.color}20`, color: info.color } : { backgroundColor: 'hsl(var(--muted))' }}
+                    >
+                      {info.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">{info.name}</p>
+                      {info.cardLast4 && (
+                        <p className="text-[10px] font-mono text-muted-foreground">••{info.cardLast4}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+              return (
+                <div className="p-4 rounded-xl border bg-primary/5 border-primary/20">
+                  <div className="flex items-center gap-2 mb-3 text-primary">
+                    <ArrowLeftRight className="w-4 h-4" />
+                    <p className="text-sm font-medium">{t('transactions.transferTitle', 'Prijenos između računa')}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {renderEndpoint(transfer.from, t('transactions.transferFrom', 'Iz računa'))}
+                    <ArrowRight className="w-5 h-5 text-primary shrink-0" />
+                    {renderEndpoint(transfer.to, t('transactions.transferTo', 'U račun'))}
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
+            <div 
+              className="p-4 rounded-xl border"
+              style={paymentInfo.color ? {
+                backgroundColor: `${paymentInfo.color}10`,
+                borderColor: `${paymentInfo.color}40`
+              } : undefined}
+            >
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                  style={paymentInfo.color ? {
+                    backgroundColor: `${paymentInfo.color}20`,
+                    color: paymentInfo.color
+                  } : undefined}
+                >
+                  {paymentInfo.icon}
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t('transactions.paymentSource')}</p>
+                  <p className="font-semibold text-lg">{paymentInfo.name}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-3">
