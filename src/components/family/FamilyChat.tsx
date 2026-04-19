@@ -32,7 +32,7 @@ export const FamilyChat = ({ groupId, groupColor = '#3b82f6' }: FamilyChatProps)
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const hasInitialScrolled = useRef(false);
 
   // Fetch messages and user display names
   const fetchMessages = async () => {
