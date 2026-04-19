@@ -201,25 +201,20 @@ export const SummarySection = React.memo(({
             <div>
               <p className="text-sm font-medium">{t('transactions.transfers')}</p>
               <p className="text-xs text-muted-foreground">
-                {allTransfers.length === 0
+                {monthlyTransferCount === 0
                   ? t('transactions.noTransfers')
-                  : `${allTransfers.length} ${allTransfers.length === 1 ? t('transactions.transfer').toLowerCase() : t('transactions.transfers').toLowerCase()}`}
+                  : `${monthlyTransferCount} ${monthlyTransferCount === 1 ? t('transactions.transfer').toLowerCase() : t('transactions.transfers').toLowerCase()}`}
               </p>
             </div>
           </div>
           <div className="text-right">
             <p className="font-mono font-semibold text-lg text-muted-foreground">
-              ↔ {formatAmount(totalTransfers)}
+              ↔ {formatAmount(monthlyTransfers)}
             </p>
-            <p className="text-xs text-muted-foreground">{t('common.clickForDetails')} →</p>
+            <p className="text-[9px] text-muted-foreground mt-0.5 capitalize">{currentMonthLabel}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('common.clickForDetails')} →</p>
           </div>
         </div>
-        {allTransfers.length > 0 && monthlyTransferCount > 0 && (
-          <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{t('transactions.thisMonth')}: {monthlyTransferCount} {monthlyTransferCount === 1 ? t('transactions.transfer').toLowerCase() : t('transactions.transfers').toLowerCase()}</span>
-            <span className="font-mono">{formatAmount(monthlyTransfers)}</span>
-          </div>
-        )}
       </motion.div>
 
       {/* Recurring Transactions Card */}
