@@ -110,7 +110,7 @@ export async function autoRegisterIfEnabled(): Promise<void> {
             platform: Capacitor.getPlatform(),
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
           },
-          details,
+          details: details as any,
         }]);
       } catch { /* best-effort */ }
     };
