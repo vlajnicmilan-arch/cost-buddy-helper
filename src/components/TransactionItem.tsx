@@ -239,6 +239,18 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipContent>
               </Tooltip>
             )}
+            {isOwnerLoan && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="text-[9px] py-0 px-1 h-4 border-amber-500/40 text-amber-600 dark:text-amber-400 shrink-0">
+                    🪙 {t('transactions.ownerLoanBadge', 'Pozajmica')}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">{t('transactions.ownerLoanTooltip', 'Poslovni trošak plaćen iz osobnog računa — kreirana pozajmica vlasnika')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {expense.note && (
               <Tooltip>
                 <TooltipTrigger asChild>
