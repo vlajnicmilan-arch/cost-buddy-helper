@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Receipt, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
+import { hr as hrLocale, enUS, de as deLocale } from 'date-fns/locale';
 
 interface TransactionListSectionProps {
   transactionsOpen: boolean;
