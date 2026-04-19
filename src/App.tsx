@@ -18,6 +18,7 @@ import { useStatusBar } from "@/hooks/useStatusBar";
 import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { DiagnosticRouteTracker } from "@/components/DiagnosticRouteTracker";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { isPublicRoute } from "@/lib/publicRoutes";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from "react";
@@ -273,6 +274,7 @@ const App = () => (
                   <Sonner />
                   <BrowserRouter>
                     <BackButtonProvider>
+                      <ScrollToTop />
                       <DeepLinkInit />
                       <PushAutoRegister />
                       <DiagnosticRouteTracker />
