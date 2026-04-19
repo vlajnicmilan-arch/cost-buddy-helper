@@ -10,6 +10,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { TransferTransactionItem } from './TransferTransactionItem';
 
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
