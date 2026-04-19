@@ -25,6 +25,7 @@ import { TransactionNotesThread } from '@/components/TransactionNotesThread';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { invokeNotifyFunction } from '@/lib/notifyHelper';
 import { 
   FileText, Loader2, TrendingUp, TrendingDown, Plus, CalendarIcon, 
   Target, Trash2, Clock, Check, X, AlertCircle, User, MessageCircle,
@@ -286,6 +287,19 @@ export const ProjectTransactionsTab = ({
         await updateBalance(paymentSourceForInsert, parsedAmount, expenseType);
       }
 
+      // Notify project members (fire-and-forget). Pending transactions notify on approval instead.
+      if (inserted && status === 'approved') {
+        invokeNotifyFunction({
+          functionName: 'notify-project-transaction',
+          body: { expense_id: (inserted as any).id, project_id: projectId, action: 'created' },
+        });
+      } else if (inserted && status === 'pending') {
+        invokeNotifyFunction({
+          functionName: 'notify-pending-transaction',
+          body: { expense_id: (inserted as any).id, project_id: projectId },
+        });
+      }
+
       // Owner-loan auto-creation: business project expense paid from personal source
       if (activeBusinessProfileId && inserted && status === 'approved' && expenseType === 'expense') {
         const { createOwnerLoanIfCrossMode } = await import('@/lib/ownerLoanLogic');
@@ -417,6 +431,20 @@ export const ProjectTransactionsTab = ({
         newAmount,
         editType
       );
+
+      // Notify project members about the update — only when something material changed.
+      const significantChange =
+        oldAmount !== newAmount ||
+        oldType !== editType ||
+        editingExpense.description !== editDescription.trim() ||
+        editingExpense.category !== editCategory ||
+        (editingExpense.milestone_id || null) !== (editMilestoneId !== 'none' ? editMilestoneId : null);
+      if (significantChange) {
+        invokeNotifyFunction({
+          functionName: 'notify-project-transaction',
+          body: { expense_id: editingExpense.id, project_id: projectId, action: 'updated' },
+        });
+      }
 
       // Sync owner-loan after edit
       if (activeBusinessProfileId && editType === 'expense' && user) {
