@@ -254,9 +254,22 @@ export const CATEGORIES: CategoryInfo[] = [
   { id: 'other', name: 'Ostalo', icon: '📦', color: 'category-other' },
 ];
 
-export const getCategoryInfo = (category: Category | IncomeCategory): CategoryInfo | IncomeCategoryInfo => {
+// System-reserved category for transfers between accounts.
+// NOT shown in category dropdowns — applied automatically when type === 'transfer'.
+export const TRANSFER_CATEGORY: CategoryInfo = {
+  id: 'transfer' as Category,
+  name: 'Prijenos',
+  icon: '🔄',
+  color: 'category-other',
+};
+
+export const getCategoryInfo = (category: Category | IncomeCategory | 'transfer'): CategoryInfo | IncomeCategoryInfo => {
+  // System-reserved transfer category
+  if (category === 'transfer') {
+    return TRANSFER_CATEGORY;
+  }
   // First check if it's an income category
-  const incomeCategory = INCOME_CATEGORIES.find(c => c.id === category);
+  const incomeCategory = INCOME_CATEGORIES.find(c => c.id === category as IncomeCategory);
   if (incomeCategory) {
     return incomeCategory;
   }

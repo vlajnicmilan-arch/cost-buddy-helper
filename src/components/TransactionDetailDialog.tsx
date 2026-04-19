@@ -511,16 +511,18 @@ export const TransactionDetailDialog = ({
               </div>
             )}
 
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Tag className="w-4 h-4" />
-                <span className="text-xs">{t('common.category')}</span>
+            {expense.type !== 'transfer' && (
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Tag className="w-4 h-4" />
+                  <span className="text-xs">{t('common.category')}</span>
+                </div>
+                <p className="font-medium flex items-center gap-1">
+                  <span>{categoryInfo.icon}</span>
+                  <span>{categoryInfo.name}</span>
+                </p>
               </div>
-              <p className="font-medium flex items-center gap-1">
-                <span>{categoryInfo.icon}</span>
-                <span>{categoryInfo.name}</span>
-              </p>
-            </div>
+            )}
 
             {/* Expense Nature - for project/budget transactions */}
             {expense.expense_nature && (expense.project_id || expense.budget_id) && (

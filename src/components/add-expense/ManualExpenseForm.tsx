@@ -569,7 +569,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         <div className="relative">
           <Input
             id="description"
-            placeholder={t('transactions.descriptionPlaceholder')}
+            placeholder={props.type === 'transfer' ? t('transactions.transferDescriptionPlaceholder') : t('transactions.descriptionPlaceholder')}
             value={props.description}
             onChange={(e) => props.onDescriptionChange(e.target.value)}
             className="h-12 rounded-xl pr-12"
@@ -580,6 +580,11 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             className="absolute top-1/2 -translate-y-1/2 right-2"
           />
         </div>
+        {props.type === 'transfer' && (
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            💡 {t('transactions.transferCategoryHint')}
+          </p>
+        )}
       </div>
 
       {/* Category - expense */}
