@@ -171,7 +171,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     } finally {
       setLoading(false);
     }
-  }, [user, isLocalMode, activeBusinessProfileId]);
+  }, [user, isLocalMode, activeBusinessProfileId, includePersonal]);
 
   useEffect(() => {
     fetchCustomPaymentSources();
