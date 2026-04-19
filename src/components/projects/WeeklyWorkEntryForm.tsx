@@ -50,6 +50,7 @@ export const WeeklyWorkEntryForm = ({
   };
 
   const [weekStart, setWeekStart] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekOpen, setWeekOpen] = useState(false);
   const [selectedDays, setSelectedDays] = useState<boolean[]>([true, true, true, true, true, false, false]);
   const [scheduledHours, setScheduledHours] = useState(getDefaultHours());
   const [actualHours, setActualHours] = useState(getDefaultHours());
@@ -115,7 +116,7 @@ export const WeeklyWorkEntryForm = ({
       {/* Week Selector */}
       <div className="space-y-2">
         <Label>{t('workers.selectWeek', 'Odaberi tjedan')}</Label>
-        <Popover>
+        <Popover open={weekOpen} onOpenChange={setWeekOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" className="w-full justify-start text-left font-normal">
               <CalendarIcon className="mr-2 h-4 w-4" />
@@ -126,7 +127,12 @@ export const WeeklyWorkEntryForm = ({
             <Calendar
               mode="single"
               selected={weekStart}
-              onSelect={(date) => date && setWeekStart(startOfWeek(date, { weekStartsOn: 1 }))}
+              onSelect={(date) => {
+                if (date) {
+                  setWeekStart(startOfWeek(date, { weekStartsOn: 1 }));
+                  setWeekOpen(false);
+                }
+              }}
               locale={hr}
               className="p-3 pointer-events-auto"
             />
