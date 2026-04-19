@@ -82,12 +82,14 @@ export const PaymentSourceSelector = ({
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="bg-popover z-50 max-h-[300px]">
-          {customPaymentSources.length > 0 && (
+          {businessSources.length > 0 && (
             <>
               <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('transactions.myMethods')}
+                {activeBusinessProfileId
+                  ? t('business.payment.businessAccountsGroup', 'Poslovni računi')
+                  : t('transactions.myMethods')}
               </div>
-              {customPaymentSources.map((source) => (
+              {businessSources.map((source) => (
                 <SelectItem key={source.id} value={source.id}>
                   <div className="flex items-center gap-2">
                     <span 
@@ -97,6 +99,34 @@ export const PaymentSourceSelector = ({
                       {source.icon}
                     </span>
                     <span>{source.name}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {(CURRENCIES.find(c => c.code === source.currency)?.symbol || primaryCurrency.symbol)}{source.balance.toFixed(2)}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </>
+          )}
+
+          {personalLoanSources.length > 0 && (
+            <>
+              <div className="px-2 py-1.5 mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                <span>🪙</span>
+                <span>{t('business.payment.personalAccountsGroup', 'Osobni računi (pozajmica)')}</span>
+              </div>
+              {personalLoanSources.map((source) => (
+                <SelectItem key={source.id} value={source.id}>
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                      style={{ backgroundColor: source.color + '20', color: source.color }}
+                    >
+                      {source.icon}
+                    </span>
+                    <span>{source.name}</span>
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400">
+                      {t('transactions.ownerLoanBadge', 'Pozajmica')}
+                    </Badge>
                     <span className="text-xs text-muted-foreground ml-auto">
                       {(CURRENCIES.find(c => c.code === source.currency)?.symbol || primaryCurrency.symbol)}{source.balance.toFixed(2)}
                     </span>
