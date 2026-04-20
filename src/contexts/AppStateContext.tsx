@@ -18,6 +18,10 @@ interface AppStateContextValue {
   setSimpleModeEnabled: (enabled: boolean) => void;
   familyModeEnabled: boolean;
   setFamilyModeEnabled: (enabled: boolean) => void;
+  // Master switch (controlled from Settings) — does the user want business features at all?
+  businessFeatureEnabled: boolean;
+  setBusinessFeatureEnabled: (enabled: boolean) => void;
+  // Session view flag — is the business view currently open right now?
   businessModeEnabled: boolean;
   setBusinessModeEnabled: (enabled: boolean) => void;
   activeBusinessProfileId: string | null;
@@ -51,6 +55,17 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   // Always start each session in Personal mode (default view) for safety.
   // The last active business profile id is preserved separately so the
   // BusinessProfileSwitcher can show it and one click returns to business mode.
+  // Master switch from Settings — persisted. If user upgrades from old build,
+  // migrate from the previous `business_mode_enabled` key (which used to act as master).
+  const [businessFeatureEnabled, setBusinessFeatureEnabledState] = useState<boolean>(() => {
+    const explicit = localStorage.getItem('business_feature_enabled');
+    if (explicit !== null) return explicit === 'true';
+    // Migration: previously `business_mode_enabled === 'true'` meant feature was on
+    return localStorage.getItem('business_mode_enabled') === 'true';
+  });
+  // Always start each session in Personal view (default) for safety.
+  // The last active business profile id is preserved separately so the
+  // BusinessProfileSwitcher can show it and one click returns to business view.
   const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(() => {
     localStorage.setItem('business_mode_enabled', 'false');
     return false;
@@ -190,10 +205,21 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('family_mode_enabled', enabled.toString());
   }, []);
 
+  const setBusinessFeatureEnabled = useCallback((enabled: boolean) => {
+    setBusinessFeatureEnabledState(enabled);
+    localStorage.setItem('business_feature_enabled', enabled.toString());
+    // When user disables the master switch, also exit any active business view —
+    // but KEEP the active_business_profile_id so it returns when re-enabled.
+    if (!enabled) {
+      setBusinessModeEnabledState(false);
+      localStorage.setItem('business_mode_enabled', 'false');
+    }
+  }, []);
+
   const setBusinessModeEnabled = useCallback((enabled: boolean) => {
     setBusinessModeEnabledState(enabled);
     localStorage.setItem('business_mode_enabled', enabled.toString());
-    // Note: we intentionally KEEP active_business_profile_id when disabling business mode,
+    // Note: we intentionally KEEP active_business_profile_id when disabling business view,
     // so the user's last chosen company is remembered for next time they re-enable it.
   }, []);
 
@@ -247,6 +273,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setSimpleModeEnabled,
     familyModeEnabled,
     setFamilyModeEnabled,
+    businessFeatureEnabled,
+    setBusinessFeatureEnabled,
     businessModeEnabled,
     setBusinessModeEnabled,
     activeBusinessProfileId,
@@ -265,6 +293,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
     familyModeEnabled, setFamilyModeEnabled,
+    businessFeatureEnabled, setBusinessFeatureEnabled,
     businessModeEnabled, setBusinessModeEnabled,
     activeBusinessProfileId, setActiveBusinessProfileId,
     onboardingCompleted, setOnboardingCompleted,

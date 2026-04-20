@@ -92,7 +92,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
     familyModeEnabled, setFamilyModeEnabled,
-    businessModeEnabled, setBusinessModeEnabled,
+    businessFeatureEnabled, setBusinessFeatureEnabled,
     emitFinancialReset,
   } = useAppState();
   const isLocalMode = storageMode === 'local';
@@ -645,8 +645,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   showSuccess(t('settings.familyModeEnabled', 'Obiteljski način uključen'));
                 }
               }}
-              businessModeEnabled={businessModeEnabled}
-              onBusinessModeChange={setBusinessModeEnabled}
+              businessModeEnabled={businessFeatureEnabled}
+              onBusinessModeChange={setBusinessFeatureEnabled}
               onShowBusinessProfile={() => setShowBusinessProfile(true)}
               isLocalMode={isLocalMode}
             />
