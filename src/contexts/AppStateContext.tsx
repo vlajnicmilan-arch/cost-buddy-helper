@@ -48,16 +48,17 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('family_mode_enabled') !== 'false'
   );
-  // Always start each session in Personal mode (per user preference).
-  // The previously selected business profile is forgotten on reload so the
-  // user has to explicitly switch via the BusinessProfileSwitcher.
+  // Always start each session in Personal mode (default view) for safety.
+  // BUT we remember the last active business profile so the BusinessProfileSwitcher
+  // can show it and one click brings the user back into business mode.
   const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(() => {
-    // Clear any persisted business state so reloads always land in Personal.
+    // Always default to Personal view on cold start; do not touch active_business_profile_id.
     localStorage.setItem('business_mode_enabled', 'false');
-    localStorage.removeItem('active_business_profile_id');
     return false;
   });
-  const [activeBusinessProfileId, setActiveBusinessProfileIdState] = useState<string | null>(null);
+  const [activeBusinessProfileId, setActiveBusinessProfileIdState] = useState<string | null>(
+    () => localStorage.getItem('active_business_profile_id')
+  );
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
@@ -81,6 +82,25 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       if (!hasStorageConfig) {
         localStorage.setItem('finmate-storage-config', JSON.stringify({ mode: 'cloud', lastSync: new Date().toISOString() }));
         window.dispatchEvent(new Event('storage-mode-restored'));
+      }
+
+      // Validate the remembered business profile still exists (silently clear if not)
+      const storedProfileId = localStorage.getItem('active_business_profile_id');
+      if (storedProfileId) {
+        try {
+          const { data: bp } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('id', storedProfileId)
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          if (!bp) {
+            localStorage.removeItem('active_business_profile_id');
+            setActiveBusinessProfileIdState(null);
+          }
+        } catch {
+          // Network hiccup — leave the stored id alone, switcher will handle invalid state
+        }
       }
 
       // If localStorage already says onboarding is done, trust it and finish
@@ -174,10 +194,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const setBusinessModeEnabled = useCallback((enabled: boolean) => {
     setBusinessModeEnabledState(enabled);
     localStorage.setItem('business_mode_enabled', enabled.toString());
-    if (!enabled) {
-      setActiveBusinessProfileIdState(null);
-      localStorage.removeItem('active_business_profile_id');
-    }
+    // Note: we intentionally KEEP active_business_profile_id when disabling business mode,
+    // so the user's last chosen company is remembered for next time they re-enable it.
   }, []);
 
   const setActiveBusinessProfileId = useCallback((id: string | null) => {
