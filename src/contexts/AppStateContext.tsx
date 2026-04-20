@@ -84,6 +84,25 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         window.dispatchEvent(new Event('storage-mode-restored'));
       }
 
+      // Validate the remembered business profile still exists (silently clear if not)
+      const storedProfileId = localStorage.getItem('active_business_profile_id');
+      if (storedProfileId) {
+        try {
+          const { data: bp } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('id', storedProfileId)
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          if (!bp) {
+            localStorage.removeItem('active_business_profile_id');
+            setActiveBusinessProfileIdState(null);
+          }
+        } catch {
+          // Network hiccup — leave the stored id alone, switcher will handle invalid state
+        }
+      }
+
       // If localStorage already says onboarding is done, trust it and finish
       if (localStorage.getItem('onboarding_completed') === 'true') {
         setOnboardingCompletedState(true);
