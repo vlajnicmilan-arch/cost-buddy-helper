@@ -175,10 +175,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const setBusinessModeEnabled = useCallback((enabled: boolean) => {
     setBusinessModeEnabledState(enabled);
     localStorage.setItem('business_mode_enabled', enabled.toString());
-    if (!enabled) {
-      setActiveBusinessProfileIdState(null);
-      localStorage.removeItem('active_business_profile_id');
-    }
+    // Note: we intentionally KEEP active_business_profile_id when disabling business mode,
+    // so the user's last chosen company is remembered for next time they re-enable it.
   }, []);
 
   const setActiveBusinessProfileId = useCallback((id: string | null) => {
