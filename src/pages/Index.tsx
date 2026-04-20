@@ -476,7 +476,7 @@ const Index = () => {
         businessProfile={businessProfile}
         displayName={displayName}
         onBackToPersonal={() => {
-          setActiveBusinessProfileId(null);
+          setBusinessModeEnabled(false);
           setBusinessTab('dashboard');
         }}
         onAddExpense={addExpenseWithRecurringCheck}
