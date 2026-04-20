@@ -205,10 +205,21 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('family_mode_enabled', enabled.toString());
   }, []);
 
+  const setBusinessFeatureEnabled = useCallback((enabled: boolean) => {
+    setBusinessFeatureEnabledState(enabled);
+    localStorage.setItem('business_feature_enabled', enabled.toString());
+    // When user disables the master switch, also exit any active business view —
+    // but KEEP the active_business_profile_id so it returns when re-enabled.
+    if (!enabled) {
+      setBusinessModeEnabledState(false);
+      localStorage.setItem('business_mode_enabled', 'false');
+    }
+  }, []);
+
   const setBusinessModeEnabled = useCallback((enabled: boolean) => {
     setBusinessModeEnabledState(enabled);
     localStorage.setItem('business_mode_enabled', enabled.toString());
-    // Note: we intentionally KEEP active_business_profile_id when disabling business mode,
+    // Note: we intentionally KEEP active_business_profile_id when disabling business view,
     // so the user's last chosen company is remembered for next time they re-enable it.
   }, []);
 
