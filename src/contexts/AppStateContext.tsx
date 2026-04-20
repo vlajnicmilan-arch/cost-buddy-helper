@@ -48,16 +48,17 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('family_mode_enabled') !== 'false'
   );
-  // Always start each session in Personal mode (per user preference).
-  // The previously selected business profile is forgotten on reload so the
-  // user has to explicitly switch via the BusinessProfileSwitcher.
+  // Always start each session in Personal mode (default view) for safety.
+  // BUT we remember the last active business profile so the BusinessProfileSwitcher
+  // can show it and one click brings the user back into business mode.
   const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(() => {
-    // Clear any persisted business state so reloads always land in Personal.
+    // Always default to Personal view on cold start; do not touch active_business_profile_id.
     localStorage.setItem('business_mode_enabled', 'false');
-    localStorage.removeItem('active_business_profile_id');
     return false;
   });
-  const [activeBusinessProfileId, setActiveBusinessProfileIdState] = useState<string | null>(null);
+  const [activeBusinessProfileId, setActiveBusinessProfileIdState] = useState<string | null>(
+    () => localStorage.getItem('active_business_profile_id')
+  );
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
