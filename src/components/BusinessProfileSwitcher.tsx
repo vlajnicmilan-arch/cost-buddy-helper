@@ -22,7 +22,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!user || !businessModeEnabled) return;
+    if (!user) return;
     supabase
       .from('business_profiles')
       .select('id, company_name, legal_form, is_active')
@@ -31,9 +31,10 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
       .then(({ data }) => {
         if (data) setProfiles(data);
       });
-  }, [user, businessModeEnabled]);
+  }, [user]);
 
-  if (!businessModeEnabled || profiles.length === 0) return null;
+  // Hide only when there are truly no business profiles for this user.
+  if (profiles.length === 0) return null;
 
   const activeProfile = profiles.find(p => p.id === activeBusinessProfileId);
   const isBusinessMode = !!activeBusinessProfileId;
