@@ -37,7 +37,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
   if (profiles.length === 0) return null;
 
   const activeProfile = profiles.find(p => p.id === activeBusinessProfileId);
-  const isBusinessMode = !!activeBusinessProfileId;
+  const isBusinessMode = businessModeEnabled && !!activeBusinessProfileId;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
