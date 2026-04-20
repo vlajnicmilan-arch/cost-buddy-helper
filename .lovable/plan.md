@@ -1,45 +1,39 @@
 
-Problem sam sada precizno locirao. Nije do toga da “možda” publish nije prošao, nego do stvarne rupe u kodu.
+Korisnik želi: app pri pokretanju otvara **osobni mod** (default view), ALI poslovni mod ostaje **uključen u pozadini** — tako da prekidač/switcher u zaglavlju pokazuje da postoji aktivna tvrtka i jedan klik je dovoljan za prebacivanje.
 
-Što je konkretno krivo:
-1. U općem unosu transakcija `src/hooks/useExpenseCRUD.ts` postoji poziv na `notify-project-transaction` preko `invokeNotifyFunction(...)`.
-2. Ali u projektnom ekranu `src/components/projects/ProjectTransactionsTab.tsx` transakcije se spremaju direktno u `expenses` tablicu i nakon spremanja se nigdje ne poziva `notify-project-transaction`.
-3. Zato se u tom toku ne stvara:
-   - zapis u `notifications`
-   - push pokušaj
-   - push log
-4. Znači: backend nije ni dobio naredbu da pošalje obavijest. Zato nema ni in-app ni phone push.
-5. Dodatno, `TransactionNotesThread.tsx` za projektne napomene još koristi stari `supabase.functions.invoke(...)` umjesto novog pouzdanijeg helpera.
+Trenutno stanje (`AppStateContext.tsx` linije 51-59):
+- `businessModeEnabled` se nasilno postavlja na `false`
+- `active_business_profile_id` se briše iz localStorage
 
-Do I know what the issue is?
-Da. Glavni problem je da projektni CRUD flow zaobilazi notification helper i uopće ne okida notify funkcije.
+Što treba: razdvojiti dva koncepta:
+1. **"Posljednja korištena tvrtka"** (`active_business_profile_id`) — pamti se trajno
+2. **"Aktivni view pri startu"** (`businessModeEnabled`) — uvijek `false` na startu (osobni view)
 
-Plan popravka:
-1. U `src/components/projects/ProjectTransactionsTab.tsx`
-   - nakon uspješnog dodavanja projektne transakcije pozvati `invokeNotifyFunction({ functionName: 'notify-project-transaction', ... })`
-   - nakon uspješnog uređivanja projektne transakcije također pozvati isti notify za `updated`
-   - ostaviti to kao fire-and-forget da spremanje transakcije ne blokira
-2. U `src/components/TransactionNotesThread.tsx`
-   - zamijeniti stari `supabase.functions.invoke('notify-note-added')` s `invokeNotifyFunction(...)`
-   - tako i komentari u projektima dobivaju isti pouzdani trag u dijagnostici
-3. U `src/hooks/useProjectPendingTransactions.ts`
-   - pregledati treba li pri odobrenju pending projektne transakcije također slati obavijest ostalim članovima
-   - ako da, dodati isti notify poziv nakon approve
-4. Provjeriti i uskladiti poruke/status logiku
-   - da se notifikacije šalju samo za stvarne promjene
-   - da se ne šalju duplikati kad nema relevantne promjene
-5. Testirati cijeli lanac
-   - dodavanje transakcije unutar projekta
-   - uređivanje transakcije unutar projekta
-   - dodavanje note na projektnu transakciju
-   - provjera da nastane in-app zapis i push pokušaj/log
+Tako korisnik dobiva:
+- Otvori app → vidi osobni mod (sigurnost po defaultu)
+- U zaglavlju `BusinessProfileSwitcher` već zna koja je zadnja tvrtka (jer je ID spremljen)
+- Jedan klik na tvrtku u switcheru → odmah u poslovnom modu te tvrtke
 
-Tehnički detalji:
-- Iskoristit ću već postojeći `src/lib/notifyHelper.ts`
-- Neću dirati auto-generirani Supabase client
-- Neću uvoditi novu arhitekturu nego ću uskladiti projektni flow s već postojećim ispravnim obrascem iz `useExpenseCRUD.ts`
+## Plan izmjena
 
-Očekivani rezultat:
-- Kad se transakcija doda iz projekta, odmah će se okinuti isti notify lanac kao i u ostalim dijelovima aplikacije
-- Ako push opet negdje zapne, barem ćemo imati trag
-- In-app obavijesti više neće izostati samo zato što funkcija nikad nije bila pozvana
+**Datoteka: `src/contexts/AppStateContext.tsx`**
+
+1. `businessModeEnabled` početna vrijednost → uvijek `false` pri startu (kao i sad), ali bez brisanja `active_business_profile_id`
+2. `activeBusinessProfileId` početna vrijednost → čita iz `localStorage.getItem('active_business_profile_id')` umjesto `null`
+3. Ukloniti `localStorage.removeItem('active_business_profile_id')` iz inicijalizacije
+4. U `setBusinessModeEnabled(false)` — NE brisati `active_business_profile_id` (samo ugasiti view, zadržati pamćenje tvrtke)
+
+**Validacija (u postojećem `useEffect` koji razrješava onboarding):**
+- Ako spremljeni `active_business_profile_id` više ne postoji u bazi (obrisana tvrtka), tiho ga obrisati iz localStorage
+
+## Što se NE dira
+- `BusinessProfileSwitcher.tsx` — već radi ispravno, samo će sada vidjeti spremljeni ID
+- `BusinessModeGuard.tsx` — netaknut
+- Push/in-app notifikacije — netaknute (kako si tražio)
+- Auto-generirani fileovi
+
+## Rezultat
+- Otvoriš app → osobni mod (zaštićeno)
+- Zaglavlje pokazuje: "Osobno ▼" + ispod u dropdownu tvoja zadnja tvrtka spremna
+- Jedan klik → poslovni mod aktivne tvrtke
+- Kad u poslovnom modu klikneš "Osobno" → vraćaš se u osobni, ali tvrtka ostaje zapamćena za sljedeći put
