@@ -17,7 +17,7 @@ interface BusinessProfile {
 export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { activeBusinessProfileId, setActiveBusinessProfileId, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+  const { activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
   const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -33,7 +33,8 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
       });
   }, [user]);
 
-  // Hide only when there are truly no business profiles for this user.
+  // Hide if master switch is OFF in Settings, or if user has no business profiles.
+  if (!businessFeatureEnabled) return null;
   if (profiles.length === 0) return null;
 
   const activeProfile = profiles.find(p => p.id === activeBusinessProfileId);
