@@ -18,6 +18,10 @@ interface AppStateContextValue {
   setSimpleModeEnabled: (enabled: boolean) => void;
   familyModeEnabled: boolean;
   setFamilyModeEnabled: (enabled: boolean) => void;
+  // Master switch (controlled from Settings) — does the user want business features at all?
+  businessFeatureEnabled: boolean;
+  setBusinessFeatureEnabled: (enabled: boolean) => void;
+  // Session view flag — is the business view currently open right now?
   businessModeEnabled: boolean;
   setBusinessModeEnabled: (enabled: boolean) => void;
   activeBusinessProfileId: string | null;
