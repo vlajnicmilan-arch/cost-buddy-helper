@@ -55,6 +55,17 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   // Always start each session in Personal mode (default view) for safety.
   // The last active business profile id is preserved separately so the
   // BusinessProfileSwitcher can show it and one click returns to business mode.
+  // Master switch from Settings — persisted. If user upgrades from old build,
+  // migrate from the previous `business_mode_enabled` key (which used to act as master).
+  const [businessFeatureEnabled, setBusinessFeatureEnabledState] = useState<boolean>(() => {
+    const explicit = localStorage.getItem('business_feature_enabled');
+    if (explicit !== null) return explicit === 'true';
+    // Migration: previously `business_mode_enabled === 'true'` meant feature was on
+    return localStorage.getItem('business_mode_enabled') === 'true';
+  });
+  // Always start each session in Personal view (default) for safety.
+  // The last active business profile id is preserved separately so the
+  // BusinessProfileSwitcher can show it and one click returns to business view.
   const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(() => {
     localStorage.setItem('business_mode_enabled', 'false');
     return false;
