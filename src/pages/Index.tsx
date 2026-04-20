@@ -34,9 +34,9 @@ const Index = () => {
   const { storageMode } = useStorage();
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
-  const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
+  const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId, businessModeEnabled, setBusinessModeEnabled } = useAppState();
   const { totalReceivable, totalPayable } = useBusinessDebts();
-  const isBusinessMode = !!activeBusinessProfileId;
+  const isBusinessMode = businessModeEnabled && !!activeBusinessProfileId;
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
 
