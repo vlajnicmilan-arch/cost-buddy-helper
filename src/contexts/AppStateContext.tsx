@@ -49,10 +49,9 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     () => localStorage.getItem('family_mode_enabled') !== 'false'
   );
   // Always start each session in Personal mode (default view) for safety.
-  // BUT we remember the last active business profile so the BusinessProfileSwitcher
-  // can show it and one click brings the user back into business mode.
+  // The last active business profile id is preserved separately so the
+  // BusinessProfileSwitcher can show it and one click returns to business mode.
   const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(() => {
-    // Always default to Personal view on cold start; do not touch active_business_profile_id.
     localStorage.setItem('business_mode_enabled', 'false');
     return false;
   });
