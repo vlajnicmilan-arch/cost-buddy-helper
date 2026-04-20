@@ -1,79 +1,73 @@
 
-Problem sada nije “jedna sitnica”, nego 3 logike koje se međusobno tuku, pa zato prethodna izmjena nije dala rezultat.
+## Problem
 
-## Što sam točno našao
+Korisnik je primijetio: poslovni switcher u zaglavlju sada je **uvijek vidljiv** ako postoji bar jedan poslovni profil — čak i kad korisnik u **Postavkama** ima isključen "Poslovni mod" prekidač.
 
-1. `AppStateContext.tsx`
-- pri startu namjerno stavlja `businessModeEnabled = false`
-- pamti `activeBusinessProfileId`
+To je nuspojava prošlog popravka. U `BusinessProfileSwitcher.tsx` smo uklonili uvjet koji je skrivao komponentu kad je `businessModeEnabled === false`, ali smo time slučajno zaobišli i **glavni master prekidač** iz Postavki.
 
-2. `BusinessProfileSwitcher.tsx`
-- profile učitava samo ako je `businessModeEnabled === true`
-- cijeli switcher skriva ako `businessModeEnabled === false`
+## Što treba
 
-To znači: app se otvori u osobnom modu, ali istovremeno sakrije jedini UI koji bi trebao pokazati zapamćenu tvrtku. Zato izgleda kao da promjena “ne radi”.
+Postoje **tri** različita stanja koja se moraju razlikovati:
 
-3. `Index.tsx`
-- poslovni prikaz određuje s `const isBusinessMode = !!activeBusinessProfileId`
-- povratak na osobni radi tako da briše `activeBusinessProfileId`
+1. **Master prekidač u Postavkama** (`businessModeEnabled` u Postavkama) — "Želim li uopće vidjeti poslovne funkcije u aplikaciji?"
+2. **Trenutni view** (osobni vs poslovni ekran) — "Što sad gledam?"
+3. **Zapamćena tvrtka** (`activeBusinessProfileId`) — "Koja je zadnja tvrtka koju sam koristio?"
 
-To ruši originalnu želju:
-- čim se vratiš na osobni, briše se zapamćena tvrtka
-- a ako bi ID ostao spremljen, `Index.tsx` bi te odmah opet prebacio u poslovni prikaz
+Trenutno smo #1 i #2 spojili u istu varijablu (`businessModeEnabled`), pa kad jedno gasimo, gasimo i drugo.
 
-## Plan popravka
+## Istraga koju moram napraviti
 
-### 1. Razdvojiti “zapamćena tvrtka” od “trenutno otvoren poslovni prikaz”
-U `AppStateContext.tsx` ostaviti:
-- `activeBusinessProfileId` = zadnja korištena tvrtka
-- `businessModeEnabled` = samo je li poslovni prikaz trenutno otvoren
+Prije nego predložim popravak, trebam pogledati:
+- `src/contexts/AppStateContext.tsx` — kako je sada strukturirano stanje
+- `src/components/settings/` — gdje je master prekidač u Postavkama i koju varijablu koristi
+- `src/components/BusinessProfileSwitcher.tsx` — trenutni uvjet vidljivosti
+- `src/pages/Index.tsx` — kako se odlučuje o prikazu
 
-### 2. Ispraviti odluku koji se ekran prikazuje
-U `Index.tsx` promijeniti logiku:
-- poslovni ekran se otvara samo kad je `businessModeEnabled === true` i postoji `activeBusinessProfileId`
-- osobni ekran ostaje default pri pokretanju
+## Predložena strategija (visoki nivo)
 
-### 3. Ne brisati zadnju tvrtku kad se vratiš u osobni mod
-U `Index.tsx` i `BusinessProfileSwitcher.tsx` promijeniti “back to personal” ponašanje:
-- isključi poslovni prikaz
-- ali NE briši `activeBusinessProfileId`
+Razdvojiti master prekidač iz Postavki od dnevnog view-toggla:
 
-### 4. Prikazati switcher i u osobnom modu ako postoji zapamćena tvrtka
-U `BusinessProfileSwitcher.tsx`:
-- dohvatiti profile i kad `businessModeEnabled` nije uključen
-- ne skrivati komponentu samo zato što je osobni mod aktivan
-- u osobnom modu prikazati “Osobno”, ali u dropdownu ponuditi zadnju/spremljene tvrtke za 1 klik povratka
+- **`businessFeatureEnabled`** (novo, iz Postavki) — master sklopka. Ako je `false`, switcher je nevidljiv, poslovni mod nedostupan.
+- **`businessViewActive`** (preimenovano `businessModeEnabled`) — trenutni view. Resetira se na `false` pri startu.
+- **`activeBusinessProfileId`** — pamti se kao i sad.
 
-### 5. Očistiti rubne slučajeve
-- ako spremljena tvrtka više ne postoji, tiho obrisati spremljeni ID
-- ako korisnik izgubi pristup poslovnom dijelu, guard i dalje smije ugasiti poslovni prikaz, ali bez nekonzistentnog stanja
+Switcher je vidljiv samo ako: `businessFeatureEnabled === true` **I** postoji bar 1 poslovni profil.
 
-## Rezultat nakon popravka
+**Alternativa (manji rez):** Ne uvoditi novu varijablu, samo dodati provjeru postavke iz Postavki (gdje god se ona čuva — vjerojatno localStorage ključ) u `BusinessProfileSwitcher` i u `Index.tsx`.
 
-Željeno ponašanje će biti:
-- otvoriš app
-- vidiš osobni mod
-- u zaglavlju i dalje imaš poslovni switcher / zapamćenu tvrtku
-- jednim klikom se vraćaš u zadnju tvrtku
-- kad opet izađeš iz poslovnog moda, tvrtka ostaje zapamćena
+## Pitanja prije plana
 
-## Datoteke za izmjenu
-- `src/contexts/AppStateContext.tsx`
-- `src/components/BusinessProfileSwitcher.tsx`
-- `src/pages/Index.tsx`
+Trebam razjasniti gdje točno se nalazi taj "master prekidač" u Postavkama da znam koju varijablu koristi, jer u kodu vidim samo `businessModeEnabled` koji sad služi i kao trenutni view. Pogledat ću kod prije finalnog plana — ali već sad znam smjer popravka.
 
-## Dodatno što sam usput našao
-U konzoli postoje i odvojena React upozorenja s `ref` prosljeđivanjem u:
-- `WelcomeChecklist.tsx`
-- `PaymentSourcesSection.tsx`
+## Konkretan plan popravka
 
-To nije glavni uzrok ovog business-mode problema, ali vrijedi srediti odmah nakon toga jer stvara warninge i može kasnije praviti dodatnu zbrku.
+**1. Pronaći master prekidač u Postavkama** i utvrditi koristi li istu varijablu `businessModeEnabled` ili nešto drugo (npr. localStorage `business_feature_enabled`).
 
-## Tehnički sažetak
-Trenutni bug nije u spremanju podataka nego u kontradikciji između 3 mjesta:
-- stanje se pamti
-- UI za povratak se skriva
-- povratak na osobni briše spremljenu tvrtku
-- prikaz poslovnog ekrana ovisi o krivom signalu
+**2. Ako koristi istu varijablu** → uvesti razdvajanje:
+- `businessFeatureEnabled` (perzistentno, kontrolirano iz Postavki) — kontrolira VIDLJIVOST switchera
+- `businessViewActive` (sesijski, default `false`) — kontrolira AKTIVNI VIEW
 
-Kad odobriš, napravit ću mali, ciljani popravak ta tri mjesta umjesto još jednog parcijalnog workarounda.
+**3. `BusinessProfileSwitcher.tsx`**: prikazuj samo ako `businessFeatureEnabled && profiles.length > 0`.
+
+**4. `Index.tsx`**: poslovni view se renderira samo ako `businessFeatureEnabled && businessViewActive && activeBusinessProfileId`.
+
+**5. Postavke**: prekidač "Poslovni mod" sada kontrolira `businessFeatureEnabled`. Kad ga isključiš → switcher nestaje, view se vraća na osobni, ali zapamćena tvrtka se ČUVA (vraća se kad ponovo uključiš).
+
+**6. Migracija stanja**: postojeći korisnici koji su imali `businessModeEnabled = true` trebaju automatski dobiti `businessFeatureEnabled = true` da im se ništa ne pokvari.
+
+## Datoteke koje ću mijenjati
+- `src/contexts/AppStateContext.tsx` — uvesti `businessFeatureEnabled`, zadržati `businessModeEnabled` kao session view-flag
+- `src/components/BusinessProfileSwitcher.tsx` — provjera `businessFeatureEnabled` umjesto `businessModeEnabled`
+- `src/pages/Index.tsx` — uskladiti uvjet prikaza
+- `src/components/settings/` (točan file utvrdit ću čitanjem) — prekidač spojiti na `businessFeatureEnabled`
+
+## Što se NE dira
+- `BusinessModeGuard.tsx`
+- Push/in-app notifikacije
+- Auto-generirani fileovi
+- Logika podataka, RLS, edge funkcije
+
+## Rezultat
+- Postavke → "Poslovni mod" ISKLJUČEN: switcher u zaglavlju nestaje, app radi kao čisto osobna
+- Postavke → "Poslovni mod" UKLJUČEN: switcher se pojavi, otvoriš app u osobnom view-u, jednim klikom u zadnju tvrtku
+- Tvoj zadnji izbor tvrtke pamti se neovisno o tome jesi li trenutno u osobnom ili poslovnom view-u
