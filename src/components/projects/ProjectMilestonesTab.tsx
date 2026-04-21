@@ -47,6 +47,7 @@ export const ProjectMilestonesTab = ({
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { addMilestone, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
+  const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
@@ -286,15 +287,17 @@ export const ProjectMilestonesTab = ({
                           +{formatAmount(overAmount)}
                         </Badge>
                       )}
-                      {isManager && !isContingency && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setRevisionsTarget(milestone); setRevisionsDialogOpen(true); }}
-                          className="ml-auto inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-                          title={t('projects.revisions.viewHistory', 'Povijest promjena budžeta')}
-                        >
-                          <History className="w-3 h-3" />
-                        </button>
+                      {isManager && (
+                        <div className="ml-auto">
+                          <MilestoneRevisionTrendBadge
+                            revisionCount={getRevisionCount(milestone.id)}
+                            recentTrend={getRecentTrend(milestone.id, 30)}
+                            isContingency={isContingency}
+                            contingencyOriginal={isContingency ? milestone.budget + (milestone.spent || 0) : undefined}
+                            contingencyRemaining={isContingency ? milestone.budget : undefined}
+                            onClick={(e) => { e.stopPropagation(); setRevisionsTarget(milestone); setRevisionsDialogOpen(true); }}
+                          />
+                        </div>
                       )}
                     </div>
                     
