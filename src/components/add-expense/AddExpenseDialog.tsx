@@ -246,9 +246,17 @@ export const AddExpenseDialog = ({
   };
 
   const handleNativeCapture = async (source: 'camera' | 'gallery', multiMode = false) => {
-    const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
-    if (base64) {
-      await processImageBase64(base64, multiMode);
+    console.warn('📸 handleNativeCapture start', { source, multiMode, isNative });
+    try {
+      const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
+      console.warn('📸 handleNativeCapture got base64?', !!base64, 'len=', base64?.length || 0);
+      if (base64) {
+        console.warn('📤 Sending to processImageBase64');
+        await processImageBase64(base64, multiMode);
+      }
+    } catch (err: any) {
+      console.error('📸 handleNativeCapture error:', err);
+      showError(`Greška pri snimanju: ${err?.message || 'nepoznato'}`);
     }
   };
 
