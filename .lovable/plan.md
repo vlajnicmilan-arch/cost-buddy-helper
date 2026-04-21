@@ -1,57 +1,67 @@
 
-## Razumijem — bez novog APK-a
+## Pravi uzrok (potvrđeno iz koda + logova)
 
-Imaš pravo. Kamera je radila prije, znači problem nije u nativnom Capacitor sloju (taj kod već postoji u instaliranom APK-u i ne trebamo ga dirati). Problem je nastao u **web kodu** koji se učitava preko Live Sync — i to mogu popraviti bez ikakvog rebuilda.
+U **tvojim console logovima** vidi se točno trenutak pada:
+```
+[Diag:route_change] { "from": "/app", "to": "/home" }
+[BackButton] route changed: /home public: false
+```
 
-## Gdje je nastao problem
+Ovo se događa **baš dok je nativna kamera otvorena**. Slijed:
 
-Trebam pogledati git/file povijest ovih fileova da nađem točno koji je commit pokvario stvar:
+1. Otvoriš `AddExpenseDialog` (na ruti `/app` ili `/index`)
+2. Klikneš "Skeniraj" → otvara se **nativna Android Camera Activity** kao zasebni Android prozor iznad WebView-a
+3. Slikaš → Android kamera se zatvara → vraća fokus WebView-u → Android operativni sustav usput šalje **`popstate` event** WebView-u (tipično ponašanje pri vraćanju activity-ja)
+4. `BackButtonContext.handlePopState` se okida
+5. `AddExpenseDialog` **nije registriran** preko `useBackButton`, pa `BackButtonContext` misli da nema otvorenog dialoga
+6. Trenutna ruta nije root app ruta → kod izvršava `navigate('/home')`
+7. Ruta se mijenja → `Index` page se demontira → cijeli `AddExpenseDialog` se demontira zajedno s njim
+8. `scanReceipt` koji u međuvremenu uspješno završava (vidimo u edge logovima `200 OK`) **postavlja state na komponenti koje više nema** → `ScannedDataPreview` se ne renderira
+9. Korisnik vidi početni ekran, bez podataka
 
-1. **`src/components/add-expense/AddExpenseDialog.tsx`** — `handleNativeCapture` funkcija (poziva nativnu kameru i šalje na `parse-receipt`)
-2. **`src/hooks/useReceiptScanner.ts`** — `scanReceipt` funkcija (radi fetch na edge funkciju)
-3. **`src/components/add-expense/ReceiptCaptureButtons.tsx`** — gumbi koji okidaju snimanje
+Ovo nije bilo prije jer `BackButtonContext` (s pushanjem `popstate` i navigacijom na `/home`) je dodan tijekom rada na nativnom back gumbu, **isti period kao push notifikacije** — zato djeluje kao da su push krivi, ali zapravo su to dvije nezavisne izmjene iz iste runde.
 
-Ključni dokaz: u Supabase logovima `parse-receipt` edge funkcije **nema poziva** od kad si prijavio problem. Znači slika ni ne kreće s uređaja prema serveru. Pad je u web JS kodu, prije fetcha — i to nakon neke nedavne izmjene koju ću pronaći čitanjem trenutnog stanja tih fileova i usporedbom s logikom koja je nekad radila.
+## Što ću napraviti (samo web kod, bez novog APK-a)
 
-## Što ću točno napraviti (samo web izmjene)
+### Datoteka 1: `src/components/add-expense/AddExpenseDialog.tsx`
+Registrirati dialog u globalni back-button sustav, da `BackButtonContext` zna da je otvoren i ne navigira nigdje:
 
-### Korak 1: Forenzika
-Pročitati trenutno stanje `useNativeCamera.ts`, `AddExpenseDialog.tsx`, `useReceiptScanner.ts` — utvrditi:
-- vraća li `useNativeCamera` strukturirani objekt ili string (ako je nedavno mijenjano, možda pozivatelj još očekuje string i tihi pad uništava tijek)
-- gađa li `scanReceipt` točno endpoint `parse-receipt` s ispravnim payloadom
-- postoji li negdje `early return` koji proguta sliku
+```ts
+import { useBackButton } from '@/hooks/useBackButton';
+// …
+useBackButton(open, () => setOpen(false), 10);
+```
 
-### Korak 2: Vraćanje na poznato dobro ponašanje
-- Vratiti `useNativeCamera` na **jednostavni return tipa string** (`data:image/jpeg;base64,...` ili `null`) — kako je radilo prije, da pozivatelj ne treba mijenjati interface
-- Zadržati `CameraResultType.Base64` ako je to bilo originalno (ili `DataUrl` — što god je bilo u verziji koja je radila)
-- Ukloniti svaki novi permission `request` koji nije bio tamo prije (nativni APK već ima dozvole; novi web kod ih ne treba ponovno tražiti)
+Time kad Android pošalje `popstate` po povratku iz kamere, `handlePopState` vidi otvoreni dialog kao top handler, pozove njegov `onClose` (koji bi normalno zatvorio dialog), **ali** mi imamo `onOpenChange` zaštitu na liniji 697:
+```ts
+if (!isOpen && (scanning || showScannedPreview || isSaving)) return;
+```
+…pa dialog ostaje otvoren dok skeniranje traje. Kad rezultat stigne → `setShowScannedPreview(true)` → preview se pokaže.
 
-### Korak 3: Ponovno spojiti s `scanReceipt`
-- Osigurati da `handleNativeCapture` proslijedi `dataUrl` direktno u `scanReceipt`
-- Dodati 3 mala `console.warn` markera (📸 capture start, 📸 got image size=X, 📤 sending to parse-receipt) **samo radi sljedeće dijagnostike** — bez logičkih izmjena
-- Bez `try/catch` koji proguta grešku bez prikaza
+### Datoteka 2: `src/components/add-expense/AddExpenseDialog.tsx` (ista, mali dodatak)
+Proširiti zaštitu `onOpenChange` da pokriva i prozor **prije** `scanning=true` (dok je nativna kamera otvorena, prije nego što slika krene na server):
+- Dodati ref `cameraActiveRef` koji se postavlja `true` u `handleNativeCapture` prije `nativeTakePhoto`, resetira u `finally` nakon `processImageBase64`
+- Dodati u guard: `if (!isOpen && (scanning || showScannedPreview || isSaving || cameraActiveRef.current)) return;`
 
-### Korak 4: Verifikacija u logovima
-Nakon izmjene, ti probaš slikati račun i ja u sljedećoj poruci provjerim:
-- console logove iz preview-a (vidim li "📸 got image")
-- `parse-receipt` edge logove (vidim li poziv)
+### Datoteka 3: `src/contexts/BackButtonContext.tsx` (sigurnosna mreža)
+Dodati kratak prozor (~500 ms) nakon povratka iz pozadine u kojem `handlePopState` ne radi navigaciju na `/home`. Koristiti `document.visibilitychange` event:
+- Kad `document.visibilityState` postane `hidden` (kamera otvorena) → zapamtiti timestamp
+- Kad ponovno postane `visible` (povratak iz kamere) → 500 ms prozor u kojem se ignorira `popstate` koji nije zatvorio nijedan dialog
 
-Ako poziv stigne na server → kamera + slanje rade, ostalo je serverska logika.
-Ako poziv ne stigne → još imam log točke i znam točno gdje je puklo.
+Ovo štiti **sve buduće dialoge** koji otvaraju nativne plugine (kamera, file picker, share), ne samo `AddExpenseDialog`.
 
 ## Što se NE dira
-- Nativni Android kod / Capacitor plugini → **bez `cap sync`, bez novog APK-a**
-- `parse-receipt` edge funkcija
-- `useReceiptScanner` interna logika
-- Bilo što izvan ova 3 web file-a
+- Nativni Capacitor sloj → **bez `cap sync`, bez novog APK-a, bez `git pull`**
+- `useNativeCamera`, `useReceiptScanner`, `parse-receipt` edge funkcija
+- Push notifikacije i `usePushNotifications` (potvrđeno: nemaju veze)
+- Bilo što izvan ova 2 file-a
 
-## Datoteke za izmjenu (samo web, Live Sync ih dohvaća automatski)
-- `src/hooks/useNativeCamera.ts` — vratiti na jednostavni interface koji je radio
-- `src/components/add-expense/AddExpenseDialog.tsx` — uskladiti `handleNativeCapture` s tim interfaceom
-- (po potrebi) `src/components/add-expense/ReceiptCaptureButtons.tsx` — ako tamo postoji nedavna izmjena koja blokira okidanje
+## Kako ću potvrditi popravak
+Nakon izmjene, ti probaš jednom snimiti račun. Ja u sljedećoj poruci provjerim u tvojim console logovima:
+- **prije**: `[BackButton] route changed: /home` se pojavljivao baš pri povratku iz kamere
+- **poslije**: te promjene rute više nema; umjesto toga vidi se `📤 Sending to processImageBase64` → 17 s pauze → `ScannedDataPreview` se pokaže
 
-## Rezultat
-- Otvoriš app na telefonu (postojeći APK, bez ažuriranja)
-- Live Sync povuče novi web kod
-- Skeniranje računa ponovno radi kao prije
-- Bez nikakvog `git pull`, `npm install`, `cap sync`, niti rebuilda APK-a
+Ako se ipak ne pokaže, imam točan dijagnostički trag i znamo da problem više nije u routeru.
+
+## Zašto nismo prije našli ovo
+Prošla 3 plana su gledali samo `AddExpenseDialog` i `useNativeCamera`. Bug je bio u **trećem mjestu** (`BackButtonContext`) koje je dodano u istoj rundi kad i push notifikacije, pa je djelovalo povezano. Kad se ova izmjena napravi, popravak je trajan i pokriva sve buduće dialoge koji koriste nativne plugine.
