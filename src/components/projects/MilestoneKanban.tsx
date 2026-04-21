@@ -147,6 +147,15 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                           {m.reminder_days_before && m.due_date && (
                             <Bell className="w-3 h-3" />
                           )}
+                          <MilestoneRevisionTrendBadge
+                            revisionCount={getRevisionCount(m.id)}
+                            recentTrend={getRecentTrend(m.id, 30)}
+                            isContingency={!!m.is_contingency}
+                            contingencyOriginal={m.is_contingency ? m.budget + (m.spent || 0) : undefined}
+                            contingencyRemaining={m.is_contingency ? m.budget : undefined}
+                            onClick={(e) => { e.stopPropagation(); onShowRevisions?.(m); }}
+                            compact
+                          />
                         </div>
                         {isManager && (
                           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -232,8 +232,10 @@ export const ProjectMilestonesTab = ({
         <MilestoneKanban
           milestones={milestones}
           isManager={isManager}
+          projectId={projectId}
           onEdit={(m) => openDialog(m)}
           onDelete={handleDelete}
+          onShowRevisions={(m) => { setRevisionsTarget(m); setRevisionsDialogOpen(true); }}
           onStatusChange={async (m, newStatus) => {
             await updateMilestone({ ...m, status: newStatus });
             onRefetch();
