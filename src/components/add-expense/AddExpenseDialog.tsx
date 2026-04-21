@@ -155,6 +155,7 @@ export const AddExpenseDialog = ({
 
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
+  const cameraActiveRef = useRef(false);
 
   const selectedSourceCurrencyCode = useMemo(() => {
     if (!multiCurrencyEnabled) return primaryCurrency.code;
