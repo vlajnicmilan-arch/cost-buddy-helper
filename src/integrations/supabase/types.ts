@@ -1351,6 +1351,36 @@ export type Database = {
           },
         ]
       }
+      health_summaries: {
+        Row: {
+          created_at: string
+          generated_by: string | null
+          id: string
+          language: string
+          metrics_json: Json | null
+          summary_date: string
+          summary_text: string
+        }
+        Insert: {
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          language?: string
+          metrics_json?: Json | null
+          summary_date?: string
+          summary_text: string
+        }
+        Update: {
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          language?: string
+          metrics_json?: Json | null
+          summary_date?: string
+          summary_text?: string
+        }
+        Relationships: []
+      }
       income_source_invitations: {
         Row: {
           created_at: string
@@ -1976,6 +2006,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      monitor_alerts_log: {
+        Row: {
+          affected_users: number
+          alert_signature: string
+          created_at: string
+          details: Json | null
+          error_count: number
+          id: string
+          notified: boolean
+          sample_message: string | null
+          sample_route: string | null
+          triggered_at: string
+        }
+        Insert: {
+          affected_users?: number
+          alert_signature: string
+          created_at?: string
+          details?: Json | null
+          error_count?: number
+          id?: string
+          notified?: boolean
+          sample_message?: string | null
+          sample_route?: string | null
+          triggered_at?: string
+        }
+        Update: {
+          affected_users?: number
+          alert_signature?: string
+          created_at?: string
+          details?: Json | null
+          error_count?: number
+          id?: string
+          notified?: boolean
+          sample_message?: string | null
+          sample_route?: string | null
+          triggered_at?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -3699,7 +3768,9 @@ export type Database = {
     Functions: {
       cleanup_old_chat_messages: { Args: never; Returns: undefined }
       cleanup_old_diagnostic_logs: { Args: never; Returns: undefined }
+      cleanup_old_health_summaries: { Args: never; Returns: undefined }
       cleanup_old_login_logs: { Args: never; Returns: undefined }
+      cleanup_old_monitor_alerts: { Args: never; Returns: undefined }
       cleanup_old_push_logs: { Args: never; Returns: undefined }
       consume_invitation_token: {
         Args: { _invitation_type: string; _token: string }

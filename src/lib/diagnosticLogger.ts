@@ -144,6 +144,75 @@ export const logDiagnostic = (input: DiagnosticEventInput | string, details?: Re
 
 export const getDiagnosticSessionId = () => SESSION_ID;
 
+/**
+ * Log a performance metric (page load, slow action, etc.) into the same
+ * `app_diagnostics_logs` table under event = 'performance_metric'.
+ * Lightweight — uses the same buffer/flush pipeline.
+ */
+export const logPerformance = (
+  action: string,
+  durationMs: number,
+  metadata?: Record<string, unknown>
+) => {
+  if (!Number.isFinite(durationMs) || durationMs < 0) return;
+  logDiagnostic('performance_metric', {
+    action,
+    duration_ms: Math.round(durationMs),
+    ...(metadata ?? {}),
+  });
+};
+
+/**
+ * Wrap an async function and automatically log its duration as a performance
+ * metric. Only logs when duration exceeds the threshold (default 2000 ms) to
+ * keep the diagnostics table noise-free.
+ */
+export const withPerfTracking = async <T>(
+  action: string,
+  fn: () => Promise<T>,
+  options?: { thresholdMs?: number; metadata?: Record<string, unknown> }
+): Promise<T> => {
+  const threshold = options?.thresholdMs ?? 2000;
+  const start = performance.now();
+  try {
+    const result = await fn();
+    const dur = performance.now() - start;
+    if (dur >= threshold) {
+      logPerformance(action, dur, options?.metadata);
+    }
+    return result;
+  } catch (err) {
+    const dur = performance.now() - start;
+    if (dur >= threshold) {
+      logPerformance(action, dur, { ...(options?.metadata ?? {}), failed: true });
+    }
+    throw err;
+  }
+};
+
+// ----- Auto page-load timing -----
+if (typeof window !== 'undefined' && 'performance' in window) {
+  // After full load, capture navigation timing once.
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      try {
+        const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+        const nav = navEntries[0];
+        if (!nav) return;
+        const loadDuration = nav.loadEventEnd - nav.startTime;
+        if (loadDuration > 0 && loadDuration < 60_000) {
+          logPerformance('page_load', loadDuration, {
+            domContentLoaded: Math.round(nav.domContentLoadedEventEnd - nav.startTime),
+            ttfb: Math.round(nav.responseStart - nav.startTime),
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+  });
+}
+
 // Best-effort flush before the page unloads.
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
