@@ -419,53 +419,89 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-9 h-9">
-            <TabsTrigger value="pulse" className="text-xs gap-1 px-1">
-              <Heart className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">Pulse</span>
-              <span className="sm:hidden">Pulse</span>
-            </TabsTrigger>
-            <TabsTrigger value="stats" className="text-xs gap-1 px-1">
-              <BarChart3 className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">Statistika</span>
-              <span className="sm:hidden">Stats</span>
-            </TabsTrigger>
-            <TabsTrigger value="users" className="text-xs gap-1 px-1">
-              <Users className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">Korisnici</span>
-              <span className="sm:hidden">Users</span>
-            </TabsTrigger>
-            <TabsTrigger value="billing" className="text-xs gap-1 px-1">
-              <CreditCard className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">Pretplate</span>
-              <span className="sm:hidden">Sub</span>
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="text-xs gap-1 px-1">
-              <Bug className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">Prijave</span>
-              <span className="sm:hidden">Bug</span>
-            </TabsTrigger>
-            <TabsTrigger value="notify" className="text-xs gap-1 px-1">
-              <Bell className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">Obavijesti</span>
-              <span className="sm:hidden">Slanje</span>
-            </TabsTrigger>
-            <TabsTrigger value="pushlogs" className="text-xs gap-1 px-1">
-              <BellRing className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">Push log</span>
-              <span className="sm:hidden">Push</span>
-            </TabsTrigger>
-            <TabsTrigger value="apk" className="text-xs gap-1 px-1">
-              <Package className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">APK</span>
-              <span className="sm:hidden">APK</span>
-            </TabsTrigger>
-            <TabsTrigger value="diagnostics" className="text-xs gap-1 px-1">
-              <Activity className="w-3 h-3 shrink-0" />
-              <span className="hidden sm:inline">Dijagnostika</span>
-              <span className="sm:hidden">Diag</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="sticky top-0 z-10 -mx-4 px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <TabsList
+              ref={tabsListRef}
+              className="w-full h-auto flex items-stretch justify-start gap-1 overflow-x-auto overflow-y-hidden p-1 rounded-md [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {/* Pregled */}
+              <TabsTrigger
+                value="pulse"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <Heart className="w-4 h-4 shrink-0" />
+                <span>Pulse</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="stats"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <BarChart3 className="w-4 h-4 shrink-0" />
+                <span>Statistika</span>
+              </TabsTrigger>
+
+              <div className="w-px self-stretch bg-border/60 mx-1 flex-shrink-0" aria-hidden="true" />
+
+              {/* Korisnici */}
+              <TabsTrigger
+                value="users"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <Users className="w-4 h-4 shrink-0" />
+                <span>Korisnici</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="billing"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <CreditCard className="w-4 h-4 shrink-0" />
+                <span>Pretplate</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="reports"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <Bug className="w-4 h-4 shrink-0" />
+                <span>Prijave</span>
+              </TabsTrigger>
+
+              <div className="w-px self-stretch bg-border/60 mx-1 flex-shrink-0" aria-hidden="true" />
+
+              {/* Komunikacija */}
+              <TabsTrigger
+                value="notify"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <Bell className="w-4 h-4 shrink-0" />
+                <span>Obavijesti</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="pushlogs"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <BellRing className="w-4 h-4 shrink-0" />
+                <span>Push log</span>
+              </TabsTrigger>
+
+              <div className="w-px self-stretch bg-border/60 mx-1 flex-shrink-0" aria-hidden="true" />
+
+              {/* Sustav */}
+              <TabsTrigger
+                value="apk"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <Package className="w-4 h-4 shrink-0" />
+                <span>APK</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="diagnostics"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <Activity className="w-4 h-4 shrink-0" />
+                <span>Dijagnostika</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* STATS TAB */}
           <TabsContent value="stats" className="space-y-4 mt-4">
