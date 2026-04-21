@@ -144,7 +144,7 @@ export const MilestoneRevisionTrendBadge = ({
           : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground hover:bg-muted/60',
         glowClass
       )}
-      title={glowTitle || t('projects.revisions.viewHistory', 'Povijest promjena budžeta')}
+      title={glowTitle || planRevisedTitle || t('projects.revisions.viewHistory', 'Povijest promjena budžeta')}
     >
       <History className="w-3 h-3" />
       <span>{revisionCount}</span>
