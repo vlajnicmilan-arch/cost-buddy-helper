@@ -22,10 +22,9 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Pull all milestones with a positive budget that are not completed.
-    // We don't filter by spent here — `spent` is a computed value the app maintains.
     const { data: milestones, error: mError } = await supabase
       .from("project_milestones")
-      .select("id, project_id, name, budget, spent, status, is_contingency")
+      .select("id, project_id, name, budget, status, is_contingency")
       .gt("budget", 0)
       .neq("status", "completed");
 
@@ -39,8 +38,22 @@ Deno.serve(async (req) => {
       if (m.is_contingency) continue;
 
       const budget = Number(m.budget) || 0;
-      const spent = Number(m.spent) || 0;
       if (budget <= 0) continue;
+
+      // Compute "spent" for this milestone from `expenses` (mirrors the app's logic):
+      // only `type='expense'`, exclude transfers and balance corrections.
+      const { data: spentRows, error: spentErr } = await supabase
+        .from("expenses")
+        .select("amount, expense_nature")
+        .eq("milestone_id", m.id)
+        .eq("type", "expense");
+      if (spentErr) {
+        console.warn("Failed to compute spent for milestone", m.id, spentErr);
+        continue;
+      }
+      const spent = (spentRows || [])
+        .filter((r: any) => r.expense_nature !== "transfer" && r.expense_nature !== "correction")
+        .reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0);
 
       const usagePct = (spent / budget) * 100;
       // Pick the highest threshold reached (100 wins over 80).
