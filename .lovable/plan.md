@@ -1,69 +1,74 @@
 
 
-## Što slijedi — sljedeći logični koraci
+## Opcija C — Notifikacije i proaktivna upozorenja
 
-Završili smo **Razinu 1 + Razinu 2** plana za nepredviđene troškove. Evo 4 prirodna nastavka, poredana po vrijednosti:
-
----
-
-### Opcija A — Vizualni indikatori i povijest na karticama faza ⭐ preporučeno
-Dodati na svaku karticu faze (Kanban i lista):
-- 📜 **Badge s brojem revizija** (npr. "3 promjene") → klik otvara `MilestoneRevisionsDialog`
-- ↗ / ↘ **Trend strelica** ako je budžet mijenjan u zadnjih 30 dana (zelena = ušteda, crvena = premašaj)
-- 🛡️ **Status rezerve** — koliko je preostalo od početne rezerve (npr. "Rezerva: 800 € / 1.000 €")
-
-**Zašto prvo:** sustav već bilježi revizije, ali korisnik ih trenutno mora aktivno otvarati kroz dialog. Bez vizualnih signala ne zna da postoje. Ovo je "kompletiranje" prethodnog rada.
+Nadograđujemo sustav iz pasivnog (korisnik mora otvoriti dialog) u **proaktivnog asistenta** koji sam upozorava na rizike.
 
 ---
 
-### Opcija B — Izvještaj o reviziju budžeta u Project Reports
-Proširiti postojeći `ProjectReportsDialog` s novom sekcijom **"Promjene budžeta"**:
-- Ukupan iznos premašaja po kategoriji (Premašaj/Ušteda/Promjena opsega/Korekcija)
-- Top 3 faze s najviše promjena
-- Iskorištenost rezerve (koliko od 10 % je potrošeno)
-- Argument prema klijentu: "Od 12.000 € premašaja, 8.000 € otpada na promjene opsega"
+### Što ćemo izgraditi
 
-**Zašto:** zatvara cijeli ciklus — od bilježenja do iskorištenja podataka. Direktna poslovna vrijednost.
+**1. In-app obavijest "Faza blizu limita" (80 % i 100 %)**
+- Edge funkcija `check-milestone-budgets` (cron, 1×/dan u 8:00)
+- Prolazi kroz sve aktivne faze i provjerava: `spent / planned_amount`
+- Trigger pragovi:
+  - **80 %** → "🟡 Faza X je na 85 % budžeta"
+  - **100 %** → "🔴 Faza X je premašila budžet za 12 %"
+- Šalje **push obavijest** + **in-app notifikaciju** (`notifications` tablica)
+- Anti-spam: jedna obavijest po fazi po pragu (bilježi u `milestone_budget_alerts`)
 
----
+**2. Auto-prijedlog povlačenja iz rezerve**
+- Kad korisnik otvori `MilestoneBudgetChangeSection` za fazu koja je **iznad 100 %**
+- Provjeri postoji li `is_contingency=true` faza s preostalim sredstvima
+- Ako da → automatski preselektira opciju "Premjesti iz druge faze" + linked_milestone_id na rezervu
+- Prikaže info bedž: "💡 Predlažemo povlačenje iz Rezerve (preostalo 800 €)"
 
-### Opcija C — Notifikacije i upozorenja
-- **Push/in-app obavijest** kad je faza prešla 80 % budžeta ("Faza X je na 85 % budžeta — razmisli o reviziji")
-- **Auto-prijedlog povlačenja iz rezerve** kad faza pređe 100 % i postoji rezerva
-- **Tjedni sažetak** revizija po projektu
-
-**Zašto:** pretvara pasivni alat u proaktivnog asistenta. Najveća korisnost, ali najviše rada.
-
----
-
-### Opcija D — Druga tema (npr. izvještaji, šihterica, AI asistent)
-Pauziramo nepredviđene troškove i prelazimo na nešto drugo iz tvojeg backloga.
-
----
-
-## Moja preporuka
-
-Idi s **Opcijom A** sada — to je 30 min posla i zatvara prošlu rundu tako da korisnik **vidi** vrijednost onoga što smo upravo izgradili. Bez vizualnih indikatora cijela ta funkcionalnost je "skrivena" iza dialoga koji nitko neće otvoriti bez razloga.
-
-Onda **Opcija B** kao sljedeći korak (poslovna vrijednost), a **Opcija C** kasnije kad sve sjedne.
+**3. Vizualna upozorenja na karticama (bez novih notifikacija)**
+- Kartica faze ≥80 % → žuti glow oko `MilestoneRevisionTrendBadge`
+- Kartica faze ≥100 % → crveni glow + pulse animacija
+- Ovo su trenutni vizualni signali, ne notifikacije — uvijek vidljivi
 
 ---
 
-## Implementacija Opcije A (ako odobriš)
+### Tehničke odluke
 
-**Datoteke:**
-- `src/components/projects/MilestoneKanban.tsx` — dodati badge i trend strelicu na karticu
-- `src/components/projects/ProjectMilestonesTab.tsx` — isto za list view
-- `src/hooks/useMilestoneRevisions.ts` — dodati pomoćne metode `getRevisionCount(milestoneId)` i `getRecentTrend(milestoneId, days)`
-- `src/components/projects/MilestoneRevisionTrendBadge.tsx` (nova) — reusable mali badge
-
-**Logika rezerve:** za fazu s `is_contingency=true` prikazati postotak preostalog umjesto trenda (jer rezerva nije pravi trošak).
-
-**Lokalizacija:** dodati ~6 novih ključeva u hr/en/de.
-
-**Bez izmjena baze.** Sve se gradi na već postojećim podacima.
+| Pitanje | Odluka | Razlog |
+|---|---|---|
+| Push ili samo in-app? | **Oboje** | Sustav već ima push infrastrukturu, kritične financijske informacije zaslužuju push |
+| Cron ili real-time trigger? | **Cron 1×/dan** | Real-time = spam pri svakoj transakciji. Dnevno je dovoljno za budžet alerts |
+| Anti-spam | **Nova tablica `milestone_budget_alerts`** | Bilježi `(milestone_id, threshold, sent_at)` da se isti prag ne šalje 2× |
+| Tjedni sažetak | **Odgađamo za kasnije** | Dnevni alerti pokrivaju 90 % vrijednosti; sažetak je nice-to-have |
 
 ---
 
-**Reci A, B, C, D ili predloži svoje.**
+### Datoteke / promjene
+
+**Baza (1 migracija):**
+- Nova tablica `milestone_budget_alerts` (anti-spam log)
+- RLS: korisnik vidi svoje, edge funkcija piše service role
+
+**Backend (1 nova edge funkcija):**
+- `supabase/functions/check-milestone-budgets/index.ts` — cron job
+- Cron registracija (pg_cron, 8:00 svaki dan)
+
+**Frontend:**
+- `src/components/projects/MilestoneBudgetChangeSection.tsx` — dodati auto-prijedlog rezerve
+- `src/components/projects/MilestoneKanban.tsx` — glow class na kartici
+- `src/components/projects/ProjectMilestonesTab.tsx` — glow class na redu liste
+- `src/components/projects/MilestoneRevisionTrendBadge.tsx` — primati `usagePct` prop za glow
+- `src/i18n/locales/{hr,en,de}.json` — ~8 novih ključeva (notifikacije + glow tooltips)
+
+**Bez izmjena:** `useNotifications`, `usePushNotifications` — postojeća infrastruktura već radi.
+
+---
+
+### Što ostaje za kasnije (ne radimo sada)
+
+- ❌ Tjedni sažetak revizija (može doći s Opcijom D)
+- ❌ Email obavijesti (već imamo push + in-app, dovoljno)
+- ❌ Custom pragovi po projektu (sad fiksno 80/100, kasnije postavke)
+
+---
+
+**Reci "Idemo" za potvrdu, ili predloži izmjene.**
 
