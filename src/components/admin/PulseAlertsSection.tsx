@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { Loader2, RefreshCw, AlertTriangle, BellRing } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle, BellRing, ChevronRight } from 'lucide-react';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { PulseAlertDetailDialog } from './PulseAlertDetailDialog';
 
 interface AlertRow {
   id: string;
