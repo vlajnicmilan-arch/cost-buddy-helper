@@ -206,17 +206,11 @@ export const AddExpenseDialog = ({
     }
   }, [type, getSuggestedCategory, aiCategorize, merchantName]);
 
-  // Register with global back-button system so Android popstate (e.g. when the
-  // native camera activity returns) does NOT navigate the app to /home and
-  // unmount this dialog mid-scan. The onClose callback respects the same
-  // guards as onOpenChange below (scanning, preview, saving, camera active).
-  const handleBackClose = useCallback(() => {
-    if (scanning || showScannedPreview || isSaving || cameraActiveRef.current) return;
-    setOpen(false);
-  }, [scanning, showScannedPreview, isSaving]);
-  useBackButton(open, handleBackClose, 10);
-
   useEffect(() => {
+    if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
+      setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
+    }
+  }, [open, customPaymentSources]);
     if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
       setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
     }
