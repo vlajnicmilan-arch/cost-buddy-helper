@@ -133,6 +133,10 @@ const JoinProject = () => {
           setActiveBusinessProfileId(chosenBusinessProfileId);
           localStorage.setItem('business_mode_enabled', 'true');
           localStorage.setItem('active_business_profile_id', chosenBusinessProfileId);
+        } else if (chosenContext === 'business' && !chosenBusinessProfileId) {
+          // Joined as general business (no specific profile) — just enable business mode
+          setBusinessModeEnabled(true);
+          localStorage.setItem('business_mode_enabled', 'true');
         } else if (chosenContext === 'personal') {
           setBusinessModeEnabled(false);
           setActiveBusinessProfileId(null);
