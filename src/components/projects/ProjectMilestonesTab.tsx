@@ -245,19 +245,21 @@ export const ProjectMilestonesTab = ({
         </div>
       ) : viewMode === 'list' ? (
         <div className="space-y-3">
-          {milestones.map((milestone) => {
+          {[...milestones].sort((a, b) => Number(!!b.is_contingency) - Number(!!a.is_contingency)).map((milestone) => {
             const budgetUsed = milestone.budget > 0 
               ? ((milestone.spent || 0) / milestone.budget) * 100 
               : 0;
             const isOverBudget = milestone.budget > 0 && (milestone.spent || 0) > milestone.budget;
             const overAmount = isOverBudget ? (milestone.spent || 0) - milestone.budget : 0;
+            const isContingency = !!milestone.is_contingency;
 
             return (
               <div 
                 key={milestone.id}
                 className={cn(
                   "p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow",
-                  isOverBudget && "border-destructive/40 bg-destructive/5"
+                  isOverBudget && "border-destructive/40 bg-destructive/5",
+                  isContingency && "border-dashed border-muted-foreground/40 bg-muted/20"
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -265,15 +267,32 @@ export const ProjectMilestonesTab = ({
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      {isContingency && <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
                       <h4 className="font-medium truncate">{milestone.name}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        {MILESTONE_STATUS_LABELS[milestone.status]}
-                      </Badge>
-                      {isOverBudget && (
+                      {isContingency ? (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {t('projects.contingency.badge', 'Rezerva')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          {MILESTONE_STATUS_LABELS[milestone.status]}
+                        </Badge>
+                      )}
+                      {isOverBudget && !isContingency && (
                         <Badge variant="destructive" className="text-xs gap-1">
                           <AlertTriangle className="w-3 h-3" />
                           +{formatAmount(overAmount)}
                         </Badge>
+                      )}
+                      {isManager && !isContingency && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setRevisionsTarget(milestone); setRevisionsDialogOpen(true); }}
+                          className="ml-auto inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+                          title={t('projects.revisions.viewHistory', 'Povijest promjena budžeta')}
+                        >
+                          <History className="w-3 h-3" />
+                        </button>
                       )}
                     </div>
                     
