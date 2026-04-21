@@ -24,6 +24,8 @@ export const PulseAlertsSection = () => {
   const [alerts, setAlerts] = useState<AlertRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<AlertRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
