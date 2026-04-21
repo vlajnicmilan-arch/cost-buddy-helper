@@ -25,7 +25,8 @@ interface ProjectDialogProps {
   project?: Project | null;
   onSave: (
     project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
-    template?: ProjectTemplate | null
+    template?: ProjectTemplate | null,
+    addContingency?: boolean
   ) => Promise<void>;
   onUpdate?: (project: Project) => Promise<void>;
 }
@@ -50,6 +51,7 @@ export const ProjectDialog = ({
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+  const [addContingency, setAddContingency] = useState(true);
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
 
@@ -109,7 +111,7 @@ export const ProjectDialog = ({
       if (project && onUpdate) {
         await onUpdate({ ...project, ...projectData });
       } else {
-        await onSave(projectData, selectedTemplate);
+        await onSave(projectData, selectedTemplate, addContingency);
       }
       onOpenChange(false);
     } finally {
@@ -303,6 +305,26 @@ export const ProjectDialog = ({
               </Popover>
             </div>
           </div>
+
+          {/* Contingency reserve opt-in (only for new projects with a budget) */}
+          {!isEdit && parseFloat(totalBudget) > 0 && (
+            <label className="flex items-start gap-2 p-3 rounded-lg border bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors">
+              <input
+                type="checkbox"
+                checked={addContingency}
+                onChange={(e) => setAddContingency(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+              />
+              <div className="flex-1 text-xs">
+                <div className="font-medium flex items-center gap-1.5">
+                  🛡️ {t('projects.contingency.add', 'Dodaj rezervu za nepredviđeno (10%)')}
+                </div>
+                <div className="text-muted-foreground mt-0.5">
+                  {t('projects.contingency.help', 'Posebna faza koja čuva 10% budžeta za nepredviđene troškove. Preporučeno.')}
+                </div>
+              </div>
+            </label>
+          )}
 
           {/* Preview */}
           <div className="p-3 rounded-lg border bg-muted/50">
