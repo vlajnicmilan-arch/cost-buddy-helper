@@ -110,7 +110,21 @@
       "coverageShort": { "increase_total": "Povećan ukupni budžet", "transfer": "Prijenos", "contingency": "Iz rezerve" },
       "reserveTooltip": "Preostala rezerva za nepredviđeno",
       "trendOverrun": "Premašaj u zadnjih 30 dana",
-      "trendSaving": "Ušteda u zadnjih 30 dana"
+      "trendSaving": "Ušteda u zadnjih 30 dana",
+      "tabLabel": "Promjene",
+      "totalChanges": "Promjena ukupno",
+      "netChange": "Neto promjena",
+      "totalOverruns": "Ukupni premašaji",
+      "totalSavings": "Ukupne uštede",
+      "byCategory": "Po kategoriji promjene",
+      "scopeArgument": "Od {{total}} premašaja, {{scope}} otpada na promjene opsega — argument za dodatnu naplatu prema klijentu.",
+      "reserveUsage": "Iskorištenost rezerve",
+      "reserveExhausted": "Rezerva je u potpunosti iskorištena.",
+      "reserveRemaining": "Preostalo {{amt}} za nepredviđene troškove.",
+      "topChanged": "Faze s najviše promjena",
+      "recentActivity": "Kronologija promjena",
+      "unknownPhase": "Nepoznata faza",
+      "emptyHint": "Svaka izmjena budžeta faze automatski se bilježi ovdje za potpunu transparentnost."
     },
     "standup": {
       "title": "Dnevni izvještaj",
