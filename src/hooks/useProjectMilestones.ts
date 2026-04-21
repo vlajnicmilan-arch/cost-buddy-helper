@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { ProjectMilestone, MilestoneStatus } from '@/types/project';
+import { ProjectMilestone, MilestoneStatus, Project } from '@/types/project';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { PendingRevisionInput } from '@/types/milestoneRevision';
 
 export const useProjectMilestones = (projectId: string | null) => {
   const { user } = useAuth();
@@ -52,6 +53,7 @@ export const useProjectMilestones = (projectId: string | null) => {
         spent: spentByMilestone.get(m.id) || 0,
         depends_on_milestone_id: m.depends_on_milestone_id || null,
         reminder_days_before: m.reminder_days_before ?? 3,
+        is_contingency: !!m.is_contingency,
       })));
     } catch (error) {
       console.error('Error fetching milestones:', error);
@@ -84,7 +86,8 @@ export const useProjectMilestones = (projectId: string | null) => {
           color: milestone.color || '#3b82f6',
           depends_on_milestone_id: milestone.depends_on_milestone_id || null,
           reminder_days_before: milestone.reminder_days_before ?? 3,
-        })
+          is_contingency: milestone.is_contingency ?? false,
+        } as any)
         .select()
         .single();
 
@@ -94,7 +97,8 @@ export const useProjectMilestones = (projectId: string | null) => {
         ...data,
         status: data.status as MilestoneStatus,
         budget: Number(data.budget) || 0,
-        spent: 0
+        spent: 0,
+        is_contingency: !!(data as any).is_contingency,
       };
 
       setMilestones(prev => [...prev, newMilestone].sort((a, b) => a.sort_order - b.sort_order));
@@ -107,7 +111,11 @@ export const useProjectMilestones = (projectId: string | null) => {
     }
   };
 
-  const updateMilestone = async (milestone: ProjectMilestone): Promise<void> => {
+  const updateMilestone = async (
+    milestone: ProjectMilestone,
+    revision?: PendingRevisionInput,
+    previousBudget?: number
+  ): Promise<void> => {
     try {
       const { error } = await supabase
         .from('project_milestones')
@@ -127,6 +135,77 @@ export const useProjectMilestones = (projectId: string | null) => {
         .eq('id', milestone.id);
 
       if (error) throw error;
+
+      // If a budget revision was attached, persist the audit trail and balance siblings
+      if (revision && previousBudget !== undefined && user && projectId) {
+        const newBudget = Number(milestone.budget) || 0;
+        const delta = newBudget - previousBudget;
+        let linkedRevisionId: string | null = null;
+
+        // Step 1: balance the source (transfer or contingency) BEFORE inserting our revision
+        if (delta > 0 && (revision.coverage === 'transfer' || revision.coverage === 'contingency')) {
+          const sourceId =
+            revision.coverage === 'transfer'
+              ? revision.linked_milestone_id
+              : milestones.find((m) => m.is_contingency)?.id || null;
+
+          if (sourceId) {
+            const sourceMilestone = milestones.find((m) => m.id === sourceId);
+            if (sourceMilestone) {
+              const sourceOldBudget = Number(sourceMilestone.budget) || 0;
+              const sourceNewBudget = Math.max(0, sourceOldBudget - delta);
+
+              const { error: sourceUpdateErr } = await supabase
+                .from('project_milestones')
+                .update({ budget: sourceNewBudget })
+                .eq('id', sourceId);
+
+              if (!sourceUpdateErr) {
+                // Insert linked counter-revision on the source
+                const { data: linkedRev, error: linkedErr } = await supabase
+                  .from('milestone_budget_revisions' as any)
+                  .insert({
+                    milestone_id: sourceId,
+                    project_id: projectId,
+                    user_id: user.id,
+                    previous_amount: sourceOldBudget,
+                    new_amount: sourceNewBudget,
+                    reason: t('projects.revisions.linkedReason', 'Sredstva prebačena na fazu „{{name}}“', { name: milestone.name }),
+                    change_type: revision.change_type,
+                    coverage: revision.coverage,
+                    linked_milestone_id: milestone.id,
+                  } as any)
+                  .select('id')
+                  .single();
+
+                if (!linkedErr && linkedRev) {
+                  linkedRevisionId = (linkedRev as any).id;
+                }
+
+                // Reflect the source change locally
+                setMilestones((prev) =>
+                  prev.map((m) => (m.id === sourceId ? { ...m, budget: sourceNewBudget } : m))
+                );
+              }
+            }
+          }
+        }
+
+        // Step 2: insert the primary revision for the edited milestone
+        await supabase.from('milestone_budget_revisions' as any).insert({
+          milestone_id: milestone.id,
+          project_id: projectId,
+          user_id: user.id,
+          previous_amount: previousBudget,
+          new_amount: newBudget,
+          reason: revision.reason,
+          change_type: revision.change_type,
+          coverage: revision.coverage,
+          linked_milestone_id:
+            revision.coverage === 'transfer' ? revision.linked_milestone_id : null,
+          linked_revision_id: linkedRevisionId,
+        } as any);
+      }
 
       setMilestones(prev => prev.map(m => 
         m.id === milestone.id ? { ...milestone, budget: Number(milestone.budget) } : m

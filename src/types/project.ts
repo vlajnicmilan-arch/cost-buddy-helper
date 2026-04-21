@@ -52,6 +52,7 @@ export interface ProjectMilestone {
   color?: string | null;
   depends_on_milestone_id?: string | null;
   reminder_days_before?: number;
+  is_contingency?: boolean;
   created_at?: string;
   updated_at?: string;
   // Computed
