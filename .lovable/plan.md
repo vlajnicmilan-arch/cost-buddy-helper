@@ -1,67 +1,45 @@
 
-## Pravi uzrok (potvrđeno iz koda + logova)
 
-U **tvojim console logovima** vidi se točno trenutak pada:
-```
-[Diag:route_change] { "from": "/app", "to": "/home" }
-[BackButton] route changed: /home public: false
-```
+## Preporuka: Da, isključi poslovni mod kod cold starta
 
-Ovo se događa **baš dok je nativna kamera otvorena**. Slijed:
+Stručno gledano, ovo je **najsigurniji i najintuitivniji pristup** iz tri razloga:
 
-1. Otvoriš `AddExpenseDialog` (na ruti `/app` ili `/index`)
-2. Klikneš "Skeniraj" → otvara se **nativna Android Camera Activity** kao zasebni Android prozor iznad WebView-a
-3. Slikaš → Android kamera se zatvara → vraća fokus WebView-u → Android operativni sustav usput šalje **`popstate` event** WebView-u (tipično ponašanje pri vraćanju activity-ja)
-4. `BackButtonContext.handlePopState` se okida
-5. `AddExpenseDialog` **nije registriran** preko `useBackButton`, pa `BackButtonContext` misli da nema otvorenog dialoga
-6. Trenutna ruta nije root app ruta → kod izvršava `navigate('/home')`
-7. Ruta se mijenja → `Index` page se demontira → cijeli `AddExpenseDialog` se demontira zajedno s njim
-8. `scanReceipt` koji u međuvremenu uspješno završava (vidimo u edge logovima `200 OK`) **postavlja state na komponenti koje više nema** → `ScannedDataPreview` se ne renderira
-9. Korisnik vidi početni ekran, bez podataka
+1. **Sigurnost podataka** — ako korisnik slučajno doda transakciju misleći da je u osobnom modu, a zapravo je u poslovnom (ili obrnuto), transakcija završi u krivoj tvrtki. Ovo si upravo doživio kao "katastrofu" iako podaci nisu bili izgubljeni.
+2. **Princip najmanjeg iznenađenja** — osobni mod je "default" za većinu dnevnih unosa (kava, namirnice, gorivo). Poslovni mod je svjesna odluka koju korisnik donosi kad sjedne raditi knjigovodstvo.
+3. **Vidljivost** — kad se app otvori u osobnom modu, odmah vidiš svoje izvore plaćanja i transakcije; nema dvojbe "gdje sam".
 
-Ovo nije bilo prije jer `BackButtonContext` (s pushanjem `popstate` i navigacijom na `/home`) je dodan tijekom rada na nativnom back gumbu, **isti period kao push notifikacije** — zato djeluje kao da su push krivi, ali zapravo su to dvije nezavisne izmjene iz iste runde.
+## Trenutno stanje (provjereno u kodu)
 
-## Što ću napraviti (samo web kod, bez novog APK-a)
+`AppStateContext` već **postavlja `business_mode_enabled = false` na svakom mountu** (linija ~70). Znači kod je **već dobar za session view**. Problem koji si imao bio je što je **`active_business_profile_id`** ostao u localStorage pa je `BusinessProfileSwitcher` (ili neka komponenta po mountu) **automatski reaktivirao** poslovni view.
 
-### Datoteka 1: `src/components/add-expense/AddExpenseDialog.tsx`
-Registrirati dialog u globalni back-button sustav, da `BackButtonContext` zna da je otvoren i ne navigira nigdje:
+Trebam kratko provjeriti gdje se točno reaktivira (BusinessProfileSwitcher ili neki guard) i blokirati tu auto-reaktivaciju kod cold starta.
 
-```ts
-import { useBackButton } from '@/hooks/useBackButton';
-// …
-useBackButton(open, () => setOpen(false), 10);
-```
+## Što ću napraviti
 
-Time kad Android pošalje `popstate` po povratku iz kamere, `handlePopState` vidi otvoreni dialog kao top handler, pozove njegov `onClose` (koji bi normalno zatvorio dialog), **ali** mi imamo `onOpenChange` zaštitu na liniji 697:
-```ts
-if (!isOpen && (scanning || showScannedPreview || isSaving)) return;
-```
-…pa dialog ostaje otvoren dok skeniranje traje. Kad rezultat stigne → `setShowScannedPreview(true)` → preview se pokaže.
+### `src/contexts/AppStateContext.tsx`
+- Dodati flag `coldStartCompleted` u sessionStorage (NE localStorage — sessionStorage se briše kod zatvaranja taba/app procesa)
+- Kod inicijalizacije: ako `coldStartCompleted` ne postoji → ovo je svježi start → forsirati `businessModeEnabled = false` i postaviti flag
+- `active_business_profile_id` ostaje u localStorage (da se pamti zadnja tvrtka), ali **se ne aktivira automatski**
 
-### Datoteka 2: `src/components/add-expense/AddExpenseDialog.tsx` (ista, mali dodatak)
-Proširiti zaštitu `onOpenChange` da pokriva i prozor **prije** `scanning=true` (dok je nativna kamera otvorena, prije nego što slika krene na server):
-- Dodati ref `cameraActiveRef` koji se postavlja `true` u `handleNativeCapture` prije `nativeTakePhoto`, resetira u `finally` nakon `processImageBase64`
-- Dodati u guard: `if (!isOpen && (scanning || showScannedPreview || isSaving || cameraActiveRef.current)) return;`
+### `src/components/BusinessProfileSwitcher.tsx`
+- Provjeriti i (ako postoji) ukloniti auto-aktivaciju koja čita `active_business_profile_id` i odmah poziva `setBusinessModeEnabled(true)` po mountu
+- Switcher i dalje prikazuje zadnju tvrtku kao "zapamćenu" — korisnik je vidi i jednim klikom aktivira
 
-### Datoteka 3: `src/contexts/BackButtonContext.tsx` (sigurnosna mreža)
-Dodati kratak prozor (~500 ms) nakon povratka iz pozadine u kojem `handlePopState` ne radi navigaciju na `/home`. Koristiti `document.visibilitychange` event:
-- Kad `document.visibilityState` postane `hidden` (kamera otvorena) → zapamtiti timestamp
-- Kad ponovno postane `visible` (povratak iz kamere) → 500 ms prozor u kojem se ignorira `popstate` koji nije zatvorio nijedan dialog
-
-Ovo štiti **sve buduće dialoge** koji otvaraju nativne plugine (kamera, file picker, share), ne samo `AddExpenseDialog`.
+### Ponašanje nakon izmjene
+- **Cold start** (zatvoriš app, ponovno otvoriš) → uvijek u Osobnom modu, zadnja tvrtka vidljiva u switcheru ali neaktivirana
+- **Tijekom sesije** → ako prebaciš na poslovni mod, ostaje aktivan dok ne prebaciš nazad ili zatvoriš app
+- **Master switch u Postavkama** → ostaje netaknut, kontrolira samo hoće li poslovne značajke biti dostupne uopće
 
 ## Što se NE dira
-- Nativni Capacitor sloj → **bez `cap sync`, bez novog APK-a, bez `git pull`**
-- `useNativeCamera`, `useReceiptScanner`, `parse-receipt` edge funkcija
-- Push notifikacije i `usePushNotifications` (potvrđeno: nemaju veze)
-- Bilo što izvan ova 2 file-a
+- `active_business_profile_id` u localStorage (zadržava se)
+- Master switch `business_feature_enabled` (zadržava se)
+- Bilo kakav nativni kod ili APK (samo web izmjena, Live Sync)
+- Skeniranje računa i ostali popravci iz prošlih rundi
 
-## Kako ću potvrditi popravak
-Nakon izmjene, ti probaš jednom snimiti račun. Ja u sljedećoj poruci provjerim u tvojim console logovima:
-- **prije**: `[BackButton] route changed: /home` se pojavljivao baš pri povratku iz kamere
-- **poslije**: te promjene rute više nema; umjesto toga vidi se `📤 Sending to processImageBase64` → 17 s pauze → `ScannedDataPreview` se pokaže
+## Datoteke za izmjenu
+- `src/contexts/AppStateContext.tsx` (flag za cold start)
+- `src/components/BusinessProfileSwitcher.tsx` (ukloniti auto-aktivaciju ako postoji)
 
-Ako se ipak ne pokaže, imam točan dijagnostički trag i znamo da problem više nije u routeru.
+## Rezultat
+Više se ne može dogoditi da otvoriš app i misliš da su ti podaci nestali — uvijek krećeš s vlastitog osobnog pregleda, a poslovni mod je jedan svjestan klik daleko.
 
-## Zašto nismo prije našli ovo
-Prošla 3 plana su gledali samo `AddExpenseDialog` i `useNativeCamera`. Bug je bio u **trećem mjestu** (`BackButtonContext`) koje je dodano u istoj rundi kad i push notifikacije, pa je djelovalo povezano. Kad se ova izmjena napravi, popravak je trajan i pokriva sve buduće dialoge koji koriste nativne plugine.
