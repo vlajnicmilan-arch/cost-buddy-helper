@@ -38,6 +38,13 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const locationRef = useRef<string>('/');
   const initialStatePushedRef = useRef(false);
+  // Tracks the moment the WebView returned to the foreground. When a native
+  // activity (camera, file picker, share sheet, …) finishes, Android often
+  // emits a popstate as it restores focus to the WebView. We must NOT treat
+  // that as a user "back" press, otherwise we'd navigate away and unmount
+  // dialogs that are mid-flight (e.g. AddExpenseDialog while scanning).
+  const lastForegroundAtRef = useRef<number>(0);
+  const VISIBILITY_GRACE_MS = 800;
 
   const location = useLocation();
   useEffect(() => {
@@ -94,6 +101,19 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // SAFETY WINDOW: if we just returned from the background (e.g. native
+    // camera activity finished), Android may emit a spurious popstate. Don't
+    // navigate away — re-push the guard state instead so a real subsequent
+    // back press still works.
+    const sinceForeground = Date.now() - lastForegroundAtRef.current;
+    if (lastForegroundAtRef.current > 0 && sinceForeground < VISIBILITY_GRACE_MS) {
+      if (import.meta.env.DEV) {
+        console.log('[BackButton] popstate ignored — within visibility grace window:', sinceForeground, 'ms');
+      }
+      window.history.pushState(null, '');
+      return;
+    }
+
     // No dialogs open — handle page-level back navigation in app area
     if (!isRootAppRoute(currentPath)) {
       navigate('/home', { replace: false });
@@ -110,6 +130,18 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [handlePopState]);
+
+  // Track foreground/background transitions so popstate fired on activity
+  // return (camera, file picker, share sheet, …) can be ignored briefly.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        lastForegroundAtRef.current = Date.now();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
 
   // Push the initial guard state ONLY once we're inside the authenticated app,
   // never on public routes (otherwise back from /auth or /setup gets trapped).

@@ -30,6 +30,7 @@ import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useInAppReview } from '@/hooks/useInAppReview';
 import { useLocation } from '@/hooks/useLocation';
+import { useBackButton } from '@/hooks/useBackButton';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
@@ -154,6 +155,7 @@ export const AddExpenseDialog = ({
 
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
+  const cameraActiveRef = useRef(false);
 
   const selectedSourceCurrencyCode = useMemo(() => {
     if (!multiCurrencyEnabled) return primaryCurrency.code;
@@ -247,6 +249,7 @@ export const AddExpenseDialog = ({
 
   const handleNativeCapture = async (source: 'camera' | 'gallery', multiMode = false) => {
     console.warn('📸 handleNativeCapture start', { source, multiMode, isNative });
+    cameraActiveRef.current = true;
     try {
       const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
       console.warn('📸 handleNativeCapture got base64?', !!base64, 'len=', base64?.length || 0);
@@ -257,6 +260,9 @@ export const AddExpenseDialog = ({
     } catch (err: any) {
       console.error('📸 handleNativeCapture error:', err);
       showError(`Greška pri snimanju: ${err?.message || 'nepoznato'}`);
+    } finally {
+      // Slight delay so any popstate that fires on activity return is still blocked.
+      setTimeout(() => { cameraActiveRef.current = false; }, 800);
     }
   };
 
@@ -311,6 +317,15 @@ export const AddExpenseDialog = ({
   };
 
   const [isSaving, setIsSaving] = useState(false);
+
+  // Register with global back-button system so Android popstate (e.g. when the
+  // native camera activity returns) does NOT navigate the app to /home and
+  // unmount this dialog mid-scan.
+  const handleBackClose = useCallback(() => {
+    if (scanning || showScannedPreview || isSaving || cameraActiveRef.current) return;
+    setOpen(false);
+  }, [scanning, showScannedPreview, isSaving]);
+  useBackButton(open, handleBackClose, 10);
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving) return;
@@ -694,7 +709,8 @@ export const AddExpenseDialog = ({
   return (
     <>
     <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen && (scanning || showScannedPreview || isSaving)) return;
+      console.warn('🚪 AddExpenseDialog onOpenChange', { isOpen, scanning, showScannedPreview, isSaving, cameraActive: cameraActiveRef.current });
+      if (!isOpen && (scanning || showScannedPreview || isSaving || cameraActiveRef.current)) return;
       setOpen(isOpen);
       if (isOpen) {
         refetchPaymentSources().then(() => {
