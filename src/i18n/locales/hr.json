@@ -124,7 +124,15 @@
       "topChanged": "Faze s najviše promjena",
       "recentActivity": "Kronologija promjena",
       "unknownPhase": "Nepoznata faza",
-      "emptyHint": "Svaka izmjena budžeta faze automatski se bilježi ovdje za potpunu transparentnost."
+      "emptyHint": "Svaka izmjena budžeta faze automatski se bilježi ovdje za potpunu transparentnost.",
+      "glowOver": "Faza je premašila budžet",
+      "glowNear": "Faza je blizu limita budžeta",
+      "suggestReserve": "Predlažemo povlačenje iz Rezerve",
+      "suggestReserveHelp": "Faza je iznad 100% budžeta. Preostalo u rezervi: {{amt}}.",
+      "alertNearTitle": "Faza blizu limita budžeta",
+      "alertNearBody": "Faza „{{name}}“ potrošila je {{pct}}% planiranog budžeta.",
+      "alertOverTitle": "Faza je premašila budžet",
+      "alertOverBody": "Faza „{{name}}“ premašuje budžet za {{pct}}%."
     },
     "standup": {
       "title": "Dnevni izvještaj",
