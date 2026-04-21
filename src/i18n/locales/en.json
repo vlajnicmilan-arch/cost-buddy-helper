@@ -124,7 +124,15 @@
       "topChanged": "Phases with most changes",
       "recentActivity": "Change timeline",
       "unknownPhase": "Unknown phase",
-      "emptyHint": "Every phase budget change is automatically recorded here for full transparency."
+      "emptyHint": "Every phase budget change is automatically recorded here for full transparency.",
+      "glowOver": "Phase is over budget",
+      "glowNear": "Phase is near its budget limit",
+      "suggestReserve": "We suggest pulling from Reserve",
+      "suggestReserveHelp": "This phase is over 100% of budget. Reserve remaining: {{amt}}.",
+      "alertNearTitle": "Phase near budget limit",
+      "alertNearBody": "Phase “{{name}}” has used {{pct}}% of its planned budget.",
+      "alertOverTitle": "Phase is over budget",
+      "alertOverBody": "Phase “{{name}}” is over budget by {{pct}}%."
     },
     "standup": {
       "title": "Daily report",

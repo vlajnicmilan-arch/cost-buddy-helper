@@ -153,6 +153,7 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                             isContingency={!!m.is_contingency}
                             contingencyOriginal={m.is_contingency ? m.budget + (m.spent || 0) : undefined}
                             contingencyRemaining={m.is_contingency ? m.budget : undefined}
+                            usagePct={!m.is_contingency && m.budget > 0 ? ((m.spent || 0) / m.budget) * 100 : undefined}
                             onClick={(e) => { e.stopPropagation(); onShowRevisions?.(m); }}
                             compact
                           />

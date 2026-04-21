@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Shield, ArrowRightLeft, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Shield, ArrowRightLeft, Plus, Lightbulb } from 'lucide-react';
 import {
   MilestoneRevisionType,
   MilestoneRevisionCoverage,
@@ -29,6 +29,8 @@ interface Props {
   siblingMilestones: ProjectMilestone[];
   contingencyMilestone: ProjectMilestone | null;
   currentMilestoneId: string | null;
+  /** Current spent / previousAmount * 100. Drives the auto-suggestion to pull from reserve. */
+  currentUsagePct?: number;
 }
 
 const TYPE_OPTIONS: MilestoneRevisionType[] = ['overrun', 'saving', 'scope_change', 'correction'];
@@ -47,6 +49,7 @@ export const MilestoneBudgetChangeSection = ({
   siblingMilestones,
   contingencyMilestone,
   currentMilestoneId,
+  currentUsagePct,
 }: Props) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -66,7 +69,20 @@ export const MilestoneBudgetChangeSection = ({
     [siblingMilestones, currentMilestoneId]
   );
 
-  const contingencyAvailable = contingencyMilestone && contingencyMilestone.budget > 0;
+  const contingencyAvailable = !!(contingencyMilestone && contingencyMilestone.budget > 0);
+  const isOverBudget = typeof currentUsagePct === 'number' && currentUsagePct >= 100;
+  const shouldSuggestReserve = isIncrease && isOverBudget && contingencyAvailable;
+
+  // Auto-preselect "pull from reserve" the first time this section opens
+  // for an over-budget phase that has reserve available — only if user hasn't picked anything yet.
+  const autoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (autoSelectedRef.current) return;
+    if (shouldSuggestReserve && coverage === 'increase_total') {
+      onCoverageChange('contingency');
+      autoSelectedRef.current = true;
+    }
+  }, [shouldSuggestReserve, coverage, onCoverageChange]);
 
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
@@ -83,6 +99,23 @@ export const MilestoneBudgetChangeSection = ({
       <div className="text-xs text-muted-foreground">
         {formatAmount(previousAmount)} → <span className="font-semibold text-foreground">{formatAmount(newAmount)}</span>
       </div>
+
+      {/* Auto-suggestion banner: phase already over budget AND reserve has funds */}
+      {shouldSuggestReserve && (
+        <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-foreground">
+          <Lightbulb className="w-3.5 h-3.5 text-warning mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <div className="font-medium">
+              {t('projects.revisions.suggestReserve', 'Predlažemo povlačenje iz Rezerve')}
+            </div>
+            <div className="text-muted-foreground mt-0.5">
+              {t('projects.revisions.suggestReserveHelp', 'Faza je iznad 100% budžeta. Preostalo u rezervi: {{amt}}.', {
+                amt: formatAmount(contingencyMilestone!.budget),
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reason — required */}
       <div className="space-y-1.5">

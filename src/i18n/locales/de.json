@@ -956,7 +956,15 @@
       "topChanged": "Phasen mit den meisten Änderungen",
       "recentActivity": "Änderungsverlauf",
       "unknownPhase": "Unbekannte Phase",
-      "emptyHint": "Jede Phasenbudget-Änderung wird hier automatisch für volle Transparenz erfasst."
+      "emptyHint": "Jede Phasenbudget-Änderung wird hier automatisch für volle Transparenz erfasst.",
+      "glowOver": "Phase hat das Budget überschritten",
+      "glowNear": "Phase nähert sich der Budgetgrenze",
+      "suggestReserve": "Wir empfehlen, aus der Reserve zu entnehmen",
+      "suggestReserveHelp": "Diese Phase liegt über 100% des Budgets. Verbleibende Reserve: {{amt}}.",
+      "alertNearTitle": "Phase nahe der Budgetgrenze",
+      "alertNearBody": "Phase „{{name}}“ hat {{pct}}% des geplanten Budgets verbraucht.",
+      "alertOverTitle": "Phase hat das Budget überschritten",
+      "alertOverBody": "Phase „{{name}}“ überschreitet das Budget um {{pct}}%."
     },
     "standup": {
       "title": "Tagesbericht",
