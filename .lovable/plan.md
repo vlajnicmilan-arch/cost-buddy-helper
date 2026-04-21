@@ -1,45 +1,45 @@
 
 
-## Preporuka: Da, isključi poslovni mod kod cold starta
+## Problem
 
-Stručno gledano, ovo je **najsigurniji i najintuitivniji pristup** iz tri razloga:
+Sve izmjene faza (uređivanje, brisanje, status) padaju s greškom:
+```
+record "new" has no field "user_id"
+```
 
-1. **Sigurnost podataka** — ako korisnik slučajno doda transakciju misleći da je u osobnom modu, a zapravo je u poslovnom (ili obrnuto), transakcija završi u krivoj tvrtki. Ovo si upravo doživio kao "katastrofu" iako podaci nisu bili izgubljeni.
-2. **Princip najmanjeg iznenađenja** — osobni mod je "default" za većinu dnevnih unosa (kava, namirnice, gorivo). Poslovni mod je svjesna odluka koju korisnik donosi kad sjedne raditi knjigovodstvo.
-3. **Vidljivost** — kad se app otvori u osobnom modu, odmah vidiš svoje izvore plaćanja i transakcije; nema dvojbe "gdje sam".
+## Uzrok
 
-## Trenutno stanje (provjereno u kodu)
+Database trigger `trg_log_milestone_activity` na tablici `project_milestones` poziva funkciju `log_project_activity()`. Ta funkcija na vrhu radi:
+```sql
+v_user_id := COALESCE(NEW.user_id, OLD.user_id);
+```
 
-`AppStateContext` već **postavlja `business_mode_enabled = false` na svakom mountu** (linija ~70). Znači kod je **već dobar za session view**. Problem koji si imao bio je što je **`active_business_profile_id`** ostao u localStorage pa je `BusinessProfileSwitcher` (ili neka komponenta po mountu) **automatski reaktivirao** poslovni view.
+Tablica `expenses` ima `user_id` kolonu — radi. Tablica `project_milestones` **nema** `user_id` kolonu — Postgres odbija cijeli statement prije nego dođe do logike.
 
-Trebam kratko provjeriti gdje se točno reaktivira (BusinessProfileSwitcher ili neki guard) i blokirati tu auto-reaktivaciju kod cold starta.
+## Popravak (jedna migracija)
 
-## Što ću napraviti
+Promijeniti funkciju `log_project_activity()` tako da `user_id` dohvati ovisno o tablici:
 
-### `src/contexts/AppStateContext.tsx`
-- Dodati flag `coldStartCompleted` u sessionStorage (NE localStorage — sessionStorage se briše kod zatvaranja taba/app procesa)
-- Kod inicijalizacije: ako `coldStartCompleted` ne postoji → ovo je svježi start → forsirati `businessModeEnabled = false` i postaviti flag
-- `active_business_profile_id` ostaje u localStorage (da se pamti zadnja tvrtka), ali **se ne aktivira automatski**
+- Za `expenses` → `NEW.user_id` (kao i sad)
+- Za `project_milestones` → dohvatiti vlasnika projekta iz `projects.user_id` preko `project_id`, jer milestone nema vlastitog autora; ovo je dovoljno za activity log
 
-### `src/components/BusinessProfileSwitcher.tsx`
-- Provjeriti i (ako postoji) ukloniti auto-aktivaciju koja čita `active_business_profile_id` i odmah poziva `setBusinessModeEnabled(true)` po mountu
-- Switcher i dalje prikazuje zadnju tvrtku kao "zapamćenu" — korisnik je vidi i jednim klikom aktivira
-
-### Ponašanje nakon izmjene
-- **Cold start** (zatvoriš app, ponovno otvoriš) → uvijek u Osobnom modu, zadnja tvrtka vidljiva u switcheru ali neaktivirana
-- **Tijekom sesije** → ako prebaciš na poslovni mod, ostaje aktivan dok ne prebaciš nazad ili zatvoriš app
-- **Master switch u Postavkama** → ostaje netaknut, kontrolira samo hoće li poslovne značajke biti dostupne uopće
+Logika ostaje ista, mijenja se samo izvor `v_user_id` unutar bloka za `project_milestones`:
+```sql
+SELECT user_id INTO v_user_id FROM public.projects WHERE id = v_project_id;
+```
 
 ## Što se NE dira
-- `active_business_profile_id` u localStorage (zadržava se)
-- Master switch `business_feature_enabled` (zadržava se)
-- Bilo kakav nativni kod ili APK (samo web izmjena, Live Sync)
-- Skeniranje računa i ostali popravci iz prošlih rundi
 
-## Datoteke za izmjenu
-- `src/contexts/AppStateContext.tsx` (flag za cold start)
-- `src/components/BusinessProfileSwitcher.tsx` (ukloniti auto-aktivaciju ako postoji)
+- Trigger ostaje (koristan je za activity feed)
+- Tablica `project_milestones` ostaje bez nepotrebne `user_id` kolone
+- Postojeći zapisi u `project_activity_log` ostaju
+- RLS politike i ostala logika faza
 
 ## Rezultat
-Više se ne može dogoditi da otvoriš app i misliš da su ti podaci nestali — uvijek krećeš s vlastitog osobnog pregleda, a poslovni mod je jedan svjestan klik daleko.
+
+Uređivanje, mijenjanje statusa i brisanje faza odmah radi. Activity log nastavlja bilježiti promjene faza pripisane vlasniku projekta.
+
+## Veza s prethodnom temom (nepredviđeni troškovi)
+
+Čim ovo proradi, vraćamo se na tvoja 2 pitanja iz plana za revizije budžeta faza (kategorije promjene + automatska rezerva). Ovaj popravak je preduvjet — bez njega ni postojeće faze ne radi, kamoli proširenja.
 
