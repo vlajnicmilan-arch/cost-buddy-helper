@@ -96,7 +96,11 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
 
     if (openHandlers.length > 0) {
       const handler = openHandlers[0];
-      handler.isOpen = false;
+      // Important: do NOT eagerly mark the handler as closed here.
+      // Some dialogs intentionally ignore back/close while a native flow is in
+      // progress (camera, file picker, saving, etc.). If we flip isOpen=false
+      // before the dialog actually closes, a follow-up popstate can slip
+      // through and navigate away to /home.
       handler.onClose();
       return;
     }
