@@ -1,74 +1,79 @@
 
 
-## Opcija C — Notifikacije i proaktivna upozorenja
+## Odgovor: nije idealna postavka — to je trenutni dizajn, ali nije logičan
 
-Nadograđujemo sustav iz pasivnog (korisnik mora otvoriti dialog) u **proaktivnog asistenta** koji sam upozorava na rizike.
+### Trenutno stanje (kako je sad implementirano)
 
----
+U sustavu postoje **3 uloge** na projektu:
 
-### Što ćemo izgraditi
+| Uloga | Može uređivati faze | Vidi prekoračenja (📜 trend) | Prima notifikacije |
+|---|---|---|---|
+| **Manager (Voditelj)** | ✅ Da | ✅ Da | ✅ Da |
+| **Member (Punopravni član)** | ❌ **Ne** | ❌ **Ne** | ❌ Ne |
+| **Viewer (Promatrač)** | ❌ Ne | ❌ Ne | ❌ Ne |
 
-**1. In-app obavijest "Faza blizu limita" (80 % i 100 %)**
-- Edge funkcija `check-milestone-budgets` (cron, 1×/dan u 8:00)
-- Prolazi kroz sve aktivne faze i provjerava: `spent / planned_amount`
-- Trigger pragovi:
-  - **80 %** → "🟡 Faza X je na 85 % budžeta"
-  - **100 %** → "🔴 Faza X je premašila budžet za 12 %"
-- Šalje **push obavijest** + **in-app notifikaciju** (`notifications` tablica)
-- Anti-spam: jedna obavijest po fazi po pragu (bilježi u `milestone_budget_alerts`)
+**Konkretno za Test:** ima ulogu "Punopravni član" (member), ali sav UI za faze (gumb Uredi, badge revizija, glow upozorenja) skriven je iza `isManager`. Trenutno je **Member ≈ Viewer** kad su faze u pitanju — jedina razlika je što Member može dodavati transakcije bez odobrenja, a Viewer treba odobrenje.
 
-**2. Auto-prijedlog povlačenja iz rezerve**
-- Kad korisnik otvori `MilestoneBudgetChangeSection` za fazu koja je **iznad 100 %**
-- Provjeri postoji li `is_contingency=true` faza s preostalim sredstvima
-- Ako da → automatski preselektira opciju "Premjesti iz druge faze" + linked_milestone_id na rezervu
-- Prikaže info bedž: "💡 Predlažemo povlačenje iz Rezerve (preostalo 800 €)"
+To znači da "Punopravni član" zapravo nije punopravan — ne može sudjelovati u upravljanju budžetom faza ni vidjeti rizike.
 
-**3. Vizualna upozorenja na karticama (bez novih notifikacija)**
-- Kartica faze ≥80 % → žuti glow oko `MilestoneRevisionTrendBadge`
-- Kartica faze ≥100 % → crveni glow + pulse animacija
-- Ovo su trenutni vizualni signali, ne notifikacije — uvijek vidljivi
+### Zašto to nije logično
+
+1. **Naziv obmanjuje:** "Punopravni član" sugerira jednake mogućnosti kao manager, ali u praksi vidi manje od onoga što treba za rad.
+2. **Slijepa odgovornost:** Member mora donositi odluke o trošenju, ali ne vidi koliko je faza prekoračila ni povijest revizija.
+3. **Bottleneck na manageru:** sve promjene budžeta moraju ići kroz Dujeta, Test ne može pomoći ni kad je očito.
 
 ---
 
-### Tehničke odluke
+## 3 opcije — odaberi koja ti odgovara
 
-| Pitanje | Odluka | Razlog |
-|---|---|---|
-| Push ili samo in-app? | **Oboje** | Sustav već ima push infrastrukturu, kritične financijske informacije zaslužuju push |
-| Cron ili real-time trigger? | **Cron 1×/dan** | Real-time = spam pri svakoj transakciji. Dnevno je dovoljno za budžet alerts |
-| Anti-spam | **Nova tablica `milestone_budget_alerts`** | Bilježi `(milestone_id, threshold, sent_at)` da se isti prag ne šalje 2× |
-| Tjedni sažetak | **Odgađamo za kasnije** | Dnevni alerti pokrivaju 90 % vrijednosti; sažetak je nice-to-have |
+### Opcija 1 — "Member vidi sve, ali ne mijenja" ⭐ preporučeno
+- Member **vidi** sve: badge revizija 📜, trend strelice ↗↘, glow upozorenja, gumb "Povijest"
+- Member **ne može**: uređivati budžet faze, brisati faze, drag & drop u Kanbanu
+- Manager zadržava puna prava
+- Viewer ostaje kako je (ne vidi povijest revizija)
 
----
+**Prednost:** Test odmah razumije stanje projekta i može alarmirati Duje. Bez rizika od neovlaštenih izmjena.
 
-### Datoteke / promjene
+### Opcija 2 — "Member može sve osim brisanja"
+- Member **vidi sve i može uređivati** budžete faza (s obaveznim razlogom revizije — sve se loga)
+- Member **ne može**: brisati faze, mijenjati strukturu (dodavati/uklanjati), drag & drop
+- Manager + brisanje + struktura
+- Viewer ostaje kako je
 
-**Baza (1 migracija):**
-- Nova tablica `milestone_budget_alerts` (anti-spam log)
-- RLS: korisnik vidi svoje, edge funkcija piše service role
+**Prednost:** Pravi "punopravni" član. Audit trag postoji kroz revizije.
+**Rizik:** Više ljudi mijenja budžete — može stvoriti zbrku ako tim nije discipliniran.
 
-**Backend (1 nova edge funkcija):**
-- `supabase/functions/check-milestone-budgets/index.ts` — cron job
-- Cron registracija (pg_cron, 8:00 svaki dan)
+### Opcija 3 — Granularne dozvole po članu
+- Postojeća `ProjectMemberPermissionsDialog` (Shield ikona) proširena s prekidačima:
+  - "Može uređivati faze" (on/off)
+  - "Može vidjeti povijest revizija" (on/off)
+  - "Može brisati faze" (on/off)
+- Manager za svakog člana posebno odlučuje
 
-**Frontend:**
-- `src/components/projects/MilestoneBudgetChangeSection.tsx` — dodati auto-prijedlog rezerve
-- `src/components/projects/MilestoneKanban.tsx` — glow class na kartici
-- `src/components/projects/ProjectMilestonesTab.tsx` — glow class na redu liste
-- `src/components/projects/MilestoneRevisionTrendBadge.tsx` — primati `usagePct` prop za glow
-- `src/i18n/locales/{hr,en,de}.json` — ~8 novih ključeva (notifikacije + glow tooltips)
-
-**Bez izmjena:** `useNotifications`, `usePushNotifications` — postojeća infrastruktura već radi.
-
----
-
-### Što ostaje za kasnije (ne radimo sada)
-
-- ❌ Tjedni sažetak revizija (može doći s Opcijom D)
-- ❌ Email obavijesti (već imamo push + in-app, dovoljno)
-- ❌ Custom pragovi po projektu (sad fiksno 80/100, kasnije postavke)
+**Prednost:** Maksimalna fleksibilnost.
+**Mana:** Više klikanja pri postavljanju, više kompleksnosti za korisnika koji nije programer.
 
 ---
 
-**Reci "Idemo" za potvrdu, ili predloži izmjene.**
+## Moja preporuka
+
+**Opcija 1** — najmanja promjena, najveća korist, nema rizika:
+- Rješava tvoj točan problem (Test ne vidi prekoračenja)
+- Zadržava jasnu hijerarhiju (samo manager mijenja)
+- Kasnije možemo na Opciju 2 ako Test traži više
+- Bez izmjena baze, samo UI gating
+
+### Implementacija Opcije 1 (ako odobriš)
+
+**Datoteke:**
+- `ProjectMilestonesTab.tsx` — promijeniti `{isManager &&` → `{` na badge sekciji (linija ~292), gumb Uredi/Briši (linija ~366) ostaje pod `isManager`
+- `MilestoneKanban.tsx` — prikazati `MilestoneRevisionTrendBadge` i glow svima; drag & drop, edit/delete gumbi ostaju samo manageru
+- `MilestoneRevisionsDialog.tsx` — već prima `canEdit` prop, samo ga otvoriti svima za čitanje
+- Bez izmjena hooka, baze, ni notifikacija
+
+**Vrijeme:** ~10 minuta.
+
+---
+
+**Reci 1, 2 ili 3 (ili "nešto drugo").**
 
