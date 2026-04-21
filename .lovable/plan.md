@@ -1,73 +1,57 @@
 
-## Problem
+## Razumijem — bez novog APK-a
 
-Korisnik je primijetio: poslovni switcher u zaglavlju sada je **uvijek vidljiv** ako postoji bar jedan poslovni profil — čak i kad korisnik u **Postavkama** ima isključen "Poslovni mod" prekidač.
+Imaš pravo. Kamera je radila prije, znači problem nije u nativnom Capacitor sloju (taj kod već postoji u instaliranom APK-u i ne trebamo ga dirati). Problem je nastao u **web kodu** koji se učitava preko Live Sync — i to mogu popraviti bez ikakvog rebuilda.
 
-To je nuspojava prošlog popravka. U `BusinessProfileSwitcher.tsx` smo uklonili uvjet koji je skrivao komponentu kad je `businessModeEnabled === false`, ali smo time slučajno zaobišli i **glavni master prekidač** iz Postavki.
+## Gdje je nastao problem
 
-## Što treba
+Trebam pogledati git/file povijest ovih fileova da nađem točno koji je commit pokvario stvar:
 
-Postoje **tri** različita stanja koja se moraju razlikovati:
+1. **`src/components/add-expense/AddExpenseDialog.tsx`** — `handleNativeCapture` funkcija (poziva nativnu kameru i šalje na `parse-receipt`)
+2. **`src/hooks/useReceiptScanner.ts`** — `scanReceipt` funkcija (radi fetch na edge funkciju)
+3. **`src/components/add-expense/ReceiptCaptureButtons.tsx`** — gumbi koji okidaju snimanje
 
-1. **Master prekidač u Postavkama** (`businessModeEnabled` u Postavkama) — "Želim li uopće vidjeti poslovne funkcije u aplikaciji?"
-2. **Trenutni view** (osobni vs poslovni ekran) — "Što sad gledam?"
-3. **Zapamćena tvrtka** (`activeBusinessProfileId`) — "Koja je zadnja tvrtka koju sam koristio?"
+Ključni dokaz: u Supabase logovima `parse-receipt` edge funkcije **nema poziva** od kad si prijavio problem. Znači slika ni ne kreće s uređaja prema serveru. Pad je u web JS kodu, prije fetcha — i to nakon neke nedavne izmjene koju ću pronaći čitanjem trenutnog stanja tih fileova i usporedbom s logikom koja je nekad radila.
 
-Trenutno smo #1 i #2 spojili u istu varijablu (`businessModeEnabled`), pa kad jedno gasimo, gasimo i drugo.
+## Što ću točno napraviti (samo web izmjene)
 
-## Istraga koju moram napraviti
+### Korak 1: Forenzika
+Pročitati trenutno stanje `useNativeCamera.ts`, `AddExpenseDialog.tsx`, `useReceiptScanner.ts` — utvrditi:
+- vraća li `useNativeCamera` strukturirani objekt ili string (ako je nedavno mijenjano, možda pozivatelj još očekuje string i tihi pad uništava tijek)
+- gađa li `scanReceipt` točno endpoint `parse-receipt` s ispravnim payloadom
+- postoji li negdje `early return` koji proguta sliku
 
-Prije nego predložim popravak, trebam pogledati:
-- `src/contexts/AppStateContext.tsx` — kako je sada strukturirano stanje
-- `src/components/settings/` — gdje je master prekidač u Postavkama i koju varijablu koristi
-- `src/components/BusinessProfileSwitcher.tsx` — trenutni uvjet vidljivosti
-- `src/pages/Index.tsx` — kako se odlučuje o prikazu
+### Korak 2: Vraćanje na poznato dobro ponašanje
+- Vratiti `useNativeCamera` na **jednostavni return tipa string** (`data:image/jpeg;base64,...` ili `null`) — kako je radilo prije, da pozivatelj ne treba mijenjati interface
+- Zadržati `CameraResultType.Base64` ako je to bilo originalno (ili `DataUrl` — što god je bilo u verziji koja je radila)
+- Ukloniti svaki novi permission `request` koji nije bio tamo prije (nativni APK već ima dozvole; novi web kod ih ne treba ponovno tražiti)
 
-## Predložena strategija (visoki nivo)
+### Korak 3: Ponovno spojiti s `scanReceipt`
+- Osigurati da `handleNativeCapture` proslijedi `dataUrl` direktno u `scanReceipt`
+- Dodati 3 mala `console.warn` markera (📸 capture start, 📸 got image size=X, 📤 sending to parse-receipt) **samo radi sljedeće dijagnostike** — bez logičkih izmjena
+- Bez `try/catch` koji proguta grešku bez prikaza
 
-Razdvojiti master prekidač iz Postavki od dnevnog view-toggla:
+### Korak 4: Verifikacija u logovima
+Nakon izmjene, ti probaš slikati račun i ja u sljedećoj poruci provjerim:
+- console logove iz preview-a (vidim li "📸 got image")
+- `parse-receipt` edge logove (vidim li poziv)
 
-- **`businessFeatureEnabled`** (novo, iz Postavki) — master sklopka. Ako je `false`, switcher je nevidljiv, poslovni mod nedostupan.
-- **`businessViewActive`** (preimenovano `businessModeEnabled`) — trenutni view. Resetira se na `false` pri startu.
-- **`activeBusinessProfileId`** — pamti se kao i sad.
-
-Switcher je vidljiv samo ako: `businessFeatureEnabled === true` **I** postoji bar 1 poslovni profil.
-
-**Alternativa (manji rez):** Ne uvoditi novu varijablu, samo dodati provjeru postavke iz Postavki (gdje god se ona čuva — vjerojatno localStorage ključ) u `BusinessProfileSwitcher` i u `Index.tsx`.
-
-## Pitanja prije plana
-
-Trebam razjasniti gdje točno se nalazi taj "master prekidač" u Postavkama da znam koju varijablu koristi, jer u kodu vidim samo `businessModeEnabled` koji sad služi i kao trenutni view. Pogledat ću kod prije finalnog plana — ali već sad znam smjer popravka.
-
-## Konkretan plan popravka
-
-**1. Pronaći master prekidač u Postavkama** i utvrditi koristi li istu varijablu `businessModeEnabled` ili nešto drugo (npr. localStorage `business_feature_enabled`).
-
-**2. Ako koristi istu varijablu** → uvesti razdvajanje:
-- `businessFeatureEnabled` (perzistentno, kontrolirano iz Postavki) — kontrolira VIDLJIVOST switchera
-- `businessViewActive` (sesijski, default `false`) — kontrolira AKTIVNI VIEW
-
-**3. `BusinessProfileSwitcher.tsx`**: prikazuj samo ako `businessFeatureEnabled && profiles.length > 0`.
-
-**4. `Index.tsx`**: poslovni view se renderira samo ako `businessFeatureEnabled && businessViewActive && activeBusinessProfileId`.
-
-**5. Postavke**: prekidač "Poslovni mod" sada kontrolira `businessFeatureEnabled`. Kad ga isključiš → switcher nestaje, view se vraća na osobni, ali zapamćena tvrtka se ČUVA (vraća se kad ponovo uključiš).
-
-**6. Migracija stanja**: postojeći korisnici koji su imali `businessModeEnabled = true` trebaju automatski dobiti `businessFeatureEnabled = true` da im se ništa ne pokvari.
-
-## Datoteke koje ću mijenjati
-- `src/contexts/AppStateContext.tsx` — uvesti `businessFeatureEnabled`, zadržati `businessModeEnabled` kao session view-flag
-- `src/components/BusinessProfileSwitcher.tsx` — provjera `businessFeatureEnabled` umjesto `businessModeEnabled`
-- `src/pages/Index.tsx` — uskladiti uvjet prikaza
-- `src/components/settings/` (točan file utvrdit ću čitanjem) — prekidač spojiti na `businessFeatureEnabled`
+Ako poziv stigne na server → kamera + slanje rade, ostalo je serverska logika.
+Ako poziv ne stigne → još imam log točke i znam točno gdje je puklo.
 
 ## Što se NE dira
-- `BusinessModeGuard.tsx`
-- Push/in-app notifikacije
-- Auto-generirani fileovi
-- Logika podataka, RLS, edge funkcije
+- Nativni Android kod / Capacitor plugini → **bez `cap sync`, bez novog APK-a**
+- `parse-receipt` edge funkcija
+- `useReceiptScanner` interna logika
+- Bilo što izvan ova 3 web file-a
+
+## Datoteke za izmjenu (samo web, Live Sync ih dohvaća automatski)
+- `src/hooks/useNativeCamera.ts` — vratiti na jednostavni interface koji je radio
+- `src/components/add-expense/AddExpenseDialog.tsx` — uskladiti `handleNativeCapture` s tim interfaceom
+- (po potrebi) `src/components/add-expense/ReceiptCaptureButtons.tsx` — ako tamo postoji nedavna izmjena koja blokira okidanje
 
 ## Rezultat
-- Postavke → "Poslovni mod" ISKLJUČEN: switcher u zaglavlju nestaje, app radi kao čisto osobna
-- Postavke → "Poslovni mod" UKLJUČEN: switcher se pojavi, otvoriš app u osobnom view-u, jednim klikom u zadnju tvrtku
-- Tvoj zadnji izbor tvrtke pamti se neovisno o tome jesi li trenutno u osobnom ili poslovnom view-u
+- Otvoriš app na telefonu (postojeći APK, bez ažuriranja)
+- Live Sync povuče novi web kod
+- Skeniranje računa ponovno radi kao prije
+- Bez nikakvog `git pull`, `npm install`, `cap sync`, niti rebuilda APK-a
