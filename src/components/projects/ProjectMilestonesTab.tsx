@@ -297,6 +297,7 @@ export const ProjectMilestonesTab = ({
                             isContingency={isContingency}
                             contingencyOriginal={isContingency ? milestone.budget + (milestone.spent || 0) : undefined}
                             contingencyRemaining={isContingency ? milestone.budget : undefined}
+                            usagePct={!isContingency ? budgetUsed : undefined}
                             onClick={(e) => { e.stopPropagation(); setRevisionsTarget(milestone); setRevisionsDialogOpen(true); }}
                           />
                         </div>
