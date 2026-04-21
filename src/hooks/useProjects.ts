@@ -55,11 +55,14 @@ export const useProjects = () => {
 
         if (membershipError) throw membershipError;
 
-        // Filter memberships by current view context (Personal vs Business profile)
+        // Filter memberships by current view context (Personal vs Business profile).
+        // Model B for guest members: a business membership with NULL profile_id is visible
+        // in ANY business profile (general business context).
         const filteredMemberships = (membershipData || []).filter((m: any) => {
           if (activeBusinessProfileId) {
-            // Business view: include only memberships marked business + matching profile
-            return m.member_context === 'business' && m.member_business_profile_id === activeBusinessProfileId;
+            // Business view: include business memberships matching profile OR with NULL profile (general)
+            return m.member_context === 'business' &&
+              (m.member_business_profile_id === null || m.member_business_profile_id === activeBusinessProfileId);
           }
           // Personal view: include only memberships marked personal
           return m.member_context !== 'business';

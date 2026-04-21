@@ -83,11 +83,7 @@ const JoinProject = () => {
   const handleAccept = async () => {
     if (!token || !user) return;
 
-    // Validation: if business chosen, a profile must be selected
-    if (chosenContext === 'business' && !chosenBusinessProfileId) {
-      setError(t('projects.selectBusinessProfile', 'Odaberite poslovni profil ili odaberite Osobne financije.'));
-      return;
-    }
+    // Note: business context allowed even without a specific profile (model B for guest members)
 
     setAccepting(true);
     setError(null);
@@ -247,7 +243,6 @@ const JoinProject = () => {
                     size="sm"
                     className="h-10 justify-start"
                     onClick={() => setChosenContext('business')}
-                    disabled={businessProfiles.length === 0}
                   >
                     <Briefcase className="w-4 h-4 mr-2" />
                     {t('projects.contextBusiness', 'Poslovni mod')}

@@ -151,34 +151,36 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (type === 'project') {
       memberData.display_name = memberName;
 
-      // Resolve member context: prefer client-provided choice, fall back to invitation suggestion, then 'personal'
+      // Resolve member context (model B for guest members):
+      // - explicit 'business' from client → store as business (validate profile if provided, else NULL)
+      // - explicit 'personal' from client → store as personal
+      // - no choice from client → fall back to invitation.suggested_context
       let resolvedContext: 'personal' | 'business' = 'personal';
       let resolvedBusinessProfileId: string | null = null;
 
-      if (memberContext === 'business' && memberBusinessProfileId) {
-        // Validate that the business profile belongs to the accepting user
-        const { data: bp } = await supabaseAdmin
-          .from('business_profiles')
-          .select('id')
-          .eq('id', memberBusinessProfileId)
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (bp) {
-          resolvedContext = 'business';
-          resolvedBusinessProfileId = memberBusinessProfileId;
+      if (memberContext === 'business') {
+        resolvedContext = 'business';
+        if (memberBusinessProfileId) {
+          // Validate that the business profile belongs to the accepting user
+          const { data: bp } = await supabaseAdmin
+            .from('business_profiles')
+            .select('id')
+            .eq('id', memberBusinessProfileId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          resolvedBusinessProfileId = bp ? memberBusinessProfileId : null;
         }
       } else if (memberContext === 'personal') {
         resolvedContext = 'personal';
       } else {
-        // Fall back to invitation's suggested context (informational only — for personal we just store 'personal')
+        // No client choice — use invitation suggestion
         const { data: invRow } = await supabaseAdmin
           .from('project_invitations')
           .select('suggested_context')
           .eq('id', invitation.invitation_id)
           .maybeSingle();
         if (invRow?.suggested_context === 'business') {
-          // No specific business profile chosen — store as personal so the project still appears somewhere
-          resolvedContext = 'personal';
+          resolvedContext = 'business';
         }
       }
 
