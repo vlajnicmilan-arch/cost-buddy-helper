@@ -82,6 +82,33 @@
     "deleteConfirmTitle": "Obriši projekt?",
     "deleteConfirmMessage": "Ova radnja će trajno obrisati projekt, sve faze i financiranje. Transakcije neće biti obrisane.",
     "kanban": { "list": "Lista", "board": "Ploča", "empty": "Nema faza" },
+    "contingency": {
+      "add": "Dodaj rezervu za nepredviđeno (10%)",
+      "help": "Posebna faza koja čuva 10% budžeta za nepredviđene troškove. Preporučeno.",
+      "milestoneName": "Rezerva za nepredviđeno",
+      "badge": "Rezerva"
+    },
+    "revisions": {
+      "title": "Promjena budžeta faze",
+      "reason": "Razlog promjene",
+      "reasonPlaceholder": "npr. Cijena materijala porasla 15%, dodatni rad...",
+      "reasonRequired": "Razlog promjene budžeta je obavezan.",
+      "changeType": "Tip promjene (neobavezno)",
+      "coverage": "Kako pokriti dodatni iznos?",
+      "coverageIncrease": "Povećaj ukupni budžet projekta",
+      "coverageIncreaseHelp": "Standardno za nepredviđene troškove",
+      "coverageContingency": "Povuci iz rezerve",
+      "coverageContingencyHelp": "Smanjuje fazu „Rezerva za nepredviđeno“",
+      "coverageTransfer": "Prenesi s druge faze",
+      "selectSource": "Odaberi izvornu fazu",
+      "selectSourceRequired": "Odaberite izvornu fazu za prijenos sredstava.",
+      "linkedReason": "Sredstva prebačena na fazu „{{name}}“",
+      "historyTitle": "Povijest promjena budžeta",
+      "viewHistory": "Povijest promjena budžeta",
+      "empty": "Nema zabilježenih promjena.",
+      "types": { "overrun": "Premašaj", "saving": "Ušteda", "scope_change": "Promjena opsega", "correction": "Korekcija" },
+      "coverageShort": { "increase_total": "Povećan ukupni budžet", "transfer": "Prijenos", "contingency": "Iz rezerve" }
+    },
     "standup": {
       "title": "Dnevni izvještaj",
       "subtitle": "Reci ili napiši što je danas rađeno na projektu. AI će strukturirati radnike, materijal i ključne stavke.",

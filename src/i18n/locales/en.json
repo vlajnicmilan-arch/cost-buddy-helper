@@ -82,6 +82,33 @@
     "deleteConfirmTitle": "Delete project?",
     "deleteConfirmMessage": "This will permanently delete the project, all milestones and funding. Transactions will not be deleted.",
     "kanban": { "list": "List", "board": "Board", "empty": "No milestones" },
+    "contingency": {
+      "add": "Add contingency reserve (10%)",
+      "help": "A dedicated phase that holds 10% of the budget for unforeseen costs. Recommended.",
+      "milestoneName": "Contingency reserve",
+      "badge": "Reserve"
+    },
+    "revisions": {
+      "title": "Phase budget change",
+      "reason": "Reason for change",
+      "reasonPlaceholder": "e.g. Material price up 15%, extra labor...",
+      "reasonRequired": "A reason for the budget change is required.",
+      "changeType": "Change type (optional)",
+      "coverage": "How to cover the additional amount?",
+      "coverageIncrease": "Increase total project budget",
+      "coverageIncreaseHelp": "Standard for unforeseen costs",
+      "coverageContingency": "Pull from reserve",
+      "coverageContingencyHelp": "Reduces the “Contingency reserve” phase",
+      "coverageTransfer": "Transfer from another phase",
+      "selectSource": "Select source phase",
+      "selectSourceRequired": "Please select a source phase for the transfer.",
+      "linkedReason": "Funds transferred to phase “{{name}}”",
+      "historyTitle": "Budget change history",
+      "viewHistory": "Budget change history",
+      "empty": "No changes recorded yet.",
+      "types": { "overrun": "Overrun", "saving": "Saving", "scope_change": "Scope change", "correction": "Correction" },
+      "coverageShort": { "increase_total": "Total budget raised", "transfer": "Transfer", "contingency": "From reserve" }
+    },
     "standup": {
       "title": "Daily report",
       "subtitle": "Say or type what was done on the project today. AI will structure workers, materials and key items.",

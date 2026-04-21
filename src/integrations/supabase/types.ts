@@ -1802,6 +1802,89 @@ export type Database = {
           },
         ]
       }
+      milestone_budget_revisions: {
+        Row: {
+          change_type:
+            | Database["public"]["Enums"]["milestone_revision_type"]
+            | null
+          coverage: Database["public"]["Enums"]["milestone_revision_coverage"]
+          created_at: string
+          delta: number | null
+          id: string
+          linked_milestone_id: string | null
+          linked_revision_id: string | null
+          milestone_id: string
+          new_amount: number
+          previous_amount: number
+          project_id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          change_type?:
+            | Database["public"]["Enums"]["milestone_revision_type"]
+            | null
+          coverage?: Database["public"]["Enums"]["milestone_revision_coverage"]
+          created_at?: string
+          delta?: number | null
+          id?: string
+          linked_milestone_id?: string | null
+          linked_revision_id?: string | null
+          milestone_id: string
+          new_amount?: number
+          previous_amount?: number
+          project_id: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          change_type?:
+            | Database["public"]["Enums"]["milestone_revision_type"]
+            | null
+          coverage?: Database["public"]["Enums"]["milestone_revision_coverage"]
+          created_at?: string
+          delta?: number | null
+          id?: string
+          linked_milestone_id?: string | null
+          linked_revision_id?: string | null
+          milestone_id?: string
+          new_amount?: number
+          previous_amount?: number
+          project_id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestone_budget_revisions_linked_milestone_id_fkey"
+            columns: ["linked_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestone_budget_revisions_linked_revision_id_fkey"
+            columns: ["linked_revision_id"]
+            isOneToOne: false
+            referencedRelation: "milestone_budget_revisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestone_budget_revisions_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestone_budget_revisions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestone_checklist_items: {
         Row: {
           created_at: string
@@ -2517,6 +2600,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          is_contingency: boolean
           name: string
           project_id: string
           reminder_days_before: number | null
@@ -2534,6 +2618,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_contingency?: boolean
           name: string
           project_id: string
           reminder_days_before?: number | null
@@ -2551,6 +2636,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_contingency?: boolean
           name?: string
           project_id?: string
           reminder_days_before?: number | null
@@ -3667,6 +3753,12 @@ export type Database = {
         | "subcontractor"
         | "other"
       income_source_role: "owner" | "member"
+      milestone_revision_coverage: "increase_total" | "transfer" | "contingency"
+      milestone_revision_type:
+        | "overrun"
+        | "saving"
+        | "scope_change"
+        | "correction"
       milestone_status: "pending" | "in_progress" | "completed" | "overdue"
       project_role: "manager" | "member" | "viewer"
       project_status: "draft" | "active" | "paused" | "completed" | "cancelled"
@@ -3809,6 +3901,17 @@ export const Constants = {
         "other",
       ],
       income_source_role: ["owner", "member"],
+      milestone_revision_coverage: [
+        "increase_total",
+        "transfer",
+        "contingency",
+      ],
+      milestone_revision_type: [
+        "overrun",
+        "saving",
+        "scope_change",
+        "correction",
+      ],
       milestone_status: ["pending", "in_progress", "completed", "overdue"],
       project_role: ["manager", "member", "viewer"],
       project_status: ["draft", "active", "paused", "completed", "cancelled"],

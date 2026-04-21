@@ -178,11 +178,23 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
 
   const handleSave = async (
     projectData: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
-    template?: ProjectTemplate | null
+    template?: ProjectTemplate | null,
+    addContingency?: boolean
   ) => {
     const created = await addProject(projectData);
-    if (created && template) {
-      await applyTemplateToProject(created.id, template, created.start_date || null);
+    if (created) {
+      if (template || (addContingency && (created.total_budget || 0) > 0)) {
+        await applyTemplateToProject(
+          created.id,
+          template ?? ({ default_milestones: [], color: created.color } as any),
+          created.start_date || null,
+          {
+            addContingency,
+            totalBudget: Number(created.total_budget) || 0,
+            contingencyLabel: t('projects.contingency.milestoneName', 'Rezerva za nepredviđeno'),
+          }
+        );
+      }
     }
   };
 

@@ -4,7 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Pencil, Trash2, Bell, Link2, GripVertical } from 'lucide-react';
+import { AlertTriangle, Pencil, Trash2, Bell, Link2, GripVertical, Shield } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -96,7 +96,10 @@ export const MilestoneKanban = ({ milestones, isManager, onEdit, onDelete, onSta
                           <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 mt-0.5 shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{m.name}</p>
+                          <p className="text-sm font-medium truncate flex items-center gap-1">
+                            {m.is_contingency && <Shield className="w-3 h-3 text-muted-foreground shrink-0" />}
+                            {m.name}
+                          </p>
                           {m.description && (
                             <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{m.description}</p>
                           )}

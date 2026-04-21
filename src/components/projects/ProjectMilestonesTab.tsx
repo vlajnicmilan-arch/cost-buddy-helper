@@ -14,15 +14,18 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks, Shield, History } from 'lucide-react';
 import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
+import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
+import { MilestoneRevisionsDialog } from './MilestoneRevisionsDialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
+import { MilestoneRevisionType, MilestoneRevisionCoverage } from '@/types/milestoneRevision';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
@@ -47,6 +50,8 @@ export const ProjectMilestonesTab = ({
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [revisionsDialogOpen, setRevisionsDialogOpen] = useState(false);
+  const [revisionsTarget, setRevisionsTarget] = useState<ProjectMilestone | null>(null);
   
   // Form state
   const [name, setName] = useState('');
@@ -60,6 +65,16 @@ export const ProjectMilestonesTab = ({
   const [reminderDays, setReminderDays] = useState('3');
   const [startOpen, setStartOpen] = useState(false);
   const [dueOpen, setDueOpen] = useState(false);
+  // Budget revision state (only relevant when editing)
+  const [revisionReason, setRevisionReason] = useState('');
+  const [revisionType, setRevisionType] = useState<MilestoneRevisionType | null>(null);
+  const [revisionCoverage, setRevisionCoverage] = useState<MilestoneRevisionCoverage>('increase_total');
+  const [revisionLinkedId, setRevisionLinkedId] = useState<string | null>(null);
+
+  const contingencyMilestone = milestones.find((m) => m.is_contingency) || null;
+  const previousBudget = editingMilestone ? editingMilestone.budget : 0;
+  const newBudgetNum = parseFloat(budget) || 0;
+  const budgetChanged = !!editingMilestone && Math.abs(newBudgetNum - previousBudget) > 0.001;
 
   const MILESTONE_COLORS = [
     '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', 
@@ -92,6 +107,11 @@ export const ProjectMilestonesTab = ({
       setDependsOn('');
       setReminderDays('3');
     }
+    // Reset revision form on every dialog open
+    setRevisionReason('');
+    setRevisionType(null);
+    setRevisionCoverage('increase_total');
+    setRevisionLinkedId(null);
     setDialogOpen(true);
   };
 
@@ -102,10 +122,25 @@ export const ProjectMilestonesTab = ({
     if (status === 'in_progress' && dependsOn) {
       const depMilestone = milestones.find(m => m.id === dependsOn);
       if (depMilestone && depMilestone.status !== 'completed') {
-        const { toast } = await import('sonner');
         showError(t('projects.dependencyNotCompleted', 'Prethodna faza mora biti završena prije pokretanja ove faze'));
         return;
       }
+    }
+
+    // If editing and budget changed, require a reason
+    if (budgetChanged && !revisionReason.trim()) {
+      showError(t('projects.revisions.reasonRequired', 'Razlog promjene budžeta je obavezan.'));
+      return;
+    }
+    // For increases via transfer, require source selection
+    if (
+      budgetChanged &&
+      newBudgetNum > previousBudget &&
+      revisionCoverage === 'transfer' &&
+      !revisionLinkedId
+    ) {
+      showError(t('projects.revisions.selectSourceRequired', 'Odaberite izvornu fazu za prijenos sredstava.'));
+      return;
     }
     
     setSaving(true);
@@ -125,7 +160,15 @@ export const ProjectMilestonesTab = ({
       };
 
       if (editingMilestone) {
-        await updateMilestone({ ...editingMilestone, ...milestoneData });
+        const revisionInput = budgetChanged
+          ? {
+              reason: revisionReason.trim(),
+              change_type: revisionType,
+              coverage: revisionCoverage,
+              linked_milestone_id: revisionCoverage === 'transfer' ? revisionLinkedId : null,
+            }
+          : undefined;
+        await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget);
       } else {
         await addMilestone(milestoneData);
       }
@@ -202,19 +245,21 @@ export const ProjectMilestonesTab = ({
         </div>
       ) : viewMode === 'list' ? (
         <div className="space-y-3">
-          {milestones.map((milestone) => {
+          {[...milestones].sort((a, b) => Number(!!b.is_contingency) - Number(!!a.is_contingency)).map((milestone) => {
             const budgetUsed = milestone.budget > 0 
               ? ((milestone.spent || 0) / milestone.budget) * 100 
               : 0;
             const isOverBudget = milestone.budget > 0 && (milestone.spent || 0) > milestone.budget;
             const overAmount = isOverBudget ? (milestone.spent || 0) - milestone.budget : 0;
+            const isContingency = !!milestone.is_contingency;
 
             return (
               <div 
                 key={milestone.id}
                 className={cn(
                   "p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow",
-                  isOverBudget && "border-destructive/40 bg-destructive/5"
+                  isOverBudget && "border-destructive/40 bg-destructive/5",
+                  isContingency && "border-dashed border-muted-foreground/40 bg-muted/20"
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -222,15 +267,32 @@ export const ProjectMilestonesTab = ({
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      {isContingency && <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
                       <h4 className="font-medium truncate">{milestone.name}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        {MILESTONE_STATUS_LABELS[milestone.status]}
-                      </Badge>
-                      {isOverBudget && (
+                      {isContingency ? (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {t('projects.contingency.badge', 'Rezerva')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          {MILESTONE_STATUS_LABELS[milestone.status]}
+                        </Badge>
+                      )}
+                      {isOverBudget && !isContingency && (
                         <Badge variant="destructive" className="text-xs gap-1">
                           <AlertTriangle className="w-3 h-3" />
                           +{formatAmount(overAmount)}
                         </Badge>
+                      )}
+                      {isManager && !isContingency && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setRevisionsTarget(milestone); setRevisionsDialogOpen(true); }}
+                          className="ml-auto inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+                          title={t('projects.revisions.viewHistory', 'Povijest promjena budžeta')}
+                        >
+                          <History className="w-3 h-3" />
+                        </button>
                       )}
                     </div>
                     
@@ -380,6 +442,24 @@ export const ProjectMilestonesTab = ({
               </div>
             </div>
 
+            {budgetChanged && editingMilestone && !editingMilestone.is_contingency && (
+              <MilestoneBudgetChangeSection
+                previousAmount={previousBudget}
+                newAmount={newBudgetNum}
+                reason={revisionReason}
+                onReasonChange={setRevisionReason}
+                changeType={revisionType}
+                onChangeTypeChange={setRevisionType}
+                coverage={revisionCoverage}
+                onCoverageChange={setRevisionCoverage}
+                linkedMilestoneId={revisionLinkedId}
+                onLinkedMilestoneChange={setRevisionLinkedId}
+                siblingMilestones={milestones}
+                contingencyMilestone={contingencyMilestone}
+                currentMilestoneId={editingMilestone.id}
+              />
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('projects.startDate')}</Label>
@@ -490,6 +570,13 @@ export const ProjectMilestonesTab = ({
           </div>
         </DialogContent>
       </Dialog>
+      <MilestoneRevisionsDialog
+        open={revisionsDialogOpen}
+        onOpenChange={(o) => { setRevisionsDialogOpen(o); if (!o) setRevisionsTarget(null); }}
+        projectId={projectId}
+        milestone={revisionsTarget}
+        allMilestones={milestones}
+      />
     </div>
   );
 };
