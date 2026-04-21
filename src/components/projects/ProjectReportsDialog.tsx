@@ -506,6 +506,11 @@ export const ProjectReportsDialog = ({
               )}
             </TabsContent>
 
+            {/* Revisions Tab */}
+            <TabsContent value="revisions" className="m-0">
+              <ProjectRevisionsReport projectId={project.id} milestones={milestones} />
+            </TabsContent>
+
             {/* Members Tab */}
             <TabsContent value="members" className="m-0 space-y-4">
               {members.length === 0 ? (
