@@ -9,13 +9,17 @@ import { format, differenceInDays } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { useMilestoneRevisions } from '@/hooks/useMilestoneRevisions';
+import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
 
 interface MilestoneKanbanProps {
   milestones: ProjectMilestone[];
   isManager: boolean;
+  projectId: string;
   onEdit: (m: ProjectMilestone) => void;
   onDelete: (id: string) => void;
   onStatusChange: (m: ProjectMilestone, status: MilestoneStatus) => void;
+  onShowRevisions?: (m: ProjectMilestone) => void;
 }
 
 const COLUMNS: { id: MilestoneStatus; bg: string; border: string }[] = [
@@ -25,9 +29,10 @@ const COLUMNS: { id: MilestoneStatus; bg: string; border: string }[] = [
   { id: 'overdue',     bg: 'bg-destructive/5',     border: 'border-destructive/30' },
 ];
 
-export const MilestoneKanban = ({ milestones, isManager, onEdit, onDelete, onStatusChange }: MilestoneKanbanProps) => {
+export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDelete, onStatusChange, onShowRevisions }: MilestoneKanbanProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, m: ProjectMilestone) => {
     if (!isManager) return;
