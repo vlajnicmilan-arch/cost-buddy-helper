@@ -160,7 +160,15 @@ export const ProjectMilestonesTab = ({
       };
 
       if (editingMilestone) {
-        await updateMilestone({ ...editingMilestone, ...milestoneData });
+        const revisionInput = budgetChanged
+          ? {
+              reason: revisionReason.trim(),
+              change_type: revisionType,
+              coverage: revisionCoverage,
+              linked_milestone_id: revisionCoverage === 'transfer' ? revisionLinkedId : null,
+            }
+          : undefined;
+        await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget);
       } else {
         await addMilestone(milestoneData);
       }
