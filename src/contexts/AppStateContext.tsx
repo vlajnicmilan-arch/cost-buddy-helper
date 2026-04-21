@@ -64,11 +64,20 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     return localStorage.getItem('business_mode_enabled') === 'true';
   });
   // Always start each session in Personal view (default) for safety.
-  // The last active business profile id is preserved separately so the
-  // BusinessProfileSwitcher can show it and one click returns to business view.
+  // We use sessionStorage as a cold-start sentinel: it is cleared when the
+  // tab/app process is killed, so a missing flag = fresh launch = force Personal.
+  // Within the same session (HMR, re-renders, route changes) the user's choice
+  // to switch to business mode is preserved via localStorage.
   const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(() => {
-    localStorage.setItem('business_mode_enabled', 'false');
-    return false;
+    const sessionAlive = sessionStorage.getItem('app_session_started') === 'true';
+    if (!sessionAlive) {
+      // Cold start — force Personal mode regardless of last persisted value.
+      sessionStorage.setItem('app_session_started', 'true');
+      localStorage.setItem('business_mode_enabled', 'false');
+      return false;
+    }
+    // Same session (e.g. HMR / provider remount) — honor persisted value.
+    return localStorage.getItem('business_mode_enabled') === 'true';
   });
   const [activeBusinessProfileId, setActiveBusinessProfileIdState] = useState<string | null>(
     () => localStorage.getItem('active_business_profile_id')
