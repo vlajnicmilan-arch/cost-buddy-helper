@@ -34,6 +34,7 @@ export const useNativeCamera = (): UseNativeCameraReturn => {
 
   const takeNativePhoto = useCallback(async (source: CameraSource): Promise<string | null> => {
     try {
+      console.warn('📸 Native camera start, source=', source);
       const image = await Camera.getPhoto({
         quality: 85,
         allowEditing: false,
@@ -45,15 +46,25 @@ export const useNativeCamera = (): UseNativeCameraReturn => {
 
       if (image.base64String) {
         const mimeType = image.format === 'png' ? 'image/png' : 'image/jpeg';
-        return `data:${mimeType};base64,${image.base64String}`;
+        const dataUrl = `data:${mimeType};base64,${image.base64String}`;
+        console.warn('📸 Got image, length=', dataUrl.length);
+        return dataUrl;
       }
+      console.warn('📸 Camera returned no base64String');
       return null;
     } catch (error: any) {
-      // User cancelled
-      if (error?.message?.includes('User cancelled') || error?.message?.includes('cancelled')) {
+      const msg = (error?.message || String(error) || '').toLowerCase();
+      // User cancelled — silent
+      if (msg.includes('user cancelled') || msg.includes('cancelled') || msg.includes('canceled')) {
+        console.warn('📸 User cancelled camera');
         return null;
       }
-      console.error('Native camera error:', error);
+      // Real error — surface it to the user instead of silently returning null
+      console.error('📸 Native camera error:', error);
+      try {
+        const { showError } = await import('@/hooks/useStatusFeedback');
+        showError(`Kamera: ${error?.message || 'nepoznata greška'}`);
+      } catch {}
       return null;
     }
   }, []);
