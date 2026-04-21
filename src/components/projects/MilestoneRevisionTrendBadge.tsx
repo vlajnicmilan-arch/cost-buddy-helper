@@ -57,11 +57,17 @@ export const MilestoneRevisionTrendBadge = ({
       ? 'shadow-[0_0_0_2px_hsl(var(--warning,38_92%_50%)/0.4)]'
       : '';
 
+  // Dynamic tooltip — distinguishes overrun vs near-limit vs plan-revised states
+  const pctRounded = Math.round(usagePct ?? 0);
   const glowTitle = glowLevel === 'over'
-    ? t('projects.revisions.glowOver', 'Faza je premašila budžet')
+    ? t('projects.revisions.glowOverWithPct', 'Faza je premašila budžet ({{pct}}%)', { pct: pctRounded })
     : glowLevel === 'near'
-      ? t('projects.revisions.glowNear', 'Faza je blizu limita budžeta')
+      ? t('projects.revisions.glowNearWithPct', 'Faza je blizu limita budžeta ({{pct}}%)', { pct: pctRounded })
       : '';
+
+  const planRevisedTitle = revisionCount > 0
+    ? t('projects.revisions.planRevisedTooltip', 'Plan revidiran {{count}} put(a)', { count: revisionCount })
+    : '';
 
   // Contingency pill: show how much of the reserve is still available
   if (isContingency) {
