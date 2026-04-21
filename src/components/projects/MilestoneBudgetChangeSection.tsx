@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Shield, ArrowRightLeft, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Shield, ArrowRightLeft, Plus, Lightbulb } from 'lucide-react';
 import {
   MilestoneRevisionType,
   MilestoneRevisionCoverage,
@@ -29,6 +29,8 @@ interface Props {
   siblingMilestones: ProjectMilestone[];
   contingencyMilestone: ProjectMilestone | null;
   currentMilestoneId: string | null;
+  /** Current spent / previousAmount * 100. Drives the auto-suggestion to pull from reserve. */
+  currentUsagePct?: number;
 }
 
 const TYPE_OPTIONS: MilestoneRevisionType[] = ['overrun', 'saving', 'scope_change', 'correction'];
