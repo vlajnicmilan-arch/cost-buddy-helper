@@ -1802,6 +1802,51 @@ export type Database = {
           },
         ]
       }
+      milestone_budget_alerts: {
+        Row: {
+          id: string
+          milestone_id: string
+          project_id: string
+          sent_at: string
+          threshold: number
+          usage_pct: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          milestone_id: string
+          project_id: string
+          sent_at?: string
+          threshold: number
+          usage_pct: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          milestone_id?: string
+          project_id?: string
+          sent_at?: string
+          threshold?: number
+          usage_pct?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestone_budget_alerts_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestone_budget_alerts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestone_budget_revisions: {
         Row: {
           change_type:
