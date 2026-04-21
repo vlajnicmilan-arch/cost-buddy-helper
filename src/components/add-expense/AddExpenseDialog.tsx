@@ -249,6 +249,7 @@ export const AddExpenseDialog = ({
 
   const handleNativeCapture = async (source: 'camera' | 'gallery', multiMode = false) => {
     console.warn('📸 handleNativeCapture start', { source, multiMode, isNative });
+    cameraActiveRef.current = true;
     try {
       const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
       console.warn('📸 handleNativeCapture got base64?', !!base64, 'len=', base64?.length || 0);
@@ -259,6 +260,9 @@ export const AddExpenseDialog = ({
     } catch (err: any) {
       console.error('📸 handleNativeCapture error:', err);
       showError(`Greška pri snimanju: ${err?.message || 'nepoznato'}`);
+    } finally {
+      // Slight delay so any popstate that fires on activity return is still blocked.
+      setTimeout(() => { cameraActiveRef.current = false; }, 800);
     }
   };
 
