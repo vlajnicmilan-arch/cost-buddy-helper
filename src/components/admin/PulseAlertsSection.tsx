@@ -79,7 +79,15 @@ export const PulseAlertsSection = () => {
       ) : (
         <div className="space-y-2">
           {alerts.map((a) => (
-            <div key={a.id} className="border rounded-lg p-2.5 space-y-1.5 bg-background/50">
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => {
+                setSelectedAlert(a);
+                setDetailOpen(true);
+              }}
+              className="w-full text-left border rounded-lg p-2.5 space-y-1.5 bg-background/50 hover:bg-accent/40 transition-colors"
+            >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
@@ -96,6 +104,7 @@ export const PulseAlertsSection = () => {
                   <span className="text-[10px] text-muted-foreground">
                     {format(new Date(a.triggered_at), 'dd.MM HH:mm')}
                   </span>
+                  <ChevronRight className="w-3 h-3 text-muted-foreground" />
                 </div>
               </div>
               {a.sample_route && (
@@ -108,10 +117,16 @@ export const PulseAlertsSection = () => {
                   {a.sample_message}
                 </div>
               )}
-            </div>
+            </button>
           ))}
         </div>
       )}
+
+      <PulseAlertDetailDialog
+        alert={selectedAlert}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </div>
   );
 };
