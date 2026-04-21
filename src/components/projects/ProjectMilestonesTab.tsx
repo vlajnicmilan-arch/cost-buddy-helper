@@ -570,6 +570,13 @@ export const ProjectMilestonesTab = ({
           </div>
         </DialogContent>
       </Dialog>
+      <MilestoneRevisionsDialog
+        open={revisionsDialogOpen}
+        onOpenChange={(o) => { setRevisionsDialogOpen(o); if (!o) setRevisionsTarget(null); }}
+        projectId={projectId}
+        milestone={revisionsTarget}
+        allMilestones={milestones}
+      />
     </div>
   );
 };
