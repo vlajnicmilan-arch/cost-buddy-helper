@@ -18,6 +18,14 @@ interface MilestoneRevisionTrendBadgeProps {
   onClick?: (e: React.MouseEvent) => void;
   /** Compact mode for tight Kanban cards (icon-only, no labels). */
   compact?: boolean;
+  /**
+   * Current budget usage percentage for this milestone (spent / budget * 100).
+   * Drives an ambient glow:
+   *   - >=100 → red pulsing glow (over budget)
+   *   - >=80  → amber glow (near limit)
+   * Ignored for contingency phases.
+   */
+  usagePct?: number;
 }
 
 /**
