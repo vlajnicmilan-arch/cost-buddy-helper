@@ -914,6 +914,33 @@
     "deleteConfirmTitle": "Projekt löschen?",
     "deleteConfirmMessage": "Dadurch werden das Projekt, alle Meilensteine und Finanzierungen dauerhaft gelöscht. Transaktionen werden nicht gelöscht.",
     "kanban": { "list": "Liste", "board": "Board", "empty": "Keine Meilensteine" },
+    "contingency": {
+      "add": "Reserve für Unvorhergesehenes hinzufügen (10%)",
+      "help": "Eine eigene Phase, die 10% des Budgets für unvorhergesehene Kosten zurückhält. Empfohlen.",
+      "milestoneName": "Reserve für Unvorhergesehenes",
+      "badge": "Reserve"
+    },
+    "revisions": {
+      "title": "Phasenbudget ändern",
+      "reason": "Grund der Änderung",
+      "reasonPlaceholder": "z. B. Materialpreis +15%, Mehrarbeit...",
+      "reasonRequired": "Ein Grund für die Budgetänderung ist erforderlich.",
+      "changeType": "Änderungsart (optional)",
+      "coverage": "Wie soll der Mehrbetrag gedeckt werden?",
+      "coverageIncrease": "Gesamtbudget des Projekts erhöhen",
+      "coverageIncreaseHelp": "Standard bei unvorhergesehenen Kosten",
+      "coverageContingency": "Aus der Reserve entnehmen",
+      "coverageContingencyHelp": "Reduziert die Phase „Reserve für Unvorhergesehenes“",
+      "coverageTransfer": "Von einer anderen Phase übertragen",
+      "selectSource": "Quellphase wählen",
+      "selectSourceRequired": "Bitte eine Quellphase für die Umbuchung wählen.",
+      "linkedReason": "Mittel auf Phase „{{name}}“ übertragen",
+      "historyTitle": "Budgetänderungs-Verlauf",
+      "viewHistory": "Budgetänderungs-Verlauf",
+      "empty": "Noch keine Änderungen erfasst.",
+      "types": { "overrun": "Überschreitung", "saving": "Einsparung", "scope_change": "Umfangsänderung", "correction": "Korrektur" },
+      "coverageShort": { "increase_total": "Gesamtbudget erhöht", "transfer": "Übertragung", "contingency": "Aus Reserve" }
+    },
     "standup": {
       "title": "Tagesbericht",
       "subtitle": "Sagen oder tippen Sie, was heute am Projekt gemacht wurde. KI strukturiert Arbeiter, Material und wichtige Punkte.",
