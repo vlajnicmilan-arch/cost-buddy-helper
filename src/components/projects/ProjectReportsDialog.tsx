@@ -18,11 +18,12 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { 
   FileText, Download, Wallet, Target, Users, 
-  TrendingDown, CheckCircle2, Clock, AlertTriangle
+  TrendingDown, CheckCircle2, Clock, AlertTriangle, History
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend
 } from 'recharts';
+import { ProjectRevisionsReport } from './ProjectRevisionsReport';
 
 interface ProjectExpense {
   id: string;
@@ -286,7 +287,7 @@ export const ProjectReportsDialog = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="shrink-0 grid grid-cols-3 w-full">
+          <TabsList className="shrink-0 grid grid-cols-4 w-full">
             <TabsTrigger value="overview" className="gap-1">
               <Wallet className="w-4 h-4" />
               {t('projects.budgetOverview', 'Budžet')}
@@ -294,6 +295,10 @@ export const ProjectReportsDialog = ({
             <TabsTrigger value="milestones" className="gap-1">
               <Target className="w-4 h-4" />
               {t('projects.milestones', 'Faze')}
+            </TabsTrigger>
+            <TabsTrigger value="revisions" className="gap-1">
+              <History className="w-4 h-4" />
+              {t('projects.revisions.tabLabel', 'Promjene')}
             </TabsTrigger>
             <TabsTrigger value="members" className="gap-1">
               <Users className="w-4 h-4" />
