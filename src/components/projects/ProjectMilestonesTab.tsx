@@ -14,15 +14,18 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks, Shield, History } from 'lucide-react';
 import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
+import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
+import { MilestoneRevisionsDialog } from './MilestoneRevisionsDialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
+import { MilestoneRevisionType, MilestoneRevisionCoverage } from '@/types/milestoneRevision';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
@@ -47,6 +50,8 @@ export const ProjectMilestonesTab = ({
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [revisionsDialogOpen, setRevisionsDialogOpen] = useState(false);
+  const [revisionsTarget, setRevisionsTarget] = useState<ProjectMilestone | null>(null);
   
   // Form state
   const [name, setName] = useState('');
@@ -60,6 +65,16 @@ export const ProjectMilestonesTab = ({
   const [reminderDays, setReminderDays] = useState('3');
   const [startOpen, setStartOpen] = useState(false);
   const [dueOpen, setDueOpen] = useState(false);
+  // Budget revision state (only relevant when editing)
+  const [revisionReason, setRevisionReason] = useState('');
+  const [revisionType, setRevisionType] = useState<MilestoneRevisionType | null>(null);
+  const [revisionCoverage, setRevisionCoverage] = useState<MilestoneRevisionCoverage>('increase_total');
+  const [revisionLinkedId, setRevisionLinkedId] = useState<string | null>(null);
+
+  const contingencyMilestone = milestones.find((m) => m.is_contingency) || null;
+  const previousBudget = editingMilestone ? editingMilestone.budget : 0;
+  const newBudgetNum = parseFloat(budget) || 0;
+  const budgetChanged = !!editingMilestone && Math.abs(newBudgetNum - previousBudget) > 0.001;
 
   const MILESTONE_COLORS = [
     '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', 
@@ -92,6 +107,11 @@ export const ProjectMilestonesTab = ({
       setDependsOn('');
       setReminderDays('3');
     }
+    // Reset revision form on every dialog open
+    setRevisionReason('');
+    setRevisionType(null);
+    setRevisionCoverage('increase_total');
+    setRevisionLinkedId(null);
     setDialogOpen(true);
   };
 
@@ -102,10 +122,25 @@ export const ProjectMilestonesTab = ({
     if (status === 'in_progress' && dependsOn) {
       const depMilestone = milestones.find(m => m.id === dependsOn);
       if (depMilestone && depMilestone.status !== 'completed') {
-        const { toast } = await import('sonner');
         showError(t('projects.dependencyNotCompleted', 'Prethodna faza mora biti završena prije pokretanja ove faze'));
         return;
       }
+    }
+
+    // If editing and budget changed, require a reason
+    if (budgetChanged && !revisionReason.trim()) {
+      showError(t('projects.revisions.reasonRequired', 'Razlog promjene budžeta je obavezan.'));
+      return;
+    }
+    // For increases via transfer, require source selection
+    if (
+      budgetChanged &&
+      newBudgetNum > previousBudget &&
+      revisionCoverage === 'transfer' &&
+      !revisionLinkedId
+    ) {
+      showError(t('projects.revisions.selectSourceRequired', 'Odaberite izvornu fazu za prijenos sredstava.'));
+      return;
     }
     
     setSaving(true);
