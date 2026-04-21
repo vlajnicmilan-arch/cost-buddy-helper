@@ -41,9 +41,27 @@ export const MilestoneRevisionTrendBadge = ({
   contingencyRemaining,
   onClick,
   compact = false,
+  usagePct,
 }: MilestoneRevisionTrendBadgeProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+
+  // Glow level driven by usage (only relevant for regular phases)
+  const glowLevel: 'over' | 'near' | null = !isContingency && typeof usagePct === 'number'
+    ? usagePct >= 100 ? 'over' : usagePct >= 80 ? 'near' : null
+    : null;
+
+  const glowClass = glowLevel === 'over'
+    ? 'shadow-[0_0_0_2px_hsl(var(--destructive)/0.35)] animate-pulse'
+    : glowLevel === 'near'
+      ? 'shadow-[0_0_0_2px_hsl(var(--warning,38_92%_50%)/0.4)]'
+      : '';
+
+  const glowTitle = glowLevel === 'over'
+    ? t('projects.revisions.glowOver', 'Faza je premašila budžet')
+    : glowLevel === 'near'
+      ? t('projects.revisions.glowNear', 'Faza je blizu limita budžeta')
+      : '';
 
   // Contingency pill: show how much of the reserve is still available
   if (isContingency) {
@@ -77,13 +95,35 @@ export const MilestoneRevisionTrendBadge = ({
     );
   }
 
-  // Regular milestone: nothing to show if there have never been revisions
-  if (revisionCount === 0) return null;
+  // Regular milestone: if no revisions AND no glow signal, render nothing
+  if (revisionCount === 0 && !glowLevel) return null;
 
   const delta = recentTrend?.delta ?? 0;
   const hasRecentChange = !!recentTrend && Math.abs(delta) > 0.001;
   const isOverrun = delta > 0;
   const TrendIcon = isOverrun ? TrendingUp : TrendingDown;
+
+  // No revisions yet but glow needed → render a minimal glowing badge so the user
+  // sees the alert and can still click through to (an empty) history.
+  if (revisionCount === 0 && glowLevel) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium transition-colors',
+          glowLevel === 'over'
+            ? 'border-destructive/40 bg-destructive/10 text-destructive'
+            : 'border-warning/40 bg-warning/10 text-warning',
+          glowClass
+        )}
+        title={glowTitle}
+      >
+        <History className="w-3 h-3" />
+        <span>{Math.round(usagePct ?? 0)}%</span>
+      </button>
+    );
+  }
 
   return (
     <button
@@ -95,9 +135,10 @@ export const MilestoneRevisionTrendBadge = ({
           ? isOverrun
             ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/15'
             : 'border-income/40 bg-income/10 text-income hover:bg-income/15'
-          : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground hover:bg-muted/60'
+          : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground hover:bg-muted/60',
+        glowClass
       )}
-      title={t('projects.revisions.viewHistory', 'Povijest promjena budžeta')}
+      title={glowTitle || t('projects.revisions.viewHistory', 'Povijest promjena budžeta')}
     >
       <History className="w-3 h-3" />
       <span>{revisionCount}</span>
