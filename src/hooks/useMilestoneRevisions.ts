@@ -48,5 +48,28 @@ export const useMilestoneRevisions = (
     fetch();
   }, [fetch]);
 
-  return { revisions, loading, refetch: fetch };
+  /** Number of revisions for a given milestone (counts both primary and linked entries). */
+  const getRevisionCount = useCallback(
+    (mid: string) => revisions.filter((r) => r.milestone_id === mid).length,
+    [revisions]
+  );
+
+  /**
+   * Net budget delta for a milestone over the last N days.
+   * Positive = budget grew (overrun trend), negative = budget shrunk (saving trend), null = no recent revisions.
+   */
+  const getRecentTrend = useCallback(
+    (mid: string, days = 30): { delta: number; count: number } | null => {
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      const recent = revisions.filter(
+        (r) => r.milestone_id === mid && new Date(r.created_at).getTime() >= cutoff
+      );
+      if (recent.length === 0) return null;
+      const delta = recent.reduce((sum, r) => sum + (Number(r.delta) || 0), 0);
+      return { delta, count: recent.length };
+    },
+    [revisions]
+  );
+
+  return { revisions, loading, refetch: fetch, getRevisionCount, getRecentTrend };
 };

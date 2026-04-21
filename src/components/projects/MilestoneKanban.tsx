@@ -9,13 +9,17 @@ import { format, differenceInDays } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { useMilestoneRevisions } from '@/hooks/useMilestoneRevisions';
+import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
 
 interface MilestoneKanbanProps {
   milestones: ProjectMilestone[];
   isManager: boolean;
+  projectId: string;
   onEdit: (m: ProjectMilestone) => void;
   onDelete: (id: string) => void;
   onStatusChange: (m: ProjectMilestone, status: MilestoneStatus) => void;
+  onShowRevisions?: (m: ProjectMilestone) => void;
 }
 
 const COLUMNS: { id: MilestoneStatus; bg: string; border: string }[] = [
@@ -25,9 +29,10 @@ const COLUMNS: { id: MilestoneStatus; bg: string; border: string }[] = [
   { id: 'overdue',     bg: 'bg-destructive/5',     border: 'border-destructive/30' },
 ];
 
-export const MilestoneKanban = ({ milestones, isManager, onEdit, onDelete, onStatusChange }: MilestoneKanbanProps) => {
+export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDelete, onStatusChange, onShowRevisions }: MilestoneKanbanProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, m: ProjectMilestone) => {
     if (!isManager) return;
@@ -142,6 +147,15 @@ export const MilestoneKanban = ({ milestones, isManager, onEdit, onDelete, onSta
                           {m.reminder_days_before && m.due_date && (
                             <Bell className="w-3 h-3" />
                           )}
+                          <MilestoneRevisionTrendBadge
+                            revisionCount={getRevisionCount(m.id)}
+                            recentTrend={getRecentTrend(m.id, 30)}
+                            isContingency={!!m.is_contingency}
+                            contingencyOriginal={m.is_contingency ? m.budget + (m.spent || 0) : undefined}
+                            contingencyRemaining={m.is_contingency ? m.budget : undefined}
+                            onClick={(e) => { e.stopPropagation(); onShowRevisions?.(m); }}
+                            compact
+                          />
                         </div>
                         {isManager && (
                           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -14,7 +14,7 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks, Shield, History } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks, Shield } from 'lucide-react';
 import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
 import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
@@ -26,6 +26,8 @@ import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { MilestoneRevisionType, MilestoneRevisionCoverage } from '@/types/milestoneRevision';
+import { useMilestoneRevisions } from '@/hooks/useMilestoneRevisions';
+import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
@@ -45,6 +47,7 @@ export const ProjectMilestonesTab = ({
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { addMilestone, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
+  const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
@@ -229,8 +232,10 @@ export const ProjectMilestonesTab = ({
         <MilestoneKanban
           milestones={milestones}
           isManager={isManager}
+          projectId={projectId}
           onEdit={(m) => openDialog(m)}
           onDelete={handleDelete}
+          onShowRevisions={(m) => { setRevisionsTarget(m); setRevisionsDialogOpen(true); }}
           onStatusChange={async (m, newStatus) => {
             await updateMilestone({ ...m, status: newStatus });
             onRefetch();
@@ -284,15 +289,17 @@ export const ProjectMilestonesTab = ({
                           +{formatAmount(overAmount)}
                         </Badge>
                       )}
-                      {isManager && !isContingency && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setRevisionsTarget(milestone); setRevisionsDialogOpen(true); }}
-                          className="ml-auto inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-                          title={t('projects.revisions.viewHistory', 'Povijest promjena budžeta')}
-                        >
-                          <History className="w-3 h-3" />
-                        </button>
+                      {isManager && (
+                        <div className="ml-auto">
+                          <MilestoneRevisionTrendBadge
+                            revisionCount={getRevisionCount(milestone.id)}
+                            recentTrend={getRecentTrend(milestone.id, 30)}
+                            isContingency={isContingency}
+                            contingencyOriginal={isContingency ? milestone.budget + (milestone.spent || 0) : undefined}
+                            contingencyRemaining={isContingency ? milestone.budget : undefined}
+                            onClick={(e) => { e.stopPropagation(); setRevisionsTarget(milestone); setRevisionsDialogOpen(true); }}
+                          />
+                        </div>
                       )}
                     </div>
                     
