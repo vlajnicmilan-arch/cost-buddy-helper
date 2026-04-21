@@ -211,10 +211,6 @@ export const AddExpenseDialog = ({
       setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
     }
   }, [open, customPaymentSources]);
-    if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
-      setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
-    }
-  }, [open, customPaymentSources]);
 
   // Auto-launch scan when dialog opens with autoScan=true
   const autoScanTriggeredRef = useRef(false);
