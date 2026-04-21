@@ -1,73 +1,69 @@
 
 
-## Moja stručna preporuka
+## Što slijedi — sljedeći logični koraci
 
-### Pitanje 1 — Tip promjene: **DA, 4 kategorije, ali kao opcionalni quick-tag**
-
-**Preporuka:** "Razlog" (slobodan tekst) je **obavezan**, "Tip promjene" je **opcionalni chip selector** s 4 ponuđene vrijednosti.
-
-**Zašto:**
-- Slobodan tekst sam → kasnije nemaš kako filtrirati/grupirati ("Pokaži mi sve premašaje budžeta po projektu") — gubiš analitičku moć
-- 4 kategorije sam → korisnik se osjeća prisiljeno klasificirati svaku sitnicu, dosadi mu, počne random klikati
-- **Kombinacija** = kratak chip klik za 80 % slučajeva + slobodan tekst za nijanse → najbolje od oba svijeta
-
-**Konkretne 4 kategorije** (provjereno u praksi gradnje/usluga):
-- 🔴 **Premašaj** (overrun) — stvaran trošak veći od plana, cijene materijala, više rada
-- 🟢 **Ušteda** (saving) — manje od plana, ostaje rezerva
-- 🟡 **Promjena opsega** (scope_change) — investitor/klijent promijenio zahtjev
-- 🔵 **Korekcija** (correction) — ispravak greške u izvornoj procjeni
-
-Bonus: u izvještaju projekta na kraju vidiš "od 12.000 € premašaja, 8.000 € otpada na promjene opsega" → **direktan argument prema klijentu** za dodatnu naplatu.
+Završili smo **Razinu 1 + Razinu 2** plana za nepredviđene troškove. Evo 4 prirodna nastavka, poredana po vrijednosti:
 
 ---
 
-### Pitanje 2 — Rezerva za nepredviđeno: **DA, automatski u predloške, ali s pametnim defaultom**
+### Opcija A — Vizualni indikatori i povijest na karticama faza ⭐ preporučeno
+Dodati na svaku karticu faze (Kanban i lista):
+- 📜 **Badge s brojem revizija** (npr. "3 promjene") → klik otvara `MilestoneRevisionsDialog`
+- ↗ / ↘ **Trend strelica** ako je budžet mijenjan u zadnjih 30 dana (zelena = ušteda, crvena = premašaj)
+- 🛡️ **Status rezerve** — koliko je preostalo od početne rezerve (npr. "Rezerva: 800 € / 1.000 €")
 
-**Preporuka:** Automatski dodaj fazu **"Rezerva za nepredviđeno"** s **10 %** ukupnog budžeta projekta, **uz checkbox** "Dodaj rezervu za nepredviđeno (preporučeno)" prilikom kreiranja iz predloška — već uključen po defaultu, korisnik ga može isključiti jednim klikom.
-
-**Zašto:**
-- Industrijski standard u građevini/projektima je 5–15 % rezerve. 10 % je sigurna sredina.
-- Ako ostaje opcionalna i ručna → 90 % korisnika je nikad neće dodati i opet će kukati kad pukne budžet
-- Ako je nasilno obavezna → korisnik koji radi mali fiksni posao (npr. "popravak slavine za 50 €") ne treba je
-- **Default-on s opt-out** = najbolja edukacija korisnika + sloboda izbora
-
-**Tehnički detalji rezerve:**
-- Posebna vizualna oznaka: 🛡️ ikona, sive boje, badge "Rezerva"
-- **Ne broji se u "spent"** prikazu napretka projekta (jer nije pravi trošak nego buffer)
-- Status uvijek `pending`, ne može se mijenjati u `completed`
-- Prikazuje se **na vrhu** kanban prikaza, odvojena tankom linijom od "pravih" faza
-- Kad neka faza povisi budžet → opcija "Povući iz rezerve" u dialogu, automatski smanjuje rezervu i bilježi 2 povezane revizije
-- Kad se projekt završi s preostalom rezervom → final report kaže "Ušteda: X €" → osjećaj uspjeha
-
-**Iznimke:**
-- Ako predložak već ima fazu s imenom koje sadrži "rezerv" / "contingency" → ne dupliciramo
-- Ako projekt nema `total_budget` (= 0) → checkbox sakriven, rezerva se ne nudi (nema postotka za izračun)
+**Zašto prvo:** sustav već bilježi revizije, ali korisnik ih trenutno mora aktivno otvarati kroz dialog. Bez vizualnih signala ne zna da postoje. Ovo je "kompletiranje" prethodnog rada.
 
 ---
 
-### Sažetak prijedloga
+### Opcija B — Izvještaj o reviziju budžeta u Project Reports
+Proširiti postojeći `ProjectReportsDialog` s novom sekcijom **"Promjene budžeta"**:
+- Ukupan iznos premašaja po kategoriji (Premašaj/Ušteda/Promjena opsega/Korekcija)
+- Top 3 faze s najviše promjena
+- Iskorištenost rezerve (koliko od 10 % je potrošeno)
+- Argument prema klijentu: "Od 12.000 € premašaja, 8.000 € otpada na promjene opsega"
 
-| Element | Odluka | Razlog |
-|---|---|---|
-| Razlog promjene | Obavezan tekst | Trag i odgovornost |
-| Tip promjene | Opcionalni chip (4 opcije) | Analitika bez prisile |
-| Rezerva za nepredviđeno | Auto u predlošku, default-on, 10 %, opt-out checkbox | Edukacija + sloboda |
-| Postotak rezerve | 10 % fiksno u prvoj iteraciji | Kasnije može u postavke korisnika |
-| Vizualno | 🛡️ siva boja, na vrhu, ne broji se u spent | Jasno odvojeno od pravih faza |
+**Zašto:** zatvara cijeli ciklus — od bilježenja do iskorištenja podataka. Direktna poslovna vrijednost.
 
 ---
 
-### Što slijedi nakon tvog odobrenja
+### Opcija C — Notifikacije i upozorenja
+- **Push/in-app obavijest** kad je faza prešla 80 % budžeta ("Faza X je na 85 % budžeta — razmisli o reviziji")
+- **Auto-prijedlog povlačenja iz rezerve** kad faza pređe 100 % i postoji rezerva
+- **Tjedni sažetak** revizija po projektu
 
-Kreće implementacija **Razine 1 + Razine 2** iz prethodnog plana, s ovim odlukama uklopljenim:
+**Zašto:** pretvara pasivni alat u proaktivnog asistenta. Najveća korisnost, ali najviše rada.
 
-1. Migracija: nova tablica `milestone_budget_revisions` + kolona `is_contingency` na `project_milestones`
-2. `useMilestoneRevisions` hook + proširenje `updateMilestone` u `useProjectMilestones`
-3. `MilestoneBudgetChangeSection` komponenta (razlog + chip tip + 3 radio opcije balansiranja)
-4. `MilestoneRevisionsDialog` (povijest s filtrom po tipu)
-5. Vizualni indikatori na karticama faza (📜 broj revizija, ↗/↘ trend)
-6. Proširenje `applyTemplateToProject` da doda rezervnu fazu (10 %, opt-out u UI-ju kreiranja projekta)
-7. Lokalizacija svih novih tekstova (HR/EN/DE)
+---
 
-**Reci samo "Idemo" pa krećem.**
+### Opcija D — Druga tema (npr. izvještaji, šihterica, AI asistent)
+Pauziramo nepredviđene troškove i prelazimo na nešto drugo iz tvojeg backloga.
+
+---
+
+## Moja preporuka
+
+Idi s **Opcijom A** sada — to je 30 min posla i zatvara prošlu rundu tako da korisnik **vidi** vrijednost onoga što smo upravo izgradili. Bez vizualnih indikatora cijela ta funkcionalnost je "skrivena" iza dialoga koji nitko neće otvoriti bez razloga.
+
+Onda **Opcija B** kao sljedeći korak (poslovna vrijednost), a **Opcija C** kasnije kad sve sjedne.
+
+---
+
+## Implementacija Opcije A (ako odobriš)
+
+**Datoteke:**
+- `src/components/projects/MilestoneKanban.tsx` — dodati badge i trend strelicu na karticu
+- `src/components/projects/ProjectMilestonesTab.tsx` — isto za list view
+- `src/hooks/useMilestoneRevisions.ts` — dodati pomoćne metode `getRevisionCount(milestoneId)` i `getRecentTrend(milestoneId, days)`
+- `src/components/projects/MilestoneRevisionTrendBadge.tsx` (nova) — reusable mali badge
+
+**Logika rezerve:** za fazu s `is_contingency=true` prikazati postotak preostalog umjesto trenda (jer rezerva nije pravi trošak).
+
+**Lokalizacija:** dodati ~6 novih ključeva u hr/en/de.
+
+**Bez izmjena baze.** Sve se gradi na već postojećim podacima.
+
+---
+
+**Reci A, B, C, D ili predloži svoje.**
 
