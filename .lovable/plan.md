@@ -1,79 +1,42 @@
 
 
-## Odgovor: nije idealna postavka — to je trenutni dizajn, ali nije logičan
+## Opcija B — Popravak Kanban prikaza + "Plan revidiran" indikator
 
-### Trenutno stanje (kako je sad implementirano)
+### Što ćemo napraviti
 
-U sustavu postoje **3 uloge** na projektu:
+**1. Kanban — pokazati badge revizija svim članovima**
+- `MilestoneKanban.tsx` trenutno skriva `MilestoneRevisionTrendBadge` od običnih članova (Test ga ne vidi na ploči, samo u Listi)
+- Uklanjamo `isManager` gating oko badge-a
+- Edit/delete gumbi i drag & drop ostaju samo za managera (bez promjene)
 
-| Uloga | Može uređivati faze | Vidi prekoračenja (📜 trend) | Prima notifikacije |
-|---|---|---|---|
-| **Manager (Voditelj)** | ✅ Da | ✅ Da | ✅ Da |
-| **Member (Punopravni član)** | ❌ **Ne** | ❌ **Ne** | ❌ Ne |
-| **Viewer (Promatrač)** | ❌ Ne | ❌ Ne | ❌ Ne |
+**2. "Plan revidiran" — uvijek vidljiv badge kad postoje revizije**
+- Trenutno: ako faza ima reviziju ali 0 € potrošnje, badge 📜 se prikazuje neutralno (sivo) — što je već u redu
+- Provjera: osigurati da uvjet `revisionCount === 0 && !glowLevel` u `MilestoneRevisionTrendBadge.tsx` ne sakrije badge kad revizija **postoji** (trenutni kod to već ispravno radi, ali potvrdit ću renderiranje na 0% iskorištenosti)
+- Dodati jasniji **tooltip** koji razlikuje dva slučaja:
+  - "Plan revidiran X puta" → kad postoje revizije ali nema premašaja
+  - "Faza je premašila budžet za Y €" → kad je usagePct ≥ 100
+  - "Faza je blizu limita budžeta (Z%)" → kad je usagePct ≥ 80
 
-**Konkretno za Test:** ima ulogu "Punopravni član" (member), ali sav UI za faze (gumb Uredi, badge revizija, glow upozorenja) skriven je iza `isManager`. Trenutno je **Member ≈ Viewer** kad su faze u pitanju — jedina razlika je što Member može dodavati transakcije bez odobrenja, a Viewer treba odobrenje.
+### Datoteke koje se mijenjaju
 
-To znači da "Punopravni član" zapravo nije punopravan — ne može sudjelovati u upravljanju budžetom faza ni vidjeti rizike.
+| Datoteka | Promjena |
+|---|---|
+| `src/components/projects/MilestoneKanban.tsx` | Ukloniti `isManager &&` ispred `<MilestoneRevisionTrendBadge>` |
+| `src/components/projects/MilestoneRevisionTrendBadge.tsx` | Dinamički tooltip prema stanju (revizija vs blizu limita vs premašaj) |
+| `src/i18n/locales/{hr,en,de}.json` | 2 nova ključa: `projects.revisions.planRevisedTooltip`, `projects.revisions.glowNearWithPct` |
 
-### Zašto to nije logično
+### Što se NE mijenja
+- Baza, RLS politike, hook-ovi
+- Permissions sustav (Test ostaje "member")
+- List view (već radi nakon prošle izmjene)
+- Logika izračuna iskorištenosti (spent/budget)
 
-1. **Naziv obmanjuje:** "Punopravni član" sugerira jednake mogućnosti kao manager, ali u praksi vidi manje od onoga što treba za rad.
-2. **Slijepa odgovornost:** Member mora donositi odluke o trošenju, ali ne vidi koliko je faza prekoračila ni povijest revizija.
-3. **Bottleneck na manageru:** sve promjene budžeta moraju ići kroz Dujeta, Test ne može pomoći ni kad je očito.
+### Očekivani ishod
+Test otvori projekt **Duje Grčić** i vidi na **kartici "Postavljanje parketa"** (i u Listi i na Kanban ploči):
+- 📜 **1** — sivi badge s brojem revizija
+- Hover/klik na badge → tooltip "Plan revidiran 1 put" → klik otvara povijest revizija
+- Bez glow-a (jer je 0 € potrošeno od 800 €, što je ispravno ponašanje)
 
----
-
-## 3 opcije — odaberi koja ti odgovara
-
-### Opcija 1 — "Member vidi sve, ali ne mijenja" ⭐ preporučeno
-- Member **vidi** sve: badge revizija 📜, trend strelice ↗↘, glow upozorenja, gumb "Povijest"
-- Member **ne može**: uređivati budžet faze, brisati faze, drag & drop u Kanbanu
-- Manager zadržava puna prava
-- Viewer ostaje kako je (ne vidi povijest revizija)
-
-**Prednost:** Test odmah razumije stanje projekta i može alarmirati Duje. Bez rizika od neovlaštenih izmjena.
-
-### Opcija 2 — "Member može sve osim brisanja"
-- Member **vidi sve i može uređivati** budžete faza (s obaveznim razlogom revizije — sve se loga)
-- Member **ne može**: brisati faze, mijenjati strukturu (dodavati/uklanjati), drag & drop
-- Manager + brisanje + struktura
-- Viewer ostaje kako je
-
-**Prednost:** Pravi "punopravni" član. Audit trag postoji kroz revizije.
-**Rizik:** Više ljudi mijenja budžete — može stvoriti zbrku ako tim nije discipliniran.
-
-### Opcija 3 — Granularne dozvole po članu
-- Postojeća `ProjectMemberPermissionsDialog` (Shield ikona) proširena s prekidačima:
-  - "Može uređivati faze" (on/off)
-  - "Može vidjeti povijest revizija" (on/off)
-  - "Može brisati faze" (on/off)
-- Manager za svakog člana posebno odlučuje
-
-**Prednost:** Maksimalna fleksibilnost.
-**Mana:** Više klikanja pri postavljanju, više kompleksnosti za korisnika koji nije programer.
-
----
-
-## Moja preporuka
-
-**Opcija 1** — najmanja promjena, najveća korist, nema rizika:
-- Rješava tvoj točan problem (Test ne vidi prekoračenja)
-- Zadržava jasnu hijerarhiju (samo manager mijenja)
-- Kasnije možemo na Opciju 2 ako Test traži više
-- Bez izmjena baze, samo UI gating
-
-### Implementacija Opcije 1 (ako odobriš)
-
-**Datoteke:**
-- `ProjectMilestonesTab.tsx` — promijeniti `{isManager &&` → `{` na badge sekciji (linija ~292), gumb Uredi/Briši (linija ~366) ostaje pod `isManager`
-- `MilestoneKanban.tsx` — prikazati `MilestoneRevisionTrendBadge` i glow svima; drag & drop, edit/delete gumbi ostaju samo manageru
-- `MilestoneRevisionsDialog.tsx` — već prima `canEdit` prop, samo ga otvoriti svima za čitanje
-- Bez izmjena hooka, baze, ni notifikacija
-
-**Vrijeme:** ~10 minuta.
-
----
-
-**Reci 1, 2 ili 3 (ili "nešto drugo").**
+Kad netko unese trošak ≥ 640 € (80 %) → automatski se pojavljuje žuti glow.
+Kad netko unese trošak ≥ 800 € (100 %) → crveni pulsirajući glow.
 
