@@ -86,6 +86,16 @@ const Admin = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('stats');
+  const tabsListRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const list = tabsListRef.current;
+    if (!list) return;
+    const activeEl = list.querySelector<HTMLElement>(`[data-state="active"]`);
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activeTab]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [notifTitle, setNotifTitle] = useState('');
   const [notifMessage, setNotifMessage] = useState('');
