@@ -110,7 +110,21 @@
       "coverageShort": { "increase_total": "Total budget raised", "transfer": "Transfer", "contingency": "From reserve" },
       "reserveTooltip": "Remaining contingency reserve",
       "trendOverrun": "Overrun in the last 30 days",
-      "trendSaving": "Saving in the last 30 days"
+      "trendSaving": "Saving in the last 30 days",
+      "tabLabel": "Changes",
+      "totalChanges": "Total changes",
+      "netChange": "Net change",
+      "totalOverruns": "Total overruns",
+      "totalSavings": "Total savings",
+      "byCategory": "By change category",
+      "scopeArgument": "Of {{total}} in overruns, {{scope}} is from scope changes — argument for additional client billing.",
+      "reserveUsage": "Reserve usage",
+      "reserveExhausted": "The reserve has been fully used.",
+      "reserveRemaining": "{{amt}} left for unforeseen costs.",
+      "topChanged": "Phases with most changes",
+      "recentActivity": "Change timeline",
+      "unknownPhase": "Unknown phase",
+      "emptyHint": "Every phase budget change is automatically recorded here for full transparency."
     },
     "standup": {
       "title": "Daily report",
