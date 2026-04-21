@@ -700,7 +700,8 @@ export const AddExpenseDialog = ({
   return (
     <>
     <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen && (scanning || showScannedPreview || isSaving)) return;
+      console.warn('🚪 AddExpenseDialog onOpenChange', { isOpen, scanning, showScannedPreview, isSaving, cameraActive: cameraActiveRef.current });
+      if (!isOpen && (scanning || showScannedPreview || isSaving || cameraActiveRef.current)) return;
       setOpen(isOpen);
       if (isOpen) {
         refetchPaymentSources().then(() => {
