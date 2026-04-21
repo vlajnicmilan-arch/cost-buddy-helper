@@ -318,6 +318,15 @@ export const AddExpenseDialog = ({
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Register with global back-button system so Android popstate (e.g. when the
+  // native camera activity returns) does NOT navigate the app to /home and
+  // unmount this dialog mid-scan.
+  const handleBackClose = useCallback(() => {
+    if (scanning || showScannedPreview || isSaving || cameraActiveRef.current) return;
+    setOpen(false);
+  }, [scanning, showScannedPreview, isSaving]);
+  useBackButton(open, handleBackClose, 10);
+
   const acceptScannedData = async () => {
     if (!scannedData || isSaving) return;
     if (activeBusinessProfileId) {
