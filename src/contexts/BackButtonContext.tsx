@@ -38,6 +38,13 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const locationRef = useRef<string>('/');
   const initialStatePushedRef = useRef(false);
+  // Tracks the moment the WebView returned to the foreground. When a native
+  // activity (camera, file picker, share sheet, …) finishes, Android often
+  // emits a popstate as it restores focus to the WebView. We must NOT treat
+  // that as a user "back" press, otherwise we'd navigate away and unmount
+  // dialogs that are mid-flight (e.g. AddExpenseDialog while scanning).
+  const lastForegroundAtRef = useRef<number>(0);
+  const VISIBILITY_GRACE_MS = 800;
 
   const location = useLocation();
   useEffect(() => {
