@@ -465,6 +465,7 @@ export const ProjectMilestonesTab = ({
                 siblingMilestones={milestones}
                 contingencyMilestone={contingencyMilestone}
                 currentMilestoneId={editingMilestone.id}
+                currentUsagePct={editingMilestone.budget > 0 ? ((editingMilestone.spent || 0) / editingMilestone.budget) * 100 : undefined}
               />
             )}
 
