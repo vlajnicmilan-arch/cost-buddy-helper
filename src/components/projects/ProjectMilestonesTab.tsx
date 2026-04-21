@@ -442,6 +442,24 @@ export const ProjectMilestonesTab = ({
               </div>
             </div>
 
+            {budgetChanged && editingMilestone && !editingMilestone.is_contingency && (
+              <MilestoneBudgetChangeSection
+                previousAmount={previousBudget}
+                newAmount={newBudgetNum}
+                reason={revisionReason}
+                onReasonChange={setRevisionReason}
+                changeType={revisionType}
+                onChangeTypeChange={setRevisionType}
+                coverage={revisionCoverage}
+                onCoverageChange={setRevisionCoverage}
+                linkedMilestoneId={revisionLinkedId}
+                onLinkedMilestoneChange={setRevisionLinkedId}
+                siblingMilestones={milestones}
+                contingencyMilestone={contingencyMilestone}
+                currentMilestoneId={editingMilestone.id}
+              />
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('projects.startDate')}</Label>
