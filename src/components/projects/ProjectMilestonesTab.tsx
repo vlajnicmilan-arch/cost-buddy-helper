@@ -26,6 +26,8 @@ import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { MilestoneRevisionType, MilestoneRevisionCoverage } from '@/types/milestoneRevision';
+import { useMilestoneRevisions } from '@/hooks/useMilestoneRevisions';
+import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
