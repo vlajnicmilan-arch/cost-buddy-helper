@@ -107,7 +107,10 @@
       "viewHistory": "Budget change history",
       "empty": "No changes recorded yet.",
       "types": { "overrun": "Overrun", "saving": "Saving", "scope_change": "Scope change", "correction": "Correction" },
-      "coverageShort": { "increase_total": "Total budget raised", "transfer": "Transfer", "contingency": "From reserve" }
+      "coverageShort": { "increase_total": "Total budget raised", "transfer": "Transfer", "contingency": "From reserve" },
+      "reserveTooltip": "Remaining contingency reserve",
+      "trendOverrun": "Overrun in the last 30 days",
+      "trendSaving": "Saving in the last 30 days"
     },
     "standup": {
       "title": "Daily report",

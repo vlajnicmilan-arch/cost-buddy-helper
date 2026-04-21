@@ -107,7 +107,10 @@
       "viewHistory": "Povijest promjena budžeta",
       "empty": "Nema zabilježenih promjena.",
       "types": { "overrun": "Premašaj", "saving": "Ušteda", "scope_change": "Promjena opsega", "correction": "Korekcija" },
-      "coverageShort": { "increase_total": "Povećan ukupni budžet", "transfer": "Prijenos", "contingency": "Iz rezerve" }
+      "coverageShort": { "increase_total": "Povećan ukupni budžet", "transfer": "Prijenos", "contingency": "Iz rezerve" },
+      "reserveTooltip": "Preostala rezerva za nepredviđeno",
+      "trendOverrun": "Premašaj u zadnjih 30 dana",
+      "trendSaving": "Ušteda u zadnjih 30 dana"
     },
     "standup": {
       "title": "Dnevni izvještaj",

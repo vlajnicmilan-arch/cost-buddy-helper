@@ -939,7 +939,10 @@
       "viewHistory": "Budgetänderungs-Verlauf",
       "empty": "Noch keine Änderungen erfasst.",
       "types": { "overrun": "Überschreitung", "saving": "Einsparung", "scope_change": "Umfangsänderung", "correction": "Korrektur" },
-      "coverageShort": { "increase_total": "Gesamtbudget erhöht", "transfer": "Übertragung", "contingency": "Aus Reserve" }
+      "coverageShort": { "increase_total": "Gesamtbudget erhöht", "transfer": "Übertragung", "contingency": "Aus Reserve" },
+      "reserveTooltip": "Verbleibende Reserve",
+      "trendOverrun": "Überschreitung in den letzten 30 Tagen",
+      "trendSaving": "Einsparung in den letzten 30 Tagen"
     },
     "standup": {
       "title": "Tagesbericht",
