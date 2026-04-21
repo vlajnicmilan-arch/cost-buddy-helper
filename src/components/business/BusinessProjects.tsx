@@ -332,13 +332,22 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         project={editingProject}
-        onSave={async (projectData, template) => {
+        onSave={async (projectData, template, addContingency) => {
           if (editingProject) {
             await updateProject({ ...editingProject, ...projectData });
           } else {
             const created = await addProject({ ...projectData, business_profile_id: activeBusinessProfileId } as any);
-            if (created && template) {
-              await applyTemplateToProject(created.id, template, created.start_date || null);
+            if (created && (template || (addContingency && (created.total_budget || 0) > 0))) {
+              await applyTemplateToProject(
+                created.id,
+                template ?? ({ default_milestones: [], color: created.color } as any),
+                created.start_date || null,
+                {
+                  addContingency,
+                  totalBudget: Number(created.total_budget) || 0,
+                  contingencyLabel: t('projects.contingency.milestoneName', 'Rezerva za nepredviđeno'),
+                }
+              );
             }
           }
           setDialogOpen(false);
