@@ -318,13 +318,85 @@ export const ProjectWorkersTab = ({
         <TabsContent value="list" className="space-y-4 mt-4">
           {/* Total cost summary */}
           {workers.length > 0 && (
-            <Card className="p-4 bg-muted/50">
+            <Card className="p-4 bg-muted/50 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-sm text-muted-foreground">{t('workers.totalCost', 'Ukupni trošak rada')}:</span>
-                  <span className="text-xs text-muted-foreground">{totalActualHours}h odrađeno</span>
+                  <span className="text-xs text-muted-foreground">{totalActualHours}h {t('workers.workedShort', 'odrađeno')}</span>
                 </div>
                 <span className="text-lg font-bold text-primary">{formatAmount(totalCost)}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs text-muted-foreground truncate">{periodLabel}:</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {periodTotals.active} {t('workers.activeWorkers', 'aktivnih')} · {periodTotals.hours.toFixed(1)}h
+                  </span>
+                </div>
+                <span className="text-base font-semibold text-foreground">{formatAmount(periodTotals.cost)}</span>
+              </div>
+            </Card>
+          )}
+
+          {/* Filters */}
+          {workers.length > 0 && (
+            <Card className="p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
+                  <SelectTrigger className="h-9">
+                    <Filter className="w-3.5 h-3.5 mr-1 shrink-0" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="currentMonth">{t('workers.currentMonth', 'Tekući mjesec')}</SelectItem>
+                    <SelectItem value="previousMonth">{t('workers.previousMonth', 'Prethodni mjesec')}</SelectItem>
+                    <SelectItem value="last30">{t('workers.last30', 'Zadnjih 30 dana')}</SelectItem>
+                    <SelectItem value="last90">{t('workers.last90', 'Zadnjih 90 dana')}</SelectItem>
+                    <SelectItem value="thisYear">{t('workers.thisYear', 'Cijela godina')}</SelectItem>
+                    <SelectItem value="allTime">{t('workers.allTime', 'Sve vrijeme')}</SelectItem>
+                    <SelectItem value="custom">{t('workers.custom', 'Prilagođeno')}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">{t('workers.sortName', 'Ime')}</SelectItem>
+                    <SelectItem value="position">{t('workers.sortPosition', 'Pozicija')}</SelectItem>
+                    <SelectItem value="hourlyRate">{t('workers.sortHourlyRate', 'Cijena sata ↓')}</SelectItem>
+                    <SelectItem value="periodHours">{t('workers.sortPeriodHours', 'Sati u periodu ↓')}</SelectItem>
+                    <SelectItem value="periodCost">{t('workers.sortPeriodCost', 'Trošak u periodu ↓')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {period === 'custom' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                    className="h-9"
+                  />
+                  <Input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+              )}
+
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('workers.searchPlaceholder', 'Pretraga po imenu/poziciji...')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 pl-8"
+                />
               </div>
             </Card>
           )}
@@ -336,9 +408,17 @@ export const ProjectWorkersTab = ({
               <p>{t('workers.noWorkers', 'Nema unesenih radnika')}</p>
               <p className="text-sm">{t('workers.noWorkersHint', 'Dodajte radnike za praćenje troškova rada')}</p>
             </div>
+          ) : displayedWorkers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Search className="w-10 h-10 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">{t('workers.noMatches', 'Nema rezultata za pretragu')}</p>
+            </div>
           ) : (
             <div className="space-y-3">
-              {workers.map((worker) => {
+              {displayedWorkers.map((worker) => {
+                const periodHours = workerPeriodStats[worker.id] || 0;
+                const periodCost = periodHours * worker.hourly_rate;
+                const isCurrentMonth = period === 'currentMonth';
                 return (
                   <Card key={worker.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -363,8 +443,20 @@ export const ProjectWorkersTab = ({
                           </div>
                         </div>
 
-                        <div className="mt-2 text-sm font-medium">
-                          {t('workers.workedHours', 'Odrađeno')}: {worker.actualHoursTotal}h = <span className="text-primary">{formatAmount(worker.actualCostTotal)}</span>
+                        <div className="mt-3 space-y-1 text-sm">
+                          {!isCurrentMonth && (
+                            <div className="text-foreground">
+                              <span className="text-muted-foreground">{t('workers.currentMonth', 'Tekući mjesec')}:</span>{' '}
+                              {worker.currentMonthHours.toFixed(1)}h = <span className="text-primary font-medium">{formatAmount(worker.currentMonthCost)}</span>
+                            </div>
+                          )}
+                          <div className="text-foreground">
+                            <span className="text-muted-foreground">{periodLabel}:</span>{' '}
+                            {periodHours.toFixed(1)}h = <span className="text-primary font-medium">{formatAmount(periodCost)}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground pt-1 border-t border-border/50">
+                            {t('workers.totalLabel', 'Ukupno')}: {worker.actualHoursTotal.toFixed(1)}h = {formatAmount(worker.actualCostTotal)}
+                          </div>
                         </div>
                       </div>
 
