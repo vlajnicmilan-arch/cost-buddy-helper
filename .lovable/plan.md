@@ -1,69 +1,71 @@
 
 
-## Admin – preglednost menija na mobitelu
+## Kartica Radnici — sati za tekući mjesec + filteri
 
-### Problem
-9 tabova (`Pulse, Stats, Users, Sub, Bug, Slanje, Push, APK, Diag`) stiješnjeno u `grid-cols-9` na 384px ekranu = svaki tab ~42 px, ikone i tekst se sudaraju, oznake tipa "Slanje", "Diag", "Sub" su skraćenice koje korisnik ne razumije.
+### Što se mijenja
 
-### Rješenje – horizontalno klizni meni s grupiranjem
+**1. Dodatni izračun: sati za tekući mjesec**
+- U `useProjectWorkers.ts` proširujem dohvat `project_work_entries` da vrati i `work_date`, pa za svakog radnika izračunavam:
+  - `currentMonthHours` — zbroj `actual_hours` gdje je `work_date` u tekućem mjesecu
+  - `currentMonthCost` — `currentMonthHours × hourly_rate`
+  - `periodHours` / `periodCost` — zbroj za odabrani period (računa se klijentski na temelju filtera)
 
-**1. Zamjena `grid-cols-9` s vodoravnim scroll-om**
-- TabsList postaje `flex` s `overflow-x-auto`, snap scroll, skriveni scrollbar
-- Svaki tab je `flex-shrink-0` s minimalnom širinom (npr. `min-w-[88px]`) — tabovi se više ne zbijaju, već klize lijevo/desno
-- Aktivni tab automatski skrolira u vidljivo područje (`scrollIntoView` na `activeTab` change)
-- Suptilna sjena s lijeve/desne strane signalizira da ima još sadržaja
+**2. Nova kartica filtera iznad popisa radnika**
 
-**2. Logičko grupiranje u 3 sekcije s vizualnim separatorom**
-- **Pregled**: Pulse · Statistika
-- **Korisnici**: Korisnici · Pretplate · Prijave
-- **Komunikacija**: Obavijesti · Push log
-- **Sustav**: APK · Dijagnostika
+Dodajem novu sekciju iznad popisa s 3 filtera u jednom redu (mobile-friendly grid):
 
-Tanki vertikalni divider (`w-px bg-border`) između grupa daje strukturu bez gubitka prostora.
+| Filter | Tip | Opcije |
+|---|---|---|
+| **Period** | Select | Tekući mjesec (default) · Prethodni mjesec · Zadnjih 30 dana · Zadnjih 90 dana · Cijela godina · Sve vrijeme · Prilagođeno |
+| **Sortiraj po** | Select | Ime · Pozicija · Cijena sata (↓) · Sati u periodu (↓) · Trošak u periodu (↓) |
+| **Pretraga** | Input | Pretraga po imenu/poziciji (live) |
 
-**3. Pune hrvatske oznake umjesto skraćenica**
-- Brisanje `<span className="sm:hidden">` (skraćenica)
-- Svuda samo jedan label: "Pulse", "Statistika", "Korisnici", "Pretplate", "Prijave", "Obavijesti", "Push log", "APK", "Dijagnostika"
-- Ikona iznad teksta, **vertikalno raspored** (umjesto horizontalnog) — manje širine, čitljivije
+Kad korisnik odabere "Prilagođeno" — ispod se pojavljuju dva date pickera (od/do).
 
-**4. Veći touch targeti**
-- Visina taba `h-14` (umjesto `h-9`) — zadovoljava 44 px minimum iz brand pravila
-- Ikona 4×4, label `text-[11px]` ispod ikone
-- Padding po osi `px-3 py-1.5`
+**3. Prikaz po radniku u listi (proširen)**
 
-**5. Sticky header pri scrollu sadržaja**
-- TabsList dobiva `sticky top-0 z-10 bg-background/95 backdrop-blur` da meni ostaje vidljiv pri scrollu duge liste korisnika/prijava
-
-### Vizualizacija (384 px viewport)
-
+Za svaku karticu radnika:
 ```text
-┌────────────────────────────────────────────┐
-│ ← Admin                                    │
-├────────────────────────────────────────────┤
-│ ┃ 💗     📊  ┃ 👥    💳    🐛   ┃ 🔔   📲┃→│  ← klizno
-│ ┃Pulse  Stat ┃Kor.  Pret.  Prij ┃Obav. Push│
-└────────────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│ Marko Marić          [Zidar]        │
+│ 🕒 08:00–16:00   💶 15 €/sat        │
+│                                     │
+│ Tekući mjesec: 42h = 630 €          │  ← NOVO
+│ Period (zadnjih 30d): 88h = 1.320 € │  ← NOVO (dinamički label)
+│ Ukupno: 156h = 2.340 €              │
+└─────────────────────────────────────┘
 ```
 
-Korisnik vidi 3-4 taba odjednom + jasno vidi da može kliziti dalje. Aktivni tab uvijek u fokusu.
+Kad je period = "Tekući mjesec", redovi 1 i 2 se spajaju da se ne ponavlja.
 
-### Datoteke koje se mijenjaju
+**4. Sažetak na vrhu (već postoji, samo se nadopunjuje)**
+
+Postojeća kartica "Ukupni trošak rada" prikazuje uz postojeće "ukupno" još i:
+- Ukupno za odabrani period (X radnika · Y sati · Z €)
+- Broj aktivnih radnika u tom periodu (oni s ≥1 unosom)
+
+### Tehničke izmjene
 
 | Datoteka | Promjena |
 |---|---|
-| `src/pages/Admin.tsx` | TabsList: `flex overflow-x-auto`, vertikalni layout svakog TabsTrigger-a, separator-divovi između grupa, auto-scroll na promjenu, sticky pozicioniranje, pune labele |
+| `src/hooks/useProjectWorkers.ts` | Dohvat `work_date` u entries, izračun `currentMonthHours/Cost`, izlaganje `entries` (ili helper `getStatsForPeriod`) tako da tab može računati period |
+| `src/components/projects/ProjectWorkersTab.tsx` | Nova filter-traka (Select × 2 + Input + opcionalno DatePicker × 2), `useMemo` za filtriranu/sortiranu listu, prošireni prikaz po radniku, prošireni summary |
+| `src/i18n/locales/{hr,en,de}.json` | ~12 novih ključeva: `workers.filterPeriod`, `workers.currentMonth`, `workers.previousMonth`, `workers.last30Days`, `workers.last90Days`, `workers.thisYear`, `workers.allTime`, `workers.custom`, `workers.sortBy`, `workers.search`, `workers.activeWorkers`, `workers.periodLabel` |
 
 ### Što se NE mijenja
-- Broj tabova ostaje 9
-- Sav sadržaj svake kartice
-- Logika učitavanja, RLS, edge funkcije
-- Drugi dijelovi Admin stranice (statCard, lista korisnika itd.)
 
-### Očekivani ishod (na 384 px)
-- Tabovi imaju dovoljno prostora, ikona i label se ne sudaraju
-- Pune hrvatske oznake umjesto "Sub", "Slanje", "Diag"
-- Klizanje lijevo-desno za pristup ostalim tabovima
-- Aktivni tab uvijek vidljiv (auto-scroll)
-- Vizualne grupe pomažu pronalasku po funkciji
-- Sticky meni pri dugim listama (Korisnici, Push log)
+- Tablica `project_workers` i `project_work_entries` ostaju netaknute (samo dohvaćamo postojeća polja)
+- RLS politike
+- Kalendarski pregled (`WorkCalendarOverview`)
+- Dijalozi (Add/Edit, Schedule)
+- Logika izvoza (PDF/CSV/JSON)
+- Svi ostali tabovi projekta
+
+### Očekivani ishod
+
+- Otvoriš projekt → tab **Radnici** → odmah vidiš za svakog radnika sate za tekući mjesec
+- Možeš mijenjati period (npr. prošli mjesec) i sve kartice se ažuriraju u realnom vremenu
+- Sortiranje po cijeni/satima/trošku — tko je najskuplji, tko je najviše radio
+- Pretraga po imenu — brzi pronalazak u dugačkim listama
+- Sve i dalje radi na 384 px viewportu (filteri u `grid grid-cols-2 sm:grid-cols-3` rasporedu)
 
