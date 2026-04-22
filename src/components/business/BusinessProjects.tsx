@@ -14,9 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap, Mic, BookOpen } from 'lucide-react';
 import { DailyStandupSheet } from '@/components/projects/DailyStandupSheet';
-import { WorkLogDialog } from '@/components/projects/WorkLogDialog';
-import { useProjectWorkLogs } from '@/hooks/useProjectWorkLogs';
-import { useProjectMilestones } from '@/hooks/useProjectMilestones';
+import { WorkLogQuickEntry } from '@/components/projects/WorkLogQuickEntry';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -516,6 +514,56 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         initialProjectId={standupProject?.id || null}
         onApplied={() => { fetchAllStats(); onRefreshExpenses?.(); }}
       />
+
+      {/* Work Log: project picker */}
+      <Dialog open={workLogPickerOpen} onOpenChange={(o) => { if (!o) { setWorkLogPickerOpen(false); } }}>
+        <DialogContent className="max-w-md max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-primary" />
+              {t('workLog.pickProject', 'Odaberi projekt za dnevni zapis')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
+            {businessProjects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  setWorkLogProjectId(p.id);
+                  setWorkLogPickerOpen(false);
+                  setWorkLogDialogOpen(true);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:bg-accent/50 hover:border-primary/40 transition-colors text-left"
+              >
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                  style={{ background: `${p.color || '#3b82f6'}20` }}
+                >
+                  {p.icon || '📁'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{p.name}</p>
+                  {p.description && (
+                    <p className="text-xs text-muted-foreground truncate">{p.description}</p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Work Log: actual entry dialog */}
+      {workLogProjectId && (
+        <WorkLogQuickEntry
+          open={workLogDialogOpen}
+          onOpenChange={(o) => {
+            setWorkLogDialogOpen(o);
+            if (!o) setWorkLogProjectId(null);
+          }}
+          projectId={workLogProjectId}
+        />
+      )}
     </div>
   );
 };
