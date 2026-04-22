@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo } from '@/types/expense';
-import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
+import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 
 export interface CurrencyConfig {
   code: string;
@@ -46,7 +46,7 @@ const toAscii = (text: string): string => {
     .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
 };
 
-export const generatePDFReport = async (data: ReportData, reportTitle: string = 'Financijsko izvjesce'): Promise<void> => {
+export const generatePDFReport = async (data: ReportData, reportTitle: string = 'Financijsko izvjesce', mode: ExportMode = 'save'): Promise<void> => {
   const doc = new jsPDF();
   
   doc.setFontSize(20);
@@ -146,10 +146,10 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
   });
 
   const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
-  await exportPDFDoc(doc, fileName);
+  await exportPDFDoc(doc, fileName, mode);
 };
 
-export const generateCSVReport = async (data: ReportData): Promise<void> => {
+export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'save'): Promise<void> => {
   const headers = ['Datum', 'Tip', 'Opis', 'Kategorija', 'Način plaćanja', 'Iznos'];
   
   const rows = data.expenses
@@ -171,10 +171,10 @@ export const generateCSVReport = async (data: ReportData): Promise<void> => {
 
   const csvContent = [headers.join(','), ...rows].join('\n');
   const fileName = `transakcije_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.csv`;
-  await exportTextFile(csvContent, fileName, 'text/csv', true);
+  await exportTextFile(csvContent, fileName, 'text/csv', true, mode);
 };
 
-export const generateJSONExport = async (data: ReportData): Promise<void> => {
+export const generateJSONExport = async (data: ReportData, mode: ExportMode = 'save'): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     dateRange: {
@@ -191,7 +191,7 @@ export const generateJSONExport = async (data: ReportData): Promise<void> => {
   };
 
   const fileName = `financije_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.json`;
-  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json', false, mode);
 };
 
 // ============= INCOME REPORT EXPORTS =============
@@ -204,7 +204,7 @@ export interface IncomeReportData {
   currency?: CurrencyConfig;
 }
 
-export const generateIncomePDFReport = async (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima'): Promise<void> => {
+export const generateIncomePDFReport = async (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima', mode: ExportMode = 'save'): Promise<void> => {
   const doc = new jsPDF();
   
   doc.setFontSize(20);
@@ -295,10 +295,10 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
   });
 
   const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
-  await exportPDFDoc(doc, fileName);
+  await exportPDFDoc(doc, fileName, mode);
 };
 
-export const generateIncomeCSVReport = async (data: IncomeReportData): Promise<void> => {
+export const generateIncomeCSVReport = async (data: IncomeReportData, mode: ExportMode = 'save'): Promise<void> => {
   const headers = ['Datum', 'Opis', 'Kategorija', 'Iznos'];
   
   const rows = data.incomeTransactions
@@ -314,10 +314,10 @@ export const generateIncomeCSVReport = async (data: IncomeReportData): Promise<v
 
   const csvContent = [headers.join(','), ...rows].join('\n');
   const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.csv`;
-  await exportTextFile(csvContent, fileName, 'text/csv', true);
+  await exportTextFile(csvContent, fileName, 'text/csv', true, mode);
 };
 
-export const generateIncomeJSONExport = async (data: IncomeReportData): Promise<void> => {
+export const generateIncomeJSONExport = async (data: IncomeReportData, mode: ExportMode = 'save'): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     dateRange: {
@@ -333,5 +333,5 @@ export const generateIncomeJSONExport = async (data: IncomeReportData): Promise<
   };
 
   const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}.json`;
-  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json', false, mode);
 };

@@ -2,7 +2,7 @@
  * Generate an ICS (iCalendar) file from reminder data and trigger download.
  */
 
-import { exportTextFile } from '@/lib/fileExport';
+import { exportTextFile, type ExportMode } from '@/lib/fileExport';
 
 interface ReminderEvent {
   id: string;
@@ -64,9 +64,9 @@ export function generateICS(events: ReminderEvent[]): string {
   return lines.join('\r\n');
 }
 
-export async function downloadICS(events: ReminderEvent[], filename = 'reminders.ics'): Promise<void> {
+export async function downloadICS(events: ReminderEvent[], filename = 'reminders.ics', mode: ExportMode = 'save'): Promise<void> {
   const icsContent = generateICS(events);
-  await exportTextFile(icsContent, filename, 'text/calendar');
+  await exportTextFile(icsContent, filename, 'text/calendar', false, mode);
 }
 
 function mapCalendarEventToReminder(event: CalendarEventForICS): ReminderEvent {
@@ -80,13 +80,13 @@ function mapCalendarEventToReminder(event: CalendarEventForICS): ReminderEvent {
   };
 }
 
-export async function downloadCalendarEventICS(event: CalendarEventForICS): Promise<void> {
+export async function downloadCalendarEventICS(event: CalendarEventForICS, mode: ExportMode = 'save'): Promise<void> {
   const reminder = mapCalendarEventToReminder(event);
   const safeName = event.title.replace(/[^a-zA-Z0-9\u00C0-\u024F]/g, '_').substring(0, 30);
-  await downloadICS([reminder], `${safeName}.ics`);
+  await downloadICS([reminder], `${safeName}.ics`, mode);
 }
 
-export async function downloadCalendarEventsICS(events: CalendarEventForICS[], filename = 'calendar.ics'): Promise<void> {
+export async function downloadCalendarEventsICS(events: CalendarEventForICS[], filename = 'calendar.ics', mode: ExportMode = 'save'): Promise<void> {
   const reminders = events.map(mapCalendarEventToReminder);
-  await downloadICS(reminders, filename);
+  await downloadICS(reminders, filename, mode);
 }

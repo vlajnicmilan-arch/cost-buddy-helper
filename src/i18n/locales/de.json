@@ -1,4 +1,12 @@
 {
+  "fileExport": {
+    "download": "Herunterladen",
+    "share": "Teilen",
+    "savedToDocuments": "In Dokumenten gespeichert",
+    "saveError": "Datei konnte nicht gespeichert werden",
+    "shareError": "Teilen fehlgeschlagen",
+    "shareDialogTitle": "Datei speichern oder teilen"
+  },
   "projects": {
     "tabs": { "work": "Arbeit", "people": "Personen", "money": "Geld" },
     "tooltips": {

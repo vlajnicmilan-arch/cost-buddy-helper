@@ -18,6 +18,8 @@ import {
 } from '@/lib/projectReportExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
+import { ExportButton } from '@/components/ui/export-button';
+import type { ExportMode } from '@/lib/fileExport';
 import { 
   FileText, Download, Wallet, Target, Users, 
   TrendingDown, CheckCircle2, Clock, AlertTriangle, History, BookOpen
@@ -189,7 +191,7 @@ export const ProjectReportsDialog = ({
     });
   }, [milestones]);
 
-  const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
+  const handleExport = async (format: 'pdf' | 'csv' | 'json', mode: ExportMode = 'save') => {
     const reportData: ProjectReportData = {
       projectName: project.name,
       projectDescription: project.description,
@@ -228,16 +230,16 @@ export const ProjectReportsDialog = ({
     try {
       switch (format) {
         case 'pdf':
-          await generateProjectPDFReport(reportData);
-          showSuccess(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
+          await generateProjectPDFReport(reportData, mode);
+          if (mode === 'share') showSuccess(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
           break;
         case 'csv':
-          await generateProjectCSVReport(reportData);
-          showSuccess(t('reports.csvGenerated', 'CSV izvještaj generiran'));
+          await generateProjectCSVReport(reportData, mode);
+          if (mode === 'share') showSuccess(t('reports.csvGenerated', 'CSV izvještaj generiran'));
           break;
         case 'json':
-          await generateProjectJSONExport(reportData);
-          showSuccess(t('reports.jsonGenerated', 'JSON izvoz generiran'));
+          await generateProjectJSONExport(reportData, mode);
+          if (mode === 'share') showSuccess(t('reports.jsonGenerated', 'JSON izvoz generiran'));
           break;
       }
     } catch (error) {
@@ -246,7 +248,7 @@ export const ProjectReportsDialog = ({
     }
   };
 
-  const handleExportWorkLog = async () => {
+  const handleExportWorkLog = async (mode: ExportMode = 'save') => {
     try {
       // Fetch work logs + related data
       const [logsRes, msRes] = await Promise.all([
@@ -332,8 +334,8 @@ export const ProjectReportsDialog = ({
         fromDate,
         toDate,
         entries,
-      });
-      showSuccess(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
+      }, mode);
+      if (mode === 'share') showSuccess(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
     } catch (error) {
       console.error('Work log export error:', error);
       showError(t('common.error'));
@@ -366,22 +368,27 @@ export const ProjectReportsDialog = ({
               {t('projects.reports', 'Izvještaji projekta')}
             </DialogTitle>
             <div className="flex flex-wrap gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={() => handleExport('csv')}>
-                <Download className="w-4 h-4 mr-1" />
-                CSV
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleExport('json')}>
-                <Download className="w-4 h-4 mr-1" />
-                JSON
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportWorkLog}>
-                <BookOpen className="w-4 h-4 mr-1" />
-                {t('workLog.exportPdf', 'Dnevnik PDF')}
-              </Button>
-              <Button size="sm" onClick={() => handleExport('pdf')}>
-                <Download className="w-4 h-4 mr-1" />
-                PDF
-              </Button>
+              <ExportButton
+                label="CSV"
+                icon={<Download className="w-4 h-4 mr-1" />}
+                onExport={(mode) => handleExport('csv', mode)}
+              />
+              <ExportButton
+                label="JSON"
+                icon={<Download className="w-4 h-4 mr-1" />}
+                onExport={(mode) => handleExport('json', mode)}
+              />
+              <ExportButton
+                label={t('workLog.exportPdf', 'Dnevnik PDF')}
+                icon={<BookOpen className="w-4 h-4 mr-1" />}
+                onExport={(mode) => handleExportWorkLog(mode)}
+              />
+              <ExportButton
+                label="PDF"
+                icon={<Download className="w-4 h-4 mr-1" />}
+                variant="default"
+                onExport={(mode) => handleExport('pdf', mode)}
+              />
             </div>
           </div>
         </DialogHeader>
