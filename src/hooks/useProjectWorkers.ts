@@ -4,26 +4,35 @@ import { ProjectWorker, ProjectWorkerInput, ProjectWorkEntry } from '@/types/pro
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
+interface WorkEntryLite {
+  worker_id: string;
+  work_date: string;
+  actual_hours: number;
+}
+
 interface WorkerWithStats extends ProjectWorker {
   actualHoursTotal: number;
   actualCostTotal: number;
+  currentMonthHours: number;
+  currentMonthCost: number;
 }
 
 export const useProjectWorkers = (projectId: string | null) => {
   const { t } = useTranslation();
   const [workers, setWorkers] = useState<WorkerWithStats[]>([]);
+  const [entries, setEntries] = useState<WorkEntryLite[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchWorkers = useCallback(async () => {
     if (!projectId) {
       setWorkers([]);
+      setEntries([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      // Fetch workers and their work entries in parallel
       const [workersRes, entriesRes] = await Promise.all([
         supabase
           .from('project_workers')
@@ -32,33 +41,51 @@ export const useProjectWorkers = (projectId: string | null) => {
           .order('created_at', { ascending: false }),
         supabase
           .from('project_work_entries')
-          .select('worker_id, actual_hours')
+          .select('worker_id, actual_hours, work_date')
           .eq('project_id', projectId)
       ]);
 
       if (workersRes.error) throw workersRes.error;
       
-      const entries = entriesRes.data || [];
-      
-      // Calculate actual hours per worker
+      const rawEntries = (entriesRes.data || []).map(e => ({
+        worker_id: e.worker_id,
+        work_date: e.work_date,
+        actual_hours: Number(e.actual_hours),
+      }));
+
+      // Calculate totals
       const hoursByWorker: Record<string, number> = {};
-      entries.forEach(entry => {
-        hoursByWorker[entry.worker_id] = (hoursByWorker[entry.worker_id] || 0) + Number(entry.actual_hours);
+      const currentMonthHoursByWorker: Record<string, number> = {};
+
+      const now = new Date();
+      const cmStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const cmEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      rawEntries.forEach(entry => {
+        hoursByWorker[entry.worker_id] = (hoursByWorker[entry.worker_id] || 0) + entry.actual_hours;
+        const d = new Date(entry.work_date);
+        if (d >= cmStart && d < cmEnd) {
+          currentMonthHoursByWorker[entry.worker_id] = (currentMonthHoursByWorker[entry.worker_id] || 0) + entry.actual_hours;
+        }
       });
       
       const workersWithStats: WorkerWithStats[] = (workersRes.data || []).map(w => {
         const actualHours = hoursByWorker[w.id] || 0;
+        const cmHours = currentMonthHoursByWorker[w.id] || 0;
         const hourlyRate = Number(w.hourly_rate);
         return {
           ...w,
           work_hours: Number(w.work_hours),
           hourly_rate: hourlyRate,
           actualHoursTotal: actualHours,
-          actualCostTotal: actualHours * hourlyRate
+          actualCostTotal: actualHours * hourlyRate,
+          currentMonthHours: cmHours,
+          currentMonthCost: cmHours * hourlyRate,
         };
       });
       
       setWorkers(workersWithStats);
+      setEntries(rawEntries);
     } catch (error) {
       console.error('Error fetching project workers:', error);
       showError(t('common.error'));
@@ -97,7 +124,9 @@ export const useProjectWorkers = (projectId: string | null) => {
         work_hours: Number(data.work_hours),
         hourly_rate: Number(data.hourly_rate),
         actualHoursTotal: 0,
-        actualCostTotal: 0
+        actualCostTotal: 0,
+        currentMonthHours: 0,
+        currentMonthCost: 0,
       };
 
       setWorkers(prev => [newWorker, ...prev]);
@@ -132,7 +161,9 @@ export const useProjectWorkers = (projectId: string | null) => {
           return {
             ...worker,
             actualHoursTotal: w.actualHoursTotal,
-            actualCostTotal: w.actualHoursTotal * worker.hourly_rate
+            actualCostTotal: w.actualHoursTotal * worker.hourly_rate,
+            currentMonthHours: w.currentMonthHours,
+            currentMonthCost: w.currentMonthHours * worker.hourly_rate,
           };
         }
         return w;
@@ -154,6 +185,7 @@ export const useProjectWorkers = (projectId: string | null) => {
       if (error) throw error;
 
       setWorkers(prev => prev.filter(w => w.id !== id));
+      setEntries(prev => prev.filter(e => e.worker_id !== id));
       showSuccess(t('workers.deleted', 'Radnik uklonjen'));
     } catch (error) {
       console.error('Error deleting worker:', error);
@@ -167,6 +199,7 @@ export const useProjectWorkers = (projectId: string | null) => {
 
   return {
     workers,
+    entries,
     loading,
     addWorker,
     updateWorker,

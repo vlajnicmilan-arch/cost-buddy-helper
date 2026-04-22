@@ -2312,5 +2312,24 @@
     "notSupported": "Voice input is not supported on this device",
     "permissionTitle": "Allow microphone access",
     "permissionBody": "Voice dictation requires access to your microphone. Open your device or browser settings and allow microphone access for this app."
+  },
+  "workers": {
+    "currentMonth": "Current month",
+    "previousMonth": "Previous month",
+    "last30": "Last 30 days",
+    "last90": "Last 90 days",
+    "thisYear": "This year",
+    "allTime": "All time",
+    "custom": "Custom",
+    "sortName": "Name",
+    "sortPosition": "Position",
+    "sortHourlyRate": "Hourly rate ↓",
+    "sortPeriodHours": "Period hours ↓",
+    "sortPeriodCost": "Period cost ↓",
+    "searchPlaceholder": "Search by name/position...",
+    "noMatches": "No search results",
+    "activeWorkers": "active",
+    "totalLabel": "Total",
+    "workedShort": "worked"
   }
 }

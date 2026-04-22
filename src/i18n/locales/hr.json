@@ -2319,5 +2319,24 @@
     "notSupported": "Glasovni unos nije podržan na ovom uređaju",
     "permissionTitle": "Dopustite pristup mikrofonu",
     "permissionBody": "Za diktiranje teksta potreban je pristup mikrofonu. Otvorite postavke uređaja ili preglednika i dopustite pristup mikrofonu za ovu aplikaciju."
+  },
+  "workers": {
+    "currentMonth": "Tekući mjesec",
+    "previousMonth": "Prethodni mjesec",
+    "last30": "Zadnjih 30 dana",
+    "last90": "Zadnjih 90 dana",
+    "thisYear": "Cijela godina",
+    "allTime": "Sve vrijeme",
+    "custom": "Prilagođeno",
+    "sortName": "Ime",
+    "sortPosition": "Pozicija",
+    "sortHourlyRate": "Cijena sata ↓",
+    "sortPeriodHours": "Sati u periodu ↓",
+    "sortPeriodCost": "Trošak u periodu ↓",
+    "searchPlaceholder": "Pretraga po imenu/poziciji...",
+    "noMatches": "Nema rezultata za pretragu",
+    "activeWorkers": "aktivnih",
+    "totalLabel": "Ukupno",
+    "workedShort": "odrađeno"
   }
 }
