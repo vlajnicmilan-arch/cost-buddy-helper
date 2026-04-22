@@ -278,6 +278,18 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
               {t('projects.standup.button', 'Dnevni izvještaj')}
             </Button>
           )}
+          {businessProjects.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-xl"
+              onClick={() => { setWorkLogProjectId(null); setWorkLogPickerOpen(true); }}
+              title={t('workLog.newEntry', 'Novi dnevni zapis')}
+            >
+              <BookOpen className="w-4 h-4" />
+              {t('workLog.quickAction', 'Dnevni zapis')}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
