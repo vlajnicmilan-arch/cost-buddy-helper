@@ -20,6 +20,30 @@ const isIOS = (): boolean => {
   return /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
 };
 
+const isAndroidApp = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  // Android WebView: typically contains "; wv)" or our Capacitor scheme
+  return /Android/.test(ua) && (/; wv\)/.test(ua) || /Capacitor/i.test(ua) || (window as any).Capacitor != null);
+};
+
+/**
+ * Best-effort check if mic permission is actually denied at the OS/browser layer.
+ * Returns:
+ *  - 'granted' | 'denied' | 'prompt' when known
+ *  - 'unknown' when Permissions API doesn't expose microphone (e.g. Android WebView)
+ */
+const queryMicPermission = async (): Promise<'granted' | 'denied' | 'prompt' | 'unknown'> => {
+  try {
+    const perms: any = (navigator as any).permissions;
+    if (!perms?.query) return 'unknown';
+    const status = await perms.query({ name: 'microphone' as PermissionName });
+    return (status?.state as 'granted' | 'denied' | 'prompt') || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+};
+
 const getWebRecognition = (lang: string): SpeechRecognitionLike | null => {
   if (typeof window === 'undefined') return null;
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -185,6 +209,19 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
   }, [clearTimers, stop]);
 
   const start = useCallback(async () => {
+    // Diagnostics for next-step debugging — never logs PII.
+    try {
+      const permState = await queryMicPermission();
+      // eslint-disable-next-line no-console
+      console.info('[voice] start()', {
+        supported,
+        androidApp: isAndroidApp(),
+        permState,
+        hasSR: typeof window !== 'undefined' && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition),
+      });
+    } catch { /* noop */ }
+
+
     if (!supported) {
       setErrorKind('unsupported');
       setShowPermissionHelp(true);
@@ -229,18 +266,37 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
         onTranscriptRef.current(accumulatedFinalRef.current, true);
       }
     };
-    r.onerror = (e: any) => {
+    r.onerror = async (e: any) => {
       const errType = e?.error || 'unknown';
+      // Diagnostics — non-PII, helps identify the real failure path next time.
+      try {
+        // eslint-disable-next-line no-console
+        console.warn('[voice] onerror', {
+          errType,
+          message: e?.message,
+          androidApp: isAndroidApp(),
+          ua: typeof navigator !== 'undefined' ? navigator.userAgent : 'n/a',
+        });
+      } catch { /* noop */ }
       if (errType === 'no-speech' || errType === 'aborted') return;
       manualStopRef.current = true;
       clearTimers();
       setRecording(false);
       setContinuing(false);
-      // Only treat 'not-allowed' as a real permission denial.
-      // 'service-not-allowed' / 'network' / 'audio-capture' = engine/service problem,
-      // not a user permission issue — show different message.
+
+      // 'not-allowed' on Web Speech is ambiguous in Android WebView — it often
+      // fires when the engine simply can't start, NOT because the user blocked
+      // the mic. Verify against the Permissions API before claiming denial.
       if (errType === 'not-allowed') {
-        setErrorKind('permission-denied');
+        const permState = await queryMicPermission();
+        // eslint-disable-next-line no-console
+        console.warn('[voice] permission check after not-allowed', { permState });
+        if (permState === 'denied') {
+          setErrorKind('permission-denied');
+        } else {
+          // granted / prompt / unknown → it's the engine, not the user.
+          setErrorKind('service-unavailable');
+        }
       } else if (
         errType === 'service-not-allowed' ||
         errType === 'network' ||
