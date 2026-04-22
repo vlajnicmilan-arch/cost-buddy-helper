@@ -20,6 +20,30 @@ const isIOS = (): boolean => {
   return /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
 };
 
+const isAndroidApp = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  // Android WebView: typically contains "; wv)" or our Capacitor scheme
+  return /Android/.test(ua) && (/; wv\)/.test(ua) || /Capacitor/i.test(ua) || (window as any).Capacitor != null);
+};
+
+/**
+ * Best-effort check if mic permission is actually denied at the OS/browser layer.
+ * Returns:
+ *  - 'granted' | 'denied' | 'prompt' when known
+ *  - 'unknown' when Permissions API doesn't expose microphone (e.g. Android WebView)
+ */
+const queryMicPermission = async (): Promise<'granted' | 'denied' | 'prompt' | 'unknown'> => {
+  try {
+    const perms: any = (navigator as any).permissions;
+    if (!perms?.query) return 'unknown';
+    const status = await perms.query({ name: 'microphone' as PermissionName });
+    return (status?.state as 'granted' | 'denied' | 'prompt') || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+};
+
 const getWebRecognition = (lang: string): SpeechRecognitionLike | null => {
   if (typeof window === 'undefined') return null;
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
