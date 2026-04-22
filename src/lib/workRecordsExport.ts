@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
+import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 
 export interface WorkerExportData {
   id: string;
@@ -62,7 +62,7 @@ const getMilestoneNames = (ids: string[] | null | undefined, milestones: { id: s
 
 // ============= PDF =============
 
-export const generateWorkRecordsPDF = async (data: WorkExportConfig): Promise<void> => {
+export const generateWorkRecordsPDF = async (data: WorkExportConfig, mode: ExportMode = 'save'): Promise<void> => {
   const doc = new jsPDF();
 
   doc.setFontSize(18);
@@ -195,12 +195,12 @@ export const generateWorkRecordsPDF = async (data: WorkExportConfig): Promise<vo
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
-  await exportPDFDoc(doc, fileName);
+  await exportPDFDoc(doc, fileName, mode);
 };
 
 // ============= CSV =============
 
-export const generateWorkRecordsCSV = async (data: WorkExportConfig): Promise<void> => {
+export const generateWorkRecordsCSV = async (data: WorkExportConfig, mode: ExportMode = 'save'): Promise<void> => {
   const rows: string[] = [];
 
   // Workers summary
@@ -234,12 +234,12 @@ export const generateWorkRecordsCSV = async (data: WorkExportConfig): Promise<vo
   const csvContent = rows.join('\n');
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
-  await exportTextFile(csvContent, fileName, 'text/csv', true);
+  await exportTextFile(csvContent, fileName, 'text/csv', true, mode);
 };
 
 // ============= JSON =============
 
-export const generateWorkRecordsJSON = async (data: WorkExportConfig): Promise<void> => {
+export const generateWorkRecordsJSON = async (data: WorkExportConfig, mode: ExportMode = 'save'): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     project: data.projectName,
@@ -282,5 +282,5 @@ export const generateWorkRecordsJSON = async (data: WorkExportConfig): Promise<v
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
-  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json', false, mode);
 };
