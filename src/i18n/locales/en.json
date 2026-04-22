@@ -2319,7 +2319,9 @@
     "recording": "Recording...",
     "notSupported": "Voice input is not supported on this device",
     "permissionTitle": "Allow microphone access",
-    "permissionBody": "Voice dictation requires access to your microphone. Open your device or browser settings and allow microphone access for this app."
+    "permissionBody": "Voice dictation requires access to your microphone. Open your device or browser settings and allow microphone access for this app.",
+    "continuing": "Listening... keep speaking",
+    "maxDurationReached": "Max recording duration (30s) — stopped automatically"
   },
   "workers": {
     "currentMonth": "Current month",

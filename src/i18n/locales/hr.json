@@ -2326,7 +2326,9 @@
     "recording": "Snimanje...",
     "notSupported": "Glasovni unos nije podržan na ovom uređaju",
     "permissionTitle": "Dopustite pristup mikrofonu",
-    "permissionBody": "Za diktiranje teksta potreban je pristup mikrofonu. Otvorite postavke uređaja ili preglednika i dopustite pristup mikrofonu za ovu aplikaciju."
+    "permissionBody": "Za diktiranje teksta potreban je pristup mikrofonu. Otvorite postavke uređaja ili preglednika i dopustite pristup mikrofonu za ovu aplikaciju.",
+    "continuing": "Slušam... nastavi govoriti",
+    "maxDurationReached": "Maks. trajanje snimanja (30s) — automatski zaustavljeno"
   },
   "workers": {
     "currentMonth": "Tekući mjesec",

@@ -2321,7 +2321,9 @@
     "recording": "Aufnahme...",
     "notSupported": "Spracheingabe wird auf diesem Gerät nicht unterstützt",
     "permissionTitle": "Mikrofonzugriff erlauben",
-    "permissionBody": "Für die Sprachdiktierung wird Zugriff auf das Mikrofon benötigt. Öffnen Sie die Geräte- oder Browsereinstellungen und erlauben Sie den Mikrofonzugriff für diese App."
+    "permissionBody": "Für die Sprachdiktierung wird Zugriff auf das Mikrofon benötigt. Öffnen Sie die Geräte- oder Browsereinstellungen und erlauben Sie den Mikrofonzugriff für diese App.",
+    "continuing": "Höre zu... weitersprechen",
+    "maxDurationReached": "Max. Aufnahmedauer (30s) — automatisch gestoppt"
   },
   "workers": {
     "currentMonth": "Aktueller Monat",
