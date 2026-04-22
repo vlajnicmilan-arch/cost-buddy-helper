@@ -2332,7 +2332,11 @@
     "unsupportedTitle": "Glasovni unos nije dostupan",
     "unsupportedBody": "Vaša verzija aplikacije ili preglednika ne podržava glasovni unos. Molimo upišite tekst rukom — sve ostale funkcije rade normalno.",
     "continuing": "Slušam... nastavi govoriti",
-    "maxDurationReached": "Maks. trajanje snimanja (30s) — automatski zaustavljeno"
+    "maxDurationReached": "Maks. trajanje snimanja (30s) — automatski zaustavljeno",
+    "diagnosticTitle": "Dijagnostika",
+    "diagnosticCode": "Kod greške",
+    "diagnosticPermission": "Stanje dozvole",
+    "diagnosticRuntime": "Runtime"
   },
   "workers": {
     "currentMonth": "Tekući mjesec",

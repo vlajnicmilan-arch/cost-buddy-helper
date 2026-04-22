@@ -2327,7 +2327,11 @@
     "unsupportedTitle": "Spracheingabe nicht verfügbar",
     "unsupportedBody": "Ihre App- oder Browser-Version unterstützt die Spracheingabe nicht. Bitte geben Sie den Text manuell ein — alle anderen Funktionen arbeiten normal.",
     "continuing": "Höre zu... weitersprechen",
-    "maxDurationReached": "Max. Aufnahmedauer (30s) — automatisch gestoppt"
+    "maxDurationReached": "Max. Aufnahmedauer (30s) — automatisch gestoppt",
+    "diagnosticTitle": "Diagnose",
+    "diagnosticCode": "Fehlercode",
+    "diagnosticPermission": "Berechtigungsstatus",
+    "diagnosticRuntime": "Laufzeit"
   },
   "workers": {
     "currentMonth": "Aktueller Monat",

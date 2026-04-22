@@ -61,6 +61,9 @@ export const DailyStandupSheet = ({
     showPermissionHelp,
     setShowPermissionHelp,
     errorKind: voiceErrorKind,
+    diagnosticCode: voiceDiagnosticCode,
+    permissionState: voicePermissionState,
+    isAndroidRuntime,
   } = useVoiceDictation({
     onTranscript: (transcript, isFinal) => {
       setText(prev => {
@@ -418,6 +421,21 @@ export const DailyStandupSheet = ({
                     </div>
                   </>
                 )}
+
+                <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1">
+                  <p className="text-[11px] font-semibold text-foreground">
+                    {t('voice.diagnosticTitle', 'Dijagnostika')}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground break-all">
+                    {t('voice.diagnosticCode', 'Kod greške')}: {voiceDiagnosticCode || 'n/a'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('voice.diagnosticPermission', 'Stanje dozvole')}: {voicePermissionState}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('voice.diagnosticRuntime', 'Runtime')}: {isAndroidRuntime ? 'android-webview' : 'browser'}
+                  </p>
+                </div>
 
                 <p className="text-xs text-muted-foreground">
                   {t('projects.standup.permissionFallback', 'Ako i dalje ne radi, jednostavno upiši izvještaj rukom u polje iznad — AI će ga svejedno strukturirati.')}
