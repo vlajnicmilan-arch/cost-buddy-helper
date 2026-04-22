@@ -10,6 +10,8 @@ import { format, parseISO } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { downloadCalendarEventICS } from '@/lib/icsExport';
+import { ExportButton } from '@/components/ui/export-button';
+import type { ExportMode } from '@/lib/fileExport';
 
 interface Props {
   open: boolean;
@@ -66,7 +68,7 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
     }
   };
 
-  const handleExportICS = async (event: CalendarEvent) => {
+  const handleExportICS = async (event: CalendarEvent, mode: ExportMode = 'save') => {
     try {
       await downloadCalendarEventICS({
         id: event.id,
@@ -76,7 +78,7 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
         amount: event.amount,
         type: event.type,
         source: event.source,
-      });
+      }, mode);
       showSuccess(t('calendar.exportedToCalendar', 'Izvezeno'));
     } catch {
       showError('Greška');
@@ -158,15 +160,15 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <Button
+                  <ExportButton
+                    label=""
+                    icon={<CalendarPlus className="w-4 h-4" />}
                     variant="ghost"
                     size="icon"
+                    compact
+                    onExport={(mode) => handleExportICS(event, mode)}
                     className="h-7 w-7"
-                    onClick={() => handleExportICS(event)}
-                    title={t('calendar.addToCalendar', 'Dodaj u kalendar')}
-                  >
-                    <CalendarPlus className="w-4 h-4" />
-                  </Button>
+                  />
                   {isReminder && (
                     <>
                       <Button

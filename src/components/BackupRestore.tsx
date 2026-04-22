@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { exportTextFile } from '@/lib/fileExport';
+import { exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { ExportButton } from '@/components/ui/export-button';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Download, Upload, FileJson, Check, AlertCircle, Loader2, HardDrive, Clock, History, Settings2, RotateCcw } from 'lucide-react';
@@ -123,7 +124,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (mode: ExportMode = 'save') => {
     setIsExporting(true);
     setError('');
 
@@ -158,7 +159,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
         }, null, 2);
       }
 
-      await exportTextFile(jsonData, `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+      await exportTextFile(jsonData, `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json', false, mode);
 
       emitAvatarEvent('proud', 'Podatci su sigurni! 🔒');
       showSuccess(t('backup.exportSuccess'));
@@ -330,19 +331,15 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
       )}
 
       <div className="space-y-3">
-        <Button
+        <ExportButton
+          label={isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('backup.export')}
+          icon={<Download className="w-4 h-4 mr-2" />}
+          onExport={handleExport}
           variant="outline"
-          className="w-full gap-2 rounded-xl justify-start"
-          onClick={handleExport}
+          size="default"
           disabled={isExporting}
-        >
-          {isExporting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Download className="w-4 h-4" />
-          )}
-          {t('backup.export')}
-        </Button>
+          className="w-full gap-2 rounded-xl justify-start"
+        />
 
         <Dialog open={open} onOpenChange={(isOpen) => {
           setOpen(isOpen);

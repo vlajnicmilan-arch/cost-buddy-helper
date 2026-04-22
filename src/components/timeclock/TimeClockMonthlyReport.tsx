@@ -8,6 +8,8 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDaysInMonth } f
 import { hr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { ExportButton } from '@/components/ui/export-button';
 
 interface TimeClockMonthlyReportProps {
   projectId: string;
@@ -105,7 +107,7 @@ export const TimeClockMonthlyReport = ({
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
-  const exportCSV = () => {
+  const exportCSV = async (mode: ExportMode = 'save') => {
     const header = [
       t('timeClock.worker', 'Radnik'),
       ...allDays.map(d => format(d, 'd')),
@@ -144,13 +146,7 @@ export const TimeClockMonthlyReport = ({
     ]);
 
     const csv = [header, ...rows].map(r => r.join(';')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sihterica_${format(currentMonth, 'yyyy-MM')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    await exportTextFile(csv, `sihterica_${format(currentMonth, 'yyyy-MM')}.csv`, 'text/csv', true, mode);
   };
 
   if (loading) {
@@ -191,10 +187,11 @@ export const TimeClockMonthlyReport = ({
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={exportCSV}>
-          <Download className="w-4 h-4 mr-1" />
-          CSV
-        </Button>
+        <ExportButton
+          label="CSV"
+          icon={<Download className="w-4 h-4 mr-1" />}
+          onExport={exportCSV}
+        />
       </div>
 
       {/* Monthly table */}

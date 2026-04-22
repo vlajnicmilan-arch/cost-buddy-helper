@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { APP_VERSION } from '@/lib/version';
-import { exportTextFile } from '@/lib/fileExport';
+import { exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -240,7 +240,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (mode: ExportMode = 'save') => {
     setIsExporting(true);
     try {
       let jsonData: string;
@@ -254,7 +254,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         if (itemsError) throw itemsError;
         jsonData = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), source: 'cloud', expenses: expenses || [], receiptItems: receiptItems || [] }, null, 2);
       }
-      await exportTextFile(jsonData, `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+      await exportTextFile(jsonData, `vm-balance-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json', false, mode);
       showSuccess(t('settings.exportSuccess', 'Backup uspješno izvezen'));
     } catch (err) {
       console.error('Export error:', err);
@@ -743,7 +743,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
             <p className="text-xs text-muted-foreground">
               {t('settings.exportBeforeDeleteDesc', 'Preporučujemo izvoz podataka prije brisanja računa kako biste imali sigurnosnu kopiju.')}
             </p>
-            <Button variant="outline" size="sm" className="w-full gap-2 rounded-lg" onClick={handleExport} disabled={isExporting}>
+            <Button variant="outline" size="sm" className="w-full gap-2 rounded-lg" onClick={() => handleExport('save')} disabled={isExporting}>
               {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {t('settings.exportNow', 'Izvezi sada')}
             </Button>

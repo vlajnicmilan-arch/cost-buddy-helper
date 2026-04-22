@@ -9,7 +9,8 @@ import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, en
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { exportPDFDoc } from '@/lib/fileExport';
+import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
+import { ExportButton } from '@/components/ui/export-button';
 import { useTranslation } from 'react-i18next';
 
 type Period = 'monthly' | 'quarterly' | 'yearly';
@@ -52,7 +53,7 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
   const current = periodData[periodData.length - 1];
   const previous = periodData.length > 1 ? periodData[periodData.length - 2] : null;
 
-  const exportPDF = async () => {
+  const exportPDF = async (mode: ExportMode = 'save') => {
     const doc = new jsPDF();
     doc.setFontSize(16);
     doc.text(`${companyName} — ${t('business.reports.businessReport', 'Poslovni izvještaj')}`, 14, 20);
@@ -73,7 +74,7 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
     });
 
     const fileName = `${companyName.replace(/\s+/g, '_')}_report_${format(now, 'yyyyMMdd')}.pdf`;
-    await exportPDFDoc(doc, fileName);
+    await exportPDFDoc(doc, fileName, mode);
   };
 
   return (
@@ -95,10 +96,13 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
             </Badge>
           ))}
         </div>
-        <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={exportPDF}>
-          <Download className="w-3 h-3" />
-          PDF
-        </Button>
+        <ExportButton
+          label="PDF"
+          icon={<Download className="w-3 h-3 mr-1" />}
+          onExport={exportPDF}
+          size="sm"
+          className="h-8 gap-1 text-xs"
+        />
       </div>
 
       {current && (

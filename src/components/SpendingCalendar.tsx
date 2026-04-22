@@ -4,11 +4,12 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, CalendarDays, X, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ExportButton } from '@/components/ui/export-button';
 import { cn } from '@/lib/utils';
 import { getCategoryInfo } from '@/types/expense';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { exportPDFDoc } from '@/lib/fileExport';
+import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
 
 interface Expense {
   id: string;
@@ -92,7 +93,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
       .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
   };
 
-  const exportDayPDF = async () => {
+  const exportDayPDF = async (mode: ExportMode = 'save') => {
     if (!selectedDay || !selectedDayData || selectedDayData.transactions.length === 0) return;
 
     const dateStr = `${selectedDay}. ${monthName}`;
@@ -150,7 +151,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
     doc.setFont('helvetica', 'bold');
     doc.text(`${toAscii(t('dashboard.calendar.net', 'Neto'))}: ${net >= 0 ? '+' : ''}${formatAmount(net)}`, 196, y, { align: 'right' });
 
-    await exportPDFDoc(doc, `${toAscii(t('dashboard.calendar.title', 'Kalendar'))}_${selectedDay}_${month + 1}_${year}.pdf`);
+    await exportPDFDoc(doc, `${toAscii(t('dashboard.calendar.title', 'Kalendar'))}_${selectedDay}_${month + 1}_${year}.pdf`, mode);
   };
 
   return (
@@ -290,9 +291,15 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
                     +{formatAmount(selectedDayData.income)}
                   </span>
                 )}
-                <button onClick={exportDayPDF} className="text-muted-foreground hover:text-foreground" title={t('dashboard.calendar.print', 'PDF')}>
-                  <FileDown className="w-3.5 h-3.5" />
-                </button>
+                <ExportButton
+                  label=""
+                  icon={<FileDown className="w-3.5 h-3.5" />}
+                  onExport={exportDayPDF}
+                  variant="ghost"
+                  size="icon"
+                  compact
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground p-0"
+                />
                 <button onClick={() => setSelectedDay(null)} className="text-muted-foreground hover:text-foreground">
                   <X className="w-3.5 h-3.5" />
                 </button>
