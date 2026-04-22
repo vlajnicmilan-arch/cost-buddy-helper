@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap, Mic } from 'lucide-react';
+import { Plus, FolderKanban, Download, Loader2, Camera as CameraIcon, ImagePlus, Zap, Mic, BookOpen } from 'lucide-react';
 import { DailyStandupSheet } from '@/components/projects/DailyStandupSheet';
+import { WorkLogQuickEntry } from '@/components/projects/WorkLogQuickEntry';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -58,6 +59,9 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
   const [quickPhotoSource, setQuickPhotoSource] = useState<'camera' | 'gallery' | null>(null);
   const [standupOpen, setStandupOpen] = useState(false);
   const [standupProject, setStandupProject] = useState<ProjectWithOwnership | null>(null);
+  const [workLogPickerOpen, setWorkLogPickerOpen] = useState(false);
+  const [workLogProjectId, setWorkLogProjectId] = useState<string | null>(null);
+  const [workLogDialogOpen, setWorkLogDialogOpen] = useState(false);
 
   // Show owned projects assigned to this profile + shared projects joined under this profile.
   const businessProjects = useMemo(
@@ -270,6 +274,18 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
             >
               <Mic className="w-4 h-4" />
               {t('projects.standup.button', 'Dnevni izvještaj')}
+            </Button>
+          )}
+          {businessProjects.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-xl"
+              onClick={() => { setWorkLogProjectId(null); setWorkLogPickerOpen(true); }}
+              title={t('workLog.newEntry', 'Novi dnevni zapis')}
+            >
+              <BookOpen className="w-4 h-4" />
+              {t('workLog.quickAction', 'Dnevni zapis')}
             </Button>
           )}
           <Button
@@ -498,6 +514,56 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         initialProjectId={standupProject?.id || null}
         onApplied={() => { fetchAllStats(); onRefreshExpenses?.(); }}
       />
+
+      {/* Work Log: project picker */}
+      <Dialog open={workLogPickerOpen} onOpenChange={(o) => { if (!o) { setWorkLogPickerOpen(false); } }}>
+        <DialogContent className="max-w-md max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-primary" />
+              {t('workLog.pickProject', 'Odaberi projekt za dnevni zapis')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
+            {businessProjects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  setWorkLogProjectId(p.id);
+                  setWorkLogPickerOpen(false);
+                  setWorkLogDialogOpen(true);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:bg-accent/50 hover:border-primary/40 transition-colors text-left"
+              >
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                  style={{ background: `${p.color || '#3b82f6'}20` }}
+                >
+                  {p.icon || '📁'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{p.name}</p>
+                  {p.description && (
+                    <p className="text-xs text-muted-foreground truncate">{p.description}</p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Work Log: actual entry dialog */}
+      {workLogProjectId && (
+        <WorkLogQuickEntry
+          open={workLogDialogOpen}
+          onOpenChange={(o) => {
+            setWorkLogDialogOpen(o);
+            if (!o) setWorkLogProjectId(null);
+          }}
+          projectId={workLogProjectId}
+        />
+      )}
     </div>
   );
 };

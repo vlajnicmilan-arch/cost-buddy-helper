@@ -1,6 +1,6 @@
 import { useProjectActivity } from '@/hooks/useProjectActivity';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Activity, Plus, Pencil, Trash2, CheckCircle2, FileText, Users, Target, Wallet } from 'lucide-react';
+import { Loader2, Activity, Plus, Pencil, Trash2, CheckCircle2, FileText, Users, Target, Wallet, BookOpen } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,6 +18,9 @@ const ACTION_ICONS: Record<string, any> = {
   milestone_added: Target,
   member_added: Users,
   document_added: FileText,
+  work_log_added: BookOpen,
+  work_log_updated: BookOpen,
+  work_log_deleted: BookOpen,
 };
 
 const ACTION_COLORS: Record<string, string> = {
@@ -29,6 +32,9 @@ const ACTION_COLORS: Record<string, string> = {
   milestone_added: 'text-primary',
   member_added: 'text-primary',
   document_added: 'text-muted-foreground',
+  work_log_added: 'text-primary',
+  work_log_updated: 'text-muted-foreground',
+  work_log_deleted: 'text-destructive',
 };
 
 export const ProjectActivityTab = ({ projectId }: ProjectActivityTabProps) => {

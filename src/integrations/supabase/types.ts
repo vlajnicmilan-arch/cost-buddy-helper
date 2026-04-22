@@ -2938,6 +2938,60 @@ export type Database = {
           },
         ]
       }
+      project_work_logs: {
+        Row: {
+          created_at: string
+          id: string
+          log_date: string
+          milestone_id: string | null
+          notes: string | null
+          project_id: string
+          summary: string
+          updated_at: string
+          user_id: string
+          weather: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          log_date?: string
+          milestone_id?: string | null
+          notes?: string | null
+          project_id: string
+          summary: string
+          updated_at?: string
+          user_id: string
+          weather?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          log_date?: string
+          milestone_id?: string | null
+          notes?: string | null
+          project_id?: string
+          summary?: string
+          updated_at?: string
+          user_id?: string
+          weather?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_work_logs_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_work_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_workers: {
         Row: {
           business_profile_id: string | null
