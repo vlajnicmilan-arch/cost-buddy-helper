@@ -743,7 +743,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
             <p className="text-xs text-muted-foreground">
               {t('settings.exportBeforeDeleteDesc', 'Preporučujemo izvoz podataka prije brisanja računa kako biste imali sigurnosnu kopiju.')}
             </p>
-            <Button variant="outline" size="sm" className="w-full gap-2 rounded-lg" onClick={handleExport} disabled={isExporting}>
+            <Button variant="outline" size="sm" className="w-full gap-2 rounded-lg" onClick={() => handleExport('save')} disabled={isExporting}>
               {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {t('settings.exportNow', 'Izvezi sada')}
             </Button>

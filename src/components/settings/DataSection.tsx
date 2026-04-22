@@ -8,6 +8,8 @@ import { showSuccess } from '@/hooks/useStatusFeedback';
 import { CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 import { Separator } from '@/components/ui/separator';
 import { RuntimeDiagnostics } from '@/components/update/RuntimeDiagnostics';
+import { ExportButton } from '@/components/ui/export-button';
+import type { ExportMode } from '@/lib/fileExport';
 
 interface DataSectionProps {
   // Storage
@@ -24,7 +26,7 @@ interface DataSectionProps {
   multiCurrencyEnabled: boolean;
   onMultiCurrencyChange: (v: boolean) => void;
   // Export/Import
-  onExport: () => void;
+  onExport: (mode?: ExportMode) => void;
   isExporting: boolean;
   onShowImportDialog: () => void;
 }
@@ -168,10 +170,15 @@ export const DataSection = ({
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           {t('settings.data', 'Podaci')}
         </h3>
-        <Button variant="outline" className="w-full gap-2 rounded-xl justify-start" onClick={onExport} disabled={isExporting}>
-          {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          {t('settings.export', 'Izvezi podatke (JSON)')}
-        </Button>
+        <ExportButton
+          label={isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('settings.export', 'Izvezi podatke (JSON)')}
+          icon={<Download className="w-4 h-4 mr-2" />}
+          onExport={(mode) => onExport(mode)}
+          variant="outline"
+          size="default"
+          disabled={isExporting}
+          className="w-full gap-2 rounded-xl justify-start"
+        />
         <Button variant="outline" className="w-full gap-2 rounded-xl justify-start" onClick={onShowImportDialog}>
           <Upload className="w-4 h-4" />
           {t('settings.import', 'Uvezi backup')}
