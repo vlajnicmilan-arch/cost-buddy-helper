@@ -16,7 +16,7 @@ export interface ProjectWorkLog {
 
 export type ProjectWorkLogInput = Omit<
   ProjectWorkLog,
-  'id' | 'created_at' | 'updated_at' | 'user_id' | 'user_name' | 'milestone_name'
+  'id' | 'project_id' | 'created_at' | 'updated_at' | 'user_id' | 'user_name' | 'milestone_name'
 >;
 
 /** Hours summary per worker for a given log day */
