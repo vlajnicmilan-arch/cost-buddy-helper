@@ -163,13 +163,10 @@ export const VoiceInputButton = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('voice.permissionTitle', 'Dopustite pristup mikrofonu')}
+              {t(dialogTitleKey, dialogTitleFallback)}
             </AlertDialogTitle>
             <AlertDialogDescription className="whitespace-pre-line">
-              {t(
-                'voice.permissionBody',
-                'Za diktiranje teksta potreban je pristup mikrofonu. Otvorite postavke uređaja ili preglednika i dopustite pristup mikrofonu za ovu aplikaciju.'
-              )}
+              {t(dialogBodyKey, dialogBodyFallback)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
