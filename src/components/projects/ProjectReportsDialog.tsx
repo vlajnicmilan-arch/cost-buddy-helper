@@ -20,7 +20,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { 
   FileText, Download, Wallet, Target, Users, 
-  TrendingDown, CheckCircle2, Clock, AlertTriangle, History
+  TrendingDown, CheckCircle2, Clock, AlertTriangle, History, BookOpen
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend
