@@ -2333,5 +2333,29 @@
     "activeWorkers": "aktiv",
     "totalLabel": "Gesamt",
     "workedShort": "geleistet"
+  },
+  "collaboratorsFilters": {
+    "filterStatus": "Status",
+    "filterMilestone": "Phase",
+    "sortBy": "Sortieren",
+    "search": "Suche nach Name, Firma, Leistung...",
+    "allStatuses": "Alle Status",
+    "statusActive": "Aktiv",
+    "statusCompleted": "Abgeschlossen",
+    "statusCancelled": "Storniert",
+    "allMilestones": "Alle Phasen",
+    "noMilestone": "Keine Phase",
+    "sortNewest": "Neueste",
+    "sortOldest": "Älteste",
+    "sortName": "Name (A→Z)",
+    "sortAgreed": "Vereinbart ↓",
+    "sortPaid": "Bezahlt ↓",
+    "sortRemaining": "Restbetrag ↓",
+    "remaining": "Restbetrag",
+    "remainingTotal": "Noch zu zahlen",
+    "activeCount": "Aktiv",
+    "completedCount": "Abgeschlossen",
+    "noResults": "Keine Mitarbeiter entsprechen den Filtern",
+    "resetFilters": "Filter zurücksetzen"
   }
 }

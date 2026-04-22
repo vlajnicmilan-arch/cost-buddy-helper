@@ -2331,5 +2331,29 @@
     "activeWorkers": "active",
     "totalLabel": "Total",
     "workedShort": "worked"
+  },
+  "collaboratorsFilters": {
+    "filterStatus": "Status",
+    "filterMilestone": "Phase",
+    "sortBy": "Sort",
+    "search": "Search by name, company, service...",
+    "allStatuses": "All statuses",
+    "statusActive": "Active",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "allMilestones": "All phases",
+    "noMilestone": "No phase",
+    "sortNewest": "Newest",
+    "sortOldest": "Oldest",
+    "sortName": "Name (A→Z)",
+    "sortAgreed": "Agreed ↓",
+    "sortPaid": "Paid ↓",
+    "sortRemaining": "Remaining ↓",
+    "remaining": "Remaining",
+    "remainingTotal": "Remaining to pay",
+    "activeCount": "Active",
+    "completedCount": "Completed",
+    "noResults": "No collaborators match the filters",
+    "resetFilters": "Reset filters"
   }
 }
