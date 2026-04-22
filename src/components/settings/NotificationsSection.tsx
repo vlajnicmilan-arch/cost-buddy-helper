@@ -42,6 +42,27 @@ export const NotificationsSection = ({
   const navigate = useNavigate();
   const canUseBusiness = hasAccess('business_module');
   const isNative = Capacitor.isNativePlatform();
+  const { prefs, setCategory } = useNotificationPreferences();
+  const [showCategories, setShowCategories] = useState(false);
+
+  const categoryItems: Array<{
+    key: PushCategory;
+    icon: typeof MessageSquare;
+    labelKey: string;
+    labelDefault: string;
+    descKey: string;
+    descDefault: string;
+    enabled: boolean;
+  }> = [
+    { key: 'chat', icon: MessageSquare, labelKey: 'settings.notifChat', labelDefault: 'Poruke i komentari', descKey: 'settings.notifChatDesc', descDefault: 'Obiteljski chat i bilješke na transakcijama', enabled: prefs.chat_enabled },
+    { key: 'transactions', icon: ArrowLeftRight, labelKey: 'settings.notifTransactions', labelDefault: 'Transakcije', descKey: 'settings.notifTransactionsDesc', descDefault: 'Dijeljeni računi i projektne transakcije', enabled: prefs.transactions_enabled },
+    { key: 'pending', icon: Clock, labelKey: 'settings.notifPending', labelDefault: 'Odobrenja na čekanju', descKey: 'settings.notifPendingDesc', descDefault: 'Transakcije koje čekaju vašu potvrdu', enabled: prefs.pending_enabled },
+    { key: 'projects', icon: FolderKanban, labelKey: 'settings.notifProjects', labelDefault: 'Projekti', descKey: 'settings.notifProjectsDesc', descDefault: 'Pozivnice i promjene članstva', enabled: prefs.projects_enabled },
+    { key: 'budgets', icon: PiggyBank, labelKey: 'settings.notifBudgets', labelDefault: 'Budžeti', descKey: 'settings.notifBudgetsDesc', descDefault: 'Upozorenja o prekoračenju i pragovima', enabled: prefs.budgets_enabled },
+    { key: 'reminders', icon: CalendarClock, labelKey: 'settings.notifReminders', labelDefault: 'Podsjetnici i rokovi', descKey: 'settings.notifRemindersDesc', descDefault: 'Kalendar i rokovi faza projekta', enabled: prefs.reminders_enabled },
+    { key: 'trial', icon: BadgePercent, labelKey: 'settings.notifTrial', labelDefault: 'Pretplata', descKey: 'settings.notifTrialDesc', descDefault: 'Podsjetnici o probnom razdoblju i naplati', enabled: prefs.trial_enabled },
+    { key: 'broadcast', icon: Megaphone, labelKey: 'settings.notifBroadcast', labelDefault: 'Sustavske obavijesti', descKey: 'settings.notifBroadcastDesc', descDefault: 'Važne najave i nadogradnje aplikacije', enabled: prefs.broadcast_enabled },
+  ];
 
   return (
     <div className="space-y-4">
