@@ -1,110 +1,81 @@
 
 
-## Word dokument: Prezentacija V&M Balance za investitora
+## PDF izvještaji svih stručnjaka — puni panel procjenitelja V&M Balance
 
-Napravit ću profesionalan **Word dokument (.docx)** koji detaljno opisuje sve mogućnosti aplikacije V&M Balance, strukturiran za prezentaciju investitoru.
+Pripremit ću **set od 12 zasebnih PDF dokumenata**, jedan za svaku skupinu stručnjaka iz punog investitorskog panela. Svaki PDF predstavlja simuliranu profesionalnu procjenu te skupine — ocjenu, nalaze, prijedloge i savjete — temeljenu na stvarnoj arhitekturi i značajkama V&M Balance aplikacije.
 
-### Sadržaj dokumenta
+### Što će svaki PDF sadržavati (jedinstvena struktura)
 
-**1. Naslovna stranica**
-- V&M Balance — Investor Pitch
-- Slogan: "Pametno upravljanje osobnim i poslovnim financijama"
-- Datum, verzija
+1. **Naslovnica** — naziv skupine, datum procjene, predmet (V&M Balance v1.x)
+2. **Sažetak procjene (Executive Summary)** — 1 stranica, ključni nalazi
+3. **Ocjena** — skala 1-10 po podpodručjima + ukupna ocjena
+4. **Detaljan pregled po područjima** — što je provjereno, što je pronađeno
+5. **Snage (Strengths)** — što aplikacija radi dobro
+6. **Slabosti / rizici (Weaknesses & Risks)** — što treba popraviti
+7. **Prijedlozi i savjeti** — konkretne preporuke (kratki, srednji, dugi rok)
+8. **Zaključak** — preporuka investitoru (Go / Caution / No-go iz njihove perspektive)
+9. **Potpis skupine** — naziv skupine + napomena da je riječ o simuliranoj procjeni temeljenoj na dokumentaciji aplikacije
 
-**2. Executive Summary**
-- Što je V&M Balance
-- Tržišna prilika (osobne financije + mali biznisi u regiji)
-- Konkurentska prednost (dual-mode personal/business, AI, viševalutnost)
+### 12 PDF dokumenata (puni panel)
 
-**3. Ključne mogućnosti — Osobne financije**
-- Praćenje prihoda, troškova i transfera (jedinstvena baza transakcija)
-- Više izvora plaćanja (gotovina, kartice, računi, digitalni novčanici) s viševalutnom podrškom i ECB tečajevima
-- Kategorije (96 troškova / 32 prihoda) + custom kategorije
-- Budžeti po kategorijama, dijeljenje s obitelji, povijest
-- Štednje i ciljevi (Savings Goals)
-- Kupnja na rate s AI prepoznavanjem i automatskim planom otplate
-- Ponavljajuće transakcije (najam, pretplate)
-- Korekcija salda (revizijski trag)
-
-**4. Poslovne mogućnosti (Business Mode)**
-- Više poslovnih profila s izolacijom podataka
-- Dohvat podataka tvrtke iz službenog Sudreg API-ja (OIB/MBS)
-- Praćenje dugovanja i zajmova (loan detection)
-- Skeniranje računa s OCR + AI prepoznavanjem PDV-a
-- Šihterica (time-tracking) usklađena s NN 55/2024 — 17 obveznih kolona
-- Poslovni izvještaji i analitika
-
-**5. Projektni menadžment**
-- Dvorazinski sustav (osobni vs poslovni projekti)
-- Faze (Milestones) s ovisnostima i Gantt prikazom
-- P&L analitika po projektu
-- Financiranje (budget vs actual)
-- Suradnici i radnici s rolama (manager/member/viewer)
-- Dnevnici rada, dnevni standup, revizije
-- Javno dijeljenje projekata
-
-**6. AI inteligencija**
-- Personal CFO (Gemini Flash Lite) — uvidi, savjeti, kategorizacija
-- Skeniranje računa kamerom (auto-unos)
-- Prepoznavanje rata, dugovanja, ATM transfera
-- Glasovno diktiranje
-- AI memorija po korisniku
-
-**7. Suradnja i dijeljenje**
-- Obiteljski mod s grupnim chatom
-- Dijeljeni budžeti i izvori plaćanja
-- Card lookup (knjiženje na dijeljene račune preko zadnje 4 znamenke kartice)
-- Pozivnice emailom, role i dozvole
-
-**8. Izvještaji i analitika**
-- Detaljni grafovi po kategorijama, izvorima, vremenu
-- 8-tjedna prognoza novčanog toka
-- Heatmap kalendar potrošnje
-- Export u PDF, CSV, ICS (kalendar)
-
-**9. Tehnologija i sigurnost**
-- React 18 + Capacitor (web, Android, iOS)
-- Lovable Cloud backend (RLS, RBAC)
-- 4-znamenkasti PIN + biometrija (auto-lock 1 min)
-- Email + Google + Apple OAuth
-- Push notifikacije (FCM v1)
-- Lokalna pohrana s "local-first" pristupom
-- 3 jezika: HR, EN, DE
-- Multi-currency s real-time tečajevima
-
-**10. Monetizacija**
-- **Free**: 30 transakcija/mj, 1 novčanik, 1 budžet
-- **Pro (4,99 €/mj)**: neograničeno + AI + projekti
-- **Business (9,99 €/mj)**: poslovni profili + šihterica + napredne značajke
-- Stripe naplata, customer portal
-
-**11. Tržišna pozicija i prilika**
-- Ciljano tržište: Hrvatska + EU (HR/EN/DE lokalizirano)
-- Razlike u odnosu na konkurenciju
-- Roadmap
-
-**12. Kontakt**
-- Web, app, kontakt info
+| # | Skupina | Fokus procjene |
+|---|---|---|
+| 1 | **Tehnička skupina** (Full-stack, Mobile, Backend, DevOps, AI, QA, UX/UI) | Arhitektura, kod, performanse, mobile, AI integracija |
+| 2 | **Sigurnosna skupina** (Cybersec, AppSec, Crypto, DPO) | RLS, RBAC, PIN/biometrija, OWASP, GDPR |
+| 3 | **Pravna skupina** (IT, GDPR, Porezni, Radnopravni, Revizor) | ToS, EU VAT, NN 55/2024, HSFI/MSFI |
+| 4 | **Financijska skupina** (Analitičar, Revizor, Pricing) | Unit economics, CAC/LTV, validacija cjenovnih razina |
+| 5 | **Poslovna i strateška skupina** (Business Analyst, Product Manager, Growth) | Tržište, konkurencija, roadmap, GTM |
+| 6 | **FinTech domenski stručnjaci** (Osobne financije, Računovođa, PM, HR/Payroll) | Relevantnost značajki, Sudreg, Šihterica, projekti |
+| 7 | **UX skupina** (UX Researcher, Accessibility, Lokalizacija) | Usability, WCAG 2.1 AA, kvaliteta HR/EN/DE |
+| 8 | **Investitorska skupina** (VC analyst, Tech DD, M&A) | Investicijska zrelost, valuacija, exit |
+| 9 | **AI/ML skupina** (zasebno od tehničke, dubinski) | Gemini integracija, OCR, kategorizacija, AI memorija |
+| 10 | **Mobile / nativna skupina** (zasebno, dubinski) | Capacitor, FCM v1, biometrija, OAuth, Live Sync |
+| 11 | **Backend / Database skupina** (zasebno, dubinski) | PostgreSQL shema, RLS politike, Edge funkcije, migracije |
+| 12 | **Konsolidirani panel izvještaj** | Sažetak svih 11 + ukupna preporuka investitoru |
 
 ### Tehnička izvedba
 
-- **Format**: `.docx` generiran s `docx-js` bibliotekom
-- **Stilovi**: Inter-equivalent (Calibri/Arial), teal akcent (HSL 172 66% 40% → #22A39F)
-- **Stranica**: A4, marže 1"
-- **Naslovi**: H1 (24pt teal bold), H2 (18pt bold), body 11pt
-- **Tablice** za cjenik i usporedbu
-- **Bullet liste** za značajke
-- **QA**: nakon generiranja konvertiram u PDF i pregledam svaku stranicu
-- **Output**: `/mnt/documents/VM_Balance_Investor_Presentation.docx`
+- **Format**: PDF generiran s Pythonom (`reportlab` + Platypus), profesionalan layout
+- **Stilovi**: 
+  - Brand boja: Teal `#22A39F` (HSL 172 66% 40%)
+  - Naslovi: Helvetica/Arial Bold (24pt H1, 16pt H2, 12pt H3)
+  - Body: 11pt
+  - A4, marže 2cm
+  - Header s nazivom skupine, footer s paginacijom i "V&M Balance — Investor Assessment Panel"
+- **Tablice**: ocjene po podpodručjima, SWOT matrice
+- **Vizualni elementi**: bar prikaz ocjena, color-coded box za snage/slabosti/preporuke
+- **Jezik**: hrvatski
+- **Output**: `/mnt/documents/panel/` (12 PDF datoteka)
+  - `01_Tehnicka_Skupina.pdf`
+  - `02_Sigurnosna_Skupina.pdf`
+  - `03_Pravna_Skupina.pdf`
+  - `04_Financijska_Skupina.pdf`
+  - `05_Poslovna_Strateska_Skupina.pdf`
+  - `06_FinTech_Domenski_Strucnjaci.pdf`
+  - `07_UX_Skupina.pdf`
+  - `08_Investitorska_Skupina.pdf`
+  - `09_AI_ML_Skupina.pdf`
+  - `10_Mobile_Nativna_Skupina.pdf`
+  - `11_Backend_Database_Skupina.pdf`
+  - `12_Konsolidirani_Panel_Izvjestaj.pdf`
+
+### QA proces (obavezan)
+
+- Nakon generiranja svakog PDF-a, konverzija u slike (`pdftoppm`) i vizualna provjera **svake stranice**
+- Provjera: prelijevanje teksta, presjecanje tablica, čitljivost, kontrast, dosljednost branda
+- Ako se nađu greške — popravak skripte i ponovna generacija
+- Sažetak QA nalaza prije isporuke
 
 ### Što ćeš dobiti
 
-Jedan profesionalni Word dokument koji možeš:
-- Direktno otvoriti u Wordu i editirati
-- Poslati investitoru kao PDF
-- Iskoristiti kao predložak za PowerPoint pitch deck (mogu napraviti i to ako želiš nakon ovoga)
+- **12 zasebnih PDF dokumenata** — svaki potpuna procjena jedne skupine
+- **1 konsolidirani izvještaj** — sažetak cijelog panela s ukupnom preporukom
+- Svi dokumenti dostupni za preuzimanje pojedinačno preko `<lov-artifact>` tagova
+- Spremno za predaju investitoru kao "Independent Assessment Panel Report"
 
-### Jezik dokumenta
+### Važna napomena (transparentnost)
 
-Napravit ću ga na **hrvatskom jeziku** (jer prezentiraš investitoru, pretpostavljam regionalnom). Ako trebaš englesku verziju za međunarodnog investitora — reci pa ću napraviti i tu.
+Svaki PDF imat će jasnu napomenu na kraju da je riječ o **simuliranoj procjeni temeljenoj na dokumentaciji, kodu i memoriji projekta** — ne stvarnom angažmanu vanjskih revizora. To je etički obvezno jer ne mogu lažno predstaviti da su stvarni stručnjaci pregledali aplikaciju. Procjena je realna i temeljena na stvarnim podacima projekta, ali predstavlja **strukturirani analitički okvir**, ne zamjenu za pravi due diligence.
+
+Ako želiš da nešto izostavim, dodam dodatnu skupinu, promijenim jezik na engleski ili ukupan broj smanjim — reci prije nego krenem.
 
