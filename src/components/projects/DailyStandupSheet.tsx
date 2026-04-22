@@ -362,36 +362,62 @@ export const DailyStandupSheet = ({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-base">
               <MicOff className="w-4 h-4 text-destructive" />
-              {t('projects.standup.permissionTitle', 'Mikrofon je blokiran')}
+              {voiceErrorKind === 'unsupported'
+                ? t('voice.unsupportedTitle', 'Glasovni unos nije dostupan')
+                : voiceErrorKind === 'service-unavailable'
+                ? t('voice.serviceTitle', 'Diktiranje trenutno nije dostupno')
+                : t('projects.standup.permissionTitle', 'Mikrofon je blokiran')}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm text-foreground">
-                <p className="text-muted-foreground">
-                  {t('projects.standup.permissionIntro', 'Da bi snimanje radilo, moraš dopustiti pristup mikrofonu. Evo kako:')}
-                </p>
-
-                <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
-                  <p className="font-semibold text-xs uppercase tracking-wide text-primary">
-                    {t('projects.standup.permissionAndroid', 'Android (Chrome / V&M Balance app)')}
+                {voiceErrorKind === 'unsupported' && (
+                  <p className="text-muted-foreground whitespace-pre-line">
+                    {t(
+                      'voice.unsupportedBody',
+                      'Vaša verzija aplikacije ili preglednika ne podržava glasovni unos. Molimo upišite tekst rukom u polje iznad — AI će ga svejedno strukturirati.'
+                    )}
                   </p>
-                  <ol className="list-decimal pl-4 space-y-1 text-xs">
-                    <li>{t('projects.standup.permAndroid1', 'Otvori Postavke telefona → Aplikacije.')}</li>
-                    <li>{t('projects.standup.permAndroid2', 'Pronađi "V&M Balance" (ili "Chrome" ako koristiš preglednik).')}</li>
-                    <li>{t('projects.standup.permAndroid3', 'Otvori Dozvole → Mikrofon → odaberi "Dopusti".')}</li>
-                    <li>{t('projects.standup.permAndroid4', 'Vrati se u aplikaciju i klikni Snimaj ponovno.')}</li>
-                  </ol>
-                </div>
+                )}
 
-                <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
-                  <p className="font-semibold text-xs uppercase tracking-wide text-primary">
-                    {t('projects.standup.permissionChromeWeb', 'Chrome (web preglednik)')}
+                {voiceErrorKind === 'service-unavailable' && (
+                  <p className="text-muted-foreground whitespace-pre-line">
+                    {t(
+                      'voice.serviceBody',
+                      'Servis za prepoznavanje govora se ne može pokrenuti. Provjerite internetsku vezu i pokušajte ponovno. Ako i dalje ne radi, otvorite aplikaciju u Chrome pregledniku.'
+                    )}
                   </p>
-                  <ol className="list-decimal pl-4 space-y-1 text-xs">
-                    <li>{t('projects.standup.permChrome1', 'Klikni ikonu lokota 🔒 lijevo od adrese stranice.')}</li>
-                    <li>{t('projects.standup.permChrome2', 'Pronađi "Mikrofon" i postavi na "Dopusti".')}</li>
-                    <li>{t('projects.standup.permChrome3', 'Osvježi stranicu i pokušaj ponovno.')}</li>
-                  </ol>
-                </div>
+                )}
+
+                {(voiceErrorKind === 'permission-denied' || voiceErrorKind === 'unknown' || voiceErrorKind === null) && (
+                  <>
+                    <p className="text-muted-foreground">
+                      {t('projects.standup.permissionIntro', 'Da bi snimanje radilo, moraš dopustiti pristup mikrofonu. Evo kako:')}
+                    </p>
+
+                    <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
+                      <p className="font-semibold text-xs uppercase tracking-wide text-primary">
+                        {t('projects.standup.permissionAndroid', 'Android (Chrome / V&M Balance app)')}
+                      </p>
+                      <ol className="list-decimal pl-4 space-y-1 text-xs">
+                        <li>{t('projects.standup.permAndroid1', 'Otvori Postavke telefona → Aplikacije.')}</li>
+                        <li>{t('projects.standup.permAndroid2', 'Pronađi "V&M Balance" (ili "Chrome" ako koristiš preglednik).')}</li>
+                        <li>{t('projects.standup.permAndroid3', 'Otvori Dozvole → Mikrofon → odaberi "Dopusti".')}</li>
+                        <li>{t('projects.standup.permAndroid4', 'Vrati se u aplikaciju i klikni Snimaj ponovno.')}</li>
+                      </ol>
+                    </div>
+
+                    <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
+                      <p className="font-semibold text-xs uppercase tracking-wide text-primary">
+                        {t('projects.standup.permissionChromeWeb', 'Chrome (web preglednik)')}
+                      </p>
+                      <ol className="list-decimal pl-4 space-y-1 text-xs">
+                        <li>{t('projects.standup.permChrome1', 'Klikni ikonu lokota 🔒 lijevo od adrese stranice.')}</li>
+                        <li>{t('projects.standup.permChrome2', 'Pronađi "Mikrofon" i postavi na "Dopusti".')}</li>
+                        <li>{t('projects.standup.permChrome3', 'Osvježi stranicu i pokušaj ponovno.')}</li>
+                      </ol>
+                    </div>
+                  </>
+                )}
 
                 <p className="text-xs text-muted-foreground">
                   {t('projects.standup.permissionFallback', 'Ako i dalje ne radi, jednostavno upiši izvještaj rukom u polje iznad — AI će ga svejedno strukturirati.')}
