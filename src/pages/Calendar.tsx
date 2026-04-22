@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Download } from 'lucide-react';
 import { downloadCalendarEventsICS } from '@/lib/icsExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Button } from '@/components/ui/button';
+import { ExportButton } from '@/components/ui/export-button';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -124,19 +125,25 @@ const Calendar = () => {
           </Button>
           <h2 className="text-lg font-semibold capitalize">{monthName}</h2>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={async () => {
-              const allEvents = Object.values(mergedEventsByDate).flat().filter(e => e.source !== 'holiday');
-              if (!allEvents.length) return;
-              try {
-                await downloadCalendarEventsICS(
-                  allEvents.map(e => ({ id: e.id, title: e.title, description: e.description, date: e.date, amount: e.amount, type: e.type, source: e.source })),
-                  `kalendar-${format(currentMonth, 'yyyy-MM')}.ics`
-                );
-                showSuccess(t('calendar.monthExported', 'Mjesec izvezen'));
-              } catch { showError('Greška'); }
-            }} title={t('calendar.exportMonth', 'Izvezi mjesec')}>
-              <Download className="w-4 h-4" />
-            </Button>
+            <ExportButton
+              label=""
+              icon={<Download className="w-4 h-4" />}
+              variant="ghost"
+              size="icon"
+              compact
+              onExport={async (mode) => {
+                const allEvents = Object.values(mergedEventsByDate).flat().filter(e => e.source !== 'holiday');
+                if (!allEvents.length) return;
+                try {
+                  await downloadCalendarEventsICS(
+                    allEvents.map(e => ({ id: e.id, title: e.title, description: e.description, date: e.date, amount: e.amount, type: e.type, source: e.source })),
+                    `kalendar-${format(currentMonth, 'yyyy-MM')}.ics`,
+                    mode
+                  );
+                  showSuccess(t('calendar.monthExported', 'Mjesec izvezen'));
+                } catch { showError('Greška'); }
+              }}
+            />
             <Button variant="ghost" size="icon" onClick={nextMonth}>
               <ChevronRight className="w-5 h-5" />
             </Button>
