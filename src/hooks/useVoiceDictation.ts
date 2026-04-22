@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Capacitor } from '@capacitor/core';
-import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 type SpeechRecognitionLike = {
   lang: string;
@@ -64,8 +62,16 @@ export interface UseVoiceDictationResult {
 }
 
 /**
- * Centralized voice dictation hook for both Capacitor native (Android) and web (Chrome/Edge).
- * iOS Safari falls back to unsupported because webkit shim is unreliable.
+ * Voice dictation hook backed by the Web Speech API (`webkitSpeechRecognition`).
+ *
+ * Works on:
+ * - Chrome / Edge desktop
+ * - Android (Chrome browser AND inside Capacitor WebView, which is Chrome under the hood).
+ *   This means dictation improvements ship via Live Sync — no APK rebuild required.
+ *
+ * Not supported:
+ * - iOS Safari (webkit shim is unreliable; hook reports `supported: false`)
+ * - Firefox
  *
  * Features:
  * - Accumulates final text across multiple recognizer cycles (auto-restart) so nothing is lost
@@ -73,6 +79,8 @@ export interface UseVoiceDictationResult {
  * - Promotes the last interim transcript to final before restart, so mid-sentence pauses
  *   (e.g. "...na katu i u [pause] prizemlju") survive the restart.
  * - Hard cap of 30s on a single session to prevent runaway recordings.
+ *
+ * Note: requires an internet connection (the Web Speech API streams audio to Google servers).
  */
 export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): UseVoiceDictationResult => {
   const { i18n } = useTranslation();
@@ -87,7 +95,7 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
 
   // Cross-cycle accumulator: holds all final text recognized in this session.
   const accumulatedFinalRef = useRef('');
-  // Last interim transcript from current recognizer cycle (web).
+  // Last interim transcript from current recognizer cycle.
   const lastInterimRef = useRef('');
 
   // Session timing
@@ -102,10 +110,10 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     onTranscriptRef.current = onTranscript;
   }, [onTranscript]);
 
-  // Detect support (memoized once on mount)
-  const supported = Capacitor.isNativePlatform()
-    ? true
-    : !isIOS() && typeof window !== 'undefined' && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  // Detect support — Web Speech API only (works in Chrome/Edge & Android WebView).
+  const supported = !isIOS()
+    && typeof window !== 'undefined'
+    && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
   const clearTimers = useCallback(() => {
     if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null; }
@@ -139,10 +147,7 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     return () => {
       manualStopRef.current = true;
       clearTimers();
-      if (Capacitor.isNativePlatform()) {
-        SpeechRecognition.stop().catch(() => undefined);
-        SpeechRecognition.removeAllListeners().catch(() => undefined);
-      } else if (recognitionRef.current) {
+      if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch { /* noop */ }
       }
     };
@@ -153,13 +158,6 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     clearTimers();
     // Final flush so any in-flight interim text becomes permanent.
     flushInterimToFinal();
-    if (Capacitor.isNativePlatform()) {
-      SpeechRecognition.stop().catch(() => undefined);
-      SpeechRecognition.removeAllListeners().catch(() => undefined);
-      setRecording(false);
-      setContinuing(false);
-      return;
-    }
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch { /* noop */ }
     }
@@ -192,68 +190,6 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       stop();
     }, MAX_SESSION_MS);
 
-    // === NATIVE PATH ===
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const available = await SpeechRecognition.available();
-        if (!available.available) { clearTimers(); return; }
-
-        const permStatus = await SpeechRecognition.checkPermissions();
-        if (permStatus.speechRecognition !== 'granted') {
-          const req = await SpeechRecognition.requestPermissions();
-          if (req.speechRecognition !== 'granted') {
-            setShowPermissionHelp(true);
-            clearTimers();
-            return;
-          }
-        }
-
-        manualStopRef.current = false;
-
-        await SpeechRecognition.removeAllListeners();
-        await SpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
-          const transcript = data?.matches?.[0] || '';
-          if (transcript) {
-            lastResultAtRef.current = Date.now();
-            setContinuing(false);
-            // On Android partialResults the plugin emits the FULL utterance for this cycle.
-            // We treat it as interim for the current cycle and merge with prior accumulated final.
-            lastInterimRef.current = transcript;
-            emitMerged(transcript);
-          }
-        });
-        await SpeechRecognition.addListener('listeningState' as any, (data: any) => {
-          if (data?.status === 'stopped' && !manualStopRef.current) {
-            // Engine paused on silence — flush this cycle's interim into final, then restart.
-            flushInterimToFinal();
-            // Respect max session
-            if (Date.now() - sessionStartRef.current >= MAX_SESSION_MS) return;
-            SpeechRecognition.start({
-              language: lang,
-              partialResults: true,
-              popup: false,
-            }).catch(() => setRecording(false));
-          }
-        });
-
-        await SpeechRecognition.start({
-          language: lang,
-          partialResults: true,
-          popup: false,
-        });
-        setRecording(true);
-      } catch (err: any) {
-        const msg = String(err?.message || err);
-        if (/permission|denied/i.test(msg)) {
-          setShowPermissionHelp(true);
-        }
-        clearTimers();
-        setRecording(false);
-      }
-      return;
-    }
-
-    // === WEB PATH ===
     const r = getWebRecognition(lang);
     if (!r) { clearTimers(); return; }
 
