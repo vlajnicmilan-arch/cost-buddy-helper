@@ -25,6 +25,12 @@ interface VoiceInputButtonProps {
   size?: 'sm' | 'md';
 }
 
+const formatMMSS = (totalSec: number): string => {
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+
 /**
  * Microphone button that dictates speech into a text field.
  * Hidden when voice input is unsupported (e.g. iOS Safari, Firefox).
@@ -45,29 +51,29 @@ export const VoiceInputButton = ({
   size = 'sm',
 }: VoiceInputButtonProps) => {
   const { t } = useTranslation();
-  // Buffer holds the value at start-of-recording so partial results can be
-  // appended on top without losing typed text.
+  // Buffer holds the value that existed BEFORE recording started.
+  // The hook gives us the full session transcript on every update,
+  // which we append after this base text.
   const baseValueRef = useRef('');
-  // Final-segment text accumulated within current recording session
-  const finalChunksRef = useRef('');
 
-  const handleTranscript = useCallback((transcript: string, isFinal: boolean) => {
-    if (isFinal) {
-      finalChunksRef.current = (finalChunksRef.current + ' ' + transcript).replace(/\s+/g, ' ').trim();
-      const merged = [baseValueRef.current.trim(), finalChunksRef.current].filter(Boolean).join(' ');
-      onChange(merged);
-    } else {
-      // partial / interim: replace from base + final + interim
-      const merged = [baseValueRef.current.trim(), finalChunksRef.current, transcript]
-        .filter(Boolean)
-        .join(' ')
-        .replace(/\s+/g, ' ');
-      onChange(merged);
-    }
+  const handleTranscript = useCallback((transcript: string) => {
+    const merged = [baseValueRef.current.trim(), transcript.trim()]
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+/g, ' ');
+    onChange(merged);
   }, [onChange]);
 
-  const { recording, start, stop, supported, showPermissionHelp, setShowPermissionHelp } =
-    useVoiceDictation({ onTranscript: handleTranscript });
+  const {
+    recording,
+    start,
+    stop,
+    supported,
+    showPermissionHelp,
+    setShowPermissionHelp,
+    elapsedSec,
+    continuing,
+  } = useVoiceDictation({ onTranscript: handleTranscript });
 
   if (!supported) return null;
 
@@ -77,7 +83,6 @@ export const VoiceInputButton = ({
       return;
     }
     baseValueRef.current = value || '';
-    finalChunksRef.current = '';
     void start();
   };
 
@@ -85,33 +90,47 @@ export const VoiceInputButton = ({
 
   return (
     <>
-      <Button
-        type="button"
-        variant={recording ? 'destructive' : 'ghost'}
-        size="icon"
-        disabled={disabled}
-        onClick={handleClick}
-        aria-label={recording ? t('voice.stop', 'Zaustavi snimanje') : t('voice.start', 'Diktiraj')}
-        title={recording ? t('voice.recording', 'Snimanje...') : t('voice.start', 'Diktiraj')}
-        className={cn(
-          sizeClasses,
-          'rounded-full shrink-0 relative',
-          recording && 'shadow-lg shadow-destructive/30',
-          className
+      <div className={cn('flex flex-col items-end gap-1', className)}>
+        <Button
+          type="button"
+          variant={recording ? 'destructive' : 'ghost'}
+          size="icon"
+          disabled={disabled}
+          onClick={handleClick}
+          aria-label={recording ? t('voice.stop', 'Zaustavi snimanje') : t('voice.start', 'Diktiraj')}
+          title={recording ? t('voice.recording', 'Snimanje...') : t('voice.start', 'Diktiraj')}
+          className={cn(
+            sizeClasses,
+            'rounded-full shrink-0 relative',
+            recording && 'shadow-lg shadow-destructive/30'
+          )}
+        >
+          {recording ? (
+            <>
+              <MicOff className="w-4 h-4" />
+              <span
+                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-destructive border-2 border-background animate-pulse"
+                aria-hidden
+              />
+            </>
+          ) : (
+            <Mic className="w-4 h-4" />
+          )}
+        </Button>
+
+        {recording && (
+          <div className="flex flex-col items-end gap-0.5 pointer-events-none">
+            <span className="text-[10px] font-mono tabular-nums text-destructive font-semibold">
+              {formatMMSS(elapsedSec)}
+            </span>
+            {continuing && (
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                {t('voice.continuing', 'Slušam... nastavi govoriti')}
+              </span>
+            )}
+          </div>
         )}
-      >
-        {recording ? (
-          <>
-            <MicOff className="w-4 h-4" />
-            <span
-              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-destructive border-2 border-background animate-pulse"
-              aria-hidden
-            />
-          </>
-        ) : (
-          <Mic className="w-4 h-4" />
-        )}
-      </Button>
+      </div>
 
       <AlertDialog open={showPermissionHelp} onOpenChange={setShowPermissionHelp}>
         <AlertDialogContent>
