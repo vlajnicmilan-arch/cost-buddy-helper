@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 
 type SpeechRecognitionLike = {
   lang: string;
@@ -42,6 +43,14 @@ const MAX_SESSION_MS = 30_000;
 /** If silence (no speech result) lasts longer than this (ms), treat as user paused. */
 const SILENCE_HINT_MS = 2_000;
 
+/** Distinct error categories surfaced to the UI so we never lie to the user about mic permissions. */
+export type VoiceErrorKind =
+  | null
+  | 'permission-denied'   // user/system actually blocked mic access
+  | 'service-unavailable' // engine failed to start (network, Google service, WebView)
+  | 'unsupported'         // no engine available in this build/runtime
+  | 'unknown';            // anything else
+
 interface UseVoiceDictationOptions {
   /** Called whenever a transcript update arrives. Should typically append the transcript to existing field value. */
   onTranscript: (transcript: string, isFinal: boolean) => void;
@@ -53,8 +62,13 @@ export interface UseVoiceDictationResult {
   stop: () => void;
   /** True if voice input is supported on this platform/browser. */
   supported: boolean;
+  /** Which engine will (or did) handle this session — 'native' on Android app, 'web' in browser. */
+  engine: 'native' | 'web' | 'none';
   showPermissionHelp: boolean;
   setShowPermissionHelp: (open: boolean) => void;
+  /** Detailed last error category (drives which dialog/text the UI shows). */
+  errorKind: VoiceErrorKind;
+  setErrorKind: (kind: VoiceErrorKind) => void;
   /** Elapsed seconds of current recording session. */
   elapsedSec: number;
   /** True when recognizer paused listening but we are auto-restarting (user can keep speaking). */
@@ -62,36 +76,31 @@ export interface UseVoiceDictationResult {
 }
 
 /**
- * Voice dictation hook backed by the Web Speech API (`webkitSpeechRecognition`).
+ * Voice dictation hook with TWO engines:
  *
- * Works on:
- * - Chrome / Edge desktop
- * - Android (Chrome browser AND inside Capacitor WebView, which is Chrome under the hood).
- *   This means dictation improvements ship via Live Sync — no APK rebuild required.
+ * - **Native (Android Capacitor app)** — uses `@capacitor-community/speech-recognition`,
+ *   which talks to the Android system speech service directly (not via WebView mic).
+ *   Avoids the WebView's notorious auto-rejection of `getUserMedia()`.
+ * - **Web (browsers)** — uses Web Speech API (`webkitSpeechRecognition`).
  *
- * Not supported:
- * - iOS Safari (webkit shim is unreliable; hook reports `supported: false`)
- * - Firefox
+ * Error model deliberately distinguishes between *real* permission failures and
+ * engine/service failures so the UI never falsely claims the mic is blocked.
  *
- * Features:
- * - Accumulates final text across multiple recognizer cycles (auto-restart) so nothing is lost
- *   when the underlying engine pauses on silence.
- * - Promotes the last interim transcript to final before restart, so mid-sentence pauses
- *   (e.g. "...na katu i u [pause] prizemlju") survive the restart.
- * - Hard cap of 30s on a single session to prevent runaway recordings.
- *
- * Note: requires an internet connection (the Web Speech API streams audio to Google servers).
+ * Note: web engine requires an internet connection (audio streams to Google).
  */
 export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): UseVoiceDictationResult => {
   const { i18n } = useTranslation();
   const [recording, setRecording] = useState(false);
   const [showPermissionHelp, setShowPermissionHelp] = useState(false);
+  const [errorKind, setErrorKind] = useState<VoiceErrorKind>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [continuing, setContinuing] = useState(false);
+  const [nativePluginAvailable, setNativePluginAvailable] = useState<boolean | null>(null);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const manualStopRef = useRef(false);
   const onTranscriptRef = useRef(onTranscript);
+  const nativeListenerRef = useRef<{ remove: () => void } | null>(null);
 
   // Cross-cycle accumulator: holds all final text recognized in this session.
   const accumulatedFinalRef = useRef('');
@@ -110,10 +119,49 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     onTranscriptRef.current = onTranscript;
   }, [onTranscript]);
 
-  // Detect support — Web Speech API only (works in Chrome/Edge & Android WebView).
-  const supported = !isIOS()
-    && typeof window !== 'undefined'
-    && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  const isNativeAndroid =
+    typeof Capacitor !== 'undefined' &&
+    Capacitor.isNativePlatform?.() &&
+    Capacitor.getPlatform?.() === 'android';
+
+  // Probe native plugin availability once.
+  useEffect(() => {
+    let cancelled = false;
+    if (!isNativeAndroid) {
+      setNativePluginAvailable(false);
+      return () => { cancelled = true; };
+    }
+    (async () => {
+      try {
+        const mod = await import('@capacitor-community/speech-recognition');
+        const SpeechRecognition = (mod as any).SpeechRecognition;
+        if (!SpeechRecognition) throw new Error('plugin-missing');
+        const avail = await SpeechRecognition.available?.();
+        if (cancelled) return;
+        setNativePluginAvailable(!!(avail?.available ?? true));
+      } catch {
+        if (!cancelled) setNativePluginAvailable(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isNativeAndroid]);
+
+  const hasWebEngine =
+    !isIOS() &&
+    typeof window !== 'undefined' &&
+    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+
+  // Native engine (when available) wins on Android app; else fall back to web in browsers.
+  const engine: 'native' | 'web' | 'none' =
+    isNativeAndroid && nativePluginAvailable
+      ? 'native'
+      : hasWebEngine
+      ? 'web'
+      : 'none';
+
+  // While probing the native plugin we still consider native a candidate so the button isn't hidden.
+  const supported =
+    (isNativeAndroid && nativePluginAvailable !== false) || hasWebEngine;
 
   const clearTimers = useCallback(() => {
     if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null; }
@@ -137,8 +185,14 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
         .replace(/\s+/g, ' ')
         .trim();
       lastInterimRef.current = '';
-      // Emit so the textarea reflects the promoted text immediately.
       onTranscriptRef.current(accumulatedFinalRef.current, true);
+    }
+  }, []);
+
+  const removeNativeListener = useCallback(() => {
+    if (nativeListenerRef.current) {
+      try { nativeListenerRef.current.remove(); } catch { /* noop */ }
+      nativeListenerRef.current = null;
     }
   }, []);
 
@@ -147,37 +201,52 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     return () => {
       manualStopRef.current = true;
       clearTimers();
+      removeNativeListener();
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch { /* noop */ }
       }
+      // Best-effort native stop
+      if (isNativeAndroid) {
+        import('@capacitor-community/speech-recognition')
+          .then((mod) => (mod as any).SpeechRecognition?.stop?.())
+          .catch(() => { /* noop */ });
+      }
     };
-  }, [clearTimers]);
+  }, [clearTimers, removeNativeListener, isNativeAndroid]);
+
+  const stopWeb = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* noop */ }
+    }
+  }, []);
+
+  const stopNative = useCallback(async () => {
+    try {
+      const mod = await import('@capacitor-community/speech-recognition');
+      await (mod as any).SpeechRecognition?.stop?.();
+    } catch { /* noop */ }
+    removeNativeListener();
+  }, [removeNativeListener]);
 
   const stop = useCallback(() => {
     manualStopRef.current = true;
     clearTimers();
-    // Final flush so any in-flight interim text becomes permanent.
     flushInterimToFinal();
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch { /* noop */ }
+    if (engine === 'native') {
+      void stopNative();
+    } else {
+      stopWeb();
     }
     setRecording(false);
     setContinuing(false);
-  }, [clearTimers, flushInterimToFinal]);
+  }, [clearTimers, flushInterimToFinal, engine, stopNative, stopWeb]);
 
-  const start = useCallback(async () => {
-    const lang = langForLocale(i18n.language || 'hr');
-
-    // Reset session state
-    accumulatedFinalRef.current = '';
-    lastInterimRef.current = '';
+  const startUITimers = useCallback(() => {
+    clearTimers();
     sessionStartRef.current = Date.now();
     lastResultAtRef.current = Date.now();
     setElapsedSec(0);
     setContinuing(false);
-
-    // Start UI timers
-    clearTimers();
     elapsedTimerRef.current = setInterval(() => {
       setElapsedSec(Math.floor((Date.now() - sessionStartRef.current) / 1000));
     }, 250);
@@ -185,22 +254,101 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       const sinceLast = Date.now() - lastResultAtRef.current;
       setContinuing(sinceLast > SILENCE_HINT_MS);
     }, 300);
-    maxSessionTimerRef.current = setTimeout(() => {
-      // Auto-stop after MAX_SESSION_MS
-      stop();
-    }, MAX_SESSION_MS);
+    maxSessionTimerRef.current = setTimeout(() => { stop(); }, MAX_SESSION_MS);
+  }, [clearTimers, stop]);
 
-    const r = getWebRecognition(lang);
-    if (!r) { clearTimers(); return; }
+  const startNative = useCallback(async (lang: string) => {
+    const mod = await import('@capacitor-community/speech-recognition');
+    const SpeechRecognition: any = (mod as any).SpeechRecognition;
+    if (!SpeechRecognition) throw new Error('plugin-missing');
 
-    // NOTE: We intentionally do NOT call navigator.mediaDevices.getUserMedia() here.
-    // On Android WebView (Capacitor), that pre-check is auto-rejected even when the
-    // system mic permission is granted, which used to incorrectly trigger the
-    // "permission help" dialog. The Web Speech API manages mic access internally
-    // via Google's speech service, and any real permission failure is surfaced
-    // through the `onerror` handler below ('not-allowed' / 'service-not-allowed').
+    // Permission flow — only here do we treat denial as a real permission issue.
+    try {
+      const perm = await SpeechRecognition.checkPermissions?.();
+      const granted =
+        perm?.speechRecognition === 'granted' || perm?.permission === 'granted';
+      if (!granted) {
+        const req = await SpeechRecognition.requestPermissions?.();
+        const ok =
+          req?.speechRecognition === 'granted' || req?.permission === 'granted';
+        if (!ok) {
+          setErrorKind('permission-denied');
+          setShowPermissionHelp(true);
+          return;
+        }
+      }
+    } catch {
+      // permission API may not exist on older plugin versions — proceed and let start() fail clearly
+    }
 
+    accumulatedFinalRef.current = '';
+    lastInterimRef.current = '';
     manualStopRef.current = false;
+
+    removeNativeListener();
+    try {
+      const handle = await SpeechRecognition.addListener?.(
+        'partialResults',
+        (data: any) => {
+          const matches: string[] = data?.matches || [];
+          const text = matches[0] || '';
+          if (!text) return;
+          lastResultAtRef.current = Date.now();
+          setContinuing(false);
+          // Native plugin emits cumulative partials per session — treat as interim.
+          lastInterimRef.current = text;
+          emitMerged(text);
+        }
+      );
+      if (handle) nativeListenerRef.current = handle;
+    } catch { /* noop */ }
+
+    try {
+      startUITimers();
+      setRecording(true);
+      setErrorKind(null);
+      await SpeechRecognition.start({
+        language: lang,
+        maxResults: 1,
+        prompt: '',
+        partialResults: true,
+        popup: false,
+      });
+      // start() resolves when session ends in some implementations.
+      flushInterimToFinal();
+      removeNativeListener();
+      clearTimers();
+      setRecording(false);
+      setContinuing(false);
+    } catch (err: any) {
+      removeNativeListener();
+      clearTimers();
+      setRecording(false);
+      setContinuing(false);
+      const msg = String(err?.message || err || '').toLowerCase();
+      if (msg.includes('permission') || msg.includes('denied')) {
+        setErrorKind('permission-denied');
+        setShowPermissionHelp(true);
+      } else {
+        setErrorKind('service-unavailable');
+        setShowPermissionHelp(true);
+      }
+    }
+  }, [clearTimers, emitMerged, flushInterimToFinal, removeNativeListener, startUITimers]);
+
+  const startWeb = useCallback((lang: string) => {
+    const r = getWebRecognition(lang);
+    if (!r) {
+      setErrorKind('unsupported');
+      setShowPermissionHelp(true);
+      return;
+    }
+
+    accumulatedFinalRef.current = '';
+    lastInterimRef.current = '';
+    manualStopRef.current = false;
+    setErrorKind(null);
+    startUITimers();
 
     r.onstart = () => setRecording(true);
     r.onresult = (e: any) => {
@@ -223,31 +371,35 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       if (interimThisEvent) {
         emitMerged(interimThisEvent);
       } else {
-        // Final-only update
         onTranscriptRef.current(accumulatedFinalRef.current, true);
       }
     };
     r.onerror = (e: any) => {
       const errType = e?.error || 'unknown';
       if (errType === 'no-speech' || errType === 'aborted') return;
-      if (errType === 'not-allowed' || errType === 'service-not-allowed') {
-        manualStopRef.current = true;
-        clearTimers();
-        setShowPermissionHelp(true);
-        setRecording(false);
-        setContinuing(false);
-        return;
-      }
       manualStopRef.current = true;
       clearTimers();
       setRecording(false);
       setContinuing(false);
+      // Only treat 'not-allowed' as a real permission denial.
+      // 'service-not-allowed' / 'network' / 'audio-capture' = engine/service problem,
+      // not a user permission issue — show different message.
+      if (errType === 'not-allowed') {
+        setErrorKind('permission-denied');
+      } else if (
+        errType === 'service-not-allowed' ||
+        errType === 'network' ||
+        errType === 'audio-capture'
+      ) {
+        setErrorKind('service-unavailable');
+      } else {
+        setErrorKind('unknown');
+      }
+      setShowPermissionHelp(true);
     };
     r.onend = () => {
       if (!manualStopRef.current) {
-        // Promote any pending interim into final BEFORE restarting so it survives.
         flushInterimToFinal();
-        // Respect max session
         if (Date.now() - sessionStartRef.current >= MAX_SESSION_MS) {
           clearTimers();
           setRecording(false);
@@ -267,16 +419,37 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     } catch {
       clearTimers();
       setRecording(false);
+      setErrorKind('service-unavailable');
+      setShowPermissionHelp(true);
     }
-  }, [i18n.language, clearTimers, emitMerged, flushInterimToFinal, stop]);
+  }, [clearTimers, emitMerged, flushInterimToFinal, startUITimers]);
+
+  const start = useCallback(async () => {
+    const lang = langForLocale(i18n.language || 'hr');
+
+    if (engine === 'native') {
+      await startNative(lang);
+      return;
+    }
+    if (engine === 'web') {
+      startWeb(lang);
+      return;
+    }
+    // No engine at all — never claim it's a permission problem.
+    setErrorKind('unsupported');
+    setShowPermissionHelp(true);
+  }, [i18n.language, engine, startNative, startWeb]);
 
   return {
     recording,
     start,
     stop,
     supported,
+    engine,
     showPermissionHelp,
     setShowPermissionHelp,
+    errorKind,
+    setErrorKind,
     elapsedSec,
     continuing,
   };
