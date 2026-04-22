@@ -22,6 +22,7 @@ import {
   ChevronDown, ChevronUp, AlertCircle, Flag, Calendar as CalendarWeekIcon
 } from 'lucide-react';
 import { WeeklyWorkEntryForm } from './WeeklyWorkEntryForm';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 
 interface WorkerScheduleDialogProps {
@@ -373,12 +374,16 @@ export const WorkerScheduleDialog = ({
 
             <div className="space-y-2">
               <Label>{t('workers.note', 'Napomena')} ({t('common.optional', 'opcionalno')})</Label>
-              <Textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t('workers.notePlaceholder', 'npr. Prekovremeni rad, bolovanje...')}
-                rows={2}
-              />
+              <div className="relative">
+                <Textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder={t('workers.notePlaceholder', 'npr. Prekovremeni rad, bolovanje...')}
+                  rows={2}
+                  className="pr-12"
+                />
+                <VoiceInputButton value={note} onChange={setNote} className="absolute bottom-2 right-2" />
+              </div>
             </div>
 
             <div className="flex gap-2">
