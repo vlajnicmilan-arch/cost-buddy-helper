@@ -1,4 +1,12 @@
 {
+  "fileExport": {
+    "download": "Download",
+    "share": "Share",
+    "savedToDocuments": "Saved to Documents",
+    "saveError": "Failed to save file",
+    "shareError": "Sharing failed",
+    "shareDialogTitle": "Save or share file"
+  },
   "projects": {
     "noPaymentSource": "No source",
     "title": "Projects",
