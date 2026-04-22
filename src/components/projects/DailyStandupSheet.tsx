@@ -61,6 +61,9 @@ export const DailyStandupSheet = ({
     showPermissionHelp,
     setShowPermissionHelp,
     errorKind: voiceErrorKind,
+    diagnosticCode: voiceDiagnosticCode,
+    permissionState: voicePermissionState,
+    isAndroidRuntime,
   } = useVoiceDictation({
     onTranscript: (transcript, isFinal) => {
       setText(prev => {

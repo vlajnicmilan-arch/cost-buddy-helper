@@ -120,6 +120,9 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
   const [recording, setRecording] = useState(false);
   const [showPermissionHelp, setShowPermissionHelp] = useState(false);
   const [errorKind, setErrorKind] = useState<VoiceErrorKind>(null);
+  const [diagnosticCode, setDiagnosticCode] = useState<string | null>(null);
+  const [diagnosticMessage, setDiagnosticMessage] = useState<string | null>(null);
+  const [permissionState, setPermissionState] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown');
   const [elapsedSec, setElapsedSec] = useState(0);
   const [continuing, setContinuing] = useState(false);
 
@@ -215,8 +218,12 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
 
   const start = useCallback(async () => {
     // Diagnostics for next-step debugging — never logs PII.
+    let permState: 'granted' | 'denied' | 'prompt' | 'unknown' = 'unknown';
     try {
-      const permState = await queryMicPermission();
+      permState = await queryMicPermission();
+      setPermissionState(permState);
+      setDiagnosticCode(null);
+      setDiagnosticMessage(null);
       // eslint-disable-next-line no-console
       console.info('[voice] start()', {
         supported,
@@ -226,8 +233,8 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       });
     } catch { /* noop */ }
 
-
     if (!supported) {
+      setDiagnosticCode('unsupported');
       setErrorKind('unsupported');
       setShowPermissionHelp(true);
       return;
@@ -236,6 +243,7 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     const lang = langForLocale(i18n.language || 'hr');
     const r = getWebRecognition(lang);
     if (!r) {
+      setDiagnosticCode('missing-recognition-constructor');
       setErrorKind('unsupported');
       setShowPermissionHelp(true);
       return;
@@ -273,12 +281,13 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     };
     r.onerror = async (e: any) => {
       const errType = e?.error || 'unknown';
+      const errMessage = e?.message || null;
       // Diagnostics — non-PII, helps identify the real failure path next time.
       try {
         // eslint-disable-next-line no-console
         console.warn('[voice] onerror', {
           errType,
-          message: e?.message,
+          message: errMessage,
           androidApp: isAndroidApp(),
           ua: typeof navigator !== 'undefined' ? navigator.userAgent : 'n/a',
         });
@@ -288,15 +297,18 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       clearTimers();
       setRecording(false);
       setContinuing(false);
+      setDiagnosticCode(errType);
+      setDiagnosticMessage(errMessage);
 
       // 'not-allowed' on Web Speech is ambiguous in Android WebView — it often
       // fires when the engine simply can't start, NOT because the user blocked
       // the mic. Verify against the Permissions API before claiming denial.
       if (errType === 'not-allowed') {
-        const permState = await queryMicPermission();
+        const nextPermState = await queryMicPermission();
+        setPermissionState(nextPermState);
         // eslint-disable-next-line no-console
-        console.warn('[voice] permission check after not-allowed', { permState });
-        if (permState === 'denied') {
+        console.warn('[voice] permission check after not-allowed', { permState: nextPermState });
+        if (nextPermState === 'denied') {
           setErrorKind('permission-denied');
         } else {
           // granted / prompt / unknown → it's the engine, not the user.
@@ -335,6 +347,7 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     } catch {
       clearTimers();
       setRecording(false);
+      setDiagnosticCode('start-failed');
       setErrorKind('service-unavailable');
       setShowPermissionHelp(true);
     }
@@ -349,6 +362,10 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     setShowPermissionHelp,
     errorKind,
     setErrorKind,
+    diagnosticCode,
+    diagnosticMessage,
+    permissionState,
+    isAndroidRuntime: isAndroidApp(),
     elapsedSec,
     continuing,
   };
