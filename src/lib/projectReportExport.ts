@@ -74,7 +74,7 @@ const toAscii = (text: string): string => {
     .replace(/Ž/g, 'Z');
 };
 
-export const generateProjectPDFReport = async (data: ProjectReportData): Promise<void> => {
+export const generateProjectPDFReport = async (data: ProjectReportData, mode: ExportMode = 'save'): Promise<void> => {
   const doc = new jsPDF();
   
   // Title
@@ -260,10 +260,10 @@ export const generateProjectPDFReport = async (data: ProjectReportData): Promise
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
-  await exportPDFDoc(doc, fileName);
+  await exportPDFDoc(doc, fileName, mode);
 };
 
-export const generateProjectCSVReport = async (data: ProjectReportData): Promise<void> => {
+export const generateProjectCSVReport = async (data: ProjectReportData, mode: ExportMode = 'save'): Promise<void> => {
   // Summary section
   const summaryRows = [
     `"Projekt","${data.projectName}"`,
@@ -316,7 +316,7 @@ export const generateProjectCSVReport = async (data: ProjectReportData): Promise
   
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
-  await exportTextFile(csvContent, fileName, 'text/csv', true);
+  await exportTextFile(csvContent, fileName, 'text/csv', true, mode);
 };
 
 // ===== Work Log PDF Export =====
@@ -338,7 +338,7 @@ export interface WorkLogReportData {
   entries: WorkLogEntry[];
 }
 
-export const generateWorkLogPDFReport = async (data: WorkLogReportData): Promise<void> => {
+export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: ExportMode = 'save'): Promise<void> => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
@@ -436,10 +436,10 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData): Promise
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `dnevnik_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
-  await exportPDFDoc(doc, fileName);
+  await exportPDFDoc(doc, fileName, mode);
 };
 
-export const generateProjectJSONExport = async (data: ProjectReportData): Promise<void> => {
+export const generateProjectJSONExport = async (data: ProjectReportData, mode: ExportMode = 'save'): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
     project: {
@@ -490,5 +490,5 @@ export const generateProjectJSONExport = async (data: ProjectReportData): Promis
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
-  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json');
+  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json', false, mode);
 };
