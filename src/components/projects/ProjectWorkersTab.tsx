@@ -185,6 +185,75 @@ export const ProjectWorkersTab = ({
     setScheduleWorker(worker);
   };
 
+  // Per-worker hours for selected period
+  const workerPeriodStats = useMemo(() => {
+    const range = getPeriodRange(period, customFrom, customTo);
+    const map: Record<string, number> = {};
+    entries.forEach(e => {
+      const d = new Date(e.work_date);
+      if (range.start && d < range.start) return;
+      if (range.end && d >= range.end) return;
+      map[e.worker_id] = (map[e.worker_id] || 0) + e.actual_hours;
+    });
+    return map;
+  }, [entries, period, customFrom, customTo]);
+
+  const periodLabelDefaults: Record<PeriodKey, string> = {
+    currentMonth: 'Tekući mjesec',
+    previousMonth: 'Prethodni mjesec',
+    last30: 'Zadnjih 30 dana',
+    last90: 'Zadnjih 90 dana',
+    thisYear: 'Cijela godina',
+    allTime: 'Sve vrijeme',
+    custom: 'Prilagođeno',
+  };
+  const periodLabel = t(`workers.${period}`, periodLabelDefaults[period]);
+
+  // Filtered + sorted workers
+  const displayedWorkers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? workers.filter(w =>
+          `${w.first_name} ${w.last_name}`.toLowerCase().includes(q) ||
+          w.position.toLowerCase().includes(q)
+        )
+      : workers;
+
+    const sorted = [...filtered].sort((a, b) => {
+      const aHours = workerPeriodStats[a.id] || 0;
+      const bHours = workerPeriodStats[b.id] || 0;
+      switch (sortBy) {
+        case 'name':
+          return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+        case 'position':
+          return a.position.localeCompare(b.position);
+        case 'hourlyRate':
+          return b.hourly_rate - a.hourly_rate;
+        case 'periodHours':
+          return bHours - aHours;
+        case 'periodCost':
+          return (bHours * b.hourly_rate) - (aHours * a.hourly_rate);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [workers, workerPeriodStats, search, sortBy]);
+
+  const periodTotals = useMemo(() => {
+    let hours = 0;
+    let cost = 0;
+    let active = 0;
+    workers.forEach(w => {
+      const h = workerPeriodStats[w.id] || 0;
+      if (h > 0) active++;
+      hours += h;
+      cost += h * w.hourly_rate;
+    });
+    return { hours, cost, active };
+  }, [workers, workerPeriodStats]);
+
   if (loading || externalLoading) {
     return (
       <div className="flex items-center justify-center py-8">
