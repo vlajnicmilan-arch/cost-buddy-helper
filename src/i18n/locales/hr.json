@@ -2338,5 +2338,29 @@
     "activeWorkers": "aktivnih",
     "totalLabel": "Ukupno",
     "workedShort": "odrađeno"
+  },
+  "collaboratorsFilters": {
+    "filterStatus": "Status",
+    "filterMilestone": "Faza",
+    "sortBy": "Sortiraj",
+    "search": "Pretraga po imenu, tvrtki, usluzi...",
+    "allStatuses": "Svi statusi",
+    "statusActive": "Aktivni",
+    "statusCompleted": "Završeni",
+    "statusCancelled": "Otkazani",
+    "allMilestones": "Sve faze",
+    "noMilestone": "Bez faze",
+    "sortNewest": "Najnoviji",
+    "sortOldest": "Najstariji",
+    "sortName": "Ime (A→Z)",
+    "sortAgreed": "Dogovoreno ↓",
+    "sortPaid": "Isplaćeno ↓",
+    "sortRemaining": "Preostalo ↓",
+    "remaining": "Preostalo",
+    "remainingTotal": "Preostalo za isplatu",
+    "activeCount": "Aktivnih",
+    "completedCount": "Završenih",
+    "noResults": "Nema suradnika koji odgovaraju filterima",
+    "resetFilters": "Resetiraj filtere"
   }
 }
