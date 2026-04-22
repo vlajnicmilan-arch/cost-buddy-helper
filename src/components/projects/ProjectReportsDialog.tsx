@@ -12,13 +12,15 @@ import {
   generateProjectPDFReport, 
   generateProjectCSVReport, 
   generateProjectJSONExport,
-  ProjectReportData 
+  generateWorkLogPDFReport,
+  ProjectReportData,
+  WorkLogEntry,
 } from '@/lib/projectReportExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { 
   FileText, Download, Wallet, Target, Users, 
-  TrendingDown, CheckCircle2, Clock, AlertTriangle, History
+  TrendingDown, CheckCircle2, Clock, AlertTriangle, History, BookOpen
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend
@@ -244,6 +246,100 @@ export const ProjectReportsDialog = ({
     }
   };
 
+  const handleExportWorkLog = async () => {
+    try {
+      // Fetch work logs + related data
+      const [logsRes, msRes] = await Promise.all([
+        (supabase as any)
+          .from('project_work_logs')
+          .select('*')
+          .eq('project_id', project.id)
+          .order('log_date', { ascending: false }),
+        supabase
+          .from('project_milestones')
+          .select('id, name')
+          .eq('project_id', project.id),
+      ]);
+
+      const logs = (logsRes.data || []) as any[];
+      if (logs.length === 0) {
+        showError(t('workLog.noEntries', 'Nema zapisa za izvoz'));
+        return;
+      }
+
+      const msMap = new Map<string, string>(
+        (msRes.data || []).map((m: any) => [m.id, m.name])
+      );
+
+      // Author names
+      const userIds = Array.from(new Set(logs.map((l) => l.user_id).filter(Boolean)));
+      const nameMap = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name')
+          .in('user_id', userIds);
+        profiles?.forEach((p: any) => nameMap.set(p.user_id, p.display_name || ''));
+      }
+
+      // Hours per date
+      const dates = Array.from(new Set(logs.map((l) => l.log_date)));
+      const [entriesRes, workersRes] = await Promise.all([
+        supabase
+          .from('project_work_entries')
+          .select('worker_id, work_date, actual_hours')
+          .eq('project_id', project.id)
+          .in('work_date', dates),
+        supabase
+          .from('project_workers')
+          .select('id, first_name, last_name')
+          .eq('project_id', project.id),
+      ]);
+      const wMap = new Map<string, string>();
+      (workersRes.data || []).forEach((w: any) => {
+        wMap.set(w.id, `${w.first_name} ${w.last_name}`.trim());
+      });
+      const hoursByDate: Record<string, Map<string, number>> = {};
+      (entriesRes.data || []).forEach((e: any) => {
+        if (!hoursByDate[e.work_date]) hoursByDate[e.work_date] = new Map();
+        const m = hoursByDate[e.work_date];
+        m.set(e.worker_id, (m.get(e.worker_id) || 0) + (Number(e.actual_hours) || 0));
+      });
+
+      const entries: WorkLogEntry[] = logs.map((l) => ({
+        log_date: l.log_date,
+        weather: l.weather,
+        summary: l.summary,
+        notes: l.notes,
+        milestone_name: l.milestone_id ? msMap.get(l.milestone_id) : null,
+        user_name: l.user_id ? nameMap.get(l.user_id) : null,
+        hours: hoursByDate[l.log_date]
+          ? Array.from(hoursByDate[l.log_date].entries())
+              .map(([wid, h]) => ({ worker_name: wMap.get(wid) || '?', actual_hours: h }))
+              .sort((a, b) => b.actual_hours - a.actual_hours)
+          : [],
+      }));
+
+      const fromDate = entries.length
+        ? new Date(entries[entries.length - 1].log_date + 'T00:00:00')
+        : undefined;
+      const toDate = entries.length
+        ? new Date(entries[0].log_date + 'T00:00:00')
+        : undefined;
+
+      await generateWorkLogPDFReport({
+        projectName: project.name,
+        fromDate,
+        toDate,
+        entries,
+      });
+      showSuccess(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
+    } catch (error) {
+      console.error('Work log export error:', error);
+      showError(t('common.error'));
+    }
+  };
+
   // Use unified logic: Remaining = Allocated (received) - Spent (completed milestones)
   const remaining = totalAllocated - totalSpent;
   const usedPercent = totalAllocated > 0 
@@ -269,7 +365,7 @@ export const ProjectReportsDialog = ({
               <FileText className="w-5 h-5" />
               {t('projects.reports', 'Izvještaji projekta')}
             </DialogTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={() => handleExport('csv')}>
                 <Download className="w-4 h-4 mr-1" />
                 CSV
@@ -277,6 +373,10 @@ export const ProjectReportsDialog = ({
               <Button variant="outline" size="sm" onClick={() => handleExport('json')}>
                 <Download className="w-4 h-4 mr-1" />
                 JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportWorkLog}>
+                <BookOpen className="w-4 h-4 mr-1" />
+                {t('workLog.exportPdf', 'Dnevnik PDF')}
               </Button>
               <Button size="sm" onClick={() => handleExport('pdf')}>
                 <Download className="w-4 h-4 mr-1" />

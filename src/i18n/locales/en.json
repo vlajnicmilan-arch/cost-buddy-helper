@@ -2387,6 +2387,8 @@
     "emptyHint": "Click \"New entry\" to start the project chronology.",
     "emptyFiltered": "No entries match the selected filters",
     "searchPlaceholder": "Search: description, author...",
+    "exportPdf": "Work log PDF",
+    "noEntries": "No entries to export",
     "filter": {
       "currentMonth": "Current month",
       "previousMonth": "Previous month",

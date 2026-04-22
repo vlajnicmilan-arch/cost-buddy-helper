@@ -2389,6 +2389,8 @@
     "emptyHint": "Klicken Sie auf \"Neuer Eintrag\", um die Projektchronologie zu starten.",
     "emptyFiltered": "Keine Einträge entsprechen den gewählten Filtern",
     "searchPlaceholder": "Suche: Beschreibung, Autor...",
+    "exportPdf": "Tagebuch PDF",
+    "noEntries": "Keine Einträge zum Exportieren",
     "filter": {
       "currentMonth": "Aktueller Monat",
       "previousMonth": "Vormonat",

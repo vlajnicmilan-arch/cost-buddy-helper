@@ -2394,6 +2394,8 @@
     "emptyHint": "Klikni \"Novi zapis\" da započneš kronologiju projekta.",
     "emptyFiltered": "Nema zapisa za odabrane filtere",
     "searchPlaceholder": "Pretraga: opis, autor...",
+    "exportPdf": "Dnevnik PDF",
+    "noEntries": "Nema zapisa za izvoz",
     "filter": {
       "currentMonth": "Tekući mjesec",
       "previousMonth": "Prošli mjesec",
