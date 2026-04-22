@@ -73,7 +73,34 @@ export const VoiceInputButton = ({
     setShowPermissionHelp,
     elapsedSec,
     continuing,
+    errorKind,
   } = useVoiceDictation({ onTranscript: handleTranscript });
+
+  // Pick the right title/body based on what actually went wrong.
+  const dialogTitleKey =
+    errorKind === 'unsupported'
+      ? 'voice.unsupportedTitle'
+      : errorKind === 'service-unavailable'
+      ? 'voice.serviceTitle'
+      : 'voice.permissionTitle';
+  const dialogTitleFallback =
+    errorKind === 'unsupported'
+      ? 'Glasovni unos nije dostupan'
+      : errorKind === 'service-unavailable'
+      ? 'Diktiranje trenutno nije dostupno'
+      : 'Dopustite pristup mikrofonu';
+  const dialogBodyKey =
+    errorKind === 'unsupported'
+      ? 'voice.unsupportedBody'
+      : errorKind === 'service-unavailable'
+      ? 'voice.serviceBody'
+      : 'voice.permissionBody';
+  const dialogBodyFallback =
+    errorKind === 'unsupported'
+      ? 'Vaša verzija aplikacije ili preglednika ne podržava glasovni unos. Molimo upišite tekst rukom.'
+      : errorKind === 'service-unavailable'
+      ? 'Servis za prepoznavanje govora se ne može pokrenuti. Provjerite internetsku vezu i pokušajte ponovno. Ako i dalje ne radi, otvorite aplikaciju u Chrome pregledniku.'
+      : 'Za diktiranje teksta potreban je pristup mikrofonu. Otvorite postavke uređaja ili preglednika i dopustite pristup mikrofonu za ovu aplikaciju.';
 
   if (!supported) return null;
 
