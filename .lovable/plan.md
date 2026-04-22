@@ -1,81 +1,91 @@
 
 
-## PDF izvještaji svih stručnjaka — puni panel procjenitelja V&M Balance
+## Provjera i dorada push obavijesti — puna pokrivenost svih segmenata
 
-Pripremit ću **set od 12 zasebnih PDF dokumenata**, jedan za svaku skupinu stručnjaka iz punog investitorskog panela. Svaki PDF predstavlja simuliranu profesionalnu procjenu te skupine — ocjenu, nalaze, prijedloge i savjete — temeljenu na stvarnoj arhitekturi i značajkama V&M Balance aplikacije.
+### Što već znam (iz koda i memorije)
 
-### Što će svaki PDF sadržavati (jedinstvena struktura)
+Sustav koristi **FCM HTTP v1 API** s OAuth2/RS256 autentifikacijom. Tokeni se spremaju u `push_tokens` tablicu preko `usePushNotifications` hooka. Postoji **9 edge funkcija** koje šalju push notifikacije preko zajedničkog `_shared/sendPushNotification.ts`:
 
-1. **Naslovnica** — naziv skupine, datum procjene, predmet (V&M Balance v1.x)
-2. **Sažetak procjene (Executive Summary)** — 1 stranica, ključni nalazi
-3. **Ocjena** — skala 1-10 po podpodručjima + ukupna ocjena
-4. **Detaljan pregled po područjima** — što je provjereno, što je pronađeno
-5. **Snage (Strengths)** — što aplikacija radi dobro
-6. **Slabosti / rizici (Weaknesses & Risks)** — što treba popraviti
-7. **Prijedlozi i savjeti** — konkretne preporuke (kratki, srednji, dugi rok)
-8. **Zaključak** — preporuka investitoru (Go / Caution / No-go iz njihove perspektive)
-9. **Potpis skupine** — naziv skupine + napomena da je riječ o simuliranoj procjeni temeljenoj na dokumentaciji aplikacije
+1. `notify-family-message` — chat poruke u obiteljskoj grupi
+2. `notify-note-added` — bilješke dodane na transakciju
+3. `notify-payment-source-transaction` — transakcija na dijeljenom računu
+4. `notify-pending-transaction` — transakcija na odobrenju
+5. `notify-project-transaction` — transakcija na projektu
+6. `check-budget-alerts` — upozorenja kad se prijeđe budžet
+7. `check-reminders` — podsjetnici (kalendar)
+8. `check-milestone-deadlines` — rokovi faza projekta
+9. `check-milestone-budgets` — preopterećenje proračuna milestonea
+10. `trial-reminder` — podsjetnik o isteku probnog razdoblja
+11. `broadcast-notification` — admin broadcast
 
-### 12 PDF dokumenata (puni panel)
+### Plan provjere (3 koraka)
 
-| # | Skupina | Fokus procjene |
+**Korak 1 — Tehnička provjera trenutnog stanja**
+- Pregledat ću `_shared/sendPushNotification.ts` (kako se šalju notifikacije, OAuth, FCM v1 payload)
+- Pregledat ću `usePushNotifications.ts` i `nativePush.ts` (registracija tokena, listeneri)
+- Pregledat ću `push_tokens` shemu i `push_delivery_logs` (status isporuke)
+- Provjerit ću svih 11 edge funkcija — koriste li ispravno `sendPushNotificationToMany` i imaju li `data.type` za routing
+- Provjerit ću `capacitor.config.ts` (`PushNotifications` plugin postavke)
+- Provjerit ću dohvaća li se token i sprema li se ispravno (potencijalni `onConflict` bug)
+
+**Korak 2 — Funkcionalna analiza svih segmenata**
+Provjerit ću pokriva li push sustav SVE relevantne događaje u aplikaciji:
+
+| Segment | Trenutno stanje | Potrebna funkcija |
 |---|---|---|
-| 1 | **Tehnička skupina** (Full-stack, Mobile, Backend, DevOps, AI, QA, UX/UI) | Arhitektura, kod, performanse, mobile, AI integracija |
-| 2 | **Sigurnosna skupina** (Cybersec, AppSec, Crypto, DPO) | RLS, RBAC, PIN/biometrija, OWASP, GDPR |
-| 3 | **Pravna skupina** (IT, GDPR, Porezni, Radnopravni, Revizor) | ToS, EU VAT, NN 55/2024, HSFI/MSFI |
-| 4 | **Financijska skupina** (Analitičar, Revizor, Pricing) | Unit economics, CAC/LTV, validacija cjenovnih razina |
-| 5 | **Poslovna i strateška skupina** (Business Analyst, Product Manager, Growth) | Tržište, konkurencija, roadmap, GTM |
-| 6 | **FinTech domenski stručnjaci** (Osobne financije, Računovođa, PM, HR/Payroll) | Relevantnost značajki, Sudreg, Šihterica, projekti |
-| 7 | **UX skupina** (UX Researcher, Accessibility, Lokalizacija) | Usability, WCAG 2.1 AA, kvaliteta HR/EN/DE |
-| 8 | **Investitorska skupina** (VC analyst, Tech DD, M&A) | Investicijska zrelost, valuacija, exit |
-| 9 | **AI/ML skupina** (zasebno od tehničke, dubinski) | Gemini integracija, OCR, kategorizacija, AI memorija |
-| 10 | **Mobile / nativna skupina** (zasebno, dubinski) | Capacitor, FCM v1, biometrija, OAuth, Live Sync |
-| 11 | **Backend / Database skupina** (zasebno, dubinski) | PostgreSQL shema, RLS politike, Edge funkcije, migracije |
-| 12 | **Konsolidirani panel izvještaj** | Sažetak svih 11 + ukupna preporuka investitoru |
+| Obiteljski chat | ✅ ima | `notify-family-message` |
+| Bilješke na transakciji | ✅ ima | `notify-note-added` |
+| Dijeljeni računi (transakcija) | ✅ ima | `notify-payment-source-transaction` |
+| Pending odobrenja | ✅ ima | `notify-pending-transaction` |
+| Projektne transakcije | ✅ ima | `notify-project-transaction` |
+| Budžet — upozorenja | ✅ ima (cron) | `check-budget-alerts` |
+| Kalendar podsjetnici | ✅ ima (cron) | `check-reminders` |
+| Rokovi faza | ✅ ima (cron) | `check-milestone-deadlines` |
+| Probno razdoblje | ✅ ima (cron) | `trial-reminder` |
+| **Pozivnice (projekt/budžet/family/source)** | ❓ provjeriti | `respond-to-invitation` / `send-member-invitation` |
+| **Prihvaćena pozivnica → vlasniku** | ❓ provjeriti | `accept-project-invitation` |
+| **Nova ponavljajuća transakcija auto-generirana** | ❓ provjeriti | `match-recurring` |
+| **Detektiran zajam/dug** | ❓ provjeriti | `detect-loans` |
+| **Ažuriranje tečaja kad utječe na saldo** | ❓ vjerojatno ne treba | — |
+| **Push na tap → navigacija u app** | ❓ provjeriti `pushNotificationActionPerformed` listener | — |
+| **Push delivery logging i admin pregled** | ❓ provjeriti | — |
+| **Web push (PWA, ne samo nativno)** | ❌ trenutno samo nativno | nedostaje VAPID flow |
 
-### Tehnička izvedba
+**Korak 3 — Live test**
+- Pozvat ću `broadcast-notification` da pošaljem testnu obavijest na vaš token i provjerim isporuku
+- Pregledat ću `push_delivery_logs` posljednjih 24h za stvarnu uspješnost
+- Pregledat ću edge function logs (`send-push`, `notify-*`) na greške
 
-- **Format**: PDF generiran s Pythonom (`reportlab` + Platypus), profesionalan layout
-- **Stilovi**: 
-  - Brand boja: Teal `#22A39F` (HSL 172 66% 40%)
-  - Naslovi: Helvetica/Arial Bold (24pt H1, 16pt H2, 12pt H3)
-  - Body: 11pt
-  - A4, marže 2cm
-  - Header s nazivom skupine, footer s paginacijom i "V&M Balance — Investor Assessment Panel"
-- **Tablice**: ocjene po podpodručjima, SWOT matrice
-- **Vizualni elementi**: bar prikaz ocjena, color-coded box za snage/slabosti/preporuke
-- **Jezik**: hrvatski
-- **Output**: `/mnt/documents/panel/` (12 PDF datoteka)
-  - `01_Tehnicka_Skupina.pdf`
-  - `02_Sigurnosna_Skupina.pdf`
-  - `03_Pravna_Skupina.pdf`
-  - `04_Financijska_Skupina.pdf`
-  - `05_Poslovna_Strateska_Skupina.pdf`
-  - `06_FinTech_Domenski_Strucnjaci.pdf`
-  - `07_UX_Skupina.pdf`
-  - `08_Investitorska_Skupina.pdf`
-  - `09_AI_ML_Skupina.pdf`
-  - `10_Mobile_Nativna_Skupina.pdf`
-  - `11_Backend_Database_Skupina.pdf`
-  - `12_Konsolidirani_Panel_Izvjestaj.pdf`
+### Što očekujem da ću trebati popraviti (na temelju iskustva)
 
-### QA proces (obavezan)
+1. **Tap-to-navigate** — `pushNotificationActionPerformed` trenutno samo logira, ne navigira na relevantni ekran (transakcija/projekt/chat). Dodati routing iz `notification.data`.
+2. **Pozivnice nemaju push** — kad netko pozove korisnika u projekt/budžet/family/dijeljeni račun, šalje se samo email + in-app notifikacija. Dodati push.
+3. **Auto-generirane recurring transakcije** — `match-recurring` možda ne šalje push pri kreiranju. Provjeriti.
+4. **Detect-loans** — kad AI detektira novi zajam, push prijedlog korisniku.
+5. **Token rotacija / cleanup** — provjeriti briše li se nevažeći token nakon FCM `UNREGISTERED` greške (inače se gomilaju mrtvi tokeni).
+6. **PWA web push** — trenutno radi samo na nativnom Androidu. Za korisnike koji koriste PWA na desktopu/iOS Safariju, dodati Web Push (VAPID) ako je u opsegu.
+7. **Per-user toggle** — provjeriti ima li korisnik mogućnost u Postavkama uključiti/isključiti pojedinu kategoriju (chat, budžet, podsjetnici…). Ako ne — dodati.
+8. **Zvuk/badge sync** — provjeriti čisti li se badge nakon `markAllAsRead`.
 
-- Nakon generiranja svakog PDF-a, konverzija u slike (`pdftoppm`) i vizualna provjera **svake stranice**
-- Provjera: prelijevanje teksta, presjecanje tablica, čitljivost, kontrast, dosljednost branda
-- Ako se nađu greške — popravak skripte i ponovna generacija
-- Sažetak QA nalaza prije isporuke
+### Što ću isporučiti nakon plana
 
-### Što ćeš dobiti
+1. **Detaljan dijagnostički izvještaj** s točnim popisom:
+   - što radi
+   - što je djelomično
+   - što nedostaje
+   - što ima bug
+2. **Implementacija ispravaka** (po prioritetu, jedan po jedan, da možete testirati):
+   - **P0 (kritično)**: tap-to-navigate, token cleanup
+   - **P1 (visoko)**: push za pozivnice, recurring auto-gen, loan detection
+   - **P2 (srednje)**: per-user toggle u Postavkama, PWA web push
+   - **P3 (nice-to-have)**: admin pregled push uspješnosti u Pulse tabu
 
-- **12 zasebnih PDF dokumenata** — svaki potpuna procjena jedne skupine
-- **1 konsolidirani izvještaj** — sažetak cijelog panela s ukupnom preporukom
-- Svi dokumenti dostupni za preuzimanje pojedinačno preko `<lov-artifact>` tagova
-- Spremno za predaju investitoru kao "Independent Assessment Panel Report"
+### Što trebam od vas
 
-### Važna napomena (transparentnost)
+Prije nego krenem implementirati popravke, samo potvrdite dvije stvari:
 
-Svaki PDF imat će jasnu napomenu na kraju da je riječ o **simuliranoj procjeni temeljenoj na dokumentaciji, kodu i memoriji projekta** — ne stvarnom angažmanu vanjskih revizora. To je etički obvezno jer ne mogu lažno predstaviti da su stvarni stručnjaci pregledali aplikaciju. Procjena je realna i temeljena na stvarnim podacima projekta, ali predstavlja **strukturirani analitički okvir**, ne zamjenu za pravi due diligence.
+- **a)** Želite li da pokrijem i **PWA Web Push** (za korisnike koji ne koriste Android nativnu aplikaciju), ili samo nativno?
+- **b)** Želite li **per-user toggle** po kategorijama u Postavkama (npr. "isključi push za chat"), ili je dovoljno globalno on/off?
 
-Ako želiš da nešto izostavim, dodam dodatnu skupinu, promijenim jezik na engleski ili ukupan broj smanjim — reci prije nego krenem.
+Ako kažete "kreni s defaultima" — pretpostavit ću **da** za oboje i krenuti redom od P0 prema P3.
 
