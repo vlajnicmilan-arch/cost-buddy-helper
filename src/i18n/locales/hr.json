@@ -1,4 +1,12 @@
 {
+  "fileExport": {
+    "download": "Preuzmi",
+    "share": "Podijeli",
+    "savedToDocuments": "Spremljeno u Dokumenti",
+    "saveError": "Greška pri spremanju datoteke",
+    "shareError": "Dijeljenje nije uspjelo",
+    "shareDialogTitle": "Spremi ili podijeli datoteku"
+  },
   "projects": {
     "noPaymentSource": "Bez izvora",
     "title": "Projekti",
