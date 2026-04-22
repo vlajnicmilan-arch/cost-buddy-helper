@@ -235,6 +235,38 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Respect per-category user preference (default ON if no preference exists).
+    // The category is passed via data.category (set by each notify-* function).
+    const category = data?.category ? String(data.category) : null;
+    if (category) {
+      try {
+        const { data: prefAllowed } = await supabase.rpc("is_push_category_enabled", {
+          _user_id: user_id,
+          _category: category,
+        });
+        if (prefAllowed === false) {
+          await logDelivery(supabase, {
+            user_id, source_function: source, title, body,
+            token_count: 0, success_count: 0, failure_count: 0,
+            fcm_error_codes: ["CATEGORY_DISABLED"],
+            request_payload: { title, body, data },
+            response_summary: { reason: "category disabled by user", category },
+            duration_ms: Date.now() - startedAt,
+            request_id, dispatch_status: "send_push_category_disabled",
+            dispatch_error: `category '${category}' disabled by user`,
+            lifecycle_stage: "send_push",
+          });
+          return new Response(
+            JSON.stringify({ sent: 0, reason: "category disabled by user", category }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } catch (e) {
+        // If preference check fails, fall through to delivery (fail-open).
+        console.warn("[send-push] preference check failed, defaulting to allow:", e);
+      }
+    }
+
     const { data: tokens, error } = await supabase
       .from("push_tokens")
       .select("token")

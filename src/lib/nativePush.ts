@@ -46,6 +46,18 @@ export async function registerNativePush(): Promise<boolean> {
 
       PushNotifications.addListener('pushNotificationActionPerformed', (a) => {
         console.log('[Push] Tapped:', a);
+        try {
+          const data = (a?.notification?.data ?? {}) as Record<string, string | undefined>;
+          const route = resolveRouteFromPushData(data);
+          if (route && typeof window !== 'undefined') {
+            // Use hash-safe navigation. window.location.assign forces a full
+            // route change which works regardless of where React Router is.
+            // Small timeout lets the OS finish bringing the app to foreground.
+            setTimeout(() => { window.location.assign(route); }, 80);
+          }
+        } catch (e) {
+          console.error('[Push] tap navigation error:', e);
+        }
       });
     }
 
