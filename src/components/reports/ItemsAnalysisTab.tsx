@@ -17,7 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
+import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { ExportButton } from '@/components/ui/export-button';
 
 interface ItemWithCategory extends ReceiptItem {
   category: string;
@@ -168,7 +169,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
     }));
   }, [categoryGroups]);
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = async (mode: ExportMode = 'save') => {
     try {
       const doc = new jsPDF();
       doc.setFont('helvetica');
@@ -214,14 +215,14 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       doc.text(`UKUPNO: ${formatAmount(totalItemsAmount)}`, 14, finalY + 10);
 
       const pdfFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`;
-      await exportPDFDoc(doc, pdfFileName);
+      await exportPDFDoc(doc, pdfFileName, mode);
       showSuccess('PDF izvjesce generirano!');
     } catch {
       showError('Greska pri generiranju PDF-a');
     }
   };
 
-  const handleExportCSV = async () => {
+  const handleExportCSV = async (mode: ExportMode = 'save') => {
     try {
       const header = 'Kategorija,Artikl,Kolicina,Jedinicna cijena,Ukupno,Datum,Opis transakcije\n';
       const rows: string[] = [];
@@ -238,14 +239,14 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       rows.push(`"SVEUKUPNO","",${allItems.length},,${totalItemsAmount},"",""`);
       const csvContent = header + rows.join('\n');
       const csvFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.csv`;
-      await exportTextFile(csvContent, csvFileName, 'text/csv', true);
+      await exportTextFile(csvContent, csvFileName, 'text/csv', true, mode);
       showSuccess('CSV datoteka generirana!');
     } catch {
       showError('Greska pri generiranju CSV-a');
     }
   };
 
-  const handleExportJSON = async () => {
+  const handleExportJSON = async (mode: ExportMode = 'save') => {
     try {
       const data = {
         period: {
@@ -271,7 +272,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
         })),
       };
       const jsonFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.json`;
-      await exportTextFile(JSON.stringify(data, null, 2), jsonFileName, 'application/json');
+      await exportTextFile(JSON.stringify(data, null, 2), jsonFileName, 'application/json', false, mode);
       showSuccess('JSON datoteka generirana!');
     } catch {
       showError('Greska pri generiranju JSON-a');
@@ -487,18 +488,30 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
           Izvezi analizu artikala
         </Label>
         <div className="grid grid-cols-3 gap-3">
-          <Button variant="outline" className="gap-2 rounded-xl h-auto py-4 flex-col" onClick={handleExportPDF}>
-            <FileText className="w-6 h-6 text-destructive" />
-            <span>PDF</span>
-          </Button>
-          <Button variant="outline" className="gap-2 rounded-xl h-auto py-4 flex-col" onClick={handleExportCSV}>
-            <FileSpreadsheet className="w-6 h-6 text-income" />
-            <span>CSV</span>
-          </Button>
-          <Button variant="outline" className="gap-2 rounded-xl h-auto py-4 flex-col" onClick={handleExportJSON}>
-            <FileJson className="w-6 h-6 text-primary" />
-            <span>JSON</span>
-          </Button>
+          <ExportButton
+            label={<span className="flex flex-col items-center gap-2"><FileText className="w-6 h-6 text-destructive" /><span>PDF</span></span>}
+            icon={null as any}
+            onExport={handleExportPDF}
+            variant="outline"
+            compact
+            className="gap-2 rounded-xl h-auto py-4 flex-col"
+          />
+          <ExportButton
+            label={<span className="flex flex-col items-center gap-2"><FileSpreadsheet className="w-6 h-6 text-income" /><span>CSV</span></span>}
+            icon={null as any}
+            onExport={handleExportCSV}
+            variant="outline"
+            compact
+            className="gap-2 rounded-xl h-auto py-4 flex-col"
+          />
+          <ExportButton
+            label={<span className="flex flex-col items-center gap-2"><FileJson className="w-6 h-6 text-primary" /><span>JSON</span></span>}
+            icon={null as any}
+            onExport={handleExportJSON}
+            variant="outline"
+            compact
+            className="gap-2 rounded-xl h-auto py-4 flex-col"
+          />
         </div>
       </div>
     </div>
