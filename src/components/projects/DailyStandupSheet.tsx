@@ -60,6 +60,7 @@ export const DailyStandupSheet = ({
     supported: voiceSupported,
     showPermissionHelp,
     setShowPermissionHelp,
+    errorKind: voiceErrorKind,
   } = useVoiceDictation({
     onTranscript: (transcript, isFinal) => {
       setText(prev => {
