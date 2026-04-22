@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ProjectMilestone, MILESTONE_STATUS_LABELS } from '@/types/project';
-import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
+import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 
 export interface CurrencyConfig {
   code: string;
