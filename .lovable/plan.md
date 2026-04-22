@@ -1,154 +1,136 @@
 
 
-## Dnevnik rada — implementacija
+## Razdvajanje preuzimanja i dijeljenja
 
-### Što je Dnevnik rada?
+### Problem
 
-**Dnevnik rada** = vremenska kronologija svega što se dogodilo na **gradilištu/projektu** po danu — tko je radio, koliko sati, na kojoj fazi, što je obavljeno, što su zapazili. Različito od:
-- **Aktivnost** (sustavski log: tko je dodao trošak/fazu)
-- **Šihterica** (formalna evidencija sati po radniku — NN 55/2024)
-- **Standup** (AI-strukturiran glasovni unos koji se **pretvara** u sate)
+Trenutno na nativnoj Android aplikaciji svaki izvoz datoteke (PDF, CSV, JSON, ICS) automatski otvara **Share dijalog**. Korisnik mora kroz dijaloga odabrati "Spremi u datoteku" da bi datoteku stvarno preuzeo. Web verzija već radi kako treba — datoteka se direktno preuzme.
 
-Dnevnik rada je **slobodan tekstualni zapis po danu** + automatski sažetak sati radnika za taj dan.
+### Cilj
+
+Razdvojiti dvije akcije na nativnoj aplikaciji:
+- **📥 Preuzmi** — sprema PDF direktno u javnu **Downloads** mapu uređaja, bez dijaloga (samo potvrda "Spremljeno u Downloads")
+- **📤 Podijeli** — otvara Share dijalog (WhatsApp, email, Drive…)
+
+Na webu **Preuzmi** radi kao i sada (browser download), **Podijeli** koristi `navigator.share` ako je dostupan, inače kopira link/tekst.
 
 ---
 
-### Gdje se dodaje
+### Promjene u `src/lib/fileExport.ts`
 
-Novi tab **"Dnevnik"** unutar grupe **Posao** (`Briefcase`), pozicija: nakon `Aktivnost`.
+Dodati opcijski parametar `mode`:
 
-```text
-Posao: Pregled · Timeline · Faze · Dokumenti · Aktivnost · [Dnevnik]
+```ts
+type ExportMode = 'save' | 'share';
+
+export async function exportFile(
+  blob: Blob, 
+  fileName: string, 
+  mode: ExportMode = 'save'  // novi default = SAVE (preuzimanje)
+): Promise<boolean>
 ```
 
-Ikona: `BookOpen` (Lucide). Tab je vidljiv svim članovima projekta (kao Aktivnost).
+**Native ponašanje po modu:**
 
----
+| Mode | Direktorij | Otvara Share? | Korisnik vidi |
+|---|---|---|---|
+| `save` | `Directory.Documents` (javna mapa) | ❌ Ne | Status feedback "Spremljeno u Dokumenti/Download" |
+| `share` | `Directory.Cache` (privatna) | ✅ Da | Android Share Sheet |
 
-### Model podataka
+**Web ponašanje po modu:**
 
-Nova tablica `project_work_logs`:
-
-| Kolona | Tip | Napomena |
-|---|---|---|
-| `id` | uuid PK | |
-| `project_id` | uuid FK→projects | ON DELETE CASCADE |
-| `log_date` | date NOT NULL | dan kojem se zapis odnosi |
-| `user_id` | uuid | autor zapisa |
-| `weather` | text | npr. "sunčano, 18°C" (slobodan tekst) |
-| `summary` | text NOT NULL | glavni opis dana (što je rađeno) |
-| `notes` | text | dodatne napomene/incidenti |
-| `milestone_id` | uuid FK→project_milestones | opcionalno: faza |
-| `created_at`, `updated_at` | timestamptz | |
-
-**Jedinstvenost**: jedan dnevnik po (projekt, datum, autor) — više članova može imati svoj zapis za isti dan.
-
-**RLS**: identično `project_work_entries` (members SELECT/INSERT/UPDATE, owners DELETE).
-
-**Storage slika**: koristi postojeći `project-documents` bucket — slike dana se vežu kroz postojeću `ProjectDocumentsTab` logiku (s tagom `work_log:{id}`), ne dupliciramo bucket.
-
----
-
-### UI — `ProjectWorkLogTab.tsx`
-
-**Glavni prikaz**: vertikalna kronologija (najnoviji na vrhu), grupirana po danima.
-
-```text
-┌─────────────────────────────────────┐
-│ + Novi zapis                        │  ← gumb na vrhu (samo članovi)
-├─────────────────────────────────────┤
-│ 📅 Pon, 22.4.2026.                  │
-│ ☀️ Sunčano, 18°C  ·  🎯 Faza 2     │
-│                                     │
-│ Završeno žbukanje prizemlja, počeli │
-│ s instalacijama u kuhinji.          │
-│                                     │
-│ 👷 Marko (8h) · Ivan (6h) · Ana (4h)│  ← auto iz work_entries
-│ 📝 Napomena: dostava cementa kasni  │
-│                                     │
-│ ✍️ Petar Petrović · prije 2 sata    │
-│                          [Uredi][🗑]│
-└─────────────────────────────────────┘
-```
-
-**Filter-traka iznad** (mobile-first):
-- **Mjesec** (Select): tekući (default), prošli, prošli-2, sve
-- **Faza** (Select): sve faze · [popis] · bez faze
-- **Pretraga** (Input): po sažetku/napomeni/autoru
-- **Sortiranje** implicitno: silazno po datumu (najnoviji prvi)
-
-**Dijalog za novi/uredi zapis** (`WorkLogDialog`):
-- Datum (DatePicker, default: danas)
-- Faza (Select, opcionalno)
-- Vrijeme (Input, opcionalno) — npr. "Sunčano 18°C"
-- **Što je rađeno** (Textarea) + 🎤 mikrofon
-- **Napomene/incidenti** (Textarea) + 🎤 mikrofon
-- Gumb: "Spremi"
-
-**Auto-pridruženi sati**: kartica dana automatski povlači sve `project_work_entries` za taj `(project_id, work_date)` i prikazuje sažetak radnika i sati — **ne unosi se ručno** (već postoji u Šihterici/Kalendaru rada).
-
----
-
-### Quick action — "+ Dnevni zapis" iz `BusinessProjects`
-
-Dodajem stavku u postojeći "Brza akcija" dropdown (gdje je već Standup, Plus, Camera) — ikona `BookOpen`, otvara `WorkLogDialog` s pre-odabranim projektom.
-
-**Jasna razlika od Standup-a**: Standup = AI parsira sate iz govora; Dnevnik = ručni opis dana (sate sustav sam pridruži iz drugih izvora).
-
----
-
-### Aktivnost integracija
-
-Kad se kreira/uredi/obriše zapis dnevnika, automatski log u `project_activity_log`:
-- `work_log_added` — "dodao dnevnik za 22.4.2026"
-- `work_log_updated` — "ažurirao dnevnik za …"
-- `work_log_deleted` — "obrisao dnevnik za …"
-
-Ikone u `ProjectActivityTab.tsx` se proširuju (`BookOpen`).
-
----
-
-### Izvoz
-
-Dodatak u postojeći `ProjectReportsDialog`: novi gumb **"Izvezi dnevnik (PDF)"** koji generira mjesečni dnevnik kronološki — datum, vrijeme, što je rađeno, sati radnika, napomene. Koristi postojeći `projectReportExport.ts` obrazac.
-
----
-
-### Tehničke izmjene
-
-| Datoteka | Promjena |
+| Mode | Akcija |
 |---|---|
-| `supabase/migrations/...` | Nova tablica `project_work_logs` + RLS politike + trigger `update_updated_at` + activity log trigger |
-| `src/types/projectWorkLog.ts` | TS tipovi (NOVO) |
-| `src/hooks/useProjectWorkLogs.ts` | CRUD hook (NOVO): fetch/create/update/delete + summary sati |
-| `src/components/projects/ProjectWorkLogTab.tsx` | Glavni tab (NOVO) — lista, filteri, prazno stanje |
-| `src/components/projects/WorkLogDialog.tsx` | Dijalog za unos/uređivanje (NOVO) — s mikrofonom |
-| `src/components/projects/ProjectFullScreenView.tsx` | Dodati `worklog` u `TAB_TO_GROUP`, `TabsTrigger` u Posao grupi, `TabsContent` |
-| `src/components/projects/ProjectActivityTab.tsx` | Nove ikone za `work_log_*` action types |
-| `src/components/business/BusinessProjects.tsx` | Nova quick-action stavka "Dnevni zapis" |
-| `src/components/projects/ProjectReportsDialog.tsx` | Gumb za PDF izvoz dnevnika |
-| `src/lib/projectReportExport.ts` | Funkcija `exportWorkLogPDF()` |
-| `src/i18n/locales/{hr,en,de}.json` | ~25 ključeva pod `workLog.*` |
+| `save` | Klasično `<a download>` (kao sada) |
+| `share` | `navigator.share({ files: [...] })` ako podržano, inače fallback na download |
+
+Pomoćne funkcije `exportPDFDoc` i `exportTextFile` dobivaju isti `mode` parametar (default `'save'`).
+
+---
+
+### Promjene u dijalozima — gumbi za izvoz
+
+Svuda gdje sada postoji jedan gumb (npr. "PDF", "Dnevnik PDF", "CSV", "JSON"), pretvaramo ga u **dropdown s 2 opcije**:
+
+```text
+[ 📄 Dnevnik PDF ▾ ]
+   ├ 📥 Preuzmi
+   └ 📤 Podijeli
+```
+
+**Komponenta**: novi mali wrapper `<ExportButton>` u `src/components/ui/export-button.tsx` — koristi shadcn `DropdownMenu` + `Button`. Prima `label`, `icon`, i `onExport(mode)` callback. Time izbjegavamo duplo-kodiranje na svakom mjestu.
+
+**Mjesta gdje se mijenja:**
+
+| Datoteka | Gumbi koji se nadograđuju |
+|---|---|
+| `src/components/projects/ProjectReportsDialog.tsx` | CSV, JSON, **Dnevnik PDF**, PDF |
+| `src/components/reports/ReportsDialog.tsx` | PDF, CSV, JSON izvozi izvještaja |
+| `src/components/timeclock/TimeClockMonthlyReport.tsx` | PDF/CSV/JSON evidencije rada |
+| `src/components/BackupRestore.tsx` | Sigurnosna kopija (JSON) |
+| `src/pages/Calendar.tsx` (ICS izvoz) | ICS kalendar |
+| Ostale točke koje koriste `exportPDFDoc` / `exportTextFile` | Isto |
+
+---
+
+### Status feedback
+
+Nakon **Preuzmi** na nativnom uređaju:
+- ✅ Zelena potvrda: **"Datoteka spremljena u Dokumenti"** (1200 ms, kroz `showSuccess`)
+- Ako Filesystem write padne → crveni `showError` s razlogom
+
+Nakon **Podijeli**:
+- Otvara se Share Sheet — bez dodatne potvrde
+
+---
+
+### Lokalizacija
+
+Novi ključevi u `hr.json`, `en.json`, `de.json`:
+
+```json
+"export": {
+  "download": "Preuzmi",
+  "share": "Podijeli",
+  "savedToDocuments": "Spremljeno u Dokumenti",
+  "shareError": "Dijeljenje nije uspjelo"
+}
+```
+
+---
+
+### Tehnički detalji za nativno spremanje
+
+Capacitor Filesystem API:
+```ts
+await Filesystem.writeFile({
+  path: fileName,
+  data: base64Data,
+  directory: Directory.Documents,  // javna mapa, vidljiva u Files appu
+  recursive: true,
+});
+```
+
+Na Androidu `Directory.Documents` mapira na `/storage/emulated/0/Documents/` — datoteka je odmah vidljiva u **Files** aplikaciji bez ikakve dodatne dozvole (od Android 11+ scoped storage).
+
+Ako uređaj odbije write (rijetko, stariji Android), pada se na `Directory.Cache` + tihi Share dijalog kao fallback.
 
 ---
 
 ### Što se NE mijenja
 
-- `project_work_entries` (Šihterica i Kalendar rada ostaju) — Dnevnik samo **čita** sate odande
-- `project_activity_log` struktura
-- Postojeći Standup tijek
-- RLS na drugim tablicama
-- Naplatni model (dostupno svim korisnicima — kao Aktivnost)
+- Web `download` ponašanje za sve postojeće gumbe ostaje isto kad se klikne **Preuzmi**
+- Logika generiranja PDF-a, CSV-a, JSON-a (jsPDF, autoTable…)
+- RLS, baza, edge funkcije
+- Ostale komponente koje ne rade izvoz datoteka
 
 ---
 
 ### Očekivani ishod
 
-- Otvoriš projekt → **Posao → Dnevnik** → vidiš kronološki zapis svih dana s opisom rada, fazom, radnicima i satima
-- Klik **+ Novi zapis** → diktiraš ili upišeš što je danas rađeno + napomene → spremiš
-- Sati radnika za taj dan se **automatski povuku** iz Šihterice/Kalendara rada
-- Filtriraj po mjesecu i fazi, pretraži po tekstu
-- Iz **Brza akcija** u Poslovnom modu dodaješ zapis bez otvaranja projekta
-- Izvezeš mjesečni dnevnik kao PDF za klijenta/arhivu
-- Sve radi na 384 px viewportu, podržano u HR/EN/DE
+- U **Izvještaji projekta** (i svim drugim mjestima izvoza) klikneš na **Dnevnik PDF ▾** → biraš **Preuzmi** ili **Podijeli**
+- **Preuzmi** na Androidu → datoteka odmah u `Documents` mapi, bez Share dijaloga, samo zelena potvrda
+- **Preuzmi** na webu → klasičan browser download
+- **Podijeli** → Android Share Sheet (WhatsApp, Drive, Email…) ili `navigator.share` na webu
+- Konzistentno ponašanje na svim ekranima koji izvoze datoteke
 
