@@ -2314,5 +2314,24 @@
     "notSupported": "Spracheingabe wird auf diesem Gerät nicht unterstützt",
     "permissionTitle": "Mikrofonzugriff erlauben",
     "permissionBody": "Für die Sprachdiktierung wird Zugriff auf das Mikrofon benötigt. Öffnen Sie die Geräte- oder Browsereinstellungen und erlauben Sie den Mikrofonzugriff für diese App."
+  },
+  "workers": {
+    "currentMonth": "Aktueller Monat",
+    "previousMonth": "Vorheriger Monat",
+    "last30": "Letzte 30 Tage",
+    "last90": "Letzte 90 Tage",
+    "thisYear": "Dieses Jahr",
+    "allTime": "Gesamt",
+    "custom": "Benutzerdefiniert",
+    "sortName": "Name",
+    "sortPosition": "Position",
+    "sortHourlyRate": "Stundenlohn ↓",
+    "sortPeriodHours": "Stunden im Zeitraum ↓",
+    "sortPeriodCost": "Kosten im Zeitraum ↓",
+    "searchPlaceholder": "Suche nach Name/Position...",
+    "noMatches": "Keine Suchergebnisse",
+    "activeWorkers": "aktiv",
+    "totalLabel": "Gesamt",
+    "workedShort": "geleistet"
   }
 }
