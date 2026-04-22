@@ -1,96 +1,47 @@
 
 
-## Kartica Suradnici — filteri i pregled (analogno Radnicima)
+## Mikrofon u projektima — provjereno stanje + dopuna
 
-### Razlika u modelu (zašto se ne može kopirati 1:1)
+### Provjereno (iz koda) — gdje mikrofon VEĆ POSTOJI
 
-Suradnici nemaju satnice ni dnevne unose — model je **fiksni ugovor**:
-- `total_price` (dogovoreni iznos)
-- `paid_amount` (do sada isplaćeno)
-- `status` (active / completed / cancelled)
-- `milestone_id` (vezana faza)
+| Lokacija | Polje |
+|---|---|
+| `ProjectDialog.tsx` | Opis projekta |
+| `ProjectMilestonesTab.tsx` | Opis faze |
+| `EstimateDialog.tsx` | Opis stavke ponude + Napomene |
+| `WorkCalendarOverview.tsx` | Bilješka u kalendaru rada (3 mjesta) |
+| `DailyStandupSheet.tsx` | Već koristi vlastiti diktat (zaseban widget) |
 
-Zato umjesto "sati ovog mjeseca" radimo **statuse i preostali iznos** + filtere koji imaju smisla za ugovore.
+### Provjereno — gdje mikrofona NEMA (a ima Textarea polje)
 
----
-
-### Što se dodaje
-
-**1. Filter-traka iznad popisa (mobile-first grid)**
-
-| Filter | Tip | Opcije |
+| Datoteka | Polje | Linija |
 |---|---|---|
-| **Status** | Select | Svi · Aktivni (default) · Završeni · Otkazani |
-| **Faza** | Select | Sve faze · [popis postojećih milestona] · Bez faze |
-| **Sortiraj** | Select | Najnoviji · Najstariji · Ime (A→Z) · Dogovoreno (↓) · Isplaćeno (↓) · Preostalo (↓) |
-| **Pretraga** | Input | Live pretraga po imenu, prezimenu, tvrtki, opisu usluge |
+| `ProjectCollaboratorDialog.tsx` | Opis usluge | 117 |
+| `ProjectCollaboratorDialog.tsx` | Napomena | 168 |
+| `WorkerScheduleDialog.tsx` | Napomena rasporeda radnika | 376 |
 
-Filteri u `grid grid-cols-2` na mobitelu, pretraga u zasebnom redu ispod (puna širina).
+### Što ću napraviti
 
-**2. Prošireni sažetak na vrhu**
-
-Postojeća kartica "Dogovoreno / Isplaćeno ukupno" dobiva **3. red**:
-
-```text
-┌──────────────────────────────────────┐
-│ Dogovoreno ukupno:        12.500 €   │
-│ Isplaćeno ukupno:          7.300 €   │
-│ ─────────────────────────────────    │
-│ Preostalo za isplatu:      5.200 €   │  ← NOVO
-│ Aktivnih: 4 · Završenih: 2           │  ← NOVO (mali brojevi)
-└──────────────────────────────────────┘
-```
-
-Sažetak se računa **na temelju filtriranih suradnika** (npr. ako filtrirate samo "Aktivni", brojevi pokazuju samo njih) — isto ponašanje kao kod Radnika.
-
-**3. Prošireni prikaz po suradniku**
-
-Dodaje se jedan novi red na svaku karticu — **Preostalo**:
-
-```text
-┌─────────────────────────────────────┐
-│ Marko Marić  [Aktivan]              │
-│ 🏢 Marić d.o.o.                     │
-│ Elektroinstalacije                  │
-│ 🎯 Faza 2 - Instalacije             │
-│                                     │
-│ Dogovoreno:  3.000 €                │
-│ Isplaćeno:   1.800 €                │
-│ Preostalo:   1.200 €  ← NOVO        │
-│ ▓▓▓▓▓▓░░░░  60%       ← NOVO progress │
-└─────────────────────────────────────┘
-```
-
-Mini progress bar (1-2 px visine) vizualno pokazuje postotak isplaćenosti — zelen za <100%, plav kad je 100% (završeno).
-
-**4. Empty state nakon filtera**
-
-Kad filteri vrate 0 rezultata (a ima suradnika u bazi), prikaz: "Nema suradnika koji odgovaraju filterima" + gumb **Resetiraj filtere**.
-
----
+Dodati `<VoiceInputButton>` na sva 3 polja iznad, koristeći postojeći obrazac (`relative` wrapper + `pr-12` padding + `absolute bottom-2 right-2`).
 
 ### Tehničke izmjene
 
 | Datoteka | Promjena |
 |---|---|
-| `src/components/projects/ProjectCollaboratorsTab.tsx` | Nova filter-traka (3× Select + 1× Input), `useMemo` za filtriranu/sortiranu listu, prošireni sažetak (preostalo + brojači po statusu), redak "Preostalo" + progress bar po kartici, empty state za prazan rezultat filtera |
-| `src/i18n/locales/{hr,en,de}.json` | ~14 novih ključeva pod `collaborators.*`: `filterStatus`, `filterMilestone`, `sortBy`, `search`, `allStatuses`, `allMilestones`, `noMilestone`, `sortNewest`, `sortOldest`, `sortName`, `sortAgreed`, `sortPaid`, `sortRemaining`, `remaining`, `remainingTotal`, `activeCount`, `completedCount`, `noResults`, `resetFilters` |
+| `src/components/projects/ProjectCollaboratorDialog.tsx` | Import `VoiceInputButton`, omotati 2 Textarea polja u `relative` div, dodati gumb |
+| `src/components/projects/WorkerScheduleDialog.tsx` | Import `VoiceInputButton`, omotati Textarea, dodati gumb |
 
 ### Što se NE mijenja
 
-- Tablica `project_collaborators` (samo se koriste postojeća polja)
-- RLS politike
-- Hook `useProjectCollaborators` (sva logika filtera je klijentska, kao kod Radnika)
-- Dijalog za dodavanje/uređivanje (`ProjectCollaboratorDialog`)
-- Logika dozvola (`isManager`)
-- Drugi tabovi projekta
+- Komponenta `VoiceInputButton` i hook `useVoiceDictation` (već postoje, već se koriste)
+- Logika spremanja, validacija, RLS
+- Ostali tabovi i dijalozi
+- Bundle size (komponenta je već uključena)
 
 ### Očekivani ishod
 
-- Otvoriš projekt → tab **Suradnici** → odmah vidiš samo aktivne (default), s preostalim iznosima i progress barovima
-- Promjenom filtera Status/Faza odmah dobiješ presjek (npr. "svi suradnici za fazu Krov")
-- Sortiranje po "Preostalo (↓)" — vidiš kome najviše duguješ
-- Pretraga po tvrtki ili usluzi — brzo nađeš tko je radio elektroinstalacije
-- Sažetak gore reagira na filtere — ako gledaš samo "Aktivne", vidiš njihove totale
-- Sve i dalje radi na 384 px viewportu
+- U dijalogu **Suradnik** (Novi/Uredi) možeš diktirati Opis usluge i Napomenu
+- U dijalogu **Raspored radnika** možeš diktirati Napomenu
+- Mikrofon se automatski skriva na uređajima koji ga ne podržavaju (iOS Safari, Firefox)
+- Bez utjecaja na performanse — komponenta je već učitana
 
