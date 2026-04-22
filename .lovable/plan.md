@@ -1,136 +1,52 @@
 
 
-## Razdvajanje preuzimanja i dijeljenja
+## Problem: Diktiranje se prekida prije kraja rečenice
 
-### Problem
+### Uzroci
 
-Trenutno na nativnoj Android aplikaciji svaki izvoz datoteke (PDF, CSV, JSON, ICS) automatski otvara **Share dijalog**. Korisnik mora kroz dijaloga odabrati "Spremi u datoteku" da bi datoteku stvarno preuzeo. Web verzija već radi kako treba — datoteka se direktno preuzme.
+1. **Web Speech API (Chrome/Edge u browseru)** automatski staje nakon ~1-2 sekunde tišine između riječi. Kad si rekao *"...na katu i u..."* napravio si malu pauzu razmišljajući → recognizer je odlučio da si gotov i odsjekao završetak.
 
-### Cilj
+2. **Buffer logike u `VoiceInputButton`** — kad se recognizer auto-restarta nakon prekida, **partial transcript** novog ciklusa može pregaziti tekst koji još nije bio označen kao "final". Tako "u prizemlju" ne stigne biti spremljeno prije nego što novi `start()` resetira interim buffer.
 
-Razdvojiti dvije akcije na nativnoj aplikaciji:
-- **📥 Preuzmi** — sprema PDF direktno u javnu **Downloads** mapu uređaja, bez dijaloga (samo potvrda "Spremljeno u Downloads")
-- **📤 Podijeli** — otvara Share dijalog (WhatsApp, email, Drive…)
-
-Na webu **Preuzmi** radi kao i sada (browser download), **Podijeli** koristi `navigator.share` ako je dostupan, inače kopira link/tekst.
+3. **Native (Android) plugin** ima sličan problem: Google Speech API na Androidu prekida snimanje nakon ~5s tišine i naša auto-restart logika gubi kontinuitet jer se `partialResults` resetira na svaku novu sesiju.
 
 ---
 
-### Promjene u `src/lib/fileExport.ts`
+### Rješenje
 
-Dodati opcijski parametar `mode`:
+#### 1. Pojačati toleranciju na pauze (web)
+- Postaviti `continuous = true` (već je) i **dodati timer** koji ignorira `onend` ako je manji od 800ms od zadnjeg govora — restartati odmah bez gubljenja teksta.
+- Pratiti **timestamp zadnjeg `onresult`** događaja i ignorirati prerane prekide.
 
-```ts
-type ExportMode = 'save' | 'share';
+#### 2. Pravilno spremati interim transcript pri restartu
+- U `useVoiceDictation` dodati internu varijablu `accumulatedFinalText` koja zadržava sav final tekst kroz više ciklusa.
+- Pri auto-restartu (nakon prekida) **prebaciti zadnji interim transcript u final** prije nego što se nova sesija pokrene → ništa se ne gubi.
 
-export async function exportFile(
-  blob: Blob, 
-  fileName: string, 
-  mode: ExportMode = 'save'  // novi default = SAVE (preuzimanje)
-): Promise<boolean>
-```
+#### 3. Vizualni indikator + ručna kontrola
+- Dodati **brojač sekundi snimanja** ispod mikrofona (npr. *"00:14"*) da korisnik vidi da snimanje teče.
+- Dodati **diskretnu poruku** *"Pauziraj govor — automatski nastavlja"* kad detektira tišinu >2s, da korisnik zna da može nastaviti.
+- Po isteku **30s neaktivnog snimanja** automatski stati (zaštita od beskonačne sesije).
 
-**Native ponašanje po modu:**
+#### 4. Testna provjera nakon promjene
+- Promjena zahtijeva **rebuild nativne aplikacije** (`npx cap sync android`) za testiranje na Androidu.
+- U browseru (Chrome) radi odmah nakon spremanja koda.
 
-| Mode | Direktorij | Otvara Share? | Korisnik vidi |
-|---|---|---|---|
-| `save` | `Directory.Documents` (javna mapa) | ❌ Ne | Status feedback "Spremljeno u Dokumenti/Download" |
-| `share` | `Directory.Cache` (privatna) | ✅ Da | Android Share Sheet |
+---
 
-**Web ponašanje po modu:**
+### Datoteke koje će se mijenjati
 
-| Mode | Akcija |
+| Datoteka | Promjena |
 |---|---|
-| `save` | Klasično `<a download>` (kao sada) |
-| `share` | `navigator.share({ files: [...] })` ako podržano, inače fallback na download |
-
-Pomoćne funkcije `exportPDFDoc` i `exportTextFile` dobivaju isti `mode` parametar (default `'save'`).
-
----
-
-### Promjene u dijalozima — gumbi za izvoz
-
-Svuda gdje sada postoji jedan gumb (npr. "PDF", "Dnevnik PDF", "CSV", "JSON"), pretvaramo ga u **dropdown s 2 opcije**:
-
-```text
-[ 📄 Dnevnik PDF ▾ ]
-   ├ 📥 Preuzmi
-   └ 📤 Podijeli
-```
-
-**Komponenta**: novi mali wrapper `<ExportButton>` u `src/components/ui/export-button.tsx` — koristi shadcn `DropdownMenu` + `Button`. Prima `label`, `icon`, i `onExport(mode)` callback. Time izbjegavamo duplo-kodiranje na svakom mjestu.
-
-**Mjesta gdje se mijenja:**
-
-| Datoteka | Gumbi koji se nadograđuju |
-|---|---|
-| `src/components/projects/ProjectReportsDialog.tsx` | CSV, JSON, **Dnevnik PDF**, PDF |
-| `src/components/reports/ReportsDialog.tsx` | PDF, CSV, JSON izvozi izvještaja |
-| `src/components/timeclock/TimeClockMonthlyReport.tsx` | PDF/CSV/JSON evidencije rada |
-| `src/components/BackupRestore.tsx` | Sigurnosna kopija (JSON) |
-| `src/pages/Calendar.tsx` (ICS izvoz) | ICS kalendar |
-| Ostale točke koje koriste `exportPDFDoc` / `exportTextFile` | Isto |
-
----
-
-### Status feedback
-
-Nakon **Preuzmi** na nativnom uređaju:
-- ✅ Zelena potvrda: **"Datoteka spremljena u Dokumenti"** (1200 ms, kroz `showSuccess`)
-- Ako Filesystem write padne → crveni `showError` s razlogom
-
-Nakon **Podijeli**:
-- Otvara se Share Sheet — bez dodatne potvrde
-
----
-
-### Lokalizacija
-
-Novi ključevi u `hr.json`, `en.json`, `de.json`:
-
-```json
-"export": {
-  "download": "Preuzmi",
-  "share": "Podijeli",
-  "savedToDocuments": "Spremljeno u Dokumenti",
-  "shareError": "Dijeljenje nije uspjelo"
-}
-```
-
----
-
-### Tehnički detalji za nativno spremanje
-
-Capacitor Filesystem API:
-```ts
-await Filesystem.writeFile({
-  path: fileName,
-  data: base64Data,
-  directory: Directory.Documents,  // javna mapa, vidljiva u Files appu
-  recursive: true,
-});
-```
-
-Na Androidu `Directory.Documents` mapira na `/storage/emulated/0/Documents/` — datoteka je odmah vidljiva u **Files** aplikaciji bez ikakve dodatne dozvole (od Android 11+ scoped storage).
-
-Ako uređaj odbije write (rijetko, stariji Android), pada se na `Directory.Cache` + tihi Share dijalog kao fallback.
-
----
-
-### Što se NE mijenja
-
-- Web `download` ponašanje za sve postojeće gumbe ostaje isto kad se klikne **Preuzmi**
-- Logika generiranja PDF-a, CSV-a, JSON-a (jsPDF, autoTable…)
-- RLS, baza, edge funkcije
-- Ostale komponente koje ne rade izvoz datoteka
+| `src/hooks/useVoiceDictation.ts` | Akumulator finalnog teksta, robusniji auto-restart, timestamp tracking |
+| `src/components/VoiceInputButton.tsx` | Brojač vremena, vizualna poruka o auto-restartu |
+| `src/i18n/locales/hr.json` (+en, de) | Novi prijevodi: `voice.continuing`, `voice.timer` |
 
 ---
 
 ### Očekivani ishod
 
-- U **Izvještaji projekta** (i svim drugim mjestima izvoza) klikneš na **Dnevnik PDF ▾** → biraš **Preuzmi** ili **Podijeli**
-- **Preuzmi** na Androidu → datoteka odmah u `Documents` mapi, bez Share dijaloga, samo zelena potvrda
-- **Preuzmi** na webu → klasičan browser download
-- **Podijeli** → Android Share Sheet (WhatsApp, Drive, Email…) ili `navigator.share` na webu
-- Konzistentno ponašanje na svim ekranima koji izvoze datoteke
+- Možeš diktirati cijelu rečenicu *"Lijepi se pločica na katu i u prizemlju"* bez prekida — čak i ako napraviš pauzu od 2-3 sekunde između *"u"* i *"prizemlju"*.
+- Tekst koji si već izgovorio **nikad se ne gubi** ni pri auto-restartu.
+- Vidiš vizualno (brojač + poruka) da snimanje teče.
+- Maksimalno trajanje jedne sesije: **30 sekundi** (dovoljno za nekoliko rečenica).
 
