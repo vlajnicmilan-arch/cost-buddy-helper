@@ -115,6 +115,43 @@ export const NotificationsSection = ({
             </span>
           </p>
         )}
+
+        {pushEnabled && (
+          <Collapsible open={showCategories} onOpenChange={setShowCategories} className="mt-2">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between text-xs h-8 px-3">
+                <span>{t('settings.notifCategories', 'Postavke po kategoriji')}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showCategories ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1.5 mt-2">
+              {categoryItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.key} className="flex items-center justify-between p-2.5 bg-muted/20 rounded-lg">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                        <Icon className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium cursor-pointer block truncate">
+                          {t(item.labelKey, item.labelDefault)}
+                        </Label>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {t(item.descKey, item.descDefault)}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={item.enabled}
+                      onCheckedChange={(v) => setCategory(item.key, v)}
+                    />
+                  </div>
+                );
+              })}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </div>
 
       {!isLocalMode && (
