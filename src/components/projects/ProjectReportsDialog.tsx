@@ -365,7 +365,7 @@ export const ProjectReportsDialog = ({
               <FileText className="w-5 h-5" />
               {t('projects.reports', 'Izvještaji projekta')}
             </DialogTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={() => handleExport('csv')}>
                 <Download className="w-4 h-4 mr-1" />
                 CSV
@@ -373,6 +373,10 @@ export const ProjectReportsDialog = ({
               <Button variant="outline" size="sm" onClick={() => handleExport('json')}>
                 <Download className="w-4 h-4 mr-1" />
                 JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportWorkLog}>
+                <BookOpen className="w-4 h-4 mr-1" />
+                {t('workLog.exportPdf', 'Dnevnik PDF')}
               </Button>
               <Button size="sm" onClick={() => handleExport('pdf')}>
                 <Download className="w-4 h-4 mr-1" />
