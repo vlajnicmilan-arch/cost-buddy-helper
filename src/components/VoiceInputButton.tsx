@@ -74,6 +74,9 @@ export const VoiceInputButton = ({
     elapsedSec,
     continuing,
     errorKind,
+    diagnosticCode,
+    permissionState,
+    isAndroidRuntime,
   } = useVoiceDictation({ onTranscript: handleTranscript });
 
   // Pick the right title/body based on what actually went wrong.
@@ -165,8 +168,22 @@ export const VoiceInputButton = ({
             <AlertDialogTitle>
               {t(dialogTitleKey, dialogTitleFallback)}
             </AlertDialogTitle>
-            <AlertDialogDescription className="whitespace-pre-line">
-              {t(dialogBodyKey, dialogBodyFallback)}
+            <AlertDialogDescription className="space-y-3 text-left">
+              <p className="whitespace-pre-line">{t(dialogBodyKey, dialogBodyFallback)}</p>
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1 text-[11px]">
+                <p className="font-semibold text-foreground">
+                  {t('voice.diagnosticTitle', 'Dijagnostika')}
+                </p>
+                <p className="text-muted-foreground break-all">
+                  {t('voice.diagnosticCode', 'Kod greške')}: {diagnosticCode || 'n/a'}
+                </p>
+                <p className="text-muted-foreground">
+                  {t('voice.diagnosticPermission', 'Stanje dozvole')}: {permissionState}
+                </p>
+                <p className="text-muted-foreground">
+                  {t('voice.diagnosticRuntime', 'Runtime')}: {isAndroidRuntime ? 'android-webview' : 'browser'}
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
