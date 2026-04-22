@@ -1,35 +1,34 @@
 
 
-## Problem: Diktiranje se prekida prije kraja rečenice
+## Problem: Mikrofon traži dozvolu iako je već dodijeljena
 
-### Uzroci
+### Uzrok
 
-1. **Web Speech API (Chrome/Edge u browseru)** automatski staje nakon ~1-2 sekunde tišine između riječi. Kad si rekao *"...na katu i u..."* napravio si malu pauzu razmišljajući → recognizer je odlučio da si gotov i odsjekao završetak.
+Na Androidu postoje **dvije razdvojene razine dozvola** za mikrofon:
 
-2. **Buffer logike u `VoiceInputButton`** — kad se recognizer auto-restarta nakon prekida, **partial transcript** novog ciklusa može pregaziti tekst koji još nije bio označen kao "final". Tako "u prizemlju" ne stigne biti spremljeno prije nego što novi `start()` resetira interim buffer.
+1. **Sistemska Android dozvola** — onu si već dao aplikaciji ✅
+2. **WebView dozvola** — Android WebView (u koji je tvoja Live Sync app pakirana) traži **zasebnu dozvolu** kad web stranica unutar njega zatraži mikrofon preko `getUserMedia()`. Po defaultu, WebView **automatski odbija** ovaj zahtjev osim ako se ručno ne implementira `onPermissionRequest` u nativnom Java/Kotlin kodu.
 
-3. **Native (Android) plugin** ima sličan problem: Google Speech API na Androidu prekida snimanje nakon ~5s tišine i naša auto-restart logika gubi kontinuitet jer se `partialResults` resetira na svaku novu sesiju.
+Dodatno, moj kod u `useVoiceDictation.ts` poziva `navigator.mediaDevices.getUserMedia({ audio: true })` **prije** pokretanja Web Speech API-ja — to izaziva dijalog koji WebView odbija, a zatim prikazujemo poruku "Dopustite pristup mikrofonu" iako je sve u redu.
+
+**Kvaka:** Web Speech API (`webkitSpeechRecognition`) **ne treba** `getUserMedia` poziv — on interno upravlja mikrofonom kroz Google servise. Pre-provjera je suvišna i kontraproduktivna na Android WebViewu.
 
 ---
 
-### Rješenje
+### Rješenje (bez novog APK-a)
 
-#### 1. Pojačati toleranciju na pauze (web)
-- Postaviti `continuous = true` (već je) i **dodati timer** koji ignorira `onend` ako je manji od 800ms od zadnjeg govora — restartati odmah bez gubljenja teksta.
-- Pratiti **timestamp zadnjeg `onresult`** događaja i ignorirati prerane prekide.
+#### 1. Ukloniti `getUserMedia` pre-provjeru iz `useVoiceDictation.ts`
+- Web Speech API sam zatraži mikrofon kad pokrene `recognition.start()`.
+- Dijalog za dozvolu se onda rješava kroz `onerror` event s tipom `not-allowed` ili `service-not-allowed` (već imamo handler).
+- Time se eliminira "duplo traženje" koje WebView odbija.
 
-#### 2. Pravilno spremati interim transcript pri restartu
-- U `useVoiceDictation` dodati internu varijablu `accumulatedFinalText` koja zadržava sav final tekst kroz više ciklusa.
-- Pri auto-restartu (nakon prekida) **prebaciti zadnji interim transcript u final** prije nego što se nova sesija pokrene → ništa se ne gubi.
+#### 2. Bolja diferencijacija grešaka
+- Ako `onerror` vrati `not-allowed`, prikazati jasniju poruku s instrukcijama specifičnima za Android:
+  > *"Mikrofon nije dostupan. Provjerite da je dozvola za mikrofon uključena u Postavkama → Aplikacije → V&M Balance → Dozvole → Mikrofon."*
+- Dodati i napomenu o WebView dozvoli kad se otkrije Android okruženje.
 
-#### 3. Vizualni indikator + ručna kontrola
-- Dodati **brojač sekundi snimanja** ispod mikrofona (npr. *"00:14"*) da korisnik vidi da snimanje teče.
-- Dodati **diskretnu poruku** *"Pauziraj govor — automatski nastavlja"* kad detektira tišinu >2s, da korisnik zna da može nastaviti.
-- Po isteku **30s neaktivnog snimanja** automatski stati (zaštita od beskonačne sesije).
-
-#### 4. Testna provjera nakon promjene
-- Promjena zahtijeva **rebuild nativne aplikacije** (`npx cap sync android`) za testiranje na Androidu.
-- U browseru (Chrome) radi odmah nakon spremanja koda.
+#### 3. Detekcija Android WebView okruženja
+- Ako smo u Capacitor Android WebView-u i `getUserMedia` nije dostupan ili odbijen, **ipak pokušati** pokrenuti Speech Recognition direktno — često radi jer Google Speech ide preko sistemskog servisa, ne kroz WebView mikrofon.
 
 ---
 
@@ -37,16 +36,15 @@
 
 | Datoteka | Promjena |
 |---|---|
-| `src/hooks/useVoiceDictation.ts` | Akumulator finalnog teksta, robusniji auto-restart, timestamp tracking |
-| `src/components/VoiceInputButton.tsx` | Brojač vremena, vizualna poruka o auto-restartu |
-| `src/i18n/locales/hr.json` (+en, de) | Novi prijevodi: `voice.continuing`, `voice.timer` |
+| `src/hooks/useVoiceDictation.ts` | Ukloniti `getUserMedia` pre-provjeru, oslanjati se na `onerror` Speech API-ja |
+| `src/i18n/locales/hr.json` (+en, de) | Jasnija poruka o dozvoli s Android-specifičnim uputama |
 
 ---
 
-### Očekivani ishod
+### Što ovo znači za tebe
 
-- Možeš diktirati cijelu rečenicu *"Lijepi se pločica na katu i u prizemlju"* bez prekida — čak i ako napraviš pauzu od 2-3 sekunde između *"u"* i *"prizemlju"*.
-- Tekst koji si već izgovorio **nikad se ne gubi** ni pri auto-restartu.
-- Vidiš vizualno (brojač + poruka) da snimanje teče.
-- Maksimalno trajanje jedne sesije: **30 sekundi** (dovoljno za nekoliko rečenica).
+- **Bez novog APK-a** — sve ide preko Live Sync
+- **Bez troškova** — i dalje besplatan Web Speech API
+- Diktiranje će raditi u postojećoj aplikaciji čim se promjena spremi
+- Ako i dalje ne radi nakon promjene, znat ćemo da je problem dublje (u nativnom WebView konfiguraciji koja **bi** zahtijevala novi APK) — ali prvo probajmo ovo lakše rješenje
 
