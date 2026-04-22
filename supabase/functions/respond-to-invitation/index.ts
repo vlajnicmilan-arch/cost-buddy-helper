@@ -232,7 +232,7 @@ serve(async (req) => {
         user_id: invitation.invited_by,
         title: "Pozivnica prihvaćena",
         body: `${userName} se pridružio/la ${targetLabel} "${targetName}"`,
-        data: { target_id: targetId, type: "invitation_accepted" },
+        data: { target_id: targetId, type: "invitation_accepted", category: "projects" },
         source: "respond-to-invitation",
       });
 
