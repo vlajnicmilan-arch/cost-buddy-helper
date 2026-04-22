@@ -2319,7 +2319,7 @@
     "recording": "Recording...",
     "notSupported": "Voice input is not supported on this device",
     "permissionTitle": "Allow microphone access",
-    "permissionBody": "Voice dictation requires access to your microphone. Open your device or browser settings and allow microphone access for this app.",
+    "permissionBody": "Voice dictation requires microphone access.\n\nOn Android, check: Settings → Apps → V&M Balance → Permissions → Microphone → enabled.\n\nIn a browser: click the lock icon next to the address bar and allow the microphone for this site.\n\nAn internet connection is also required because speech recognition is processed online.",
     "continuing": "Listening... keep speaking",
     "maxDurationReached": "Max recording duration (30s) — stopped automatically"
   },
