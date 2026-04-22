@@ -209,6 +209,19 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
   }, [clearTimers, stop]);
 
   const start = useCallback(async () => {
+    // Diagnostics for next-step debugging — never logs PII.
+    try {
+      const permState = await queryMicPermission();
+      // eslint-disable-next-line no-console
+      console.info('[voice] start()', {
+        supported,
+        androidApp: isAndroidApp(),
+        permState,
+        hasSR: typeof window !== 'undefined' && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition),
+      });
+    } catch { /* noop */ }
+
+
     if (!supported) {
       setErrorKind('unsupported');
       setShowPermissionHelp(true);
