@@ -319,6 +319,126 @@ export const generateProjectCSVReport = async (data: ProjectReportData): Promise
   await exportTextFile(csvContent, fileName, 'text/csv', true);
 };
 
+// ===== Work Log PDF Export =====
+
+export interface WorkLogEntry {
+  log_date: string; // YYYY-MM-DD
+  weather?: string | null;
+  summary: string;
+  notes?: string | null;
+  milestone_name?: string | null;
+  user_name?: string | null;
+  hours?: { worker_name: string; actual_hours: number }[];
+}
+
+export interface WorkLogReportData {
+  projectName: string;
+  fromDate?: Date;
+  toDate?: Date;
+  entries: WorkLogEntry[];
+}
+
+export const generateWorkLogPDFReport = async (data: WorkLogReportData): Promise<void> => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 14;
+
+  // Title
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text(toAscii('Dnevnik rada'), margin, 18);
+
+  // Subtitle
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text(toAscii(`Projekt: ${data.projectName}`), margin, 26);
+
+  const range =
+    data.fromDate && data.toDate
+      ? `${formatDate(data.fromDate)} - ${formatDate(data.toDate)}`
+      : `${toAscii('Generirano')}: ${formatDate(new Date())}`;
+  doc.setFontSize(9);
+  doc.text(range, margin, 32);
+
+  // Sort entries: newest first
+  const sorted = [...data.entries].sort((a, b) =>
+    a.log_date < b.log_date ? 1 : -1
+  );
+
+  if (sorted.length === 0) {
+    doc.setFontSize(11);
+    doc.text(toAscii('Nema zapisa za odabrano razdoblje.'), margin, 50);
+  } else {
+    const rows = sorted.map((e) => {
+      const dateLabel = (() => {
+        try {
+          return new Date(e.log_date + 'T00:00:00').toLocaleDateString('hr-HR');
+        } catch {
+          return e.log_date;
+        }
+      })();
+      const weather = e.weather ? toAscii(e.weather) : '-';
+      const milestone = e.milestone_name ? toAscii(e.milestone_name) : '-';
+      const author = e.user_name ? toAscii(e.user_name) : '-';
+      const hoursText =
+        e.hours && e.hours.length > 0
+          ? e.hours
+              .map((h) => `${toAscii(h.worker_name)} (${h.actual_hours.toFixed(1)}h)`)
+              .join(', ')
+          : '-';
+      const summary = toAscii(e.summary || '');
+      const notes = e.notes ? toAscii(e.notes) : '';
+      const combined = notes ? `${summary}\n\n${toAscii('Napomene')}: ${notes}` : summary;
+      return [dateLabel, weather, milestone, author, hoursText, combined];
+    });
+
+    autoTable(doc, {
+      startY: 38,
+      head: [
+        [
+          'Datum',
+          toAscii('Vrijeme'),
+          'Faza',
+          'Autor',
+          'Sati',
+          toAscii('Sto je radjeno / Napomene'),
+        ],
+      ],
+      body: rows,
+      theme: 'striped',
+      headStyles: { fillColor: [14, 165, 233], fontSize: 9 },
+      styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 22 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 32 },
+        5: { cellWidth: 'auto' },
+      },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  // Footer page numbers
+  const totalPages = (doc as any).internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      `${i} / ${totalPages}`,
+      pageWidth - margin,
+      doc.internal.pageSize.getHeight() - 8,
+      { align: 'right' }
+    );
+  }
+
+  const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
+  const fileName = `dnevnik_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
+  await exportPDFDoc(doc, fileName);
+};
+
 export const generateProjectJSONExport = async (data: ProjectReportData): Promise<void> => {
   const exportData = {
     generatedAt: new Date().toISOString(),
