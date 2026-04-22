@@ -12,7 +12,9 @@ import {
   generateProjectPDFReport, 
   generateProjectCSVReport, 
   generateProjectJSONExport,
-  ProjectReportData 
+  generateWorkLogPDFReport,
+  ProjectReportData,
+  WorkLogEntry,
 } from '@/lib/projectReportExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
