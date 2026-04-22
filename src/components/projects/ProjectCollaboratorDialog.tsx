@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { ProjectCollaborator, ProjectCollaboratorInput } from '@/types/projectCollaborator';
 import { useTranslation } from 'react-i18next';
 
@@ -114,7 +115,10 @@ export const ProjectCollaboratorDialog = ({
 
           <div className="space-y-1.5">
             <Label>{t('collaborators.serviceDescription', 'Opis usluge')}</Label>
-            <Textarea value={serviceDescription} onChange={e => setServiceDescription(e.target.value)} required rows={2} />
+            <div className="relative">
+              <Textarea value={serviceDescription} onChange={e => setServiceDescription(e.target.value)} required rows={2} className="pr-12" />
+              <VoiceInputButton value={serviceDescription} onChange={setServiceDescription} className="absolute bottom-2 right-2" />
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -165,7 +169,10 @@ export const ProjectCollaboratorDialog = ({
 
           <div className="space-y-1.5">
             <Label>{t('common.note', 'Napomena')}</Label>
-            <Textarea value={note} onChange={e => setNote(e.target.value)} rows={2} />
+            <div className="relative">
+              <Textarea value={note} onChange={e => setNote(e.target.value)} rows={2} className="pr-12" />
+              <VoiceInputButton value={note} onChange={setNote} className="absolute bottom-2 right-2" />
+            </div>
           </div>
 
           <Button type="submit" className="w-full">
