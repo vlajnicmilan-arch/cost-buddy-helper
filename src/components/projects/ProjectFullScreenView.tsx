@@ -19,7 +19,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  Briefcase, FolderOpen, HelpCircle, Share2, Activity
+  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen
 } from 'lucide-react';
 import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
@@ -36,6 +36,7 @@ import { ProjectWorkersTab } from './ProjectWorkersTab';
 import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
+import { ProjectWorkLogTab } from './ProjectWorkLogTab';
 import { TimeClockTab } from '../timeclock/TimeClockTab';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -115,6 +116,7 @@ export const ProjectFullScreenView = ({
     milestones: 'work',
     documents: 'work',
     activity: 'work',
+    worklog: 'work',
     members: 'people',
     workers: 'people',
     collaborators: 'people',
@@ -380,6 +382,10 @@ export const ProjectFullScreenView = ({
                             <Activity className="w-3.5 h-3.5" />
                             {t('projects.activity.tab', 'Aktivnost')}
                           </TabsTrigger>
+                          <TabsTrigger value="worklog" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            {t('workLog.tab', 'Dnevnik')}
+                          </TabsTrigger>
                         </>
                       )}
 
@@ -586,6 +592,10 @@ export const ProjectFullScreenView = ({
 
                 <TabsContent value="activity" className="m-0">
                   <ProjectActivityTab projectId={project.id} />
+                </TabsContent>
+
+                <TabsContent value="worklog" className="m-0">
+                  <ProjectWorkLogTab projectId={project.id} isManager={isManager} />
                 </TabsContent>
 
                 {canSeeTab('funding') && (
