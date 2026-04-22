@@ -110,6 +110,7 @@ export const useNotifications = () => {
 
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
+      setBadge(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
@@ -128,7 +129,9 @@ export const useNotifications = () => {
 
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       if (notification && !notification.read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        const newUnread = Math.max(0, unreadCount - 1);
+        setUnreadCount(newUnread);
+        setBadge(newUnread);
       }
     } catch (error) {
       console.error('Error deleting notification:', error);

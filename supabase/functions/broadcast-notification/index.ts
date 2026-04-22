@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         user_id: targetUserId,
         title,
         body: message,
-        data: { type: "system" },
+        data: { type: "system", category: "broadcast" },
         source: "broadcast-notification",
       });
 
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     // Best-effort push broadcast
     await sendPushNotificationToMany(
       users.map((u: any) => u.id),
-      { title, body: message, data: { type: "system" }, source: "broadcast-notification" }
+      { title, body: message, data: { type: "system", category: "broadcast" }, source: "broadcast-notification" }
     );
 
     return new Response(

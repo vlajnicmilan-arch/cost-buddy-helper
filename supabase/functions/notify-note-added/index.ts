@@ -170,7 +170,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       await sendPushNotificationToMany(Array.from(usersToNotify), {
         title: `Novi komentar u projektu "${project.name}"`,
         body: `${memberName}: ${truncatedNote}`,
-        data: { expense_id: expense.id, project_id: project.id, type: 'project_note_added' },
+        data: { expense_id: expense.id, project_id: project.id, type: 'project_note_added', category: 'chat' },
         source: 'notify-note-added',
       });
 
@@ -239,7 +239,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         user_id: source.user_id,
         title: 'Nova napomena na transakciji',
         body: `${memberName}: ${truncatedNote}`,
-        data: { expense_id: expense.id, income_source_id: source.id, type: 'note_added' },
+        data: { expense_id: expense.id, income_source_id: source.id, type: 'note_added', category: 'chat' },
         source: 'notify-note-added',
       });
 
@@ -322,7 +322,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       await sendPushNotificationToMany(Array.from(usersToNotify), {
         title: `Novi komentar na računu "${source.name}"`,
         body: `${memberName}: ${truncatedNote}`,
-        data: { expense_id: expense.id, payment_source_id: source.id, type: 'payment_source_note_added' },
+        data: { expense_id: expense.id, payment_source_id: source.id, type: 'payment_source_note_added', category: 'chat' },
         source: 'notify-note-added',
       });
 

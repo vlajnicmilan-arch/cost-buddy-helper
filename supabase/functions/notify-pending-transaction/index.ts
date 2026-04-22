@@ -142,7 +142,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       user_id: source.user_id,
       title: 'Nova transakcija na čekanju',
       body: `${submitterName} je dodao ${transactionType} "${expense.description}" (${formattedAmount})`,
-      data: { expense_id: expense.id, income_source_id: source.id, type: 'pending_transaction' },
+      data: { expense_id: expense.id, income_source_id: source.id, type: 'pending_transaction', category: 'pending' },
       source: 'notify-pending-transaction',
     });
 

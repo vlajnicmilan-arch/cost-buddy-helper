@@ -77,7 +77,7 @@ serve(async (req) => {
         user_id: reminder.user_id,
         title: notifTitle,
         body: notifBody,
-        data: { reminder_id: reminder.id, type: "reminder" },
+        data: { reminder_id: reminder.id, type: "reminder", category: "reminders" },
         source: "check-reminders",
       });
 

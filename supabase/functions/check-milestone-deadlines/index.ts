@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
                   type: "milestone_deadline",
                   milestone_id: milestone.id,
                   project_id: milestone.project_id,
+                  category: "reminders",
                 },
               },
             });

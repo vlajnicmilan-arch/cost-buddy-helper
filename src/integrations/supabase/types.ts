@@ -2046,6 +2046,51 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          broadcast_enabled: boolean
+          budgets_enabled: boolean
+          chat_enabled: boolean
+          created_at: string
+          id: string
+          pending_enabled: boolean
+          projects_enabled: boolean
+          reminders_enabled: boolean
+          transactions_enabled: boolean
+          trial_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          broadcast_enabled?: boolean
+          budgets_enabled?: boolean
+          chat_enabled?: boolean
+          created_at?: string
+          id?: string
+          pending_enabled?: boolean
+          projects_enabled?: boolean
+          reminders_enabled?: boolean
+          transactions_enabled?: boolean
+          trial_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          broadcast_enabled?: boolean
+          budgets_enabled?: boolean
+          chat_enabled?: boolean
+          created_at?: string
+          id?: string
+          pending_enabled?: boolean
+          projects_enabled?: boolean
+          reminders_enabled?: boolean
+          transactions_enabled?: boolean
+          trial_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -3893,6 +3938,10 @@ export type Database = {
       }
       is_project_owner: {
         Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_push_category_enabled: {
+        Args: { _category: string; _user_id: string }
         Returns: boolean
       }
       move_to_dlq: {

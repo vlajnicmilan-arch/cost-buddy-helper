@@ -206,7 +206,7 @@ serve(async (req) => {
           user_id: userId,
           title,
           body: message,
-          data: { budget_id: budget.id, threshold: targetThreshold, type: "budget_alert" },
+          data: { budget_id: budget.id, threshold: targetThreshold, type: "budget_alert", category: "budgets" },
           source: "check-budget-alerts",
         });
 

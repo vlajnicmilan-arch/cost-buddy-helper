@@ -1,12 +1,15 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock, Info } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock, Info, ChevronDown, MessageSquare, ArrowLeftRight, Clock, FolderKanban, PiggyBank, CalendarClock, BadgePercent, Megaphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useNotificationPreferences, type PushCategory } from '@/hooks/useNotificationPreferences';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { useState } from 'react';
 
 interface NotificationsSectionProps {
   soundEnabled: boolean;
@@ -39,6 +42,27 @@ export const NotificationsSection = ({
   const navigate = useNavigate();
   const canUseBusiness = hasAccess('business_module');
   const isNative = Capacitor.isNativePlatform();
+  const { prefs, setCategory } = useNotificationPreferences();
+  const [showCategories, setShowCategories] = useState(false);
+
+  const categoryItems: Array<{
+    key: PushCategory;
+    icon: typeof MessageSquare;
+    labelKey: string;
+    labelDefault: string;
+    descKey: string;
+    descDefault: string;
+    enabled: boolean;
+  }> = [
+    { key: 'chat', icon: MessageSquare, labelKey: 'settings.notifChat', labelDefault: 'Poruke i komentari', descKey: 'settings.notifChatDesc', descDefault: 'Obiteljski chat i bilješke na transakcijama', enabled: prefs.chat_enabled },
+    { key: 'transactions', icon: ArrowLeftRight, labelKey: 'settings.notifTransactions', labelDefault: 'Transakcije', descKey: 'settings.notifTransactionsDesc', descDefault: 'Dijeljeni računi i projektne transakcije', enabled: prefs.transactions_enabled },
+    { key: 'pending', icon: Clock, labelKey: 'settings.notifPending', labelDefault: 'Odobrenja na čekanju', descKey: 'settings.notifPendingDesc', descDefault: 'Transakcije koje čekaju vašu potvrdu', enabled: prefs.pending_enabled },
+    { key: 'projects', icon: FolderKanban, labelKey: 'settings.notifProjects', labelDefault: 'Projekti', descKey: 'settings.notifProjectsDesc', descDefault: 'Pozivnice i promjene članstva', enabled: prefs.projects_enabled },
+    { key: 'budgets', icon: PiggyBank, labelKey: 'settings.notifBudgets', labelDefault: 'Budžeti', descKey: 'settings.notifBudgetsDesc', descDefault: 'Upozorenja o prekoračenju i pragovima', enabled: prefs.budgets_enabled },
+    { key: 'reminders', icon: CalendarClock, labelKey: 'settings.notifReminders', labelDefault: 'Podsjetnici i rokovi', descKey: 'settings.notifRemindersDesc', descDefault: 'Kalendar i rokovi faza projekta', enabled: prefs.reminders_enabled },
+    { key: 'trial', icon: BadgePercent, labelKey: 'settings.notifTrial', labelDefault: 'Pretplata', descKey: 'settings.notifTrialDesc', descDefault: 'Podsjetnici o probnom razdoblju i naplati', enabled: prefs.trial_enabled },
+    { key: 'broadcast', icon: Megaphone, labelKey: 'settings.notifBroadcast', labelDefault: 'Sustavske obavijesti', descKey: 'settings.notifBroadcastDesc', descDefault: 'Važne najave i nadogradnje aplikacije', enabled: prefs.broadcast_enabled },
+  ];
 
   return (
     <div className="space-y-4">
@@ -90,6 +114,43 @@ export const NotificationsSection = ({
               )}
             </span>
           </p>
+        )}
+
+        {pushEnabled && (
+          <Collapsible open={showCategories} onOpenChange={setShowCategories} className="mt-2">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between text-xs h-8 px-3">
+                <span>{t('settings.notifCategories', 'Postavke po kategoriji')}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showCategories ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1.5 mt-2">
+              {categoryItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.key} className="flex items-center justify-between p-2.5 bg-muted/20 rounded-lg">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                        <Icon className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium cursor-pointer block truncate">
+                          {t(item.labelKey, item.labelDefault)}
+                        </Label>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {t(item.descKey, item.descDefault)}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={item.enabled}
+                      onCheckedChange={(v) => setCategory(item.key, v)}
+                    />
+                  </div>
+                );
+              })}
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </div>
 
