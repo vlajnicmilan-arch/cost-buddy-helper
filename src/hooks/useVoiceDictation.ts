@@ -193,17 +193,12 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     const r = getWebRecognition(lang);
     if (!r) { clearTimers(); return; }
 
-    // Prompt mic permission
-    try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(t => t.stop());
-      }
-    } catch {
-      setShowPermissionHelp(true);
-      clearTimers();
-      return;
-    }
+    // NOTE: We intentionally do NOT call navigator.mediaDevices.getUserMedia() here.
+    // On Android WebView (Capacitor), that pre-check is auto-rejected even when the
+    // system mic permission is granted, which used to incorrectly trigger the
+    // "permission help" dialog. The Web Speech API manages mic access internally
+    // via Google's speech service, and any real permission failure is surfaced
+    // through the `onerror` handler below ('not-allowed' / 'service-not-allowed').
 
     manualStopRef.current = false;
 

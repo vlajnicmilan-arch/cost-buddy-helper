@@ -2326,7 +2326,7 @@
     "recording": "Snimanje...",
     "notSupported": "Glasovni unos nije podržan na ovom uređaju",
     "permissionTitle": "Dopustite pristup mikrofonu",
-    "permissionBody": "Za diktiranje teksta potreban je pristup mikrofonu. Otvorite postavke uređaja ili preglednika i dopustite pristup mikrofonu za ovu aplikaciju.",
+    "permissionBody": "Za diktiranje teksta potreban je pristup mikrofonu.\n\nNa Androidu provjerite: Postavke → Aplikacije → V&M Balance → Dozvole → Mikrofon → uključeno.\n\nU pregledniku: kliknite ikonu lokota pored adrese i dopustite mikrofon za ovu stranicu.\n\nPotrebna je i internetska veza jer se prepoznavanje govora obrađuje online.",
     "continuing": "Slušam... nastavi govoriti",
     "maxDurationReached": "Maks. trajanje snimanja (30s) — automatski zaustavljeno"
   },
