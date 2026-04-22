@@ -1,12 +1,15 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock, Info } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock, Info, ChevronDown, MessageSquare, ArrowLeftRight, Clock, FolderKanban, PiggyBank, CalendarClock, BadgePercent, Megaphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useNotificationPreferences, type PushCategory } from '@/hooks/useNotificationPreferences';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { useState } from 'react';
 
 interface NotificationsSectionProps {
   soundEnabled: boolean;
