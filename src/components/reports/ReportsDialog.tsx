@@ -68,6 +68,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Ba
 import { useTranslation } from 'react-i18next';
 import { ItemsAnalysisTab } from './ItemsAnalysisTab';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { ExportButton } from '@/components/ui/export-button';
 
 interface ReportsDialogProps {
   expenses: Expense[];
@@ -1058,36 +1059,33 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                 {t('reports.exportReport', 'Izvezi izvješće')}
               </Label>
               <div className="grid grid-cols-3 gap-3">
-                <Button
+                <ExportButton
                   variant="outline"
                   className="gap-2 rounded-xl h-auto py-4 flex-col"
-                  onClick={handleExportPDF}
                   disabled={filteredExpenses.length === 0}
-                >
-                  <FileText className="w-6 h-6 text-destructive" />
-                  <span>PDF</span>
-                  <span className="text-xs text-muted-foreground">{t('reports.report', 'Izvješće')}</span>
-                </Button>
-                <Button
+                  icon={<FileText className="w-6 h-6 text-destructive" />}
+                  label={<span className="flex flex-col items-center"><span>PDF</span><span className="text-xs text-muted-foreground font-normal">{t('reports.report', 'Izvješće')}</span></span>}
+                  compact
+                  onExport={(m) => handleExportPDF(m)}
+                />
+                <ExportButton
                   variant="outline"
                   className="gap-2 rounded-xl h-auto py-4 flex-col"
-                  onClick={handleExportCSV}
                   disabled={filteredExpenses.length === 0}
-                >
-                  <FileSpreadsheet className="w-6 h-6 text-income" />
-                  <span>CSV</span>
-                  <span className="text-xs text-muted-foreground">Excel/Sheets</span>
-                </Button>
-                <Button
+                  icon={<FileSpreadsheet className="w-6 h-6 text-income" />}
+                  label={<span className="flex flex-col items-center"><span>CSV</span><span className="text-xs text-muted-foreground font-normal">Excel/Sheets</span></span>}
+                  compact
+                  onExport={(m) => handleExportCSV(m)}
+                />
+                <ExportButton
                   variant="outline"
                   className="gap-2 rounded-xl h-auto py-4 flex-col"
-                  onClick={handleExportJSON}
                   disabled={filteredExpenses.length === 0}
-                >
-                  <FileJson className="w-6 h-6 text-primary" />
-                  <span>JSON</span>
-                  <span className="text-xs text-muted-foreground">Backup</span>
-                </Button>
+                  icon={<FileJson className="w-6 h-6 text-primary" />}
+                  label={<span className="flex flex-col items-center"><span>JSON</span><span className="text-xs text-muted-foreground font-normal">Backup</span></span>}
+                  compact
+                  onExport={(m) => handleExportJSON(m)}
+                />
               </div>
               {filteredExpenses.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center">
@@ -1312,36 +1310,33 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                 {t('reports.exportIncomeReport', 'Izvezi izvješće prihoda')}
               </Label>
               <div className="grid grid-cols-3 gap-3">
-                <Button
+                <ExportButton
                   variant="outline"
                   className="gap-2 rounded-xl h-auto py-4 flex-col"
-                  onClick={handleExportIncomePDF}
                   disabled={incomeTransactions.length === 0}
-                >
-                  <FileText className="w-6 h-6 text-income" />
-                  <span>PDF</span>
-                  <span className="text-xs text-muted-foreground">{t('reports.report', 'Izvješće')}</span>
-                </Button>
-                <Button
+                  icon={<FileText className="w-6 h-6 text-income" />}
+                  label={<span className="flex flex-col items-center"><span>PDF</span><span className="text-xs text-muted-foreground font-normal">{t('reports.report', 'Izvješće')}</span></span>}
+                  compact
+                  onExport={(m) => handleExportIncomePDF(m)}
+                />
+                <ExportButton
                   variant="outline"
                   className="gap-2 rounded-xl h-auto py-4 flex-col"
-                  onClick={handleExportIncomeCSV}
                   disabled={incomeTransactions.length === 0}
-                >
-                  <FileSpreadsheet className="w-6 h-6 text-income" />
-                  <span>CSV</span>
-                  <span className="text-xs text-muted-foreground">{t('reports.excelSheets', 'Excel/Sheets')}</span>
-                </Button>
-                <Button
+                  icon={<FileSpreadsheet className="w-6 h-6 text-income" />}
+                  label={<span className="flex flex-col items-center"><span>CSV</span><span className="text-xs text-muted-foreground font-normal">{t('reports.excelSheets', 'Excel/Sheets')}</span></span>}
+                  compact
+                  onExport={(m) => handleExportIncomeCSV(m)}
+                />
+                <ExportButton
                   variant="outline"
                   className="gap-2 rounded-xl h-auto py-4 flex-col"
-                  onClick={handleExportIncomeJSON}
                   disabled={incomeTransactions.length === 0}
-                >
-                  <FileJson className="w-6 h-6 text-income" />
-                  <span>JSON</span>
-                  <span className="text-xs text-muted-foreground">{t('reports.backup', 'Backup')}</span>
-                </Button>
+                  icon={<FileJson className="w-6 h-6 text-income" />}
+                  label={<span className="flex flex-col items-center"><span>JSON</span><span className="text-xs text-muted-foreground font-normal">{t('reports.backup', 'Backup')}</span></span>}
+                  compact
+                  onExport={(m) => handleExportIncomeJSON(m)}
+                />
               </div>
               {incomeTransactions.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center">
