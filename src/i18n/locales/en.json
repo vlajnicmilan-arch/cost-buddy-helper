@@ -2325,7 +2325,11 @@
     "unsupportedTitle": "Voice input not available",
     "unsupportedBody": "Your version of the app or browser doesn't support voice input. Please type the text manually — all other features work normally.",
     "continuing": "Listening... keep speaking",
-    "maxDurationReached": "Max recording duration (30s) — stopped automatically"
+    "maxDurationReached": "Max recording duration (30s) — stopped automatically",
+    "diagnosticTitle": "Diagnostics",
+    "diagnosticCode": "Error code",
+    "diagnosticPermission": "Permission state",
+    "diagnosticRuntime": "Runtime"
   },
   "workers": {
     "currentMonth": "Current month",

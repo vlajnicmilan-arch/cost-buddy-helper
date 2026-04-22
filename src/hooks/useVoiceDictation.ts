@@ -90,6 +90,11 @@ export interface UseVoiceDictationResult {
   /** Detailed last error category (drives which dialog/text the UI shows). */
   errorKind: VoiceErrorKind;
   setErrorKind: (kind: VoiceErrorKind) => void;
+  /** Raw diagnostics for the latest failure so we stop guessing. */
+  diagnosticCode: string | null;
+  diagnosticMessage: string | null;
+  permissionState: 'granted' | 'denied' | 'prompt' | 'unknown';
+  isAndroidRuntime: boolean;
   /** Elapsed seconds of current recording session. */
   elapsedSec: number;
   /** True when recognizer paused listening but we are auto-restarting (user can keep speaking). */
