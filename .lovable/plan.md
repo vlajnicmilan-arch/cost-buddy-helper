@@ -1,71 +1,96 @@
 
 
-## Kartica Radnici — sati za tekući mjesec + filteri
+## Kartica Suradnici — filteri i pregled (analogno Radnicima)
 
-### Što se mijenja
+### Razlika u modelu (zašto se ne može kopirati 1:1)
 
-**1. Dodatni izračun: sati za tekući mjesec**
-- U `useProjectWorkers.ts` proširujem dohvat `project_work_entries` da vrati i `work_date`, pa za svakog radnika izračunavam:
-  - `currentMonthHours` — zbroj `actual_hours` gdje je `work_date` u tekućem mjesecu
-  - `currentMonthCost` — `currentMonthHours × hourly_rate`
-  - `periodHours` / `periodCost` — zbroj za odabrani period (računa se klijentski na temelju filtera)
+Suradnici nemaju satnice ni dnevne unose — model je **fiksni ugovor**:
+- `total_price` (dogovoreni iznos)
+- `paid_amount` (do sada isplaćeno)
+- `status` (active / completed / cancelled)
+- `milestone_id` (vezana faza)
 
-**2. Nova kartica filtera iznad popisa radnika**
+Zato umjesto "sati ovog mjeseca" radimo **statuse i preostali iznos** + filtere koji imaju smisla za ugovore.
 
-Dodajem novu sekciju iznad popisa s 3 filtera u jednom redu (mobile-friendly grid):
+---
+
+### Što se dodaje
+
+**1. Filter-traka iznad popisa (mobile-first grid)**
 
 | Filter | Tip | Opcije |
 |---|---|---|
-| **Period** | Select | Tekući mjesec (default) · Prethodni mjesec · Zadnjih 30 dana · Zadnjih 90 dana · Cijela godina · Sve vrijeme · Prilagođeno |
-| **Sortiraj po** | Select | Ime · Pozicija · Cijena sata (↓) · Sati u periodu (↓) · Trošak u periodu (↓) |
-| **Pretraga** | Input | Pretraga po imenu/poziciji (live) |
+| **Status** | Select | Svi · Aktivni (default) · Završeni · Otkazani |
+| **Faza** | Select | Sve faze · [popis postojećih milestona] · Bez faze |
+| **Sortiraj** | Select | Najnoviji · Najstariji · Ime (A→Z) · Dogovoreno (↓) · Isplaćeno (↓) · Preostalo (↓) |
+| **Pretraga** | Input | Live pretraga po imenu, prezimenu, tvrtki, opisu usluge |
 
-Kad korisnik odabere "Prilagođeno" — ispod se pojavljuju dva date pickera (od/do).
+Filteri u `grid grid-cols-2` na mobitelu, pretraga u zasebnom redu ispod (puna širina).
 
-**3. Prikaz po radniku u listi (proširen)**
+**2. Prošireni sažetak na vrhu**
 
-Za svaku karticu radnika:
+Postojeća kartica "Dogovoreno / Isplaćeno ukupno" dobiva **3. red**:
+
+```text
+┌──────────────────────────────────────┐
+│ Dogovoreno ukupno:        12.500 €   │
+│ Isplaćeno ukupno:          7.300 €   │
+│ ─────────────────────────────────    │
+│ Preostalo za isplatu:      5.200 €   │  ← NOVO
+│ Aktivnih: 4 · Završenih: 2           │  ← NOVO (mali brojevi)
+└──────────────────────────────────────┘
+```
+
+Sažetak se računa **na temelju filtriranih suradnika** (npr. ako filtrirate samo "Aktivni", brojevi pokazuju samo njih) — isto ponašanje kao kod Radnika.
+
+**3. Prošireni prikaz po suradniku**
+
+Dodaje se jedan novi red na svaku karticu — **Preostalo**:
+
 ```text
 ┌─────────────────────────────────────┐
-│ Marko Marić          [Zidar]        │
-│ 🕒 08:00–16:00   💶 15 €/sat        │
+│ Marko Marić  [Aktivan]              │
+│ 🏢 Marić d.o.o.                     │
+│ Elektroinstalacije                  │
+│ 🎯 Faza 2 - Instalacije             │
 │                                     │
-│ Tekući mjesec: 42h = 630 €          │  ← NOVO
-│ Period (zadnjih 30d): 88h = 1.320 € │  ← NOVO (dinamički label)
-│ Ukupno: 156h = 2.340 €              │
+│ Dogovoreno:  3.000 €                │
+│ Isplaćeno:   1.800 €                │
+│ Preostalo:   1.200 €  ← NOVO        │
+│ ▓▓▓▓▓▓░░░░  60%       ← NOVO progress │
 └─────────────────────────────────────┘
 ```
 
-Kad je period = "Tekući mjesec", redovi 1 i 2 se spajaju da se ne ponavlja.
+Mini progress bar (1-2 px visine) vizualno pokazuje postotak isplaćenosti — zelen za <100%, plav kad je 100% (završeno).
 
-**4. Sažetak na vrhu (već postoji, samo se nadopunjuje)**
+**4. Empty state nakon filtera**
 
-Postojeća kartica "Ukupni trošak rada" prikazuje uz postojeće "ukupno" još i:
-- Ukupno za odabrani period (X radnika · Y sati · Z €)
-- Broj aktivnih radnika u tom periodu (oni s ≥1 unosom)
+Kad filteri vrate 0 rezultata (a ima suradnika u bazi), prikaz: "Nema suradnika koji odgovaraju filterima" + gumb **Resetiraj filtere**.
+
+---
 
 ### Tehničke izmjene
 
 | Datoteka | Promjena |
 |---|---|
-| `src/hooks/useProjectWorkers.ts` | Dohvat `work_date` u entries, izračun `currentMonthHours/Cost`, izlaganje `entries` (ili helper `getStatsForPeriod`) tako da tab može računati period |
-| `src/components/projects/ProjectWorkersTab.tsx` | Nova filter-traka (Select × 2 + Input + opcionalno DatePicker × 2), `useMemo` za filtriranu/sortiranu listu, prošireni prikaz po radniku, prošireni summary |
-| `src/i18n/locales/{hr,en,de}.json` | ~12 novih ključeva: `workers.filterPeriod`, `workers.currentMonth`, `workers.previousMonth`, `workers.last30Days`, `workers.last90Days`, `workers.thisYear`, `workers.allTime`, `workers.custom`, `workers.sortBy`, `workers.search`, `workers.activeWorkers`, `workers.periodLabel` |
+| `src/components/projects/ProjectCollaboratorsTab.tsx` | Nova filter-traka (3× Select + 1× Input), `useMemo` za filtriranu/sortiranu listu, prošireni sažetak (preostalo + brojači po statusu), redak "Preostalo" + progress bar po kartici, empty state za prazan rezultat filtera |
+| `src/i18n/locales/{hr,en,de}.json` | ~14 novih ključeva pod `collaborators.*`: `filterStatus`, `filterMilestone`, `sortBy`, `search`, `allStatuses`, `allMilestones`, `noMilestone`, `sortNewest`, `sortOldest`, `sortName`, `sortAgreed`, `sortPaid`, `sortRemaining`, `remaining`, `remainingTotal`, `activeCount`, `completedCount`, `noResults`, `resetFilters` |
 
 ### Što se NE mijenja
 
-- Tablica `project_workers` i `project_work_entries` ostaju netaknute (samo dohvaćamo postojeća polja)
+- Tablica `project_collaborators` (samo se koriste postojeća polja)
 - RLS politike
-- Kalendarski pregled (`WorkCalendarOverview`)
-- Dijalozi (Add/Edit, Schedule)
-- Logika izvoza (PDF/CSV/JSON)
-- Svi ostali tabovi projekta
+- Hook `useProjectCollaborators` (sva logika filtera je klijentska, kao kod Radnika)
+- Dijalog za dodavanje/uređivanje (`ProjectCollaboratorDialog`)
+- Logika dozvola (`isManager`)
+- Drugi tabovi projekta
 
 ### Očekivani ishod
 
-- Otvoriš projekt → tab **Radnici** → odmah vidiš za svakog radnika sate za tekući mjesec
-- Možeš mijenjati period (npr. prošli mjesec) i sve kartice se ažuriraju u realnom vremenu
-- Sortiranje po cijeni/satima/trošku — tko je najskuplji, tko je najviše radio
-- Pretraga po imenu — brzi pronalazak u dugačkim listama
-- Sve i dalje radi na 384 px viewportu (filteri u `grid grid-cols-2 sm:grid-cols-3` rasporedu)
+- Otvoriš projekt → tab **Suradnici** → odmah vidiš samo aktivne (default), s preostalim iznosima i progress barovima
+- Promjenom filtera Status/Faza odmah dobiješ presjek (npr. "svi suradnici za fazu Krov")
+- Sortiranje po "Preostalo (↓)" — vidiš kome najviše duguješ
+- Pretraga po tvrtki ili usluzi — brzo nađeš tko je radio elektroinstalacije
+- Sažetak gore reagira na filtere — ako gledaš samo "Aktivne", vidiš njihove totale
+- Sve i dalje radi na 384 px viewportu
 
