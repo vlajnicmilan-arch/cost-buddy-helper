@@ -78,9 +78,16 @@ export const ProjectWorkersTab = ({
 }: ProjectWorkersTabProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
-  const { workers, loading, addWorker, updateWorker, deleteWorker, totalCost, totalActualHours, refetch } = useProjectWorkers(projectId);
+  const { workers, entries, loading, addWorker, updateWorker, deleteWorker, totalCost, totalActualHours, refetch } = useProjectWorkers(projectId);
   const { milestones } = useProjectMilestones(projectId);
   const [viewMode, setViewMode] = useState<string>('list');
+
+  // Filter state
+  const [period, setPeriod] = useState<PeriodKey>('currentMonth');
+  const [sortBy, setSortBy] = useState<SortKey>('name');
+  const [search, setSearch] = useState('');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState<ProjectWorker | null>(null);
