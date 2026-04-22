@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,13 +26,40 @@ import { ProjectWorkerDialog } from './ProjectWorkerDialog';
 import { WorkerScheduleDialog } from './WorkerScheduleDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List, Download, FileText, FileSpreadsheet, FileJson } from 'lucide-react';
+import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List, Download, FileText, FileSpreadsheet, FileJson, Search, Filter } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WorkCalendarOverview } from './WorkCalendarOverview';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { supabase } from '@/integrations/supabase/client';
 import { generateWorkRecordsPDF, generateWorkRecordsCSV, generateWorkRecordsJSON, WorkExportConfig } from '@/lib/workRecordsExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+
+type PeriodKey = 'currentMonth' | 'previousMonth' | 'last30' | 'last90' | 'thisYear' | 'allTime' | 'custom';
+type SortKey = 'name' | 'position' | 'hourlyRate' | 'periodHours' | 'periodCost';
+
+function getPeriodRange(period: PeriodKey, customFrom?: string, customTo?: string): { start: Date | null; end: Date | null } {
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  switch (period) {
+    case 'currentMonth':
+      return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 1) };
+    case 'previousMonth':
+      return { start: new Date(now.getFullYear(), now.getMonth() - 1, 1), end: new Date(now.getFullYear(), now.getMonth(), 1) };
+    case 'last30':
+      return { start: startOfDay(new Date(now.getTime() - 30 * 86400000)), end: new Date(now.getTime() + 86400000) };
+    case 'last90':
+      return { start: startOfDay(new Date(now.getTime() - 90 * 86400000)), end: new Date(now.getTime() + 86400000) };
+    case 'thisYear':
+      return { start: new Date(now.getFullYear(), 0, 1), end: new Date(now.getFullYear() + 1, 0, 1) };
+    case 'allTime':
+      return { start: null, end: null };
+    case 'custom':
+      return {
+        start: customFrom ? new Date(customFrom) : null,
+        end: customTo ? new Date(new Date(customTo).getTime() + 86400000) : null,
+      };
+  }
+}
 
 interface ProjectWorkersTabProps {
   projectId: string;
