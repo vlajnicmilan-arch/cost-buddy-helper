@@ -148,6 +148,7 @@ Deno.serve(async (req) => {
                 milestone_id: m.id,
                 project_id: m.project_id,
                 threshold: String(threshold),
+                category: "budgets",
               },
             },
           });
