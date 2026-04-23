@@ -62,6 +62,10 @@ project_id = "fzalxjretvtvokiotvkf"
     verify_jwt = true
   [functions.parse-standup]
     verify_jwt = false
+  [functions.notify-family-message]
+    verify_jwt = false
+  [functions.notify-payment-source-transaction]
+    verify_jwt = false
 
 [studio]
   enabled = true
