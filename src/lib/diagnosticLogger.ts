@@ -233,7 +233,12 @@ if (typeof window !== 'undefined') {
   });
 
   window.addEventListener('unhandledrejection', (e) => {
-    const reason = e.reason;
+    const reason: any = e.reason;
+    // Ignore expected abort errors (TanStack Query / fetch cancellation on unmount)
+    if (reason?.name === 'AbortError') return;
+    const msg = typeof reason?.message === 'string' ? reason.message : String(reason ?? '');
+    if (msg.includes('signal is aborted') || msg.includes('aborted without reason')) return;
+
     logDiagnostic('unhandled_rejection', {
       message: reason?.message ?? String(reason),
       stack: reason?.stack,
