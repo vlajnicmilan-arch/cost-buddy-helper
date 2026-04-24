@@ -234,6 +234,8 @@ export const AddExpenseDialog = ({
   }, [open, autoScan, isNative, scanning, showScannedPreview]);
 
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
+    // Defensive blur: ensure keyboard is dismissed before scan/AI analysis kicks in
+    try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     if (multiMode || showMultiImageCollector) {
       setReceiptImages(prev => [...prev, base64]);
       setReceiptImage(base64);
@@ -249,6 +251,8 @@ export const AddExpenseDialog = ({
 
   const handleNativeCapture = async (source: 'camera' | 'gallery', multiMode = false) => {
     console.warn('📸 handleNativeCapture start', { source, multiMode, isNative });
+    // Dismiss keyboard before opening camera so it doesn't reappear during scanning
+    try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     cameraActiveRef.current = true;
     try {
       const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
@@ -269,6 +273,8 @@ export const AddExpenseDialog = ({
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    // Dismiss keyboard so it doesn't stay open during scanning
+    try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
