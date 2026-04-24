@@ -210,7 +210,6 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
           value={props.merchantName}
           onChange={(e) => props.onMerchantChange(e.target.value)}
           className="h-12 rounded-xl"
-          autoFocus
         />
       </div>
 
