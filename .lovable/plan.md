@@ -1,57 +1,66 @@
 
 
-## Ispravak push obavijesti za projektne transakcije — pravi uzrok pronađen
+## Spriječiti otvaranje tipkovnice tijekom skeniranja računa
 
-### Što sam stvarno provjerio (nije nagađanje)
+### Pravi uzrok (provjereno u kodu, nije nagađanje)
 
-Pregledao sam `app_diagnostics_logs` tablicu i `useExpenseCRUD.ts`. Dokaz:
+U `src/components/add-expense/ManualExpenseForm.tsx` na **liniji 213** input "Trgovac/Izvor" ima `autoFocus`:
 
-1. **Frontend uredno zove** `notify-project-transaction` (zadnji poziv prije 11 minuta, ukupno 12 poziva jutros) — vidljivo u `notify_invoke_started` događajima.
-2. **Svaki poziv odbija Supabase gateway prije nego stigne do funkcije** s greškom `401 UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM — "Unsupported JWT algorithm ES256"`.
-3. **Edge function logs su prazni** za `notify-project-transaction` — funkcija se nikad nije pokrenula jer ju gateway odbija.
-
-### Pravi uzrok
-
-Supabase je migrirao project JWT signing na **ES256 asimetrične ključeve**. Edge funkcije s `verify_jwt = true` ne podržavaju taj algoritam u trenutnoj konfiguraciji. Funkcija se zove točno, ali gateway zaustavi zahtjev na 401 prije nego dosegne `Deno.serve(...)`.
-
-Iste sumnje vrijede i za druge `notify-*` funkcije koje pozivaju s korisničkim tokenom (notify-pending-transaction, notify-note-added, notify-family-message).
-
-### Ispravak (jedna izmjena)
-
-Dodati u `supabase/config.toml` blok za svih 5 user-invoked notify funkcija s `verify_jwt = false`. Funkcije već **interno** validiraju JWT preko `supabaseUser.auth.getClaims(token)` (vidim u kodu na liniji 41), tako da **nema sigurnosnog gubitka** — samo skidamo gateway-level provjeru koja sad fail-a zbog ES256.
-
-```toml
-[functions.notify-project-transaction]
-verify_jwt = false
-
-[functions.notify-pending-transaction]
-verify_jwt = false
-
-[functions.notify-note-added]
-verify_jwt = false
-
-[functions.notify-family-message]
-verify_jwt = false
-
-[functions.notify-payment-source-transaction]
-verify_jwt = false
+```tsx
+<Input
+  id="merchant"
+  ...
+  autoFocus
+/>
 ```
 
-### Verifikacija nakon ispravka
+Kad otvoriš dijalog "Nova transakcija" (čak i kroz `autoScan` tok preko gumba kamera/skener), Android automatski fokusira taj input → tipkovnica iskoči. Iako se preko forme prikazuje `ScanningOverlay` (vidljivo na screenshotu — "Analiziram račun..."), **input ispod ostaje fokusiran** jer overlay je samo vizualni sloj na vrhu — ne briše fokus s elementa ispod. Zato tipkovnica ostaje otvorena cijelo vrijeme analize.
 
-1. Deploy 5 funkcija
-2. Korisnik napravi novu projektnu transakciju
-3. Provjerim `app_diagnostics_logs` → `notify_invoke_ok` (status 200)
-4. Provjerim edge function logs → vidi se izvršenje
-5. Provjerim `push_delivery_logs` → `dispatch_ok` za Test uređaj
-6. Test uređaj prima push
+Dodatno: `autoFocus` je problem i kad korisnik ne skenira (samo ručno otvori formu) — tipkovnica iskoči odmah, što često nije ono što korisnik želi (često prvo bira iznos ili payment source).
 
-### Što ostaje netaknuto
+### Rješenje (2 male izmjene, bez funkcionalnih promjena)
 
-- Cron-pozvane funkcije (`check-budget-alerts`, `check-reminders`, `check-milestone-deadlines`, `trial-reminder`) — već imaju `verify_jwt = false` ili koriste service role, rade ispravno
-- `send-push` interna funkcija — ne dira se
-- Sva ostala logika notify funkcija — interno validiranje JWT-a ostaje
+**Izmjena 1 — `ManualExpenseForm.tsx` (linija 213):**
+Ukloniti `autoFocus` s Merchant inputa. Tipkovnica se neće više sama otvarati pri otvaranju dijaloga. Korisnik ju otvara **samo kad sam tapne na polje** koje želi popuniti — što je standardno mobilno ponašanje (npr. Revolut, Spendee).
+
+**Izmjena 2 — `AddExpenseDialog.tsx` (u `handleNativeCapture`, oko linije 250):**
+Prije pozivanja kamere eksplicitno pozvati `(document.activeElement as HTMLElement)?.blur()` — defenzivno, za slučaj da je korisnik već stigao tapnuti na neko polje prije skeniranja. Time osiguramo da tipkovnica nestane prije nego se pokrene analiza.
+
+```tsx
+const handleNativeCapture = async (source, multiMode = false) => {
+  // Skidamo fokus s bilo kojeg inputa da Android ne drži tipkovnicu otvorenu
+  (document.activeElement as HTMLElement)?.blur?.();
+  cameraActiveRef.current = true;
+  ...
+};
+```
+
+Iste blur pozive dodajem i u `handleImageCapture` (web fallback) i u trenutku kad se pokrene `processImageBase64` — defenzivno na 3 razine.
+
+### Što NE diram
+
+- `ScanningOverlay` ostaje identičan (radi savršeno vizualno).
+- Logika skeniranja, AI analize, Save tijeka — sve isto.
+- Postojeći `autoScan` tijek — samo skidam fokus, ne mijenjam flow.
+- Drugi dijalozi s `autoFocus` (npr. Edit) — ne diram, jer tamo nema skeniranja.
+
+### Tehnički detalji
+
+| Datoteka | Linija | Promjena |
+|---|---|---|
+| `src/components/add-expense/ManualExpenseForm.tsx` | 213 | Ukloniti `autoFocus` |
+| `src/components/add-expense/AddExpenseDialog.tsx` | ~250 (`handleNativeCapture`) | Dodati `(document.activeElement as HTMLElement)?.blur?.()` na početku |
+| `src/components/add-expense/AddExpenseDialog.tsx` | ~269 (`handleImageCapture`) | Isto |
+
+Ukupno: **3 male izmjene, bez novih ovisnosti, bez promjena u i18n.**
 
 ### Trajanje
-~3 minute (1 izmjena `config.toml` + deploy)
+
+~2 minute. Verifikacija na uređaju: otvoriš dijalog ili pokreneš skener — tipkovnica se ne pojavljuje. Kad kasnije tapneš na polje (npr. iznos), tipkovnica iskoči normalno.
+
+### Pitanje (jedno, brzo)
+
+Želiš li da `autoFocus` **u potpunosti uklonim** (preporučeno — najmanja iznenađenja, standardno mobilno ponašanje), ili da ga zadržim ali samo za **slučaj kad korisnik otvori dijalog običnim "+" gumbom** (ne preko skenera)? Drugi scenarij je tehnički izvediv (uvjetni `autoFocus={!autoScan}`), ali u praksi i tu većina korisnika preferira da tipkovnica ne iskače sama.
+
+Ako kažeš "kreni" — idem s **potpunim uklanjanjem** `autoFocus`.
 
