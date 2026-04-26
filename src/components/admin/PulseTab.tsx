@@ -10,6 +10,7 @@ import { PulseLiveFeed } from './PulseLiveFeed';
 import { PulseAlertsSection } from './PulseAlertsSection';
 import { PulsePerformanceSection } from './PulsePerformanceSection';
 import { PulseAISummary } from './PulseAISummary';
+import { PulseTopIssuesSection } from './PulseTopIssuesSection';
 
 export const PulseTab = () => {
   const { t } = useTranslation();
@@ -40,7 +41,10 @@ export const PulseTab = () => {
         errors1h={m.errors1h}
         activeSessions={m.activeSessions}
         errors24h={m.errors24h}
+        bySeverity1h={m.bySeverity1h}
       />
+
+      <PulseTopIssuesSection issues={m.topIssues} />
 
       {m.error && (
         <div className="text-xs text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-2">

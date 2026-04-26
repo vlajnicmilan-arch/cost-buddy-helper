@@ -1,117 +1,161 @@
+## Profesionalan sustav za detekciju i prioritizaciju grešaka
 
+### Što sam stvarno provjerio prije pisanja plana
 
-## Pregled grešaka u admin Pulse panelu (zadnjih 24h)
-
-### Što je stvarno u logovima (provjereno u bazi)
-
-Admin pokazuje **34 grešaka u 24h, 32 na `/home`, 2 na `/calendar`**. Kad sam grupirao po signaturi, sve se svode na **2 različita problema**:
-
-| # | Greška | Pojavnosti | Korisnici | Rute | Zadnji put |
-|---|---|---|---|---|---|
-| 1 | `"Haptics.then()" is not implemented on android` | **17** | 5 | `/home`, `/calendar` | prije ~2h (jutros) |
-| 2 | `AbortError: signal is aborted without reason` | **16** | 1 | `/home` | jučer 16:41 (jednokratan burst) |
-
-**Verzija:** sve iz `v1.3.5` (jedina na produkciji).
+1. **`app_diagnostics_logs` tablica** — 9 stupaca (id, session_id, user_id, event, route, details, device_info, app_version, created_at). Indeksi po event/route/session/created_at već postoje. RLS: insert anyone, select/delete admin only. **Nema `severity` stupca — moramo ga dodati.**
+2. **Postojećih 22 tipova događaja** zadnjih 7 dana (provjereno SQL-om):
+   - 633× `route_change`, 270× `boot_start`, 156× `performance_metric` → **info-razina (šum)**
+   - 146× `unhandled_rejection`, 14× `window_error`, 14× `notify_invoke_http_error` → **error-razina**
+   - Trenutno sve ide u jedan kanal → ne možeš razlikovati šum od pravih problema
+3. **`ErrorBoundary.tsx`** ne logira u bazu — samo `console.error`. **Crash-evi cijele aplikacije nestaju.**
+4. **`usePulseMetrics`** broji greške ali ne grupira po signaturi i ne broji "pogođene korisnike".
 
 ---
 
-### Greška #1 — Haptics na Androidu (AKTIVNA, 5 korisnika pogođeno)
+## Što radimo: Paket A + Paket B + Auto-deduplikacija
 
-**Pravi uzrok (provjereno u `src/hooks/useHaptics.ts`):**
-Capacitor `@capacitor/haptics` plugin **nije registriran u nativnom runtime-u** trenutno deployane v1.3.5 APK verzije. Kad pozovemo `await h.impact(...)`, Capacitor proxy detektira da Android nema registriran plugin i baca `"<Plugin>.then()" is not implemented on android` rejection — što je **standardni Capacitor signal "plugin nedostaje u nativnom dijelu"**.
+### **Paket A — Sveobuhvatno hvatanje + ozbiljnost**
 
-Hook ima `try/catch` oko `h.impact()`, ali rejection se javlja **prije** nego `h` postane stvarni objekt — Capacitor proxy odbije na razini `await` iza `getHaptics()`. Naš `try/catch` u `getHaptics()` također ne hvata jer se `mod.Haptics` resolva uspješno (modul postoji), ali pravi nativni mostt vrati grešku tek kad ga prvi put pozoveš.
+#### 1. Migracija baze: dodati `severity` u `app_diagnostics_logs`
 
-**Ispravak (2 male izmjene u `src/hooks/useHaptics.ts`):**
+```sql
+ALTER TABLE app_diagnostics_logs 
+  ADD COLUMN severity text DEFAULT 'info' 
+  CHECK (severity IN ('critical', 'error', 'warning', 'info'));
 
-1. **Detektirati nedostajući plugin jednom** i memoizirati rezultat — nakon prvog reject-a označi haptiku kao "nedostupna" i preskoči sve buduće pozive (nema više grešaka, nema više Pulse alarma).
-2. **Zamotati svaki nativni poziv** u catch koji guta upravo ovaj signal (`"is not implemented"`) — ne kao tihu grešku nego kao "soft disable" cijelog hooka.
-
-```ts
-let hapticsAvailable: boolean | null = null;
-
-const getHaptics = async () => {
-  if (!isNative) return null;
-  if (hapticsAvailable === false) return null;
-  if (HapticsModule) return HapticsModule;
-  try {
-    const mod = await import('@capacitor/haptics');
-    HapticsModule = mod.Haptics;
-    return HapticsModule;
-  } catch {
-    hapticsAvailable = false;
-    return null;
-  }
-};
-
-// pomoćnik koji guta "not implemented" i "soft-disable"-a hook
-const safeCall = async (fn: () => Promise<void>) => {
-  try { await fn(); }
-  catch (e: any) {
-    const msg = String(e?.message ?? e);
-    if (msg.includes('not implemented') || msg.includes('not available')) {
-      hapticsAvailable = false; // više ne pokušavaj
-      return;
-    }
-    // sve drugo tiho — vibracija nije kritična
-  }
-};
+CREATE INDEX idx_app_diag_severity_time 
+  ON app_diagnostics_logs (severity, created_at DESC) 
+  WHERE severity IN ('critical', 'error');
 ```
 
-Pa svaki `lightTap`/`mediumTap`/`successVibration`/`errorVibration` koristi `safeCall`.
+Index je djelomičan (samo critical/error) → ostaje brz čak i s milijunima info redaka.
 
-**Posljedica:** nakon idućeg deploya, prva neuspjela vibracija na uređaju gdje plugin fali → hook se sam ugasi → 0 daljnih grešaka u Pulse-u za tog korisnika.
+#### 2. Nadograditi `src/lib/diagnosticLogger.ts`
 
-**Zašto se to događa baš sad:** vrlo vjerojatno na onim uređajima radi Live Sync (web bundle na nativnom kontejneru) — web kod misli da je nativno (jer `Capacitor.isNativePlatform()` vraća true), ali stvarni APK koji pokreće app je stariji build u kojem `HapticsPlugin` nije bio registriran u `MainActivity.java`/`capacitor.config`. Ovaj softverski fix to potpuno toleranira **bez potrebe za novim APK-om**.
+- Dodati `severity?: 'critical' | 'error' | 'warning' | 'info'` u `DiagnosticEventInput`
+- **Auto-detekcija razine** ako nije eksplicitno zadana:
+  - `window_error`, `unhandled_rejection`, `react_error_boundary`, `supabase_error`, `edge_function_error` → **error**
+  - `performance_metric` (ako duration > 5s) → **warning**, inače **info**
+  - `route_change`, `boot_start`, `splash_*` itd. → **info**
+- **Auto-deduplikacija** (in-memory): hash signaturu (`event + message + route`), ako se isti hash javi unutar 60s → ne šaljemo novi red, nego inkrementiramo `count` na zadnjem bufferiranom redu (ili lokalno brojimo dok se ne flush-a). Razlika: 50 istih grešaka u sekundi → 1 red s `count: 50` umjesto 50 redaka.
 
----
+#### 3. `ErrorBoundary.tsx` integracija
 
-### Greška #2 — AbortError burst na `/home` (RIJEŠENO PRIRODNO, jednokratan)
-
-**Pravi uzrok:** 16 zaboljenja istovremeno (jučer 16:41:18, isti session), svi `AbortError: signal is aborted without reason`, isti stack trace (`index-D1TGye7b.js:200:16786`).
-
-To je klasičan **TanStack Query / fetch abort** kad se React komponenta odmounta tijekom letećih query-ja — npr. brzi prelaz s rute na rutu, ili logout. Nije korisnička greška, samo "noise" u logovima jer naš `window` `unhandled_rejection` listener hvata svaku Promise rejection bez razlike.
-
-**Ispravak (1 mala izmjena u `src/lib/diagnosticLogger.ts` ili gdje god je `unhandled_rejection` listener):**
-
-Filtrirati AbortError prije slanja u logove:
-
+U `componentDidCatch`:
 ```ts
-window.addEventListener('unhandledrejection', (event) => {
-  const reason: any = event.reason;
-  // Ne logaj očekivane abort errore (cancel u query/fetch-u)
-  if (reason?.name === 'AbortError') return;
-  if (typeof reason?.message === 'string' && reason.message.includes('signal is aborted')) return;
-  
-  logDiagnostic('unhandled_rejection', { ... });
+logDiagnostic({
+  event: 'react_error_boundary',
+  severity: 'critical',
+  details: {
+    message: error.message,
+    stack: error.stack?.slice(0, 2000),
+    componentStack: errorInfo.componentStack?.slice(0, 1000),
+  }
 });
 ```
+Ovo je **najveća rupa** trenutno — kad se cijeli React stablo sruši, ne znamo. Nakon ovog popravka znamo odmah.
 
-**Posljedica:** Pulse više neće prikazivati lažne alarme od cancellanih fetcheva.
+#### 4. Nova datoteka `src/lib/supabaseInvoke.ts` (wrapper)
+
+Mali wrapper oko `supabase.functions.invoke()` koji:
+- Mjeri trajanje
+- Ako trajanje > 5s → logira `performance_metric` warning
+- Ako vrati error → logira `edge_function_error` (severity error) sa statusom, porukom, imenom funkcije
+- Ako baci → logira i ponovo baci (ne mijenja postojeći flow)
+
+**Postojeće `supabase.functions.invoke` pozive NE mijenjam u ovom paketu** — samo dodajem wrapper kao opciju. U sljedećim iteracijama postupno migriramo "kritične" funkcije (notify-*, send-push, financial-assistant) na wrapper.
 
 ---
 
-### Što NE diram
+### **Paket B — Pulse UI po ozbiljnosti**
 
-- Sustav skeniranja računa (jučerašnji popravak ostaje).
-- Push notifikacije (jučerašnji `verify_jwt` popravak ostaje).
-- Pulse aggregaciju i metrike — sve je točno, samo smanjujemo izvor smetnje.
-- Nativni APK build — sve se popravlja na softverskoj razini.
+#### 5. Nadograditi `usePulseMetrics.ts`
+
+Dodati u `PulseMetrics` interface:
+- `errorsBySeverity: { critical: number, error: number, warning: number }` (za zadnji 1h i 24h)
+- `topIssues: Array<{ signature: string, event: string, message: string, route: string, severity, count: number, affected_users: number, last_seen: string }>` — grupiraj `error`+`critical` događaje po `event + details.message`
+
+SQL agregacija u jednoj query-iji (umjesto trenutne `rangeDataQ` koja vuče 5000 redaka):
+```ts
+// Top issues — grupiraj po event + message, brojanje + distinct user_id
+const { data } = await supabase
+  .from('app_diagnostics_logs')
+  .select('event, route, details, user_id, created_at, severity')
+  .in('severity', ['critical', 'error'])
+  .gte('created_at', since24hIso)
+  .order('created_at', { ascending: false })
+  .limit(2000);
+// + client-side groupBy
+```
+
+#### 6. Novi UI: `PulseTopIssuesSection.tsx`
+
+Prikazano **iznad** "Top problematičnih ruta" — odmah najvažnija stvar. Format:
+
+```
+🔴 KRITIČNO (3)
+  • React crash na /budgets — 4 korisnika, 12× zadnja 24h, prije 5 min  [Detalji]
+  • Spremanje transakcije fail — 2 korisnika, 6×, prije 12 min  [Detalji]
+
+🟠 GREŠKE (8) — kliknuti za prikaz
+🟡 UPOZORENJA (15) — kliknuti za prikaz
+```
+
+Klik na red → existing `PulseAlertDetailDialog` (već postoji u kodu, ponovno koristim) s prikazom svih instanci, pogođenih sessiona, stack tracea.
+
+#### 7. Nadograditi `PulseStatusBar.tsx`
+
+Trenutno: samo broji `errors1h`. Promjena:
+- Ako ima ≥1 **critical** u zadnjih 1h → status "Kritično" (crveno)
+- Ako ima ≥3 **error** u zadnjih 1h → "Pozor" (žuto)
+- Inače "Sustav OK" (zeleno)
+Plus prikaz: "🔴 X · 🟠 Y · 🟡 Z" umjesto generičnog "Err 1h".
+
+#### 8. (Mala dodana vrijednost) Filter chip iznad live feeda
+
+Toggle gumbi: `Sve | Kritično | Greške | Upozorenja | Info`. Defaultno skriva info da admin panel nije zatrpan šumom.
 
 ---
 
-### Tehnički sažetak
+### Što NE diram u ovom paketu
 
-| Datoteka | Linije | Što mijenjam |
+- Sva edge funkcije i njihova interna logika (push, financial-assistant, notify-*) — ostaju netaknute
+- Postojeći `PulseAlertDetailDialog`, `PulseLiveFeed`, `PulsePerformanceSection`, `PulseAISummary` — koriste se kakvi jesu
+- `monitor-app-health` cron — to je Paket D, čekamo 7 dana podataka prvo
+- `monitor_ignored_signatures` tablica — to je Paket B "kasniji dio", radimo nakon što vidimo da li uopće treba (možda dedup riješi 90% buke)
+- Linkanje frontend ↔ backend session-a (Paket C) — odgađamo dok ne porastemo
+
+---
+
+### Sažetak izmjena
+
+| # | Datoteka / Akcija | Tip |
 |---|---|---|
-| `src/hooks/useHaptics.ts` | cijela | Dodati `hapticsAvailable` flag i `safeCall` helper za "not implemented" detekciju |
-| `src/lib/diagnosticLogger.ts` | listener za `unhandledrejection` | Preskočiti `AbortError` i `signal is aborted` poruke |
+| 1 | `ALTER TABLE app_diagnostics_logs ADD COLUMN severity` | Migracija |
+| 2 | `src/lib/diagnosticLogger.ts` | Severity + auto-dedup + auto-classify |
+| 3 | `src/components/ErrorBoundary.tsx` | Logiranje kritičnih crash-eva u bazu |
+| 4 | `src/lib/supabaseInvoke.ts` (NOVA) | Wrapper za edge funkcije s mjerenjem |
+| 5 | `src/hooks/usePulseMetrics.ts` | Dodati `topIssues`, `errorsBySeverity` |
+| 6 | `src/components/admin/PulseTopIssuesSection.tsx` (NOVA) | UI top-3 grupirane greške |
+| 7 | `src/components/admin/PulseStatusBar.tsx` | Status po severity-u |
+| 8 | `src/components/admin/PulseTab.tsx` | Integracija nove sekcije + filter |
+| 9 | `src/i18n/locales/{hr,en,de}.json` | ~12 novih ključeva |
 
-**Ukupno: 2 datoteke, ~30 linija promjena, bez ovisnosti, bez i18n.**
+**Ukupno: 8 datoteka + 1 migracija + 3 i18n datoteke.**
+
+---
 
 ### Trajanje
-~5 minuta. Nakon deploya: idem opet u Pulse za 24h da potvrdim — očekujem **0 novih `Haptics`/abort grešaka**.
+~25-30 minuta implementacije.
 
-### Što ostaje za buduću nativnu nadogradnju (nije hitno)
-Pri sljedećem APK build-u verificirati da je `@capacitor/haptics` ispravno registriran (`npx cap sync android` + rebuild). Tada haptika počne stvarno raditi za korisnike koji ju trenutno tiho gube. Ali to je **kasnije** — softverski fix iznad odmah skida buku iz dijagnostike.
+### Što očekujemo nakon deploya
+- **Odmah**: vidiš u Pulse-u sortirano po važnosti — kritično prvo, šum sakriven
+- **Sljedećih 24h**: ako React negdje crash-ne kod korisnika, vidiš to u panelu (do sada bi bilo nevidljivo)
+- **Sljedećih 7 dana**: gledamo prave podatke, učimo što je normalan šum, pa eventualno krećemo s Paketom C/D s realnim pragovima
 
+### Što ostaje za kasnije (svjesno)
+- **Paket C** (linkanje frontend ↔ backend session preko `x-session-id`) — kad budemo imali 50+ aktivnih korisnika
+- **Paket D** (smart push alerts adminu) — nakon 1-2 tjedna učenja podataka
+- **Migracija postojećih `supabase.functions.invoke` poziva na `supabaseInvoke` wrapper** — postupno, kako diramo te dijelove koda
+
+Reci "kreni" i implementiramo.

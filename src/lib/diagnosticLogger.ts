@@ -7,15 +7,21 @@
  *
  * - Generates a session_id once per app boot.
  * - Buffers events and flushes every 2s or when 5+ events are queued.
+ * - Auto-classifies severity (critical/error/warning/info) when not provided.
+ * - In-memory deduplication: identical events within 60s are collapsed into
+ *   a single row with `details.count` instead of spamming the table.
  * - Failures are silent: the logger must NEVER break the app.
  */
 import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
 
+export type DiagnosticSeverity = 'critical' | 'error' | 'warning' | 'info';
+
 interface DiagnosticEventInput {
   event: string;
   details?: Record<string, unknown>;
   route?: string;
+  severity?: DiagnosticSeverity;
 }
 
 interface DiagnosticEventRow {
@@ -26,14 +32,13 @@ interface DiagnosticEventRow {
   details: Record<string, unknown> | null;
   device_info: Record<string, unknown> | null;
   app_version: string | null;
+  severity: DiagnosticSeverity;
   created_at: string;
 }
 
 const SESSION_KEY = 'vmb-diagnostic-session-id';
 
 const generateSessionId = (): string => {
-  // Stable per app session (memory). We also persist to sessionStorage so a
-  // soft reload keeps the same id, but a fresh app cold start gets a new id.
   try {
     const existing = sessionStorage.getItem(SESSION_KEY);
     if (existing) return existing;
@@ -67,11 +72,63 @@ const getDeviceInfo = (): Record<string, unknown> => {
   };
 };
 
+// ----- Severity auto-classification -----
+const ERROR_EVENT_NAMES = new Set([
+  'window_error',
+  'unhandled_rejection',
+  'react_error_boundary',
+  'supabase_error',
+  'edge_function_error',
+  'notify_invoke_http_error',
+]);
+
+const CRITICAL_EVENT_NAMES = new Set([
+  'react_error_boundary',
+  'app_crash',
+]);
+
+const classifySeverity = (event: string, details?: Record<string, unknown>): DiagnosticSeverity => {
+  if (CRITICAL_EVENT_NAMES.has(event)) return 'critical';
+  if (ERROR_EVENT_NAMES.has(event)) return 'error';
+  if (event === 'performance_metric') {
+    const dur = Number(details?.duration_ms ?? 0);
+    if (dur > 5000) return 'warning';
+    return 'info';
+  }
+  return 'info';
+};
+
+// ----- Deduplication (in-memory) -----
+const DEDUP_WINDOW_MS = 60_000;
+interface DedupEntry {
+  row: DiagnosticEventRow; // pointer to the row in `buffer` so we can mutate count
+  firstSeen: number;
+}
+const dedupMap = new Map<string, DedupEntry>();
+
+const buildSignature = (row: DiagnosticEventRow): string => {
+  const msg = (row.details && typeof row.details === 'object' && 'message' in row.details)
+    ? String((row.details as any).message ?? '')
+    : '';
+  // Include action for performance_metric so different slow actions don't collapse
+  const action = (row.details && typeof row.details === 'object' && 'action' in row.details)
+    ? String((row.details as any).action ?? '')
+    : '';
+  return `${row.event}::${row.severity}::${row.route ?? ''}::${msg.slice(0, 200)}::${action}`;
+};
+
+const cleanupDedup = (now: number) => {
+  for (const [key, entry] of dedupMap) {
+    if (now - entry.firstSeen > DEDUP_WINDOW_MS) {
+      dedupMap.delete(key);
+    }
+  }
+};
+
 let buffer: DiagnosticEventRow[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let cachedUserId: string | null = null;
 
-// Try to keep a cached user id so we don't await getUser() for every event.
 supabase.auth.getUser().then(({ data }) => {
   cachedUserId = data.user?.id ?? null;
 }).catch(() => {
@@ -91,11 +148,12 @@ const flush = async () => {
 
   const batch = buffer;
   buffer = [];
+  // Clear dedup map references — once flushed, a new occurrence starts fresh.
+  dedupMap.clear();
 
   try {
     const { error } = await supabase.from('app_diagnostics_logs').insert(batch as any);
     if (error) {
-      // Don't retry — keep the logger lightweight. Just log to console.
       console.warn('[Diagnostics] flush failed:', error.message);
     }
   } catch (e) {
@@ -115,6 +173,8 @@ export const logDiagnostic = (input: DiagnosticEventInput | string, details?: Re
     const payload: DiagnosticEventInput =
       typeof input === 'string' ? { event: input, details } : input;
 
+    const severity = payload.severity ?? classifySeverity(payload.event, payload.details);
+
     const row: DiagnosticEventRow = {
       session_id: SESSION_ID,
       user_id: cachedUserId,
@@ -123,12 +183,33 @@ export const logDiagnostic = (input: DiagnosticEventInput | string, details?: Re
       details: payload.details ?? null,
       device_info: getDeviceInfo(),
       app_version: APP_VERSION ?? null,
+      severity,
       created_at: new Date().toISOString(),
     };
 
     // Mirror to console for live debugging.
-    console.log(`[Diag:${payload.event}]`, payload.details ?? '');
+    const prefix = severity === 'critical' ? '🔴' : severity === 'error' ? '🟠' : severity === 'warning' ? '🟡' : '·';
+    console.log(`${prefix} [Diag:${payload.event}]`, payload.details ?? '');
 
+    // ----- Deduplication -----
+    const now = Date.now();
+    cleanupDedup(now);
+    const sig = buildSignature(row);
+    const existing = dedupMap.get(sig);
+
+    if (existing && (now - existing.firstSeen) < DEDUP_WINDOW_MS) {
+      // Increment count on the existing buffered row instead of pushing a new one.
+      const cur = existing.row.details ?? {};
+      const prevCount = Number((cur as any).count ?? 1);
+      existing.row.details = { ...cur, count: prevCount + 1, last_seen: row.created_at };
+      // Don't push, don't schedule a fresh flush — the existing scheduled one will send it.
+      return;
+    }
+
+    // First occurrence — push and remember.
+    if (row.details === null) row.details = {};
+    (row.details as any).count = 1;
+    dedupMap.set(sig, { row, firstSeen: now });
     buffer.push(row);
 
     if (buffer.length >= 5) {
@@ -137,7 +218,6 @@ export const logDiagnostic = (input: DiagnosticEventInput | string, details?: Re
       scheduleFlush();
     }
   } catch (e) {
-    // Logger must never break the app.
     console.warn('[Diagnostics] logDiagnostic failed:', e);
   }
 };
@@ -145,9 +225,8 @@ export const logDiagnostic = (input: DiagnosticEventInput | string, details?: Re
 export const getDiagnosticSessionId = () => SESSION_ID;
 
 /**
- * Log a performance metric (page load, slow action, etc.) into the same
- * `app_diagnostics_logs` table under event = 'performance_metric'.
- * Lightweight — uses the same buffer/flush pipeline.
+ * Log a performance metric. Severity is auto-set to 'warning' for >5s,
+ * otherwise 'info'.
  */
 export const logPerformance = (
   action: string,
@@ -163,9 +242,7 @@ export const logPerformance = (
 };
 
 /**
- * Wrap an async function and automatically log its duration as a performance
- * metric. Only logs when duration exceeds the threshold (default 2000 ms) to
- * keep the diagnostics table noise-free.
+ * Wrap an async function and automatically log its duration.
  */
 export const withPerfTracking = async <T>(
   action: string,
@@ -192,7 +269,6 @@ export const withPerfTracking = async <T>(
 
 // ----- Auto page-load timing -----
 if (typeof window !== 'undefined' && 'performance' in window) {
-  // After full load, capture navigation timing once.
   window.addEventListener('load', () => {
     setTimeout(() => {
       try {
@@ -224,24 +300,31 @@ if (typeof window !== 'undefined') {
 
   // Capture global errors automatically.
   window.addEventListener('error', (e) => {
-    logDiagnostic('window_error', {
-      message: e.message,
-      filename: e.filename,
-      lineno: e.lineno,
-      colno: e.colno,
+    logDiagnostic({
+      event: 'window_error',
+      severity: 'error',
+      details: {
+        message: e.message,
+        filename: e.filename,
+        lineno: e.lineno,
+        colno: e.colno,
+      },
     });
   });
 
   window.addEventListener('unhandledrejection', (e) => {
     const reason: any = e.reason;
-    // Ignore expected abort errors (TanStack Query / fetch cancellation on unmount)
     if (reason?.name === 'AbortError') return;
     const msg = typeof reason?.message === 'string' ? reason.message : String(reason ?? '');
     if (msg.includes('signal is aborted') || msg.includes('aborted without reason')) return;
 
-    logDiagnostic('unhandled_rejection', {
-      message: reason?.message ?? String(reason),
-      stack: reason?.stack,
+    logDiagnostic({
+      event: 'unhandled_rejection',
+      severity: 'error',
+      details: {
+        message: reason?.message ?? String(reason),
+        stack: typeof reason?.stack === 'string' ? reason.stack.slice(0, 2000) : undefined,
+      },
     });
   });
 }

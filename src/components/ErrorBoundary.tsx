@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface Props {
   children: ReactNode;
@@ -23,6 +24,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Critical: log full React crash to diagnostics so admin sees it in Pulse.
+    try {
+      logDiagnostic({
+        event: 'react_error_boundary',
+        severity: 'critical',
+        details: {
+          message: error.message,
+          name: error.name,
+          stack: error.stack?.slice(0, 2000),
+          componentStack: errorInfo.componentStack?.slice(0, 1000),
+        },
+      });
+    } catch {
+      /* logger must never break recovery */
+    }
   }
 
   handleReload = () => {

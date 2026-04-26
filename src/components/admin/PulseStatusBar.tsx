@@ -5,14 +5,19 @@ interface Props {
   errors1h: number;
   activeSessions: number;
   errors24h: number;
+  bySeverity1h?: { critical: number; error: number; warning: number };
 }
 
-export const PulseStatusBar = ({ errors1h, activeSessions, errors24h }: Props) => {
+export const PulseStatusBar = ({ errors1h, activeSessions, errors24h, bySeverity1h }: Props) => {
   const { t } = useTranslation();
 
+  const crit = bySeverity1h?.critical ?? 0;
+  const err = bySeverity1h?.error ?? errors1h;
+  const warn = bySeverity1h?.warning ?? 0;
+
   let level: 'ok' | 'warn' | 'crit' = 'ok';
-  if (errors1h >= 10) level = 'crit';
-  else if (errors1h >= 3) level = 'warn';
+  if (crit >= 1 || err >= 10) level = 'crit';
+  else if (err >= 3 || warn >= 10) level = 'warn';
 
   const config = {
     ok: {
@@ -49,14 +54,33 @@ export const PulseStatusBar = ({ errors1h, activeSessions, errors24h }: Props) =
             <div className="font-bold text-base">{activeSessions}</div>
             <div className="text-muted-foreground">{t('admin.pulse.online', 'Online')}</div>
           </div>
-          <div className="text-center">
-            <div className="font-bold text-base">{errors1h}</div>
-            <div className="text-muted-foreground">{t('admin.pulse.err1h', 'Err 1h')}</div>
-          </div>
-          <div className="text-center">
-            <div className="font-bold text-base">{errors24h}</div>
-            <div className="text-muted-foreground">{t('admin.pulse.err24h', 'Err 24h')}</div>
-          </div>
+          {bySeverity1h ? (
+            <>
+              <div className="text-center" title={t('admin.pulse.critical1h', 'Kritično 1h')}>
+                <div className="font-bold text-base text-red-600 dark:text-red-400">🔴 {crit}</div>
+                <div className="text-muted-foreground">1h</div>
+              </div>
+              <div className="text-center" title={t('admin.pulse.errors1h', 'Greške 1h')}>
+                <div className="font-bold text-base text-orange-600 dark:text-orange-400">🟠 {err}</div>
+                <div className="text-muted-foreground">1h</div>
+              </div>
+              <div className="text-center" title={t('admin.pulse.warnings1h', 'Upozorenja 1h')}>
+                <div className="font-bold text-base text-yellow-600 dark:text-yellow-400">🟡 {warn}</div>
+                <div className="text-muted-foreground">1h</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-center">
+                <div className="font-bold text-base">{errors1h}</div>
+                <div className="text-muted-foreground">{t('admin.pulse.err1h', 'Err 1h')}</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-base">{errors24h}</div>
+                <div className="text-muted-foreground">{t('admin.pulse.err24h', 'Err 24h')}</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
