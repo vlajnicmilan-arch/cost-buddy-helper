@@ -24,6 +24,7 @@ export type Database = {
           id: string
           route: string | null
           session_id: string
+          severity: string
           user_id: string | null
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           route?: string | null
           session_id: string
+          severity?: string
           user_id?: string | null
         }
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           id?: string
           route?: string | null
           session_id?: string
+          severity?: string
           user_id?: string | null
         }
         Relationships: []
