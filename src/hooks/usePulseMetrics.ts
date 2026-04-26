@@ -1,16 +1,38 @@
 /**
  * usePulseMetrics — aggregates `app_diagnostics_logs` into Pulse dashboard
  * metrics. Pulled in parallel queries; safe with RLS (admin only).
+ *
+ * Now severity-aware: counts and groups by critical/error/warning/info and
+ * surfaces deduplicated "top issues" with affected user counts.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export type PulseRange = '5min' | '1h' | '24h' | '7d';
+export type PulseSeverity = 'critical' | 'error' | 'warning' | 'info';
+
+export interface PulseTopIssue {
+  signature: string;
+  event: string;
+  message: string;
+  route: string;
+  severity: PulseSeverity;
+  count: number;
+  affectedUsers: number;
+  affectedSessions: number;
+  lastSeen: string;
+  sampleDetails: Record<string, unknown> | null;
+}
 
 export interface PulseMetrics {
   activeSessions: number;
   errors1h: number;
   errors24h: number;
+  /** counts in the last 1h, by severity */
+  bySeverity1h: { critical: number; error: number; warning: number };
+  /** counts in the last 24h, by severity */
+  bySeverity24h: { critical: number; error: number; warning: number };
+  topIssues: PulseTopIssue[];
   topRoutes: Array<{ route: string; errorCount: number; eventCount: number }>;
   versions: Array<{ version: string; sessions: number }>;
   perfByRoute: Array<{ route: string; samples: number; p50: number; p95: number }>;
@@ -19,7 +41,8 @@ export interface PulseMetrics {
   error: string | null;
 }
 
-const ERROR_EVENTS = ['window_error', 'unhandled_rejection'];
+const ERROR_EVENTS = ['window_error', 'unhandled_rejection', 'react_error_boundary', 'supabase_error', 'edge_function_error', 'notify_invoke_http_error'];
+const IMPORTANT_SEVERITIES: PulseSeverity[] = ['critical', 'error', 'warning'];
 
 const rangeToMs: Record<PulseRange, number> = {
   '5min': 5 * 60_000,
@@ -28,11 +51,16 @@ const rangeToMs: Record<PulseRange, number> = {
   '7d': 7 * 24 * 60 * 60_000,
 };
 
+const emptySeverityCounts = () => ({ critical: 0, error: 0, warning: 0 });
+
 export const usePulseMetrics = (range: PulseRange = '24h') => {
   const [metrics, setMetrics] = useState<PulseMetrics>({
     activeSessions: 0,
     errors1h: 0,
     errors24h: 0,
+    bySeverity1h: emptySeverityCounts(),
+    bySeverity24h: emptySeverityCounts(),
+    topIssues: [],
     topRoutes: [],
     versions: [],
     perfByRoute: [],
@@ -57,31 +85,43 @@ export const usePulseMetrics = (range: PulseRange = '24h') => {
         .gte('created_at', since5minIso)
         .limit(2000);
 
-      // Errors 1h
-      const err1hQ = supabase
+      // Severity-bucketed error counts (1h) — fetch lightweight rows for client agg
+      const sev1hQ = supabase
         .from('app_diagnostics_logs')
-        .select('id', { count: 'exact', head: true })
-        .in('event', ERROR_EVENTS)
-        .gte('created_at', since1hIso);
+        .select('severity')
+        .in('severity', IMPORTANT_SEVERITIES)
+        .gte('created_at', since1hIso)
+        .limit(5000);
 
-      // Errors 24h
-      const err24hQ = supabase
+      // Severity-bucketed error counts (24h)
+      const sev24hQ = supabase
         .from('app_diagnostics_logs')
-        .select('id', { count: 'exact', head: true })
-        .in('event', ERROR_EVENTS)
-        .gte('created_at', since24hIso);
+        .select('severity')
+        .in('severity', IMPORTANT_SEVERITIES)
+        .gte('created_at', since24hIso)
+        .limit(10000);
 
-      // Range data — aggregations done client-side
+      // Top issues — only critical+error in selected range
+      const issuesQ = supabase
+        .from('app_diagnostics_logs')
+        .select('event, route, details, user_id, session_id, severity, created_at')
+        .in('severity', ['critical', 'error'])
+        .gte('created_at', sinceRangeIso)
+        .order('created_at', { ascending: false })
+        .limit(2000);
+
+      // Range data — for routes/versions/perf aggregations
       const rangeDataQ = supabase
         .from('app_diagnostics_logs')
-        .select('event, route, session_id, app_version, details, created_at')
+        .select('event, route, session_id, app_version, details, severity, created_at')
         .gte('created_at', sinceRangeIso)
         .limit(5000);
 
-      const [sessRes, err1hRes, err24hRes, rangeRes] = await Promise.all([
+      const [sessRes, sev1hRes, sev24hRes, issuesRes, rangeRes] = await Promise.all([
         sessionsQ,
-        err1hQ,
-        err24hQ,
+        sev1hQ,
+        sev24hQ,
+        issuesQ,
         rangeDataQ,
       ]);
 
@@ -89,7 +129,89 @@ export const usePulseMetrics = (range: PulseRange = '24h') => {
         ? new Set(sessRes.data.map((r: any) => r.session_id)).size
         : 0;
 
-      // Aggregations
+      // Severity counts
+      const bySeverity1h = emptySeverityCounts();
+      const bySeverity24h = emptySeverityCounts();
+      for (const r of (sev1hRes.data ?? []) as any[]) {
+        const s = r.severity as keyof typeof bySeverity1h;
+        if (s in bySeverity1h) bySeverity1h[s] += 1;
+      }
+      for (const r of (sev24hRes.data ?? []) as any[]) {
+        const s = r.severity as keyof typeof bySeverity24h;
+        if (s in bySeverity24h) bySeverity24h[s] += 1;
+      }
+
+      // Backwards-compat: errors1h/24h = critical + error
+      const errors1h = bySeverity1h.critical + bySeverity1h.error;
+      const errors24h = bySeverity24h.critical + bySeverity24h.error;
+
+      // Top issues — group critical+error by signature
+      type Bucket = {
+        signature: string;
+        event: string;
+        message: string;
+        route: string;
+        severity: PulseSeverity;
+        count: number;
+        users: Set<string>;
+        sessions: Set<string>;
+        lastSeen: string;
+        sampleDetails: Record<string, unknown> | null;
+      };
+      const issueBuckets = new Map<string, Bucket>();
+      for (const ev of (issuesRes.data ?? []) as any[]) {
+        const message = String(ev.details?.message ?? ev.event);
+        const route = ev.route ?? '?';
+        const sigKey = `${ev.event}::${message.slice(0, 200)}`;
+        const occurrenceCount = Number(ev.details?.count ?? 1); // dedup count from logger
+
+        let b = issueBuckets.get(sigKey);
+        if (!b) {
+          b = {
+            signature: sigKey,
+            event: ev.event,
+            message,
+            route,
+            severity: ev.severity,
+            count: 0,
+            users: new Set<string>(),
+            sessions: new Set<string>(),
+            lastSeen: ev.created_at,
+            sampleDetails: ev.details ?? null,
+          };
+          issueBuckets.set(sigKey, b);
+        }
+        b.count += occurrenceCount;
+        if (ev.user_id) b.users.add(ev.user_id);
+        if (ev.session_id) b.sessions.add(ev.session_id);
+        // Critical wins severity
+        if (ev.severity === 'critical') b.severity = 'critical';
+        // Keep most-recent route/lastSeen (rows are ordered DESC so first set wins)
+      }
+      const topIssues: PulseTopIssue[] = [...issueBuckets.values()]
+        .map((b) => ({
+          signature: b.signature,
+          event: b.event,
+          message: b.message,
+          route: b.route,
+          severity: b.severity,
+          count: b.count,
+          affectedUsers: b.users.size,
+          affectedSessions: b.sessions.size,
+          lastSeen: b.lastSeen,
+          sampleDetails: b.sampleDetails,
+        }))
+        .sort((a, b) => {
+          // Critical first, then by affected users, then by count
+          const sevRank = (s: PulseSeverity) => (s === 'critical' ? 0 : s === 'error' ? 1 : 2);
+          const sevDiff = sevRank(a.severity) - sevRank(b.severity);
+          if (sevDiff !== 0) return sevDiff;
+          if (b.affectedUsers !== a.affectedUsers) return b.affectedUsers - a.affectedUsers;
+          return b.count - a.count;
+        })
+        .slice(0, 10);
+
+      // Routes / versions / perf aggregations from rangeRes
       const routeStats = new Map<string, { errorCount: number; eventCount: number }>();
       const versionStats = new Map<string, Set<string>>();
       const perfByRoute = new Map<string, number[]>();
@@ -99,7 +221,9 @@ export const usePulseMetrics = (range: PulseRange = '24h') => {
         const route = ev.route ?? '?';
         const stats = routeStats.get(route) ?? { errorCount: 0, eventCount: 0 };
         stats.eventCount += 1;
-        if (ERROR_EVENTS.includes(ev.event)) stats.errorCount += 1;
+        if (ERROR_EVENTS.includes(ev.event) || ev.severity === 'error' || ev.severity === 'critical') {
+          stats.errorCount += 1;
+        }
         routeStats.set(route, stats);
 
         if (ev.app_version) {
@@ -148,8 +272,11 @@ export const usePulseMetrics = (range: PulseRange = '24h') => {
 
       setMetrics({
         activeSessions,
-        errors1h: err1hRes.count ?? 0,
-        errors24h: err24hRes.count ?? 0,
+        errors1h,
+        errors24h,
+        bySeverity1h,
+        bySeverity24h,
+        topIssues,
         topRoutes,
         versions,
         perfByRoute: perfStats,
