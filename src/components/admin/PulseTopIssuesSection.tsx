@@ -44,7 +44,7 @@ const severityConfig = {
   },
 } as const;
 
-const formatRelative = (iso: string, t: (k: string, d?: string) => string) => {
+const formatRelative = (iso: string, t: (k: string, d: string) => string) => {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return t('admin.pulse.justNow', 'upravo');
@@ -108,7 +108,7 @@ export const PulseTopIssuesSection = ({ issues }: Props) => {
                         <Users className="w-3 h-3" />
                         {issue.affectedUsers || issue.affectedSessions} {t('admin.pulse.users', 'korisnika')}
                       </span>
-                      <span>{formatRelative(issue.lastSeen, t)}</span>
+                      <span>{formatRelative(issue.lastSeen, t as (k: string, d: string) => string)}</span>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
@@ -127,7 +127,7 @@ export const PulseTopIssuesSection = ({ issues }: Props) => {
               <code className="text-sm">{selected?.event}</code>
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {selected?.route} · {selected && formatRelative(selected.lastSeen, t)}
+              {selected?.route} · {selected && formatRelative(selected.lastSeen, t as (k: string, d: string) => string)}
             </DialogDescription>
           </DialogHeader>
 
