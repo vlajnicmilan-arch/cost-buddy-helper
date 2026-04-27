@@ -38,8 +38,12 @@ const isAbortLikeError = (error: unknown) => {
   );
 };
 
-// Kompresija slike za mobilne uređaje - smanjuje veličinu za stabilnije slanje
-const compressImage = async (base64: string, maxWidth = 800, quality = 0.75): Promise<string> => {
+const UNREADABLE_RECEIPT_RE = /pročitati|procitati|analizirati|read|analyz/i;
+
+// Kompresija slike za mobilne uređaje - zadržava dovoljno detalja za OCR.
+// 800px je bilo preagresivno za sitan tekst na računima i moglo je uzrokovati
+// odgovor "Nije moguće pročitati račun" iako je slika valjana.
+const compressImage = async (base64: string, maxWidth = 1600, quality = 0.9): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -122,7 +126,7 @@ export const useReceiptScanner = () => {
         })) || []
       })) || [];
 
-      const response = await fetch(
+      const callParseReceipt = (payloadImages: string[]) => fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`,
         {
           method: 'POST',
@@ -130,13 +134,15 @@ export const useReceiptScanner = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${sessionData.session.access_token}`
           },
-          body: JSON.stringify({ 
-            imagesBase64: compressedImages,
+          body: JSON.stringify({
+            imagesBase64: payloadImages,
             customPaymentSources: sourcesForApi,
             customCategories: customCategories || []
           })
         }
       );
+
+      let response = await callParseReceipt(compressedImages);
 
       
 
@@ -158,14 +164,33 @@ export const useReceiptScanner = () => {
         } catch {
           console.error('Failed to parse error response');
         }
-        try {
-          logDiagnostic({
-            event: 'receipt_scan_http_error',
-            severity: 'error',
-            details: { status: response.status, message: errorMessage },
-          });
-        } catch {}
-        throw new Error(errorMessage);
+        if (response.status === 400 && UNREADABLE_RECEIPT_RE.test(errorMessage)) {
+          try {
+            logDiagnostic('receipt_scan_retry_original_image', { reason: errorMessage });
+          } catch {}
+          response = await callParseReceipt(imagesBase64);
+          if (response.ok) {
+            try { logDiagnostic('receipt_scan_retry_success', { status: response.status }); } catch {}
+          } else {
+            try {
+              const retryErrorData = await response.clone().json();
+              errorMessage = retryErrorData.error || errorMessage;
+            } catch {}
+          }
+        }
+
+        if (response.ok) {
+          try { logDiagnostic('receipt_scan_response_received', { status: response.status }); } catch {}
+        } else {
+          try {
+            logDiagnostic({
+              event: 'receipt_scan_http_error',
+              severity: 'error',
+              details: { status: response.status, message: errorMessage },
+            });
+          } catch {}
+          throw new Error(errorMessage);
+        }
       }
 
       try {
