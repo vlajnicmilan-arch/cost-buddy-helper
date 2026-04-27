@@ -55,6 +55,12 @@ interface AddExpenseDialogProps {
   triggerIcon?: ReactNode;
   /** Visual variant of the trigger button. */
   triggerVariant?: 'default' | 'scan';
+  /** Controlled open state — when provided, dialog is controlled by parent. */
+  externalOpen?: boolean;
+  /** Called when the dialog wants to change its open state (controlled mode). */
+  onOpenChange?: (open: boolean) => void;
+  /** When true, hides the built-in trigger button (use with externalOpen). */
+  hideTrigger?: boolean;
 }
 
 interface ScannedData {
@@ -87,13 +93,25 @@ export const AddExpenseDialog = ({
   triggerLabel,
   triggerIcon,
   triggerVariant = 'default',
+  externalOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
   const { successVibration } = useHaptics();
   const { maybeRequestReview } = useInAppReview();
   const { getCurrentLocation, loading: locationLoading } = useLocation();
-  const [open, setOpen] = useState(false);
+  const isControlled = externalOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? !!externalOpen : internalOpen;
+  const setOpen = useCallback((next: boolean) => {
+    if (isControlled) {
+      onOpenChange?.(next);
+    } else {
+      setInternalOpen(next);
+    }
+  }, [isControlled, onOpenChange]);
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -731,20 +749,22 @@ export const AddExpenseDialog = ({
         resetForm();
       }
     }}>
-      <DialogTrigger asChild>
-        <Button
-          className={cn(
-            'gap-2 rounded-xl shadow-lg',
-            triggerVariant === 'scan'
-              ? 'bg-ai hover:bg-ai/90 text-ai-foreground shadow-ai/20'
-              : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20',
-            triggerClassName,
-          )}
-        >
-          {triggerIcon ?? (triggerVariant === 'scan' ? <ScanLine className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
-          {triggerLabel ?? t('common.add')}
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            className={cn(
+              'gap-2 rounded-xl shadow-lg',
+              triggerVariant === 'scan'
+                ? 'bg-ai hover:bg-ai/90 text-ai-foreground shadow-ai/20'
+                : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20',
+              triggerClassName,
+            )}
+          >
+            {triggerIcon ?? (triggerVariant === 'scan' ? <ScanLine className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
+            {triggerLabel ?? t('common.add')}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent 
         showBackButton={false} 
         className="sm:max-w-md glass-card border-border/50 h-[85vh] flex flex-col"

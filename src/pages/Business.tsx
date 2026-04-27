@@ -40,6 +40,7 @@ const Business = () => {
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
 
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
@@ -126,23 +127,15 @@ const Business = () => {
           <BusinessWallet />
         )}
         {activeTab === 'transactions' && (
-          <>
-            <BusinessTransactions
-              expenses={dashboardExpenses}
-              onAddClick={() => {
-                const btn = document.querySelector<HTMLButtonElement>('[data-business-add-expense-trigger] button');
-                btn?.click();
-              }}
-              onEditExpense={handleEditExpense}
-              onDeleteExpense={deleteExpense}
-              onImportCSV={importFromCSV}
-              findDuplicates={findDuplicates}
-              existingExpenses={allExpenses}
-            />
-            <div data-business-add-expense-trigger className="hidden">
-              <AddExpenseDialog onAdd={addExpense} />
-            </div>
-          </>
+          <BusinessTransactions
+            expenses={dashboardExpenses}
+            onAddClick={() => setAddExpenseOpen(true)}
+            onEditExpense={handleEditExpense}
+            onDeleteExpense={deleteExpense}
+            onImportCSV={importFromCSV}
+            findDuplicates={findDuplicates}
+            existingExpenses={allExpenses}
+          />
         )}
         {activeTab === 'reports' && (
           <BusinessReports
@@ -154,6 +147,15 @@ const Business = () => {
           <BusinessMore expenses={dashboardExpenses} />
         )}
       </div>
+
+      {/* Stable, always-mounted AddExpenseDialog — survives tab changes and
+          camera lifecycle events so scanning never loses its host. */}
+      <AddExpenseDialog
+        onAdd={addExpense}
+        externalOpen={addExpenseOpen}
+        onOpenChange={setAddExpenseOpen}
+        hideTrigger
+      />
 
       <BusinessBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
