@@ -377,10 +377,23 @@ export const AddExpenseDialog = ({
       if (!scannedData.merchant?.trim()) missing.push('partner/trgovac');
       if (!scannedData.date) missing.push('datum');
       if (missing.length > 0) {
+        try {
+          logDiagnostic('receipt_scan_blocked_business', {
+            missing,
+            has_amount: !!scannedData.amount,
+          });
+        } catch {}
         showError(`Obavezna polja za poslovni mod: ${missing.join(', ')}. Uredi podatke prije spremanja.`);
         return;
       }
     }
+    try {
+      logDiagnostic('receipt_scan_accept_attempt', {
+        is_business: !!activeBusinessProfileId,
+        amount: scannedData.amount,
+        has_vat: scannedData.vat_rate != null,
+      });
+    } catch {}
     setIsSaving(true);
     try {
       const validItems = scannedData.items.filter(item => item.name && item.total_price > 0);
