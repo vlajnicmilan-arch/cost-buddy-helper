@@ -113,8 +113,6 @@ interface BusinessModeViewProps {
 export const BusinessModeView = (props: BusinessModeViewProps) => {
   const { t } = useTranslation();
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
-  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
-  const [scanExpenseOpen, setScanExpenseOpen] = useState(false);
 
   const {
     businessTab,
@@ -272,8 +270,25 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         {businessTab === 'transactions' && (
           <BusinessTransactions
             expenses={props.expenses}
-            onAddClick={() => setAddExpenseOpen(true)}
-            onScanClick={() => setScanExpenseOpen(true)}
+            onAddClick={() => {}}
+            addAction={
+              <AddExpenseDialog
+                onAdd={props.onAddExpense}
+                checkDuplicate={props.checkDuplicate}
+                triggerLabel={t('business.transactions.new', 'Novo')}
+                triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none"
+              />
+            }
+            scanAction={
+              <AddExpenseDialog
+                onAdd={props.onAddExpense}
+                checkDuplicate={props.checkDuplicate}
+                autoScan
+                triggerVariant="scan"
+                triggerLabel={t('common.scan', 'Skeniraj')}
+                triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none border border-primary/30 bg-background text-primary hover:bg-primary/10"
+              />
+            }
             onEditExpense={props.onUpdateExpense}
             onDeleteExpense={props.onDeleteExpense}
             onImportCSV={props.importFromCSV}
@@ -326,24 +341,6 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         onRecurringMatchDialogChange={props.onRecurringMatchDialogChange}
         recurringMatches={props.recurringMatches}
         onRecurringMatchConfirm={props.onRecurringMatchConfirm}
-      />
-
-      {/* Stabilne instance dialoga za poslovni mod — preživljavaju izmjene tabova
-          i kameru, pa skener ne gubi host. */}
-      <AddExpenseDialog
-        onAdd={props.onAddExpense}
-        checkDuplicate={props.checkDuplicate}
-        externalOpen={addExpenseOpen}
-        onOpenChange={setAddExpenseOpen}
-        hideTrigger
-      />
-      <AddExpenseDialog
-        onAdd={props.onAddExpense}
-        checkDuplicate={props.checkDuplicate}
-        externalOpen={scanExpenseOpen}
-        onOpenChange={setScanExpenseOpen}
-        autoScan
-        hideTrigger
       />
 
       <BusinessBottomNav activeTab={businessTab} onTabChange={onBusinessTabChange} />
