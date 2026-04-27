@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { useTranslation } from 'react-i18next';
 import { APP_VERSION } from '@/lib/version';
 import {
   fetchLatestVersion,
@@ -69,14 +70,41 @@ export const checkForNativeUpdates = async () => {
 };
 
 export const NativeUpdateInitializer = () => {
+  const { t } = useTranslation();
+
   useEffect(() => {
     const checker = initializeNativeUpdateChecker();
+    const silentCheck = async () => {
+      const result = await fetchLatestVersion();
+      if (result.version && isRemoteVersionNewer(APP_VERSION, result.version)) {
+        toast.info(
+          t('update.available'),
+          {
+            action: { label: t('update.updateNow'), onClick: () => window.location.reload() },
+            duration: 10000,
+          }
+        );
+      }
+    };
+    const timeoutId = window.setTimeout(() => {
+      silentCheck().catch((error) => console.error('[NativeUpdate] Startup check failed:', error));
+    }, 2500);
+
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') {
+        silentCheck().catch((error) => console.error('[NativeUpdate] Visibility check failed:', error));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+
     return () => {
+      window.clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', handleVisible);
       if (checkForUpdatesRef === checker) {
         checkForUpdatesRef = null;
       }
     };
-  }, []);
+  }, [t]);
 
   return null;
 };
