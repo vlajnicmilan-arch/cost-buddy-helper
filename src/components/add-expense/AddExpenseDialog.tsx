@@ -811,7 +811,7 @@ export const AddExpenseDialog = ({
           <DialogTitle className="text-xl font-semibold">{t('transactions.newTransaction')}</DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto -mx-6 px-6 relative">
+        <div className={cn('flex-1 -mx-6 px-6 relative', showScannedPreview ? 'overflow-hidden' : 'overflow-y-auto')}>
           <ScanningOverlay visible={scanning} imageCount={receiptImages.length || 1} />
           
           {showScannedPreview && scannedData && (
