@@ -276,6 +276,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               <AddExpenseDialog
                 onAdd={props.onAddExpense}
                 checkDuplicate={props.checkDuplicate}
+                businessProfileId={props.businessProfile?.id ?? null}
                 triggerIcon={<Plus className="w-3.5 h-3.5" />}
                 triggerLabel={t('business.transactions.new', 'Novo')}
                 triggerClassName="h-9 gap-1 px-3 text-sm"
@@ -285,6 +286,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               <AddExpenseDialog
                 onAdd={props.onAddExpense}
                 checkDuplicate={props.checkDuplicate}
+                businessProfileId={props.businessProfile?.id ?? null}
                 autoScan
                 triggerVariant="scan"
                 triggerIcon={<ScanLine className="w-3.5 h-3.5" />}
