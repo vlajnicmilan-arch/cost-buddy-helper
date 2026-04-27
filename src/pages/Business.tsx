@@ -127,23 +127,15 @@ const Business = () => {
           <BusinessWallet />
         )}
         {activeTab === 'transactions' && (
-          <>
-            <BusinessTransactions
-              expenses={dashboardExpenses}
-              onAddClick={() => {
-                const btn = document.querySelector<HTMLButtonElement>('[data-business-add-expense-trigger] button');
-                btn?.click();
-              }}
-              onEditExpense={handleEditExpense}
-              onDeleteExpense={deleteExpense}
-              onImportCSV={importFromCSV}
-              findDuplicates={findDuplicates}
-              existingExpenses={allExpenses}
-            />
-            <div data-business-add-expense-trigger className="hidden">
-              <AddExpenseDialog onAdd={addExpense} />
-            </div>
-          </>
+          <BusinessTransactions
+            expenses={dashboardExpenses}
+            onAddClick={() => setAddExpenseOpen(true)}
+            onEditExpense={handleEditExpense}
+            onDeleteExpense={deleteExpense}
+            onImportCSV={importFromCSV}
+            findDuplicates={findDuplicates}
+            existingExpenses={allExpenses}
+          />
         )}
         {activeTab === 'reports' && (
           <BusinessReports
