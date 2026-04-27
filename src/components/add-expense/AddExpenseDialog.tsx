@@ -319,6 +319,16 @@ export const AddExpenseDialog = ({
         ? result.description.trim()
         : (result.merchant?.trim() || result.issuer_name?.trim() || 'Račun');
 
+    // Sync key form fields too so the data survives even if the preview
+    // somehow doesn't render (e.g. dialog state desync).
+    setAmount(String(result.amount ?? ''));
+    setDescription(safeDescription);
+    if (result.merchant) setMerchantName(result.merchant);
+    if (result.category) setCategory(result.category as Category);
+    if (result.date) setExpenseDate(result.date);
+    if (result.payment_source) setPaymentSource(result.payment_source);
+    if (result.payment_source_card_id) setSelectedCardId(result.payment_source_card_id);
+
     setScannedData({
       amount: result.amount,
       merchant: result.merchant,
@@ -342,6 +352,18 @@ export const AddExpenseDialog = ({
       setIsInstallment(true);
       setInstallmentCount(result.installment_count);
       setFirstPaymentDate(result.date || new Date().toISOString().split('T')[0]);
+    }
+    // Force the dialog open in case it got closed during the camera roundtrip
+    if (!open) {
+      console.warn('🔁 Dialog was closed when scan result arrived — re-opening to show preview');
+      setOpen(true);
+      try {
+        logDiagnostic({
+          event: 'receipt_scan_dialog_reopened',
+          severity: 'warning',
+          details: { amount: result.amount },
+        });
+      } catch {}
     }
     setShowScannedPreview(true);
     try {
