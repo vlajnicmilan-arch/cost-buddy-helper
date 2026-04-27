@@ -8,6 +8,7 @@ import { Project, ProjectWithOwnership } from '@/types/project';
 import { ProjectCard } from './ProjectCard';
 import { ProjectDialog } from './ProjectDialog';
 import { ProjectFullScreenView } from './ProjectFullScreenView';
+import { ProjectOnboardingHint, type QuickStartSuggestion } from './ProjectOnboardingHint';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -37,6 +38,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [dialogPreset, setDialogPreset] = useState<{ name?: string; icon?: string; color?: string; description?: string; totalBudget?: number } | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -46,6 +48,24 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [migrateConfirmOpen, setMigrateConfirmOpen] = useState(false);
   const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+
+  const handlePickQuickStart = (s: QuickStartSuggestion) => {
+    setEditingProject(null);
+    setDialogPreset({
+      name: s.name,
+      icon: s.emoji,
+      color: s.color,
+      description: s.description,
+      totalBudget: s.defaultBudget,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleOpenBlankDialog = () => {
+    setEditingProject(null);
+    setDialogPreset(null);
+    setDialogOpen(true);
+  };
 
   // Handle navigation from notification click
   useEffect(() => {
