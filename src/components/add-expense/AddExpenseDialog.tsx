@@ -55,6 +55,12 @@ interface AddExpenseDialogProps {
   triggerIcon?: ReactNode;
   /** Visual variant of the trigger button. */
   triggerVariant?: 'default' | 'scan';
+  /** Controlled open state — when provided, dialog is controlled by parent. */
+  externalOpen?: boolean;
+  /** Called when the dialog wants to change its open state (controlled mode). */
+  onOpenChange?: (open: boolean) => void;
+  /** When true, hides the built-in trigger button (use with externalOpen). */
+  hideTrigger?: boolean;
 }
 
 interface ScannedData {
