@@ -95,6 +95,9 @@ export const useReceiptScanner = () => {
   ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
+    try {
+      logDiagnostic('receipt_scan_start', { pages: imagesBase64.length });
+    } catch {}
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
