@@ -202,8 +202,6 @@ export interface Expense {
   business_profile_id?: string | null;
   cash_register_id?: string | null;
   currency?: string | null;
-  vat_rate?: number | null;
-  vat_amount?: number | null;
   created_at?: string;
   updated_at?: string;
   import_batch_id?: string | null;

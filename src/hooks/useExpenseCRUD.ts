@@ -126,8 +126,6 @@ export const useExpenseCRUD = ({
             business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
             
             currency: (normalizedExpense as any).currency || null,
-            vat_rate: (normalizedExpense as any).vat_rate ?? null,
-            vat_amount: (normalizedExpense as any).vat_amount ?? null,
           })
           .select()
           .single();
