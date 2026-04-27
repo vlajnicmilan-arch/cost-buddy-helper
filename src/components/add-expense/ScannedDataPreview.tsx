@@ -87,9 +87,11 @@ export const ScannedDataPreview = ({
     if (custom) return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color };
     return getCategoryInfo(scannedData.category);
   })();
+  const invalidTip = totalWithTip ? parseFloat(totalWithTip) < scannedData.amount : false;
 
   return (
-    <div className="space-y-4 pb-4">
+    <div className="h-full flex flex-col min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pb-4">
       <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-primary flex items-center gap-2">
@@ -291,7 +293,7 @@ export const ScannedDataPreview = ({
                 </span>
               </div>
             )}
-            {totalWithTip && parseFloat(totalWithTip) < scannedData.amount && (
+            {invalidTip && (
               <p className="text-xs text-destructive">Iznos ne može biti manji od iznosa s računa</p>
             )}
           </div>
@@ -532,7 +534,9 @@ export const ScannedDataPreview = ({
         </div>
       </div>
       
-      <div className="flex gap-2">
+      </div>
+
+      <div className="flex-shrink-0 flex gap-2 pt-3 border-t border-border/50 bg-background">
         <Button
           type="button"
           variant="outline"
@@ -544,12 +548,12 @@ export const ScannedDataPreview = ({
         </Button>
         <Button
           type="button"
-          className="flex-1 gap-2 rounded-xl bg-primary"
+          className="flex-1 gap-2 rounded-xl bg-primary h-12"
           onClick={onAccept}
-          disabled={isSaving}
+          disabled={isSaving || invalidTip}
         >
           <Check className="w-4 h-4" />
-          {t('scanner.accept')}
+          {isSaving ? t('common.saving') : t('scanner.accept')}
         </Button>
       </div>
     </div>
