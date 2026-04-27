@@ -17,6 +17,8 @@ import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { BottomNav } from '@/components/BottomNav';
+import { ActiveProjectsStrip } from '@/components/home/ActiveProjectsStrip';
+import { ProjectWithOwnership } from '@/types/project';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { Smartphone, ArrowRight, ChevronDown } from 'lucide-react';
@@ -64,6 +66,8 @@ interface PersonalModeViewProps {
   budgetsCount: number;
   budgetsForAssistant: any[];
   projectsForAssistant: any[];
+  projects: ProjectWithOwnership[];
+  isBusinessMode: boolean;
   businessProfileName?: string;
   // Recurring
   activeRecurringCount: number;
@@ -205,6 +209,16 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         <PaymentSourcesSection
           customPaymentSources={props.customPaymentSources}
           onSourceClick={props.onPaymentSourceClick}
+        />
+
+        {/* Active Projects Strip — primary feature highlight */}
+        <ActiveProjectsStrip
+          projects={props.projects}
+          allExpenses={props.allExpenses}
+          isLocalMode={props.isLocalMode}
+          simpleModeEnabled={props.simpleModeEnabled}
+          isBusinessMode={props.isBusinessMode}
+          loading={props.expensesLoading}
         />
 
         {/* Summary Cards */}
