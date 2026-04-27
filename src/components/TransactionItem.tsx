@@ -183,6 +183,12 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
           "group flex items-center gap-2 py-2.5 px-2 rounded-lg bg-background hover:bg-muted/50 transition-colors touch-pan-y",
           onClick && "cursor-pointer"
         )}
+        style={{
+          x,
+          opacity: itemOpacity,
+          // Phase 3: project color-coding — subtle 3px left accent stripe
+          borderLeft: projectInfo?.color ? `3px solid ${projectInfo.color}` : undefined,
+        } as any}
       >
         {/* Category Icon */}
         <div
