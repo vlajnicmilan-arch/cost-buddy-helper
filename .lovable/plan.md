@@ -1,49 +1,34 @@
-## Problem
+## Provjera grešaka iz Pulse-a
 
-Na kartici Novčanika ("Kredit Vinka") iznos je prikazan u boji koju je korisnik odabrao za izvor plaćanja (crna). Pošto je tema aplikacije tamna (slate-900), iznos se gotovo gubi na pozadini i jedva je čitljiv.
+Provjerio sam `app_diagnostics_logs` tablicu (klijentske greške) i pronašao 2 stvarna problema:
 
-Trenutno se boja iznosa postavlja iz `source.color` bez ikakve pozadinske zaštite:
+### ✅ 1. "Rendered more hooks than during the previous render" — VEĆ POPRAVLJENO
+Greška je iz `ActiveProjectsStrip.tsx:65` od prije 35 min. Pregledom trenutnog koda vidim da su svi hooks već ispravno pozvani **prije** bilo kakvog `return null` (komentar na liniji 78 to potvrđuje). Ovo je popravljeno u prethodnom turn-u, samo su logovi stari.
 
-```tsx
-<span style={{ color: source.balance >= 0 ? source.color : undefined }}>
-  {formatAmount(source.balance)}
-</span>
-```
+### 🔧 2. "Haptics.then() is not implemented on android" — TREBA POPRAVITI
+Pojavljuje se mnogo puta na `/wallet`, `/home`, `/projects`. Uzrok: Android build aplikacije nema registriran `@capacitor/haptics` plugin u nativnom bridge-u, pa Capacitor proxy detektira `.then` access (jer je Promise thenable) i baca grešku **prilikom poziva metode** (`h.impact(...)`), ne prilikom `import()`. Trenutni `safeCall` u `useHaptics.ts` štiti samo poziv metode, ali greška se može propagirati i kroz import/inicijalizaciju enuma.
 
 ## Rješenje
 
-Dodati polu-prozirnu pozadinsku "pločicu" (chip/badge) iza iznosa na svakoj kartici Novčanika. Pločica je dovoljno svijetla da iznos bude čitljiv i kad je boja teksta jednaka pozadini, ali dovoljno prozirna da se vidi gradient pozadine kartice.
+**Datoteka:** `src/hooks/useHaptics.ts`
 
-### Vizualni prikaz
+Refaktor koji:
 
-```text
-┌─────────────────────────────┐
-│ 🪙  Kredit Vinka            │
-│                             │
-│  ┌──────────────────┐       │   ← polu-prozirna ploča
-│  │ 30.000,00 €      │       │     (bg: foreground/8%)
-│  └──────────────────┘       │
-└─────────────────────────────┘
-```
+1. **Sav async kod (uključujući `getHaptics()` i import enuma) zamota u jedan `safeRun` wrapper** — trenutni kod ima `getHaptics()` van `safeCall`-a, pa greške iz inicijalizacije nisu uhvaćene.
 
-## Tehničke promjene
+2. **Cache-aju se i `ImpactStyle` i `NotificationType` enumi** pri prvom uspješnom importu, pa se izbjegava ponovno dinamičko importanje pri svakom pozivu.
 
-**Datoteka:** `src/components/home/PaymentSourcesSection.tsx`
+3. **Dodaje se `'Haptics.then'` u `isPluginUnavailableError`** — kad detektira tu specifičnu poruku, trajno gasi haptics za cijelu sesiju (`hapticsAvailable = false`), pa se greška ne ponavlja na svakom tap-u.
 
-- Element `<p>` koji prikazuje `formatAmount(source.balance)` (linije 126-133) zamotati u `inline-block` kontejner s:
-  - `bg-foreground/[0.06]` (vrlo suptilno svijetla pozadina u dark mode, suptilno tamna u light mode — automatski se prilagođava temi)
-  - `backdrop-blur-sm` da se pozadina kartice nazire kroz pločicu
-  - `px-2 py-1 rounded-md` za udobno padding/zaobljenje
-  - Suptilna `border border-foreground/5` za bolju definiciju ruba
+4. **Sve greške ostaju tihe** (haptics su non-critical) — ne logiraju se više u `unhandled_rejection` jer su uhvaćene unutar try/catch.
 
-- Tako iznos **uvijek** ima minimalni kontrast prema pozadini, neovisno o tome koju boju je korisnik odabrao za izvor (čak i čista crna ili boja blizu `slate-900`).
+### Što se ne mijenja
 
-- Promjena se odnosi samo na "expanded" pločice ispod glavnog "Financije" trigger-a — glavni totalBalance ostaje nepromijenjen jer koristi `text-primary` (teal) koji uvijek ima dobar kontrast.
+- Javni API ostaje isti: `useHaptics()` vraća `{ lightTap, mediumTap, successVibration, errorVibration }`
+- Sve postojeće komponente (`BottomNav`, `LockScreen`, `SetPinDialog`, `TransactionItem`, `TransferTransactionItem`, `AddExpenseDialog`, `ActiveProjectsStrip`) rade bez izmjena
+- Web fallback (na browseru) ostaje no-op
+- Na Androidu/iOS gdje plugin radi — vibracije i dalje rade normalno
 
-## Što ostaje isto
+## Rezultat
 
-- Odabrana boja izvora plaćanja (`source.color`) i dalje boji tekst iznosa
-- Lijevi border, ikona, naziv, gradient pozadina kartice — sve ostaje kako je
-- Konverzija valuta i prikaz broja kartica nepromijenjeni
-
-Nakon implementacije svi iznosi će biti čitljivi bez obzira na odabranu boju izvora.
+Nakon promjene, `unhandled_rejection` greške s porukom `"Haptics.then() is not implemented on android"` neće se više pojavljivati u Pulse-u jer će biti tiho uhvaćene i plugin će se trajno disable-ati za sesiju nakon prve takve greške.
