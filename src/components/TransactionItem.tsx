@@ -327,7 +327,13 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
             {projectInfo && (
               <>
                 <span className="text-muted-foreground/40">•</span>
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-accent-foreground truncate max-w-[70px]">
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[70px] px-1 rounded"
+                  style={{
+                    color: projectInfo.color || undefined,
+                    backgroundColor: projectInfo.color ? `${projectInfo.color}15` : undefined,
+                  }}
+                >
                   <span className="text-[9px]">{projectInfo.icon || '📁'}</span>
                   {projectInfo.name}
                 </span>
