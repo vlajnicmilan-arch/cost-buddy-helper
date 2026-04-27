@@ -113,8 +113,7 @@ interface BusinessModeViewProps {
 export const BusinessModeView = (props: BusinessModeViewProps) => {
   const { t } = useTranslation();
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
-  const [businessAddOpen, setBusinessAddOpen] = useState(false);
-  const [businessScanOpen, setBusinessScanOpen] = useState(false);
+
 
   const {
     businessTab,
