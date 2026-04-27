@@ -35,7 +35,7 @@ const Business = () => {
   const navigate = useNavigate();
   const { activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
   const { user } = useAuth();
-  const { expenses: dashboardExpenses, allExpenses, loading, addExpense, updateExpense, deleteExpense, importFromCSV, findDuplicates } = useExpenses();
+  const { expenses: dashboardExpenses, allExpenses, loading, addExpense, updateExpense, deleteExpense, importFromCSV, findDuplicates, checkDuplicate } = useExpenses();
   const { totalReceivable, totalPayable } = useBusinessDebts();
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canAccessBusiness = hasAccess('business_module');
@@ -134,6 +134,7 @@ const Business = () => {
             addAction={
               <AddExpenseDialog
                 onAdd={addExpense}
+                checkDuplicate={checkDuplicate}
                 triggerLabel={t('business.transactions.new', 'Novo')}
                 triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none"
               />
@@ -141,6 +142,7 @@ const Business = () => {
             scanAction={
               <AddExpenseDialog
                 onAdd={addExpense}
+                checkDuplicate={checkDuplicate}
                 autoScan
                 triggerVariant="scan"
                 triggerLabel={t('common.scan', 'Skeniraj')}
