@@ -136,6 +136,7 @@ const Business = () => {
               <AddExpenseDialog
                 onAdd={addExpense}
                 checkDuplicate={checkDuplicate}
+                businessProfileId={activeBusinessProfileId}
                 triggerIcon={<Plus className="w-3.5 h-3.5" />}
                 triggerLabel={t('business.transactions.new', 'Novo')}
                 triggerClassName="h-9 gap-1 px-3 text-sm"
@@ -145,6 +146,7 @@ const Business = () => {
               <AddExpenseDialog
                 onAdd={addExpense}
                 checkDuplicate={checkDuplicate}
+                businessProfileId={activeBusinessProfileId}
                 autoScan
                 triggerVariant="scan"
                 triggerIcon={<ScanLine className="w-3.5 h-3.5" />}
