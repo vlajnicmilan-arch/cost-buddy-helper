@@ -177,18 +177,17 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         animate={controls}
-        style={{ x, opacity: itemOpacity }}
-        onClick={handleClick}
-        className={cn(
-          "group flex items-center gap-2 py-2.5 px-2 rounded-lg bg-background hover:bg-muted/50 transition-colors touch-pan-y",
-          onClick && "cursor-pointer"
-        )}
         style={{
           x,
           opacity: itemOpacity,
           // Phase 3: project color-coding — subtle 3px left accent stripe
           borderLeft: projectInfo?.color ? `3px solid ${projectInfo.color}` : undefined,
         } as any}
+        onClick={handleClick}
+        className={cn(
+          "group flex items-center gap-2 py-2.5 px-2 rounded-lg bg-background hover:bg-muted/50 transition-colors touch-pan-y",
+          onClick && "cursor-pointer"
+        )}
       >
         {/* Category Icon */}
         <div
