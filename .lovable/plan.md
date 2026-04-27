@@ -1,71 +1,94 @@
-Imaš pravo: pogrešno sam dirao i opisao PDV. Pregled logova sada pokazuje stvarni prekid:
+Razumijem. Krećemo od temelja, bez nagađanja i bez kozmetike.
 
-- `parse-receipt` radi: u 17:15 dva puta je pročitao isti račun, iznos 72.89, trgovac i datum.
-- Dijagnostika ima `receipt_scan_success` i `receipt_scan_preview_shown`.
-- Nema `receipt_scan_accept_attempt`.
-- Nema `expense_insert_attempt`.
-- Nema nove transakcije u `expenses` danas nakon skeniranja.
+Što je sada jasno iz provjere:
+- Kod za kameru postoji: `useNativeCamera` otvara Capacitor kameru i vraća sliku kao base64.
+- Kod za AI analizu postoji: `useReceiptScanner` šalje sliku u backend funkciju `parse-receipt`.
+- AI veza radi: backend logovi pokazuju da AI vraća stvarne podatke računa, npr. 72,89 € i 6,44 € s artiklima.
+- Kod za dijalog nakon skeniranja postoji: `ScannedDataPreview` se prikazuje nakon `applyScannedResult`.
+- Poveznica za popunjavanje podataka postoji djelomično: `applyScannedResult` puni `scannedData`, a kod za spremanje iz `scannedData` postoji.
 
-Znači kvar nije u AI čitanju i nije u bazi; tok staje na preview ekranu, prije pritiska/obrade "Prihvati". Također sam potvrdio da je PDV UI i dalje aktivan i da AI prompt i dalje traži PDV, iako je taj modul izbačen. To treba ukloniti, ne popravljati.
+Zaključak: problem najvjerojatnije nije u AI-u ni u čitanju računa. Temeljni problem je u životnom ciklusu dijaloga i stanju nakon povratka iz kamere, posebno u poslovnom modu. Drugim riječima: rezultat dođe, ali UI/otvoreni dijalog ga ne prikazuje ili se pogrešno resetira.
 
 Plan popravka:
 
-1. Potpuno ukloniti PDV iz skenera i spremanja
-   - Izbaciti `vat_rate` i `vat_amount` iz `Expense` tipa.
-   - Izbaciti `vat_rate` i `vat_amount` iz insert payload-a u `useExpenseCRUD.ts`.
-   - Izbaciti PDV polja iz `ScannedData` i `ParsedReceipt` tipova.
-   - Ukloniti PDV UI blok iz `ScannedDataPreview.tsx`.
-   - Ukloniti PDV logiranje (`has_vat`) iz dijagnostike skenera.
-   - Ukloniti PDV dio iz `parse-receipt` prompta i response-a da AI više ne troši pažnju na modul koji ne postoji.
+1. Napraviti jedan jasan, jedinstven tok skeniranja
+   - Ukloniti dva paralelna načina otvaranja poslovnog skenera gdje god postoje.
+   - Skeniranje u osobnim i poslovnim financijama mora koristiti isti `AddExpenseDialog` i isti `autoScan` tok.
+   - Poslovni gumb neće imati poseban “hack” tok, nego će pozivati isti stabilni mehanizam kao osobni gumb.
 
-2. Popraviti stvarni razlog zašto poslovni sken ne završava spremanjem
-   - U `BusinessModeView.tsx` poslovna kartica "Transakcije" trenutno šalje `onAddClick={() => {}}` i nema `onScanClick`, pa je upravo `/home` poslovni tok nedovršen. To odgovara logovima: korisnik je na `/home`, scan se prikaže, ali nema stabilan poslovni save flow.
-   - Dodati kontrolirana stanja za ručni unos i skeniranje direktno u `BusinessModeView`.
-   - Montirati stabilne `AddExpenseDialog` instance u `BusinessModeView`, isto kao što je napravljeno u zasebnoj `/business` stranici:
+2. Dodati eksplicitna stanja skenera u dijalog
+   - Umjesto da se oslanjamo samo na `scanning`, `showScannedPreview` i nekoliko boolean varijabli, uvesti jasan flow:
 
 ```text
-BusinessModeView /home
-  Transakcije -> Novo      -> otvara AddExpenseDialog
-  Transakcije -> Skeniraj  -> otvara AddExpenseDialog autoScan
-  Preview -> Prihvati      -> onAddExpense -> useExpenseCRUD -> expenses insert
+idle -> camera_opening -> image_received -> ai_analyzing -> preview_ready -> saving -> done
+                                      \-> error
 ```
 
-   - Proslijediti `checkDuplicate` u te dialoge kako ponašanje ostane konzistentno.
+   - Svaka faza će imati vidljiv status korisniku.
+   - Ako AI vrati rezultat, dijalog se ne smije zatvoriti dok korisnik ne vidi pregled i ne odluči što dalje.
 
-3. Učiniti prihvat skena dokazivim i robusnim
-   - U `acceptScannedData` zadržati logove za `receipt_scan_accept_attempt`, ali bez PDV-a.
-   - Dodati log `receipt_scan_accept_success` nakon uspješnog `executeAdd`.
-   - Dodati log `receipt_scan_accept_error` ako save padne, s porukom greške.
-   - Ako poslovni mod blokira spremanje zbog obaveznih polja, poruka ostaje jasna: fali trgovac/partner ili datum.
+3. Spriječiti resetiranje rezultata nakon skeniranja
+   - `onOpenChange`, `resetForm`, promjena taba i Android back/popstate više ne smiju obrisati rezultat dok je skeniranje ili pregled u tijeku.
+   - Reset se smije dogoditi samo kada korisnik izričito zatvori/odbije pregled ili nakon uspješnog spremanja.
 
-4. Ukloniti krive hardkodirane tekstove u dirnutim dijelovima
-   - U dijelovima koje mijenjam koristiti postojeći `t()` pristup ili dodati ključeve za HR/EN/DE gdje ih nema.
-   - Posebno u `ScannedDataPreview.tsx` ne dodavati nove hardkodirane UI tekstove.
+4. Popraviti popunjavanje podataka iz AI rezultata
+   - Kad AI vrati rezultat, odmah sinkronizirati ključna polja forme:
+     - iznos
+     - opis
+     - trgovac/partner
+     - datum
+     - kategorija
+     - izvor plaćanja/kartica
+     - artikli
+   - Time pregled i forma više neće ovisiti o odvojenim podacima koji mogu otići izvan sinkronizacije.
 
-5. Popraviti Pulse/dijagnostiku da ne izgleda katastrofično zbog warninga
-   - Trenutno u zadnja 4 sata postoji samo jedan `performance_metric` warning, nema critical/error zapisa za scanner.
-   - Pulse status treba ostati "OK" kad postoje samo performance warningi, a ne prikazivati katastrofu.
-   - U `PulseStatusBar` i/ili `usePulseMetrics` odvojiti "kritično/greške" od "upozorenja" jasnije, tako da spor page load ne izgleda kao crash.
+5. Dodati vidljive greške i dijagnostiku bez skrivanja problema
+   - Ako kamera vrati null, korisnik dobiva jasnu poruku.
+   - Ako AI ne vrati JSON, prikazuje se stvarna korisna poruka.
+   - Ako rezultat dođe, ali preview nije prikazan, to će se logirati kao posebna greška.
+   - Dodati logove za:
+     - kamera otvorena
+     - slika primljena
+     - AI pozvan
+     - AI rezultat primljen
+     - preview prikazan
+     - spremanje pokušano
+     - spremanje uspješno/neuspješno
 
-6. Popraviti trenutni console warning koji nije scanner, ali zagađuje dijagnostiku
-   - Console pokazuje: `Function components cannot be given refs` u `BusinessModuleSettings` na `Badge`.
-   - Uzrok je korištenje `Badge` unutar `Switch`/Radix ref okruženja bez `forwardRef` kompatibilnosti.
-   - Popraviti tako da se u tom mjestu ne koristi `Badge` komponenta koja dobiva ref, nego običan `span` stiliziran badge-om ili forwardRef kompatibilan wrapper.
+6. U poslovnom modu vezati skeniranu transakciju uz aktivnu firmu
+   - Provjeriti da `activeBusinessProfileId` postoji prije spremanja.
+   - Ako ga nema, prikazati jasnu grešku umjesto tihog neuspjeha.
+   - Osigurati da spremljena poslovna transakcija dobije `business_profile_id`.
 
-7. Validacija nakon izmjena
-   - Pokrenuti TypeScript provjeru.
-   - Provjeriti kroz logički tok da na `/home` poslovni tab "Transakcije" ima stvarno povezane gumbe "Novo" i "Skeniraj".
-   - Očekivani dijagnostički trag nakon sljedećeg skena:
+7. Testirati stvarni lanac, ne samo TypeScript
+   - Provjeriti da build/TypeScript prolazi.
+   - Provjeriti backend funkciju `parse-receipt` kroz test poziv gdje je moguće.
+   - Provjeriti dijagnostičke zapise nakon pokušaja skeniranja.
+   - U završnom odgovoru navesti točno što je potvrđeno: kamera, AI, preview, spremanje.
+
+Datoteke koje ću dirati nakon odobrenja:
+- `src/components/add-expense/AddExpenseDialog.tsx`
+- `src/hooks/useReceiptScanner.ts`
+- `src/hooks/useNativeCamera.ts` samo ako treba dodati dijagnostiku/bolju grešku
+- `src/components/home/BusinessModeView.tsx`
+- `src/pages/Business.tsx`
+- po potrebi i18n prijevodi u `src/i18n/locales/hr.json`, `en.json`, `de.json`
+
+Neću dirati:
+- `src/integrations/supabase/client.ts`
+- `src/integrations/supabase/types.ts`
+- `.env`
+
+Cilj ove izmjene nije “još jedan pokušaj”, nego uklanjanje nejasnog toka i postavljanje jednog provjerljivog lanca:
 
 ```text
-receipt_scan_start
-receipt_scan_success
-receipt_scan_preview_shown
-receipt_scan_accept_attempt
-expense_insert_attempt
-receipt_scan_accept_success
+Gumb Skeniraj
+  -> Kamera
+  -> Slika
+  -> AI analiza
+  -> Pregled rezultata u dijalogu
+  -> Popunjeni podaci
+  -> Spremanje poslovne transakcije
 ```
 
-   - Očekivano u bazi: novi red u `expenses` s `business_profile_id`, `amount`, `merchant_name`, `description`, `ai_extracted=true`, bez PDV polja iz aplikacijskog toka.
-
-Neću više tvrditi da je riješeno samo zato što TypeScript prolazi. Ovdje je konkretan dokaz gdje staje i popravak ide baš na taj prekid.
+Nakon odobrenja idem direktno na ovu temeljnu stabilizaciju.
