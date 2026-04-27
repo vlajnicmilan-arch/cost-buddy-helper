@@ -8,6 +8,7 @@ import { Project, ProjectWithOwnership } from '@/types/project';
 import { ProjectCard } from './ProjectCard';
 import { ProjectDialog } from './ProjectDialog';
 import { ProjectFullScreenView } from './ProjectFullScreenView';
+import { ProjectOnboardingHint, type QuickStartSuggestion } from './ProjectOnboardingHint';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -37,6 +38,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [dialogPreset, setDialogPreset] = useState<{ name?: string; icon?: string; color?: string; description?: string; totalBudget?: number } | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -46,6 +48,24 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
   const [migrateConfirmOpen, setMigrateConfirmOpen] = useState(false);
   const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+
+  const handlePickQuickStart = (s: QuickStartSuggestion) => {
+    setEditingProject(null);
+    setDialogPreset({
+      name: s.name,
+      icon: s.emoji,
+      color: s.color,
+      description: s.description,
+      totalBudget: s.defaultBudget,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleOpenBlankDialog = () => {
+    setEditingProject(null);
+    setDialogPreset(null);
+    setDialogOpen(true);
+  };
 
   // Handle navigation from notification click
   useEffect(() => {
@@ -231,7 +251,7 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
               {showArchived ? t('projects.showActive', 'Aktivni') : t('projects.showArchived', `Arhiva (${archivedCount})`)}
             </Button>
           )}
-          <Button onClick={() => { setEditingProject(null); setDialogOpen(true); }} size="sm">
+          <Button onClick={handleOpenBlankDialog} size="sm">
             <Plus className="w-4 h-4 mr-2" />
             {t('projects.add')}
           </Button>
@@ -260,12 +280,17 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
       )}
 
       {visibleProjects.length === 0 ? (
-        <EmptyState
-          variant="projects"
-          title={showArchived ? t('projects.noArchived', 'Nema arhiviranih projekata') : t('projects.noProjects')}
-          description={showArchived ? '' : t('projects.noProjectsHint')}
-          action={showArchived ? undefined : { label: t('projects.add'), onClick: () => { setEditingProject(null); setDialogOpen(true); } }}
-        />
+        <>
+          {!showArchived && (
+            <ProjectOnboardingHint onPickSuggestion={handlePickQuickStart} />
+          )}
+          <EmptyState
+            variant="projects"
+            title={showArchived ? t('projects.noArchived', 'Nema arhiviranih projekata') : t('projects.noProjects')}
+            description={showArchived ? '' : t('projects.noProjectsHint')}
+            action={showArchived ? undefined : { label: t('projects.add'), onClick: handleOpenBlankDialog }}
+          />
+        </>
       ) : (
         <AnimatePresence mode="popLayout">
           <div className="space-y-3">
@@ -302,8 +327,12 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
       {/* Create/Edit Dialog */}
       <ProjectDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setDialogPreset(null);
+        }}
         project={editingProject}
+        preset={dialogPreset}
         onSave={handleSave}
         onUpdate={handleUpdate}
       />
