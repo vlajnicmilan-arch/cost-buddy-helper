@@ -619,7 +619,12 @@
     "createFirstProject": "Create first project",
     "newProject": "New project",
     "projectProgress": "{{percent}}% used",
-    "noActiveProjects": "No active projects"
+    "noActiveProjects": "No active projects",
+    "profit": "Profit",
+    "loss": "Loss",
+    "remaining": "Remaining",
+    "overBudget": "Over budget",
+    "items": "{{count}} items"
   },
   "validation": {
     "dateOutOfRange": "Date is outside the allowed range",
