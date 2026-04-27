@@ -20,6 +20,7 @@ import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { BottomNav } from '@/components/BottomNav';
 import { PageHeader } from '@/components/PageHeader';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 interface BusinessProfile {
   id: string;
@@ -30,6 +31,7 @@ interface BusinessProfile {
 }
 
 const Business = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { activeBusinessProfileId, setActiveBusinessProfileId } = useAppState();
   const { user } = useAuth();
@@ -40,8 +42,6 @@ const Business = () => {
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
-  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
-  const [scanExpenseOpen, setScanExpenseOpen] = useState(false);
 
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
@@ -130,8 +130,23 @@ const Business = () => {
         {activeTab === 'transactions' && (
           <BusinessTransactions
             expenses={dashboardExpenses}
-            onAddClick={() => setAddExpenseOpen(true)}
-            onScanClick={() => setScanExpenseOpen(true)}
+            onAddClick={() => {}}
+            addAction={
+              <AddExpenseDialog
+                onAdd={addExpense}
+                triggerLabel={t('business.transactions.new', 'Novo')}
+                triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none"
+              />
+            }
+            scanAction={
+              <AddExpenseDialog
+                onAdd={addExpense}
+                autoScan
+                triggerVariant="scan"
+                triggerLabel={t('common.scan', 'Skeniraj')}
+                triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none border border-primary/30 bg-background text-primary hover:bg-primary/10"
+              />
+            }
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
             onImportCSV={importFromCSV}
@@ -149,24 +164,6 @@ const Business = () => {
           <BusinessMore expenses={dashboardExpenses} />
         )}
       </div>
-
-      {/* Stable, always-mounted AddExpenseDialog — survives tab changes and
-          camera lifecycle events so scanning never loses its host. */}
-      <AddExpenseDialog
-        onAdd={addExpense}
-        externalOpen={addExpenseOpen}
-        onOpenChange={setAddExpenseOpen}
-        hideTrigger
-      />
-
-      {/* Auto-scan flow: opens dialog and immediately launches camera/gallery. */}
-      <AddExpenseDialog
-        onAdd={addExpense}
-        externalOpen={scanExpenseOpen}
-        onOpenChange={setScanExpenseOpen}
-        autoScan
-        hideTrigger
-      />
 
       <BusinessBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
