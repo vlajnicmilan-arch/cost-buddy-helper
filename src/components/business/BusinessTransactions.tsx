@@ -64,6 +64,12 @@ export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, onEdit
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('business.transactions.search', 'Pretraži...')} className="pl-8 h-9 text-sm" />
         </div>
+        {onScanClick && (
+          <Button size="sm" variant="outline" className="h-9 gap-1 border-primary/30 text-primary" onClick={onScanClick}>
+            <ScanLine className="w-3.5 h-3.5" />
+            {t('common.scan', 'Skeniraj')}
+          </Button>
+        )}
         <Button size="sm" className="h-9 gap-1" onClick={onAddClick}>
           <Plus className="w-3.5 h-3.5" />
           {t('business.transactions.new', 'Novo')}
