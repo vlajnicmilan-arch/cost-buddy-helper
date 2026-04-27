@@ -31,6 +31,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useInAppReview } from '@/hooks/useInAppReview';
 import { useLocation } from '@/hooks/useLocation';
 import { useBackButton } from '@/hooks/useBackButton';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
