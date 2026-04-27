@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { useTranslation } from 'react-i18next';
 import { APP_VERSION } from '@/lib/version';
 import {
   fetchLatestVersion,
@@ -69,15 +70,17 @@ export const checkForNativeUpdates = async () => {
 };
 
 export const NativeUpdateInitializer = () => {
+  const { t } = useTranslation();
+
   useEffect(() => {
     const checker = initializeNativeUpdateChecker();
     const silentCheck = async () => {
       const result = await fetchLatestVersion();
       if (result.version && isRemoteVersionNewer(APP_VERSION, result.version)) {
         toast.info(
-          `Nova web verzija ${result.version} dostupna! (Trenutna: ${APP_VERSION})`,
+          t('update.available'),
           {
-            action: { label: 'Osvježi', onClick: () => window.location.reload() },
+            action: { label: t('update.updateNow'), onClick: () => window.location.reload() },
             duration: 10000,
           }
         );
@@ -101,7 +104,7 @@ export const NativeUpdateInitializer = () => {
         checkForUpdatesRef = null;
       }
     };
-  }, []);
+  }, [t]);
 
   return null;
 };
