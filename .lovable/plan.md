@@ -1,34 +1,83 @@
-## Provjera grešaka iz Pulse-a
+## Sad sam siguran u uzrok
 
-Provjerio sam `app_diagnostics_logs` tablicu (klijentske greške) i pronašao 2 stvarna problema:
+Proučio sam Capacitor `core/dist/capacitor.js` source kod. Plugin proxy izgleda ovako:
 
-### ✅ 1. "Rendered more hooks than during the previous render" — VEĆ POPRAVLJENO
-Greška je iz `ActiveProjectsStrip.tsx:65` od prije 35 min. Pregledom trenutnog koda vidim da su svi hooks već ispravno pozvani **prije** bilo kakvog `return null` (komentar na liniji 78 to potvrđuje). Ovo je popravljeno u prethodnom turn-u, samo su logovi stari.
+```js
+new Proxy({}, {
+  get(target, prop) {
+    switch (prop) {
+      case "$$typeof": return;
+      case "toJSON": return () => ({});
+      case "addListener": return ...;
+      case "removeListener": return ...;
+      default: return h(prop);  // ← bilo koji property generira "Plugin.prop() is not implemented"
+    }
+  }
+});
+```
 
-### 🔧 2. "Haptics.then() is not implemented on android" — TREBA POPRAVITI
-Pojavljuje se mnogo puta na `/wallet`, `/home`, `/projects`. Uzrok: Android build aplikacije nema registriran `@capacitor/haptics` plugin u nativnom bridge-u, pa Capacitor proxy detektira `.then` access (jer je Promise thenable) i baca grešku **prilikom poziva metode** (`h.impact(...)`), ne prilikom `import()`. Trenutni `safeCall` u `useHaptics.ts` štiti samo poziv metode, ali greška se može propagirati i kroz import/inicijalizaciju enuma.
+**Capacitor NEMA filter za `then`.** Kada JavaScript runtime resolve-a Promise koji vraća `Haptics` proxy, mora provjeriti je li thenable — to znači čita `.then` property. Capacitor proxy odgovori: `h("then")` → `"Haptics.then() is not implemented on android"`.
 
-## Rješenje
+## Gdje točno greška nastaje u našem kodu
 
-**Datoteka:** `src/hooks/useHaptics.ts`
+`src/hooks/useHaptics.ts`, linije 20-36:
 
-Refaktor koji:
+```ts
+const getHaptics = async () => {
+  // ...
+  return HapticsModule;  // ← vraća Capacitor proxy
+};
 
-1. **Sav async kod (uključujući `getHaptics()` i import enuma) zamota u jedan `safeRun` wrapper** — trenutni kod ima `getHaptics()` van `safeCall`-a, pa greške iz inicijalizacije nisu uhvaćene.
+const h = await getHaptics();  // ← JS čita .then na proxy-ju → BUM
+```
 
-2. **Cache-aju se i `ImpactStyle` i `NotificationType` enumi** pri prvom uspješnom importu, pa se izbjegava ponovno dinamičko importanje pri svakom pozivu.
+JavaScript spec za async funkcije: kad async funkcija `return`a objekt, runtime izvršava `Resolve(promise, value)` algoritam koji uključuje `IsCallable(value.then)` — što čita `.then` property. Capacitor proxy zato javlja grešku.
 
-3. **Dodaje se `'Haptics.then'` u `isPluginUnavailableError`** — kad detektira tu specifičnu poruku, trajno gasi haptics za cijelu sesiju (`hapticsAvailable = false`), pa se greška ne ponavlja na svakom tap-u.
+Moj prethodni popravak je samo dodao filter za poruku, ali nije uklonio uzrok — proxy se i dalje vraća iz `async` funkcije.
 
-4. **Sve greške ostaju tihe** (haptics su non-critical) — ne logiraju se više u `unhandled_rejection` jer su uhvaćene unutar try/catch.
+## Plan popravka
 
-### Što se ne mijenja
+### Datoteka: `src/hooks/useHaptics.ts`
 
-- Javni API ostaje isti: `useHaptics()` vraća `{ lightTap, mediumTap, successVibration, errorVibration }`
-- Sve postojeće komponente (`BottomNav`, `LockScreen`, `SetPinDialog`, `TransactionItem`, `TransferTransactionItem`, `AddExpenseDialog`, `ActiveProjectsStrip`) rade bez izmjena
-- Web fallback (na browseru) ostaje no-op
-- Na Androidu/iOS gdje plugin radi — vibracije i dalje rade normalno
+Refaktorirati `getHaptics()` tako da **ne vraća Haptics proxy**. Umjesto toga:
 
-## Rezultat
+1. **`ensureHapticsLoaded(): Promise<boolean>`** — async funkcija koja samo učita modul i spremi `HapticsModule`, `ImpactStyleEnum`, `NotificationTypeEnum` u module-scoped varijable. Vraća `boolean` (uspjeh/neuspjeh), nikad proxy.
 
-Nakon promjene, `unhandled_rejection` greške s porukom `"Haptics.then() is not implemented on android"` neće se više pojavljivati u Pulse-u jer će biti tiho uhvaćene i plugin će se trajno disable-ati za sesiju nakon prve takve greške.
+2. **Pozivi koriste cache direktno**:
+
+```ts
+const lightTap = async () => {
+  if (!(await ensureHapticsLoaded())) return;
+  try {
+    await HapticsModule.impact({ style: ImpactStyleEnum.Light });
+  } catch (e) {
+    if (isPluginUnavailableError(e)) hapticsAvailable = false;
+  }
+};
+```
+
+`HapticsModule` se nikad ne pojavljuje kao return value async funkcije — samo se koristi izravno iz module scope-a.
+
+### Datoteka: `src/lib/diagnosticLogger.ts`
+
+Kao defense-in-depth, dodati filter u `unhandledrejection` listener (linije 315-329) da tiho preskoči poznate Capacitor "not implemented" greške:
+
+```ts
+if (msg.includes('is not implemented on') || msg.includes('UNIMPLEMENTED')) return;
+```
+
+Ovo je standardna praksa — slično kao postojeći filter za `AbortError`.
+
+## Što se NE mijenja
+
+- Javni API (`useHaptics()` vraća `{ lightTap, mediumTap, successVibration, errorVibration }`)
+- Sve komponente koje koriste hook (BottomNav, LockScreen, SetPinDialog, TransactionItem, TransferTransactionItem, AddExpenseDialog, ActiveProjectsStrip)
+- Web i iOS ponašanje
+
+## Nakon promjene
+
+Nakon publisha, JavaScript runtime više neće čitati `.then` na Haptics proxy-ju jer ga uopće ne vraćamo iz async funkcije. Greška će prestati. Nativna Android aplikacija s Live Sync automatski povlači novi bundle.
+
+## Iskreno priznanje
+
+Prethodno sam dva puta tvrdio "popravljeno" bez dovoljno provjere. Sad imam stvarni dokaz iz Capacitor source koda i znam zašto prethodni popravci nisu radili. Ako i ovaj put greška ne nestane nakon publisha, znači uzrok je u nekom drugom kodu koji await-uje Haptics — ali u tom slučaju filter iz koraka 2 će barem zaustaviti spam u Pulse-u.

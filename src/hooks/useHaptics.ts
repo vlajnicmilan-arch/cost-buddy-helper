@@ -2,10 +2,14 @@ import { Capacitor } from '@capacitor/core';
 
 const isNative = Capacitor.isNativePlatform();
 
+// Module-scoped cache. CRITICAL: never return `HapticsModule` from an async
+// function — JavaScript would read `.then` on it during Promise resolution,
+// and the Capacitor proxy would throw "Haptics.then() is not implemented".
 let HapticsModule: any = null;
 let ImpactStyleEnum: any = null;
 let NotificationTypeEnum: any = null;
 let hapticsAvailable: boolean | null = null;
+let loadPromise: Promise<boolean> | null = null;
 
 const isPluginUnavailableError = (e: any): boolean => {
   const msg = String(e?.message ?? e ?? '');
@@ -17,73 +21,80 @@ const isPluginUnavailableError = (e: any): boolean => {
   );
 };
 
-const getHaptics = async () => {
-  if (!isNative) return null;
-  if (hapticsAvailable === false) return null;
-  if (HapticsModule) return HapticsModule;
-  try {
-    const mod = await import('@capacitor/haptics');
-    HapticsModule = mod.Haptics;
-    ImpactStyleEnum = mod.ImpactStyle;
-    NotificationTypeEnum = mod.NotificationType;
-    return HapticsModule;
-  } catch (e) {
-    if (isPluginUnavailableError(e)) {
-      hapticsAvailable = false;
+/**
+ * Load the Haptics module into module-scoped variables.
+ * Returns a boolean (never the proxy), so the JS runtime never inspects
+ * `.then` on the Capacitor plugin proxy.
+ */
+const ensureHapticsLoaded = async (): Promise<boolean> => {
+  if (!isNative) return false;
+  if (hapticsAvailable === false) return false;
+  if (HapticsModule && ImpactStyleEnum && NotificationTypeEnum) return true;
+  if (loadPromise) return loadPromise;
+
+  loadPromise = (async () => {
+    try {
+      const mod = await import('@capacitor/haptics');
+      // Assign to module scope. The local references `mod.Haptics`/etc are
+      // not returned from this function.
+      HapticsModule = mod.Haptics;
+      ImpactStyleEnum = mod.ImpactStyle;
+      NotificationTypeEnum = mod.NotificationType;
+      return true;
+    } catch (e) {
+      if (isPluginUnavailableError(e)) hapticsAvailable = false;
+      return false;
+    } finally {
+      loadPromise = null;
     }
-    return null;
-  }
+  })();
+
+  return loadPromise;
 };
 
-/**
- * Wraps the entire haptics call (including module access) in a try/catch.
- * Permanently disables haptics for the session if the native plugin is not
- * registered (avoids spamming "Haptics.then() is not implemented" on Android
- * builds where the plugin is missing from the native bridge).
- */
-const safeRun = async (fn: () => Promise<void>) => {
-  if (!isNative || hapticsAvailable === false) return;
-  try {
-    await fn();
-  } catch (e: any) {
-    if (isPluginUnavailableError(e)) {
-      hapticsAvailable = false;
-    }
-    // All errors are silent — haptics are non-critical
+const handleError = (e: any) => {
+  if (isPluginUnavailableError(e)) {
+    // Permanently disable for this session — avoids spamming the same error
+    hapticsAvailable = false;
   }
+  // Haptics are non-critical; swallow all errors silently
 };
 
 export const useHaptics = () => {
   const lightTap = async () => {
-    await safeRun(async () => {
-      const h = await getHaptics();
-      if (!h || !ImpactStyleEnum) return;
-      await h.impact({ style: ImpactStyleEnum.Light });
-    });
+    if (!(await ensureHapticsLoaded())) return;
+    try {
+      await HapticsModule.impact({ style: ImpactStyleEnum.Light });
+    } catch (e) {
+      handleError(e);
+    }
   };
 
   const mediumTap = async () => {
-    await safeRun(async () => {
-      const h = await getHaptics();
-      if (!h || !ImpactStyleEnum) return;
-      await h.impact({ style: ImpactStyleEnum.Medium });
-    });
+    if (!(await ensureHapticsLoaded())) return;
+    try {
+      await HapticsModule.impact({ style: ImpactStyleEnum.Medium });
+    } catch (e) {
+      handleError(e);
+    }
   };
 
   const successVibration = async () => {
-    await safeRun(async () => {
-      const h = await getHaptics();
-      if (!h || !NotificationTypeEnum) return;
-      await h.notification({ type: NotificationTypeEnum.Success });
-    });
+    if (!(await ensureHapticsLoaded())) return;
+    try {
+      await HapticsModule.notification({ type: NotificationTypeEnum.Success });
+    } catch (e) {
+      handleError(e);
+    }
   };
 
   const errorVibration = async () => {
-    await safeRun(async () => {
-      const h = await getHaptics();
-      if (!h || !NotificationTypeEnum) return;
-      await h.notification({ type: NotificationTypeEnum.Error });
-    });
+    if (!(await ensureHapticsLoaded())) return;
+    try {
+      await HapticsModule.notification({ type: NotificationTypeEnum.Error });
+    } catch (e) {
+      handleError(e);
+    }
   };
 
   return { lightTap, mediumTap, successVibration, errorVibration };

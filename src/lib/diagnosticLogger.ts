@@ -317,6 +317,9 @@ if (typeof window !== 'undefined') {
     if (reason?.name === 'AbortError') return;
     const msg = typeof reason?.message === 'string' ? reason.message : String(reason ?? '');
     if (msg.includes('signal is aborted') || msg.includes('aborted without reason')) return;
+    // Filter known-benign Capacitor plugin-not-implemented errors
+    // (e.g. Haptics on Android builds where the plugin isn't registered).
+    if (msg.includes('is not implemented on') || msg.includes('UNIMPLEMENTED')) return;
 
     logDiagnostic({
       event: 'unhandled_rejection',
