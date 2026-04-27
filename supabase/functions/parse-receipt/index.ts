@@ -476,8 +476,6 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         is_installment: receiptData.is_installment || false,
         installment_count: receiptData.installment_count || null,
         installment_amount: receiptData.installment_amount || null,
-        vat_rate: receiptData.vat_rate ?? null,
-        vat_amount: receiptData.vat_amount ?? null,
         items: receiptData.items || []
       }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
