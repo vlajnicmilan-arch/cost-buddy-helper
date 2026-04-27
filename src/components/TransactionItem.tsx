@@ -177,7 +177,12 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         animate={controls}
-        style={{ x, opacity: itemOpacity }}
+        style={{
+          x,
+          opacity: itemOpacity,
+          // Phase 3: project color-coding — subtle 3px left accent stripe
+          borderLeft: projectInfo?.color ? `3px solid ${projectInfo.color}` : undefined,
+        } as any}
         onClick={handleClick}
         className={cn(
           "group flex items-center gap-2 py-2.5 px-2 rounded-lg bg-background hover:bg-muted/50 transition-colors touch-pan-y",
@@ -322,7 +327,13 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
             {projectInfo && (
               <>
                 <span className="text-muted-foreground/40">•</span>
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-accent-foreground truncate max-w-[70px]">
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[70px] px-1 rounded"
+                  style={{
+                    color: projectInfo.color || undefined,
+                    backgroundColor: projectInfo.color ? `${projectInfo.color}15` : undefined,
+                  }}
+                >
                   <span className="text-[9px]">{projectInfo.icon || '📁'}</span>
                   {projectInfo.name}
                 </span>

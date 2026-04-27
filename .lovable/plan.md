@@ -145,3 +145,18 @@ Dodaju se 4 nova ključa unutar postojećeg `nav` bloka (već postoji na 3 mjest
 - **(b)** Zadržan na 5. poziciji, a Family se sakriva u "More" meni (dodatni rad)
 
 Default preporuka: **(a)** — Kalendar je sekundarna funkcija prema podacima (nizak engagement). Ako se slažeš, krećem implementaciju odmah po odobrenju.
+
+---
+
+## ✅ Faza 3 — implementirano
+
+### 1. Color-coding transakcija po projektu
+- `src/components/TransactionItem.tsx`: dodan suptilni 3px lijevi rub u boji projekta (`projectInfo.color`) i obojeni badge na info-redu (umjesto generičnog `text-accent-foreground`).
+- Bez novih queryja — koristi postojeći `contextLookup.projects` koji se već prosljeđuje.
+- Sve transakcije bez `project_id` izgledaju identično kao prije (defenzivno: stripe se ne renderira).
+
+### 2. Day 1 / 3 / 7 push nudges
+- Migracija: nova tablica `activation_nudge_log` (UNIQUE per user+day) — admin-only RLS.
+- Edge funkcija: `supabase/functions/activation-nudge/index.ts` — za svaki dan (1, 3, 7) pronađe profile registrirane prije N dana, isključi one koji već imaju projekt ili su već dobili taj nudge, poštuje `notification_preferences.projects_enabled`, šalje push s deep-link `/projects`, loga u `activation_nudge_log`.
+- Cron: `activation-nudge-daily`, svaki dan u 10:00 UTC.
+- Tekstovi: HR / EN / DE (defaultira na HR — locale po profilu još nije pohranjen).
