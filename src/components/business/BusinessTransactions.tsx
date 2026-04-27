@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 interface Props {
   expenses: Expense[];
   onAddClick: () => void;
+  onScanClick?: () => void;
   onEditExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => void;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -23,7 +24,7 @@ interface Props {
   existingExpenses?: Expense[];
 }
 
-export const BusinessTransactions = ({ expenses, onAddClick, onEditExpense, onDeleteExpense, onImportCSV, findDuplicates, existingExpenses }: Props) => {
+export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, onEditExpense, onDeleteExpense, onImportCSV, findDuplicates, existingExpenses }: Props) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
