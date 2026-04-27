@@ -42,8 +42,7 @@ const Business = () => {
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
-  const [businessAddOpen, setBusinessAddOpen] = useState(false);
-  const [businessScanOpen, setBusinessScanOpen] = useState(false);
+
 
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
