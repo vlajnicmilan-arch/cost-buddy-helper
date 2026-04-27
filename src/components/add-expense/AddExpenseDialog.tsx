@@ -242,6 +242,13 @@ export const AddExpenseDialog = ({
     }
     if (autoScan && !autoScanTriggeredRef.current && !scanning && !showScannedPreview) {
       autoScanTriggeredRef.current = true;
+      try {
+        logDiagnostic('receipt_auto_scan_triggered', {
+          is_native: isNative,
+          is_business: !!effectiveBusinessProfileId,
+          business_profile_id: effectiveBusinessProfileId,
+        });
+      } catch {}
       // Small delay so the dialog is fully mounted before launching the camera
       const t = setTimeout(() => {
         if (isNative) {
@@ -252,7 +259,7 @@ export const AddExpenseDialog = ({
       }, 150);
       return () => clearTimeout(t);
     }
-  }, [open, autoScan, isNative, scanning, showScannedPreview]);
+  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId]);
 
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
     // Defensive blur: ensure keyboard is dismissed before scan/AI analysis kicks in
