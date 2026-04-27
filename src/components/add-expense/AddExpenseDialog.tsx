@@ -62,6 +62,8 @@ interface AddExpenseDialogProps {
   onOpenChange?: (open: boolean) => void;
   /** When true, hides the built-in trigger button (use with externalOpen). */
   hideTrigger?: boolean;
+  /** Explicit business context for business-mode launchers. */
+  businessProfileId?: string | null;
 }
 
 interface ScannedData {
@@ -95,6 +97,7 @@ export const AddExpenseDialog = ({
   externalOpen,
   onOpenChange,
   hideTrigger = false,
+  businessProfileId,
 }: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
@@ -164,6 +167,7 @@ export const AddExpenseDialog = ({
   const { recordHabit, getSuggestedCategory } = useCategoryHabits();
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const { activeBusinessProfileId } = useAppState();
+  const effectiveBusinessProfileId = businessProfileId ?? activeBusinessProfileId;
   const { detectSingleLoan } = useLoanDetection();
   const { addDebt } = useBusinessDebts();
   const [loanDetected, setLoanDetected] = useState<DetectedLoan | null>(null);
@@ -238,6 +242,13 @@ export const AddExpenseDialog = ({
     }
     if (autoScan && !autoScanTriggeredRef.current && !scanning && !showScannedPreview) {
       autoScanTriggeredRef.current = true;
+      try {
+        logDiagnostic('receipt_auto_scan_triggered', {
+          is_native: isNative,
+          is_business: !!effectiveBusinessProfileId,
+          business_profile_id: effectiveBusinessProfileId,
+        });
+      } catch {}
       // Small delay so the dialog is fully mounted before launching the camera
       const t = setTimeout(() => {
         if (isNative) {
@@ -248,7 +259,7 @@ export const AddExpenseDialog = ({
       }, 150);
       return () => clearTimeout(t);
     }
-  }, [open, autoScan, isNative, scanning, showScannedPreview]);
+  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId]);
 
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
     // Defensive blur: ensure keyboard is dismissed before scan/AI analysis kicks in
@@ -371,7 +382,8 @@ export const AddExpenseDialog = ({
         amount: result.amount,
         has_merchant: !!result.merchant,
         has_date: !!result.date,
-        is_business: !!activeBusinessProfileId,
+        is_business: !!effectiveBusinessProfileId,
+        business_profile_id: effectiveBusinessProfileId,
       });
     } catch {}
   };
@@ -389,7 +401,7 @@ export const AddExpenseDialog = ({
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving) return;
-    if (activeBusinessProfileId) {
+    if (effectiveBusinessProfileId) {
       const missing: string[] = [];
       if (!scannedData.merchant?.trim()) missing.push('partner/trgovac');
       if (!scannedData.date) missing.push('datum');
@@ -406,7 +418,8 @@ export const AddExpenseDialog = ({
     }
     try {
       logDiagnostic('receipt_scan_accept_attempt', {
-        is_business: !!activeBusinessProfileId,
+        is_business: !!effectiveBusinessProfileId,
+        business_profile_id: effectiveBusinessProfileId,
         amount: scannedData.amount,
         route: typeof window !== 'undefined' ? window.location.pathname : null,
       });
@@ -458,7 +471,7 @@ export const AddExpenseDialog = ({
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
-        business_profile_id: activeBusinessProfileId || null,
+        business_profile_id: effectiveBusinessProfileId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         income_source_id: transferDestinationId || undefined,
         note: (isInstallment && scannedData.installment_count) 
@@ -596,7 +609,7 @@ export const AddExpenseDialog = ({
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
         recordHabit(expense.merchant_name, expense.category);
       }
-      if (activeBusinessProfileId && expense.type !== 'transfer') {
+      if (effectiveBusinessProfileId && expense.type !== 'transfer') {
         const detected = detectSingleLoan(
           expense.description,
           Number(expense.amount),
@@ -618,10 +631,10 @@ export const AddExpenseDialog = ({
   };
 
   const handleLoanConfirm = (loans: DetectedLoan[]) => {
-    if (!activeBusinessProfileId) return;
+    if (!effectiveBusinessProfileId) return;
     for (const loan of loans) {
       addDebt({
-        business_profile_id: activeBusinessProfileId,
+        business_profile_id: effectiveBusinessProfileId,
         type: loan.type,
         contact_name: loan.contactName,
         description: loan.description,
@@ -704,7 +717,7 @@ export const AddExpenseDialog = ({
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
-        business_profile_id: activeBusinessProfileId || null,
+        business_profile_id: effectiveBusinessProfileId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       };
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
@@ -739,7 +752,7 @@ export const AddExpenseDialog = ({
       project_id: selectedProjectId || undefined,
       budget_id: selectedBudgetId || undefined,
       expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
-      business_profile_id: activeBusinessProfileId || null,
+      business_profile_id: effectiveBusinessProfileId || null,
       currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
     };
@@ -792,6 +805,14 @@ export const AddExpenseDialog = ({
       if (!isOpen && (scanning || showScannedPreview || isSaving || cameraActiveRef.current)) return;
       setOpen(isOpen);
       if (isOpen) {
+        try {
+          logDiagnostic('add_expense_dialog_opened', {
+            auto_scan: autoScan,
+            is_business: !!effectiveBusinessProfileId,
+            business_profile_id: effectiveBusinessProfileId,
+            route: typeof window !== 'undefined' ? window.location.pathname : null,
+          });
+        } catch {}
         refetchPaymentSources().then(() => {
           if (customPaymentSources.length > 0) {
             setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
