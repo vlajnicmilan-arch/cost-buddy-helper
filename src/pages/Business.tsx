@@ -42,8 +42,7 @@ const Business = () => {
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
-  const [businessAddOpen, setBusinessAddOpen] = useState(false);
-  const [businessScanOpen, setBusinessScanOpen] = useState(false);
+
 
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
@@ -132,8 +131,27 @@ const Business = () => {
         {activeTab === 'transactions' && (
           <BusinessTransactions
             expenses={dashboardExpenses}
-            onAddClick={() => setBusinessAddOpen(true)}
-            onScanClick={() => setBusinessScanOpen(true)}
+            onAddClick={() => {}}
+            addAction={
+              <AddExpenseDialog
+                onAdd={addExpense}
+                checkDuplicate={checkDuplicate}
+                triggerIcon={<Plus className="w-3.5 h-3.5" />}
+                triggerLabel={t('business.transactions.new', 'Novo')}
+                triggerClassName="h-9 gap-1 px-3 text-sm"
+              />
+            }
+            scanAction={
+              <AddExpenseDialog
+                onAdd={addExpense}
+                checkDuplicate={checkDuplicate}
+                autoScan
+                triggerVariant="scan"
+                triggerIcon={<ScanLine className="w-3.5 h-3.5" />}
+                triggerLabel={t('common.scan', 'Skeniraj')}
+                triggerClassName="h-9 gap-1 px-3 text-sm"
+              />
+            }
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
             onImportCSV={importFromCSV}
@@ -151,27 +169,6 @@ const Business = () => {
           <BusinessMore expenses={dashboardExpenses} />
         )}
       </div>
-
-      <AddExpenseDialog
-        onAdd={addExpense}
-        checkDuplicate={checkDuplicate}
-        externalOpen={businessAddOpen}
-        onOpenChange={setBusinessAddOpen}
-        hideTrigger
-        triggerIcon={<Plus className="w-5 h-5" />}
-        triggerLabel={t('business.transactions.new', 'Novo')}
-      />
-      <AddExpenseDialog
-        onAdd={addExpense}
-        checkDuplicate={checkDuplicate}
-        externalOpen={businessScanOpen}
-        onOpenChange={setBusinessScanOpen}
-        hideTrigger
-        autoScan
-        triggerVariant="scan"
-        triggerIcon={<ScanLine className="w-5 h-5" />}
-        triggerLabel={t('common.scan', 'Skeniraj')}
-      />
 
       <BusinessBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
