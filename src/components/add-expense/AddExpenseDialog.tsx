@@ -749,20 +749,22 @@ export const AddExpenseDialog = ({
         resetForm();
       }
     }}>
-      <DialogTrigger asChild>
-        <Button
-          className={cn(
-            'gap-2 rounded-xl shadow-lg',
-            triggerVariant === 'scan'
-              ? 'bg-ai hover:bg-ai/90 text-ai-foreground shadow-ai/20'
-              : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20',
-            triggerClassName,
-          )}
-        >
-          {triggerIcon ?? (triggerVariant === 'scan' ? <ScanLine className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
-          {triggerLabel ?? t('common.add')}
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            className={cn(
+              'gap-2 rounded-xl shadow-lg',
+              triggerVariant === 'scan'
+                ? 'bg-ai hover:bg-ai/90 text-ai-foreground shadow-ai/20'
+                : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20',
+              triggerClassName,
+            )}
+          >
+            {triggerIcon ?? (triggerVariant === 'scan' ? <ScanLine className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
+            {triggerLabel ?? t('common.add')}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent 
         showBackButton={false} 
         className="sm:max-w-md glass-card border-border/50 h-[85vh] flex flex-col"
