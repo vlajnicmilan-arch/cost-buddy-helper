@@ -346,26 +346,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         onRecurringMatchConfirm={props.onRecurringMatchConfirm}
       />
 
-      <AddExpenseDialog
-        onAdd={props.onAddExpense}
-        checkDuplicate={props.checkDuplicate}
-        externalOpen={businessAddOpen}
-        onOpenChange={setBusinessAddOpen}
-        hideTrigger
-        triggerIcon={<Plus className="w-5 h-5" />}
-        triggerLabel={t('business.transactions.new', 'Novo')}
-      />
-      <AddExpenseDialog
-        onAdd={props.onAddExpense}
-        checkDuplicate={props.checkDuplicate}
-        externalOpen={businessScanOpen}
-        onOpenChange={setBusinessScanOpen}
-        hideTrigger
-        autoScan
-        triggerVariant="scan"
-        triggerIcon={<ScanLine className="w-5 h-5" />}
-        triggerLabel={t('common.scan', 'Skeniraj')}
-      />
+
 
       <BusinessBottomNav activeTab={businessTab} onTabChange={onBusinessTabChange} />
     </div>
