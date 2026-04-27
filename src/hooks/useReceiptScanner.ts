@@ -26,8 +26,6 @@ interface ParsedReceipt {
   recipient_name: string | null;
   issuer_name: string | null;
   issuer_oib: string | null;
-  vat_rate: number | null;
-  vat_amount: number | null;
 }
 
 const isAbortLikeError = (error: unknown) => {
@@ -201,8 +199,6 @@ export const useReceiptScanner = () => {
         recipient_name: data.recipient_name || null,
         issuer_name: data.issuer_name || data.merchant || null,
         issuer_oib: data.issuer_oib || null,
-        vat_rate: data.vat_rate ?? null,
-        vat_amount: data.vat_amount ?? null,
         items: (data.items || []).map((item: any) => ({
           name: item.name || '',
           quantity: item.quantity || 1,
@@ -237,7 +233,6 @@ export const useReceiptScanner = () => {
           amount: result.amount,
           has_merchant: !!result.merchant,
           has_date: !!result.date,
-          has_vat: result.vat_rate != null,
           item_count: result.items.length,
         });
       } catch {}
