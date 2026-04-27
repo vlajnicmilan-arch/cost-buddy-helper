@@ -113,6 +113,8 @@ interface BusinessModeViewProps {
 export const BusinessModeView = (props: BusinessModeViewProps) => {
   const { t } = useTranslation();
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
+  const [scanExpenseOpen, setScanExpenseOpen] = useState(false);
 
   const {
     businessTab,
@@ -270,7 +272,8 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         {businessTab === 'transactions' && (
           <BusinessTransactions
             expenses={props.expenses}
-            onAddClick={() => {}}
+            onAddClick={() => setAddExpenseOpen(true)}
+            onScanClick={() => setScanExpenseOpen(true)}
             onEditExpense={props.onUpdateExpense}
             onDeleteExpense={props.onDeleteExpense}
             onImportCSV={props.importFromCSV}
