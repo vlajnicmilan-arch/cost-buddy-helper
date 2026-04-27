@@ -278,8 +278,6 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
   "is_installment": false,
   "installment_count": null,
   "installment_amount": null,
-  "vat_rate": 25,
-  "vat_amount": 9.10,
   "items": [
     {"name": "MLIJEKO DUKAT 1L", "quantity": 2, "unit_price": 1.29, "total_price": 2.58},
     {"name": "KRUH BIJELI", "quantity": 1, "unit_price": null, "total_price": 1.50}
