@@ -31,6 +31,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useInAppReview } from '@/hooks/useInAppReview';
 import { useLocation } from '@/hooks/useLocation';
 import { useBackButton } from '@/hooks/useBackButton';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
@@ -315,10 +316,15 @@ export const AddExpenseDialog = ({
   };
 
   const applyScannedResult = (result: NonNullable<Awaited<ReturnType<typeof scanReceipt>>>) => {
+    const safeDescription =
+      (result.description && result.description.trim().length > 0)
+        ? result.description.trim()
+        : (result.merchant?.trim() || result.issuer_name?.trim() || 'Račun');
+
     setScannedData({
       amount: result.amount,
       merchant: result.merchant,
-      description: result.description,
+      description: safeDescription,
       category: result.category,
       date: result.date,
       payment_source: result.payment_source,
@@ -330,7 +336,11 @@ export const AddExpenseDialog = ({
       installment_amount: result.installment_amount,
       transaction_type: result.transaction_type,
       transfer_destination_name: result.transfer_destination_name,
-      recipient_name: result.recipient_name
+      recipient_name: result.recipient_name,
+      issuer_name: result.issuer_name,
+      issuer_oib: result.issuer_oib,
+      vat_rate: result.vat_rate,
+      vat_amount: result.vat_amount,
     });
     if (result.is_installment && result.installment_count) {
       setIsInstallment(true);
@@ -338,6 +348,15 @@ export const AddExpenseDialog = ({
       setFirstPaymentDate(result.date || new Date().toISOString().split('T')[0]);
     }
     setShowScannedPreview(true);
+    try {
+      logDiagnostic('receipt_scan_preview_shown', {
+        amount: result.amount,
+        has_merchant: !!result.merchant,
+        has_date: !!result.date,
+        has_vat: result.vat_rate != null,
+        is_business: !!activeBusinessProfileId,
+      });
+    } catch {}
   };
 
   const [isSaving, setIsSaving] = useState(false);
@@ -358,10 +377,23 @@ export const AddExpenseDialog = ({
       if (!scannedData.merchant?.trim()) missing.push('partner/trgovac');
       if (!scannedData.date) missing.push('datum');
       if (missing.length > 0) {
+        try {
+          logDiagnostic('receipt_scan_blocked_business', {
+            missing,
+            has_amount: !!scannedData.amount,
+          });
+        } catch {}
         showError(`Obavezna polja za poslovni mod: ${missing.join(', ')}. Uredi podatke prije spremanja.`);
         return;
       }
     }
+    try {
+      logDiagnostic('receipt_scan_accept_attempt', {
+        is_business: !!activeBusinessProfileId,
+        amount: scannedData.amount,
+        has_vat: scannedData.vat_rate != null,
+      });
+    } catch {}
     setIsSaving(true);
     try {
       const validItems = scannedData.items.filter(item => item.name && item.total_price > 0);

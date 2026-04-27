@@ -6,6 +6,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { LocalFileCache } from './useLocalFileCache';
 import { LocalStorage } from './useLocalStorage';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface ParsedReceipt {
   amount: number;
@@ -94,6 +95,9 @@ export const useReceiptScanner = () => {
   ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
+    try {
+      logDiagnostic('receipt_scan_start', { pages: imagesBase64.length });
+    } catch {}
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -156,6 +160,13 @@ export const useReceiptScanner = () => {
         } catch {
           console.error('Failed to parse error response');
         }
+        try {
+          logDiagnostic({
+            event: 'receipt_scan_http_error',
+            severity: 'error',
+            details: { status: response.status, message: errorMessage },
+          });
+        } catch {}
         throw new Error(errorMessage);
       }
 
@@ -221,15 +232,32 @@ export const useReceiptScanner = () => {
         const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';
         showSuccess(`Račun skeniran${pagesNote}! Pronađeno ${result.items.length} artikala.`);
       }
+      try {
+        logDiagnostic('receipt_scan_success', {
+          amount: result.amount,
+          has_merchant: !!result.merchant,
+          has_date: !!result.date,
+          has_vat: result.vat_rate != null,
+          item_count: result.items.length,
+        });
+      } catch {}
       return result;
     } catch (error) {
       if (isAbortLikeError(error)) {
         console.warn('Receipt scanning was interrupted:', error);
+        try { logDiagnostic('receipt_scan_aborted', {}); } catch {}
         showError('Skeniranje je prekinuto. Pokušaj ponovno.');
         return null;
       }
 
       console.error('Error scanning receipt:', error);
+      try {
+        logDiagnostic({
+          event: 'receipt_scan_exception',
+          severity: 'error',
+          details: { message: error instanceof Error ? error.message : String(error) },
+        });
+      } catch {}
       showError(error instanceof Error ? error.message : 'Greška pri skeniranju računa');
       return null;
     } finally {

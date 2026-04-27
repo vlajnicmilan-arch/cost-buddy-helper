@@ -41,6 +41,7 @@ const Business = () => {
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
+  const [scanExpenseOpen, setScanExpenseOpen] = useState(false);
 
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
@@ -130,6 +131,7 @@ const Business = () => {
           <BusinessTransactions
             expenses={dashboardExpenses}
             onAddClick={() => setAddExpenseOpen(true)}
+            onScanClick={() => setScanExpenseOpen(true)}
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
             onImportCSV={importFromCSV}
@@ -154,6 +156,15 @@ const Business = () => {
         onAdd={addExpense}
         externalOpen={addExpenseOpen}
         onOpenChange={setAddExpenseOpen}
+        hideTrigger
+      />
+
+      {/* Auto-scan flow: opens dialog and immediately launches camera/gallery. */}
+      <AddExpenseDialog
+        onAdd={addExpense}
+        externalOpen={scanExpenseOpen}
+        onOpenChange={setScanExpenseOpen}
+        autoScan
         hideTrigger
       />
 
