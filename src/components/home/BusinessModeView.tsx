@@ -328,6 +328,24 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         onRecurringMatchConfirm={props.onRecurringMatchConfirm}
       />
 
+      {/* Stabilne instance dialoga za poslovni mod — preživljavaju izmjene tabova
+          i kameru, pa skener ne gubi host. */}
+      <AddExpenseDialog
+        onAdd={props.onAddExpense}
+        checkDuplicate={props.checkDuplicate}
+        externalOpen={addExpenseOpen}
+        onOpenChange={setAddExpenseOpen}
+        hideTrigger
+      />
+      <AddExpenseDialog
+        onAdd={props.onAddExpense}
+        checkDuplicate={props.checkDuplicate}
+        externalOpen={scanExpenseOpen}
+        onOpenChange={setScanExpenseOpen}
+        autoScan
+        hideTrigger
+      />
+
       <BusinessBottomNav activeTab={businessTab} onTabChange={onBusinessTabChange} />
     </div>
   );
