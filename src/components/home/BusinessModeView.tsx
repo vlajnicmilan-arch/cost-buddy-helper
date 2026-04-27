@@ -113,6 +113,8 @@ interface BusinessModeViewProps {
 export const BusinessModeView = (props: BusinessModeViewProps) => {
   const { t } = useTranslation();
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
+  const [scanExpenseOpen, setScanExpenseOpen] = useState(false);
 
   const {
     businessTab,
@@ -270,7 +272,8 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         {businessTab === 'transactions' && (
           <BusinessTransactions
             expenses={props.expenses}
-            onAddClick={() => {}}
+            onAddClick={() => setAddExpenseOpen(true)}
+            onScanClick={() => setScanExpenseOpen(true)}
             onEditExpense={props.onUpdateExpense}
             onDeleteExpense={props.onDeleteExpense}
             onImportCSV={props.importFromCSV}
@@ -323,6 +326,24 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         onRecurringMatchDialogChange={props.onRecurringMatchDialogChange}
         recurringMatches={props.recurringMatches}
         onRecurringMatchConfirm={props.onRecurringMatchConfirm}
+      />
+
+      {/* Stabilne instance dialoga za poslovni mod — preživljavaju izmjene tabova
+          i kameru, pa skener ne gubi host. */}
+      <AddExpenseDialog
+        onAdd={props.onAddExpense}
+        checkDuplicate={props.checkDuplicate}
+        externalOpen={addExpenseOpen}
+        onOpenChange={setAddExpenseOpen}
+        hideTrigger
+      />
+      <AddExpenseDialog
+        onAdd={props.onAddExpense}
+        checkDuplicate={props.checkDuplicate}
+        externalOpen={scanExpenseOpen}
+        onOpenChange={setScanExpenseOpen}
+        autoScan
+        hideTrigger
       />
 
       <BusinessBottomNav activeTab={businessTab} onTabChange={onBusinessTabChange} />

@@ -15,9 +15,11 @@ export const PulseStatusBar = ({ errors1h, activeSessions, errors24h, bySeverity
   const err = bySeverity1h?.error ?? errors1h;
   const warn = bySeverity1h?.warning ?? 0;
 
+  // Status se određuje po stvarnim greškama, ne po performance-warningima.
+  // Warning sam za sebe NE diže status — samo critical/error.
   let level: 'ok' | 'warn' | 'crit' = 'ok';
   if (crit >= 1 || err >= 10) level = 'crit';
-  else if (err >= 3 || warn >= 10) level = 'warn';
+  else if (err >= 3) level = 'warn';
 
   const config = {
     ok: {

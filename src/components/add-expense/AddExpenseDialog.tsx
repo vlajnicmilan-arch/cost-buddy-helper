@@ -82,8 +82,6 @@ interface ScannedData {
   recipient_name?: string | null;
   issuer_name?: string | null;
   issuer_oib?: string | null;
-  vat_rate?: number | null;
-  vat_amount?: number | null;
 }
 
 export const AddExpenseDialog = ({
@@ -339,8 +337,6 @@ export const AddExpenseDialog = ({
       recipient_name: result.recipient_name,
       issuer_name: result.issuer_name,
       issuer_oib: result.issuer_oib,
-      vat_rate: result.vat_rate,
-      vat_amount: result.vat_amount,
     });
     if (result.is_installment && result.installment_count) {
       setIsInstallment(true);
@@ -353,7 +349,6 @@ export const AddExpenseDialog = ({
         amount: result.amount,
         has_merchant: !!result.merchant,
         has_date: !!result.date,
-        has_vat: result.vat_rate != null,
         is_business: !!activeBusinessProfileId,
       });
     } catch {}
@@ -391,7 +386,6 @@ export const AddExpenseDialog = ({
       logDiagnostic('receipt_scan_accept_attempt', {
         is_business: !!activeBusinessProfileId,
         amount: scannedData.amount,
-        has_vat: scannedData.vat_rate != null,
       });
     } catch {}
     setIsSaving(true);
@@ -447,10 +441,6 @@ export const AddExpenseDialog = ({
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
           : (tipNote || undefined),
-        ...(scannedData.vat_rate != null && scannedData.vat_amount != null ? {
-          vat_rate: scannedData.vat_rate,
-          vat_amount: scannedData.vat_amount,
-        } : {}),
       } as any;
 
       if (checkDuplicate) {
@@ -483,13 +473,22 @@ export const AddExpenseDialog = ({
           payment_source_card_id: finalCardId || undefined
         });
         await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
+        try { logDiagnostic('receipt_scan_accept_success', { amount: scannedData.amount, is_installment: true }); } catch {}
         setIsSaving(false);
         return;
       }
 
       await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
+      try { logDiagnostic('receipt_scan_accept_success', { amount: scannedData.amount }); } catch {}
     } catch (error) {
       console.error('Error saving expense:', error);
+      try {
+        logDiagnostic({
+          event: 'receipt_scan_accept_error',
+          severity: 'error',
+          details: { message: error instanceof Error ? error.message : String(error) },
+        });
+      } catch {}
       showError(t('transactions.saveError'));
     } finally {
       setIsSaving(false);

@@ -1,42 +1,71 @@
-Prvo: imaš pravo biti ljut. Pregledao sam stvarne logove, ne samo kod, i pronašao konkretan problem: backend skeniranje računa je 27.04. u 16:56 i 16:57 uspješno pročitalo račun iz poslovnih financija, uključujući iznos 72.89, trgovca, datum, artikle i PDV. Ali nakon toga nema nijednog `expense_insert_attempt` zapisa i nema spremljene transakcije u zadnja 2 sata. To znači da AI skener nije pao na čitanju računa; tok se prekida između prikaza rezultata i spremanja / prihvaćanja rezultata u aplikaciji.
+Imaš pravo: pogrešno sam dirao i opisao PDV. Pregled logova sada pokazuje stvarni prekid:
+
+- `parse-receipt` radi: u 17:15 dva puta je pročitao isti račun, iznos 72.89, trgovac i datum.
+- Dijagnostika ima `receipt_scan_success` i `receipt_scan_preview_shown`.
+- Nema `receipt_scan_accept_attempt`.
+- Nema `expense_insert_attempt`.
+- Nema nove transakcije u `expenses` danas nakon skeniranja.
+
+Znači kvar nije u AI čitanju i nije u bazi; tok staje na preview ekranu, prije pritiska/obrade "Prihvati". Također sam potvrdio da je PDV UI i dalje aktivan i da AI prompt i dalje traži PDV, iako je taj modul izbačen. To treba ukloniti, ne popravljati.
 
 Plan popravka:
 
-1. Popraviti spremanje skeniranog poslovnog računa
-   - U `src/hooks/useExpenseCRUD.ts` dodati spremanje `vat_rate` i `vat_amount` u `expenses` insert payload.
-   - Trenutno `AddExpenseDialog` pripremi PDV podatke, ali CRUD insert ih ne šalje u bazu, pa se poslovni dio ponaša kao da dio skenera “ne radi”.
-   - U `src/types/expense.ts` dodati `vat_rate` i `vat_amount` u `Expense` tip da se podaci dosljedno nose kroz aplikaciju.
+1. Potpuno ukloniti PDV iz skenera i spremanja
+   - Izbaciti `vat_rate` i `vat_amount` iz `Expense` tipa.
+   - Izbaciti `vat_rate` i `vat_amount` iz insert payload-a u `useExpenseCRUD.ts`.
+   - Izbaciti PDV polja iz `ScannedData` i `ParsedReceipt` tipova.
+   - Ukloniti PDV UI blok iz `ScannedDataPreview.tsx`.
+   - Ukloniti PDV logiranje (`has_vat`) iz dijagnostike skenera.
+   - Ukloniti PDV dio iz `parse-receipt` prompta i response-a da AI više ne troši pažnju na modul koji ne postoji.
 
-2. Popraviti prijenos podataka iz AI rezultata u preview
-   - U `src/components/add-expense/AddExpenseDialog.tsx` proširiti `applyScannedResult()` da ne izgubi `issuer_name`, `issuer_oib`, `vat_rate` i `vat_amount`.
-   - Dodati fallback za `description`: ako AI vrati `null` (što se upravo dogodilo u logu), opis će automatski biti trgovac/izdavatelj, a ne prazna vrijednost.
-
-3. Učiniti poslovni skener direktnim, a ne skrivenim iza “Novo”
-   - U `src/components/business/BusinessTransactions.tsx` dodati zaseban gumb “Skeniraj” uz postojeći “Novo”.
-   - U `src/pages/Business.tsx` voditi dva načina otvaranja dijaloga: ručni unos i auto-scan.
-   - Kad korisnik klikne “Skeniraj”, `AddExpenseDialog` se otvara s `autoScan`, kao na početnoj stranici, umjesto da korisnik mora pogoditi da se skener nalazi unutar ručnog dodavanja.
-
-4. Dodati dokazivu dijagnostiku za cijeli sken-flow
-   - U `useReceiptScanner.ts` logirati: početak skeniranja, uspjeh AI rezultata, HTTP grešku i prekid.
-   - U `AddExpenseDialog.tsx` logirati: prikaz preview-a, klik “Prihvati”, blokadu zbog obaveznih poslovnih polja i pokušaj spremanja.
-   - Ovi zapisi neće lomiti aplikaciju, ali će pokazati točno gdje tok staje ako opet ne spremi.
-
-5. Ispraviti lažni “kritično” iz dijagnostike
-   - Trenutni Pulse označava sporo učitavanje preview rute kao `warning`, ali korisnički je to prikazano kao katastrofa. Popraviti prikaz/klasifikaciju tako da performance warning ne izgleda kao fatalna greška.
-   - Neću skrivati stvarne greške; samo razdvojiti “aplikacija se srušila” od “stranica se sporo učitala”.
-
-6. Provjera nakon izmjena
-   - Pokrenuti TypeScript provjeru.
-   - Provjeriti da poslovni scan path ima očekivani tok:
+2. Popraviti stvarni razlog zašto poslovni sken ne završava spremanjem
+   - U `BusinessModeView.tsx` poslovna kartica "Transakcije" trenutno šalje `onAddClick={() => {}}` i nema `onScanClick`, pa je upravo `/home` poslovni tok nedovršen. To odgovara logovima: korisnik je na `/home`, scan se prikaže, ali nema stabilan poslovni save flow.
+   - Dodati kontrolirana stanja za ručni unos i skeniranje direktno u `BusinessModeView`.
+   - Montirati stabilne `AddExpenseDialog` instance u `BusinessModeView`, isto kao što je napravljeno u zasebnoj `/business` stranici:
 
 ```text
-Poslovanje -> Transakcije -> Skeniraj
-  -> kamera/galerija
-  -> AI parse receipt
-  -> preview s iznosom, trgovcem, datumom, PDV-om
-  -> Prihvati
-  -> expenses insert s business_profile_id + vat_rate + vat_amount
-  -> transakcija vidljiva u poslovnim financijama
+BusinessModeView /home
+  Transakcije -> Novo      -> otvara AddExpenseDialog
+  Transakcije -> Skeniraj  -> otvara AddExpenseDialog autoScan
+  Preview -> Prihvati      -> onAddExpense -> useExpenseCRUD -> expenses insert
 ```
 
-Napomena: backend funkcija `parse-receipt` prema logovima radi. Neću dirati AI prompt kao prvi potez jer nije tu puklo. Popravak ide na frontend tok i spremanje rezultata, gdje logovi pokazuju rupu.
+   - Proslijediti `checkDuplicate` u te dialoge kako ponašanje ostane konzistentno.
+
+3. Učiniti prihvat skena dokazivim i robusnim
+   - U `acceptScannedData` zadržati logove za `receipt_scan_accept_attempt`, ali bez PDV-a.
+   - Dodati log `receipt_scan_accept_success` nakon uspješnog `executeAdd`.
+   - Dodati log `receipt_scan_accept_error` ako save padne, s porukom greške.
+   - Ako poslovni mod blokira spremanje zbog obaveznih polja, poruka ostaje jasna: fali trgovac/partner ili datum.
+
+4. Ukloniti krive hardkodirane tekstove u dirnutim dijelovima
+   - U dijelovima koje mijenjam koristiti postojeći `t()` pristup ili dodati ključeve za HR/EN/DE gdje ih nema.
+   - Posebno u `ScannedDataPreview.tsx` ne dodavati nove hardkodirane UI tekstove.
+
+5. Popraviti Pulse/dijagnostiku da ne izgleda katastrofično zbog warninga
+   - Trenutno u zadnja 4 sata postoji samo jedan `performance_metric` warning, nema critical/error zapisa za scanner.
+   - Pulse status treba ostati "OK" kad postoje samo performance warningi, a ne prikazivati katastrofu.
+   - U `PulseStatusBar` i/ili `usePulseMetrics` odvojiti "kritično/greške" od "upozorenja" jasnije, tako da spor page load ne izgleda kao crash.
+
+6. Popraviti trenutni console warning koji nije scanner, ali zagađuje dijagnostiku
+   - Console pokazuje: `Function components cannot be given refs` u `BusinessModuleSettings` na `Badge`.
+   - Uzrok je korištenje `Badge` unutar `Switch`/Radix ref okruženja bez `forwardRef` kompatibilnosti.
+   - Popraviti tako da se u tom mjestu ne koristi `Badge` komponenta koja dobiva ref, nego običan `span` stiliziran badge-om ili forwardRef kompatibilan wrapper.
+
+7. Validacija nakon izmjena
+   - Pokrenuti TypeScript provjeru.
+   - Provjeriti kroz logički tok da na `/home` poslovni tab "Transakcije" ima stvarno povezane gumbe "Novo" i "Skeniraj".
+   - Očekivani dijagnostički trag nakon sljedećeg skena:
+
+```text
+receipt_scan_start
+receipt_scan_success
+receipt_scan_preview_shown
+receipt_scan_accept_attempt
+expense_insert_attempt
+receipt_scan_accept_success
+```
+
+   - Očekivano u bazi: novi red u `expenses` s `business_profile_id`, `amount`, `merchant_name`, `description`, `ai_extracted=true`, bez PDV polja iz aplikacijskog toka.
+
+Neću više tvrditi da je riješeno samo zato što TypeScript prolazi. Ovdje je konkretan dokaz gdje staje i popravak ide baš na taj prekid.

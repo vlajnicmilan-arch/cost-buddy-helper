@@ -29,8 +29,6 @@ interface ScannedData {
   recipient_name?: string | null;
   issuer_name?: string | null;
   issuer_oib?: string | null;
-  vat_rate?: number | null;
-  vat_amount?: number | null;
 }
 
 interface ScannedDataPreviewProps {
@@ -196,51 +194,7 @@ export const ScannedDataPreview = ({
           </div>
         )}
 
-        {/* VAT info */}
-        {activeBusinessProfileId && (
-          <div className="p-2 rounded-lg bg-accent/30 border border-accent/50 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">PDV:</span>
-              <div className="flex gap-1">
-                {[0, 5, 13, 25].map(rate => (
-                  <button
-                    key={rate}
-                    type="button"
-                    onClick={() => {
-                      const vatAmount = rate > 0 ? parseFloat((scannedData.amount * rate / (100 + rate)).toFixed(2)) : 0;
-                      onScannedDataChange({ ...scannedData, vat_rate: rate, vat_amount: vatAmount });
-                    }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                      scannedData.vat_rate === rate
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    {rate}%
-                  </button>
-                ))}
-              </div>
-            </div>
-            {scannedData.vat_rate != null && scannedData.vat_rate > 0 && scannedData.vat_amount != null && (
-              <p className="text-xs text-muted-foreground">
-                PDV: <span className="font-medium text-foreground">€{scannedData.vat_amount.toFixed(2)}</span>
-                <span className="ml-2">
-                  Osnovica: <span className="font-medium text-foreground">€{(scannedData.amount - scannedData.vat_amount).toFixed(2)}</span>
-                </span>
-              </p>
-            )}
-          </div>
-        )}
-        {!activeBusinessProfileId && scannedData.vat_rate != null && scannedData.vat_amount != null && scannedData.vat_rate > 0 && (
-          <div className="p-2 rounded-lg bg-accent/30 border border-accent/50">
-            <p className="text-xs text-muted-foreground">
-              PDV {scannedData.vat_rate}%: <span className="font-medium text-foreground">€{scannedData.vat_amount.toFixed(2)}</span>
-              <span className="ml-2">
-                Osnovica: <span className="font-medium text-foreground">€{(scannedData.amount - scannedData.vat_amount).toFixed(2)}</span>
-              </span>
-            </p>
-          </div>
-        )}
+        {/* PDV modul je uklonjen — više se ne prikazuje ni izračunava. */}
 
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
