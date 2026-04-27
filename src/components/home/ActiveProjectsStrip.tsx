@@ -38,7 +38,7 @@ interface ProjectCardData {
  * Mini traffic light indicator (3 vertical dots, only one lit).
  * Universal status convention — color-blind friendly because position carries meaning.
  */
-const TrafficLight: React.FC<{ level: HealthLevel }> = ({ level }) => {
+const TrafficLight = React.forwardRef<HTMLDivElement, { level: HealthLevel }>(({ level }, ref) => {
   const dot = (active: boolean, color: string) => (
     <div
       className="w-[5px] h-[5px] rounded-full transition-all"

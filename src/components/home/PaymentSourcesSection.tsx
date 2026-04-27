@@ -12,7 +12,7 @@ interface PaymentSourcesSectionProps {
   onSourceClick: (source: CustomPaymentSource) => void;
 }
 
-export const PaymentSourcesSection = React.memo(({ customPaymentSources, onSourceClick }: PaymentSourcesSectionProps) => {
+export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement, PaymentSourcesSectionProps>(({ customPaymentSources, onSourceClick }, _ref) => {
   const { t } = useTranslation();
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
@@ -151,4 +151,5 @@ export const PaymentSourcesSection = React.memo(({ customPaymentSources, onSourc
       </CollapsibleContent>
     </Collapsible>
   );
-});
+}));
+PaymentSourcesSection.displayName = 'PaymentSourcesSection';
