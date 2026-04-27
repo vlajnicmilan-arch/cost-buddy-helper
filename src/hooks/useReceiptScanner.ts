@@ -6,6 +6,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { LocalFileCache } from './useLocalFileCache';
 import { LocalStorage } from './useLocalStorage';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface ParsedReceipt {
   amount: number;
