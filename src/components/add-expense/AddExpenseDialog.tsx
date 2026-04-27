@@ -386,6 +386,7 @@ export const AddExpenseDialog = ({
       logDiagnostic('receipt_scan_accept_attempt', {
         is_business: !!activeBusinessProfileId,
         amount: scannedData.amount,
+        route: typeof window !== 'undefined' ? window.location.pathname : null,
       });
     } catch {}
     setIsSaving(true);
@@ -590,6 +591,7 @@ export const AddExpenseDialog = ({
     } catch (error) {
       console.error('Error saving transaction:', error);
       showError(t('transactions.saveError') || 'Greška pri spremanju transakcije.');
+      throw error;
     }
   };
 
