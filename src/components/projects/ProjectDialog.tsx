@@ -19,10 +19,19 @@ import { ProjectTemplate } from '@/hooks/useProjectTemplates';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 
+interface ProjectDialogPreset {
+  name?: string;
+  icon?: string;
+  color?: string;
+  description?: string;
+  totalBudget?: number;
+}
+
 interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project?: Project | null;
+  preset?: ProjectDialogPreset | null;
   onSave: (
     project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
     template?: ProjectTemplate | null,
@@ -35,6 +44,7 @@ export const ProjectDialog = ({
   open,
   onOpenChange,
   project,
+  preset,
   onSave,
   onUpdate
 }: ProjectDialogProps) => {
