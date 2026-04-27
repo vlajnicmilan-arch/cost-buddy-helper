@@ -71,7 +71,20 @@ export const checkForNativeUpdates = async () => {
 export const NativeUpdateInitializer = () => {
   useEffect(() => {
     const checker = initializeNativeUpdateChecker();
+    const timeoutId = window.setTimeout(() => {
+      checker?.().catch((error) => console.error('[NativeUpdate] Startup check failed:', error));
+    }, 2500);
+
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') {
+        checker?.().catch((error) => console.error('[NativeUpdate] Visibility check failed:', error));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+
     return () => {
+      window.clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', handleVisible);
       if (checkForUpdatesRef === checker) {
         checkForUpdatesRef = null;
       }
