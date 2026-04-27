@@ -214,7 +214,6 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         {/* Active Projects Strip — primary feature highlight */}
         <ActiveProjectsStrip
           projects={props.projects}
-          allExpenses={props.allExpenses}
           isLocalMode={props.isLocalMode}
           simpleModeEnabled={props.simpleModeEnabled}
           isBusinessMode={props.isBusinessMode}

@@ -137,7 +137,7 @@ export const ActiveProjectsStrip = React.memo(({
 
       return { project: p, spent, income, profit, remaining, txCount, health, kpiKind, kpiValue };
     });
-  }, [projects, allExpenses]);
+  }, [projects, summary]);
 
   // Early returns AFTER all hooks (Rules of Hooks compliance)
   if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
@@ -148,8 +148,8 @@ export const ActiveProjectsStrip = React.memo(({
     navigate(path);
   };
 
-  // Loading skeleton
-  if (loading) {
+  // Loading skeleton — show while parent is loading projects OR while we fetch sums
+  if (loading || (activeIds.length > 0 && summaryLoading && summary.size === 0)) {
     return (
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3 px-1">
