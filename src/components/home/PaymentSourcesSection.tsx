@@ -124,7 +124,10 @@ export const PaymentSourcesSection = React.memo(({ customPaymentSources, onSourc
                   </div>
                 </div>
                 <p className="relative text-base sm:text-lg font-bold font-mono tracking-tight">
-                  <span className={source.balance < 0 ? 'text-destructive' : ''} style={{ color: source.balance >= 0 ? source.color : undefined }}>
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded-md bg-foreground/[0.06] backdrop-blur-sm border border-foreground/5 ${source.balance < 0 ? 'text-destructive' : ''}`}
+                    style={{ color: source.balance >= 0 ? source.color : undefined }}
+                  >
                     {sourceCurr
                       ? formatAmount(source.balance, source.currency as any)
                       : formatAmount(source.balance)
