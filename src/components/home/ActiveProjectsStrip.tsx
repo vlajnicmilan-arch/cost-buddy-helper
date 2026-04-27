@@ -81,11 +81,8 @@ export const ActiveProjectsStrip = React.memo(({
   const { lightTap } = useHaptics();
   const { formatAmount } = useCurrency();
 
-  // Hide in unsupported modes
-  if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
-  if (!hasAccess('projects')) return null;
-
   // Compute active projects with spent / income / health
+  // IMPORTANT: hooks MUST be called before any early return (Rules of Hooks)
   const activeProjects: ProjectCardData[] = useMemo(() => {
     const active = projects.filter(p => p.status === 'active' || p.status === 'draft');
     return active.slice(0, MAX_VISIBLE).map(p => {
@@ -135,6 +132,10 @@ export const ActiveProjectsStrip = React.memo(({
       return { project: p, spent, income, profit, remaining, txCount, health, kpiKind, kpiValue };
     });
   }, [projects, allExpenses]);
+
+  // Early returns AFTER all hooks (Rules of Hooks compliance)
+  if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
+  if (!hasAccess('projects')) return null;
 
   const handleNav = (path: string) => {
     lightTap();
