@@ -79,17 +79,17 @@ export const ProjectDialog = ({
       setEndDate(project.end_date ? new Date(project.end_date) : undefined);
       setSelectedTemplate(null);
     } else if (open) {
-      setName('');
-      setDescription('');
-      setIcon('📁');
-      setColor('#3b82f6');
+      setName(preset?.name ?? '');
+      setDescription(preset?.description ?? '');
+      setIcon(preset?.icon ?? '📁');
+      setColor(preset?.color ?? '#3b82f6');
       setStatus('draft');
-      setTotalBudget('');
+      setTotalBudget(preset?.totalBudget !== undefined ? String(preset.totalBudget) : '');
       setStartDate(undefined);
       setEndDate(undefined);
       setSelectedTemplate(null);
     }
-  }, [open, project]);
+  }, [open, project, preset]);
 
   const handleTemplateSelect = (tpl: ProjectTemplate | null) => {
     setSelectedTemplate(tpl);
