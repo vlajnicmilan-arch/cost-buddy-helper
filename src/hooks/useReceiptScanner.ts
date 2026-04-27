@@ -38,8 +38,12 @@ const isAbortLikeError = (error: unknown) => {
   );
 };
 
-// Kompresija slike za mobilne uređaje - smanjuje veličinu za stabilnije slanje
-const compressImage = async (base64: string, maxWidth = 800, quality = 0.75): Promise<string> => {
+const UNREADABLE_RECEIPT_RE = /pročitati|procitati|analizirati|read|analyz/i;
+
+// Kompresija slike za mobilne uređaje - zadržava dovoljno detalja za OCR.
+// 800px je bilo preagresivno za sitan tekst na računima i moglo je uzrokovati
+// odgovor "Nije moguće pročitati račun" iako je slika valjana.
+const compressImage = async (base64: string, maxWidth = 1600, quality = 0.9): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
