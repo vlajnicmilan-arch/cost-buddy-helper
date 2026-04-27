@@ -9,6 +9,18 @@
   },
   "projects": {
     "noPaymentSource": "No source",
+    "onboarding": {
+      "title": "Quick start",
+      "subtitle": "Pick a project type — you can change name and budget in the next step."
+    },
+    "quickStart": {
+      "renovation": "Renovation",
+      "renovationDesc": "Track construction costs",
+      "client": "Client / Work",
+      "clientDesc": "Income and expenses per client",
+      "personal": "Personal goal",
+      "personalDesc": "Travel, wedding, purchase"
+    },
     "title": "Projects",
     "add": "New Project",
     "edit": "Edit Project",

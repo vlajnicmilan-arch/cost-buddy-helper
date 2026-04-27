@@ -9,6 +9,18 @@
   },
   "projects": {
     "tabs": { "work": "Arbeit", "people": "Personen", "money": "Geld" },
+    "onboarding": {
+      "title": "Schnellstart",
+      "subtitle": "Wähle einen Projekttyp — Name und Budget kannst du im nächsten Schritt ändern."
+    },
+    "quickStart": {
+      "renovation": "Renovierung",
+      "renovationDesc": "Baukosten verfolgen",
+      "client": "Kunde / Auftrag",
+      "clientDesc": "Einnahmen und Ausgaben pro Kunde",
+      "personal": "Persönliches Ziel",
+      "personalDesc": "Reise, Hochzeit, Kauf"
+    },
     "tooltips": {
       "team": "Andere App-Benutzer mit Projektzugriff",
       "workers": "Deine Mitarbeiter (du verwaltest und bezahlst sie, Stundenerfassung)",
