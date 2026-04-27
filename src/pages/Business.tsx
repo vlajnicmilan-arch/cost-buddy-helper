@@ -148,6 +148,15 @@ const Business = () => {
         )}
       </div>
 
+      {/* Stable, always-mounted AddExpenseDialog — survives tab changes and
+          camera lifecycle events so scanning never loses its host. */}
+      <AddExpenseDialog
+        onAdd={addExpense}
+        externalOpen={addExpenseOpen}
+        onOpenChange={setAddExpenseOpen}
+        hideTrigger
+      />
+
       <BusinessBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
