@@ -631,10 +631,10 @@ export const AddExpenseDialog = ({
   };
 
   const handleLoanConfirm = (loans: DetectedLoan[]) => {
-    if (!activeBusinessProfileId) return;
+    if (!effectiveBusinessProfileId) return;
     for (const loan of loans) {
       addDebt({
-        business_profile_id: activeBusinessProfileId,
+        business_profile_id: effectiveBusinessProfileId,
         type: loan.type,
         contact_name: loan.contactName,
         description: loan.description,
@@ -717,7 +717,7 @@ export const AddExpenseDialog = ({
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
-        business_profile_id: activeBusinessProfileId || null,
+        business_profile_id: effectiveBusinessProfileId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       };
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
@@ -752,7 +752,7 @@ export const AddExpenseDialog = ({
       project_id: selectedProjectId || undefined,
       budget_id: selectedBudgetId || undefined,
       expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
-      business_profile_id: activeBusinessProfileId || null,
+      business_profile_id: effectiveBusinessProfileId || null,
       currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
     };
