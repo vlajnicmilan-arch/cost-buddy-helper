@@ -93,13 +93,25 @@ export const AddExpenseDialog = ({
   triggerLabel,
   triggerIcon,
   triggerVariant = 'default',
+  externalOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
   const { successVibration } = useHaptics();
   const { maybeRequestReview } = useInAppReview();
   const { getCurrentLocation, loading: locationLoading } = useLocation();
-  const [open, setOpen] = useState(false);
+  const isControlled = externalOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? !!externalOpen : internalOpen;
+  const setOpen = useCallback((next: boolean) => {
+    if (isControlled) {
+      onOpenChange?.(next);
+    } else {
+      setInternalOpen(next);
+    }
+  }, [isControlled, onOpenChange]);
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
