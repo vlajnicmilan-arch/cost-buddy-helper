@@ -504,6 +504,8 @@ const Index = () => {
       budgetsCount={budgetsWithStats.length}
       budgetsForAssistant={budgetsForAssistant}
       projectsForAssistant={projectsForAssistant}
+      projects={projects}
+      isBusinessMode={isBusinessMode}
       businessProfileName={businessProfile?.company_name}
       showWelcome={showWelcome}
       onWelcomeComplete={() => setShowWelcome(false)}
