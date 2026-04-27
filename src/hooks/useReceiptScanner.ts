@@ -126,7 +126,7 @@ export const useReceiptScanner = () => {
         })) || []
       })) || [];
 
-      const response = await fetch(
+      const callParseReceipt = (payloadImages: string[]) => fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`,
         {
           method: 'POST',
@@ -134,13 +134,15 @@ export const useReceiptScanner = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${sessionData.session.access_token}`
           },
-          body: JSON.stringify({ 
-            imagesBase64: compressedImages,
+          body: JSON.stringify({
+            imagesBase64: payloadImages,
             customPaymentSources: sourcesForApi,
             customCategories: customCategories || []
           })
         }
       );
+
+      let response = await callParseReceipt(compressedImages);
 
       
 
@@ -162,14 +164,33 @@ export const useReceiptScanner = () => {
         } catch {
           console.error('Failed to parse error response');
         }
-        try {
-          logDiagnostic({
-            event: 'receipt_scan_http_error',
-            severity: 'error',
-            details: { status: response.status, message: errorMessage },
-          });
-        } catch {}
-        throw new Error(errorMessage);
+        if (response.status === 400 && UNREADABLE_RECEIPT_RE.test(errorMessage)) {
+          try {
+            logDiagnostic('receipt_scan_retry_original_image', { reason: errorMessage });
+          } catch {}
+          response = await callParseReceipt(imagesBase64);
+          if (response.ok) {
+            try { logDiagnostic('receipt_scan_retry_success', { status: response.status }); } catch {}
+          } else {
+            try {
+              const retryErrorData = await response.clone().json();
+              errorMessage = retryErrorData.error || errorMessage;
+            } catch {}
+          }
+        }
+
+        if (response.ok) {
+          try { logDiagnostic('receipt_scan_response_received', { status: response.status }); } catch {}
+        } else {
+          try {
+            logDiagnostic({
+              event: 'receipt_scan_http_error',
+              severity: 'error',
+              details: { status: response.status, message: errorMessage },
+            });
+          } catch {}
+          throw new Error(errorMessage);
+        }
       }
 
       try {
