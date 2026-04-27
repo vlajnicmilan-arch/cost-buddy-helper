@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_nudge_log: {
+        Row: {
+          day_number: number
+          id: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          day_number: number
+          id?: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          day_number?: number
+          id?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_diagnostics_logs: {
         Row: {
           app_version: string | null
