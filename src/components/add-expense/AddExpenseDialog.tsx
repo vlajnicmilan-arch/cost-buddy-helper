@@ -473,13 +473,22 @@ export const AddExpenseDialog = ({
           payment_source_card_id: finalCardId || undefined
         });
         await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
+        try { logDiagnostic('receipt_scan_accept_success', { amount: scannedData.amount, is_installment: true }); } catch {}
         setIsSaving(false);
         return;
       }
 
       await executeAdd(newExpense, validItems.length > 0 ? validItems : undefined);
+      try { logDiagnostic('receipt_scan_accept_success', { amount: scannedData.amount }); } catch {}
     } catch (error) {
       console.error('Error saving expense:', error);
+      try {
+        logDiagnostic({
+          event: 'receipt_scan_accept_error',
+          severity: 'error',
+          details: { message: error instanceof Error ? error.message : String(error) },
+        });
+      } catch {}
       showError(t('transactions.saveError'));
     } finally {
       setIsSaving(false);
