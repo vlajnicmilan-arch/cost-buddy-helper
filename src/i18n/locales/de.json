@@ -348,7 +348,12 @@
     "settings": "Einstellungen",
     "help": "Hilfe",
     "signOut": "Abmelden",
-    "signIn": "Anmelden"
+    "signIn": "Anmelden",
+    "activeProjects": "Aktive Projekte",
+    "createFirstProject": "Erstes Projekt erstellen",
+    "newProject": "Neues Projekt",
+    "projectProgress": "{{percent}}% verwendet",
+    "noActiveProjects": "Keine aktiven Projekte"
   },
   "validation": {
     "dateOutOfRange": "Datum liegt außerhalb des zulässigen Bereichs",
