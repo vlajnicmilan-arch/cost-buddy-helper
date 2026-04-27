@@ -805,6 +805,14 @@ export const AddExpenseDialog = ({
       if (!isOpen && (scanning || showScannedPreview || isSaving || cameraActiveRef.current)) return;
       setOpen(isOpen);
       if (isOpen) {
+        try {
+          logDiagnostic('add_expense_dialog_opened', {
+            auto_scan: autoScan,
+            is_business: !!effectiveBusinessProfileId,
+            business_profile_id: effectiveBusinessProfileId,
+            route: typeof window !== 'undefined' ? window.location.pathname : null,
+          });
+        } catch {}
         refetchPaymentSources().then(() => {
           if (customPaymentSources.length > 0) {
             setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
