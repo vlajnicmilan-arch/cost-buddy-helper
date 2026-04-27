@@ -602,7 +602,12 @@
     "settings": "Settings",
     "help": "Help",
     "signOut": "Sign Out",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "activeProjects": "Active projects",
+    "createFirstProject": "Create first project",
+    "newProject": "New project",
+    "projectProgress": "{{percent}}% used",
+    "noActiveProjects": "No active projects"
   },
   "validation": {
     "dateOutOfRange": "Date is outside the allowed range",

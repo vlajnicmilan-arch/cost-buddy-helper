@@ -609,7 +609,12 @@
     "settings": "Postavke",
     "help": "Pomoć",
     "signOut": "Odjava",
-    "signIn": "Prijava"
+    "signIn": "Prijava",
+    "activeProjects": "Aktivni projekti",
+    "createFirstProject": "Kreiraj prvi projekt",
+    "newProject": "Novi projekt",
+    "projectProgress": "{{percent}}% iskorišteno",
+    "noActiveProjects": "Nema aktivnih projekata"
   },
   "validation": {
     "dateOutOfRange": "Datum nije unutar dopuštenog raspona",
