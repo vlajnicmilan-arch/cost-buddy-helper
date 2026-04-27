@@ -133,6 +133,10 @@ export const ActiveProjectsStrip = React.memo(({
     });
   }, [projects, allExpenses]);
 
+  // Early returns AFTER all hooks (Rules of Hooks compliance)
+  if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
+  if (!hasAccess('projects')) return null;
+
   const handleNav = (path: string) => {
     lightTap();
     navigate(path);
