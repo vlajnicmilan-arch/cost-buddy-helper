@@ -11,6 +11,7 @@ import { PulseAlertsSection } from './PulseAlertsSection';
 import { PulsePerformanceSection } from './PulsePerformanceSection';
 import { PulseAISummary } from './PulseAISummary';
 import { PulseTopIssuesSection } from './PulseTopIssuesSection';
+import { PulseActivationFunnel } from './PulseActivationFunnel';
 
 export const PulseTab = () => {
   const { t } = useTranslation();
@@ -43,6 +44,8 @@ export const PulseTab = () => {
         errors24h={m.errors24h}
         bySeverity1h={m.bySeverity1h}
       />
+
+      <PulseActivationFunnel />
 
       <PulseTopIssuesSection issues={m.topIssues} />
 
