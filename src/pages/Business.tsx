@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, ArrowLeft, User, Settings } from 'lucide-react';
+import { Building2, ArrowLeft, Plus, ScanLine } from 'lucide-react';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
@@ -42,6 +42,8 @@ const Business = () => {
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [businessAddOpen, setBusinessAddOpen] = useState(false);
+  const [businessScanOpen, setBusinessScanOpen] = useState(false);
 
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
 
@@ -130,25 +132,8 @@ const Business = () => {
         {activeTab === 'transactions' && (
           <BusinessTransactions
             expenses={dashboardExpenses}
-            onAddClick={() => {}}
-            addAction={
-              <AddExpenseDialog
-                onAdd={addExpense}
-                checkDuplicate={checkDuplicate}
-                triggerLabel={t('business.transactions.new', 'Novo')}
-                triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none"
-              />
-            }
-            scanAction={
-              <AddExpenseDialog
-                onAdd={addExpense}
-                checkDuplicate={checkDuplicate}
-                autoScan
-                triggerVariant="scan"
-                triggerLabel={t('common.scan', 'Skeniraj')}
-                triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none border border-primary/30 bg-background text-primary hover:bg-primary/10"
-              />
-            }
+            onAddClick={() => setBusinessAddOpen(true)}
+            onScanClick={() => setBusinessScanOpen(true)}
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
             onImportCSV={importFromCSV}
@@ -166,6 +151,27 @@ const Business = () => {
           <BusinessMore expenses={dashboardExpenses} />
         )}
       </div>
+
+      <AddExpenseDialog
+        onAdd={addExpense}
+        checkDuplicate={checkDuplicate}
+        externalOpen={businessAddOpen}
+        onOpenChange={setBusinessAddOpen}
+        hideTrigger
+        triggerIcon={<Plus className="w-5 h-5" />}
+        triggerLabel={t('business.transactions.new', 'Novo')}
+      />
+      <AddExpenseDialog
+        onAdd={addExpense}
+        checkDuplicate={checkDuplicate}
+        externalOpen={businessScanOpen}
+        onOpenChange={setBusinessScanOpen}
+        hideTrigger
+        autoScan
+        triggerVariant="scan"
+        triggerIcon={<ScanLine className="w-5 h-5" />}
+        triggerLabel={t('common.scan', 'Skeniraj')}
+      />
 
       <BusinessBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
