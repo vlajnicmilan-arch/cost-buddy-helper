@@ -251,17 +251,7 @@ KORAK 3: Ako nema podudaranja brojeva
      - Ako NIJE dopuna/transfer/bankomat → transaction_type: "expense"
 ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
 
- 8. PDV / VAT (KRITIČNO ZA POSLOVNE KORISNIKE!)
-    - Traži: "PDV", "VAT", "POREZ", "TAX", "PDV 25%", "PDV 13%", "PDV 5%"
-    - Traži retke poput: "Osnovica: 36.40", "PDV 25%: 9.10", "Ukupno: 45.50"
-    - Traži i: "Porezna osnovica", "Iznos poreza", "Stopa PDV-a"
-    - Ako pronađeš PDV informacije:
-      - vat_rate: stopa PDV-a kao broj (25, 13, 5, 0)
-      - vat_amount: apsolutni iznos PDV-a u eurima
-    - Ako račun ima VIŠE stopa PDV-a, koristi NAJVEĆU stopu i zbroji sve PDV iznose
-    - Ako nema PDV informacija → vat_rate: null, vat_amount: null
-
- 9. IZDAVATELJ I PRIMATELJ RAČUNA (KRITIČNO!)
+ 8. IZDAVATELJ I PRIMATELJ RAČUNA (KRITIČNO!)
     - issuer_name: Tvrtka/obrt/osoba koja je IZDALA račun (prodavatelj, pružatelj usluge)
       - Obično na vrhu računa: naziv firme, OIB, adresa
       - Primjeri: "KONZUM PLUS d.o.o.", "INA d.d.", "Frizerski salon Ana"
