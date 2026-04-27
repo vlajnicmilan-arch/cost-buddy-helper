@@ -365,7 +365,12 @@
     "createFirstProject": "Erstes Projekt erstellen",
     "newProject": "Neues Projekt",
     "projectProgress": "{{percent}}% verwendet",
-    "noActiveProjects": "Keine aktiven Projekte"
+    "noActiveProjects": "Keine aktiven Projekte",
+    "profit": "Gewinn",
+    "loss": "Verlust",
+    "remaining": "Verbleibend",
+    "overBudget": "Über Budget",
+    "items": "{{count}} Einträge"
   },
   "validation": {
     "dateOutOfRange": "Datum liegt außerhalb des zulässigen Bereichs",
