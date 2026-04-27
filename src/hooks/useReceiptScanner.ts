@@ -160,6 +160,13 @@ export const useReceiptScanner = () => {
         } catch {
           console.error('Failed to parse error response');
         }
+        try {
+          logDiagnostic({
+            event: 'receipt_scan_http_error',
+            severity: 'error',
+            details: { status: response.status, message: errorMessage },
+          });
+        } catch {}
         throw new Error(errorMessage);
       }
 
