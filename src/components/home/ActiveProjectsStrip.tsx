@@ -4,18 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { FolderKanban, Plus, ChevronRight } from 'lucide-react';
 import { ProjectWithOwnership, DEFAULT_PROJECT_COLORS } from '@/types/project';
-import { Expense } from '@/types/expense';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import {
-  calculateProjectSpent,
-  calculateProjectIncomeFromTransactions,
-} from '@/lib/projectCalculations';
+import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
 
 interface ActiveProjectsStripProps {
   projects: ProjectWithOwnership[];
-  allExpenses: Expense[];
   isLocalMode: boolean;
   simpleModeEnabled: boolean;
   isBusinessMode: boolean;
@@ -69,7 +64,6 @@ const TrafficLight: React.FC<{ level: HealthLevel }> = ({ level }) => {
 
 export const ActiveProjectsStrip = React.memo(({
   projects,
-  allExpenses,
   isLocalMode,
   simpleModeEnabled,
   isBusinessMode,
@@ -81,17 +75,29 @@ export const ActiveProjectsStrip = React.memo(({
   const { lightTap } = useHaptics();
   const { formatAmount } = useCurrency();
 
-  // Compute active projects with spent / income / health
   // IMPORTANT: hooks MUST be called before any early return (Rules of Hooks)
+  // Compute active project ids (limit to MAX_VISIBLE) for the summary fetch
+  const activeIds = useMemo(
+    () =>
+      projects
+        .filter(p => p.status === 'active' || p.status === 'draft')
+        .slice(0, MAX_VISIBLE)
+        .map(p => p.id),
+    [projects]
+  );
+
+  // Fetch authoritative spent/income directly from DB (mirrors Projects page)
+  const { summary, loading: summaryLoading } = useActiveProjectsSummary(activeIds);
+
   const activeProjects: ProjectCardData[] = useMemo(() => {
     const active = projects.filter(p => p.status === 'active' || p.status === 'draft');
     return active.slice(0, MAX_VISIBLE).map(p => {
-      const projectExpenses = allExpenses.filter(e => e.project_id === p.id);
-      const spent = calculateProjectSpent(projectExpenses as any);
-      const income = calculateProjectIncomeFromTransactions(projectExpenses as any);
+      const entry = summary.get(p.id);
+      const spent = entry?.spent ?? 0;
+      const income = entry?.income ?? 0;
+      const txCount = entry?.txCount ?? 0;
       const profit = income - spent;
       const remaining = (p.total_budget || 0) - spent;
-      const txCount = projectExpenses.length;
 
       const hasIncome = income > 0;
       const hasBudget = (p.total_budget || 0) > 0;
