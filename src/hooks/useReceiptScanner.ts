@@ -168,6 +168,9 @@ export const useReceiptScanner = () => {
         throw new Error(errorMessage);
       }
 
+      try {
+        logDiagnostic('receipt_scan_response_received', { status: response.status });
+      } catch {}
       const data = await response.json();
       
       // Map payment_method from AI to PaymentSource
@@ -208,17 +211,6 @@ export const useReceiptScanner = () => {
       };
 
       setParsedData(result);
-
-      // Cache result locally for offline access
-      try {
-        await LocalStorage.setJSON(`receipt_cache_${Date.now()}`, result);
-        // Save first image locally
-        if (compressedImages[0]) {
-          await LocalFileCache.saveReceiptImage(compressedImages[0]);
-        }
-      } catch (cacheErr) {
-        console.warn('Failed to cache receipt locally:', cacheErr);
-      }
       
       // Show different message if custom source was matched
       if (data.custom_payment_source_id) {
@@ -236,6 +228,25 @@ export const useReceiptScanner = () => {
           item_count: result.items.length,
         });
       } catch {}
+
+      // Cache result locally only after the UI result is already returned.
+      // On Android, Preferences/Filesystem can occasionally stall; that must never block preview.
+      void (async () => {
+        try {
+          await LocalStorage.setJSON(`receipt_cache_${Date.now()}`, result);
+          if (compressedImages[0]) {
+            await LocalFileCache.saveReceiptImage(compressedImages[0]);
+          }
+          logDiagnostic('receipt_scan_cache_saved', {});
+        } catch (cacheErr) {
+          console.warn('Failed to cache receipt locally:', cacheErr);
+          logDiagnostic({
+            event: 'receipt_scan_cache_error',
+            severity: 'warning',
+            details: { message: cacheErr instanceof Error ? cacheErr.message : String(cacheErr) },
+          });
+        }
+      })();
       return result;
     } catch (error) {
       if (isAbortLikeError(error)) {
