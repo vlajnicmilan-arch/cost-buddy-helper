@@ -71,13 +71,25 @@ export const checkForNativeUpdates = async () => {
 export const NativeUpdateInitializer = () => {
   useEffect(() => {
     const checker = initializeNativeUpdateChecker();
+    const silentCheck = async () => {
+      const result = await fetchLatestVersion();
+      if (result.version && isRemoteVersionNewer(APP_VERSION, result.version)) {
+        toast.info(
+          `Nova web verzija ${result.version} dostupna! (Trenutna: ${APP_VERSION})`,
+          {
+            action: { label: 'Osvježi', onClick: () => window.location.reload() },
+            duration: 10000,
+          }
+        );
+      }
+    };
     const timeoutId = window.setTimeout(() => {
-      checker?.().catch((error) => console.error('[NativeUpdate] Startup check failed:', error));
+      silentCheck().catch((error) => console.error('[NativeUpdate] Startup check failed:', error));
     }, 2500);
 
     const handleVisible = () => {
       if (document.visibilityState === 'visible') {
-        checker?.().catch((error) => console.error('[NativeUpdate] Visibility check failed:', error));
+        silentCheck().catch((error) => console.error('[NativeUpdate] Visibility check failed:', error));
       }
     };
     document.addEventListener('visibilitychange', handleVisible);
