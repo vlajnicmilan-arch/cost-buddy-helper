@@ -171,27 +171,6 @@ const Business = () => {
         )}
       </div>
 
-      <AddExpenseDialog
-        onAdd={addExpense}
-        checkDuplicate={checkDuplicate}
-        externalOpen={businessAddOpen}
-        onOpenChange={setBusinessAddOpen}
-        hideTrigger
-        triggerIcon={<Plus className="w-5 h-5" />}
-        triggerLabel={t('business.transactions.new', 'Novo')}
-      />
-      <AddExpenseDialog
-        onAdd={addExpense}
-        checkDuplicate={checkDuplicate}
-        externalOpen={businessScanOpen}
-        onOpenChange={setBusinessScanOpen}
-        hideTrigger
-        autoScan
-        triggerVariant="scan"
-        triggerIcon={<ScanLine className="w-5 h-5" />}
-        triggerLabel={t('common.scan', 'Skeniraj')}
-      />
-
       <BusinessBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
