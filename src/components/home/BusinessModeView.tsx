@@ -18,7 +18,7 @@ import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { BusinessProjects } from '@/components/business/BusinessProjects';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Building2, FileSpreadsheet, Plus, ScanLine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 
@@ -113,6 +113,8 @@ interface BusinessModeViewProps {
 export const BusinessModeView = (props: BusinessModeViewProps) => {
   const { t } = useTranslation();
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
+  const [businessAddOpen, setBusinessAddOpen] = useState(false);
+  const [businessScanOpen, setBusinessScanOpen] = useState(false);
 
   const {
     businessTab,
@@ -270,25 +272,8 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         {businessTab === 'transactions' && (
           <BusinessTransactions
             expenses={props.expenses}
-            onAddClick={() => {}}
-            addAction={
-              <AddExpenseDialog
-                onAdd={props.onAddExpense}
-                checkDuplicate={props.checkDuplicate}
-                triggerLabel={t('business.transactions.new', 'Novo')}
-                triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none"
-              />
-            }
-            scanAction={
-              <AddExpenseDialog
-                onAdd={props.onAddExpense}
-                checkDuplicate={props.checkDuplicate}
-                autoScan
-                triggerVariant="scan"
-                triggerLabel={t('common.scan', 'Skeniraj')}
-                triggerClassName="h-9 gap-1 rounded-md px-3 text-xs shadow-none border border-primary/30 bg-background text-primary hover:bg-primary/10"
-              />
-            }
+            onAddClick={() => setBusinessAddOpen(true)}
+            onScanClick={() => setBusinessScanOpen(true)}
             onEditExpense={props.onUpdateExpense}
             onDeleteExpense={props.onDeleteExpense}
             onImportCSV={props.importFromCSV}
@@ -341,6 +326,27 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         onRecurringMatchDialogChange={props.onRecurringMatchDialogChange}
         recurringMatches={props.recurringMatches}
         onRecurringMatchConfirm={props.onRecurringMatchConfirm}
+      />
+
+      <AddExpenseDialog
+        onAdd={props.onAddExpense}
+        checkDuplicate={props.checkDuplicate}
+        externalOpen={businessAddOpen}
+        onOpenChange={setBusinessAddOpen}
+        hideTrigger
+        triggerIcon={<Plus className="w-5 h-5" />}
+        triggerLabel={t('business.transactions.new', 'Novo')}
+      />
+      <AddExpenseDialog
+        onAdd={props.onAddExpense}
+        checkDuplicate={props.checkDuplicate}
+        externalOpen={businessScanOpen}
+        onOpenChange={setBusinessScanOpen}
+        hideTrigger
+        autoScan
+        triggerVariant="scan"
+        triggerIcon={<ScanLine className="w-5 h-5" />}
+        triggerLabel={t('common.scan', 'Skeniraj')}
       />
 
       <BusinessBottomNav activeTab={businessTab} onTabChange={onBusinessTabChange} />
