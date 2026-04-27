@@ -1,94 +1,40 @@
-# Pojednostavljenje project kartica na Home screenu
+## Problem (ukratko)
 
-## Cilj
-Smanjiti kognitivno opterećenje na project karticama u `ActiveProjectsStrip` — prikazati samo 3 ključna podatka koji korisniku odmah govore: **što je**, **kako stoji**, **koliko zarađuje/troši**.
+Nakon zadnje izmjene kartica projekata, aplikacija ruši s React error #310 ("Rendered more hooks than during the previous render"). To uzrokuje da `ErrorBoundary` prikazuje crveni ekran "Ups, nešto je pošlo po krivu" i izgleda kao da je korisnik odjavljen — **iako prijava savršeno radi** (potvrđeno u auth logovima: uspješan login u 10:37:43).
 
-## Što se mijenja na kartici
+Uzrok: u `src/components/home/ActiveProjectsStrip.tsx` rani izlazi (`return null`) za nepodržane modove postavljeni su **iznad** poziva `useMemo`. To krši "Rules of Hooks" — kad se kontekst promijeni (npr. promjena moda), broj pozvanih hooks-a se mijenja i React puca.
 
-### Trenutno (previše info)
-- Ikona + naziv
-- Progress bar budžeta
-- "% iskorišteno" tekst
-- Boja projekta na lijevom rubu
+## Što ću napraviti
 
-### Novo (3 ključna elementa)
+**Jedan file, jedna izmjena, bez funkcionalnih promjena.**
 
-**1. Identitet**
-- Ikona projekta + naziv
-- Lijevi rub u boji projekta (ostaje)
+`src/components/home/ActiveProjectsStrip.tsx`:
+1. Premjestiti `useMemo` (izračun `activeProjects`) **iznad** ranih izlaza, tako da se hook uvijek poziva.
+2. Rane izlaze (`if (simpleModeEnabled...) return null`, `if (!hasAccess) return null`) staviti **ispod** svih hook poziva.
 
-**2. Mini semafor 🚦** (gornji desni kut kartice)
-- 3 male točkice (~5px) složene vertikalno kao pravi semafor
-- Samo jedna svijetli (puna boja + lagani glow), ostale dvije blijede (opacity 0.2)
-- **🟢 Zelena (gore)** = projekt zdrav (profit pozitivan ILI <70% budžeta iskorišteno)
-- **🟡 Žuta (sredina)** = pažnja (profit blizu nule ILI 70–95% budžeta)
-- **🔴 Crvena (dolje)** = problem (gubitak ILI preko budžeta)
-- **Zašto semafor a ne jedna točka**: univerzalna UX konvencija, color-blind friendly (pozicija nosi značenje), korisnik odmah prepoznaje da je status indikator
-
-**3. Jedan ključni broj** (kontekstualno odabran)
-- Ako projekt ima **prihode** → prikazuje **Profit/Gubitak** (npr. `+1.250 €` zeleno, `−340 €` crveno)
-- Ako projekt ima samo **budžet i troškove** → prikazuje **Preostalo** (npr. `2.150 € preostalo`)
-- Ako je **preko budžeta** → `−450 € preko` crveno
-- Ako nema ni budžet ni prihode → broj transakcija (npr. `12 stavki`)
-- Ispod broja mala oznaka što broj znači (`Profit` / `Preostalo` / `Preko budžeta` / `Stavke`)
-
-## Vizualni prikaz
-
-```
-┌─────────────────────────┐
-│ 🏗️ Renovacija      ●    │  ← zelena svijetli
-│                    ○    │
-│                    ○    │
-│                         │
-│ +1.250 €                │  ← veliki broj, boja po značenju
-│ Profit                  │  ← mala oznaka
-└─────────────────────────┘
-   ↑ lijevi rub u boji projekta
+```text
+PRIJE (krivo):                 POSLIJE (ispravno):
+─────────────────              ─────────────────
+useTranslation()               useTranslation()
+useNavigate()                  useNavigate()
+useFeatureAccess()             useFeatureAccess()
+useHaptics()                   useHaptics()
+useCurrency()                  useCurrency()
+                               useMemo(...)         ← uvijek se zove
+if (mod) return null   ← puca  
+if (!access) return null       if (mod) return null
+                               if (!access) return null
+useMemo(...)           ← preskočen
 ```
 
-## Tehnička implementacija
+## Što NEĆE biti promijenjeno
+- Vizualni izgled kartica (semafor, KPI brojka, layout)
+- Logika izračuna profita/gubitka/zdravlja
+- i18n prijevodi
+- Bilo koja druga komponenta osim ove jedne
 
-### Datoteka: `src/components/home/ActiveProjectsStrip.tsx`
-- Refactor `useMemo` kalkulacije — uz `spent` dodati i `income`, `remaining`, `profit`, `healthLevel` ('green'|'yellow'|'red')
-- Koristim postojeće `calculateProjectSpent` i `calculateProjectIncomeFromTransactions` iz `src/lib/projectCalculations.ts` — **bez novih funkcija**
-- Sve se računa iz već dohvaćenih `allExpenses` props — **zero novih DB queries**
-- Logika za `healthLevel`:
-  - Ako ima prihode: zelena ako profit ≥ 0, crvena ako profit < 0, žuta ako profit između −5% i +5% prihoda
-  - Ako ima samo budžet: zelena <70%, žuta 70–95%, crvena >95%
-  - Ako nema ni jedno: zelena (neutralno)
-- Logika za "ključni broj" (prikaz):
-  - `hasIncome` → prikaži profit
-  - `!hasIncome && hasBudget && spent > budget` → prikaži "preko"
-  - `!hasIncome && hasBudget` → prikaži preostalo
-  - inače → broj transakcija
+## Rizik
+**Minimalan.** Riječ je o standardnom React patternu — preslagivanje 5 linija. Aplikacija će ponovno raditi kao prije, plus nova zdrava UX kartica.
 
-### Nova mini-komponenta (inline u istoj datoteci)
-- `<TrafficLight level="green" | "yellow" | "red" />` — 3 točkice, jedna aktivna
-- ~16x6px, pozicionirana apsolutno u gornjem desnom kutu kartice
-
-### i18n ključevi (dodaju se u `src/i18n/locales/hr.json`, `en.json`, `de.json`)
-- `nav.profit` → "Profit" / "Profit" / "Gewinn"
-- `nav.loss` → "Gubitak" / "Loss" / "Verlust"
-- `nav.remaining` → "Preostalo" / "Remaining" / "Verbleibend"
-- `nav.overBudget` → "Preko budžeta" / "Over budget" / "Über Budget"
-- `nav.items` → "{{count}} stavki" / "{{count}} items" / "{{count}} Einträge"
-
-## Što ostaje netaknuto
-- ✅ Empty state ("Kreiraj prvi projekt")
-- ✅ "+ Novi projekt" CTA kartica na kraju strip-a
-- ✅ Skrivanje u Simple/Local/Business modu
-- ✅ Naslov sekcije + "Pogledaj sve" link
-- ✅ Loading skeleton
-- ✅ Horizontalni scroll s snap-om
-- ✅ Sva postojeća logika izračuna (samo se proširuje, ne mijenja)
-
-## Sigurnosne provjere
-- Bez DB promjena, bez novih queries, bez novih dependency-ja
-- Bez utjecaja na `ProjectsPanel`, `ProjectFullScreenView`, `BusinessProjects` — mijenja se samo Home strip
-- Bez utjecaja na color-coding transakcija (Faza 3) — koristi isti `project.color`
-
-## Datoteke koje se mijenjaju
-1. `src/components/home/ActiveProjectsStrip.tsx` — refactor prikaza
-2. `src/i18n/locales/hr.json` — novi ključevi
-3. `src/i18n/locales/en.json` — novi ključevi
-4. `src/i18n/locales/de.json` — novi ključevi
+## Što korisnik treba napraviti nakon popravka
+Samo **osvježiti stranicu** (pull-to-refresh ili klik "Osvježi stranicu" na crvenom ekranu). Sesija je još uvijek aktivna na serveru, samo je client-side React tree pukao.
