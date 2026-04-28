@@ -854,33 +854,35 @@ export const AddExpenseDialog = ({
           <DialogTitle className="text-xl font-semibold">{t('transactions.newTransaction')}</DialogTitle>
         </DialogHeader>
         
-        <div className={cn('flex-1 -mx-6 px-6 relative', showScannedPreview ? 'overflow-hidden' : 'overflow-y-auto')}>
-          <ScanningOverlay visible={scanning} imageCount={receiptImages.length || 1} />
+        <div className={cn('flex-1 min-h-0 -mx-6 px-6 relative', showScannedPreview ? 'overflow-hidden' : 'overflow-y-auto')}>
+          <ScanningOverlay visible={scanning && !showScannedPreview} imageCount={receiptImages.length || 1} />
           
           {showScannedPreview && scannedData && (
-            <ScannedDataPreview
-              scannedData={scannedData}
-              onScannedDataChange={setScannedData}
-              receiptImage={receiptImage}
-              receiptImages={receiptImages}
-              customPaymentSources={customPaymentSources}
-              customCategories={customCategories}
-              projects={projects}
-              budgets={budgets}
-              selectedProjectId={selectedProjectId}
-              onSelectedProjectIdChange={setSelectedProjectId}
-              selectedBudgetId={selectedBudgetId}
-              onSelectedBudgetIdChange={setSelectedBudgetId}
-              expenseNature={expenseNature}
-              onExpenseNatureChange={setExpenseNature}
-              totalWithTip={totalWithTip}
-              onTotalWithTipChange={setTotalWithTip}
-              saveReceipt={saveReceipt}
-              onSaveReceiptChange={setSaveReceipt}
-              isSaving={isSaving}
-              onAccept={acceptScannedData}
-              onReject={rejectScannedData}
-            />
+            <div className="absolute inset-0 z-[60] bg-background px-6 pb-1">
+              <ScannedDataPreview
+                scannedData={scannedData}
+                onScannedDataChange={setScannedData}
+                receiptImage={receiptImage}
+                receiptImages={receiptImages}
+                customPaymentSources={customPaymentSources}
+                customCategories={customCategories}
+                projects={projects}
+                budgets={budgets}
+                selectedProjectId={selectedProjectId}
+                onSelectedProjectIdChange={setSelectedProjectId}
+                selectedBudgetId={selectedBudgetId}
+                onSelectedBudgetIdChange={setSelectedBudgetId}
+                expenseNature={expenseNature}
+                onExpenseNatureChange={setExpenseNature}
+                totalWithTip={totalWithTip}
+                onTotalWithTipChange={setTotalWithTip}
+                saveReceipt={saveReceipt}
+                onSaveReceiptChange={setSaveReceipt}
+                isSaving={isSaving}
+                onAccept={acceptScannedData}
+                onReject={rejectScannedData}
+              />
+            </div>
           )}
 
           {!showScannedPreview && (
