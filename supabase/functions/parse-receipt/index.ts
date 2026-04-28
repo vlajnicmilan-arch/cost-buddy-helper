@@ -48,6 +48,25 @@ function prepareImagePart(imageBase64: string) {
   };
 }
 
+async function callAiGateway(apiKey: string, payload: Record<string, unknown>, timeoutMs = 45_000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -385,28 +404,32 @@ Vrati SAMO JSON bez dodatnog teksta.`;
       ...imageParts
     ];
 
-    // Use Gemini for OCR and categorization with enhanced prompt
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: userContent
-          }
-        ],
-        temperature: 0.1  // Lower temperature for more consistent extraction
-      })
-    });
+    const aiPayload = {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userContent
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 4000,
+    };
+
+    // Use Flash for receipt OCR. Pro was too slow on native scans and caused 503 before the UI got a result.
+    let aiResponse = await callAiGateway(LOVABLE_API_KEY, aiPayload);
+
+    if (aiResponse.status >= 500) {
+      console.warn('AI gateway transient error, retrying once with flash-lite:', aiResponse.status);
+      aiResponse = await callAiGateway(LOVABLE_API_KEY, {
+        ...aiPayload,
+        model: 'google/gemini-2.5-flash-lite',
+      }, 30_000);
+    }
 
     if (!aiResponse.ok) {
       if (aiResponse.status === 429) {
@@ -423,7 +446,10 @@ Vrati SAMO JSON bez dodatnog teksta.`;
       }
       const errorText = await aiResponse.text();
       console.error('AI gateway error:', aiResponse.status, errorText);
-      throw new Error('AI gateway error');
+      return new Response(
+        JSON.stringify({ error: 'AI analiza trenutno nije dostupna. Pokušaj ponovno za minutu.' }), 
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const aiData = await aiResponse.json();
