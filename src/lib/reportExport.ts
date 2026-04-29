@@ -221,6 +221,7 @@ export interface IncomeReportData {
 }
 
 export const generateIncomePDFReport = async (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima', mode: ExportMode = 'save'): Promise<void> => {
+  const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   
   doc.setFontSize(20);
