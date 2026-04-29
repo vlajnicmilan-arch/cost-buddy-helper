@@ -1,6 +1,7 @@
 // FCM HTTP v1 API implementation with OAuth2 (RS256 JWT)
 // Requires FCM_SERVICE_ACCOUNT secret containing the full service account JSON
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { captureEdgeError } from "../_shared/sentry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -374,6 +375,11 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("[send-push] Error:", e);
+    captureEdgeError(e, {
+      functionName: 'send-push',
+      userId: user_id ?? undefined,
+      context: { source, request_id, has_data: !!data },
+    });
     await logDelivery(supabase, {
       user_id, source_function: source, title, body,
       token_count: 0, success_count: 0, failure_count: 0,

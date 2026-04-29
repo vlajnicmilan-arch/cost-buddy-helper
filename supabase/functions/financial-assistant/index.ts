@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { captureEdgeError } from "../_shared/sentry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1637,6 +1638,10 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
     });
   } catch (error) {
     console.error("Financial assistant error:", error);
+    captureEdgeError(error, {
+      functionName: 'financial-assistant',
+      context: { method: req.method },
+    });
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Nepoznata greška" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
