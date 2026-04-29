@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { captureSentryException } from '@/lib/sentry';
 
 interface Props {
   children: ReactNode;
@@ -39,6 +40,11 @@ export class ErrorBoundary extends Component<Props, State> {
     } catch {
       /* logger must never break recovery */
     }
+    // Send to Sentry for stack trace + breadcrumbs + grouping.
+    captureSentryException(error, {
+      componentStack: errorInfo.componentStack?.slice(0, 2000),
+      source: 'ErrorBoundary',
+    });
   }
 
   handleReload = () => {
