@@ -138,21 +138,49 @@ export const useReceiptScanner = () => {
         })) || []
       })) || [];
 
-      const callParseReceipt = (payloadImages: string[]) => fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`,
-        {
+      const callParseReceipt = async (payloadImages: string[]): Promise<ReceiptHttpResult> => {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`;
+        const payload = {
+          imagesBase64: payloadImages,
+          customPaymentSources: sourcesForApi,
+          customCategories: customCategories || []
+        };
+
+        if (Capacitor.isNativePlatform()) {
+          try { logDiagnostic('receipt_scan_native_http_start', { image_count: payloadImages.length }); } catch {}
+          const nativeResponse = await CapacitorHttp.post({
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionData.session.access_token}`,
+            },
+            data: payload,
+            connectTimeout: 15000,
+            readTimeout: 60000,
+            responseType: 'json',
+          });
+          return {
+            ok: nativeResponse.status >= 200 && nativeResponse.status < 300,
+            status: nativeResponse.status,
+            json: () => Promise.resolve(parseReceiptResponseBody(nativeResponse.data)),
+          };
+        }
+
+        const webResponse = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${sessionData.session.access_token}`
           },
-          body: JSON.stringify({
-            imagesBase64: payloadImages,
-            customPaymentSources: sourcesForApi,
-            customCategories: customCategories || []
-          })
-        }
-      );
+          body: JSON.stringify(payload)
+        });
+
+        return {
+          ok: webResponse.ok,
+          status: webResponse.status,
+          json: () => webResponse.json(),
+        };
+      };
 
       let response = await callParseReceipt(compressedImages);
 
@@ -185,7 +213,7 @@ export const useReceiptScanner = () => {
             try { logDiagnostic('receipt_scan_retry_success', { status: response.status }); } catch {}
           } else {
             try {
-              const retryErrorData = await response.clone().json();
+              const retryErrorData = await response.json();
               errorMessage = retryErrorData.error || errorMessage;
             } catch {}
           }
