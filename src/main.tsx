@@ -5,6 +5,10 @@ import "./index.css";
 import "./i18n";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { logDiagnostic } from "./lib/diagnosticLogger";
+import { initSentry } from "./lib/sentry";
+
+// Init Sentry as early as possible — must run before any errors can fire.
+initSentry();
 
 // Boot diagnostic event — first thing logged from the JS bundle.
 logDiagnostic('boot_start', {

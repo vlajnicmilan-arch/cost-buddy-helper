@@ -14,6 +14,7 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
+import { captureSentryException, setSentryUser } from '@/lib/sentry';
 
 export type DiagnosticSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -131,12 +132,14 @@ let cachedUserId: string | null = null;
 
 supabase.auth.getUser().then(({ data }) => {
   cachedUserId = data.user?.id ?? null;
+  setSentryUser(cachedUserId);
 }).catch(() => {
   /* ignore */
 });
 
 supabase.auth.onAuthStateChange((_event, session) => {
   cachedUserId = session?.user?.id ?? null;
+  setSentryUser(cachedUserId);
 });
 
 const flush = async () => {
@@ -310,6 +313,10 @@ if (typeof window !== 'undefined') {
         colno: e.colno,
       },
     });
+    // Mirror to Sentry for stack trace + breadcrumbs.
+    if (e.error instanceof Error) {
+      captureSentryException(e.error, { source: 'window.error' });
+    }
   });
 
   window.addEventListener('unhandledrejection', (e) => {
@@ -329,5 +336,11 @@ if (typeof window !== 'undefined') {
         stack: typeof reason?.stack === 'string' ? reason.stack.slice(0, 2000) : undefined,
       },
     });
+    // Mirror to Sentry — passes Error directly if available for proper grouping.
+    if (reason instanceof Error) {
+      captureSentryException(reason, { source: 'unhandledrejection' });
+    } else {
+      captureSentryException(new Error(msg), { source: 'unhandledrejection', reason });
+    }
   });
 }

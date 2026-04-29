@@ -1,128 +1,132 @@
-# Plan: V&M Balance — Launch Readiness & Go-To-Market Pack (interni)
-
 ## Cilj
-Jedan PDF dokument koji ti služi kao **interni radni plan** — što još moraš popraviti/dodati u app-u prije ozbiljnog launcha, i kako onda krenuti s reklamiranjem na EU tržištu kroz sljedećih 6-8 tjedana. Ovo nije materijal za kupca, nego tvoj checklist.
 
-## Što će dokument sadržavati
+Integrirati Sentry za React frontend (web + Capacitor APK) — automatic crash & error capture s breadcrumbs, release tracking i source maps. Edge funkcije ostaju za sada, dodajemo ih kasnije ako bude potrebe.
 
-### Dio 1 — Launch Readiness Audit (što još moraš popraviti)
+## Što već imamo
 
-Konkretne stavke izvučene iz stvarnog stanja koda i nedavnih problema:
+- `@sentry/react` v10.39.0 već instaliran u `package.json` ✅
+- DSN: `https://e71c65a2c4b6da7f654257df9b5fa8f0@o4511302417973248.ingest.de.sentry.io/4511302422167632` (EU region)
+- Postojeći `diagnosticLogger.ts` s `window_error`, `unhandled_rejection`, `react_error_boundary` capture
+- `ErrorBoundary` komponenta već loga critical evente
 
-1. **Tehnička stabilnost**
-   - Riješiti otvoreni problem skenera računa na Androidu (CapacitorHttp put, diagnostics monitoring)
-   - Crash/error monitoring (Sentry ili sl. — trenutno postoji samo `monitor-app-health` edge funkcija)
-   - Performance baseline (loading vremena, bundle size analiza)
-   - Offline ponašanje provjeriti (PWA + Capacitor)
+## Strategija (potvrđena ranije)
 
-2. **EU pravna usklađenost (must-have prije reklamiranja u EU)**
-   - GDPR: Privacy Policy update (već postoji `/privacy-policy` — treba revidirati za EU specifike)
-   - Cookie consent banner (PWA verzija)
-   - Data Processing Agreement template
-   - Right to be forgotten flow (delete account + svih podataka)
-   - Data export funkcija za korisnika (već postoji parcijalno preko `fileExport.ts`)
-   - Impressum (DE/AT zahtjev)
-   - Pricing s PDV-om jasno označen po zemlji
+**"Sentry primaran, diag samo za custom"** — Sentry hvata sve crash/error evente sa stack traceom i breadcrumbima. `app_diagnostics_logs` ostaje za business evente (`receipt_scan_*`, `boot_*`, `route_change`, `expense_insert_attempt`, `notify_invoke_*`).
 
-3. **App Store / Play Store readiness**
-   - Play Store listing dotjerati (postoji `PLAY_STORE_LISTING.md`)
-   - Screenshots za 3 jezika (HR/EN/DE), 6.7" + 6.5" + tablet
-   - App preview video (15-30s)
-   - ASO ključne riječi za EU (research po zemljama)
-   - iOS App Store priprema (ako nije gotova)
-   - Data Safety / Privacy Nutrition Labels
-   - Beta testing (Internal/Closed track) — minimum 2 tjedna
+## Implementacijski koraci
 
-4. **UX polish (zadnji prolaz)**
-   - Onboarding tok — testirati s 5+ realnih korisnika
-   - Empty states na svim stranicama
-   - Error poruke human-friendly na sva 3 jezika
-   - First-run iskustvo bez intimidacije (već postoji activation funnel)
-   - In-app review trigger optimizacija
+### 1. DSN kao runtime config (ne hardkodiran)
 
-5. **Podrška & feedback infrastruktura**
-   - Support email + auto-responder
-   - In-app feedback dugme (već postoji?)
-   - FAQ stranica / Help Center (možda Notion public)
-   - Status page (statuspage.io ili UptimeRobot public)
-   - Discord ili Telegram zajednica
+DSN je javan po dizajnu, ali ga pohranjujemo kao **Vite env var** (`VITE_SENTRY_DSN`) tako da:
+- Lako ga mijenjaš bez code change
+- Možeš ga isključiti u dev modu postavljanjem na prazan string
 
-6. **Monetizacija provjera**
-   - Stripe webhook robusnost (postoji `check-subscription`)
-   - Trial expiry email tok (postoji `trial-reminder`)
-   - Failed payment recovery
-   - Refund policy dokumentirana
-   - Usporedba cijena s EU konkurencijom
+Dodajem ga u `.env` automatski tijekom implementacije (Lovable Cloud ima pristup za izmjene osim za Supabase varijable).
 
-7. **Analitika i metrike (BEZ ovih ne znaš ide li reklamiranje)**
-   - Activation rate (već postoji activation funnel)
-   - DAU/MAU tracking
-   - Retention cohorts (D1/D7/D30)
-   - Funnel: install → signup → first transaction → 2nd week active
-   - Revenue dashboard (interni admin)
-   - Attribution po marketing kanalu (UTM)
+> Napomena: ako Lovable env tooling ne dozvoljava `VITE_*` varijable, fallback je hardkodirati DSN u `src/lib/sentry.ts` (sigurno jer je javan).
 
-### Dio 2 — Go-To-Market plan (6-8 tjedana, EU fokus)
+### 2. Novi file: `src/lib/sentry.ts`
 
-**Tjedan 0-1: Foundation**
-- Brand asseti finalizirani (logo varijante, social templates)
-- Landing page (cost-buddy-helper.lovable.app → custom domain vmbalance.com)
-- Email marketing setup (već postoji infrastructure)
-- Analytics setup (Plausible / GA4)
+Centralizirana inicijalizacija s:
+- `Sentry.init()` s DSN-om, environment (`development` / `production` / `preview`), release tag (iz `APP_VERSION`)
+- **`tracesSampleRate: 0`** — ne plaćamo performance tracing (free tier 5k/mj je samo errors)
+- **`replaysSessionSampleRate: 0`, `replaysOnErrorSampleRate: 0`** — Session Replay isključen (štedi quotu)
+- **`sendDefaultPii: false`** — ne šaljemo IP/UA automatski (GDPR)
+- **`beforeSend` filter** — odbacuje:
+  - `AbortError`, `signal is aborted`
+  - Capacitor `is not implemented on` / `UNIMPLEMENTED`
+  - ResizeObserver loop limit warnings
+  - Network errors u offline modu (`navigator.onLine === false`)
+- **`beforeBreadcrumb` filter** — uklanja console.log breadcrumbs (samo console.warn/error)
+- Integracije: `browserTracingIntegration` ISKLJUČENA, `breadcrumbsIntegration` ON
+- `Sentry.setTag('platform', 'web' | 'android' | 'ios')` na osnovu Capacitora
+- `Sentry.setUser({ id })` kad se user ulogira (samo `id`, bez emaila — GDPR)
 
-**Tjedan 2-3: Soft launch**
-- Beta poziv 50-100 korisnika (HR primarno)
-- Product Hunt priprema (ne launch još)
-- Reddit prisustvo (r/personalfinance, r/eupersonalfinance, r/Croatia)
-- LinkedIn osobni profil — content priprema
+### 3. Inicijalizacija u `src/main.tsx`
 
-**Tjedan 4-5: Content & inbound**
-- Blog (5-10 SEO članaka): "Best budget app EU", "GDPR compliant finance app", lokalni keywords
-- YouTube tutoriali (HR + EN)
-- TikTok/Instagram Reels (3-5 demo videa)
-- Suradnja s 2-3 mikro-influencera (finance niša)
+Dodajem **prije** `logDiagnostic('boot_start')`:
+```ts
+import { initSentry } from './lib/sentry';
+initSentry();
+```
 
-**Tjedan 6-8: Paid push**
-- Product Hunt launch (utorak/srijeda, EU friendly time)
-- Google Ads (search) — €500-1000 test budget
-- Meta Ads (Instagram) — lookalike, €500-1000
-- App Store / Play Store featured submissions
-- PR: tech blogovi (Netokracija, Bug.hr, t3n.de)
+### 4. Wrappam `ErrorBoundary` komponentu
 
-### Dio 3 — Konkretne TODO liste po prioritetu
+U `src/components/ErrorBoundary.tsx` u `componentDidCatch`:
+- Postojeći `logDiagnostic('react_error_boundary')` ostaje
+- Dodajem `Sentry.captureException(error, { contexts: { react: { componentStack } } })`
 
-- **P0 (BLOCKER za launch)**: ~10 stavki koje moraš riješiti ili nema smisla reklamirati
-- **P1 (must-have za 4 tjedna)**: ~15 stavki koje značajno utječu na konverziju
-- **P2 (nice-to-have)**: ~10 stavki koje možeš dodati kasnije
-- Svaka stavka: opis, procjena vremena, ovisnosti
+### 5. Ažuriram `src/lib/diagnosticLogger.ts`
 
-### Dio 4 — Budžet i metrike uspjeha
+U `window.addEventListener('error')` i `unhandledrejection` handlerima:
+- Postojeći `logDiagnostic` ostaje (za diag tablicu — postupno fade out)
+- Dodajem `Sentry.captureException()` za stack trace + breadcrumbs
 
-- Procjena troškova prvih 8 tjedana (alati, ads, dizajn, pravno)
-- Definicija uspjeha: target signupi, target paid konverzija, target CAC
-- "Kada NE reklamirati" signali (npr. ako D7 retention < X%)
+> Ovime izbjegavamo dupliciranje: Sentry će grupirati pametno, a diag tablica ostaje fallback dok ne potvrdimo da Sentry stabilno radi.
 
-## Tehnička izvedba
+### 6. User context sync
 
-- Generirat ću PDF kroz Python (reportlab/weasyprint) konzistentan s prošlim brand pack-om
-- Teal accent (HSL 172 66% 40%), iste fontove, isti stil
-- ~25-30 stranica, sa checkbox-listama gdje ima smisla
-- QA: konvertirati u slike i provjeriti svaku stranicu prije isporuke
-- Output: `/mnt/documents/VM_Balance_Launch_GTM_Plan.pdf`
+U `useAuth` hooku (ili gdje se updateuje auth session) dodajem:
+```ts
+Sentry.setUser(user ? { id: user.id } : null);
+```
+Pošto već imamo `supabase.auth.onAuthStateChange` u `diagnosticLogger.ts`, dodajem Sentry call tamo.
 
-## Što ću prije generiranja PDF-a provjeriti u kodu
-- Stvarno stanje: ima li već Sentry, cookie consent, impressum, FAQ, status page
-- Što već postoji u `PLAY_STORE_LISTING.md` da ne dupliciram
-- Postojeće edge funkcije za podršku (`monitor-app-health`, `trial-reminder`, `check-subscription`) da preporuke budu realne
-- Privacy Policy stranica trenutno stanje
-- Trenutni i18n pokriveni jezici (HR/EN/DE — potvrđeno)
+### 7. Admin panel: "Sentry" shortcut gumb
 
-Tako će preporuke biti **konkretno za tvoj app**, a ne generičke.
+U `src/pages/Admin.tsx` (Pulse / Diagnostics tab) dodajem gumb:
+- Label: "Otvori Sentry Dashboard" (i18n key)
+- Otvara `https://tactura-jdoo.sentry.io/issues/` u novom tabu (`window.open` na webu, `Browser.open` na nativeu)
+- Vidljiv samo adminima (već postoji RBAC)
 
-## Što NEĆE biti u dokumentu
-- Pitch za kupca (to je već u prošlom packu)
-- Valuacija / exit strategija
-- Generičke "10 tips for app marketing" liste
-- Floskule — samo akcijske stavke s rokovima
+### 8. Test error gumb (samo za admin)
 
-Ako odobriš, kreće generiranje. Ako želiš nešto dodati/maknuti (npr. fokus samo na HR umjesto šireg EU, ili dodati i SEO content kalendar s konkretnim naslovima članaka), reci sad.
+U Admin panelu dodajem mali "Test Sentry" gumb koji baci `throw new Error('Sentry test from VM Balance admin')`. Time:
+- Potvrđujemo da Sentry prima evente
+- Sentry će označiti onboarding kao završen ("Waiting for error" → green)
+
+### 9. i18n ključevi
+
+Dodajem nove ključeve u `src/i18n/locales/{hr,en,de}.json`:
+- `admin.sentry.openDashboard`
+- `admin.sentry.testError`
+- `admin.sentry.testErrorSent`
+
+## Što NE radimo (sad)
+
+- ❌ Edge funkcije (Deno SDK) — ostavljamo za fazu 2 ako bude potrebe
+- ❌ Source maps upload — Lovable build pipeline ne podržava `sentry-cli` u build hooku; minified stack ostaje, ali Sentry barem grupira po hash-u. Ako ti zatreba pravi unminified stack, kasnije možeš ručno uploadati source maps iz published builda
+- ❌ Performance monitoring (`tracesSampleRate > 0`) — ne plaćamo, free tier je samo errors
+- ❌ Session Replay — štedi quotu i privatnost
+
+## Rizici i mitigacija
+
+| Rizik | Mitigacija |
+|-------|-----------|
+| Quota overshoot (>5k/mj) | `beforeSend` filter agresivan; production-only kroz `environment` check |
+| Duplicirani eventi (Sentry + diag) | Phase 1: oba; Phase 2 (za 2 tjedna nakon validacije): uklonimo `window_error`/`unhandled_rejection`/`react_error_boundary` iz diag |
+| Capacitor specific noise | Filter `is not implemented on` u `beforeSend` |
+| GDPR | `sendDefaultPii: false`, samo `user.id`, EU region (Frankfurt) |
+
+## Datoteke koje mijenjamo
+
+1. **NEW** `src/lib/sentry.ts` — init, beforeSend, helpers
+2. `src/main.tsx` — pozvati `initSentry()` na vrhu
+3. `src/components/ErrorBoundary.tsx` — dodati `Sentry.captureException`
+4. `src/lib/diagnosticLogger.ts` — dodati `Sentry.captureException` u global handlers + `setUser` u onAuthStateChange
+5. `src/pages/Admin.tsx` — dodati "Otvori Sentry" + "Test Sentry" gumbe
+6. `src/i18n/locales/hr.json`, `en.json`, `de.json` — 3 nova ključa
+7. `.env` — dodati `VITE_SENTRY_DSN` (ako tooling dopušta; inače hardcode u `sentry.ts`)
+
+## Validacija nakon implementacije
+
+1. Otvorim preview, kliknem "Test Sentry" u Adminu
+2. Provjerim u Sentry UI da event stigao (~5 sec)
+3. Provjerim da onboarding na sentry.io pokazuje "Onboarding complete"
+4. Triggeram pravi error (npr. baci u console: `throw new Error('test2')`) i provjerim breadcrumbs (route changes, klikovi prije erora)
+5. Verificiram da `app_diagnostics_logs` i dalje prima business evente
+
+## Saznam dodatno (post-deploy)
+
+- Za Capacitor APK: stack traces će biti malo nemir jer source maps nisu uploadane, ali Sentry će grupirati po error message + minified stack signature → i dalje korisno za detekciju regresija
+- Email alerts: Sentry default šalje email za nove issue → ne treba dodatna konfiguracija
