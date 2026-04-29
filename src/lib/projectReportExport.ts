@@ -1,7 +1,21 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// jspdf is loaded on demand to keep it out of the initial bundle.
+import type { jsPDF as JsPDFType } from 'jspdf';
 import { ProjectMilestone, MILESTONE_STATUS_LABELS } from '@/types/project';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
+
+let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
+const loadPdfLibs = () => {
+  if (!pdfLibsPromise) {
+    pdfLibsPromise = Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]).then(([jspdf, autotable]) => ({
+      jsPDF: jspdf.default,
+      autoTable: autotable.default,
+    }));
+  }
+  return pdfLibsPromise;
+};
 
 export interface CurrencyConfig {
   code: string;
@@ -75,6 +89,7 @@ const toAscii = (text: string): string => {
 };
 
 export const generateProjectPDFReport = async (data: ProjectReportData, mode: ExportMode = 'save'): Promise<void> => {
+  const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   
   // Title
@@ -339,6 +354,7 @@ export interface WorkLogReportData {
 }
 
 export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: ExportMode = 'save'): Promise<void> => {
+  const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
