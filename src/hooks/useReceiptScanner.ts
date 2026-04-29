@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, ReceiptItem } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
@@ -39,6 +40,17 @@ const isAbortLikeError = (error: unknown) => {
 };
 
 const UNREADABLE_RECEIPT_RE = /pročitati|procitati|analizirati|read|analyz/i;
+
+type ReceiptHttpResult = {
+  ok: boolean;
+  status: number;
+  json: () => Promise<any>;
+};
+
+const parseReceiptResponseBody = async (body: unknown) => {
+  if (typeof body === 'string') return JSON.parse(body);
+  return body;
+};
 
 // Kompresija slike za mobilne uređaje - zadržava dovoljno detalja za OCR.
 // 800px je bilo preagresivno za sitan tekst na računima i moglo je uzrokovati
