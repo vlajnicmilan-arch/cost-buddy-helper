@@ -41,4 +41,30 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (!id.includes("node_modules")) return;
+          // Heavy, route-specific deps — split into own chunks so they
+          // load only when a page that imports them is visited.
+          if (id.includes("jspdf") || id.includes("jspdf-autotable")) return "jspdf";
+          if (id.includes("recharts") || id.includes("d3-")) return "charts";
+          if (id.includes("xlsx")) return "xlsx";
+          // Stable vendor chunks for better long-term caching.
+          if (id.includes("@supabase")) return "supabase";
+          if (id.includes("@radix-ui")) return "radix";
+          if (id.includes("@tanstack")) return "tanstack";
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("/react-router") ||
+            id.includes("/scheduler/")
+          )
+            return "react-vendor";
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
 }));
