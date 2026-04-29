@@ -62,6 +62,7 @@ const toAscii = (text: string): string => {
 };
 
 export const generatePDFReport = async (data: ReportData, reportTitle: string = 'Financijsko izvjesce', mode: ExportMode = 'save'): Promise<void> => {
+  const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   
   doc.setFontSize(20);
