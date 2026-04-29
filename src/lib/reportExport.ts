@@ -1,7 +1,22 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// jspdf + jspdf-autotable are heavy (~420 KB). Load them on demand only when
+// a PDF export is actually requested, so they stay out of the initial bundle.
+import type { jsPDF as JsPDFType } from 'jspdf';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo } from '@/types/expense';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
+
+let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
+const loadPdfLibs = () => {
+  if (!pdfLibsPromise) {
+    pdfLibsPromise = Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]).then(([jspdf, autotable]) => ({
+      jsPDF: jspdf.default,
+      autoTable: autotable.default,
+    }));
+  }
+  return pdfLibsPromise;
+};
 
 export interface CurrencyConfig {
   code: string;
