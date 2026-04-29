@@ -1,94 +1,128 @@
-Razumijem. Krećemo od temelja, bez nagađanja i bez kozmetike.
+# Plan: V&M Balance — Launch Readiness & Go-To-Market Pack (interni)
 
-Što je sada jasno iz provjere:
-- Kod za kameru postoji: `useNativeCamera` otvara Capacitor kameru i vraća sliku kao base64.
-- Kod za AI analizu postoji: `useReceiptScanner` šalje sliku u backend funkciju `parse-receipt`.
-- AI veza radi: backend logovi pokazuju da AI vraća stvarne podatke računa, npr. 72,89 € i 6,44 € s artiklima.
-- Kod za dijalog nakon skeniranja postoji: `ScannedDataPreview` se prikazuje nakon `applyScannedResult`.
-- Poveznica za popunjavanje podataka postoji djelomično: `applyScannedResult` puni `scannedData`, a kod za spremanje iz `scannedData` postoji.
+## Cilj
+Jedan PDF dokument koji ti služi kao **interni radni plan** — što još moraš popraviti/dodati u app-u prije ozbiljnog launcha, i kako onda krenuti s reklamiranjem na EU tržištu kroz sljedećih 6-8 tjedana. Ovo nije materijal za kupca, nego tvoj checklist.
 
-Zaključak: problem najvjerojatnije nije u AI-u ni u čitanju računa. Temeljni problem je u životnom ciklusu dijaloga i stanju nakon povratka iz kamere, posebno u poslovnom modu. Drugim riječima: rezultat dođe, ali UI/otvoreni dijalog ga ne prikazuje ili se pogrešno resetira.
+## Što će dokument sadržavati
 
-Plan popravka:
+### Dio 1 — Launch Readiness Audit (što još moraš popraviti)
 
-1. Napraviti jedan jasan, jedinstven tok skeniranja
-   - Ukloniti dva paralelna načina otvaranja poslovnog skenera gdje god postoje.
-   - Skeniranje u osobnim i poslovnim financijama mora koristiti isti `AddExpenseDialog` i isti `autoScan` tok.
-   - Poslovni gumb neće imati poseban “hack” tok, nego će pozivati isti stabilni mehanizam kao osobni gumb.
+Konkretne stavke izvučene iz stvarnog stanja koda i nedavnih problema:
 
-2. Dodati eksplicitna stanja skenera u dijalog
-   - Umjesto da se oslanjamo samo na `scanning`, `showScannedPreview` i nekoliko boolean varijabli, uvesti jasan flow:
+1. **Tehnička stabilnost**
+   - Riješiti otvoreni problem skenera računa na Androidu (CapacitorHttp put, diagnostics monitoring)
+   - Crash/error monitoring (Sentry ili sl. — trenutno postoji samo `monitor-app-health` edge funkcija)
+   - Performance baseline (loading vremena, bundle size analiza)
+   - Offline ponašanje provjeriti (PWA + Capacitor)
 
-```text
-idle -> camera_opening -> image_received -> ai_analyzing -> preview_ready -> saving -> done
-                                      \-> error
-```
+2. **EU pravna usklađenost (must-have prije reklamiranja u EU)**
+   - GDPR: Privacy Policy update (već postoji `/privacy-policy` — treba revidirati za EU specifike)
+   - Cookie consent banner (PWA verzija)
+   - Data Processing Agreement template
+   - Right to be forgotten flow (delete account + svih podataka)
+   - Data export funkcija za korisnika (već postoji parcijalno preko `fileExport.ts`)
+   - Impressum (DE/AT zahtjev)
+   - Pricing s PDV-om jasno označen po zemlji
 
-   - Svaka faza će imati vidljiv status korisniku.
-   - Ako AI vrati rezultat, dijalog se ne smije zatvoriti dok korisnik ne vidi pregled i ne odluči što dalje.
+3. **App Store / Play Store readiness**
+   - Play Store listing dotjerati (postoji `PLAY_STORE_LISTING.md`)
+   - Screenshots za 3 jezika (HR/EN/DE), 6.7" + 6.5" + tablet
+   - App preview video (15-30s)
+   - ASO ključne riječi za EU (research po zemljama)
+   - iOS App Store priprema (ako nije gotova)
+   - Data Safety / Privacy Nutrition Labels
+   - Beta testing (Internal/Closed track) — minimum 2 tjedna
 
-3. Spriječiti resetiranje rezultata nakon skeniranja
-   - `onOpenChange`, `resetForm`, promjena taba i Android back/popstate više ne smiju obrisati rezultat dok je skeniranje ili pregled u tijeku.
-   - Reset se smije dogoditi samo kada korisnik izričito zatvori/odbije pregled ili nakon uspješnog spremanja.
+4. **UX polish (zadnji prolaz)**
+   - Onboarding tok — testirati s 5+ realnih korisnika
+   - Empty states na svim stranicama
+   - Error poruke human-friendly na sva 3 jezika
+   - First-run iskustvo bez intimidacije (već postoji activation funnel)
+   - In-app review trigger optimizacija
 
-4. Popraviti popunjavanje podataka iz AI rezultata
-   - Kad AI vrati rezultat, odmah sinkronizirati ključna polja forme:
-     - iznos
-     - opis
-     - trgovac/partner
-     - datum
-     - kategorija
-     - izvor plaćanja/kartica
-     - artikli
-   - Time pregled i forma više neće ovisiti o odvojenim podacima koji mogu otići izvan sinkronizacije.
+5. **Podrška & feedback infrastruktura**
+   - Support email + auto-responder
+   - In-app feedback dugme (već postoji?)
+   - FAQ stranica / Help Center (možda Notion public)
+   - Status page (statuspage.io ili UptimeRobot public)
+   - Discord ili Telegram zajednica
 
-5. Dodati vidljive greške i dijagnostiku bez skrivanja problema
-   - Ako kamera vrati null, korisnik dobiva jasnu poruku.
-   - Ako AI ne vrati JSON, prikazuje se stvarna korisna poruka.
-   - Ako rezultat dođe, ali preview nije prikazan, to će se logirati kao posebna greška.
-   - Dodati logove za:
-     - kamera otvorena
-     - slika primljena
-     - AI pozvan
-     - AI rezultat primljen
-     - preview prikazan
-     - spremanje pokušano
-     - spremanje uspješno/neuspješno
+6. **Monetizacija provjera**
+   - Stripe webhook robusnost (postoji `check-subscription`)
+   - Trial expiry email tok (postoji `trial-reminder`)
+   - Failed payment recovery
+   - Refund policy dokumentirana
+   - Usporedba cijena s EU konkurencijom
 
-6. U poslovnom modu vezati skeniranu transakciju uz aktivnu firmu
-   - Provjeriti da `activeBusinessProfileId` postoji prije spremanja.
-   - Ako ga nema, prikazati jasnu grešku umjesto tihog neuspjeha.
-   - Osigurati da spremljena poslovna transakcija dobije `business_profile_id`.
+7. **Analitika i metrike (BEZ ovih ne znaš ide li reklamiranje)**
+   - Activation rate (već postoji activation funnel)
+   - DAU/MAU tracking
+   - Retention cohorts (D1/D7/D30)
+   - Funnel: install → signup → first transaction → 2nd week active
+   - Revenue dashboard (interni admin)
+   - Attribution po marketing kanalu (UTM)
 
-7. Testirati stvarni lanac, ne samo TypeScript
-   - Provjeriti da build/TypeScript prolazi.
-   - Provjeriti backend funkciju `parse-receipt` kroz test poziv gdje je moguće.
-   - Provjeriti dijagnostičke zapise nakon pokušaja skeniranja.
-   - U završnom odgovoru navesti točno što je potvrđeno: kamera, AI, preview, spremanje.
+### Dio 2 — Go-To-Market plan (6-8 tjedana, EU fokus)
 
-Datoteke koje ću dirati nakon odobrenja:
-- `src/components/add-expense/AddExpenseDialog.tsx`
-- `src/hooks/useReceiptScanner.ts`
-- `src/hooks/useNativeCamera.ts` samo ako treba dodati dijagnostiku/bolju grešku
-- `src/components/home/BusinessModeView.tsx`
-- `src/pages/Business.tsx`
-- po potrebi i18n prijevodi u `src/i18n/locales/hr.json`, `en.json`, `de.json`
+**Tjedan 0-1: Foundation**
+- Brand asseti finalizirani (logo varijante, social templates)
+- Landing page (cost-buddy-helper.lovable.app → custom domain vmbalance.com)
+- Email marketing setup (već postoji infrastructure)
+- Analytics setup (Plausible / GA4)
 
-Neću dirati:
-- `src/integrations/supabase/client.ts`
-- `src/integrations/supabase/types.ts`
-- `.env`
+**Tjedan 2-3: Soft launch**
+- Beta poziv 50-100 korisnika (HR primarno)
+- Product Hunt priprema (ne launch još)
+- Reddit prisustvo (r/personalfinance, r/eupersonalfinance, r/Croatia)
+- LinkedIn osobni profil — content priprema
 
-Cilj ove izmjene nije “još jedan pokušaj”, nego uklanjanje nejasnog toka i postavljanje jednog provjerljivog lanca:
+**Tjedan 4-5: Content & inbound**
+- Blog (5-10 SEO članaka): "Best budget app EU", "GDPR compliant finance app", lokalni keywords
+- YouTube tutoriali (HR + EN)
+- TikTok/Instagram Reels (3-5 demo videa)
+- Suradnja s 2-3 mikro-influencera (finance niša)
 
-```text
-Gumb Skeniraj
-  -> Kamera
-  -> Slika
-  -> AI analiza
-  -> Pregled rezultata u dijalogu
-  -> Popunjeni podaci
-  -> Spremanje poslovne transakcije
-```
+**Tjedan 6-8: Paid push**
+- Product Hunt launch (utorak/srijeda, EU friendly time)
+- Google Ads (search) — €500-1000 test budget
+- Meta Ads (Instagram) — lookalike, €500-1000
+- App Store / Play Store featured submissions
+- PR: tech blogovi (Netokracija, Bug.hr, t3n.de)
 
-Nakon odobrenja idem direktno na ovu temeljnu stabilizaciju.
+### Dio 3 — Konkretne TODO liste po prioritetu
+
+- **P0 (BLOCKER za launch)**: ~10 stavki koje moraš riješiti ili nema smisla reklamirati
+- **P1 (must-have za 4 tjedna)**: ~15 stavki koje značajno utječu na konverziju
+- **P2 (nice-to-have)**: ~10 stavki koje možeš dodati kasnije
+- Svaka stavka: opis, procjena vremena, ovisnosti
+
+### Dio 4 — Budžet i metrike uspjeha
+
+- Procjena troškova prvih 8 tjedana (alati, ads, dizajn, pravno)
+- Definicija uspjeha: target signupi, target paid konverzija, target CAC
+- "Kada NE reklamirati" signali (npr. ako D7 retention < X%)
+
+## Tehnička izvedba
+
+- Generirat ću PDF kroz Python (reportlab/weasyprint) konzistentan s prošlim brand pack-om
+- Teal accent (HSL 172 66% 40%), iste fontove, isti stil
+- ~25-30 stranica, sa checkbox-listama gdje ima smisla
+- QA: konvertirati u slike i provjeriti svaku stranicu prije isporuke
+- Output: `/mnt/documents/VM_Balance_Launch_GTM_Plan.pdf`
+
+## Što ću prije generiranja PDF-a provjeriti u kodu
+- Stvarno stanje: ima li već Sentry, cookie consent, impressum, FAQ, status page
+- Što već postoji u `PLAY_STORE_LISTING.md` da ne dupliciram
+- Postojeće edge funkcije za podršku (`monitor-app-health`, `trial-reminder`, `check-subscription`) da preporuke budu realne
+- Privacy Policy stranica trenutno stanje
+- Trenutni i18n pokriveni jezici (HR/EN/DE — potvrđeno)
+
+Tako će preporuke biti **konkretno za tvoj app**, a ne generičke.
+
+## Što NEĆE biti u dokumentu
+- Pitch za kupca (to je već u prošlom packu)
+- Valuacija / exit strategija
+- Generičke "10 tips for app marketing" liste
+- Floskule — samo akcijske stavke s rokovima
+
+Ako odobriš, kreće generiranje. Ako želiš nešto dodati/maknuti (npr. fokus samo na HR umjesto šireg EU, ili dodati i SEO content kalendar s konkretnim naslovima članaka), reci sad.
