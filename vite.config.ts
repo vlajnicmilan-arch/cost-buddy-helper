@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { visualizer } from "rollup-plugin-visualizer";
 import fs from "fs";
 
 // Read version from version.json
@@ -23,6 +24,16 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    // Bundle analyzer — generates dist/stats.html after `vite build`.
+    // Only runs when ANALYZE=true to avoid slowing down normal builds.
+    process.env.ANALYZE === "true" &&
+      visualizer({
+        filename: "dist/stats.html",
+        template: "treemap",
+        gzipSize: true,
+        brotliSize: true,
+        open: false,
+      }),
   ].filter(Boolean),
   resolve: {
     alias: {
