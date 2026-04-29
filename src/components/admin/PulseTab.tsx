@@ -104,6 +104,8 @@ export const PulseTab = () => {
 
       <PulseAlertsSection />
 
+      <SentryControlsCard />
+
       <PulseAISummary />
 
       <PulseMetricCard
