@@ -89,6 +89,7 @@ const toAscii = (text: string): string => {
 };
 
 export const generateProjectPDFReport = async (data: ProjectReportData, mode: ExportMode = 'save'): Promise<void> => {
+  const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   
   // Title
@@ -353,6 +354,7 @@ export interface WorkLogReportData {
 }
 
 export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: ExportMode = 'save'): Promise<void> => {
+  const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
