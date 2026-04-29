@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { captureEdgeError } from "../_shared/sentry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -508,6 +509,10 @@ Vrati SAMO JSON bez dodatnog teksta.`;
     );
   } catch (error) {
     console.error('Error processing receipt:', error);
+    captureEdgeError(error, {
+      functionName: 'parse-receipt',
+      context: { method: req.method },
+    });
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), 
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
