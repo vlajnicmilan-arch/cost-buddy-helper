@@ -12,6 +12,7 @@ import { PulsePerformanceSection } from './PulsePerformanceSection';
 import { PulseAISummary } from './PulseAISummary';
 import { PulseTopIssuesSection } from './PulseTopIssuesSection';
 import { PulseActivationFunnel } from './PulseActivationFunnel';
+import { SentryControlsCard } from './SentryControlsCard';
 
 export const PulseTab = () => {
   const { t } = useTranslation();
