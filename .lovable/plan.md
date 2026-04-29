@@ -1,132 +1,105 @@
 ## Cilj
 
-Integrirati Sentry za React frontend (web + Capacitor APK) — automatic crash & error capture s breadcrumbs, release tracking i source maps. Edge funkcije ostaju za sada, dodajemo ih kasnije ako bude potrebe.
+Dodati Sentry error capture u 5 najkritičnijih edge funkcija, tako da svaka neuhvaćena greška (Stripe payment fail, AI fail, FCM token expire, itd.) odmah završi u Sentry dashboardu — umjesto da je vidimo tek kada korisnik javi.
 
-## Što već imamo
+## Top 5 funkcija (po prioritetu)
 
-- `@sentry/react` v10.39.0 već instaliran u `package.json` ✅
-- DSN: `https://e71c65a2c4b6da7f654257df9b5fa8f0@o4511302417973248.ingest.de.sentry.io/4511302422167632` (EU region)
-- Postojeći `diagnosticLogger.ts` s `window_error`, `unhandled_rejection`, `react_error_boundary` capture
-- `ErrorBoundary` komponenta već loga critical evente
+| # | Funkcija | Zašto kritična |
+|---|----------|---------------|
+| 1 | `parse-receipt` | Korisnici skeniraju račune dnevno; Gemini AI fail = izgubljen receipt |
+| 2 | `send-push` | FCM v1 OAuth token može expire; tihi fail = nema notifikacija |
+| 3 | `create-checkout` | Stripe payments = pravi novac, fail blokira upgrade |
+| 4 | `customer-portal` | Stripe billing management, isti rizik |
+| 5 | `financial-assistant` | AI chat, glavni Pro feature |
 
-## Strategija (potvrđena ranije)
-
-**"Sentry primaran, diag samo za custom"** — Sentry hvata sve crash/error evente sa stack traceom i breadcrumbima. `app_diagnostics_logs` ostaje za business evente (`receipt_scan_*`, `boot_*`, `route_change`, `expense_insert_attempt`, `notify_invoke_*`).
+Ostale 60+ funkcija dodajemo postupno **kada se javi konkretan problem**, da ne trošimo vrijeme bez ROI-a.
 
 ## Implementacijski koraci
 
-### 1. DSN kao runtime config (ne hardkodiran)
+### 1. Novi shared helper: `supabase/functions/_shared/sentry.ts`
 
-DSN je javan po dizajnu, ali ga pohranjujemo kao **Vite env var** (`VITE_SENTRY_DSN`) tako da:
-- Lako ga mijenjaš bez code change
-- Možeš ga isključiti u dev modu postavljanjem na prazan string
+Lightweight Deno wrapper koji:
+- Šalje POST direktno na Sentry **Store API** (`https://o4511302417973248.ingest.de.sentry.io/api/4511302422167632/store/`) — bez SDK-a, bez `npm:` ovisnosti, bez `deno.lock` rizika
+- Format event payloada: `{ event_id, timestamp, platform: 'javascript', level: 'error', exception: {...}, tags: { function_name, environment: 'edge' }, extra: {...} }`
+- Sve u **fire-and-forget** modu (`.catch(() => {})`) — Sentry ne smije nikad blokirati ni rušiti edge funkciju
+- Export: `captureEdgeError(error, { functionName, userId?, context? })`
 
-Dodajem ga u `.env` automatski tijekom implementacije (Lovable Cloud ima pristup za izmjene osim za Supabase varijable).
+DSN je javan po dizajnu, hardkodiran u helperu (isti kao frontend) — nema potrebe za novim secretom.
 
-> Napomena: ako Lovable env tooling ne dozvoljava `VITE_*` varijable, fallback je hardkodirati DSN u `src/lib/sentry.ts` (sigurno jer je javan).
+### 2. Wrap `Deno.serve` handlera u svakoj od 5 funkcija
 
-### 2. Novi file: `src/lib/sentry.ts`
+Pattern (minimalna izmjena, ne diramo business logiku):
 
-Centralizirana inicijalizacija s:
-- `Sentry.init()` s DSN-om, environment (`development` / `production` / `preview`), release tag (iz `APP_VERSION`)
-- **`tracesSampleRate: 0`** — ne plaćamo performance tracing (free tier 5k/mj je samo errors)
-- **`replaysSessionSampleRate: 0`, `replaysOnErrorSampleRate: 0`** — Session Replay isključen (štedi quotu)
-- **`sendDefaultPii: false`** — ne šaljemo IP/UA automatski (GDPR)
-- **`beforeSend` filter** — odbacuje:
-  - `AbortError`, `signal is aborted`
-  - Capacitor `is not implemented on` / `UNIMPLEMENTED`
-  - ResizeObserver loop limit warnings
-  - Network errors u offline modu (`navigator.onLine === false`)
-- **`beforeBreadcrumb` filter** — uklanja console.log breadcrumbs (samo console.warn/error)
-- Integracije: `browserTracingIntegration` ISKLJUČENA, `breadcrumbsIntegration` ON
-- `Sentry.setTag('platform', 'web' | 'android' | 'ios')` na osnovu Capacitora
-- `Sentry.setUser({ id })` kad se user ulogira (samo `id`, bez emaila — GDPR)
-
-### 3. Inicijalizacija u `src/main.tsx`
-
-Dodajem **prije** `logDiagnostic('boot_start')`:
 ```ts
-import { initSentry } from './lib/sentry';
-initSentry();
+import { captureEdgeError } from "../_shared/sentry.ts";
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  
+  let userId: string | undefined;
+  try {
+    // ... postojeći kod (auth, validacija, posao) ...
+    // userId postavimo čim ga dohvatimo iz auth-a
+    return new Response(JSON.stringify(result), { ... });
+  } catch (error) {
+    // Fire-and-forget Sentry
+    captureEdgeError(error, {
+      functionName: "parse-receipt",
+      userId,
+      context: { method: req.method, path: new URL(req.url).pathname },
+    });
+    // POSTOJEĆI error response ostaje netaknut
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
 ```
 
-### 4. Wrappam `ErrorBoundary` komponentu
+**Bitno:** wrap je samo na **vanjskoj razini**. Postojeće `try/catch` blokove unutra ne diramo. User-facing error response ostaje identičan — Sentry je samo "tap" na grešku u prolazu.
 
-U `src/components/ErrorBoundary.tsx` u `componentDidCatch`:
-- Postojeći `logDiagnostic('react_error_boundary')` ostaje
-- Dodajem `Sentry.captureException(error, { contexts: { react: { componentStack } } })`
+### 3. Šum filter (u helperu)
 
-### 5. Ažuriram `src/lib/diagnosticLogger.ts`
+`captureEdgeError` interno odbacuje:
+- `User not authenticated` (očekivani 401, ne bug)
+- `Price ID is required` i slične `400` validacijske greške gdje znamo da je input loš
+- Greške s porukom koja sadrži `not authenticated` ili počinje s `Validation:`
 
-U `window.addEventListener('error')` i `unhandledrejection` handlerima:
-- Postojeći `logDiagnostic` ostaje (za diag tablicu — postupno fade out)
-- Dodajem `Sentry.captureException()` za stack trace + breadcrumbs
+Štedi quotu i drži signal čist.
 
-> Ovime izbjegavamo dupliciranje: Sentry će grupirati pametno, a diag tablica ostaje fallback dok ne potvrdimo da Sentry stabilno radi.
+### 4. Deploy & test
 
-### 6. User context sync
+- Auto-deploy 5 funkcija
+- Pošaljem 1 test request prema `parse-receipt` s namjerno krivim payloadom da potvrdim da Sentry hvata server-side greške
+- Provjerim u Sentry dashboardu da event ima tag `function_name: parse-receipt` i `environment: edge`
 
-U `useAuth` hooku (ili gdje se updateuje auth session) dodajem:
-```ts
-Sentry.setUser(user ? { id: user.id } : null);
-```
-Pošto već imamo `supabase.auth.onAuthStateChange` u `diagnosticLogger.ts`, dodajem Sentry call tamo.
+### 5. Sentry Alerts checklist (za tebe, 5 min u Sentry UI)
 
-### 7. Admin panel: "Sentry" shortcut gumb
+Nakon implementacije dat ću ti precizne klikove za:
+- **Email alert: "Issue first seen"** → trenutni email kada se nova greška pojavi
+- **Email alert: "Error spike"** → preko 10 errora u 1 satu
+- **Regression alert** → resolved issue se vratio (često kod deploya)
 
-U `src/pages/Admin.tsx` (Pulse / Diagnostics tab) dodajem gumb:
-- Label: "Otvori Sentry Dashboard" (i18n key)
-- Otvara `https://tactura-jdoo.sentry.io/issues/` u novom tabu (`window.open` na webu, `Browser.open` na nativeu)
-- Vidljiv samo adminima (već postoji RBAC)
+## Što NE radimo
 
-### 8. Test error gumb (samo za admin)
-
-U Admin panelu dodajem mali "Test Sentry" gumb koji baci `throw new Error('Sentry test from VM Balance admin')`. Time:
-- Potvrđujemo da Sentry prima evente
-- Sentry će označiti onboarding kao završen ("Waiting for error" → green)
-
-### 9. i18n ključevi
-
-Dodajem nove ključeve u `src/i18n/locales/{hr,en,de}.json`:
-- `admin.sentry.openDashboard`
-- `admin.sentry.testError`
-- `admin.sentry.testErrorSent`
-
-## Što NE radimo (sad)
-
-- ❌ Edge funkcije (Deno SDK) — ostavljamo za fazu 2 ako bude potrebe
-- ❌ Source maps upload — Lovable build pipeline ne podržava `sentry-cli` u build hooku; minified stack ostaje, ali Sentry barem grupira po hash-u. Ako ti zatreba pravi unminified stack, kasnije možeš ručno uploadati source maps iz published builda
-- ❌ Performance monitoring (`tracesSampleRate > 0`) — ne plaćamo, free tier je samo errors
-- ❌ Session Replay — štedi quotu i privatnost
-
-## Rizici i mitigacija
-
-| Rizik | Mitigacija |
-|-------|-----------|
-| Quota overshoot (>5k/mj) | `beforeSend` filter agresivan; production-only kroz `environment` check |
-| Duplicirani eventi (Sentry + diag) | Phase 1: oba; Phase 2 (za 2 tjedna nakon validacije): uklonimo `window_error`/`unhandled_rejection`/`react_error_boundary` iz diag |
-| Capacitor specific noise | Filter `is not implemented on` u `beforeSend` |
-| GDPR | `sendDefaultPii: false`, samo `user.id`, EU region (Frankfurt) |
+- ❌ Deno SDK (`@sentry/deno`) — npm/esm import može razbiti `deno.lock` u edge-runtime, raw HTTP POST je sigurniji
+- ❌ Performance tracing — nula quota benefit za naš scale
+- ❌ Ostalih 60+ funkcija — dodajemo on-demand
+- ❌ Cleanup `app_diagnostics_logs` — čekamo 2 tjedna validacije (frontend + edge paralelno)
 
 ## Datoteke koje mijenjamo
 
-1. **NEW** `src/lib/sentry.ts` — init, beforeSend, helpers
-2. `src/main.tsx` — pozvati `initSentry()` na vrhu
-3. `src/components/ErrorBoundary.tsx` — dodati `Sentry.captureException`
-4. `src/lib/diagnosticLogger.ts` — dodati `Sentry.captureException` u global handlers + `setUser` u onAuthStateChange
-5. `src/pages/Admin.tsx` — dodati "Otvori Sentry" + "Test Sentry" gumbe
-6. `src/i18n/locales/hr.json`, `en.json`, `de.json` — 3 nova ključa
-7. `.env` — dodati `VITE_SENTRY_DSN` (ako tooling dopušta; inače hardcode u `sentry.ts`)
+1. **NEW** `supabase/functions/_shared/sentry.ts` — raw HTTP Sentry client
+2. `supabase/functions/parse-receipt/index.ts` — outer try/catch + capture
+3. `supabase/functions/send-push/index.ts` — outer try/catch + capture
+4. `supabase/functions/create-checkout/index.ts` — outer try/catch + capture
+5. `supabase/functions/customer-portal/index.ts` — outer try/catch + capture
+6. `supabase/functions/financial-assistant/index.ts` — outer try/catch + capture
 
-## Validacija nakon implementacije
+## Validacija nakon deploya
 
-1. Otvorim preview, kliknem "Test Sentry" u Adminu
-2. Provjerim u Sentry UI da event stigao (~5 sec)
-3. Provjerim da onboarding na sentry.io pokazuje "Onboarding complete"
-4. Triggeram pravi error (npr. baci u console: `throw new Error('test2')`) i provjerim breadcrumbs (route changes, klikovi prije erora)
-5. Verificiram da `app_diagnostics_logs` i dalje prima business evente
-
-## Saznam dodatno (post-deploy)
-
-- Za Capacitor APK: stack traces će biti malo nemir jer source maps nisu uploadane, ali Sentry će grupirati po error message + minified stack signature → i dalje korisno za detekciju regresija
-- Email alerts: Sentry default šalje email za nove issue → ne treba dodatna konfiguracija
+1. Sentry primio test event s tagom `function_name`
+2. Sve 5 funkcija i dalje rade normalno (curl test svake)
+3. Latencija nije porasla (`captureEdgeError` je fire-and-forget, ne čeka response)
+4. U Sentry UI vidim 2 environmenta: `production` (frontend) i `edge` (backend)
