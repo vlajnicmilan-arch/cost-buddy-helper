@@ -110,7 +110,7 @@ const SupportAutoResponderEmail = ({ name, subject, message, ticketId, language 
           <Section style={tipBox}>
             <Text style={tipTitle}>{L.tipTitle}</Text>
             <Text style={tipText}>{L.tipBody}</Text>
-            <Button style={button} href="https://vmbalance.com/app?openHelp=1">
+            <Button style={button} href="https://vmbalance.com/help">
               {L.cta}
             </Button>
           </Section>

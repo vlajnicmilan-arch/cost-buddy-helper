@@ -46,6 +46,7 @@ const JoinFamily = lazy(() => import("./pages/JoinFamily"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Impressum = lazy(() => import("./pages/Impressum"));
+const Help = lazy(() => import("./pages/Help"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -167,6 +168,7 @@ const AppRoutes = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -196,6 +198,7 @@ const AppRoutes = () => {
            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
+          <Route path="/help" element={<Help />} />
           <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
       </Suspense>
@@ -216,6 +219,7 @@ const AppRoutes = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -255,6 +259,7 @@ const AppRoutes = () => {
       <Route path="/privacy-policy" element={<Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
       <Route path="/terms-of-service" element={<Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
       <Route path="/impressum" element={<Suspense fallback={<PageLoader />}><Impressum /></Suspense>} />
+      <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
