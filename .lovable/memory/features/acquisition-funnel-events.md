@@ -14,6 +14,8 @@ Tablica **`funnel_events`** (user_id nullable, session_id, event_name, platform,
 
 **Helper:** `src/lib/funnelTracking.ts` — `logFunnelEvent(name, metadata)`. Best-effort, nikad ne baca, nikad ne blokira flow. Install se logira jednom po uređaju (localStorage flag `funnel_install_logged`). Sesija se generira jednom u `funnel_session_id`.
 
+**UTM attribution:** `captureUtmParams()` se zove sinhrono u `main.tsx` na boot — čita `utm_source/medium/campaign/term/content` + referrer + landing_path iz URL-a i sprema u `localStorage.funnel_utm` (TTL 30 dana, first-touch — postojeći se ne prepisuje ako URL nema UTM). Svaki sljedeći `logFunnelEvent` automatski merge-a spremljene UTM-ove u `metadata`. Tako se signup/paid_conversion mogu atribuirati na izvor prometa bez vanjskog analyticsa.
+
 **Pozivi:**
 - `install` — `src/main.tsx` u `idle()` callbacku, prije svega ostalog
 - `signup` — `src/hooks/useAuth.ts` u `signUp()` (immediate session) + u `SIGNED_IN` listeneru (email-confirm flow fallback)
