@@ -43,6 +43,7 @@ import { SecuritySection } from './SecuritySection';
 import { NotificationsSection } from './NotificationsSection';
 import { DataSection } from './DataSection';
 import { DangerZoneSection } from './DangerZoneSection';
+import { LegalDocumentsSection } from './LegalDocumentsSection';
 import { HelpDialogContent } from './HelpDialogContent';
 
 interface SettingsDialogProps {
@@ -667,6 +668,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onBusinessModeChange={setBusinessFeatureEnabled}
               onShowBusinessProfile={() => setShowBusinessProfile(true)}
               isLocalMode={isLocalMode}
+            />
+
+            <Separator />
+
+            <LegalDocumentsSection
+              defaultEmail={user?.email || ''}
             />
 
             <Separator />
