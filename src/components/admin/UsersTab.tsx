@@ -133,7 +133,7 @@ export const UsersTab = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {users.map((u) => (
+          {filteredUsers.map((u) => (
             <div key={u.id} className={`bg-card border rounded-xl p-4 space-y-2 ${isBanned(u) ? 'opacity-60 border-destructive/30' : ''}`}>
               <div className="cursor-pointer" onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}>
                 <div className="flex items-center justify-between">
