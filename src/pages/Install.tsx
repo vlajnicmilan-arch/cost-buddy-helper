@@ -21,6 +21,7 @@ import { motion } from 'framer-motion';
 import logo from '@/assets/logo.webp';
 import { APP_VERSION } from '@/lib/version';
 import { downloadApk } from '@/lib/downloadApk';
+import { tr } from '@/lib/errorMessages';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 // Cache-busting: rotate every 5 min so new APK uploads propagate quickly past CDN
@@ -283,7 +284,7 @@ const Install = () => {
     <div className="min-h-dvh bg-background flex flex-col p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/home')} className="rounded-xl" aria-label={t('common.back')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/home')} className="rounded-xl" aria-label={tr('common.back')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex items-center gap-2">
