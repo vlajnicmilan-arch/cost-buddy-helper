@@ -255,16 +255,16 @@ const useDeferredBelowFold = () => {
     const onFirstScroll = () => reveal();
     window.addEventListener('scroll', onFirstScroll, { once: true, passive: true });
 
-    const idleId = 'requestIdleCallback' in window
+    const idleId = typeof window.requestIdleCallback === 'function'
       ? window.requestIdleCallback(reveal, { timeout: 2500 })
-      : window.setTimeout(reveal, 1800);
+      : globalThis.setTimeout(reveal, 1800);
 
     return () => {
       window.removeEventListener('scroll', onFirstScroll);
-      if ('cancelIdleCallback' in window && typeof idleId === 'number') {
+      if (typeof window.cancelIdleCallback === 'function' && typeof idleId === 'number') {
         window.cancelIdleCallback(idleId);
       } else {
-        window.clearTimeout(idleId as number);
+        globalThis.clearTimeout(idleId as number);
       }
     };
   }, []);
