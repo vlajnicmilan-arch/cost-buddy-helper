@@ -40,7 +40,7 @@ export const useCustomCategories = () => {
       setCustomCategories((data || []) as CustomCategory[]);
     } catch (error) {
       console.error('Error fetching custom categories:', error);
-      showError('Greška pri dohvaćanju prilagođenih kategorija');
+      showError(tr('errors.fetch.categories', 'Greška pri dohvaćanju prilagođenih kategorija'));
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export const useCustomCategories = () => {
     }
 
     if (!user) {
-      showError('Morate biti prijavljeni');
+      showError(tr('errors.mustBeLoggedIn', 'Morate biti prijavljeni'));
       return null;
     }
 
@@ -88,7 +88,7 @@ export const useCustomCategories = () => {
       return newCat;
     } catch (error) {
       console.error('Error adding custom category:', error);
-      showError('Greška pri dodavanju kategorije');
+      showError(tr('errors.create.category', 'Greška pri dodavanju kategorije'));
       return null;
     }
   };
@@ -117,7 +117,7 @@ export const useCustomCategories = () => {
       showSuccess('Kategorija ažurirana');
     } catch (error) {
       console.error('Error updating custom category:', error);
-      showError('Greška pri ažuriranju kategorije');
+      showError(tr('errors.update.category', 'Greška pri ažuriranju kategorije'));
     }
   };
 
@@ -141,7 +141,7 @@ export const useCustomCategories = () => {
       showSuccess('Kategorija obrisana');
     } catch (error) {
       console.error('Error deleting custom category:', error);
-      showError('Greška pri brisanju kategorije');
+      showError(tr('errors.delete.category', 'Greška pri brisanju kategorije'));
     }
   };
 
