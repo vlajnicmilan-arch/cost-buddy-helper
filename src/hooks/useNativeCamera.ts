@@ -63,7 +63,8 @@ export const useNativeCamera = (): UseNativeCameraReturn => {
       console.error('📸 Native camera error:', error);
       try {
         const { showError } = await import('@/hooks/useStatusFeedback');
-        showError(`Kamera: ${error?.message || 'nepoznata greška'}`);
+        const { tr } = await import('@/lib/errorMessages');
+        showError(tr('errors.camera.failed', 'Kamera: {{reason}}', { reason: error?.message || tr('errors.unknownError', 'nepoznata greška') }));
       } catch {}
       return null;
     }
