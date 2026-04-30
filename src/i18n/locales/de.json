@@ -2728,5 +2728,33 @@
       "syncIssues": "Stellen Sie sicher, dass Sie auf allen Geräten mit demselben Konto angemeldet sind. Pull-to-Refresh auf der Startseite löst manuell die Synchronisation aus. Bei anhaltendem Problem kontaktieren Sie den Support.",
       "contact": "E-Mail: support@vmbalance.com — wir antworten innerhalb von 24 Stunden. Sie können auch das Kontaktformular auf dieser Seite verwenden (Schaltfläche \"Support kontaktieren\" unten) — Sie erhalten sofort eine E-Mail-Bestätigung."
     }
+  },
+  "feedbackForm": {
+    "fabLabel": "Feedback senden",
+    "title": "Feedback senden",
+    "subtitle": "Helfen Sie uns, die App zu verbessern. Ihr Input geht direkt an das Team.",
+    "typeLabel": "Art",
+    "typeBug": "Fehler",
+    "typeIdea": "Idee",
+    "typeQuestion": "Frage",
+    "message": "Ihre Nachricht",
+    "placeholderBug": "Was haben Sie versucht? Was ist passiert? Was haben Sie erwartet?",
+    "placeholderIdea": "Beschreiben Sie Ihre Idee oder Ihren Vorschlag...",
+    "placeholderQuestion": "Stellen Sie Ihre Frage...",
+    "ratingLabel": "App-Bewertung (optional)",
+    "ratingStar": "{{n}} Sterne",
+    "emailOptional": "E-Mail (optional, für eine Antwort)",
+    "attachDiagnostics": "Diagnose anhängen",
+    "diagnosticsHelp": "Aktuelle Seite, Version und letzte Konsolenmeldungen. Hilft dem Team, Probleme schneller zu lösen.",
+    "showPreview": "Anzeigen, was gesendet wird",
+    "hidePreview": "Vorschau ausblenden",
+    "send": "Senden",
+    "sending": "Senden...",
+    "thanks": "Danke für Ihr Feedback!",
+    "successTitle": "Danke! Empfangen.",
+    "successBody": "Wir werden Ihr Feedback so schnell wie möglich prüfen. Wenn Sie eine E-Mail hinterlassen haben, melden wir uns bei Bedarf.",
+    "errorMessageTooShort": "Bitte kurz beschreiben (min. 5 Zeichen)",
+    "errorInvalidEmail": "Ungültige E-Mail-Adresse",
+    "submitFailed": "Senden fehlgeschlagen. Bitte versuchen Sie es erneut."
   }
 }
