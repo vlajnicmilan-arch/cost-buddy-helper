@@ -75,13 +75,6 @@ Deno.serve(async (req) => {
     })
   }
 
-  console.log('[notify-feedback-admin] env check', {
-    hasUrl: !!supabaseUrl,
-    serviceKeyLen: serviceKey?.length || 0,
-    serviceKeyParts: serviceKey?.split('.').length || 0,
-    serviceKeyPrefix: serviceKey?.slice(0, 8) || '',
-  })
-
   const admin = createClient(supabaseUrl, serviceKey)
 
   // Fetch feedback row (service role bypasses RLS)
