@@ -11,6 +11,7 @@ import { DiagnosticLogsTab } from '@/components/admin/DiagnosticLogsTab';
 import { APKManagerTab } from '@/components/admin/APKManagerTab';
 import { PushLogsTab } from '@/components/admin/PushLogsTab';
 import { PulseTab } from '@/components/admin/PulseTab';
+import { SubscriptionMigrationPanel } from '@/components/admin/SubscriptionMigrationPanel';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
