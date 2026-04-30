@@ -185,9 +185,53 @@ serve(async (req) => {
       }
     }
 
-    log("Done", { totalSent, ...summary });
+    // ============================================================
+    // Funnel: log day7_active for users who registered exactly 7 days ago
+    // and were active (login or app_open) in the last 24h.
+    // Idempotent: unique index (user_id, event_name='day7_active') in DB.
+    // ============================================================
+    let day7Logged = 0;
+    try {
+      const day7Start = new Date(now);
+      day7Start.setUTCDate(day7Start.getUTCDate() - 7);
+      day7Start.setUTCHours(0, 0, 0, 0);
+      const day7End = new Date(day7Start);
+      day7End.setUTCHours(23, 59, 59, 999);
+
+      const { data: profiles7 } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .gte("created_at", day7Start.toISOString())
+        .lte("created_at", day7End.toISOString());
+
+      const candidateIds = (profiles7 ?? []).map((p: any) => p.user_id);
+      if (candidateIds.length > 0) {
+        const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: recentLogins } = await supabase
+          .from("user_login_logs")
+          .select("user_id")
+          .in("user_id", candidateIds)
+          .gte("logged_in_at", last24h);
+
+        const activeIds = new Set((recentLogins ?? []).map((r: any) => r.user_id));
+        for (const uid of activeIds) {
+          const { error: insErr } = await supabase.from("funnel_events").insert({
+            user_id: uid,
+            event_name: "day7_active",
+            platform: "cron",
+            metadata: { source: "activation-nudge-cron" } as any,
+          });
+          // 23505 = duplicate, expected if cron retries
+          if (!insErr || insErr.code === "23505") day7Logged++;
+        }
+      }
+    } catch (e) {
+      log("day7_active block failed", e instanceof Error ? e.message : e);
+    }
+
+    log("Done", { totalSent, day7Logged, ...summary });
     return new Response(
-      JSON.stringify({ success: true, totalSent, ...summary }),
+      JSON.stringify({ success: true, totalSent, day7Logged, ...summary }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

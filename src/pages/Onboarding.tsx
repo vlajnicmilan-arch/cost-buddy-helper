@@ -190,6 +190,13 @@ const Onboarding = () => {
       localStorage.setItem('pwa-auto-update', 'true');
       if (displayName.trim()) setContextDisplayName(displayName.trim());
       setOnboardingCompleted(true);
+      // Funnel: log onboarding completion (best-effort)
+      import('@/lib/funnelTracking')
+        .then(({ logFunnelEvent }) => logFunnelEvent('onboarding_complete', {
+          selected_sources: selectedSources.length,
+          custom_sources: customSources.length,
+        }))
+        .catch(() => {});
       navigate('/home', { replace: true });
     } catch (error) {
       console.error('Onboarding error:', error);

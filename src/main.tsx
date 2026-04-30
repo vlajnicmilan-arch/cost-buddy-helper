@@ -39,6 +39,16 @@ const loadFastLandingCrisp = () => {
   document.head.appendChild(script);
 };
 
+// Funnel: log install once per device (best-effort, deferred to idle).
+idle(() => {
+  import('./lib/funnelTracking')
+    .then(({ logFunnelEvent }) => logFunnelEvent('install', {
+      installed_app: isInstalledApp(),
+      referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+    }))
+    .catch(() => {});
+});
+
 if (!isFastLanding) idle(() => {
   // Dynamic import keeps Sentry out of the initial JS bundle entirely.
   // Sentry self-checks analytics consent before initializing; we also re-init

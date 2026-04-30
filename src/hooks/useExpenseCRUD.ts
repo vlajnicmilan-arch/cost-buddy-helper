@@ -136,6 +136,15 @@ export const useExpenseCRUD = ({
         }
         console.log('✅ Expense saved to DB:', data?.id, 'project_id:', data?.project_id ?? 'NULL');
 
+        // Funnel: log first_transaction (idempotent — DB unique index dedups).
+        import('@/lib/funnelTracking')
+          .then(({ logFunnelEvent }) => logFunnelEvent('first_transaction', {
+            type: normalizedExpense.type,
+            has_project: !!normalizedExpense.project_id,
+            has_budget: !!normalizedExpense.budget_id,
+          }))
+          .catch(() => {});
+
         if (items && items.length > 0 && data) {
           await supabase.from('receipt_items').insert(items.map(item => ({
             expense_id: data.id,

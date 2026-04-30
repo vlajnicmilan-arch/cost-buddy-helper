@@ -86,6 +86,16 @@ serve(async (req) => {
 
     if (lifetime) {
       logStep("Lifetime Pro purchase found", { foundingMember: lifetime.founding_member_number });
+      try {
+        await supabaseClient.from('funnel_events').insert({
+          user_id: user.id,
+          event_name: 'paid_conversion',
+          platform: 'lifetime',
+          metadata: { tier: 'pro', source: 'lifetime', founding_member_number: lifetime.founding_member_number } as any,
+        });
+      } catch (e) {
+        logStep("funnel insert skipped", { reason: (e as Error)?.message });
+      }
       return new Response(JSON.stringify({
         subscribed: true,
         tier: "pro",
@@ -133,6 +143,19 @@ serve(async (req) => {
     const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
     logStep("Active subscription found", { tier, subscriptionEnd });
+
+    // Funnel: log paid_conversion (idempotent — unique index per user dedups).
+    try {
+      await supabaseClient.from('funnel_events').insert({
+        user_id: user.id,
+        event_name: 'paid_conversion',
+        platform: 'stripe',
+        metadata: { tier, source: 'stripe', product_id: productId } as any,
+      });
+    } catch (e) {
+      // Ignore duplicate / non-critical errors
+      logStep("funnel insert skipped", { reason: (e as Error)?.message });
+    }
 
     return new Response(JSON.stringify({
       subscribed: true,
