@@ -97,14 +97,17 @@ Deno.serve(async (req) => {
   const consoleTailCount = Array.isArray(fb.console_tail) ? fb.console_tail.length : 0
   const adminUrl = `${PUBLIC_BASE_URL.replace(/\/$/, '')}/admin?tab=feedback&id=${fb.id}`
 
-  // 1) Email to admin
+  // 1) Email to admin (direct fetch — invoke() overrides Authorization with anon key)
   let emailOk = false
   try {
-    const emailRes = await admin.functions.invoke('send-transactional-email', {
+    const emailResp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceKey}`,
+        'apikey': serviceKey,
       },
-      body: {
+      body: JSON.stringify({
         templateName: 'feedback-admin-alert',
         recipientEmail: ADMIN_EMAIL,
         idempotencyKey: `feedback-alert-${fb.id}`,
@@ -122,10 +125,13 @@ Deno.serve(async (req) => {
           feedbackId: fb.id,
           adminUrl,
         },
-      },
+      }),
     })
-    emailOk = !emailRes.error
-    if (emailRes.error) console.warn('[notify-feedback-admin] email error', emailRes.error)
+    emailOk = emailResp.ok
+    if (!emailResp.ok) {
+      const txt = await emailResp.text().catch(() => '')
+      console.warn('[notify-feedback-admin] email non-2xx', emailResp.status, txt)
+    }
   } catch (err) {
     console.warn('[notify-feedback-admin] email exception', err)
   }
