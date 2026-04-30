@@ -108,7 +108,9 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
 
     setSubmitting(true);
     try {
+      const feedbackId = crypto.randomUUID();
       const payload: Record<string, any> = {
+        id: feedbackId,
         user_id: user?.id ?? null,
         email: (user?.email || email.trim() || null) as string | null,
         type,
@@ -127,6 +129,11 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
 
       const { error } = await supabase.from('feedback_submissions').insert(payload as any);
       if (error) throw error;
+
+      // Fire-and-forget admin notification (email + optional webhook)
+      supabase.functions
+        .invoke('notify-feedback-admin', { body: { feedbackId } })
+        .catch((err) => console.warn('[feedback] notify-admin failed', err));
 
       setSubmitted(true);
       showSuccess(t('feedbackForm.thanks', 'Hvala na povratnoj informaciji!'));

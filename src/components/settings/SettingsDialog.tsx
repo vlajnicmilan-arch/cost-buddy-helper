@@ -45,6 +45,7 @@ import { DataSection } from './DataSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
 import { HelpDialogContent } from './HelpDialogContent';
+import { MyFeedbackSection } from '@/components/feedback/MyFeedbackSection';
 import { ContactSupportDialog } from '@/components/support/ContactSupportDialog';
 
 interface SettingsDialogProps {
@@ -675,6 +676,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               isExportingZip={isExportingZip}
               onShowImportDialog={() => setShowImportDialog(true)}
             />
+
+            <Separator />
+
+            <MyFeedbackSection />
 
             <Separator />
 
