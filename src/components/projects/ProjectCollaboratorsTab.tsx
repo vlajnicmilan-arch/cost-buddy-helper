@@ -11,6 +11,7 @@ import {
 import { useProjectCollaborators } from '@/hooks/useProjectCollaborators';
 import { ProjectCollaborator, ProjectCollaboratorInput } from '@/types/projectCollaborator';
 import { ProjectCollaboratorDialog } from './ProjectCollaboratorDialog';
+import { WorkerDataDisclaimerDialog, hasAcceptedWorkerDisclaimer } from '@/components/legal/WorkerDataDisclaimerDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, Handshake, Building2, Loader2, Target, Search } from 'lucide-react';
@@ -50,6 +51,16 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
   const [editing, setEditing] = useState<ProjectCollaborator | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState<string | null>(null);
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+
+  const openAddDialog = () => {
+    setEditing(null);
+    if (!hasAcceptedWorkerDisclaimer()) {
+      setDisclaimerOpen(true);
+      return;
+    }
+    setDialogOpen(true);
+  };
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
@@ -144,7 +155,7 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
           <Badge variant="secondary">{collaborators.length}</Badge>
         </div>
         {isManager && (
-          <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }}>
+          <Button size="sm" onClick={openAddDialog}>
             <Plus className="w-4 h-4 mr-1" />
             {t('collaborators.add', 'Dodaj')}
           </Button>
@@ -325,6 +336,13 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
           })}
         </div>
       )}
+
+      {/* GDPR disclaimer */}
+      <WorkerDataDisclaimerDialog
+        open={disclaimerOpen}
+        onOpenChange={setDisclaimerOpen}
+        onAccept={() => setDialogOpen(true)}
+      />
 
       {/* Dialog */}
       <ProjectCollaboratorDialog

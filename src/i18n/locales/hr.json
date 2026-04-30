@@ -1,4 +1,13 @@
 {
+  "disclaimer": {
+    "workerData": {
+      "title": "Obrada osobnih podataka",
+      "body": "Unosom osobnih podataka treće osobe (ime, kontakt, sati rada, satnica) potvrđujete da imate pravnu osnovu (ugovor, privola) i da ste tu osobu informirali o obradi.",
+      "notOfficialTitle": "Nije službena evidencija",
+      "notOfficialBody": "Podaci se koriste isključivo za interno praćenje projekta i ne predstavljaju službenu evidenciju u smislu Zakona o radu, Zakona o računovodstvu ni Zakona o porezu.",
+      "accept": "Razumijem i prihvaćam"
+    }
+  },
   "fileExport": {
     "download": "Preuzmi",
     "share": "Podijeli",
@@ -317,6 +326,22 @@
   },
   "settings": {
     "title": "Postavke",
+    "legal": {
+      "title": "Pravna dokumentacija (GDPR)",
+      "intro": "Generirajte ugovor o obradi podataka (DPA) i obavijest o privatnosti za radnike/suradnike. Pre-popunjeno s podacima vaše tvrtke.",
+      "companyName": "Naziv tvrtke",
+      "companyRequired": "Unesite naziv firme",
+      "oib": "OIB",
+      "email": "Email",
+      "address": "Adresa sjedišta",
+      "dpaButton": "DPA Ugovor",
+      "dpaDesc": "Za vašu evidenciju kao Voditelja obrade",
+      "pnButton": "Obavijest o privatnosti",
+      "pnDesc": "Za vaše radnike i suradnike",
+      "generated": "Dokument generiran",
+      "generateError": "Greška pri generiranju dokumenta",
+      "note": "Dokumenti služe kao polazna točka. Za specifične pravne situacije konzultirajte odvjetnika."
+    },
     "language": "Jezik",
     "theme": "Tema",
     "currency": "Valuta",
@@ -2353,6 +2378,14 @@
     "s8": {
       "title": "8. Kontakt",
       "p1": "Za sva pitanja vezana uz uvjete korištenja, kontaktirajte nas na:"
+    },
+    "s9": {
+      "title": "9. Namjena usluge i ograničenja",
+      "p1": "V&M Balance je alat za interno upravljanje projektima i osobnim/poslovnim financijama. Aplikacija ne izdaje fakture, ne obrađuje PDV i ne predstavlja sustav za vođenje službenih evidencija.",
+      "l1": "Podaci uneseni u aplikaciju (evidencija rada, suradnici, troškovi) NISU službena evidencija u smislu Zakona o radu (NN 93/14 i izmjene), Zakona o računovodstvu ni Zakona o porezu na dohodak/dobit.",
+      "l2": "Izvozi (PDF/Excel) iz aplikacije su interni izvještaji i ne mogu se koristiti pred Poreznom upravom, Inspektoratom rada ili sudom kao primarni dokaz.",
+      "l3": "Korisnik je dužan voditi službene evidencije u za to ovlaštenim sustavima (kadrovska evidencija, knjigovodstveni programi, e-Porezna).",
+      "p2": "Korištenjem aplikacije korisnik prihvaća ova ograničenja i preuzima punu odgovornost za usklađenost s primjenjivim propisima."
     }
   },
   "form": {

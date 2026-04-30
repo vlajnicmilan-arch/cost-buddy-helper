@@ -1,6 +1,7 @@
 // jspdf is loaded on demand to keep it out of the initial bundle.
 import type { jsPDF as JsPDFType } from 'jspdf';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { addNotOfficialFooter } from '@/lib/pdfFooter';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -210,6 +211,7 @@ export const generateWorkRecordsPDF = async (data: WorkExportConfig, mode: Expor
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
+  addNotOfficialFooter(doc);
   await exportPDFDoc(doc, fileName, mode);
 };
 

@@ -1,4 +1,13 @@
 {
+  "disclaimer": {
+    "workerData": {
+      "title": "Verarbeitung personenbezogener Daten",
+      "body": "Mit der Eingabe personenbezogener Daten Dritter (Name, Kontakt, Arbeitsstunden, Stundensatz) bestätigen Sie, dass Sie eine Rechtsgrundlage haben (Vertrag, Einwilligung) und die betroffene Person informiert haben.",
+      "notOfficialTitle": "Keine offizielle Aufzeichnung",
+      "notOfficialBody": "Die Daten werden ausschließlich zur internen Projektverfolgung verwendet und stellen keine offizielle Aufzeichnung im Sinne des Arbeits-, Buchhaltungs- oder Steuerrechts dar.",
+      "accept": "Ich verstehe und akzeptiere"
+    }
+  },
   "fileExport": {
     "download": "Herunterladen",
     "share": "Teilen",
@@ -55,6 +64,22 @@
     "menuDesc": "Angebot erstellen und in ein Projekt umwandeln"
   },
   "settings": {
+    "legal": {
+      "title": "Rechtsdokumente (DSGVO)",
+      "intro": "Generieren Sie einen Auftragsverarbeitungsvertrag (AVV/DPA) und einen Datenschutzhinweis für Ihre Mitarbeiter/Auftragnehmer. Mit Ihren Firmendaten vorausgefüllt.",
+      "companyName": "Firmenname",
+      "companyRequired": "Firmenname eingeben",
+      "oib": "USt-IdNr.",
+      "email": "E-Mail",
+      "address": "Geschäftsadresse",
+      "dpaButton": "AVV / DPA",
+      "dpaDesc": "Für Ihre Unterlagen als Verantwortlicher",
+      "pnButton": "Datenschutzhinweis",
+      "pnDesc": "Für Ihre Mitarbeiter und Auftragnehmer",
+      "generated": "Dokument generiert",
+      "generateError": "Fehler beim Generieren des Dokuments",
+      "note": "Dokumente sind ein Ausgangspunkt. Bei spezifischen rechtlichen Fragen ziehen Sie einen Anwalt zu Rate."
+    },
     "title": "Einstellungen",
     "language": "Sprache",
     "theme": "Design",
@@ -2348,6 +2373,14 @@
     "s8": {
       "title": "8. Kontakt",
       "p1": "Bei Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns unter:"
+    },
+    "s9": {
+      "title": "9. Zweck der Dienstleistung und Einschränkungen",
+      "p1": "V&M Balance ist ein Werkzeug zur internen Projektverwaltung und für persönliche/geschäftliche Finanzen. Die Anwendung stellt keine Rechnungen aus, verarbeitet keine MwSt. und ist kein System zur Führung offizieller Aufzeichnungen.",
+      "l1": "Die in die Anwendung eingegebenen Daten (Arbeitsnachweise, Mitarbeiter, Kosten) sind KEINE offiziellen Aufzeichnungen im Sinne des Arbeitsrechts, des Buchhaltungsrechts oder des Einkommen-/Körperschaftsteuerrechts.",
+      "l2": "Exporte (PDF/Excel) aus der Anwendung sind interne Berichte und können nicht als Hauptbeweis vor Finanzbehörden, Arbeitsinspektionen oder Gerichten verwendet werden.",
+      "l3": "Der Nutzer ist verpflichtet, offizielle Aufzeichnungen in dafür zugelassenen Systemen zu führen.",
+      "p2": "Durch die Nutzung der Anwendung akzeptiert der Nutzer diese Einschränkungen und übernimmt die volle Verantwortung für die Einhaltung der geltenden Vorschriften."
     }
   },
   "form": {

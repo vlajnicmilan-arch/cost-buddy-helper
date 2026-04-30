@@ -1,4 +1,13 @@
 {
+  "disclaimer": {
+    "workerData": {
+      "title": "Personal data processing",
+      "body": "By entering personal data of a third party (name, contact, work hours, hourly rate) you confirm that you have a legal basis (contract, consent) and that you have informed that person about the processing.",
+      "notOfficialTitle": "Not an official record",
+      "notOfficialBody": "Data is used solely for internal project tracking and does not constitute an official record under labour, accounting, or tax law.",
+      "accept": "I understand and accept"
+    }
+  },
   "fileExport": {
     "download": "Download",
     "share": "Share",
@@ -309,6 +318,22 @@
     "menuDesc": "Prepare a quote and convert it into a project"
   },
   "settings": {
+    "legal": {
+      "title": "Legal documents (GDPR)",
+      "intro": "Generate a Data Processing Agreement (DPA) and a Privacy Notice for your workers/collaborators. Pre-filled with your company details.",
+      "companyName": "Company name",
+      "companyRequired": "Enter company name",
+      "oib": "Tax ID",
+      "email": "Email",
+      "address": "Registered address",
+      "dpaButton": "DPA Agreement",
+      "dpaDesc": "For your records as Data Controller",
+      "pnButton": "Privacy Notice",
+      "pnDesc": "For your workers and collaborators",
+      "generated": "Document generated",
+      "generateError": "Error generating document",
+      "note": "Documents are a starting point. For specific legal situations consult a lawyer."
+    },
     "title": "Settings",
     "language": "Language",
     "theme": "Theme",
@@ -2346,6 +2371,14 @@
     "s8": {
       "title": "8. Contact",
       "p1": "For any questions regarding these Terms of Service, contact us at:"
+    },
+    "s9": {
+      "title": "9. Service purpose and limitations",
+      "p1": "V&M Balance is a tool for internal project management and personal/business finance tracking. The application does not issue invoices, does not process VAT, and does not constitute a system for keeping official records.",
+      "l1": "Data entered into the application (work logs, collaborators, expenses) is NOT an official record under labour law, accounting law, or income/profit tax law.",
+      "l2": "Exports (PDF/Excel) from the application are internal reports and cannot be used before tax authorities, labour inspectorates, or courts as primary evidence.",
+      "l3": "The user is responsible for keeping official records in authorised systems (HR records, accounting software, e-tax portals).",
+      "p2": "By using the application, the user accepts these limitations and assumes full responsibility for compliance with applicable regulations."
     }
   },
   "form": {
