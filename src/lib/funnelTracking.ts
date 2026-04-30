@@ -118,6 +118,8 @@ export const logFunnelEvent = async (
   try {
     const platform = detectPlatform();
     const sessionId = getOrCreateSessionId();
+    const utm = getStoredUtm();
+    const enrichedMetadata = { ...utm, ...metadata };
 
     if (eventName === 'install') {
       // Only log install once per device
@@ -127,7 +129,7 @@ export const logFunnelEvent = async (
         session_id: sessionId,
         event_name: 'install',
         platform,
-        metadata: metadata as any,
+        metadata: enrichedMetadata as any,
       });
       // 23505 = unique violation → already logged, fine.
       if (!error || error.code === '23505') {
@@ -145,7 +147,7 @@ export const logFunnelEvent = async (
       session_id: sessionId,
       event_name: eventName,
       platform,
-      metadata: metadata as any,
+      metadata: enrichedMetadata as any,
     });
     // Ignore duplicate-key errors silently — these events are idempotent per user.
   } catch (e) {
