@@ -381,30 +381,28 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         showSuccess(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/onboarding';
       } else if (user) {
-        try {
-          const { data: expenses } = await supabase.from('expenses').select('id').eq('user_id', user.id);
-          if (expenses && expenses.length > 0) {
-            const expenseIds = expenses.map(e => e.id);
-            await supabase.from('receipt_items').delete().in('expense_id', expenseIds);
-          }
-          await supabase.from('transaction_notes').delete().eq('user_id', user.id);
-          await supabase.from('expenses').delete().eq('user_id', user.id);
-          const { data: ownedSources } = await supabase.from('income_sources').select('id').eq('user_id', user.id);
-          if (ownedSources && ownedSources.length > 0) {
-            const sourceIds = ownedSources.map(s => s.id);
-            await supabase.from('income_source_members').delete().in('income_source_id', sourceIds);
-            await supabase.from('income_source_invitations').delete().in('income_source_id', sourceIds);
-          }
-          await supabase.from('income_sources').delete().eq('user_id', user.id);
-          await supabase.from('payment_source_cards').delete().eq('user_id', user.id);
-          await supabase.from('custom_payment_sources').delete().eq('user_id', user.id);
-          await supabase.from('custom_categories').delete().eq('user_id', user.id);
-          await supabase.from('bank_connections').delete().eq('user_id', user.id);
-          await supabase.from('notifications').delete().eq('user_id', user.id);
-          await supabase.from('profiles').delete().eq('user_id', user.id);
-        } catch (dbError) {
-          console.error('Error deleting data:', dbError);
+        // Pozovi edge funkciju koja zakazuje brisanje za 30 dana (grace period)
+        const { data, error } = await supabase.functions.invoke('request-account-deletion', {
+          body: { reason: null },
+        });
+        if (error) throw error;
+
+        if (data?.already_scheduled) {
+          showSuccess(
+            t('settings.deletionAlreadyScheduled', 'Brisanje je već zakazano za {{date}}').replace(
+              '{{date}}',
+              new Date(data.scheduled_for).toLocaleDateString('hr-HR')
+            )
+          );
+        } else {
+          showSuccess(
+            t('settings.deletionScheduled', 'Račun će biti trajno obrisan {{date}}. Prijavite se prije tog datuma za otkazivanje.').replace(
+              '{{date}}',
+              new Date(data.scheduled_for).toLocaleDateString('hr-HR')
+            )
+          );
         }
+
         await supabase.auth.signOut();
         const storageConfig = localStorage.getItem('finmate-storage-config');
         const aiAssistant = localStorage.getItem('ai_assistant_enabled');
@@ -417,7 +415,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
         if (familyMode) localStorage.setItem('family_mode_enabled', familyMode);
         if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
-        showSuccess(t('settings.accountDeleted', 'Račun uspješno obrisan'));
         window.location.href = '/';
       }
     } catch (error) {

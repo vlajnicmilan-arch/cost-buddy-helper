@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_log: {
+        Row: {
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          reason: string | null
+          requested_at: string
+          scheduled_for: string
+          status: string
+          stripe_subscription_cancelled: boolean | null
+          tables_purged: Json | null
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          reason?: string | null
+          requested_at?: string
+          scheduled_for: string
+          status?: string
+          stripe_subscription_cancelled?: boolean | null
+          tables_purged?: Json | null
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          reason?: string | null
+          requested_at?: string
+          scheduled_for?: string
+          status?: string
+          stripe_subscription_cancelled?: boolean | null
+          tables_purged?: Json | null
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       activation_nudge_log: {
         Row: {
           day_number: number
@@ -2275,6 +2323,8 @@ export type Database = {
         Row: {
           created_at: string
           currency: string | null
+          deleted_at: string | null
+          deletion_scheduled_at: string | null
           display_name: string | null
           id: string
           multi_currency_enabled: boolean | null
@@ -2284,6 +2334,8 @@ export type Database = {
         Insert: {
           created_at?: string
           currency?: string | null
+          deleted_at?: string | null
+          deletion_scheduled_at?: string | null
           display_name?: string | null
           id?: string
           multi_currency_enabled?: boolean | null
@@ -2293,6 +2345,8 @@ export type Database = {
         Update: {
           created_at?: string
           currency?: string | null
+          deleted_at?: string | null
+          deletion_scheduled_at?: string | null
           display_name?: string | null
           id?: string
           multi_currency_enabled?: boolean | null
