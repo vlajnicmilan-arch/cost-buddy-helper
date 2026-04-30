@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2, Sparkles, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr, friendlyError } from '@/lib/errorMessages';
 
 interface SummaryRow {
   id: string;
@@ -46,7 +47,7 @@ export const PulseAISummary = () => {
       showSuccess(t('admin.pulse.summaryDone', 'Sažetak izrađen'));
       await load();
     } catch (e: any) {
-      showError(e.message || 'Greška');
+      showError(friendlyError(e));
     }
     setGenerating(false);
   };

@@ -7,6 +7,7 @@ import { Loader2, RefreshCw, ChevronDown, ChevronRight, Trash2, Activity } from 
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { tr, friendlyError } from '@/lib/errorMessages';
 
 interface DiagnosticLog {
   id: string;
@@ -75,7 +76,7 @@ export const DiagnosticLogsTab = () => {
       .limit(500);
 
     if (error) {
-      showError('Greška pri učitavanju logova');
+      showError(tr('errors.fetch.logs', 'Greška pri učitavanju logova'));
       console.error(error);
     } else {
       setLogs(data as DiagnosticLog[]);
@@ -169,7 +170,7 @@ export const DiagnosticLogsTab = () => {
       .delete()
       .lt('created_at', cutoff);
     if (error) {
-      showError('Greška pri brisanju');
+      showError(tr('errors.delete.generic', 'Greška pri brisanju'));
     } else {
       showSuccess('Stari logovi obrisani');
       await loadLogs();

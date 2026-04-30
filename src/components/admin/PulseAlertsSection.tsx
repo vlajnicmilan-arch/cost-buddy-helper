@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { Loader2, RefreshCw, AlertTriangle, BellRing, ChevronRight } from 'lucide-react';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr, friendlyError } from '@/lib/errorMessages';
 import { PulseAlertDetailDialog } from './PulseAlertDetailDialog';
 
 interface AlertRow {
@@ -50,7 +51,7 @@ export const PulseAlertsSection = () => {
       showSuccess(t('admin.pulse.scanDone', 'Skeniranje izvršeno'));
       await load();
     } catch (e: any) {
-      showError(e.message || 'Greška');
+      showError(friendlyError(e));
     }
     setRunning(false);
   };
