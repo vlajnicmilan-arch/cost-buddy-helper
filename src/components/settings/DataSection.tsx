@@ -28,6 +28,8 @@ interface DataSectionProps {
   // Export/Import
   onExport: (mode?: ExportMode) => void;
   isExporting: boolean;
+  onExportZip: (mode?: ExportMode) => void;
+  isExportingZip: boolean;
   onShowImportDialog: () => void;
 }
 
