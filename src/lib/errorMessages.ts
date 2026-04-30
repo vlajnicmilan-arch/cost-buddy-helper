@@ -154,3 +154,8 @@ export function formatErrorForUser(
   if (fallbackText) return fallbackText;
   return t('errors.generic', 'Something went wrong. Please try again.');
 }
+
+/** Convenience: like formatErrorForUser but uses the global i18n instance. */
+export function friendlyError(error: unknown, fallbackKey?: string, fallbackText?: string): string {
+  return formatErrorForUser(error, tr as TFunc, { fallbackKey, fallbackText });
+}
