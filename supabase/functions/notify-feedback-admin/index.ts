@@ -101,6 +101,9 @@ Deno.serve(async (req) => {
   let emailOk = false
   try {
     const emailRes = await admin.functions.invoke('send-transactional-email', {
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+      },
       body: {
         templateName: 'feedback-admin-alert',
         recipientEmail: ADMIN_EMAIL,
