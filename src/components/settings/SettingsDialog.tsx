@@ -638,6 +638,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onMultiCurrencyChange={setMultiCurrencyEnabled}
               onExport={handleExport}
               isExporting={isExporting}
+              onExportZip={handleExportZip}
+              isExportingZip={isExportingZip}
               onShowImportDialog={() => setShowImportDialog(true)}
             />
 
