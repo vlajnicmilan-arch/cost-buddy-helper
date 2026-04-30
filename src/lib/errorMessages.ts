@@ -5,11 +5,22 @@
  * (e.g. `showError(error.message)`). Falls back to a generic localized
  * message and logs the original error to the console for diagnostics.
  *
- * Usage:
- *   const { t } = useTranslation();
- *   try { ... } catch (e) { showError(formatErrorForUser(e, t)); }
+ * Two usage modes:
+ *   1) In React components / hooks with i18n already wired:
+ *        const { t } = useTranslation();
+ *        showError(formatErrorForUser(e, t));
+ *   2) In hooks/utilities without useTranslation, use the standalone
+ *      `tr(key, fallback)` and `friendlyError(e, fallbackKey?)` helpers.
  */
+import i18nInstance from '@/i18n';
+
 export type TFunc = (key: string, defaultOrOpts?: any, opts?: any) => string;
+
+/** Standalone translator using the global i18n instance — safe outside React. */
+export const tr = (key: string, fallback?: string, opts?: Record<string, unknown>): string => {
+  const value = i18nInstance.t(key, { defaultValue: fallback ?? key, ...(opts || {}) });
+  return typeof value === 'string' ? value : (fallback ?? key);
+};
 
 interface FormatOptions {
   /** i18n fallback key, e.g. 'errors.save.expense'. Used if no specific match. */
