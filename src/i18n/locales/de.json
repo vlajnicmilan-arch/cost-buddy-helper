@@ -1,4 +1,13 @@
 {
+  "disclaimer": {
+    "workerData": {
+      "title": "Verarbeitung personenbezogener Daten",
+      "body": "Mit der Eingabe personenbezogener Daten Dritter (Name, Kontakt, Arbeitsstunden, Stundensatz) bestätigen Sie, dass Sie eine Rechtsgrundlage haben (Vertrag, Einwilligung) und die betroffene Person informiert haben.",
+      "notOfficialTitle": "Keine offizielle Aufzeichnung",
+      "notOfficialBody": "Die Daten werden ausschließlich zur internen Projektverfolgung verwendet und stellen keine offizielle Aufzeichnung im Sinne des Arbeits-, Buchhaltungs- oder Steuerrechts dar.",
+      "accept": "Ich verstehe und akzeptiere"
+    }
+  },
   "fileExport": {
     "download": "Herunterladen",
     "share": "Teilen",

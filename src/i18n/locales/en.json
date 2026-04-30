@@ -1,4 +1,13 @@
 {
+  "disclaimer": {
+    "workerData": {
+      "title": "Personal data processing",
+      "body": "By entering personal data of a third party (name, contact, work hours, hourly rate) you confirm that you have a legal basis (contract, consent) and that you have informed that person about the processing.",
+      "notOfficialTitle": "Not an official record",
+      "notOfficialBody": "Data is used solely for internal project tracking and does not constitute an official record under labour, accounting, or tax law.",
+      "accept": "I understand and accept"
+    }
+  },
   "fileExport": {
     "download": "Download",
     "share": "Share",
