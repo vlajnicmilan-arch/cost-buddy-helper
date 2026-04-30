@@ -28,6 +28,7 @@ import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { EmptyState } from '@/components/EmptyState';
 
 interface CustomPaymentSourcesPanelProps {
   hideHeader?: boolean;
