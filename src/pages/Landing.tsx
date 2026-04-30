@@ -1,19 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { motion, type Variants } from 'framer-motion';
-import {
-  Wallet, PieChart, TrendingUp, Users, Shield, Smartphone,
-  Zap, BarChart3, Receipt, ArrowRight, Check, Star, Globe, Menu, X,
-  Download
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { downloadApk } from '@/lib/downloadApk';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { Zap, Shield, Smartphone, ArrowRight, Check, Globe, Menu, X, Download } from 'lucide-react';
 import logo from '@/assets/logo.webp';
-// heroImage is now served from /public (preloaded in index.html for LCP).
-import cardsImage from '@/assets/cards-floating.webp';
-import mockupDashboard from '@/assets/app-mockup-dashboard.webp';
-import mockupBudget from '@/assets/app-mockup-budget.webp';
+import { getInitialLandingLanguage, getLandingTranslation, landingLanguages, type LandingLanguage } from './landingTranslations';
+
+const LandingBelowFold = lazy(() => import('./LandingBelowFold').then((module) => ({ default: module.LandingBelowFold })));
 
 const goTo = (path: string) => {
   window.location.href = path;
@@ -22,551 +12,272 @@ const goTo = (path: string) => {
 const goToSignup = () => {
   window.location.href = '/auth?mode=signup';
 };
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 60, scale: 0.95 },
-  visible: (i: number) => ({
-    opacity: 1, y: 0, scale: 1,
-    transition: { delay: i * 0.15, duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }
-  })
+
+const getApkUrl = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const cacheBust = Math.floor(Date.now() / (5 * 60 * 1000));
+  return `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk&v=${cacheBust}`;
 };
 
-const slideInLeft: Variants = {
-  hidden: { opacity: 0, x: -80 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] } }
+const LanguageSelector = ({ language, setLanguage, t }: { language: LandingLanguage; setLanguage: (language: LandingLanguage) => void; t: (key: string) => string }) => {
+  const [open, setOpen] = useState(false);
+  const flags: Record<LandingLanguage, string> = { hr: '🇭🇷', en: '🇬🇧', de: '🇩🇪' };
+
+  const selectLanguage = (nextLanguage: LandingLanguage) => {
+    localStorage.setItem('i18nextLng', nextLanguage);
+    setLanguage(nextLanguage);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-lg transition-colors hover:bg-accent hover:text-accent-foreground"
+        onClick={() => setOpen((current) => !current)}
+        aria-label={t('language.label')}
+        aria-expanded={open}
+      >
+        {flags[language]}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-12 z-[60] w-40 rounded-xl border border-border bg-popover p-1 shadow-lg">
+          {landingLanguages.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => selectLanguage(item)}
+              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-popover-foreground hover:bg-accent"
+            >
+              <span className="text-lg">{flags[item]}</span>
+              <span className="flex-1">{t(`language.${item}`)}</span>
+              {language === item && <Check className="h-4 w-4 text-primary" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
-const slideInRight: Variants = {
-  hidden: { opacity: 0, x: 80 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] } }
-};
-
-const popIn: Variants = {
-  hidden: { opacity: 0, scale: 0.7, rotate: -5 },
-  visible: (i: number) => ({
-    opacity: 1, scale: 1, rotate: 0,
-    transition: { delay: i * 0.12, duration: 0.6, type: 'spring', stiffness: 200, damping: 15 }
-  })
-};
-
-const LandingNav = () => {
-  const { t } = useTranslation();
+const LandingNav = ({ language, setLanguage, t }: { language: LandingLanguage; setLanguage: (language: LandingLanguage) => void; t: (key: string) => string }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
-            <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
-          </div>
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <a href="/" className="flex min-h-11 items-center gap-2" aria-label="V&M Balance">
+          <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-xl">
+            <img src={logo} alt={t('alt.logo')} className="h-full w-full scale-[1.8] object-cover" width="36" height="36" decoding="async" />
+          </span>
           <span className="text-xl font-bold text-foreground">V&M Balance</span>
+        </a>
+        <div className="hidden items-center gap-8 md:flex">
+          <a href="#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">{t('landing.nav.features')}</a>
+          <a href="#pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">{t('landing.nav.pricing')}</a>
+          <a href="#testimonials" className="text-sm text-muted-foreground transition-colors hover:text-foreground">{t('landing.nav.testimonials')}</a>
         </div>
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('landing.nav.features')}</a>
-          <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('landing.nav.pricing')}</a>
-          <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('landing.nav.testimonials')}</a>
-        </div>
-        <div className="flex items-center gap-3">
-          <LanguageSwitcher />
-          <Button variant="outline" size="sm" onClick={() => goTo('/auth')} className="hidden sm:inline-flex">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSelector language={language} setLanguage={setLanguage} t={t} />
+          <button type="button" onClick={() => goTo('/auth')} className="hidden min-h-11 items-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex">
             {t('landing.nav.login')}
-          </Button>
-          <Button size="sm" onClick={goToSignup} className="hidden sm:inline-flex bg-gradient-to-r from-primary to-accent text-primary-foreground">
+          </button>
+          <button type="button" onClick={goToSignup} className="hidden min-h-11 items-center rounded-md bg-gradient-to-r from-primary to-accent px-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-95 sm:inline-flex">
             {t('landing.nav.getStarted')}
-          </Button>
-          {/* Mobile hamburger */}
+          </button>
           <button
-            className="md:hidden p-2 text-muted-foreground hover:text-foreground"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+            onClick={() => setMobileMenuOpen((current) => !current)}
+            aria-label="Menu"
+            aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
-      {/* Mobile menu */}
       {mobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="md:hidden bg-background border-b border-border px-4 py-4 space-y-3"
-        >
-          <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.features')}</a>
-          <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.pricing')}</a>
-          <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.testimonials')}</a>
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => { setMobileMenuOpen(false); goTo('/auth'); }}>
-              {t('landing.nav.login')}
-            </Button>
-            <Button size="sm" className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground" onClick={() => { setMobileMenuOpen(false); goToSignup(); }}>
-              {t('landing.nav.getStarted')}
-            </Button>
+        <div className="border-b border-border bg-background px-4 py-4 md:hidden">
+          <div className="space-y-2">
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block min-h-11 py-3 text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.features')}</a>
+            <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block min-h-11 py-3 text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.pricing')}</a>
+            <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="block min-h-11 py-3 text-sm text-muted-foreground hover:text-foreground">{t('landing.nav.testimonials')}</a>
           </div>
-        </motion.div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" className="min-h-11 flex-1 rounded-md border border-input px-3 text-sm font-medium" onClick={() => { setMobileMenuOpen(false); goTo('/auth'); }}>
+              {t('landing.nav.login')}
+            </button>
+            <button type="button" className="min-h-11 flex-1 rounded-md bg-gradient-to-r from-primary to-accent px-3 text-sm font-medium text-primary-foreground" onClick={() => { setMobileMenuOpen(false); goToSignup(); }}>
+              {t('landing.nav.getStarted')}
+            </button>
+          </div>
+        </div>
       )}
     </nav>
   );
 };
 
-const HeroSection = () => {
-  const { t } = useTranslation();
-  return (
-    <section className="pt-28 pb-20 px-4 relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-10 w-96 h-96 bg-accent/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-income/10 rounded-full blur-3xl" />
-      </div>
-
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-        <div>
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <Zap className="w-4 h-4" />
-              {t('landing.hero.badge')}
-            </span>
-          </motion.div>
-
-          {/* H1 renders immediately (no motion wrapper) so it qualifies as
-              the FCP element and ships in the first frame. Animations on
-              text were a measurable FCP regression. */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6">
-            {t('landing.hero.title')}{' '}
-            <span className="bg-gradient-to-r from-primary via-accent to-income bg-clip-text text-transparent">
-              {t('landing.hero.titleHighlight')}
-            </span>
-          </h1>
-
-          <p className="text-lg text-muted-foreground max-w-lg mb-8">
-            {t('landing.hero.subtitle')}
-          </p>
-
-          <motion.div
-            className="flex flex-col sm:flex-row items-start gap-4"
-            initial="hidden" animate="visible" variants={fadeUp} custom={3}
-          >
-            <Button size="lg" onClick={goToSignup} className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
-              {t('landing.hero.cta')}
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button variant="outline" size="lg" onClick={() => goTo('/install')} className="px-8 text-lg h-14 rounded-2xl">
-              <Smartphone className="w-5 h-5 mr-2" />
-              {t('landing.hero.installApp')}
-            </Button>
-          </motion.div>
-
-          <motion.div
-            className="mt-8 flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-muted-foreground"
-            initial="hidden" animate="visible" variants={fadeUp} custom={4}
-          >
-            <span className="flex items-center gap-1"><Check className="w-4 h-4 text-income" /> {t('landing.hero.free')}</span>
-            <span className="flex items-center gap-1"><Shield className="w-4 h-4 text-primary" /> {t('landing.hero.secure')}</span>
-            <span className="flex items-center gap-1"><Globe className="w-4 h-4 text-accent" /> {t('landing.hero.multilingual')}</span>
-          </motion.div>
+const HeroSection = ({ t }: { t: (key: string) => string }) => (
+  <section className="relative overflow-hidden px-4 pb-20 pt-28">
+    <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/10 via-background to-background" />
+    <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
+      <div>
+        <span className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+          <Zap className="h-4 w-4" />
+          {t('landing.hero.badge')}
+        </span>
+        <h1 className="mb-6 text-4xl font-extrabold leading-tight text-foreground sm:text-5xl lg:text-6xl">
+          {t('landing.hero.title')}{' '}
+          <span className="bg-gradient-to-r from-primary via-accent to-income bg-clip-text text-transparent">
+            {t('landing.hero.titleHighlight')}
+          </span>
+        </h1>
+        <p className="mb-8 max-w-lg text-lg text-muted-foreground">{t('landing.hero.subtitle')}</p>
+        <div className="flex flex-col items-start gap-4 sm:flex-row">
+          <button type="button" onClick={goToSignup} className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-gradient-to-r from-primary to-accent px-8 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-shadow hover:shadow-xl hover:shadow-primary/30">
+            {t('landing.hero.cta')}
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </button>
+          <button type="button" onClick={() => goTo('/install')} className="inline-flex min-h-14 items-center justify-center rounded-2xl border border-input bg-background px-8 text-lg font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+            <Smartphone className="mr-2 h-5 w-5" />
+            {t('landing.hero.installApp')}
+          </button>
         </div>
-
-        {/* Hero image */}
-        <motion.div
-          className="relative hidden lg:block"
-          initial="hidden"
-          animate="visible"
-          variants={slideInRight}
-        >
-          <motion.div
-            className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20"
-            whileHover={{ scale: 1.02, rotate: 1 }}
-            transition={{ type: 'spring', stiffness: 300 }}
-          >
-            {/* Static /public path matches the <link rel=preload> in
-                index.html, so the browser reuses the already-downloaded
-                bytes for LCP instead of waiting for the JS bundle. */}
-            <picture>
-              <source media="(min-width: 1024px)" srcSet="/hero-receipt-scan.webp" type="image/webp" />
-              <img src="/hero-receipt-scan-mobile.webp" alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="1024" height="1024" fetchPriority="high" decoding="async" />
-            </picture>
-
-            <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
-          </motion.div>
-          <motion.div
-            className="absolute -bottom-8 -left-8 w-48 rounded-2xl overflow-hidden shadow-xl"
-            initial={{ opacity: 0, scale: 0.5, rotate: -15 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 0.7, delay: 1, type: 'spring', stiffness: 200 }}
-            whileHover={{ scale: 1.1, rotate: 3 }}
-          >
-            <img src={cardsImage} alt="Kartice" className="w-full h-auto" loading="lazy" />
-          </motion.div>
-        </motion.div>
+        <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-muted-foreground sm:gap-6">
+          <span className="flex items-center gap-1"><Check className="h-4 w-4 text-income" /> {t('landing.hero.free')}</span>
+          <span className="flex items-center gap-1"><Shield className="h-4 w-4 text-primary" /> {t('landing.hero.secure')}</span>
+          <span className="flex items-center gap-1"><Globe className="h-4 w-4 text-accent" /> {t('landing.hero.multilingual')}</span>
+        </div>
       </div>
-
-      {/* Mobile hero image — no entrance animation so paint is immediate.
-          Uses the same /public asset preloaded in index.html, eliminating
-          a separate image fetch on the LCP-critical mobile viewport. */}
-      <div className="mt-10 lg:hidden flex justify-center">
-        <div className="rounded-2xl overflow-hidden shadow-xl max-w-sm">
+      <div className="relative hidden lg:block">
+        <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
           <picture>
             <source media="(min-width: 1024px)" srcSet="/hero-receipt-scan.webp" type="image/webp" />
-            <img src="/hero-receipt-scan-mobile.webp" alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="640" height="640" fetchPriority="high" decoding="async" />
+            <img src="/hero-receipt-scan-mobile.webp" alt={t('alt.hero')} className="h-auto w-full object-cover" width="1024" height="1024" fetchPriority="high" decoding="async" />
           </picture>
+          <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
         </div>
       </div>
-    </section>
-  );
-};
-
-const AppShowcaseSection = () => {
-  const { t } = useTranslation();
-
-  return (
-    <section className="py-20 px-4 relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl" />
+    </div>
+    <div className="mt-10 flex justify-center lg:hidden">
+      <div className="max-w-sm overflow-hidden rounded-2xl shadow-xl">
+        <img src="/hero-receipt-scan-mobile.webp" alt={t('alt.hero')} className="h-auto w-full object-cover" width="640" height="640" fetchPriority="high" decoding="async" />
       </div>
-      <div className="max-w-6xl mx-auto">
-        <motion.div className="text-center mb-12" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            {t('landing.showcase.title', 'Aplikacija u tvojim rukama')}
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {t('landing.showcase.subtitle', 'Prekrasno dizajnirana, jednostavna za korištenje i dostupna na svim uređajima.')}
-          </p>
-        </motion.div>
+    </div>
+  </section>
+);
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
-          <motion.div
-            className="w-52 sm:w-64"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={popIn}
-            custom={0}
-            whileHover={{ scale: 1.08, rotate: 0, y: -10 }}
-            transition={{ type: 'spring', stiffness: 300 }}
-          >
-            <img src={mockupDashboard} alt="V&M Balance dashboard" className="w-full h-auto drop-shadow-2xl" loading="lazy" />
-          </motion.div>
-          <motion.div
-            className="w-52 sm:w-64"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={popIn}
-            custom={1}
-            whileHover={{ scale: 1.08, rotate: 0, y: -10 }}
-            transition={{ type: 'spring', stiffness: 300 }}
-          >
-            <img src={mockupBudget} alt="V&M Balance budžeti" className="w-full h-auto drop-shadow-2xl" loading="lazy" />
-          </motion.div>
-        </div>
-
-        <motion.div
-          className="mt-12 flex justify-center"
-          initial={{ opacity: 0, scale: 0.6, y: 50 }}
-          whileInView={{ opacity: 1, scale: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.8, delay: 0.4, type: 'spring', stiffness: 150 }}
-          whileHover={{ scale: 1.05 }}
-        >
-          <img src={cardsImage} alt="Kartice za plaćanje" className="w-64 sm:w-80 h-auto rounded-2xl" loading="lazy" />
-        </motion.div>
-      </div>
-    </section>
-  );
-};
-
-const featuresList = [
-  { icon: PieChart, colorClass: 'from-primary to-accent', key: 'tracking' },
-  { icon: BarChart3, colorClass: 'from-accent to-income', key: 'reports' },
-  { icon: Users, colorClass: 'from-income to-primary', key: 'family' },
-  { icon: Wallet, colorClass: 'from-primary to-income', key: 'wallet' },
-  { icon: Receipt, colorClass: 'from-accent to-primary', key: 'receipts' },
-  { icon: TrendingUp, colorClass: 'from-income to-accent', key: 'budgets' },
-];
-
-const FeaturesSection = () => {
-  const { t } = useTranslation();
-
-  return (
-    <section id="features" className="py-24 px-4 bg-secondary/30">
-      <div className="max-w-6xl mx-auto">
-        <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{t('landing.features.title')}</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t('landing.features.subtitle')}</p>
-        </motion.div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuresList.map((f, i) => (
-            <motion.div
-              key={f.key}
-              className="group p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all"
-              initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={popIn} custom={i}
-              whileHover={{ y: -8, scale: 1.03 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
-              <motion.div
-                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.colorClass} flex items-center justify-center mb-4`}
-                whileHover={{ scale: 1.2, rotate: 10 }}
-                transition={{ type: 'spring', stiffness: 400 }}
-              >
-                <f.icon className="w-6 h-6 text-primary-foreground" />
-              </motion.div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">{t(`landing.features.${f.key}.title`)}</h3>
-              <p className="text-muted-foreground text-sm">{t(`landing.features.${f.key}.desc`)}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const plans = [
-  { key: 'free', popular: false },
-  { key: 'pro', popular: true },
-  { key: 'business', popular: false },
-];
-
-const PricingSection = () => {
-  const { t } = useTranslation();
-  return (
-    <section id="pricing" className="py-24 px-4">
-      <div className="max-w-5xl mx-auto">
-        <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{t('landing.pricing.title')}</h2>
-          <p className="text-muted-foreground text-lg">{t('landing.pricing.subtitle')}</p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.key}
-              className={`relative p-6 rounded-2xl border ${plan.popular ? 'border-primary bg-gradient-to-b from-primary/5 to-accent/5 shadow-xl shadow-primary/10' : 'border-border bg-card'}`}
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-            >
-              {plan.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-accent text-primary-foreground text-xs font-bold">
-                  {t('landing.pricing.popular')}
-                </span>
-              )}
-              <h3 className="text-xl font-bold text-foreground mb-1">{t(`landing.pricing.${plan.key}.name`)}</h3>
-              <div className="mb-4">
-                <span className="text-3xl font-extrabold text-foreground">{t(`landing.pricing.${plan.key}.price`)}</span>
-                <span className="text-muted-foreground text-sm">/{t('landing.pricing.month')}</span>
-              </div>
-              <ul className="space-y-3 mb-6">
-                {[1, 2, 3, 4].map(n => {
-                  const feat = t(`landing.pricing.${plan.key}.f${n}`, { defaultValue: '' });
-                  if (!feat) return null;
-                  return (
-                    <li key={n} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <Check className="w-4 h-4 text-income shrink-0 mt-0.5" />
-                      {feat}
-                    </li>
-                  );
-                })}
-              </ul>
-              <Button
-                className={`w-full rounded-xl ${plan.popular ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground' : ''}`}
-                variant={plan.popular ? 'default' : 'outline'}
-                onClick={goToSignup}
-              >
-                {t('landing.pricing.cta')}
-              </Button>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const testimonialsList = [
-  { key: 't1', stars: 5 },
-  { key: 't2', stars: 5 },
-  { key: 't3', stars: 4 },
-];
-
-const TestimonialsSection = () => {
-  const { t } = useTranslation();
-
-  return (
-    <section id="testimonials" className="py-24 px-4 bg-secondary/30">
-      <div className="max-w-5xl mx-auto">
-        <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{t('landing.testimonials.title')}</h2>
-          <p className="text-muted-foreground text-lg">{t('landing.testimonials.subtitle')}</p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonialsList.map((test, i) => (
-            <motion.div
-              key={test.key}
-              className="p-6 rounded-2xl bg-card border border-border/50"
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-            >
-              <div className="flex gap-0.5 mb-3">
-                {Array.from({ length: test.stars }).map((_, j) => (
-                  <Star key={j} className="w-4 h-4 fill-warning text-warning" />
-                ))}
-              </div>
-              <p className="text-muted-foreground text-sm mb-4 italic">"{t(`landing.testimonials.${test.key}.text`)}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold text-sm">
-                  {t(`landing.testimonials.${test.key}.name`).charAt(0)}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{t(`landing.testimonials.${test.key}.name`)}</p>
-                  <p className="text-xs text-muted-foreground">{t(`landing.testimonials.${test.key}.role`)}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const FooterSection = () => {
-  const { t } = useTranslation();
-  return (
-    <footer className="py-16 px-4 border-t border-border">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
-                <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
-              </div>
-              <span className="font-bold text-foreground">V&M Balance</span>
+const FooterSection = ({ t }: { t: (key: string) => string }) => (
+  <footer className="border-t border-border px-4 py-16">
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg">
+              <img src={logo} alt={t('alt.logo')} className="h-full w-full scale-[1.8] object-cover" loading="lazy" decoding="async" />
             </div>
-            <p className="text-sm text-muted-foreground">{t('landing.footer.desc')}</p>
+            <span className="font-bold text-foreground">V&M Balance</span>
           </div>
-          <div>
-            <h4 className="font-semibold text-foreground mb-3">{t('landing.footer.product')}</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#features" className="hover:text-foreground transition-colors">{t('landing.nav.features')}</a></li>
-              <li><a href="#pricing" className="hover:text-foreground transition-colors">{t('landing.nav.pricing')}</a></li>
-              <li><button onClick={() => goTo('/install')} className="hover:text-foreground transition-colors">{t('landing.hero.installApp')}</button></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold text-foreground mb-3">{t('landing.footer.legal')}</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><button onClick={() => goTo('/privacy-policy')} className="hover:text-foreground transition-colors">{t('landing.footer.privacy')}</button></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold text-foreground mb-3">{t('landing.footer.account')}</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><button onClick={() => goTo('/auth')} className="hover:text-foreground transition-colors">{t('landing.nav.login')}</button></li>
-              <li><button onClick={goToSignup} className="hover:text-foreground transition-colors">{t('landing.nav.getStarted')}</button></li>
-            </ul>
-          </div>
+          <p className="text-sm text-muted-foreground">{t('landing.footer.desc')}</p>
         </div>
-        <div className="pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} V&M Balance. {t('landing.footer.rights')}
+        <div>
+          <h4 className="mb-3 font-semibold text-foreground">{t('landing.footer.product')}</h4>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li><a href="#features" className="hover:text-foreground">{t('landing.nav.features')}</a></li>
+            <li><a href="#pricing" className="hover:text-foreground">{t('landing.nav.pricing')}</a></li>
+            <li><button type="button" onClick={() => goTo('/install')} className="hover:text-foreground">{t('landing.hero.installApp')}</button></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="mb-3 font-semibold text-foreground">{t('landing.footer.legal')}</h4>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li><button type="button" onClick={() => goTo('/privacy-policy')} className="hover:text-foreground">{t('landing.footer.privacy')}</button></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="mb-3 font-semibold text-foreground">{t('landing.footer.account')}</h4>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li><button type="button" onClick={() => goTo('/auth')} className="hover:text-foreground">{t('landing.nav.login')}</button></li>
+            <li><button type="button" onClick={goToSignup} className="hover:text-foreground">{t('landing.nav.getStarted')}</button></li>
+          </ul>
         </div>
       </div>
-    </footer>
-  );
-};
-
-const APKDownloadSection = ({ referralCode }: { referralCode: string }) => {
-  const { t } = useTranslation();
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  // Cache-busting: rotate every 5 min so new APK uploads propagate quickly past CDN
-  const cacheBust = Math.floor(Date.now() / (5 * 60 * 1000));
-  const apkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk&v=${cacheBust}`;
-
-  return (
-    <section className="pt-28 pb-16 px-4 relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-10 w-96 h-96 bg-accent/15 rounded-full blur-3xl" />
+      <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
+        © {new Date().getFullYear()} V&M Balance. {t('landing.footer.rights')}
       </div>
+    </div>
+  </footer>
+);
 
-      <div className="max-w-lg mx-auto text-center">
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-          <div className="w-20 h-20 rounded-3xl overflow-hidden mx-auto mb-6 shadow-lg shadow-primary/25">
-            <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
-          </div>
-        </motion.div>
-
-        <motion.h1
-          className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight mb-4"
-          initial="hidden" animate="visible" variants={fadeUp} custom={1}
-        >
-          {t('landing.apk.title', 'Preuzmi V&M Balance')}
-        </motion.h1>
-
-        <motion.p
-          className="text-lg text-muted-foreground mb-8"
-          initial="hidden" animate="visible" variants={fadeUp} custom={2}
-        >
-          {t('landing.apk.subtitle', 'Tvoj prijatelj ti preporučuje aplikaciju za praćenje financija. Preuzmi, instaliraj i započni!')}
-        </motion.p>
-
-        <motion.div
-          className="space-y-4"
-          initial="hidden" animate="visible" variants={fadeUp} custom={3}
-        >
-          <button
-            type="button"
-            onClick={() => downloadApk(apkUrl)}
-            className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 text-lg h-14 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all font-semibold"
-          >
-            <Download className="w-6 h-6" />
-            {t('landing.apk.download', 'Preuzmi APK za Android')}
-          </button>
-
-          <div className="bg-muted/50 rounded-xl p-4 text-left space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              {t('landing.apk.instructions', 'Kako instalirati:')}
-            </p>
-            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>{t('landing.apk.step1', 'Preuzmi APK datoteku')}</li>
-              <li>{t('landing.apk.step2', 'Otvori datoteku na mobitelu')}</li>
-              <li>{t('landing.apk.step3', 'Dozvoli instalaciju iz nepoznatih izvora')}</li>
-              <li>{t('landing.apk.step4', 'Instaliraj i otvori aplikaciju')}</li>
-            </ol>
-          </div>
-
-          <div className="bg-accent/10 rounded-xl p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">
-              {t('landing.apk.referralLabel', 'Tvoj referral kod:')}
-            </p>
-            <p className="text-2xl font-mono font-bold text-foreground tracking-wider select-all">
-              {referralCode.slice(0, 8).toUpperCase()}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('landing.apk.referralHint', 'Unesi ovaj kod pri registraciji u aplikaciji')}
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="mt-8 pt-6 border-t border-border"
-          initial="hidden" animate="visible" variants={fadeUp} custom={4}
-        >
-          <p className="text-sm text-muted-foreground mb-3">
-            {t('landing.apk.webOption', 'Ili se registriraj putem weba:')}
-          </p>
-          <Button
-            variant="outline"
-            onClick={goToSignup}
-          >
-            {t('landing.nav.getStarted')}
-          </Button>
-        </motion.div>
+const APKDownloadSection = ({ referralCode, t }: { referralCode: string; t: (key: string) => string }) => (
+  <section className="relative overflow-hidden px-4 pb-16 pt-28">
+    <div className="mx-auto max-w-lg text-center">
+      <div className="mx-auto mb-6 h-20 w-20 overflow-hidden rounded-3xl shadow-lg shadow-primary/25">
+        <img src={logo} alt={t('alt.logo')} className="h-full w-full scale-[1.8] object-cover" width="80" height="80" decoding="async" />
       </div>
-    </section>
-  );
+      <h1 className="mb-4 text-3xl font-extrabold leading-tight text-foreground sm:text-4xl">{t('landing.apk.title')}</h1>
+      <p className="mb-8 text-lg text-muted-foreground">{t('landing.apk.subtitle')}</p>
+      <div className="space-y-4">
+        <button type="button" onClick={() => window.open(getApkUrl(), '_blank', 'noopener,noreferrer')} className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-primary to-accent px-8 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-shadow hover:shadow-xl hover:shadow-primary/30">
+          <Download className="h-6 w-6" />
+          {t('landing.apk.download')}
+        </button>
+        <div className="space-y-2 rounded-xl bg-muted/50 p-4 text-left">
+          <p className="text-sm font-medium text-foreground">{t('landing.apk.instructions')}</p>
+          <ol className="list-inside list-decimal space-y-1 text-sm text-muted-foreground">
+            <li>{t('landing.apk.step1')}</li>
+            <li>{t('landing.apk.step2')}</li>
+            <li>{t('landing.apk.step3')}</li>
+            <li>{t('landing.apk.step4')}</li>
+          </ol>
+        </div>
+        <div className="rounded-xl bg-accent/10 p-4 text-center">
+          <p className="mb-1 text-sm text-muted-foreground">{t('landing.apk.referralLabel')}</p>
+          <p className="select-all font-mono text-2xl font-bold tracking-wider text-foreground">{referralCode.slice(0, 8).toUpperCase()}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t('landing.apk.referralHint')}</p>
+        </div>
+      </div>
+      <div className="mt-8 border-t border-border pt-6">
+        <p className="mb-3 text-sm text-muted-foreground">{t('landing.apk.webOption')}</p>
+        <button type="button" onClick={goToSignup} className="inline-flex min-h-11 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
+          {t('landing.nav.getStarted')}
+        </button>
+      </div>
+    </div>
+  </section>
+);
+
+const useDeferredBelowFold = () => {
+  const [showBelowFold, setShowBelowFold] = useState(false);
+
+  useEffect(() => {
+    const reveal = () => setShowBelowFold(true);
+    const onFirstScroll = () => reveal();
+    window.addEventListener('scroll', onFirstScroll, { once: true, passive: true });
+
+    const idleId = typeof window.requestIdleCallback === 'function'
+      ? window.requestIdleCallback(reveal, { timeout: 2500 })
+      : globalThis.setTimeout(reveal, 1800);
+
+    return () => {
+      window.removeEventListener('scroll', onFirstScroll);
+      if (typeof window.cancelIdleCallback === 'function' && typeof idleId === 'number') {
+        window.cancelIdleCallback(idleId);
+      } else {
+        globalThis.clearTimeout(idleId as number);
+      }
+    };
+  }, []);
+
+  return showBelowFold;
 };
 
 const Landing = () => {
+  const [language, setLanguage] = useState<LandingLanguage>(() => getInitialLandingLanguage());
   const [referralId, setReferralId] = useState<string | null>(null);
+  const showBelowFold = useDeferredBelowFold();
+  const t = useCallback((key: string) => getLandingTranslation(language, key), [language]);
 
-  // Capture referral param from URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
@@ -576,26 +287,28 @@ const Landing = () => {
     }
   }, []);
 
-  // If referral link, show APK download page
   if (referralId) {
     return (
       <div className="min-h-dvh bg-background">
-        <LandingNav />
-        <APKDownloadSection referralCode={referralId} />
-        <FooterSection />
+        <LandingNav language={language} setLanguage={setLanguage} t={t} />
+        <APKDownloadSection referralCode={referralId} t={t} />
+        <FooterSection t={t} />
       </div>
     );
   }
 
   return (
     <div className="min-h-dvh bg-background">
-      <LandingNav />
-      <HeroSection />
-      <AppShowcaseSection />
-      <FeaturesSection />
-      <PricingSection />
-      <TestimonialsSection />
-      <FooterSection />
+      <LandingNav language={language} setLanguage={setLanguage} t={t} />
+      <HeroSection t={t} />
+      {showBelowFold ? (
+        <Suspense fallback={<div className="min-h-[520px]" />}>
+          <LandingBelowFold t={t} goToSignup={goToSignup} />
+        </Suspense>
+      ) : (
+        <div className="min-h-[520px]" aria-hidden="true" />
+      )}
+      <FooterSection t={t} />
     </div>
   );
 };
