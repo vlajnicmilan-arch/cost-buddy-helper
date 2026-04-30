@@ -7,8 +7,7 @@ import { Expense } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subMonths, subQuarters, subYears, format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
 import { ExportButton } from '@/components/ui/export-button';
 import { useTranslation } from 'react-i18next';
@@ -54,6 +53,7 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
   const previous = periodData.length > 1 ? periodData[periodData.length - 2] : null;
 
   const exportPDF = async (mode: ExportMode = 'save') => {
+    const { jsPDF, autoTable } = await loadJsPdf();
     const doc = new jsPDF();
     doc.setFontSize(16);
     doc.text(`${companyName} — ${t('business.reports.businessReport', 'Poslovni izvještaj')}`, 14, 20);

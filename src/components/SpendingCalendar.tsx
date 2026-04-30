@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ExportButton } from '@/components/ui/export-button';
 import { cn } from '@/lib/utils';
 import { getCategoryInfo } from '@/types/expense';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
 
 interface Expense {
@@ -97,6 +96,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
     if (!selectedDay || !selectedDayData || selectedDayData.transactions.length === 0) return;
 
     const dateStr = `${selectedDay}. ${monthName}`;
+    const { jsPDF, autoTable } = await loadJsPdf();
     const doc = new jsPDF();
 
     doc.setFontSize(18);

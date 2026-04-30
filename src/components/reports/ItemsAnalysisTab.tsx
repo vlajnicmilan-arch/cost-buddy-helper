@@ -15,8 +15,7 @@ import { PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { ExportButton } from '@/components/ui/export-button';
 
@@ -171,6 +170,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
 
   const handleExportPDF = async (mode: ExportMode = 'save') => {
     try {
+      const { jsPDF, autoTable } = await loadJsPdf();
       const doc = new jsPDF();
       doc.setFont('helvetica');
       doc.setFontSize(16);
