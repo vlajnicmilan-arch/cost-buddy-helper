@@ -88,7 +88,7 @@ export const MyFeedbackSection = () => {
                     </span>
                   ) : null}
                   <Badge className={statusColors[r.status] || 'bg-muted'} variant="secondary">
-                    {t(statusLabelsKey(r.status), statusFallback[r.status] || r.status)}
+                    {String(t(statusLabelsKey(r.status), statusFallback[r.status] || r.status))}
                   </Badge>
                   <span className="text-[11px] text-muted-foreground ml-auto">
                     {format(new Date(r.created_at), 'dd. MMM yyyy.', { locale: hrLocale })}
