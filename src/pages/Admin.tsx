@@ -11,6 +11,7 @@ import { DiagnosticLogsTab } from '@/components/admin/DiagnosticLogsTab';
 import { APKManagerTab } from '@/components/admin/APKManagerTab';
 import { PushLogsTab } from '@/components/admin/PushLogsTab';
 import { PulseTab } from '@/components/admin/PulseTab';
+import { FeedbackInboxTab } from '@/components/admin/FeedbackInboxTab';
 import { SubscriptionMigrationPanel } from '@/components/admin/SubscriptionMigrationPanel';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -465,6 +466,13 @@ const Admin = () => {
               >
                 <Bug className="w-4 h-4 shrink-0" />
                 <span>Prijave</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="feedback"
+                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
+              >
+                <MessageSquareReply className="w-4 h-4 shrink-0" />
+                <span>Feedback</span>
               </TabsTrigger>
 
               <div className="w-px self-stretch bg-border/60 mx-1 flex-shrink-0" aria-hidden="true" />
@@ -921,6 +929,11 @@ const Admin = () => {
           {/* PULSE TAB */}
           <TabsContent value="pulse" className="space-y-3 mt-4">
             <PulseTab />
+          </TabsContent>
+
+          {/* FEEDBACK TAB */}
+          <TabsContent value="feedback" className="space-y-3 mt-4">
+            <FeedbackInboxTab initialId={new URLSearchParams(window.location.search).get('id')} />
           </TabsContent>
         </Tabs>
       </div>
