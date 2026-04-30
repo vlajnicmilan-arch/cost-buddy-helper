@@ -11,6 +11,7 @@ import { DiagnosticLogsTab } from '@/components/admin/DiagnosticLogsTab';
 import { APKManagerTab } from '@/components/admin/APKManagerTab';
 import { PushLogsTab } from '@/components/admin/PushLogsTab';
 import { PulseTab } from '@/components/admin/PulseTab';
+import { SubscriptionMigrationPanel } from '@/components/admin/SubscriptionMigrationPanel';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -745,8 +746,10 @@ const Admin = () => {
               )}
             </div>
 
+            <SubscriptionMigrationPanel />
+
             <p className="text-xs text-muted-foreground text-center">
-              Stripe integracija još nije aktivna. Razine se trenutno dodjeljuju ručno.
+              Stripe migracija: prvo Dry Run, zatim live. Postojeći trialovi se ne diraju.
             </p>
           </TabsContent>
 
