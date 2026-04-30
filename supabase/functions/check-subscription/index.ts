@@ -14,10 +14,17 @@ const logStep = (step: string, details?: any) => {
 
 // Tier mapping by Stripe product ID
 const PRODUCT_TIER_MAP: Record<string, string> = {
-  "prod_UBTAWWLxYO3scq": "pro",    // Pro monthly
-  "prod_UBTAc9290C7uQe": "pro",    // Pro yearly
-  "prod_UBTAN8sFLVf1N2": "business", // Business monthly
-  "prod_UBTBILcRURGUH9": "business", // Business yearly
+  // Legacy (€4.99 / €9.99) — kept for users not yet migrated
+  "prod_UBTAWWLxYO3scq": "pro",
+  "prod_UBTAc9290C7uQe": "pro",
+  "prod_UBTAN8sFLVf1N2": "business",
+  "prod_UBTBILcRURGUH9": "business",
+  // New pricing (€7.99 / €14.99 / €129 lifetime)
+  "prod_UQhwRIN3xrL1un": "pro",      // Pro Monthly
+  "prod_UQhwBmBQxvlJRJ": "pro",      // Pro Yearly
+  "prod_UQhx0n6py0qQzu": "pro",      // Pro Lifetime
+  "prod_UQhx2p8DiOL5gl": "business", // Business Monthly
+  "prod_UQhyXmdR9u8wS5": "business", // Business Yearly
 };
 
 serve(async (req) => {
