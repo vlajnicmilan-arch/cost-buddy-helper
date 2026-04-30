@@ -206,6 +206,28 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
               {t('help.intro', 'V&M Balance je aplikacija za praćenje osobnih financija. Evo kako ju koristiti:')}
             </p>
 
+            {/* Open full FAQ page */}
+            <button
+              type="button"
+              onClick={() => { onOpenChange(false); navigate('/help'); }}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-border/60 bg-card hover:bg-muted/50 hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <ExternalLink className="w-4 h-4 text-primary" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {t('help.openFullFaq', 'Otvori centar pomoći (FAQ)')}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {t('help.openFullFaqDesc', 'Pretraživa baza s 25+ čestih pitanja i odgovora')}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+
             {/* Contact support card — top of FAQ */}
             <button
               type="button"
