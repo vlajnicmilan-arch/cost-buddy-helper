@@ -42,6 +42,14 @@ export const useAuth = () => {
             device_info: deviceInfo,
           } as any).then(() => {});
 
+          // Funnel: ensure 'signup' is logged once (covers email-confirm flow
+          // where session arrives only after the first verified sign-in).
+          import('@/lib/funnelTracking')
+            .then(({ logFunnelEvent }) => logFunnelEvent('signup', {
+              method: 'sign_in_first_time',
+            }))
+            .catch(() => {});
+
           // Auto-otkaži pending brisanje računa ako se korisnik prijavi unutar grace perioda
           supabase.functions.invoke('cancel-account-deletion').then(({ data }) => {
             if (data?.success) console.log('[auth] Pending account deletion cancelled on sign-in');
