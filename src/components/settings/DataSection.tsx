@@ -173,6 +173,15 @@ export const DataSection = ({
           {t('settings.data', 'Podaci')}
         </h3>
         <ExportButton
+          label={isExportingZip ? <Loader2 className="w-4 h-4 animate-spin" /> : t('settings.exportZip', 'Izvezi sve podatke (ZIP)')}
+          icon={<Archive className="w-4 h-4 mr-2" />}
+          onExport={(mode) => onExportZip(mode)}
+          variant="default"
+          size="default"
+          disabled={isExportingZip || isLocalMode}
+          className="w-full gap-2 rounded-xl justify-start"
+        />
+        <ExportButton
           label={isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('settings.export', 'Izvezi podatke (JSON)')}
           icon={<Download className="w-4 h-4 mr-2" />}
           onExport={(mode) => onExport(mode)}
