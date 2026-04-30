@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { tr } from '@/lib/errorMessages';
+import { tr, friendlyError } from '@/lib/errorMessages';
 
 export interface EstimateItem {
   description: string;
