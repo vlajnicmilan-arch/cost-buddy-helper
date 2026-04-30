@@ -54,7 +54,7 @@ export const ProjectActivityTab = ({ projectId }: ProjectActivityTabProps) => {
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <Activity className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+          <Activity className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" />
           <p className="text-sm text-muted-foreground">
             {t('projects.activity.empty', 'Još nema aktivnosti na projektu')}
           </p>

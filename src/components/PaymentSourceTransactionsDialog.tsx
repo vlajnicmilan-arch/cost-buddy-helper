@@ -891,11 +891,11 @@ export const PaymentSourceTransactionsDialog = ({
                                     )}
                                     {cardInfo && (
                                       <>
-                                        <span className="text-muted-foreground/40">•</span>
+                                        <span className="text-muted-foreground/50">•</span>
                                         <span className="text-[11px] font-mono whitespace-nowrap">••{cardInfo.last_four_digits}</span>
                                       </>
                                     )}
-                                    <span className="text-muted-foreground/40">•</span>
+                                    <span className="text-muted-foreground/50">•</span>
                                     <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap">
                                       {format(expense.date, 'd. MMM', { locale: hr })}
                                     </span>

@@ -155,7 +155,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager }: ProjectWorkLogTabPro
       ) : filteredLogs.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <BookOpen className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+            <BookOpen className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" />
             <p className="text-sm text-muted-foreground mb-1">
               {logs.length === 0
                 ? t('workLog.empty', 'Još nema zapisa u dnevniku rada')

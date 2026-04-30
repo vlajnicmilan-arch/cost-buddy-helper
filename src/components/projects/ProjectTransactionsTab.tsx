@@ -952,11 +952,11 @@ export const ProjectTransactionsTab = ({
                           <User className="w-3 h-3" />
                           {isOwnExpense ? t('common.you', 'Ti') : authorName}
                         </span>
-                        <span className="text-muted-foreground/40">•</span>
+                        <span className="text-muted-foreground/50">•</span>
                         <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
                         {milestoneName && (
                           <>
-                            <span className="text-muted-foreground/40">•</span>
+                            <span className="text-muted-foreground/50">•</span>
                             <span className="flex items-center gap-0.5 truncate max-w-[80px]">
                               <Target className="w-3 h-3 shrink-0" />
                               {milestoneName}

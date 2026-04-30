@@ -139,7 +139,7 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
                           </p>
                           <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground">
                             <span className="truncate max-w-[80px]">{categoryInfo.name}</span>
-                            <span className="text-muted-foreground/40">•</span>
+                            <span className="text-muted-foreground/50">•</span>
                             <span>{format(expense.date, 'd. MMM', { locale: hr })}</span>
                           </div>
                         </div>

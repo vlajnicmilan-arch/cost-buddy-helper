@@ -247,7 +247,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
           <div className="space-y-2 px-6 pb-6 pt-2">
             {filteredExpenses.length === 0 ? (
               <div className="py-12 text-center">
-                <Tag className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+                <Tag className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
                 <p className="text-muted-foreground">
                   {categoryExpenses.length === 0 
                     ? t('transactions.noExpensesInCategory')
