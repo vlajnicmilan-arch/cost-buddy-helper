@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { friendlyError } from '@/lib/errorMessages';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,7 +118,7 @@ const Auth = () => {
             setAwaitingVerification(true);
             setRegisteredEmail(email.trim());
           } else {
-            showError(error.message);
+            showError(friendlyError(error));
           }
           return;
         }
@@ -132,7 +133,7 @@ const Auth = () => {
           if (error.message.includes('already registered')) {
             showError(t('toasts.userAlreadyExists'));
           } else {
-            showError(error.message);
+            showError(friendlyError(error));
           }
           return;
         }
@@ -209,7 +210,7 @@ const Auth = () => {
     try {
       const { error } = await resetPassword(trimmedEmail);
       if (error) {
-        showError(error.message || 'Greška pri slanju emaila');
+        showError(friendlyError(error, 'errors.auth.emailSendFailed', 'Greška pri slanju emaila'));
         return;
       }
       setResetEmailSent(true);
@@ -608,13 +609,13 @@ const Auth = () => {
                   redirect_uri: window.location.origin,
                 });
                 if (error) {
-                  showError('Greška pri Google prijavi');
+                  showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                   console.error('Google OAuth error:', error);
                 } else if (!storageMode) {
                   setStorageMode('cloud');
                 }
               } catch (err) {
-                showError('Greška pri Google prijavi');
+                showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                 console.error('Google OAuth error:', err);
               } finally {
                 setLoading(false);
@@ -643,13 +644,13 @@ const Auth = () => {
                   redirect_uri: window.location.origin,
                 });
                 if (error) {
-                  showError('Greška pri Apple prijavi');
+                  showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
                   console.error('Apple OAuth error:', error);
                 } else if (!storageMode) {
                   setStorageMode('cloud');
                 }
               } catch (err) {
-                showError('Greška pri Apple prijavi');
+                showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
                 console.error('Apple OAuth error:', err);
               } finally {
                 setLoading(false);
