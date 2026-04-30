@@ -14,7 +14,17 @@ const idle = (cb: () => void) => {
   }
 };
 
-idle(() => {
+const isInstalledApp = () => {
+  if (typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform?.()) return true;
+  if (window.matchMedia('(display-mode: standalone)').matches) return true;
+  if ((navigator as any).standalone === true) return true;
+  return false;
+};
+
+const path = window.location.pathname;
+const isFastLanding = (path === "/" || path === "/landing") && !isInstalledApp();
+
+if (!isFastLanding) idle(() => {
   // Dynamic import keeps Sentry out of the initial JS bundle entirely.
   import('./lib/sentry').then(({ initSentry }) => initSentry()).catch(() => {});
   import('./lib/diagnosticLogger')
@@ -85,29 +95,20 @@ try {
       await SplashScreen.hide({ fadeOutDuration: 0 });
       console.log('[Boot] Splash screen hidden');
       logDiagnostic('splash_hide_success');
-    } else {
-      const { logDiagnostic } = await import('./lib/diagnosticLogger');
-      logDiagnostic('splash_skip_not_native');
     }
   } catch (e) {
     console.warn('[Boot] SplashScreen.hide failed (non-fatal):', e);
-    import('./lib/diagnosticLogger')
-      .then(({ logDiagnostic }) => logDiagnostic('splash_hide_error', { message: (e as Error)?.message }))
-      .catch(() => {});
+    if ((window as any).Capacitor?.isNativePlatform?.()) {
+      import('./lib/diagnosticLogger')
+        .then(({ logDiagnostic }) => logDiagnostic('splash_hide_error', { message: (e as Error)?.message }))
+        .catch(() => {});
+    }
   }
 })();
 
-const isInstalledApp = () => {
-  if (typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform?.()) return true;
-  if (window.matchMedia('(display-mode: standalone)').matches) return true;
-  if ((navigator as any).standalone === true) return true;
-  return false;
-};
-
 const root = createRoot(document.getElementById("root")!);
-const path = window.location.pathname;
 
-if ((path === "/" || path === "/landing") && !isInstalledApp()) {
+if (isFastLanding) {
   root.render(
     <React.StrictMode>
       <Landing />
