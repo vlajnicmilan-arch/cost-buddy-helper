@@ -6,6 +6,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSource';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
+import { tr } from '@/lib/errorMessages';
 
 
 interface UseCustomPaymentSourcesOptions {
