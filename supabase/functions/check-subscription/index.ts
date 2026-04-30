@@ -86,6 +86,16 @@ serve(async (req) => {
 
     if (lifetime) {
       logStep("Lifetime Pro purchase found", { foundingMember: lifetime.founding_member_number });
+      try {
+        await supabaseClient.from('funnel_events').insert({
+          user_id: user.id,
+          event_name: 'paid_conversion',
+          platform: 'lifetime',
+          metadata: { tier: 'pro', source: 'lifetime', founding_member_number: lifetime.founding_member_number } as any,
+        });
+      } catch (e) {
+        logStep("funnel insert skipped", { reason: (e as Error)?.message });
+      }
       return new Response(JSON.stringify({
         subscribed: true,
         tier: "pro",
