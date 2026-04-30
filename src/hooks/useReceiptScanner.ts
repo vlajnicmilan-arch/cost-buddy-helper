@@ -109,8 +109,13 @@ export const useReceiptScanner = () => {
   ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
+    const totalBytes = imagesBase64.reduce((s, b) => s + (b?.length || 0), 0);
     try {
-      logDiagnostic('receipt_scan_start', { pages: imagesBase64.length });
+      logDiagnostic('receipt_scan_start', {
+        pages: imagesBase64.length,
+        total_base64_bytes: totalBytes,
+        is_native: Capacitor.isNativePlatform(),
+      });
     } catch {}
 
     try {
