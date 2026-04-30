@@ -247,13 +247,18 @@ export const UsersTab = ({
               )}
             </div>
           ))}
-          {hasMoreUsers && (
+          {hasMoreUsers && filter === 'all' && !search && (
             <div className="text-center pt-2">
               <Button variant="outline" size="sm" onClick={onLoadMore} disabled={usersLoading}>
                 {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
                 Učitaj više
               </Button>
             </div>
+          )}
+          {hasMoreUsers && (filter !== 'all' || search) && (
+            <p className="text-center text-[11px] text-muted-foreground pt-2">
+              Filter radi na učitanim korisnicima. Za pretragu svih, isključi filter ili klikni "Učitaj više" bez filtera.
+            </p>
           )}
         </div>
       )}
