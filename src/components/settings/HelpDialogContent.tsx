@@ -265,6 +265,11 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
           </div>
         </ScrollArea>
       </DialogContent>
+
+      <ContactSupportDialog
+        open={showSupport}
+        onOpenChange={setShowSupport}
+      />
     </Dialog>
   );
 };
