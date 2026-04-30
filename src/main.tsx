@@ -1,7 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import "./i18n";
 import Landing from "./pages/Landing";
 
 // Defer Sentry init + boot diagnostics until the browser is idle. These are
@@ -116,9 +115,10 @@ if ((path === "/" || path === "/landing") && !isInstalledApp()) {
   );
 } else {
   Promise.all([
+    import("./i18n"),
     import("./App.tsx"),
     import("./components/ErrorBoundary"),
-  ]).then(([{ default: App }, { ErrorBoundary }]) => {
+  ]).then(([, { default: App }, { ErrorBoundary }]) => {
     root.render(
       <React.StrictMode>
         <ErrorBoundary>
