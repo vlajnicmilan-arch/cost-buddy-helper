@@ -679,6 +679,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
             <Separator />
 
+            <MyFeedbackSection />
+
+            <Separator />
+
             <NotificationsSection
               soundEnabled={soundEnabled}
               onSoundToggle={handleSoundToggle}
