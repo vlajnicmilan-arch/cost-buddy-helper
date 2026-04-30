@@ -117,7 +117,7 @@ export const useReceiptScanner = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
-        showError('AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.');
+        showError(t('errors.receipt.cloudRequired', 'AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.'));
         return null;
       }
 
@@ -187,12 +187,12 @@ export const useReceiptScanner = () => {
       
 
       if (response.status === 429) {
-        showError('Previše zahtjeva. Pokušaj ponovno za minutu.');
+        showError(t('errors.receipt.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
         return null;
       }
 
       if (response.status === 402) {
-        showError('Nedostaje kredita za AI obradu.');
+        showError(t('errors.receipt.noCredits', 'Nedostaje kredita za AI obradu.'));
         return null;
       }
 
@@ -317,7 +317,7 @@ export const useReceiptScanner = () => {
       if (isAbortLikeError(error)) {
         console.warn('Receipt scanning was interrupted:', error);
         try { logDiagnostic('receipt_scan_aborted', {}); } catch {}
-        showError('Skeniranje je prekinuto. Pokušaj ponovno.');
+        showError(t('errors.receipt.scanCancelled', 'Skeniranje je prekinuto. Pokušaj ponovno.'));
         return null;
       }
 
@@ -329,7 +329,7 @@ export const useReceiptScanner = () => {
           details: { message: error instanceof Error ? error.message : String(error) },
         });
       } catch {}
-      showError(error instanceof Error ? error.message : 'Greška pri skeniranju računa');
+      showError(t('errors.receipt.scanFailed', 'Greška pri skeniranju računa'));
       return null;
     } finally {
       setScanning(false);
