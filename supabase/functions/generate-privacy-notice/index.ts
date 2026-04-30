@@ -148,11 +148,34 @@ async function fetchFont(url: string): Promise<Uint8Array> {
   return new Uint8Array(await r.arrayBuffer());
 }
 
-const FONT_REGULAR_FALLBACK = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-latin-ext-400-normal.ttf';
-const FONT_BOLD_FALLBACK = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-latin-ext-700-normal.ttf';
+const FONT_URLS = {
+  reg: [
+    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-latin-ext-400-normal.ttf',
+    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.3/files/noto-sans-latin-ext-400-normal.ttf',
+    'https://fonts.gstatic.com/s/notosans/v36/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99dxA.ttf',
+  ],
+  bold: [
+    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-latin-ext-700-normal.ttf',
+    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.3/files/noto-sans-latin-ext-700-normal.ttf',
+    'https://fonts.gstatic.com/s/notosans/v36/o-0NIpQlx3QUlC5A4PNjXhFlY9aA5Wl6PQ.ttf',
+  ],
+};
+
+async function tryFetch(urls: string[]): Promise<Uint8Array> {
+  let lastErr: unknown;
+  for (const u of urls) {
+    try {
+      return await fetchFont(u);
+    } catch (e) {
+      lastErr = e;
+      console.warn('[font] failed', u, e);
+    }
+  }
+  throw lastErr ?? new Error('no font url worked');
+}
 
 async function loadFonts() {
-  const [reg, bold] = await Promise.all([fetchFont(FONT_REGULAR_FALLBACK), fetchFont(FONT_BOLD_FALLBACK)]);
+  const [reg, bold] = await Promise.all([tryFetch(FONT_URLS.reg), tryFetch(FONT_URLS.bold)]);
   return { reg, bold };
 }
 
