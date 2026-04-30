@@ -1,10 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { logDiagnostic } from "./lib/diagnosticLogger";
+import Landing from "./pages/Landing";
 
 // Defer Sentry init + boot diagnostics until the browser is idle. These are
 // observability tools — they MUST NOT block first paint or LCP. They run
@@ -20,10 +18,12 @@ const idle = (cb: () => void) => {
 idle(() => {
   // Dynamic import keeps Sentry out of the initial JS bundle entirely.
   import('./lib/sentry').then(({ initSentry }) => initSentry()).catch(() => {});
-  logDiagnostic('boot_start', {
-    href: window.location.href,
-    pathname: window.location.pathname,
-  });
+  import('./lib/diagnosticLogger')
+    .then(({ logDiagnostic }) => logDiagnostic('boot_start', {
+      href: window.location.href,
+      pathname: window.location.pathname,
+    }))
+    .catch(() => {});
 });
 
 // Aggressively kill any leftover Service Worker + PWA caches.
@@ -80,6 +80,7 @@ try {
   try {
     const cap = (window as any).Capacitor;
     if (cap?.isNativePlatform?.()) {
+      const { logDiagnostic } = await import('./lib/diagnosticLogger');
       logDiagnostic('splash_hide_attempt');
       const { SplashScreen } = await import('@capacitor/splash-screen');
       await SplashScreen.hide({ fadeOutDuration: 0 });
@@ -94,10 +95,33 @@ try {
   }
 })();
 
-createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+const isInstalledApp = () => {
+  if (typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform?.()) return true;
+  if (window.matchMedia('(display-mode: standalone)').matches) return true;
+  if ((navigator as any).standalone === true) return true;
+  return false;
+};
+
+const root = createRoot(document.getElementById("root")!);
+const path = window.location.pathname;
+
+if ((path === "/" || path === "/landing") && !isInstalledApp()) {
+  root.render(
+    <React.StrictMode>
+      <Landing />
+    </React.StrictMode>
+  );
+} else {
+  Promise.all([
+    import("./App.tsx"),
+    import("./components/ErrorBoundary"),
+  ]).then(([{ default: App }, { ErrorBoundary }]) => {
+    root.render(
+      <React.StrictMode>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </React.StrictMode>
+    );
+  });
+}
