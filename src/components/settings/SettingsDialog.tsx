@@ -45,6 +45,7 @@ import { DataSection } from './DataSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
 import { HelpDialogContent } from './HelpDialogContent';
+import { ContactSupportDialog } from '@/components/support/ContactSupportDialog';
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
@@ -55,6 +56,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showSupportDialog, setShowSupportDialog] = useState(false);
   const [showBugReport, setShowBugReport] = useState(false);
   const [autoUpdate, setAutoUpdate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -824,6 +826,11 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
       <SetPinDialog open={showSetPin} onOpenChange={setShowSetPin} />
       <HelpDialogContent open={showHelpDialog} onOpenChange={setShowHelpDialog} />
+      <ContactSupportDialog
+        open={showSupportDialog}
+        onOpenChange={setShowSupportDialog}
+        onOpenHelp={() => setShowHelpDialog(true)}
+      />
       <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
       <BusinessProfileDialog open={showBusinessProfile} onOpenChange={setShowBusinessProfile} />
 
