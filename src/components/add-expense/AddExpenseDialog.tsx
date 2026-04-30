@@ -177,6 +177,7 @@ export const AddExpenseDialog = ({
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
   const cameraActiveRef = useRef(false);
+  const scannedPreviewActiveRef = useRef(false);
 
   const selectedSourceCurrencyCode = useMemo(() => {
     if (!multiCurrencyEnabled) return primaryCurrency.code;
@@ -376,6 +377,7 @@ export const AddExpenseDialog = ({
         });
       } catch {}
     }
+    scannedPreviewActiveRef.current = true;
     setShowScannedPreview(true);
     try {
       logDiagnostic('receipt_scan_preview_shown', {
@@ -394,7 +396,7 @@ export const AddExpenseDialog = ({
   // native camera activity returns) does NOT navigate the app to /home and
   // unmount this dialog mid-scan.
   const handleBackClose = useCallback(() => {
-    if (scanning || showScannedPreview || isSaving || cameraActiveRef.current) return;
+    if (scanning || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current) return;
     setOpen(false);
   }, [scanning, showScannedPreview, isSaving]);
   useBackButton(open, handleBackClose, 10);
@@ -532,6 +534,7 @@ export const AddExpenseDialog = ({
   };
 
   const rejectScannedData = () => {
+    scannedPreviewActiveRef.current = false;
     setScannedData(null);
     setShowScannedPreview(false);
     setReceiptImage(null);
@@ -565,6 +568,7 @@ export const AddExpenseDialog = ({
   };
 
   const resetForm = () => {
+    scannedPreviewActiveRef.current = false;
     setAmount('');
     setDescription('');
     setCategory('food');
@@ -802,7 +806,7 @@ export const AddExpenseDialog = ({
     <>
     <Dialog open={open} onOpenChange={(isOpen) => {
       console.warn('🚪 AddExpenseDialog onOpenChange', { isOpen, scanning, showScannedPreview, isSaving, cameraActive: cameraActiveRef.current });
-      if (!isOpen && (scanning || showScannedPreview || isSaving || cameraActiveRef.current)) return;
+      if (!isOpen && (scanning || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current)) return;
       setOpen(isOpen);
       if (isOpen) {
         try {
@@ -843,7 +847,7 @@ export const AddExpenseDialog = ({
       )}
       <DialogContent 
         showBackButton={false} 
-        className="sm:max-w-md glass-card border-border/50 h-[85vh] flex flex-col"
+        className="sm:max-w-md glass-card border-border/50 h-[85vh] max-h-[85vh] flex flex-col overflow-hidden"
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => {
@@ -854,11 +858,11 @@ export const AddExpenseDialog = ({
           <DialogTitle className="text-xl font-semibold">{t('transactions.newTransaction')}</DialogTitle>
         </DialogHeader>
         
-        <div className={cn('flex-1 min-h-0 -mx-6 px-6 relative', showScannedPreview ? 'overflow-hidden' : 'overflow-y-auto')}>
+        <div className={cn('flex-1 min-h-0 -mx-6 px-6 relative', showScannedPreview ? 'overflow-hidden flex flex-col' : 'overflow-y-auto')}>
           <ScanningOverlay visible={scanning && !showScannedPreview} imageCount={receiptImages.length || 1} />
           
           {showScannedPreview && scannedData && (
-            <div className="absolute inset-0 z-[60] bg-background px-6 pb-1">
+            <div className="relative z-[60] h-full min-h-0 bg-background pb-1">
               <ScannedDataPreview
                 scannedData={scannedData}
                 onScannedDataChange={setScannedData}

@@ -90,8 +90,8 @@ export const ScannedDataPreview = ({
   const invalidTip = totalWithTip ? parseFloat(totalWithTip) < scannedData.amount : false;
 
   return (
-    <div className="h-full flex flex-col min-h-0">
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pb-4">
+    <div className="h-full max-h-full flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-4 pb-4 px-1">
       <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-primary flex items-center gap-2">
@@ -536,7 +536,7 @@ export const ScannedDataPreview = ({
       
       </div>
 
-      <div className="flex-shrink-0 flex gap-2 pt-3 border-t border-border/50 bg-background">
+      <div className="flex-shrink-0 flex gap-2 pt-3 border-t border-border/50 bg-background px-1 pb-1">
         <Button
           type="button"
           variant="outline"
