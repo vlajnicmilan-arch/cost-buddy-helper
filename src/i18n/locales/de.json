@@ -2311,7 +2311,7 @@
       "free": "Begrenzt auf 30 Transaktionen/Monat, 1 Wallet, 1 Budget",
       "pro": "Unbegrenzte Transaktionen, erweiterte Funktionen, Prioritäts-Support",
       "business": "Alles aus Pro + Geschäftsmodule, Rechnungsstellung, Inventar",
-      "p2": "Neue Benutzer erhalten eine 7-tägige kostenlose Testphase mit vollem Zugang zu allen Funktionen. Nach Ablauf der Testphase wird der Zugang auf die Free-Stufe beschränkt, es sei denn, Sie aktivieren ein Abonnement.",
+      "p2": "Neue Benutzer erhalten eine 14-tägige kostenlose Testphase mit vollem Zugang zu allen Funktionen. Nach Ablauf der Testphase wird der Zugang auf die Free-Stufe beschränkt, es sei denn, Sie aktivieren ein Abonnement.",
       "p3": "Zahlungen werden über Stripe abgewickelt. Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums (monatlich oder jährlich). Jahrespläne beinhalten 17% Rabatt."
     },
     "s4": {
