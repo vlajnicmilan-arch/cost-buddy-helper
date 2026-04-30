@@ -370,6 +370,7 @@ const Admin = () => {
               setExpandedUserId={setExpandedUserId}
               actionLoading={actionLoading}
               currentUserId={user?.id}
+              subscriptions={subscriptions}
               onRefresh={() => loadUsers(1)}
               onLoadMore={() => loadUsers(usersPage + 1)}
               onManageUser={manageUser}
