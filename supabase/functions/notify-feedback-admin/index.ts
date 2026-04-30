@@ -141,6 +141,31 @@ Deno.serve(async (req) => {
       status: 'pending',
     })
 
+    // Get-or-create unsubscribe token for admin recipient (required by email API)
+    const normalizedRecipient = recipient.toLowerCase()
+    let unsubscribeToken: string
+    const { data: existingTok } = await admin
+      .from('email_unsubscribe_tokens')
+      .select('token')
+      .eq('email', normalizedRecipient)
+      .maybeSingle()
+    if (existingTok?.token) {
+      unsubscribeToken = existingTok.token
+    } else {
+      const bytes = new Uint8Array(32)
+      crypto.getRandomValues(bytes)
+      unsubscribeToken = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
+      await admin
+        .from('email_unsubscribe_tokens')
+        .upsert({ token: unsubscribeToken, email: normalizedRecipient }, { onConflict: 'email', ignoreDuplicates: true })
+      const { data: stored } = await admin
+        .from('email_unsubscribe_tokens')
+        .select('token')
+        .eq('email', normalizedRecipient)
+        .maybeSingle()
+      if (stored?.token) unsubscribeToken = stored.token
+    }
+
     const { error: enqueueError } = await admin.rpc('enqueue_email', {
       queue_name: 'transactional_emails',
       payload: {
@@ -154,6 +179,7 @@ Deno.serve(async (req) => {
         purpose: 'transactional',
         label: 'feedback-admin-alert',
         idempotency_key: idempotencyKey,
+        unsubscribe_token: unsubscribeToken,
         queued_at: new Date().toISOString(),
       },
     })
