@@ -1,105 +1,85 @@
-## Cilj
 
-Dodati Sentry error capture u 5 najkritičnijih edge funkcija, tako da svaka neuhvaćena greška (Stripe payment fail, AI fail, FCM token expire, itd.) odmah završi u Sentry dashboardu — umjesto da je vidimo tek kada korisnik javi.
+# Pricing Redesign — Opcija B (Preporučeno)
 
-## Top 5 funkcija (po prioritetu)
+## Tvoje odluke
+- **Cijene**: Pro €7.99/mj, Business €14.99/mj
+- **Lifetime**: Samo Pro, €129 jednokratno (limitirano na prvih 200 — "Founding Members")
+- **Trial**: 7 → 14 dana
+- **Yearly popust**: 25% (Pro €71.90/god = €5.99/mj, Business €134.90/god = €11.24/mj)
+- **Postojeći pretplatnici**: Instant migracija
 
-| # | Funkcija | Zašto kritična |
-|---|----------|---------------|
-| 1 | `parse-receipt` | Korisnici skeniraju račune dnevno; Gemini AI fail = izgubljen receipt |
-| 2 | `send-push` | FCM v1 OAuth token može expire; tihi fail = nema notifikacija |
-| 3 | `create-checkout` | Stripe payments = pravi novac, fail blokira upgrade |
-| 4 | `customer-portal` | Stripe billing management, isti rizik |
-| 5 | `financial-assistant` | AI chat, glavni Pro feature |
+## Nova cjenovna struktura
 
-Ostale 60+ funkcija dodajemo postupno **kada se javi konkretan problem**, da ne trošimo vrijeme bez ROI-a.
+| Plan | Mjesečno | Godišnje | Ušteda |
+|------|----------|----------|--------|
+| Free | €0 | — | — |
+| **Pro** | €7.99 | €71.90 (€5.99/mj) | 25% |
+| **Pro Lifetime** | — | €129 jednokratno | Nakon 18 mj se isplati |
+| **Business** | €14.99 | €134.90 (€11.24/mj) | 25% |
 
 ## Implementacijski koraci
 
-### 1. Novi shared helper: `supabase/functions/_shared/sentry.ts`
+### 1. Stripe — kreiranje novih proizvoda i cijena
+Kreiraj kroz Stripe MCP:
+- **Pro Monthly** €7.99 (recurring/month)
+- **Pro Yearly** €71.90 (recurring/year)
+- **Pro Lifetime** €129 (one-time payment)
+- **Business Monthly** €14.99 (recurring/month)
+- **Business Yearly** €134.90 (recurring/year)
 
-Lightweight Deno wrapper koji:
-- Šalje POST direktno na Sentry **Store API** (`https://o4511302417973248.ingest.de.sentry.io/api/4511302422167632/store/`) — bez SDK-a, bez `npm:` ovisnosti, bez `deno.lock` rizika
-- Format event payloada: `{ event_id, timestamp, platform: 'javascript', level: 'error', exception: {...}, tags: { function_name, environment: 'edge' }, extra: {...} }`
-- Sve u **fire-and-forget** modu (`.catch(() => {})`) — Sentry ne smije nikad blokirati ni rušiti edge funkciju
-- Export: `captureEdgeError(error, { functionName, userId?, context? })`
+Stari `price_*` ID-evi ostaju u Stripeu (arhivirani) za history/refundove, ali svi novi checkouti idu na nove ID-eve.
 
-DSN je javan po dizajnu, hardkodiran u helperu (isti kao frontend) — nema potrebe za novim secretom.
+### 2. Migracija postojećih pretplatnika (instant)
+Edge function `migrate-existing-subscriptions` koja:
+1. Pull-a sve `active` subscriptions sa starim price ID-evima
+2. Pozove `stripe.subscriptions.update()` s novim price ID-em + `proration_behavior: 'create_prorations'`
+3. Pošalje email kroz `send-transactional-email` na HR/EN/DE: "Tvoj plan je nadograđen — nove značajke + nova cijena od sljedećeg ciklusa"
+4. Logira sve u novu tablicu `subscription_migration_log` (audit)
 
-### 2. Wrap `Deno.serve` handlera u svakoj od 5 funkcija
+**Email mora ići 7 dana PRIJE prve naplate po novoj cijeni** (zakonska obveza EU consumer protection). Stripe automatski generira proration invoice.
 
-Pattern (minimalna izmjena, ne diramo business logiku):
+### 3. Lifetime Pro — implementacija
+- Nova tablica `lifetime_purchases` (user_id, stripe_payment_intent_id, purchased_at, founding_member_number)
+- Edge function `create-lifetime-checkout` (mode: `payment`, ne `subscription`)
+- Edge function `verify-lifetime` se poziva paralelno s `check-subscription`
+- Counter na landing page: "Founding Member 47/200"
+- Kad se postigne 200 → automatski sakrije Lifetime opciju
+- `useFeatureAccess` mora vratiti `pro` access ako postoji lifetime zapis
 
-```ts
-import { captureEdgeError } from "../_shared/sentry.ts";
+### 4. Trial 7 → 14 dana
+- `src/lib/subscriptionTiers.ts`: `TRIAL_DURATION_DAYS = 14`
+- Postojeći trialovi: prošireni za +7 dana (jednokratni SQL update na `profiles` ili computed kroz `created_at + 14 days`)
+- Update i18n stringova ("7 dana besplatno" → "14 dana besplatno")
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  
-  let userId: string | undefined;
-  try {
-    // ... postojeći kod (auth, validacija, posao) ...
-    // userId postavimo čim ga dohvatimo iz auth-a
-    return new Response(JSON.stringify(result), { ... });
-  } catch (error) {
-    // Fire-and-forget Sentry
-    captureEdgeError(error, {
-      functionName: "parse-receipt",
-      userId,
-      context: { method: req.method, path: new URL(req.url).pathname },
-    });
-    // POSTOJEĆI error response ostaje netaknut
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
-```
+### 5. Frontend update
+- `src/lib/subscriptionTiers.ts` — novi price ID-evi + Lifetime
+- `src/pages/Paywall.tsx` — 4 kartice (Free, Pro mjesečno/godišnje toggle, Pro Lifetime, Business)
+- `src/components/UpgradePrompt.tsx` — nove cijene
+- `src/i18n/locales/{hr,en,de}.json` — svi pricing stringovi
+- `src/pages/landingTranslations.ts` — landing pricing sekcija
+- Yearly toggle s "Save 25%" badgeom
+- Lifetime kartica s "Founding Member" badgeom + counter
 
-**Bitno:** wrap je samo na **vanjskoj razini**. Postojeće `try/catch` blokove unutra ne diramo. User-facing error response ostaje identičan — Sentry je samo "tap" na grešku u prolazu.
+### 6. Stripe Tax integracija (sljedeći korak nakon ovog plana)
+Tek nakon što ovo bude live → uključi Stripe Tax (`automatic_tax: { enabled: true }` u checkout sessionu). Cijene postaju "tax-exclusive" i Stripe automatski dodaje PDV po zemlji kupca. Display na landing page: "€7.99 + PDV gdje primjenjivo".
 
-### 3. Šum filter (u helperu)
+## Što NE radimo u ovom planu
+- Stripe Tax integracija — odvojeni korak nakon launcha
+- Geo-pricing (PPP popusti za CEE) — odvojeni korak
+- Promo kuponi za launch — možeš ih dodati ručno u Stripeu po potrebi
 
-`captureEdgeError` interno odbacuje:
-- `User not authenticated` (očekivani 401, ne bug)
-- `Price ID is required` i slične `400` validacijske greške gdje znamo da je input loš
-- Greške s porukom koja sadrži `not authenticated` ili počinje s `Validation:`
+## Rizici i mitigacija
+- **Churn od migracije**: Email 7 dana ranije + jasna komunikacija novih značajki minimizira reakciju. Očekuj 3-5% churn.
+- **Lifetime support obveza**: Ograničavanje na 200 osoba sprječava dugoročni teret. Nakon prvog prodaja možeš relaunch s "Wave 2" po višoj cijeni (€179).
+- **PDV kompleksnost**: Trenutno cijene tax-inclusive za HR (25% PDV uračunat). Nakon Stripe Tax integracije prelaziš na tax-exclusive — to će izgledati kao poskupljenje za HR, ali kao ispravnu cijenu za EU. Komuniciraj transparentno.
 
-Štedi quotu i drži signal čist.
+## Tehnički detalji (za referencu)
+- **Stripe API**: koristi MCP alate `create_stripe_product_and_price` (5x), `update_subscription` (za migraciju)
+- **Nove tablice**: `lifetime_purchases`, `subscription_migration_log`
+- **RLS**: lifetime_purchases — users vide samo svoje; admin vidi sve
+- **`check-subscription` edge function**: dodati lookup u `lifetime_purchases` prije Stripe poziva
+- **Memory update**: `mem://business/subscription-and-monetization-model` mora biti ažuriran s novim cijenama, Lifetime planom i 14d trialom
 
-### 4. Deploy & test
+---
 
-- Auto-deploy 5 funkcija
-- Pošaljem 1 test request prema `parse-receipt` s namjerno krivim payloadom da potvrdim da Sentry hvata server-side greške
-- Provjerim u Sentry dashboardu da event ima tag `function_name: parse-receipt` i `environment: edge`
-
-### 5. Sentry Alerts checklist (za tebe, 5 min u Sentry UI)
-
-Nakon implementacije dat ću ti precizne klikove za:
-- **Email alert: "Issue first seen"** → trenutni email kada se nova greška pojavi
-- **Email alert: "Error spike"** → preko 10 errora u 1 satu
-- **Regression alert** → resolved issue se vratio (često kod deploya)
-
-## Što NE radimo
-
-- ❌ Deno SDK (`@sentry/deno`) — npm/esm import može razbiti `deno.lock` u edge-runtime, raw HTTP POST je sigurniji
-- ❌ Performance tracing — nula quota benefit za naš scale
-- ❌ Ostalih 60+ funkcija — dodajemo on-demand
-- ❌ Cleanup `app_diagnostics_logs` — čekamo 2 tjedna validacije (frontend + edge paralelno)
-
-## Datoteke koje mijenjamo
-
-1. **NEW** `supabase/functions/_shared/sentry.ts` — raw HTTP Sentry client
-2. `supabase/functions/parse-receipt/index.ts` — outer try/catch + capture
-3. `supabase/functions/send-push/index.ts` — outer try/catch + capture
-4. `supabase/functions/create-checkout/index.ts` — outer try/catch + capture
-5. `supabase/functions/customer-portal/index.ts` — outer try/catch + capture
-6. `supabase/functions/financial-assistant/index.ts` — outer try/catch + capture
-
-## Validacija nakon deploya
-
-1. Sentry primio test event s tagom `function_name`
-2. Sve 5 funkcija i dalje rade normalno (curl test svake)
-3. Latencija nije porasla (`captureEdgeError` je fire-and-forget, ne čeka response)
-4. U Sentry UI vidim 2 environmenta: `production` (frontend) i `edge` (backend)
+**Sljedeći korak nakon approvala**: Krećem s implementacijom redoslijedom 1→6. Procjena: jedna iteracija (~10 min) za sve osim emaila migracije koji ide odgodno (zakaže za +7 dana).
