@@ -266,7 +266,22 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     }
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExportZip = async (mode: ExportMode = 'save') => {
+    if (isLocalMode) {
+      showError(t('settings.exportZipCloudOnly', 'ZIP izvoz dostupan je samo u cloud načinu'));
+      return;
+    }
+    setIsExportingZip(true);
+    try {
+      await exportAllUserDataAsZip(mode);
+      showSuccess(t('settings.exportZipSuccess', 'Svi podaci izvezeni u ZIP'));
+    } catch (err) {
+      console.error('ZIP export error:', err);
+      showError(t('settings.exportZipError', 'Greška pri ZIP izvozu'));
+    } finally {
+      setIsExportingZip(false);
+    }
+  };
     const file = event.target.files?.[0];
     if (!file) return;
     setIsImporting(true);
