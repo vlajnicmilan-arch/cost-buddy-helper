@@ -91,7 +91,7 @@ const ResetPassword = () => {
       const { error } = await updatePassword(password);
       
       if (error) {
-        showError(error.message || 'Greška pri promjeni lozinke');
+        showError(t('errors.auth.passwordChangeFailed', 'Greška pri promjeni lozinke'));
         return;
       }
       

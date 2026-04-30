@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Loader2, Shield, Zap, Building2, X, Crown, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { showError } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.webp';
 
@@ -125,7 +126,7 @@ const Paywall: React.FC = () => {
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      showError('Greška pri pokretanju naplate');
+      showError(tr('errors.checkout.startFailed', 'Greška pri pokretanju naplate'));
     } finally {
       setLoadingTier(null);
     }
