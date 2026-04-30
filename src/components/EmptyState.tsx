@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type EmptyStateVariant = 'transactions' | 'budgets' | 'projects' | 'chart' | 'generic';
+type EmptyStateVariant = 'transactions' | 'budgets' | 'projects' | 'chart' | 'wallet' | 'generic';
 
 interface EmptyStateProps {
   variant?: EmptyStateVariant;
