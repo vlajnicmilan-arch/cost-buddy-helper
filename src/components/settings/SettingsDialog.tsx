@@ -57,6 +57,20 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [open, setOpen] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showSupportDialog, setShowSupportDialog] = useState(false);
+
+  // Open Help/FAQ when redirected from auto-responder email (?openHelp=1)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('openHelp') === '1') {
+      setShowHelpDialog(true);
+      params.delete('openHelp');
+      const newSearch = params.toString();
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
+
   const [showBugReport, setShowBugReport] = useState(false);
   const [autoUpdate, setAutoUpdate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
