@@ -292,6 +292,7 @@ const App = () => (
                       <DiagnosticRouteTracker />
                       <BusinessModeGuard />
                       <RouteAwareGlobalOverlays />
+                      <CrispChat />
                       <AppRoutes />
                     </BackButtonProvider>
                   </BrowserRouter>
