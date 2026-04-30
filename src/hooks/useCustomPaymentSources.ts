@@ -168,7 +168,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         }
       }
       console.error('Error fetching custom payment sources:', error);
-      showError('Greška pri dohvaćanju prilagođenih izvora plaćanja');
+      showError(tr('errors.fetch.sources', 'Greška pri dohvaćanju prilagođenih izvora plaćanja'));
     } finally {
       setLoading(false);
     }
@@ -190,7 +190,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const addCustomPaymentSource = async (source: Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     // Check free tier payment source limit
     if (!hasAccess('unlimited_payment_sources') && customPaymentSources.length >= FREE_LIMITS.payment_sources) {
-      showError('Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore.');
+      showError(tr('errors.limits.paymentSources', 'Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore.'));
       return null;
     }
 
@@ -212,7 +212,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     }
 
     if (!user) {
-      showError('Morate biti prijavljeni');
+      showError(tr('errors.mustBeLoggedIn', 'Morate biti prijavljeni'));
       return null;
     }
 
@@ -238,7 +238,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       return newSource;
     } catch (error) {
       console.error('Error adding custom payment source:', error);
-      showError('Greška pri dodavanju izvora plaćanja');
+      showError(tr('errors.create.source', 'Greška pri dodavanju izvora plaćanja'));
       return null;
     }
   };
@@ -268,7 +268,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       showSuccess('Izvor plaćanja ažuriran');
     } catch (error) {
       console.error('Error updating custom payment source:', error);
-      showError('Greška pri ažuriranju izvora plaćanja');
+      showError(tr('errors.update.source', 'Greška pri ažuriranju izvora plaćanja'));
     }
   };
 
@@ -292,7 +292,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       showSuccess('Izvor plaćanja obrisan');
     } catch (error) {
       console.error('Error deleting custom payment source:', error);
-      showError('Greška pri brisanju izvora plaćanja');
+      showError(tr('errors.delete.source', 'Greška pri brisanju izvora plaćanja'));
     }
   };
 
@@ -317,7 +317,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     }
 
     if (!user) {
-      showError('Morate biti prijavljeni');
+      showError(tr('errors.mustBeLoggedIn', 'Morate biti prijavljeni'));
       return null;
     }
 
@@ -344,7 +344,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       return newCard;
     } catch (error) {
       console.error('Error adding card:', error);
-      showError('Greška pri dodavanju kartice');
+      showError(tr('errors.create.card', 'Greška pri dodavanju kartice'));
       return null;
     }
   };
@@ -379,7 +379,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       );
     } catch (error) {
       console.error('Error updating card:', error);
-      showError('Greška pri ažuriranju kartice');
+      showError(tr('errors.update.card', 'Greška pri ažuriranju kartice'));
     }
   };
 
@@ -409,7 +409,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       );
     } catch (error) {
       console.error('Error deleting card:', error);
-      showError('Greška pri brisanju kartice');
+      showError(tr('errors.delete.card', 'Greška pri brisanju kartice'));
     }
   };
 
@@ -439,7 +439,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       await Promise.all(updates);
     } catch (error) {
       console.error('Error reordering payment sources:', error);
-      showError('Greška pri preslagivanju izvora plaćanja');
+      showError(tr('errors.update.reorder', 'Greška pri preslagivanju izvora plaćanja'));
       // Refetch to restore correct order on error
       fetchCustomPaymentSources();
     }
