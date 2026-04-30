@@ -59,8 +59,8 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         popular: 'Najpopularnije',
         cta: 'Započni',
         free: { name: 'Besplatno', price: '€0', f1: 'Do 30 transakcija/mj', f2: '1 izvor plaćanja', f3: '1 budžet', f4: 'Skeniranje računa (5/mj)' },
-        pro: { name: 'Pro', price: '€4,99', f1: 'Sve iz Besplatnog', f2: 'Neograničeni projekti i budžeti', f3: 'AI uvidi i izvještaji', f4: 'Osobno + poslovno praćenje' },
-        business: { name: 'Poslovno', price: '€9,99', f1: 'Sve iz Pro', f2: 'Radnici i satnice', f3: 'Timski i višekorisnički pristup', f4: 'Napredni projekti sa suradnicima' },
+        pro: { name: 'Pro', price: '€7,99', f1: 'Sve iz Besplatnog', f2: 'Neograničeni projekti i budžeti', f3: 'AI uvidi i izvještaji', f4: 'Osobno + poslovno praćenje' },
+        business: { name: 'Poslovno', price: '€14,99', f1: 'Sve iz Pro', f2: 'Radnici i satnice', f3: 'Timski i višekorisnički pristup', f4: 'Napredni projekti sa suradnicima' },
       },
       testimonials: {
         title: 'Korisnici nas vole',
@@ -111,8 +111,8 @@ const translations: Record<LandingLanguage, TranslationTree> = {
       pricing: {
         title: 'Simple, Transparent Pricing', subtitle: 'Start free, upgrade when you need more', month: 'mo', popular: 'Most Popular', cta: 'Get Started',
         free: { name: 'Free', price: '€0', f1: 'Up to 30 transactions/mo', f2: '1 payment source', f3: '1 budget', f4: 'Receipt scanning (5/mo)' },
-        pro: { name: 'Pro', price: '€4.99', f1: 'Everything in Free', f2: 'Unlimited projects & budgets', f3: 'AI insights & reports', f4: 'Personal + business tracking' },
-        business: { name: 'Business', price: '€9.99', f1: 'Everything in Pro', f2: 'Workers & timesheets', f3: 'Team & multi-user access', f4: 'Advanced projects with collaborators' },
+        pro: { name: 'Pro', price: '€7.99', f1: 'Everything in Free', f2: 'Unlimited projects & budgets', f3: 'AI insights & reports', f4: 'Personal + business tracking' },
+        business: { name: 'Business', price: '€14.99', f1: 'Everything in Pro', f2: 'Workers & timesheets', f3: 'Team & multi-user access', f4: 'Advanced projects with collaborators' },
       },
       testimonials: {
         title: 'Loved by Users', subtitle: 'See what our users are saying',
@@ -143,8 +143,8 @@ const translations: Record<LandingLanguage, TranslationTree> = {
       pricing: {
         title: 'Einfache, transparente Preise', subtitle: 'Kostenlos starten, upgraden wenn Sie mehr brauchen', month: 'Mo', popular: 'Am beliebtesten', cta: 'Loslegen',
         free: { name: 'Kostenlos', price: '€0', f1: 'Bis zu 30 Transaktionen/Mo', f2: '1 Zahlungsquelle', f3: '1 Budget', f4: 'Quittungsscan (5/Mo)' },
-        pro: { name: 'Pro', price: '€4,99', f1: 'Alles aus Kostenlos', f2: 'Unbegrenzte Projekte & Budgets', f3: 'KI-Einblicke & Berichte', f4: 'Privat + geschäftlich' },
-        business: { name: 'Business', price: '€9,99', f1: 'Alles aus Pro', f2: 'Mitarbeiter & Zeiterfassung', f3: 'Team- & Mehrbenutzerzugang', f4: 'Erweiterte Projekte mit Mitarbeitern' },
+        pro: { name: 'Pro', price: '€7,99', f1: 'Alles aus Kostenlos', f2: 'Unbegrenzte Projekte & Budgets', f3: 'KI-Einblicke & Berichte', f4: 'Privat + geschäftlich' },
+        business: { name: 'Business', price: '€14,99', f1: 'Alles aus Pro', f2: 'Mitarbeiter & Zeiterfassung', f3: 'Team- & Mehrbenutzerzugang', f4: 'Erweiterte Projekte mit Mitarbeitern' },
       },
       testimonials: {
         title: 'Von Nutzern geliebt', subtitle: 'Sehen Sie, was unsere Nutzer sagen',

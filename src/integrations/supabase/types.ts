@@ -1904,6 +1904,42 @@ export type Database = {
           },
         ]
       }
+      lifetime_purchases: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          currency: string
+          founding_member_number: number
+          id: string
+          purchased_at: string
+          stripe_customer_id: string | null
+          stripe_payment_intent_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          created_at?: string
+          currency?: string
+          founding_member_number: number
+          id?: string
+          purchased_at?: string
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          currency?: string
+          founding_member_number?: number
+          id?: string
+          purchased_at?: string
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       milestone_budget_alerts: {
         Row: {
           id: string
@@ -3575,6 +3611,54 @@ export type Database = {
           },
         ]
       }
+      subscription_migration_log: {
+        Row: {
+          created_at: string
+          email_sent_at: string | null
+          error_message: string | null
+          id: string
+          migrated_at: string
+          new_amount_cents: number | null
+          new_price_id: string
+          old_amount_cents: number | null
+          old_price_id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_sent_at?: string | null
+          error_message?: string | null
+          id?: string
+          migrated_at?: string
+          new_amount_cents?: number | null
+          new_price_id: string
+          old_amount_cents?: number | null
+          old_price_id: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_sent_at?: string | null
+          error_message?: string | null
+          id?: string
+          migrated_at?: string
+          new_amount_cents?: number | null
+          new_price_id?: string
+          old_amount_cents?: number | null
+          old_price_id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -3967,6 +4051,8 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_founding_member_count: { Args: never; Returns: number }
+      get_next_founding_member_number: { Args: never; Returns: number }
       has_full_payment_source_access: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
