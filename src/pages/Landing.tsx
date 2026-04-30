@@ -210,17 +210,17 @@ const HeroSection = () => {
         </motion.div>
       </div>
 
-      {/* Mobile hero image */}
-      <motion.div
-        className="mt-10 lg:hidden flex justify-center"
-        initial={{ opacity: 0, scale: 0.8, y: 40 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.5, type: 'spring', stiffness: 150 }}
-      >
+      {/* Mobile hero image — no entrance animation so paint is immediate.
+          Uses the same /public asset preloaded in index.html, eliminating
+          a separate image fetch on the LCP-critical mobile viewport. */}
+      <div className="mt-10 lg:hidden flex justify-center">
         <div className="rounded-2xl overflow-hidden shadow-xl max-w-sm">
-          <img src={heroImage} alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="1024" height="1024" fetchPriority="high" decoding="async" />
+          <picture>
+            <source media="(min-width: 1024px)" srcSet="/hero-receipt-scan.webp" type="image/webp" />
+            <img src="/hero-receipt-scan-mobile.webp" alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="640" height="640" fetchPriority="high" decoding="async" />
+          </picture>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 };
