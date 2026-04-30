@@ -33,9 +33,10 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { email: user.email });
 
-    const { priceId } = await req.json();
+    const { priceId, mode } = await req.json();
     if (!priceId) throw new Error("Price ID is required");
-    logStep("Price ID received", { priceId });
+    const checkoutMode = mode === "payment" ? "payment" : "subscription";
+    logStep("Price ID received", { priceId, mode: checkoutMode });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -54,10 +55,10 @@ serve(async (req) => {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
-      mode: "subscription",
+      mode: checkoutMode,
       success_url: `${origin}/?checkout=success`,
       cancel_url: `${origin}/?checkout=cancelled`,
-      metadata: { user_id: user.id },
+      metadata: { user_id: user.id, checkout_type: checkoutMode === "payment" ? "lifetime" : "subscription" },
     });
 
     logStep("Checkout session created", { sessionId: session.id });
