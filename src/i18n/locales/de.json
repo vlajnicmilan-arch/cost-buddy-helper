@@ -817,12 +817,140 @@
     "checkFailed": "Überprüfung fehlgeschlagen"
   },
   "errors": {
+    "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "network": "Keine Internetverbindung. Prüfen Sie das Netzwerk und versuchen Sie es erneut.",
+    "timeout": "Zeitüberschreitung. Bitte versuchen Sie es erneut.",
+    "unauthorized": "Sie sind nicht angemeldet. Bitte melden Sie sich an.",
+    "forbidden": "Sie haben keine Berechtigung dafür.",
+    "notFound": "Element nicht gefunden.",
+    "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+    "duplicate": "Ein Eintrag mit diesen Daten existiert bereits.",
+    "mustBeLoggedIn": "Sie müssen angemeldet sein.",
+    "unknownError": "Unbekannter Fehler",
     "fetchError": "Fehler beim Abrufen der Daten",
     "saveError": "Fehler beim Speichern",
     "deleteError": "Fehler beim Löschen",
     "networkError": "Netzwerkfehler",
-    "unauthorized": "Nicht angemeldet",
-    "generic": "Ein Fehler ist aufgetreten"
+    "fetch": {
+      "expenses": "Transaktionen konnten nicht geladen werden",
+      "categories": "Kategorien konnten nicht geladen werden",
+      "sources": "Zahlungsquellen konnten nicht geladen werden",
+      "installments": "Ratenpläne konnten nicht geladen werden",
+      "pending": "Ausstehende Transaktionen konnten nicht geladen werden",
+      "logs": "Logs konnten nicht geladen werden"
+    },
+    "save": {
+      "generic": "Speichern fehlgeschlagen",
+      "category": "Kategorie konnte nicht gespeichert werden",
+      "source": "Zahlungsquelle konnte nicht gespeichert werden",
+      "card": "Karte konnte nicht gespeichert werden",
+      "expense": "Transaktion konnte nicht gespeichert werden",
+      "installment": "Rate konnte nicht gespeichert werden",
+      "setting": "Einstellung konnte nicht gespeichert werden",
+      "role": "Rolle konnte nicht aktualisiert werden"
+    },
+    "create": {
+      "category": "Kategorie konnte nicht hinzugefügt werden",
+      "source": "Zahlungsquelle konnte nicht hinzugefügt werden",
+      "card": "Karte konnte nicht hinzugefügt werden",
+      "group": "Gruppe konnte nicht erstellt werden",
+      "installmentPlan": "Ratenplan konnte nicht erstellt werden",
+      "recurring": "Wiederkehrende Transaktion konnte nicht hinzugefügt werden",
+      "expense": "Transaktion konnte nicht hinzugefügt werden"
+    },
+    "update": {
+      "category": "Kategorie konnte nicht aktualisiert werden",
+      "source": "Zahlungsquelle konnte nicht aktualisiert werden",
+      "card": "Karte konnte nicht aktualisiert werden",
+      "installment": "Rate konnte nicht aktualisiert werden",
+      "reorder": "Sortierung fehlgeschlagen"
+    },
+    "delete": {
+      "generic": "Löschen fehlgeschlagen",
+      "category": "Kategorie konnte nicht gelöscht werden",
+      "source": "Zahlungsquelle konnte nicht gelöscht werden",
+      "card": "Karte konnte nicht gelöscht werden",
+      "installmentPlan": "Ratenplan konnte nicht gelöscht werden"
+    },
+    "auth": {
+      "wrongCredentials": "Falsche E-Mail oder falsches Passwort",
+      "emailNotConfirmed": "E-Mail-Adresse wurde nicht bestätigt",
+      "userExists": "Ein Benutzer mit dieser E-Mail existiert bereits",
+      "googleSignInFailed": "Google-Anmeldung fehlgeschlagen",
+      "appleSignInFailed": "Apple-Anmeldung fehlgeschlagen",
+      "passwordChangeFailed": "Passwortänderung fehlgeschlagen",
+      "emailSendFailed": "E-Mail konnte nicht gesendet werden"
+    },
+    "family": {
+      "accountAlreadyAdded": "Dieses Konto ist bereits in der Gruppe",
+      "budgetAlreadyAdded": "Dieses Budget ist bereits in der Gruppe",
+      "projectAlreadyAdded": "Dieses Projekt ist bereits in der Gruppe",
+      "goalAlreadyAdded": "Dieses Sparziel ist bereits in der Gruppe"
+    },
+    "limits": {
+      "paymentSources": "Sie haben das Limit für Zahlungsquellen erreicht. Auf Pro upgraden für unbegrenzte Quellen."
+    },
+    "receipt": {
+      "cloudRequired": "KI-Belegscan erfordert Cloud-Modus und Anmeldung. Sie können die Daten manuell eingeben.",
+      "rateLimit": "Zu viele Anfragen. Bitte in einer Minute erneut versuchen.",
+      "noCredits": "Nicht genügend Credits für KI-Verarbeitung.",
+      "scanCancelled": "Scan wurde abgebrochen. Bitte erneut versuchen.",
+      "scanFailed": "Beleg konnte nicht gescannt werden"
+    },
+    "pdf": {
+      "loginRequired": "Sie müssen angemeldet sein, um Auszüge zu analysieren",
+      "rateLimit": "Zu viele Anfragen. Bitte in einer Minute erneut versuchen.",
+      "noCredits": "Nicht genügend Credits für KI-Verarbeitung.",
+      "parseFailed": "Auszug konnte nicht analysiert werden"
+    },
+    "appUpdate": {
+      "webCheckFailed": "Webversion-Prüfung fehlgeschlagen. Kein Server hat geantwortet.",
+      "platformUnsupported": "Update-Prüfung ist auf dieser Plattform nicht verfügbar."
+    },
+    "files": {
+      "saveFailed": "Datei konnte nicht gespeichert werden",
+      "shareFailed": "Teilen fehlgeschlagen",
+      "uploadFailed": "Upload fehlgeschlagen",
+      "apkInvalid": "Datei muss eine .apk sein",
+      "apkTooLarge": "Datei zu groß (max. {{size}}MB)"
+    },
+    "reports": {
+      "pdfFailed": "PDF konnte nicht erstellt werden",
+      "csvFailed": "CSV konnte nicht erstellt werden",
+      "jsonFailed": "JSON konnte nicht erstellt werden"
+    },
+    "transactions": {
+      "approveFailed": "Transaktion konnte nicht bestätigt werden",
+      "rejectFailed": "Transaktion konnte nicht abgelehnt werden",
+      "noItemsForAnalysis": "Keine Transaktionen mit Posten zur Analyse",
+      "noSuggestionsSelected": "Keine Vorschläge ausgewählt"
+    },
+    "project": {
+      "uploadDoc": "Dokument konnte nicht hochgeladen werden",
+      "deleteDoc": "Dokument konnte nicht gelöscht werden",
+      "estimateConvert": "Schätzung konnte nicht konvertiert werden"
+    },
+    "milestone": {
+      "addFailed": "Hinzufügen fehlgeschlagen"
+    },
+    "businessMode": {
+      "missingFields": "Erforderliche Felder für den Geschäftsmodus: {{fields}}. Bearbeiten Sie die Daten vor dem Speichern."
+    },
+    "level": {
+      "setFailed": "Stufe konnte nicht festgelegt werden"
+    },
+    "pin": {
+      "setupFailed": "PIN-Einrichtung fehlgeschlagen: {{reason}}"
+    },
+    "checkout": {
+      "startFailed": "Bezahlvorgang konnte nicht gestartet werden"
+    },
+    "camera": {
+      "failed": "Kamera: {{reason}}"
+    },
+    "bug": {
+      "loginRequired": "Sie müssen angemeldet sein, um ein Problem zu melden"
+    }
   },
   "onboarding": {
     "welcomeTitle": "Willkommen!",

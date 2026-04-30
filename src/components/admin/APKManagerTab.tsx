@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Package, Loader2, Info, Calendar, HardDrive } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr, friendlyError } from '@/lib/errorMessages';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 
@@ -56,14 +57,14 @@ export const APKManagerTab = () => {
     if (!file) return;
 
     if (!file.name.toLowerCase().endsWith('.apk')) {
-      showError('Datoteka mora biti .apk');
+      showError(tr('errors.files.apkInvalid', 'Datoteka mora biti .apk'));
       e.target.value = '';
       return;
     }
 
     const sizeMB = file.size / (1024 * 1024);
     if (sizeMB > MAX_SIZE_MB) {
-      showError(`Datoteka prevelika (max ${MAX_SIZE_MB}MB)`);
+      showError(tr('errors.files.apkTooLarge', 'Datoteka prevelika (max {{size}}MB)', { size: MAX_SIZE_MB }));
       e.target.value = '';
       return;
     }
@@ -94,7 +95,7 @@ export const APKManagerTab = () => {
       await loadMetadata();
     } catch (err: any) {
       console.error('APK upload failed:', err);
-      showError('Greška pri uploadu: ' + (err.message || 'nepoznato'));
+      showError(friendlyError(err, 'errors.files.uploadFailed'));
     } finally {
       setUploading(false);
       setProgress(0);

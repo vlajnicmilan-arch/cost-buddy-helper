@@ -1071,12 +1071,140 @@
     "checkFailed": "Check failed"
   },
   "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "No internet connection. Check your network and try again.",
+    "timeout": "The request timed out. Please try again.",
+    "unauthorized": "You are not signed in. Please sign in and try again.",
+    "forbidden": "You don't have permission to do this.",
+    "notFound": "Item not found.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "duplicate": "An item with these details already exists.",
+    "mustBeLoggedIn": "You must be signed in to do this.",
+    "unknownError": "Unknown error",
     "fetchError": "Error fetching data",
     "saveError": "Error saving",
     "deleteError": "Error deleting",
     "networkError": "Network error",
-    "unauthorized": "Not logged in",
-    "generic": "An error occurred"
+    "fetch": {
+      "expenses": "Failed to load transactions",
+      "categories": "Failed to load categories",
+      "sources": "Failed to load payment sources",
+      "installments": "Failed to load installment plans",
+      "pending": "Failed to load pending transactions",
+      "logs": "Failed to load logs"
+    },
+    "save": {
+      "generic": "Failed to save",
+      "category": "Failed to save category",
+      "source": "Failed to save payment source",
+      "card": "Failed to save card",
+      "expense": "Failed to save transaction",
+      "installment": "Failed to save installment",
+      "setting": "Failed to save setting",
+      "role": "Failed to update role"
+    },
+    "create": {
+      "category": "Failed to add category",
+      "source": "Failed to add payment source",
+      "card": "Failed to add card",
+      "group": "Failed to create group",
+      "installmentPlan": "Failed to create installment plan",
+      "recurring": "Failed to add recurring transaction",
+      "expense": "Failed to add transaction"
+    },
+    "update": {
+      "category": "Failed to update category",
+      "source": "Failed to update payment source",
+      "card": "Failed to update card",
+      "installment": "Failed to update installment",
+      "reorder": "Failed to reorder"
+    },
+    "delete": {
+      "generic": "Failed to delete",
+      "category": "Failed to delete category",
+      "source": "Failed to delete payment source",
+      "card": "Failed to delete card",
+      "installmentPlan": "Failed to delete installment plan"
+    },
+    "auth": {
+      "wrongCredentials": "Wrong email or password",
+      "emailNotConfirmed": "Email address has not been confirmed",
+      "userExists": "A user with this email already exists",
+      "googleSignInFailed": "Google sign-in failed",
+      "appleSignInFailed": "Apple sign-in failed",
+      "passwordChangeFailed": "Failed to change password",
+      "emailSendFailed": "Failed to send email"
+    },
+    "family": {
+      "accountAlreadyAdded": "This account is already in the group",
+      "budgetAlreadyAdded": "This budget is already in the group",
+      "projectAlreadyAdded": "This project is already in the group",
+      "goalAlreadyAdded": "This savings goal is already in the group"
+    },
+    "limits": {
+      "paymentSources": "You've reached the payment source limit. Upgrade to Pro for unlimited sources."
+    },
+    "receipt": {
+      "cloudRequired": "AI receipt scanning requires cloud mode and sign-in. You can enter the data manually.",
+      "rateLimit": "Too many requests. Please try again in a minute.",
+      "noCredits": "Not enough credits for AI processing.",
+      "scanCancelled": "Scan was cancelled. Please try again.",
+      "scanFailed": "Failed to scan receipt"
+    },
+    "pdf": {
+      "loginRequired": "You must be signed in to analyse statements",
+      "rateLimit": "Too many requests. Please try again in a minute.",
+      "noCredits": "Not enough credits for AI processing.",
+      "parseFailed": "Failed to analyse statement"
+    },
+    "appUpdate": {
+      "webCheckFailed": "Web version check failed. No server responded.",
+      "platformUnsupported": "Update check is not available on this platform."
+    },
+    "files": {
+      "saveFailed": "Failed to save file",
+      "shareFailed": "Sharing failed",
+      "uploadFailed": "Upload failed",
+      "apkInvalid": "File must be an .apk",
+      "apkTooLarge": "File too large (max {{size}}MB)"
+    },
+    "reports": {
+      "pdfFailed": "Failed to generate PDF",
+      "csvFailed": "Failed to generate CSV",
+      "jsonFailed": "Failed to generate JSON"
+    },
+    "transactions": {
+      "approveFailed": "Failed to approve transaction",
+      "rejectFailed": "Failed to reject transaction",
+      "noItemsForAnalysis": "No transactions with items to analyse",
+      "noSuggestionsSelected": "No suggestions selected"
+    },
+    "project": {
+      "uploadDoc": "Failed to upload document",
+      "deleteDoc": "Failed to delete document",
+      "estimateConvert": "Failed to convert estimate"
+    },
+    "milestone": {
+      "addFailed": "Failed to add"
+    },
+    "businessMode": {
+      "missingFields": "Required business mode fields: {{fields}}. Edit the data before saving."
+    },
+    "level": {
+      "setFailed": "Failed to set level"
+    },
+    "pin": {
+      "setupFailed": "PIN setup failed: {{reason}}"
+    },
+    "checkout": {
+      "startFailed": "Failed to start checkout"
+    },
+    "camera": {
+      "failed": "Camera: {{reason}}"
+    },
+    "bug": {
+      "loginRequired": "You must be signed in to report an issue"
+    }
   },
   "onboarding": {
     "welcomeTitle": "Welcome!",

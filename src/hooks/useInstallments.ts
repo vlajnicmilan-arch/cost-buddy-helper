@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { InstallmentPlan, Installment, InstallmentPlanWithProgress } from '@/types/installment';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 import { addMonths, startOfMonth, endOfMonth, isWithinInterval, isBefore, startOfToday } from 'date-fns';
 
 interface CreateInstallmentPlanInput {
@@ -131,7 +132,7 @@ export const useInstallments = () => {
       setPlans(plansWithProgress);
     } catch (error) {
       console.error('Error fetching installment plans:', error);
-      showError('Greška pri učitavanju planova rata');
+      showError(tr('errors.fetch.installments', 'Greška pri učitavanju planova rata'));
     } finally {
       setLoading(false);
     }
@@ -385,7 +386,7 @@ export const useInstallments = () => {
       };
     } catch (error) {
       console.error('Error creating installment plan:', error);
-      showError('Greška pri kreiranju plana rata');
+      showError(tr('errors.create.installmentPlan', 'Greška pri kreiranju plana rata'));
       return null;
     }
   };
@@ -422,7 +423,7 @@ export const useInstallments = () => {
       showSuccess('Rata označena kao plaćena');
     } catch (error) {
       console.error('Error marking installment as paid:', error);
-      showError('Greška pri ažuriranju rate');
+      showError(tr('errors.update.installment', 'Greška pri ažuriranju rate'));
     }
   };
 
@@ -458,7 +459,7 @@ export const useInstallments = () => {
       showSuccess('Rata označena kao neplaćena');
     } catch (error) {
       console.error('Error marking installment as unpaid:', error);
-      showError('Greška pri ažuriranju rate');
+      showError(tr('errors.update.installment', 'Greška pri ažuriranju rate'));
     }
   };
 
@@ -497,7 +498,7 @@ export const useInstallments = () => {
       showSuccess('Plan plaćanja obrisan');
     } catch (error) {
       console.error('Error deleting installment plan:', error);
-      showError('Greška pri brisanju plana');
+      showError(tr('errors.delete.installmentPlan', 'Greška pri brisanju plana'));
     }
   };
 

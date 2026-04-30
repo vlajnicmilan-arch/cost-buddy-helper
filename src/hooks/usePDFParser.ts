@@ -89,7 +89,7 @@ export const usePDFParser = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData?.session?.access_token) {
-        showError('Moraš biti prijavljen za analizu izvoda');
+        showError(t('errors.pdf.loginRequired', 'Moraš biti prijavljen za analizu izvoda'));
         return null;
       }
 
@@ -111,11 +111,11 @@ export const usePDFParser = () => {
 
       if (!response.ok) {
         if (response.status === 429) {
-          showError('Previše zahtjeva. Pokušaj ponovno za minutu.');
+          showError(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
           return null;
         }
         if (response.status === 402) {
-          showError('Nedostaje kredita za AI obradu.');
+          showError(t('errors.pdf.noCredits', 'Nedostaje kredita za AI obradu.'));
           return null;
         }
         const errorData = await response.json();
@@ -148,7 +148,7 @@ export const usePDFParser = () => {
       return result;
     } catch (error) {
       console.error('Error parsing statement:', error);
-      showError(error instanceof Error ? error.message : 'Greška pri analizi izvoda');
+      showError(t('errors.pdf.parseFailed', 'Greška pri analizi izvoda'));
       return null;
     } finally {
       setParsing(false);
@@ -169,7 +169,7 @@ export const usePDFParser = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData?.session?.access_token) {
-        showError('Moraš biti prijavljen za analizu izvoda');
+        showError(t('errors.pdf.loginRequired', 'Moraš biti prijavljen za analizu izvoda'));
         return null;
       }
 
@@ -187,11 +187,11 @@ export const usePDFParser = () => {
 
       if (!response.ok) {
         if (response.status === 429) {
-          showError('Previše zahtjeva. Pokušaj ponovno za minutu.');
+          showError(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
           return null;
         }
         if (response.status === 402) {
-          showError('Nedostaje kredita za AI obradu.');
+          showError(t('errors.pdf.noCredits', 'Nedostaje kredita za AI obradu.'));
           return null;
         }
         const errorData = await response.json();

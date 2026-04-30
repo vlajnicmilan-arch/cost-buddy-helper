@@ -218,7 +218,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       await exportPDFDoc(doc, pdfFileName, mode);
       showSuccess('PDF izvjesce generirano!');
     } catch {
-      showError('Greska pri generiranju PDF-a');
+      showError(t('errors.reports.pdfFailed', 'Greška pri generiranju PDF-a'));
     }
   };
 
@@ -242,7 +242,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       await exportTextFile(csvContent, csvFileName, 'text/csv', true, mode);
       showSuccess('CSV datoteka generirana!');
     } catch {
-      showError('Greska pri generiranju CSV-a');
+      showError(t('errors.reports.csvFailed', 'Greška pri generiranju CSV-a'));
     }
   };
 
@@ -275,7 +275,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       await exportTextFile(JSON.stringify(data, null, 2), jsonFileName, 'application/json', false, mode);
       showSuccess('JSON datoteka generirana!');
     } catch {
-      showError('Greska pri generiranju JSON-a');
+      showError(t('errors.reports.jsonFailed', 'Greška pri generiranju JSON-a'));
     }
   };
 

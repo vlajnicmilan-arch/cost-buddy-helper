@@ -19,6 +19,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { friendlyError } from '@/lib/errorMessages';
 
 interface BugReport {
   id: string;
@@ -152,7 +153,7 @@ const Admin = () => {
       .from('app_settings')
       .upsert({ key: 'billing_enabled', value: enabled as any, updated_at: new Date().toISOString() });
     if (error) {
-      showError('Greška pri spremanju postavke');
+      showError(t('errors.save.setting', 'Greška pri spremanju postavke'));
     } else {
       setBillingEnabled(enabled);
       showSuccess(enabled ? 'Naplata aktivirana' : 'Naplata deaktivirana');
@@ -181,7 +182,7 @@ const Admin = () => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
     if (error) {
-      showError('Greška pri postavljanju razine');
+      showError(t('errors.level.setFailed', 'Greška pri postavljanju razine'));
     } else {
       setSubscriptions(prev => ({ ...prev, [userId]: tier }));
       showSuccess(`Razina postavljena na ${tier.charAt(0).toUpperCase() + tier.slice(1)}`);
@@ -273,7 +274,7 @@ const Admin = () => {
       showSuccess(data?.message || 'Akcija izvršena');
       await loadUsers();
     } catch (err: any) {
-      showError('Greška: ' + (err.message || 'Nepoznata greška'));
+      showError(friendlyError(err));
     }
     setActionLoading(null);
   };
@@ -293,7 +294,7 @@ const Admin = () => {
       setNotifTitle('');
       setNotifMessage('');
     } catch (err: any) {
-      showError('Greška: ' + (err.message || 'Nepoznata greška'));
+      showError(friendlyError(err));
     }
     setSendingNotif(false);
   };
@@ -317,7 +318,7 @@ const Admin = () => {
       showSuccess(`Poruka poslana korisniku ${report.user_display_name || ''}`);
       setReplyMessages(prev => ({ ...prev, [report.id]: '' }));
     } catch (err: any) {
-      showError('Greška: ' + (err.message || 'Nepoznata greška'));
+      showError(friendlyError(err));
     }
     setSendingReply(null);
   };

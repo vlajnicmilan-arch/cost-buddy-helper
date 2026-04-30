@@ -186,7 +186,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       showSuccess('Uloga ažurirana');
     } catch (error) {
       console.error('Error updating member role:', error);
-      showError('Greška pri ažuriranju uloge');
+      showError(t('errors.save.role', 'Greška pri ažuriranju uloge'));
     }
   };
 

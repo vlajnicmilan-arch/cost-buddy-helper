@@ -63,7 +63,7 @@ export const useFamilyGroups = () => {
       return created;
     } catch (error) {
       console.error('Error creating family group:', error);
-      showError('Greška pri kreiranju grupe');
+      showError(t('errors.create.group', 'Greška pri kreiranju grupe'));
       return null;
     }
   };
@@ -473,7 +473,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       fetchResources();
     } catch (error: any) {
       if (error.code === '23505') {
-        showError('Račun je već dodan u grupu');
+        showError(t('errors.family.accountAlreadyAdded', 'Račun je već dodan u grupu'));
       } else {
         console.error('Error adding shared source:', error);
         showError(t('toasts.error'));
@@ -516,7 +516,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       fetchResources();
     } catch (error: any) {
       if (error.code === '23505') {
-        showError('Budžet je već dodan u grupu');
+        showError(t('errors.family.budgetAlreadyAdded', 'Budžet je već dodan u grupu'));
       } else {
         console.error('Error adding shared budget:', error);
         showError(t('toasts.error'));
@@ -559,7 +559,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       fetchResources();
     } catch (error: any) {
       if (error.code === '23505') {
-        showError('Projekt je već dodan u grupu');
+        showError(t('errors.family.projectAlreadyAdded', 'Projekt je već dodan u grupu'));
       } else {
         console.error('Error adding shared project:', error);
         showError(t('toasts.error'));
@@ -602,7 +602,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
       fetchResources();
     } catch (error: any) {
       if (error.code === '23505') {
-        showError('Cilj štednje je već dodan u grupu');
+        showError(t('errors.family.goalAlreadyAdded', 'Cilj štednje je već dodan u grupu'));
       } else {
         console.error('Error adding shared savings:', error);
         showError(t('toasts.error'));

@@ -55,7 +55,7 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
       await onDelete(event.id);
       showSuccess('Obrisano');
     } catch {
-      showError('Greška');
+      showError(t('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.'));
     }
   };
 
@@ -64,7 +64,7 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
     try {
       await onToggleComplete(event.id, !event.isCompleted);
     } catch {
-      showError('Greška');
+      showError(t('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.'));
     }
   };
 
@@ -81,7 +81,7 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
       }, mode);
       showSuccess(t('calendar.exportedToCalendar', 'Izvezeno'));
     } catch {
-      showError('Greška');
+      showError(t('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.'));
     }
   };
 

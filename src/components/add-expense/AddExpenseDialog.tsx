@@ -291,7 +291,7 @@ export const AddExpenseDialog = ({
       }
     } catch (err: any) {
       console.error('📸 handleNativeCapture error:', err);
-      showError(`Greška pri snimanju: ${err?.message || 'nepoznato'}`);
+      showError(t('errors.save.expense', 'Greška pri spremanju transakcije'));
     } finally {
       // Slight delay so any popstate that fires on activity return is still blocked.
       setTimeout(() => { cameraActiveRef.current = false; }, 800);
@@ -412,7 +412,7 @@ export const AddExpenseDialog = ({
             has_amount: !!scannedData.amount,
           });
         } catch {}
-        showError(`Obavezna polja za poslovni mod: ${missing.join(', ')}. Uredi podatke prije spremanja.`);
+        showError(t('errors.businessMode.missingFields', 'Obavezna polja za poslovni mod: {{fields}}. Uredi podatke prije spremanja.', { fields: missing.join(', ') }));
         return;
       }
     }

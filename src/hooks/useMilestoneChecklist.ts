@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 
 export interface ChecklistItem {
   id: string;
@@ -61,7 +62,7 @@ export const useMilestoneChecklist = (milestoneId: string | null) => {
       setItems(prev => [...prev, data]);
     } catch (e) {
       console.error(e);
-      showError('Greška kod dodavanja');
+      showError(tr('errors.milestone.addFailed', 'Greška kod dodavanja'));
     }
   };
 
@@ -83,7 +84,7 @@ export const useMilestoneChecklist = (milestoneId: string | null) => {
       showSuccess(`Dodano ${data?.length} stavki`);
     } catch (e) {
       console.error(e);
-      showError('Greška kod dodavanja');
+      showError(tr('errors.milestone.addFailed', 'Greška kod dodavanja'));
     }
   };
 
@@ -105,7 +106,7 @@ export const useMilestoneChecklist = (milestoneId: string | null) => {
       } : it));
     } catch (e) {
       console.error(e);
-      showError('Greška');
+      showError(tr('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.'));
     }
   };
 
@@ -118,7 +119,7 @@ export const useMilestoneChecklist = (milestoneId: string | null) => {
         .eq('id', id);
       if (error) throw error;
       setItems(prev => prev.map(it => it.id === id ? { ...it, title: title.trim() } : it));
-    } catch (e) { console.error(e); showError('Greška'); }
+    } catch (e) { console.error(e); showError(tr('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); }
   };
 
   const deleteItem = async (id: string) => {
@@ -129,7 +130,7 @@ export const useMilestoneChecklist = (milestoneId: string | null) => {
         .eq('id', id);
       if (error) throw error;
       setItems(prev => prev.filter(it => it.id !== id));
-    } catch (e) { console.error(e); showError('Greška'); }
+    } catch (e) { console.error(e); showError(tr('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); }
   };
 
   return { items, loading, addItem, addItemsBulk, toggleItem, updateTitle, deleteItem, refetch: fetchItems };

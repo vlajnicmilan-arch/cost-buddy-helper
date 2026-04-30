@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 
 export interface ProjectShareLink {
   id: string;
@@ -64,7 +65,7 @@ export const useProjectShareLinks = (projectId: string | null) => {
       setLinks(prev => [data, ...prev]);
       showSuccess('Link kreiran');
       return data;
-    } catch (e) { console.error(e); showError('Greška'); return null; }
+    } catch (e) { console.error(e); showError(tr('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); return null; }
   };
 
   const update = async (id: string, patch: Partial<ProjectShareLink>) => {
@@ -75,7 +76,7 @@ export const useProjectShareLinks = (projectId: string | null) => {
         .eq('id', id);
       if (error) throw error;
       setLinks(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l));
-    } catch (e) { console.error(e); showError('Greška'); }
+    } catch (e) { console.error(e); showError(tr('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); }
   };
 
   const revoke = async (id: string) => {
@@ -92,7 +93,7 @@ export const useProjectShareLinks = (projectId: string | null) => {
       if (error) throw error;
       setLinks(prev => prev.filter(l => l.id !== id));
       showSuccess('Obrisano');
-    } catch (e) { console.error(e); showError('Greška'); }
+    } catch (e) { console.error(e); showError(tr('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); }
   };
 
   return { links, loading, create, update, revoke, remove, refetch: fetch };

@@ -441,7 +441,7 @@ export const useExpenseCRUD = ({
         setExpenses(updatedExpenses);
         showSuccess(`Uvezeno ${transactions.length} transakcija`);
       } else {
-        if (!user) { showError('Moraš biti prijavljen'); return; }
+        if (!user) { showError(t('errors.mustBeLoggedIn', 'Moraš biti prijavljen')); return; }
 
         const rows = transactions.map(tx => ({
           user_id: user.id,

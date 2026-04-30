@@ -55,7 +55,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
                   backend: result.backend,
                   error: result.error,
                 });
-                showError(`PIN greška: ${result.error || 'nepoznato'}`);
+                showError(t('errors.pin.setupFailed', 'PIN greška: {{reason}}', { reason: result.error || t('errors.unknownError', 'nepoznato') }));
                 return;
               }
               enableLock(true);
@@ -76,7 +76,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
                 origin: window.location.origin,
                 message: err?.message,
               });
-              showError(`PIN error: ${err?.message || 'unknown'}`);
+              showError(t('errors.pin.setupFailed', 'PIN error: {{reason}}', { reason: err?.message || t('errors.unknownError', 'unknown') }));
               return;
             }
             try {

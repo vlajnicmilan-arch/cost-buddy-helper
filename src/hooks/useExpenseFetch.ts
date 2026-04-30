@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { showError } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
 
@@ -144,7 +145,7 @@ export const useExpenseFetch = () => {
         }
       }
       console.error('Error fetching expenses:', error);
-      showError('Greška pri učitavanju troškova');
+      showError(tr('errors.fetch.expenses', 'Greška pri učitavanju troškova'));
     } finally {
       setLoading(false);
     }

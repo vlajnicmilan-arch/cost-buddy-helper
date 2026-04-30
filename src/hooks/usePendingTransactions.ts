@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Expense } from '@/types/expense';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 
 export const usePendingTransactions = (incomeSourceId: string | null) => {
   const { user } = useAuth();
@@ -35,7 +36,7 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       setPendingTransactions(transactions);
     } catch (error) {
       console.error('Error fetching pending transactions:', error);
-      showError('Greška pri učitavanju transakcija na čekanju');
+      showError(tr('errors.fetch.pending', 'Greška pri učitavanju transakcija na čekanju'));
     } finally {
       setLoading(false);
     }
@@ -58,7 +59,7 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       showSuccess('Transakcija odobrena');
     } catch (error) {
       console.error('Error approving transaction:', error);
-      showError('Greška pri odobravanju transakcije');
+      showError(tr('errors.transactions.approveFailed', 'Greška pri odobravanju transakcije'));
     }
   };
 
@@ -75,7 +76,7 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       showSuccess('Transakcija odbijena');
     } catch (error) {
       console.error('Error rejecting transaction:', error);
-      showError('Greška pri odbijanju transakcije');
+      showError(tr('errors.transactions.rejectFailed', 'Greška pri odbijanju transakcije'));
     }
   };
 
