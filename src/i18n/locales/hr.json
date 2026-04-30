@@ -2353,6 +2353,14 @@
     "s8": {
       "title": "8. Kontakt",
       "p1": "Za sva pitanja vezana uz uvjete korištenja, kontaktirajte nas na:"
+    },
+    "s9": {
+      "title": "9. Namjena usluge i ograničenja",
+      "p1": "V&M Balance je alat za interno upravljanje projektima i osobnim/poslovnim financijama. Aplikacija ne izdaje fakture, ne obrađuje PDV i ne predstavlja sustav za vođenje službenih evidencija.",
+      "l1": "Podaci uneseni u aplikaciju (evidencija rada, suradnici, troškovi) NISU službena evidencija u smislu Zakona o radu (NN 93/14 i izmjene), Zakona o računovodstvu ni Zakona o porezu na dohodak/dobit.",
+      "l2": "Izvozi (PDF/Excel) iz aplikacije su interni izvještaji i ne mogu se koristiti pred Poreznom upravom, Inspektoratom rada ili sudom kao primarni dokaz.",
+      "l3": "Korisnik je dužan voditi službene evidencije u za to ovlaštenim sustavima (kadrovska evidencija, knjigovodstveni programi, e-Porezna).",
+      "p2": "Korištenjem aplikacije korisnik prihvaća ova ograničenja i preuzima punu odgovornost za usklađenost s primjenjivim propisima."
     }
   },
   "form": {
