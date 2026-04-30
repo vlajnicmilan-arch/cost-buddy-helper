@@ -168,6 +168,7 @@ const AppRoutes = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -197,7 +198,7 @@ const AppRoutes = () => {
            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
-          <Route path="*" element={<Navigate to="/paywall" replace />} />
+          <Route path="/help" element={<Help />} />
         </Routes>
       </Suspense>
     );
