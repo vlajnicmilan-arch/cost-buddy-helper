@@ -368,13 +368,19 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                 <BarChart data={chartData} barGap={4}>
                   <XAxis 
                     dataKey="name" 
-                    tick={{ fontSize: 10 }} 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
                     axisLine={false} 
                     tickLine={false} 
                   />
                   <YAxis hide />
                   <Tooltip
-                    contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                    contentStyle={{
+                      fontSize: 11,
+                      borderRadius: 8,
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--popover-foreground))',
+                    }}
                     formatter={(val: number, name: string) => [
                       formatAmount(val),
                       name === 'spent' ? t('budget.spent', 'Potrošeno') : t('budget.limit', 'Limit')

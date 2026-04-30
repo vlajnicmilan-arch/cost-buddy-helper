@@ -152,12 +152,21 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={periodData} barGap={2}>
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} formatter={(val: number) => formatAmount(val)} />
-                  <Legend wrapperStyle={{ fontSize: 10 }} />
-                  <Bar name={t('business.reports.income', 'Prihodi')} dataKey="income" fill="hsl(160,75%,42%)" radius={[4, 4, 0, 0]} />
-                  <Bar name={t('business.reports.expenses', 'Rashodi')} dataKey="expense" fill="hsl(0,72%,55%)" radius={[4, 4, 0, 0]} />
+                  <Tooltip
+                    contentStyle={{
+                      fontSize: 11,
+                      borderRadius: 8,
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--popover-foreground))',
+                    }}
+                    formatter={(val: number) => formatAmount(val)}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 10, color: 'hsl(var(--muted-foreground))' }} />
+                  <Bar name={t('business.reports.income', 'Prihodi')} dataKey="income" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
+                  <Bar name={t('business.reports.expenses', 'Rashodi')} dataKey="expense" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

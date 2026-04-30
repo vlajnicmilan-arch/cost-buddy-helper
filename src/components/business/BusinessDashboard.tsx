@@ -137,14 +137,20 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable }: P
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.trend} barGap={2}>
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                   <YAxis hide />
                   <Tooltip
-                    contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                    contentStyle={{
+                      fontSize: 11,
+                      borderRadius: 8,
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--popover-foreground))',
+                    }}
                     formatter={(val: number) => formatAmount(val)}
                   />
-                  <Bar dataKey="income" name={t('business.dashboard.income', 'Prihodi')} fill="hsl(160,75%,42%)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" name={t('business.dashboard.expenses', 'Rashodi')} fill="hsl(0,72%,55%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="income" name={t('business.dashboard.income', 'Prihodi')} fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" name={t('business.dashboard.expenses', 'Rashodi')} fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

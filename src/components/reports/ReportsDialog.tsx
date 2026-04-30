@@ -955,12 +955,12 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                     ) : (
                       <BarChart data={chartData} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis type="number" tickFormatter={(v) => `€${v}`} />
+                        <XAxis type="number" tickFormatter={(v) => `€${v}`} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                         <YAxis 
                           type="category" 
                           dataKey="name" 
                           width={80} 
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                         />
                         <Tooltip 
                           formatter={(value: number) => formatCurrency(value)}
@@ -1211,12 +1211,12 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                     ) : (
                       <BarChart data={incomeChartData} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis type="number" tickFormatter={(v) => formatCurrency(v)} />
+                        <XAxis type="number" tickFormatter={(v) => formatCurrency(v)} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                         <YAxis 
                           type="category" 
                           dataKey="name" 
                           width={100} 
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                         />
                         <Tooltip 
                           formatter={(value: number) => formatCurrency(value)}
