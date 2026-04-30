@@ -102,7 +102,7 @@ const RootRoute = () => {
   if (isInstalledApp()) {
     return <Navigate to="/app" replace />;
   }
-  return <Landing />;
+  return <Suspense fallback={<PageLoader />}><Landing /></Suspense>;
 };
 
 const RouteAwareGlobalOverlays = () => {
