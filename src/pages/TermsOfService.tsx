@@ -96,6 +96,19 @@ const TermsOfService = () => {
             </div>
           </section>
 
+          <section>
+            <h2 className="text-xl font-semibold mb-3">{t('tos.s9.title')}</h2>
+            <p className="text-muted-foreground leading-relaxed mb-3">{t('tos.s9.p1')}</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+              <li>{t('tos.s9.l1')}</li>
+              <li>{t('tos.s9.l2')}</li>
+              <li>{t('tos.s9.l3')}</li>
+            </ul>
+            <p className="text-muted-foreground leading-relaxed mt-3 font-medium text-foreground">
+              {t('tos.s9.p2')}
+            </p>
+          </section>
+
         </div>
 
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
