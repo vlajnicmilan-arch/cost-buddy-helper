@@ -332,9 +332,9 @@ const Paywall: React.FC = () => {
                       {f.included ? (
                         <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                       ) : (
-                        <X className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                        <X className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
                       )}
-                      <span className={`text-xs ${f.included ? 'text-foreground' : 'text-muted-foreground/50 line-through'}`}>
+                      <span className={`text-xs ${f.included ? 'text-foreground' : 'text-muted-foreground line-through opacity-70'}`}>
                         {f.text}
                       </span>
                     </div>
