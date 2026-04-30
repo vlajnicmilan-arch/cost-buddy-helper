@@ -177,6 +177,7 @@ export const AddExpenseDialog = ({
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
   const cameraActiveRef = useRef(false);
+  const scannedPreviewActiveRef = useRef(false);
 
   const selectedSourceCurrencyCode = useMemo(() => {
     if (!multiCurrencyEnabled) return primaryCurrency.code;
@@ -376,6 +377,7 @@ export const AddExpenseDialog = ({
         });
       } catch {}
     }
+    scannedPreviewActiveRef.current = true;
     setShowScannedPreview(true);
     try {
       logDiagnostic('receipt_scan_preview_shown', {
@@ -394,7 +396,7 @@ export const AddExpenseDialog = ({
   // native camera activity returns) does NOT navigate the app to /home and
   // unmount this dialog mid-scan.
   const handleBackClose = useCallback(() => {
-    if (scanning || showScannedPreview || isSaving || cameraActiveRef.current) return;
+    if (scanning || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current) return;
     setOpen(false);
   }, [scanning, showScannedPreview, isSaving]);
   useBackButton(open, handleBackClose, 10);
@@ -532,6 +534,7 @@ export const AddExpenseDialog = ({
   };
 
   const rejectScannedData = () => {
+    scannedPreviewActiveRef.current = false;
     setScannedData(null);
     setShowScannedPreview(false);
     setReceiptImage(null);
@@ -565,6 +568,7 @@ export const AddExpenseDialog = ({
   };
 
   const resetForm = () => {
+    scannedPreviewActiveRef.current = false;
     setAmount('');
     setDescription('');
     setCategory('food');
