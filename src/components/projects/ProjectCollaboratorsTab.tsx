@@ -337,6 +337,13 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
         </div>
       )}
 
+      {/* GDPR disclaimer */}
+      <WorkerDataDisclaimerDialog
+        open={disclaimerOpen}
+        onOpenChange={setDisclaimerOpen}
+        onAccept={() => setDialogOpen(true)}
+      />
+
       {/* Dialog */}
       <ProjectCollaboratorDialog
         open={dialogOpen}
