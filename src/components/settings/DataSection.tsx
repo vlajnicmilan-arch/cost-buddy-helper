@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Coins, Globe, Download, Upload, Loader2, Zap, RefreshCw, Database, ChevronRight } from 'lucide-react';
+import { Coins, Globe, Download, Upload, Loader2, Zap, RefreshCw, Database, ChevronRight, Archive } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
@@ -28,6 +28,8 @@ interface DataSectionProps {
   // Export/Import
   onExport: (mode?: ExportMode) => void;
   isExporting: boolean;
+  onExportZip: (mode?: ExportMode) => void;
+  isExportingZip: boolean;
   onShowImportDialog: () => void;
 }
 
@@ -36,7 +38,7 @@ export const DataSection = ({
   autoUpdate, onAutoUpdateChange, onCheckForUpdates, isCheckingUpdate,
   currencyCode, onCurrencyChange,
   multiCurrencyEnabled, onMultiCurrencyChange,
-  onExport, isExporting, onShowImportDialog
+  onExport, isExporting, onExportZip, isExportingZip, onShowImportDialog
 }: DataSectionProps) => {
   const { t } = useTranslation();
 
@@ -170,6 +172,15 @@ export const DataSection = ({
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           {t('settings.data', 'Podaci')}
         </h3>
+        <ExportButton
+          label={isExportingZip ? <Loader2 className="w-4 h-4 animate-spin" /> : t('settings.exportZip', 'Izvezi sve podatke (ZIP)')}
+          icon={<Archive className="w-4 h-4 mr-2" />}
+          onExport={(mode) => onExportZip(mode)}
+          variant="default"
+          size="default"
+          disabled={isExportingZip || isLocalMode}
+          className="w-full gap-2 rounded-xl justify-start"
+        />
         <ExportButton
           label={isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('settings.export', 'Izvezi podatke (JSON)')}
           icon={<Download className="w-4 h-4 mr-2" />}

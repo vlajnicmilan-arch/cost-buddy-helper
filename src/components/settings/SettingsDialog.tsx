@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { APP_VERSION } from '@/lib/version';
 import { exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { exportAllUserDataAsZip } from '@/lib/dataExportZip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [tempName, setTempName] = useState('');
   
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingZip, setIsExportingZip] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ expenses: number; items: number } | null>(null);
   const [importError, setImportError] = useState('');
@@ -261,6 +263,23 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       showError(t('settings.exportError', 'Greška pri izvozu'));
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportZip = async (mode: ExportMode = 'save') => {
+    if (isLocalMode) {
+      showError(t('settings.exportZipCloudOnly', 'ZIP izvoz dostupan je samo u cloud načinu'));
+      return;
+    }
+    setIsExportingZip(true);
+    try {
+      await exportAllUserDataAsZip(mode);
+      showSuccess(t('settings.exportZipSuccess', 'Svi podaci izvezeni u ZIP'));
+    } catch (err) {
+      console.error('ZIP export error:', err);
+      showError(t('settings.exportZipError', 'Greška pri ZIP izvozu'));
+    } finally {
+      setIsExportingZip(false);
     }
   };
 
@@ -619,6 +638,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onMultiCurrencyChange={setMultiCurrencyEnabled}
               onExport={handleExport}
               isExporting={isExporting}
+              onExportZip={handleExportZip}
+              isExportingZip={isExportingZip}
               onShowImportDialog={() => setShowImportDialog(true)}
             />
 
