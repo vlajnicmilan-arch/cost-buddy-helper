@@ -167,7 +167,7 @@ const HeroSection = ({ t }: { t: (key: string) => string }) => (
   </section>
 );
 
-const FooterSection = ({ t }: { t: (key: string) => string }) => (
+const FooterSection = ({ language, t }: { language: LandingLanguage; t: (key: string) => string }) => (
   <footer className="border-t border-border px-4 py-16">
     <div className="mx-auto max-w-6xl">
       <div className="mb-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -192,6 +192,9 @@ const FooterSection = ({ t }: { t: (key: string) => string }) => (
           <h4 className="mb-3 font-semibold text-foreground">{t('landing.footer.legal')}</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li><button type="button" onClick={() => goTo('/privacy-policy')} className="hover:text-foreground">{t('landing.footer.privacy')}</button></li>
+            {language === 'de' && (
+              <li><button type="button" onClick={() => goTo('/impressum')} className="hover:text-foreground">Impressum</button></li>
+            )}
           </ul>
         </div>
         <div>
@@ -292,7 +295,7 @@ const Landing = () => {
       <div className="min-h-dvh bg-background">
         <LandingNav language={language} setLanguage={setLanguage} t={t} />
         <APKDownloadSection referralCode={referralId} t={t} />
-        <FooterSection t={t} />
+        <FooterSection language={language} t={t} />
       </div>
     );
   }
@@ -308,7 +311,7 @@ const Landing = () => {
       ) : (
         <div className="min-h-[520px]" aria-hidden="true" />
       )}
-      <FooterSection t={t} />
+      <FooterSection language={language} t={t} />
     </div>
   );
 };

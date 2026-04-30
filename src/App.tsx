@@ -45,6 +45,7 @@ const Family = lazy(() => import("./pages/Family"));
 const JoinFamily = lazy(() => import("./pages/JoinFamily"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const Impressum = lazy(() => import("./pages/Impressum"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -165,6 +166,7 @@ const AppRoutes = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/impressum" element={<Impressum />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -193,6 +195,7 @@ const AppRoutes = () => {
           <Route path="/unsubscribe" element={<Unsubscribe />} />
            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/impressum" element={<Impressum />} />
           <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
       </Suspense>
@@ -212,6 +215,7 @@ const AppRoutes = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/impressum" element={<Impressum />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -250,6 +254,7 @@ const AppRoutes = () => {
       <Route path="/paywall" element={<Suspense fallback={<PageLoader />}><Paywall /></Suspense>} />
       <Route path="/privacy-policy" element={<Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
       <Route path="/terms-of-service" element={<Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
+      <Route path="/impressum" element={<Suspense fallback={<PageLoader />}><Impressum /></Suspense>} />
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
