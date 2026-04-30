@@ -25,7 +25,7 @@ import {
   TrendingDown, CheckCircle2, Clock, AlertTriangle, History, BookOpen
 } from 'lucide-react';
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend
+  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid
 } from 'recharts';
 import { ProjectRevisionsReport } from './ProjectRevisionsReport';
 
