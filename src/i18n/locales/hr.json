@@ -326,6 +326,22 @@
   },
   "settings": {
     "title": "Postavke",
+    "legal": {
+      "title": "Pravna dokumentacija (GDPR)",
+      "intro": "Generirajte ugovor o obradi podataka (DPA) i obavijest o privatnosti za radnike/suradnike. Pre-popunjeno s podacima vaše tvrtke.",
+      "companyName": "Naziv tvrtke",
+      "companyRequired": "Unesite naziv firme",
+      "oib": "OIB",
+      "email": "Email",
+      "address": "Adresa sjedišta",
+      "dpaButton": "DPA Ugovor",
+      "dpaDesc": "Za vašu evidenciju kao Voditelja obrade",
+      "pnButton": "Obavijest o privatnosti",
+      "pnDesc": "Za vaše radnike i suradnike",
+      "generated": "Dokument generiran",
+      "generateError": "Greška pri generiranju dokumenta",
+      "note": "Dokumenti služe kao polazna točka. Za specifične pravne situacije konzultirajte odvjetnika."
+    },
     "language": "Jezik",
     "theme": "Tema",
     "currency": "Valuta",
