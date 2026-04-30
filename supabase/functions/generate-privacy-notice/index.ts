@@ -1,4 +1,5 @@
-import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+import { PDFDocument, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+import fontkit from 'https://esm.sh/@pdf-lib/fontkit@1.1.1';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
@@ -14,7 +15,7 @@ interface PnInput {
   language?: 'hr' | 'en' | 'de';
 }
 
-const I18N: Record<string, {
+interface I18nPn {
   title: string;
   intro: (c: string) => string;
   whoTitle: string;
@@ -36,14 +37,16 @@ const I18N: Record<string, {
   contactTitle: string;
   contact: (email: string) => string;
   generated: string;
-}> = {
+  footer: string;
+}
+
+const I18N: Record<string, I18nPn> = {
   hr: {
     title: 'OBAVIJEST O OBRADI OSOBNIH PODATAKA',
     intro: (c) =>
       `Ova obavijest opisuje kako tvrtka ${c} obrađuje vaše osobne podatke kada radite na našim projektima. Cilj je biti transparentan o tome koje podatke prikupljamo, zašto i koja su vaša prava.`,
     whoTitle: '1. Tko obrađuje vaše podatke (Voditelj obrade)',
-    who: (c, oib, addr) =>
-      `${c}${oib ? `, OIB: ${oib}` : ''}${addr ? `, ${addr}` : ''}.`,
+    who: (c, oib, addr) => `${c}${oib ? `, OIB: ${oib}` : ''}${addr ? `, ${addr}` : ''}.`,
     whatTitle: '2. Koje podatke obrađujemo',
     what:
       'Ime i prezime, kontakt podaci (email i/ili telefon), pozicija/uloga na projektu, evidencija odrađenih sati po danu, ugovorena satnica ili honorar, kratke bilješke o obavljenom poslu (dnevnik rada).',
@@ -67,14 +70,14 @@ const I18N: Record<string, {
     contactTitle: '9. Kontakt za zahtjeve',
     contact: (email) => `Za bilo koje pitanje ili ostvarivanje prava javite se na: ${email || '[email firme]'}.`,
     generated: 'Generirano:',
+    footer: 'Generirano kroz V&M Balance — interna evidencija. Nije službeni knjigovodstveni dokument.',
   },
   en: {
     title: 'PRIVACY NOTICE — PROCESSING OF YOUR PERSONAL DATA',
     intro: (c) =>
       `This notice describes how ${c} processes your personal data when you work on our projects. Our goal is to be transparent about what we collect, why, and what your rights are.`,
     whoTitle: '1. Who processes your data (Controller)',
-    who: (c, oib, addr) =>
-      `${c}${oib ? `, ID: ${oib}` : ''}${addr ? `, ${addr}` : ''}.`,
+    who: (c, oib, addr) => `${c}${oib ? `, ID: ${oib}` : ''}${addr ? `, ${addr}` : ''}.`,
     whatTitle: '2. What data we process',
     what:
       'Name and surname, contact details (email/phone), position/role on the project, hours worked per day, agreed hourly rate or fee, brief work log notes.',
@@ -98,6 +101,7 @@ const I18N: Record<string, {
     contactTitle: '9. Contact for requests',
     contact: (email) => `For any question or exercising your rights contact: ${email || '[company email]'}.`,
     generated: 'Generated:',
+    footer: 'Generated via V&M Balance — internal record. Not an official accounting document.',
   },
   de: {
     title: 'DATENSCHUTZHINWEIS — VERARBEITUNG IHRER PERSONENBEZOGENEN DATEN',
@@ -128,41 +132,62 @@ const I18N: Record<string, {
     contactTitle: '9. Kontakt',
     contact: (email) => `Für Fragen oder zur Ausübung Ihrer Rechte: ${email || '[Firmen-E-Mail]'}.`,
     generated: 'Erstellt am:',
+    footer: 'Erstellt mit V&M Balance — interne Aufzeichnung. Kein offizielles Buchhaltungsdokument.',
   },
 };
 
-const toAscii = (s: string): string =>
-  s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D');
+const formatDate = (d: Date) => {
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}.${mm}.${d.getFullYear()}`;
+};
+
+async function fetchFont(url: string): Promise<Uint8Array> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`font fetch failed: ${r.status}`);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
+const FONT_REGULAR_FALLBACK = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-latin-ext-400-normal.ttf';
+const FONT_BOLD_FALLBACK = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-latin-ext-700-normal.ttf';
+
+async function loadFonts() {
+  const [reg, bold] = await Promise.all([fetchFont(FONT_REGULAR_FALLBACK), fetchFont(FONT_BOLD_FALLBACK)]);
+  return { reg, bold };
+}
 
 async function buildPnPdf(input: PnInput): Promise<Uint8Array> {
   const lang = (input.language || 'hr') as keyof typeof I18N;
   const t = I18N[lang] || I18N.hr;
 
   const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  pdf.registerFontkit(fontkit);
+  const fonts = await loadFonts();
+  const font = await pdf.embedFont(fonts.reg, { subset: true });
+  const fontBold = await pdf.embedFont(fonts.bold, { subset: true });
 
   const margin = 50;
   const pageWidth = 595;
   const pageHeight = 842;
   const contentWidth = pageWidth - 2 * margin;
+  const footerReserve = 40;
+  const pages: any[] = [];
   let page = pdf.addPage([pageWidth, pageHeight]);
+  pages.push(page);
   let y = pageHeight - margin;
+
+  const newPage = () => {
+    page = pdf.addPage([pageWidth, pageHeight]);
+    pages.push(page);
+    y = pageHeight - margin;
+  };
 
   const writeLine = (text: string, opts: { bold?: boolean; size?: number; color?: [number, number, number] } = {}) => {
     const size = opts.size ?? 10;
     const f = opts.bold ? fontBold : font;
     const lh = size + 4;
-    if (y - lh < margin + 20) {
-      page = pdf.addPage([pageWidth, pageHeight]);
-      y = pageHeight - margin;
-    }
-    const safe = toAscii(text);
-    const words = safe.split(' ');
+    if (y - lh < margin + footerReserve) newPage();
+    const words = text.split(' ');
     let line = '';
     for (const word of words) {
       const test = line ? line + ' ' + word : word;
@@ -171,7 +196,7 @@ async function buildPnPdf(input: PnInput): Promise<Uint8Array> {
         page.drawText(line, { x: margin, y, size, font: f, color: rgb(opts.color?.[0] ?? 0, opts.color?.[1] ?? 0, opts.color?.[2] ?? 0) });
         y -= lh;
         line = word;
-        if (y - lh < margin + 20) { page = pdf.addPage([pageWidth, pageHeight]); y = pageHeight - margin; }
+        if (y - lh < margin + footerReserve) newPage();
       } else { line = test; }
     }
     if (line) {
@@ -189,7 +214,7 @@ async function buildPnPdf(input: PnInput): Promise<Uint8Array> {
 
   writeLine(t.title, { bold: true, size: 14 });
   y -= 6;
-  writeLine(`${t.generated} ${new Date().toLocaleDateString(lang)}`, { size: 9, color: [0.4, 0.4, 0.4] });
+  writeLine(`${t.generated} ${formatDate(new Date())}`, { size: 9, color: [0.4, 0.4, 0.4] });
   y -= 6;
   writeLine(t.intro(input.companyName));
 
@@ -202,6 +227,20 @@ async function buildPnPdf(input: PnInput): Promise<Uint8Array> {
   writeSection(t.retentionTitle, t.retention);
   writeSection(t.rightsTitle, t.rights);
   writeSection(t.contactTitle, t.contact(input.contactEmail || ''));
+
+  const total = pages.length;
+  pages.forEach((p, idx) => {
+    const text = t.footer;
+    const size = 8;
+    const w = font.widthOfTextAtSize(text, size);
+    p.drawText(text, { x: (pageWidth - w) / 2, y: 25, size, font, color: rgb(0.45, 0.45, 0.45) });
+    const pageLabel = `${idx + 1} / ${total}`;
+    p.drawText(pageLabel, {
+      x: pageWidth - margin - font.widthOfTextAtSize(pageLabel, 8),
+      y: 25,
+      size: 8, font, color: rgb(0.45, 0.45, 0.45),
+    });
+  });
 
   return await pdf.save();
 }
@@ -245,7 +284,13 @@ Deno.serve(async (req) => {
       console.warn('[generate-privacy-notice] audit insert failed', e);
     }
 
-    const base64 = btoa(String.fromCharCode(...pdfBytes));
+    let binary = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < pdfBytes.length; i += chunk) {
+      binary += String.fromCharCode(...pdfBytes.subarray(i, i + chunk));
+    }
+    const base64 = btoa(binary);
+
     return new Response(
       JSON.stringify({ pdf: base64, filename: `Privacy-Notice-${body.companyName.replace(/\s+/g, '_')}.pdf` }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
