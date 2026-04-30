@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, Send, Loader2, Trash2, Sparkles, FileText, TrendingUp, TrendingDown, PiggyBank, Download, Printer, Brain, X } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, exportTextFile } from '@/lib/fileExport';
 import { useFinancialAssistant, ChatMessage, UserMemory } from '@/hooks/useFinancialAssistant';
 import { Badge } from '@/components/ui/badge';
@@ -659,6 +658,7 @@ async function exportToCSV(headers: string[], rows: string[][]) {
 }
 
 async function exportToPDF(headers: string[], rows: string[][]) {
+  const { jsPDF, autoTable } = await loadJsPdf();
   const doc = new jsPDF({ orientation: rows[0]?.length > 5 ? 'landscape' : 'portrait' });
   doc.setFont('helvetica');
   doc.setFontSize(14);
@@ -680,6 +680,7 @@ async function exportToPDF(headers: string[], rows: string[][]) {
 }
 
 async function exportResponseAsPDF(content: string) {
+  const { jsPDF } = await loadJsPdf();
   const doc = new jsPDF();
   doc.setFont('helvetica');
   doc.setFontSize(14);
