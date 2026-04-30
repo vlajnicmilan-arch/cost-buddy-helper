@@ -78,6 +78,25 @@ Deno.serve(async (req) => {
 
     if (logErr) throw logErr;
 
+    // Pošalji potvrdni email (ne blokirati ako padne)
+    if (userEmail) {
+      try {
+        await admin.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'account-deletion-scheduled',
+            recipientEmail: userEmail,
+            idempotencyKey: `deletion-scheduled-${logRow.id}`,
+            templateData: {
+              scheduledDate: scheduledFor.toLocaleDateString('hr-HR'),
+              graceDays: GRACE_PERIOD_DAYS,
+            },
+          },
+        });
+      } catch (e) {
+        console.error('[email] scheduled notification failed:', e);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       scheduled_for: scheduledFor.toISOString(),

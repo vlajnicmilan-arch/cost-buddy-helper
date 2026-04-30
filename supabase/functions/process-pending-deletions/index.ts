@@ -70,13 +70,28 @@ async function processOne(admin: any, log: any): Promise<{ ok: boolean; error?: 
   const tablesPurged: string[] = [];
 
   try {
-    // 1. Stripe
+    // 1. Pošalji potvrdni email PRIJE brisanja (poslije nemamo email)
+    if (log.user_email) {
+      try {
+        await admin.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'account-deletion-completed',
+            recipientEmail: log.user_email,
+            idempotencyKey: `deletion-completed-${log.id}`,
+          },
+        });
+      } catch (e) {
+        console.error('[email] completion notification failed:', e);
+      }
+    }
+
+    // 2. Stripe
     const subCancelled = await cancelStripeSubscription(log.user_email);
 
-    // 2. Storage
+    // 3. Storage
     const storagePurged = await purgeStorage(admin, userId);
 
-    // 3. Database tables
+    // 4. Database tables
     for (const table of [...new Set(TABLES_TO_PURGE)]) {
       const { error } = await admin.from(table).delete().eq("user_id", userId);
       if (error) {
@@ -86,7 +101,7 @@ async function processOne(admin: any, log: any): Promise<{ ok: boolean; error?: 
       }
     }
 
-    // 4. Auth user (zadnje)
+    // 5. Auth user (zadnje)
     const { error: authErr } = await admin.auth.admin.deleteUser(userId);
     if (authErr) throw new Error(`Auth delete failed: ${authErr.message}`);
 

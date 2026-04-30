@@ -34,14 +34,31 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-    await admin.from("account_deletion_log")
+    const { data: cancelled } = await admin.from("account_deletion_log")
       .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
       .eq("user_id", userId)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .select("id, user_email")
+      .maybeSingle();
 
     await admin.from("profiles")
       .update({ deletion_scheduled_at: null })
       .eq("user_id", userId);
+
+    // Pošalji email potvrdu otkazivanja (samo ako je doista nešto otkazano)
+    if (cancelled?.user_email) {
+      try {
+        await admin.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'account-deletion-cancelled',
+            recipientEmail: cancelled.user_email,
+            idempotencyKey: `deletion-cancelled-${cancelled.id}`,
+          },
+        });
+      } catch (e) {
+        console.error('[email] cancellation notification failed:', e);
+      }
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
