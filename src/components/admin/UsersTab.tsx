@@ -1,9 +1,13 @@
-import { Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck, ShieldCheck, ShieldOff } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck, ShieldCheck, ShieldOff, Search, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { type AppUser, parseUserAgent, parseDetailedUA, isBanned } from './types';
+
+type FilterKey = 'all' | 'admin' | 'banned' | 'pro' | 'business' | 'free';
 
 interface UsersTabProps {
   users: AppUser[];
@@ -14,6 +18,7 @@ interface UsersTabProps {
   setExpandedUserId: (id: string | null) => void;
   actionLoading: string | null;
   currentUserId?: string;
+  subscriptions?: Record<string, string>;
   onRefresh: () => void;
   onLoadMore: () => void;
   onManageUser: (action: string, userId: string, role?: string) => void;
@@ -28,24 +33,103 @@ export const UsersTab = ({
   setExpandedUserId,
   actionLoading,
   currentUserId,
+  subscriptions = {},
   onRefresh,
   onLoadMore,
   onManageUser,
 }: UsersTabProps) => {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<FilterKey>('all');
+
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      // Text search
+      if (q) {
+        const haystack = `${u.display_name || ''} ${u.email || ''}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      // Filter chip
+      if (filter === 'admin') return u.roles.includes('admin');
+      if (filter === 'banned') return isBanned(u);
+      if (filter === 'pro') return (subscriptions[u.id] || 'free') === 'pro';
+      if (filter === 'business') return (subscriptions[u.id] || 'free') === 'business';
+      if (filter === 'free') return !subscriptions[u.id] || subscriptions[u.id] === 'free';
+      return true;
+    });
+  }, [users, search, filter, subscriptions]);
+
+  const filterChips: { key: FilterKey; label: string }[] = [
+    { key: 'all', label: 'Svi' },
+    { key: 'admin', label: 'Admini' },
+    { key: 'banned', label: 'Blokirani' },
+    { key: 'business', label: 'Business' },
+    { key: 'pro', label: 'Pro' },
+    { key: 'free', label: 'Free' },
+  ];
+
   return (
     <div className="space-y-3 mt-4">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">{users.length} korisnika</p>
+        <p className="text-sm text-muted-foreground">
+          {filteredUsers.length === users.length
+            ? `${users.length} korisnika`
+            : `${filteredUsers.length} / ${users.length}`}
+        </p>
         <Button variant="outline" size="sm" onClick={onRefresh} disabled={usersLoading}>
           {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
           Osvježi
         </Button>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Pretraži po imenu ili emailu..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 pr-9 h-9 text-sm"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground"
+            aria-label="Očisti pretragu"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {filterChips.map((chip) => (
+          <button
+            key={chip.key}
+            type="button"
+            onClick={() => setFilter(chip.key)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              filter === chip.key
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            }`}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+
       {usersLoading && users.length === 0 ? (
         <div className="text-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Učitavanje...</p>
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <Search className="w-10 h-10 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Nema rezultata za zadane filtere</p>
         </div>
       ) : (
         <div className="space-y-3">
