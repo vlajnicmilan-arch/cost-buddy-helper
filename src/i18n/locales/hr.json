@@ -1552,14 +1552,27 @@
     }
   },
   "gdpr": {
-    "bannerTitle": "Privatnost i pohrana podataka",
+    "bannerTitle": "Privatnost i kolačići",
     "bannerText": "Ova aplikacija koristi localStorage i IndexedDB za pohranu vaših postavki i financijskih podataka na uređaju. Ne koristimo marketinške kolačiće niti pratimo vaše aktivnosti izvan aplikacije.",
+    "bannerTextV2": "Koristimo kolačiće i lokalnu pohranu kako bi aplikacija radila. Analitičke i marketinške kolačiće koristimo samo uz vaš pristanak. Možete prihvatiti sve, odbiti sve ili prilagoditi izbor.",
     "accept": "Prihvaćam",
+    "acceptAll": "Prihvati sve",
+    "rejectAll": "Odbij sve",
+    "customize": "Prilagodi",
+    "savePreferences": "Spremi postavke",
     "privacyPolicy": "Politika privatnosti",
     "consentLabel": "Prihvaćam {link} i suglasan/na sam s obradom osobnih podataka u skladu s GDPR regulativom.",
     "privacyPolicyLink": "Politiku privatnosti",
     "settingsPrivacyTitle": "Politika privatnosti",
-    "settingsPrivacyDesc": "GDPR prava i obrada podataka"
+    "settingsPrivacyDesc": "GDPR prava i obrada podataka",
+    "cat": {
+      "necessary": "Nužni",
+      "necessaryDesc": "Potrebni za rad aplikacije: prijava, sigurnost, jezik, PIN. Ne mogu se isključiti.",
+      "analytics": "Analitika",
+      "analyticsDesc": "Praćenje grešaka (Sentry) za poboljšanje stabilnosti. Bez osobnih podataka.",
+      "marketing": "Marketing",
+      "marketingDesc": "Trenutno ne koristimo marketinške kolačiće. Rezervirano za buduće promotivne aktivnosti."
+    }
   },
   "lock": {
     "title": "Aplikacija je zaključana",

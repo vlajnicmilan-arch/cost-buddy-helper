@@ -82,6 +82,19 @@ export const initSentry = (): void => {
       return;
     }
 
+    // GDPR / ePrivacy: Sentry is "analytics" category — requires explicit opt-in.
+    // Read consent directly from localStorage to avoid async import in this sync init.
+    try {
+      const raw = localStorage.getItem('cookie_consent_v2');
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || parsed.analytics !== true) {
+        console.log('[Sentry] Skipped init — no analytics consent');
+        return;
+      }
+    } catch {
+      return;
+    }
+
     Sentry.init({
       dsn: DSN,
       environment,

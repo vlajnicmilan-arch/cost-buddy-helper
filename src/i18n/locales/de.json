@@ -1547,14 +1547,27 @@
     }
   },
   "gdpr": {
-    "bannerTitle": "Datenschutz & Datenspeicherung",
+    "bannerTitle": "Datenschutz & Cookies",
     "bannerText": "Diese App verwendet localStorage und IndexedDB, um Ihre Einstellungen und Finanzdaten auf Ihrem Gerät zu speichern. Wir verwenden keine Marketing-Cookies und verfolgen Ihre Aktivitäten nicht außerhalb der App.",
+    "bannerTextV2": "Wir verwenden Cookies und lokalen Speicher, damit die App funktioniert. Analyse- und Marketing-Cookies nur mit Ihrer Einwilligung. Sie können alle akzeptieren, alle ablehnen oder anpassen.",
     "accept": "Akzeptieren",
+    "acceptAll": "Alle akzeptieren",
+    "rejectAll": "Alle ablehnen",
+    "customize": "Anpassen",
+    "savePreferences": "Einstellungen speichern",
     "privacyPolicy": "Datenschutzrichtlinie",
     "consentLabel": "Ich akzeptiere die {link} und stimme der Verarbeitung personenbezogener Daten gemäß der DSGVO zu.",
     "privacyPolicyLink": "Datenschutzrichtlinie",
     "settingsPrivacyTitle": "Datenschutzrichtlinie",
-    "settingsPrivacyDesc": "DSGVO-Rechte und Datenverarbeitung"
+    "settingsPrivacyDesc": "DSGVO-Rechte und Datenverarbeitung",
+    "cat": {
+      "necessary": "Notwendig",
+      "necessaryDesc": "Erforderlich für die App: Anmeldung, Sicherheit, Sprache, PIN. Kann nicht deaktiviert werden.",
+      "analytics": "Analyse",
+      "analyticsDesc": "Fehlerverfolgung (Sentry) zur Verbesserung der Stabilität. Keine personenbezogenen Daten.",
+      "marketing": "Marketing",
+      "marketingDesc": "Wir verwenden derzeit keine Marketing-Cookies. Für zukünftige Aktivitäten reserviert."
+    }
   },
   "lock": {
     "title": "App ist gesperrt",
