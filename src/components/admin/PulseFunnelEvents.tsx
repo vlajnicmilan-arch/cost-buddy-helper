@@ -164,6 +164,21 @@ export const PulseFunnelEvents = () => {
               <SelectItem value="90">{t('admin.funnel.range90d', '90 dana')}</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleExport}
+            disabled={exporting || m.loading}
+            className="h-7 text-xs gap-1"
+            title={t('admin.funnel.exportTooltip', 'Izvezi sirove eventove kao CSV')}
+          >
+            {exporting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <FileDown className="w-3 h-3" />
+            )}
+            CSV
+          </Button>
         </div>
       </div>
 
