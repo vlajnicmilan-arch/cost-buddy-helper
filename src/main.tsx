@@ -39,12 +39,16 @@ const loadFastLandingCrisp = () => {
   document.head.appendChild(script);
 };
 
-// Funnel: log install once per device (best-effort, deferred to idle).
+// Funnel: capture UTM params synchronously (URL may change after redirects),
+// then log install once per device (best-effort, deferred to idle).
+import('./lib/funnelTracking')
+  .then(({ captureUtmParams }) => captureUtmParams())
+  .catch(() => {});
+
 idle(() => {
   import('./lib/funnelTracking')
     .then(({ logFunnelEvent }) => logFunnelEvent('install', {
       installed_app: isInstalledApp(),
-      referrer: typeof document !== 'undefined' ? document.referrer || null : null,
     }))
     .catch(() => {});
 });
