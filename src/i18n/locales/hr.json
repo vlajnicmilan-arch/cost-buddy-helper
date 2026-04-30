@@ -1078,12 +1078,140 @@
     "checkFailed": "Provjera nije uspjela"
   },
   "errors": {
+    "generic": "Nešto je pošlo po krivu. Pokušajte ponovno.",
+    "network": "Nema internetske veze. Provjerite mrežu i pokušajte ponovno.",
+    "timeout": "Zahtjev je istekao. Pokušajte ponovno.",
+    "unauthorized": "Niste prijavljeni. Prijavite se i pokušajte ponovno.",
+    "forbidden": "Nemate ovlast za ovu radnju.",
+    "notFound": "Stavka nije pronađena.",
+    "sessionExpired": "Vaša sesija je istekla. Prijavite se ponovno.",
+    "duplicate": "Stavka s tim podacima već postoji.",
+    "mustBeLoggedIn": "Morate biti prijavljeni za ovu radnju.",
+    "unknownError": "Nepoznata greška",
     "fetchError": "Greška pri dohvaćanju podataka",
     "saveError": "Greška pri spremanju",
     "deleteError": "Greška pri brisanju",
     "networkError": "Greška u mreži",
-    "unauthorized": "Niste prijavljeni",
-    "generic": "Došlo je do greške"
+    "fetch": {
+      "expenses": "Greška pri učitavanju transakcija",
+      "categories": "Greška pri dohvaćanju kategorija",
+      "sources": "Greška pri dohvaćanju izvora plaćanja",
+      "installments": "Greška pri učitavanju planova rata",
+      "pending": "Greška pri učitavanju transakcija na čekanju",
+      "logs": "Greška pri učitavanju logova"
+    },
+    "save": {
+      "generic": "Greška pri spremanju",
+      "category": "Greška pri spremanju kategorije",
+      "source": "Greška pri spremanju izvora plaćanja",
+      "card": "Greška pri spremanju kartice",
+      "expense": "Greška pri spremanju transakcije",
+      "installment": "Greška pri spremanju rate",
+      "setting": "Greška pri spremanju postavke",
+      "role": "Greška pri ažuriranju uloge"
+    },
+    "create": {
+      "category": "Greška pri dodavanju kategorije",
+      "source": "Greška pri dodavanju izvora plaćanja",
+      "card": "Greška pri dodavanju kartice",
+      "group": "Greška pri kreiranju grupe",
+      "installmentPlan": "Greška pri kreiranju plana rata",
+      "recurring": "Greška pri dodavanju ponavljajuće transakcije",
+      "expense": "Greška pri dodavanju transakcije"
+    },
+    "update": {
+      "category": "Greška pri ažuriranju kategorije",
+      "source": "Greška pri ažuriranju izvora plaćanja",
+      "card": "Greška pri ažuriranju kartice",
+      "installment": "Greška pri ažuriranju rate",
+      "reorder": "Greška pri preslagivanju"
+    },
+    "delete": {
+      "generic": "Greška pri brisanju",
+      "category": "Greška pri brisanju kategorije",
+      "source": "Greška pri brisanju izvora plaćanja",
+      "card": "Greška pri brisanju kartice",
+      "installmentPlan": "Greška pri brisanju plana rata"
+    },
+    "auth": {
+      "wrongCredentials": "Pogrešan email ili lozinka",
+      "emailNotConfirmed": "Email adresa nije potvrđena",
+      "userExists": "Korisnik s ovim emailom već postoji",
+      "googleSignInFailed": "Prijava preko Googlea nije uspjela",
+      "appleSignInFailed": "Prijava preko Applea nije uspjela",
+      "passwordChangeFailed": "Greška pri promjeni lozinke",
+      "emailSendFailed": "Greška pri slanju emaila"
+    },
+    "family": {
+      "accountAlreadyAdded": "Račun je već dodan u grupu",
+      "budgetAlreadyAdded": "Budžet je već dodan u grupu",
+      "projectAlreadyAdded": "Projekt je već dodan u grupu",
+      "goalAlreadyAdded": "Cilj štednje je već dodan u grupu"
+    },
+    "limits": {
+      "paymentSources": "Dosegnuli ste limit izvora plaćanja. Nadogradite na Pro za neograničene izvore."
+    },
+    "receipt": {
+      "cloudRequired": "AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.",
+      "rateLimit": "Previše zahtjeva. Pokušaj ponovno za minutu.",
+      "noCredits": "Nedostaje kredita za AI obradu.",
+      "scanCancelled": "Skeniranje je prekinuto. Pokušaj ponovno.",
+      "scanFailed": "Greška pri skeniranju računa"
+    },
+    "pdf": {
+      "loginRequired": "Moraš biti prijavljen za analizu izvoda",
+      "rateLimit": "Previše zahtjeva. Pokušaj ponovno za minutu.",
+      "noCredits": "Nedostaje kredita za AI obradu.",
+      "parseFailed": "Greška pri analizi izvoda"
+    },
+    "update": {
+      "webCheckFailed": "Provjera web verzije nije uspjela. Nijedan server nije odgovorio.",
+      "platformUnsupported": "Provjera ažuriranja nije dostupna na ovoj platformi."
+    },
+    "files": {
+      "saveFailed": "Greška pri spremanju datoteke",
+      "shareFailed": "Dijeljenje nije uspjelo",
+      "uploadFailed": "Greška pri uploadu",
+      "apkInvalid": "Datoteka mora biti .apk",
+      "apkTooLarge": "Datoteka prevelika (max {{size}}MB)"
+    },
+    "reports": {
+      "pdfFailed": "Greška pri generiranju PDF-a",
+      "csvFailed": "Greška pri generiranju CSV-a",
+      "jsonFailed": "Greška pri generiranju JSON-a"
+    },
+    "transactions": {
+      "approveFailed": "Greška pri odobravanju transakcije",
+      "rejectFailed": "Greška pri odbijanju transakcije",
+      "noItemsForAnalysis": "Nema transakcija s artiklima za analizu",
+      "noSuggestionsSelected": "Nema odabranih prijedloga"
+    },
+    "project": {
+      "uploadDoc": "Greška pri uploadu dokumenta",
+      "deleteDoc": "Greška pri brisanju dokumenta",
+      "estimateConvert": "Greška pri konverziji procjene"
+    },
+    "milestone": {
+      "addFailed": "Greška kod dodavanja"
+    },
+    "businessMode": {
+      "missingFields": "Obavezna polja za poslovni mod: {{fields}}. Uredi podatke prije spremanja."
+    },
+    "level": {
+      "setFailed": "Greška pri postavljanju razine"
+    },
+    "pin": {
+      "setupFailed": "Postavljanje PIN-a nije uspjelo: {{reason}}"
+    },
+    "checkout": {
+      "startFailed": "Greška pri pokretanju naplate"
+    },
+    "camera": {
+      "failed": "Kamera: {{reason}}"
+    },
+    "bug": {
+      "loginRequired": "Morate biti prijavljeni za prijavu problema"
+    }
   },
   "onboarding": {
     "welcomeTitle": "Dobrodošli!",
