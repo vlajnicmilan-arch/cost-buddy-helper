@@ -88,7 +88,11 @@ const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('stats');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window === 'undefined') return 'stats';
+    const t = new URLSearchParams(window.location.search).get('tab');
+    return t || 'stats';
+  });
   const tabsListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
