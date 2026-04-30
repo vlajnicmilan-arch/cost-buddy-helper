@@ -125,7 +125,7 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
         payload.console_tail = diagnostics.console_tail;
       }
 
-      const { error } = await supabase.from('feedback_submissions').insert(payload);
+      const { error } = await supabase.from('feedback_submissions').insert(payload as any);
       if (error) throw error;
 
       setSubmitted(true);
