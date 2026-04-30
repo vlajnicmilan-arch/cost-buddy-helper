@@ -1157,7 +1157,7 @@
       "noCredits": "Not enough credits for AI processing.",
       "parseFailed": "Failed to analyse statement"
     },
-    "update": {
+    "appUpdate": {
       "webCheckFailed": "Web version check failed. No server responded.",
       "platformUnsupported": "Update check is not available on this platform."
     },

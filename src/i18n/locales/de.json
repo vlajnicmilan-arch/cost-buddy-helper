@@ -903,7 +903,7 @@
       "noCredits": "Nicht genügend Credits für KI-Verarbeitung.",
       "parseFailed": "Auszug konnte nicht analysiert werden"
     },
-    "update": {
+    "appUpdate": {
       "webCheckFailed": "Webversion-Prüfung fehlgeschlagen. Kein Server hat geantwortet.",
       "platformUnsupported": "Update-Prüfung ist auf dieser Plattform nicht verfügbar."
     },

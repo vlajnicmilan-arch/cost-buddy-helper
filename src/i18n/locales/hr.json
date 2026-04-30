@@ -1164,7 +1164,7 @@
       "noCredits": "Nedostaje kredita za AI obradu.",
       "parseFailed": "Greška pri analizi izvoda"
     },
-    "update": {
+    "appUpdate": {
       "webCheckFailed": "Provjera web verzije nije uspjela. Nijedan server nije odgovorio.",
       "platformUnsupported": "Provjera ažuriranja nije dostupna na ovoj platformi."
     },
