@@ -80,7 +80,7 @@ const Paywall: React.FC = () => {
         if (data && typeof data.remaining === 'number') {
           setLifetimeAvail({
             remaining: data.remaining,
-            total: data.total ?? LIFETIME_CONFIG.maxFoundingMembers,
+            total: data.max ?? data.total ?? LIFETIME_CONFIG.maxFoundingMembers,
             sold: data.sold ?? 0,
           });
         }
