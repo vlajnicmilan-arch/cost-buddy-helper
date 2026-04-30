@@ -90,7 +90,7 @@ export const useRecurringTransactions = () => {
 
     if (error) {
       console.error('Error adding recurring transaction:', error);
-      showError(`Greška pri dodavanju: ${error.message}`);
+      showError(t('errors.create.recurring', 'Greška pri dodavanju ponavljajuće transakcije'));
       throw error;
     }
     showSuccess('Ponavljajuća transakcija dodana');
