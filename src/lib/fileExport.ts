@@ -125,7 +125,7 @@ async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode):
     return shareFromCache(base64Data, fileName);
   } catch (e: any) {
     console.error('Native file export error:', e);
-    showError(tx('fileExport.saveError', 'Greška pri spremanju datoteke'));
+    showError(tx('errors.files.saveFailed', 'Greška pri spremanju datoteke'));
     return false;
   }
 }
@@ -152,7 +152,7 @@ async function shareFromCache(base64Data: string, fileName: string): Promise<boo
       return true;
     }
     console.error('Share error:', e);
-    showError(tx('fileExport.shareError', 'Dijeljenje nije uspjelo'));
+    showError(tx('errors.files.shareFailed', 'Dijeljenje nije uspjelo'));
     return false;
   }
 }
