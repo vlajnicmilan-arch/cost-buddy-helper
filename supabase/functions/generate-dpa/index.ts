@@ -1,4 +1,5 @@
-import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+import { PDFDocument, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+import fontkit from 'https://esm.sh/@pdf-lib/fontkit@1.1.1';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
@@ -15,17 +16,38 @@ interface DpaInput {
 }
 
 const PROCESSOR = {
-  name: 'V&M Balance',
   legal: 'V&M Balance (operator aplikacije)',
   email: 'legal@vmbalance.app',
-  region: 'Europska unija (EU regija — Supabase / Lovable Cloud)',
+  region: 'Europska unija (EU regija — Lovable Cloud / Supabase)',
 };
 
-const SUB_PROCESSORS = [
-  { name: 'Lovable Cloud (Supabase)', purpose: 'pohrana baze i autentifikacija', region: 'EU' },
-  { name: 'Stripe', purpose: 'obrada plaćanja pretplate', region: 'EU/Global' },
-  { name: 'Resend', purpose: 'slanje transakcijskih emailova', region: 'EU' },
-  { name: 'Google FCM', purpose: 'isporuka push notifikacija', region: 'Global' },
+interface SubProc {
+  name: string;
+  purpose: { hr: string; en: string; de: string };
+  region: string;
+}
+
+const SUB_PROCESSORS: SubProc[] = [
+  {
+    name: 'Lovable Cloud (Supabase)',
+    purpose: { hr: 'pohrana baze i autentifikacija', en: 'database storage and authentication', de: 'Datenbankspeicherung und Authentifizierung' },
+    region: 'EU',
+  },
+  {
+    name: 'Stripe',
+    purpose: { hr: 'obrada plaćanja pretplate', en: 'subscription payment processing', de: 'Zahlungsabwicklung für Abonnements' },
+    region: 'EU/Global',
+  },
+  {
+    name: 'Resend',
+    purpose: { hr: 'slanje transakcijskih emailova', en: 'transactional email delivery', de: 'Versand transaktionaler E-Mails' },
+    region: 'EU',
+  },
+  {
+    name: 'Google FCM',
+    purpose: { hr: 'isporuka push notifikacija', en: 'push notification delivery', de: 'Zustellung von Push-Benachrichtigungen' },
+    region: 'Global',
+  },
 ];
 
 interface I18n {
@@ -42,7 +64,6 @@ interface I18n {
   dataSubjects: string;
   dataSubjectsBody: string;
   subProcessors: string;
-  subProcessorsBody: string;
   security: string;
   securityBody: string;
   rights: string;
@@ -56,6 +77,7 @@ interface I18n {
   processorSig: string;
   date: string;
   generated: string;
+  footer: string;
 }
 
 const I18N: Record<string, I18n> = {
@@ -77,10 +99,9 @@ const I18N: Record<string, I18n> = {
     dataSubjectsBody:
       'Zaposlenici, vanjski suradnici i podizvođači Voditelja obrade čije podatke Voditelj unosi u aplikaciju u kontekstu vlastitih projekata.',
     subProcessors: '6. PODIZVOĐAČI (SUB-PROCESSORS)',
-    subProcessorsBody: '',
     security: '7. SIGURNOSNE MJERE',
     securityBody:
-      '- Šifriranje u tranzitu (TLS 1.2+)\n- Šifriranje u mirovanju (managed by infrastructure provider)\n- Row-Level Security (RLS) na svim tablicama\n- Sustav uloga (RBAC)\n- Opcionalna 2FA / PIN zaštita\n- Redoviti security scanovi\n- GDPR proces brisanja računa (30-dnevni grace period)',
+      '- Šifriranje u tranzitu (TLS 1.2+)\n- Šifriranje u mirovanju\n- Row-Level Security (RLS) na svim tablicama\n- Sustav uloga (RBAC)\n- Opcionalna 2FA / PIN zaštita\n- Redoviti security scanovi\n- GDPR proces brisanja računa (30-dnevni grace period)',
     rights: '8. PRAVA ISPITANIKA',
     rightsBody:
       'Voditelj obrade je odgovoran odgovoriti na zahtjeve ispitanika (pristup, ispravak, brisanje, prenosivost, prigovor). Obrađivač pruža tehničke alate (export podataka, brisanje računa) koji omogućuju ispunjavanje tih zahtjeva.',
@@ -95,6 +116,7 @@ const I18N: Record<string, I18n> = {
     processorSig: 'Za Obrađivača',
     date: 'Datum:',
     generated: 'Generirano:',
+    footer: 'Generirano kroz V&M Balance — interna evidencija. Nije službeni knjigovodstveni dokument.',
   },
   en: {
     title: 'DATA PROCESSING AGREEMENT (DPA)',
@@ -114,10 +136,9 @@ const I18N: Record<string, I18n> = {
     dataSubjectsBody:
       'Employees, external collaborators, and subcontractors of the Controller whose data the Controller enters into the application in the context of its own projects.',
     subProcessors: '6. SUB-PROCESSORS',
-    subProcessorsBody: '',
     security: '7. SECURITY MEASURES',
     securityBody:
-      '- Encryption in transit (TLS 1.2+)\n- Encryption at rest (managed by infrastructure provider)\n- Row-Level Security (RLS) on all tables\n- Role-Based Access Control (RBAC)\n- Optional 2FA / PIN protection\n- Regular security scans\n- GDPR account deletion (30-day grace period)',
+      '- Encryption in transit (TLS 1.2+)\n- Encryption at rest\n- Row-Level Security (RLS) on all tables\n- Role-Based Access Control (RBAC)\n- Optional 2FA / PIN protection\n- Regular security scans\n- GDPR account deletion (30-day grace period)',
     rights: '8. DATA SUBJECT RIGHTS',
     rightsBody:
       'The Controller is responsible for responding to data subject requests (access, rectification, erasure, portability, objection). The Processor provides technical tools (data export, account deletion) enabling fulfilment of those requests.',
@@ -132,6 +153,7 @@ const I18N: Record<string, I18n> = {
     processorSig: 'For the Processor',
     date: 'Date:',
     generated: 'Generated:',
+    footer: 'Generated via V&M Balance — internal record. Not an official accounting document.',
   },
   de: {
     title: 'AUFTRAGSVERARBEITUNGSVERTRAG (AVV / DPA)',
@@ -151,7 +173,6 @@ const I18N: Record<string, I18n> = {
     dataSubjectsBody:
       'Mitarbeiter, externe Mitarbeiter und Subunternehmer des Verantwortlichen, deren Daten der Verantwortliche im Kontext eigener Projekte in die Anwendung einträgt.',
     subProcessors: '6. UNTERAUFTRAGSVERARBEITER',
-    subProcessorsBody: '',
     security: '7. SICHERHEITSMASSNAHMEN',
     securityBody:
       '- Verschlüsselung in der Übertragung (TLS 1.2+)\n- Verschlüsselung im Ruhezustand\n- Row-Level Security (RLS) auf allen Tabellen\n- Rollenbasierte Zugriffskontrolle (RBAC)\n- Optionale 2FA / PIN\n- Regelmäßige Sicherheitsscans\n- DSGVO-Kontolöschung (30-Tage-Frist)',
@@ -169,74 +190,105 @@ const I18N: Record<string, I18n> = {
     processorSig: 'Für den Auftragsverarbeiter',
     date: 'Datum:',
     generated: 'Erstellt am:',
+    footer: 'Erstellt mit V&M Balance — interne Aufzeichnung. Kein offizielles Buchhaltungsdokument.',
   },
 };
 
-// ASCII-only helper because StandardFonts.Helvetica doesn't support ć/š/ž etc.
-// We strip diacritics so PDF renders cleanly without embedding custom fonts.
-const toAscii = (s: string): string =>
-  s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .replace(/ł/g, 'l')
-    .replace(/Ł/g, 'L');
+// EU/ISO date: DD.MM.YYYY
+const formatDate = (d: Date) => {
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}.${mm}.${d.getFullYear()}`;
+};
+
+// Fetch a Unicode TTF font that supports Latin Extended (č,ć,š,ž,đ,ä,ö,ü…)
+async function fetchFont(url: string): Promise<Uint8Array> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`font fetch failed: ${r.status}`);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
+const FONT_URLS = {
+  reg: [
+    'https://github.com/notofonts/notofonts.github.io/raw/main/fonts/NotoSans/hinted/ttf/NotoSans-Regular.ttf',
+    'https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSans/hinted/ttf/NotoSans-Regular.ttf',
+  ],
+  bold: [
+    'https://github.com/notofonts/notofonts.github.io/raw/main/fonts/NotoSans/hinted/ttf/NotoSans-Bold.ttf',
+    'https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSans/hinted/ttf/NotoSans-Bold.ttf',
+  ],
+};
+
+// In-memory cache so we don't refetch on every invocation of the same isolate.
+let CACHED_FONTS: { reg: Uint8Array; bold: Uint8Array } | null = null;
+
+async function tryFetch(urls: string[]): Promise<Uint8Array> {
+  let lastErr: unknown;
+  for (const u of urls) {
+    try { return await fetchFont(u); } catch (e) { lastErr = e; console.warn('[font] failed', u, e); }
+  }
+  throw lastErr ?? new Error('no font url worked');
+}
+
+async function loadFonts() {
+  if (CACHED_FONTS) return CACHED_FONTS;
+  const [reg, bold] = await Promise.all([tryFetch(FONT_URLS.reg), tryFetch(FONT_URLS.bold)]);
+  CACHED_FONTS = { reg, bold };
+  return CACHED_FONTS;
+}
 
 async function buildDpaPdf(input: DpaInput): Promise<Uint8Array> {
   const lang = (input.language || 'hr') as keyof typeof I18N;
   const t = I18N[lang] || I18N.hr;
 
   const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  pdf.registerFontkit(fontkit);
+  const fonts = await loadFonts();
+  const font = await pdf.embedFont(fonts.reg, { subset: true });
+  const fontBold = await pdf.embedFont(fonts.bold, { subset: true });
 
   const margin = 50;
   const pageWidth = 595;
   const pageHeight = 842;
   const contentWidth = pageWidth - 2 * margin;
+  const footerReserve = 40;
+  const pages: { page: any }[] = [];
   let page = pdf.addPage([pageWidth, pageHeight]);
+  pages.push({ page });
   let y = pageHeight - margin;
+
+  const newPage = () => {
+    page = pdf.addPage([pageWidth, pageHeight]);
+    pages.push({ page });
+    y = pageHeight - margin;
+  };
 
   const writeLine = (text: string, opts: { bold?: boolean; size?: number; color?: [number, number, number] } = {}) => {
     const size = opts.size ?? 10;
     const f = opts.bold ? fontBold : font;
     const lineHeight = size + 4;
-    if (y - lineHeight < margin + 30) {
-      page = pdf.addPage([pageWidth, pageHeight]);
-      y = pageHeight - margin;
-    }
-    const safe = toAscii(text);
-    // Word-wrap
-    const words = safe.split(' ');
+    if (y - lineHeight < margin + footerReserve) newPage();
+
+    const words = text.split(' ');
     let line = '';
     for (const word of words) {
       const test = line ? line + ' ' + word : word;
       const w = f.widthOfTextAtSize(test, size);
       if (w > contentWidth && line) {
         page.drawText(line, {
-          x: margin,
-          y,
-          size,
-          font: f,
+          x: margin, y, size, font: f,
           color: rgb(opts.color?.[0] ?? 0, opts.color?.[1] ?? 0, opts.color?.[2] ?? 0),
         });
         y -= lineHeight;
         line = word;
-        if (y - lineHeight < margin + 30) {
-          page = pdf.addPage([pageWidth, pageHeight]);
-          y = pageHeight - margin;
-        }
+        if (y - lineHeight < margin + footerReserve) newPage();
       } else {
         line = test;
       }
     }
     if (line) {
       page.drawText(line, {
-        x: margin,
-        y,
-        size,
-        font: f,
+        x: margin, y, size, font: f,
         color: rgb(opts.color?.[0] ?? 0, opts.color?.[1] ?? 0, opts.color?.[2] ?? 0),
       });
       y -= lineHeight;
@@ -244,10 +296,7 @@ async function buildDpaPdf(input: DpaInput): Promise<Uint8Array> {
   };
 
   const writeMultiline = (text: string, opts: { size?: number } = {}) => {
-    const lines = text.split('\n');
-    for (const ln of lines) {
-      writeLine(ln, opts);
-    }
+    for (const ln of text.split('\n')) writeLine(ln, opts);
   };
 
   const writeSection = (title: string, body: string) => {
@@ -260,7 +309,7 @@ async function buildDpaPdf(input: DpaInput): Promise<Uint8Array> {
   // Title
   writeLine(t.title, { bold: true, size: 14 });
   y -= 6;
-  writeLine(`${t.generated} ${new Date().toLocaleDateString(lang)}`, { size: 9, color: [0.4, 0.4, 0.4] });
+  writeLine(`${t.generated} ${formatDate(new Date())}`, { size: 9, color: [0.4, 0.4, 0.4] });
   y -= 6;
 
   // Parties
@@ -282,12 +331,12 @@ async function buildDpaPdf(input: DpaInput): Promise<Uint8Array> {
   writeSection(t.dataTypes, t.dataTypesBody);
   writeSection(t.dataSubjects, t.dataSubjectsBody);
 
-  // Sub-processors as list
+  // Sub-processors (localized)
   y -= 8;
   writeLine(t.subProcessors, { bold: true, size: 11 });
   y -= 2;
   for (const sp of SUB_PROCESSORS) {
-    writeLine(`- ${sp.name} — ${sp.purpose} (${sp.region})`);
+    writeLine(`- ${sp.name} — ${sp.purpose[lang]} (${sp.region})`);
   }
 
   writeSection(t.security, t.securityBody);
@@ -297,38 +346,45 @@ async function buildDpaPdf(input: DpaInput): Promise<Uint8Array> {
 
   // Signatures
   y -= 20;
-  if (y < margin + 80) {
-    page = pdf.addPage([pageWidth, pageHeight]);
-    y = pageHeight - margin;
-  }
+  if (y < margin + footerReserve + 80) newPage();
   writeLine(t.signatures, { bold: true, size: 11 });
   y -= 30;
-  // Two signature blocks side by side
   const sigY = y;
-  page.drawLine({
-    start: { x: margin, y: sigY },
-    end: { x: margin + 200, y: sigY },
-    thickness: 0.5,
-    color: rgb(0, 0, 0),
+  page.drawLine({ start: { x: margin, y: sigY }, end: { x: margin + 200, y: sigY }, thickness: 0.5, color: rgb(0, 0, 0) });
+  page.drawLine({ start: { x: margin + 280, y: sigY }, end: { x: margin + 480, y: sigY }, thickness: 0.5, color: rgb(0, 0, 0) });
+  page.drawText(t.controllerSig, { x: margin, y: sigY - 12, size: 9, font });
+  page.drawText(t.processorSig, { x: margin + 280, y: sigY - 12, size: 9, font });
+  page.drawText(`${t.date} ____________`, { x: margin, y: sigY - 30, size: 9, font });
+  page.drawText(`${t.date} ____________`, { x: margin + 280, y: sigY - 30, size: 9, font });
+
+  // Footer disclaimer on every page
+  const total = pages.length;
+  pages.forEach((p, idx) => {
+    const text = t.footer;
+    const size = 8;
+    const w = font.widthOfTextAtSize(text, size);
+    p.page.drawText(text, {
+      x: (pageWidth - w) / 2,
+      y: 25,
+      size,
+      font,
+      color: rgb(0.45, 0.45, 0.45),
+    });
+    const pageLabel = `${idx + 1} / ${total}`;
+    p.page.drawText(pageLabel, {
+      x: pageWidth - margin - font.widthOfTextAtSize(pageLabel, 8),
+      y: 25,
+      size: 8,
+      font,
+      color: rgb(0.45, 0.45, 0.45),
+    });
   });
-  page.drawLine({
-    start: { x: margin + 280, y: sigY },
-    end: { x: margin + 480, y: sigY },
-    thickness: 0.5,
-    color: rgb(0, 0, 0),
-  });
-  page.drawText(toAscii(t.controllerSig), { x: margin, y: sigY - 12, size: 9, font });
-  page.drawText(toAscii(t.processorSig), { x: margin + 280, y: sigY - 12, size: 9, font });
-  page.drawText(toAscii(`${t.date} ____________`), { x: margin, y: sigY - 30, size: 9, font });
-  page.drawText(toAscii(`${t.date} ____________`), { x: margin + 280, y: sigY - 30, size: 9, font });
 
   return await pdf.save();
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -363,7 +419,6 @@ Deno.serve(async (req) => {
 
     const pdfBytes = await buildDpaPdf(body);
 
-    // Audit log (non-blocking)
     try {
       await supabase.from('dpa_requests').insert({
         user_id: userData.user.id,
@@ -378,12 +433,18 @@ Deno.serve(async (req) => {
       console.warn('[generate-dpa] audit insert failed', e);
     }
 
-    // Return base64 so client can trigger download
-    const base64 = btoa(String.fromCharCode(...pdfBytes));
-    return new Response(JSON.stringify({ pdf: base64, filename: `DPA-${body.companyName.replace(/\s+/g, '_')}.pdf` }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    // Chunked base64 to avoid call-stack overflow on large PDFs
+    let binary = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < pdfBytes.length; i += chunk) {
+      binary += String.fromCharCode(...pdfBytes.subarray(i, i + chunk));
+    }
+    const base64 = btoa(binary);
+
+    return new Response(
+      JSON.stringify({ pdf: base64, filename: `DPA-${body.companyName.replace(/\s+/g, '_')}.pdf` }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (e) {
     console.error('[generate-dpa] error', e);
     return new Response(JSON.stringify({ error: String(e?.message || e) }), {
