@@ -746,8 +746,10 @@ const Admin = () => {
               )}
             </div>
 
+            <SubscriptionMigrationPanel />
+
             <p className="text-xs text-muted-foreground text-center">
-              Stripe integracija još nije aktivna. Razine se trenutno dodjeljuju ručno.
+              Stripe migracija: prvo Dry Run, zatim live. Postojeći trialovi se ne diraju.
             </p>
           </TabsContent>
 
