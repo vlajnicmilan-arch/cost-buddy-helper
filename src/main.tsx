@@ -87,11 +87,14 @@ try {
       console.log('[Boot] Splash screen hidden');
       logDiagnostic('splash_hide_success');
     } else {
+      const { logDiagnostic } = await import('./lib/diagnosticLogger');
       logDiagnostic('splash_skip_not_native');
     }
   } catch (e) {
     console.warn('[Boot] SplashScreen.hide failed (non-fatal):', e);
-    logDiagnostic('splash_hide_error', { message: (e as Error)?.message });
+    import('./lib/diagnosticLogger')
+      .then(({ logDiagnostic }) => logDiagnostic('splash_hide_error', { message: (e as Error)?.message }))
+      .catch(() => {});
   }
 })();
 
