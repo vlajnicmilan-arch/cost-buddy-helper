@@ -82,6 +82,20 @@ export const initSentry = (): void => {
       return;
     }
 
+    // GDPR / ePrivacy: Sentry is "analytics" category — requires explicit opt-in.
+    // We dynamically import here to avoid a circular dep at module load time.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { hasConsent } = require('@/lib/consentManager') as typeof import('@/lib/consentManager');
+      if (!hasConsent('analytics')) {
+        console.log('[Sentry] Skipped init — no analytics consent');
+        return;
+      }
+    } catch {
+      // If consent module is unavailable, fail closed (don't init).
+      return;
+    }
+
     Sentry.init({
       dsn: DSN,
       environment,
