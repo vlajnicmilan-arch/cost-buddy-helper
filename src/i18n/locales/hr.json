@@ -110,7 +110,11 @@
     "deleted": "Projekt obrisan",
     "deleteConfirmTitle": "Obriši projekt?",
     "deleteConfirmMessage": "Ova radnja će trajno obrisati projekt, sve faze i financiranje. Transakcije neće biti obrisane.",
-    "kanban": { "list": "Lista", "board": "Ploča", "empty": "Nema faza" },
+    "kanban": {
+      "list": "Lista",
+      "board": "Ploča",
+      "empty": "Nema faza"
+    },
     "contingency": {
       "add": "Dodaj rezervu za nepredviđeno (10%)",
       "help": "Posebna faza koja čuva 10% budžeta za nepredviđene troškove. Preporučeno.",
@@ -135,8 +139,17 @@
       "historyTitle": "Povijest promjena budžeta",
       "viewHistory": "Povijest promjena budžeta",
       "empty": "Nema zabilježenih promjena.",
-      "types": { "overrun": "Premašaj", "saving": "Ušteda", "scope_change": "Promjena opsega", "correction": "Korekcija" },
-      "coverageShort": { "increase_total": "Povećan ukupni budžet", "transfer": "Prijenos", "contingency": "Iz rezerve" },
+      "types": {
+        "overrun": "Premašaj",
+        "saving": "Ušteda",
+        "scope_change": "Promjena opsega",
+        "correction": "Korekcija"
+      },
+      "coverageShort": {
+        "increase_total": "Povećan ukupni budžet",
+        "transfer": "Prijenos",
+        "contingency": "Iz rezerve"
+      },
       "reserveTooltip": "Preostala rezerva za nepredviđeno",
       "trendOverrun": "Premašaj u zadnjih 30 dana",
       "trendSaving": "Ušteda u zadnjih 30 dana",
@@ -233,8 +246,13 @@
       "saved": "Račun spremljen u projekt"
     },
     "documents": {
-      "tabDocuments": "Dokumenti",
-      "tabPhotos": "Foto dnevnik",
+      "tab": "Dokumenti",
+      "upload": "Učitaj dokument",
+      "local": "Lokalno",
+      "cloud": "Oblak",
+      "analyze": "AI analiza",
+      "noDocuments": "Nema dokumenata",
+      "noDocumentsHint": "Učitaj račune, ugovore ili slike za projekt",
       "takePhoto": "Slikaj",
       "gallery": "Galerija",
       "file": "Datoteka",
@@ -242,22 +260,8 @@
       "modeLocal": "Lokalno",
       "modeCloud": "Oblak",
       "modeHint": "Lokalno = samo na ovom uređaju · Oblak = dijeljeno sa svim članovima",
-      "uploading": "Učitavanje...",
-      "noDocuments": "Nema dokumenata",
-      "noDocumentsHint": "Dodajte račune, ugovore, slike ili druge datoteke.",
-      "noPhotos": "Nema fotografija napretka",
-      "noPhotosHint": "Slikajte stanje radova kako bi vodili kronološki dnevnik.",
-      "captureProgress": "Slikaj napredak",
-      "fromGallery": "Iz galerije",
-      "photosHint": "Fotografije se spremaju lokalno s GPS lokacijom i datumom snimanja.",
-      "kindReceipt": "Račun",
-      "aiAnalysis": "AI Analiza",
-      "analyze": "AI analiza",
-      "analyzed": "Analiza spremljena",
-      "analyzeFailed": "Analiza nije uspjela",
-      "notReadable": "Dokument nije čitljiv",
-      "cameraError": "Greška kamere",
-      "galleryError": "Greška galerije"
+      "cameraError": "Greška pri korištenju kamere",
+      "galleryError": "Greška pri odabiru slike"
     },
     "budgetOverview": "Pregled budžeta",
     "addExpense": "Dodaj trošak",
@@ -295,24 +299,6 @@
       "team": "Drugi korisnici aplikacije s pristupom projektu",
       "workers": "Tvoji zaposlenici (vodiš ih ti, plaćaš ih, evidencija sati)",
       "collaborators": "Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)"
-    },
-    "documents": {
-      "tab": "Dokumenti",
-      "upload": "Učitaj dokument",
-      "local": "Lokalno",
-      "cloud": "Oblak",
-      "analyze": "AI analiza",
-      "noDocuments": "Nema dokumenata",
-      "noDocumentsHint": "Učitaj račune, ugovore ili slike za projekt",
-      "takePhoto": "Slikaj",
-      "gallery": "Galerija",
-      "file": "Datoteka",
-      "saveTo": "Spremi u",
-      "modeLocal": "Lokalno",
-      "modeCloud": "Oblak",
-      "modeHint": "Lokalno = samo na ovom uređaju · Oblak = dijeljeno sa svim članovima",
-      "cameraError": "Greška pri korištenju kamere",
-      "galleryError": "Greška pri odabiru slike"
     },
     "templates": {
       "startFrom": "Započni iz šablone (opcionalno)",
@@ -470,7 +456,9 @@
     "confirmReset": "Resetiraj",
     "resetting": "Resetiram...",
     "resetComplete": "Podaci uspješno resetirani",
-    "version": "Verzija"
+    "version": "Verzija",
+    "contactSupport": "Kontakt podrška",
+    "contactSupportDesc": "Odgovor unutar 24h • support@vmbalance.com"
   },
   "transactions": {
     "title": "Transakcije",
@@ -1886,7 +1874,9 @@
     "mobileInstallStep1": "Možete instalirati aplikaciju kao mobilnu aplikaciju",
     "mobileInstallStep2": "Android: Izbornik (⋮) → \"Instaliraj aplikaciju\"",
     "mobileInstallStep3": "iPhone: Dijeli (⬆) → \"Dodaj na početni zaslon\"",
-    "mobileInstallStep4": "Posjetite /install stranicu za detaljne upute"
+    "mobileInstallStep4": "Posjetite /install stranicu za detaljne upute",
+    "contactSupport": "Niste pronašli odgovor?",
+    "contactSupportDesc": "Kontaktirajte nas direktno — odgovaramo unutar 24 sata."
   },
   "storage": {
     "changeMode": "Promijeni način pohrane",
@@ -2379,7 +2369,7 @@
       "legal": "Pravno",
       "privacy": "Pravila privatnosti",
       "account": "Račun",
-    "rights": "Sva prava pridržana."
+      "rights": "Sva prava pridržana."
     }
   },
   "timeClock": {
@@ -2623,5 +2613,37 @@
       "all": "Sve",
       "allPhases": "Sve faze"
     }
+  },
+  "support": {
+    "title": "Kontaktirajte podršku",
+    "subtitle": "Pitanja, prijedlozi ili problemi? Odgovaramo unutar 24 sata.",
+    "name": "Ime",
+    "namePlaceholder": "Vaše ime",
+    "email": "Email",
+    "category": "Kategorija",
+    "catQuestion": "Pitanje",
+    "catBug": "Prijava greške",
+    "catFeature": "Prijedlog značajke",
+    "catBilling": "Naplata / pretplata",
+    "catAccount": "Račun i podaci",
+    "catOther": "Ostalo",
+    "subject": "Tema",
+    "subjectPlaceholder": "Kratko opišite o čemu se radi",
+    "message": "Poruka",
+    "messagePlaceholder": "Opišite svoje pitanje ili problem što detaljnije...",
+    "send": "Pošalji upit",
+    "sending": "Šaljem...",
+    "replyPromise": "Odgovaramo unutar 24 sata. Dobit ćete email potvrdu odmah.",
+    "submittedSuccess": "Upit poslan!",
+    "submitFailed": "Slanje nije uspjelo. Pokušajte direktan email na support@vmbalance.com.",
+    "errorMissingFields": "Molimo ispunite sva obavezna polja",
+    "errorInvalidEmail": "Neispravna email adresa",
+    "successTitle": "Hvala! Vaš upit je zaprimljen.",
+    "successBody": "Poslali smo vam potvrdu na email. Naš tim će vam odgovoriti unutar 24 sata.",
+    "responseTime": "Prosječno vrijeme odgovora: nekoliko sati",
+    "openFaq": "Otvori upute i FAQ",
+    "copyEmail": "Kopiraj email",
+    "copy": "Kopiraj",
+    "copied": "Kopirano"
   }
 }

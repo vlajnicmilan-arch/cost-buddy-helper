@@ -3698,6 +3698,66 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          app_version: string | null
+          auto_responder_sent: boolean
+          category: string | null
+          created_at: string
+          email: string
+          id: string
+          internal_notes: string | null
+          language: string | null
+          message: string
+          name: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          auto_responder_sent?: boolean
+          category?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          internal_notes?: string | null
+          language?: string | null
+          message: string
+          name?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          auto_responder_sent?: boolean
+          category?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          internal_notes?: string | null
+          language?: string | null
+          message?: string
+          name?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string

@@ -45,6 +45,7 @@ import { DataSection } from './DataSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
 import { HelpDialogContent } from './HelpDialogContent';
+import { ContactSupportDialog } from '@/components/support/ContactSupportDialog';
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
@@ -55,6 +56,21 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showSupportDialog, setShowSupportDialog] = useState(false);
+
+  // Open Help/FAQ when redirected from auto-responder email (?openHelp=1)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('openHelp') === '1') {
+      setShowHelpDialog(true);
+      params.delete('openHelp');
+      const newSearch = params.toString();
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
+
   const [showBugReport, setShowBugReport] = useState(false);
   const [autoUpdate, setAutoUpdate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -533,6 +549,22 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
 
+              <button
+                onClick={() => { setOpen(false); setShowSupportDialog(true); }}
+                className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Mail className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">{t('settings.contactSupport', 'Kontakt podrška')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.contactSupportDesc', 'Odgovor unutar 24h • support@vmbalance.com')}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+
               {!isLocalMode && user && (
                 <>
                   <button
@@ -808,6 +840,11 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
       <SetPinDialog open={showSetPin} onOpenChange={setShowSetPin} />
       <HelpDialogContent open={showHelpDialog} onOpenChange={setShowHelpDialog} />
+      <ContactSupportDialog
+        open={showSupportDialog}
+        onOpenChange={setShowSupportDialog}
+        onOpenHelp={() => setShowHelpDialog(true)}
+      />
       <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
       <BusinessProfileDialog open={showBusinessProfile} onOpenChange={setShowBusinessProfile} />
 

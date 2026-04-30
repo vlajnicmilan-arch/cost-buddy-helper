@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Mail, Clock, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { ContactSupportDialog } from '@/components/support/ContactSupportDialog';
 
 interface HelpDialogContentProps {
   open: boolean;
@@ -10,6 +12,7 @@ interface HelpDialogContentProps {
 
 export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps) => {
   const { t } = useTranslation();
+  const [showSupport, setShowSupport] = useState(false);
   
   const sections = [
     {
@@ -200,7 +203,37 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
             <p className="text-muted-foreground text-sm">
               {t('help.intro', 'V&M Balance je aplikacija za praćenje osobnih financija. Evo kako ju koristiti:')}
             </p>
-            
+
+            {/* Contact support card — top of FAQ */}
+            <button
+              type="button"
+              onClick={() => setShowSupport(true)}
+              className="w-full text-left bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/15 hover:to-primary/10 border border-primary/20 rounded-lg p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                  <Mail className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold text-sm">
+                      {t('help.contactSupport', 'Niste pronašli odgovor?')}
+                    </h3>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('help.contactSupportDesc', 'Kontaktirajte nas direktno — odgovaramo unutar 24 sata.')}
+                  </p>
+                  <div className="flex items-center gap-3 mt-2 text-xs">
+                    <span className="inline-flex items-center gap-1 text-primary font-medium">
+                      <Clock className="w-3 h-3" /> 24h
+                    </span>
+                    <span className="text-muted-foreground/80 truncate">support@vmbalance.com</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+
             {sections.map((section, index) => (
               <div 
                 key={index} 
@@ -232,6 +265,11 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
           </div>
         </ScrollArea>
       </DialogContent>
+
+      <ContactSupportDialog
+        open={showSupport}
+        onOpenChange={setShowSupport}
+      />
     </Dialog>
   );
 };
