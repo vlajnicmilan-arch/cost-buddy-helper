@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { APP_VERSION } from '@/lib/version';
 import { exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { exportAllUserDataAsZip } from '@/lib/dataExportZip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
