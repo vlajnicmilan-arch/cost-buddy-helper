@@ -70,11 +70,21 @@ export const RecurringMatchDialog = ({ open, onOpenChange, matches, onConfirm }:
             return (
               <div
                 key={match.recurring.id}
+                role="checkbox"
+                tabIndex={0}
+                aria-checked={isSelected}
+                aria-label={match.recurring.description}
                 className={cn(
-                  "p-3 rounded-xl border cursor-pointer transition-all",
+                  "p-3 rounded-xl border cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   isSelected ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
                 )}
                 onClick={() => toggleSelection(match.recurring.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleSelection(match.recurring.id);
+                  }
+                }}
               >
                 <div className="flex items-start gap-2.5">
                   <Checkbox
