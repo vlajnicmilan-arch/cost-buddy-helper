@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { CustomCategory } from '@/types/customCategory';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 
 export const useCustomCategories = () => {
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
