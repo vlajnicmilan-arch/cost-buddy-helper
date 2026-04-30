@@ -10,9 +10,14 @@ import {
   CreditCard,
   Loader2,
   TrendingDown,
+  FileDown,
 } from 'lucide-react';
 import { useFunnelEventsMetrics, type FunnelEventName } from '@/hooks/useFunnelEventsMetrics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { exportFile } from '@/lib/fileExport';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 const ICONS: Record<FunnelEventName, React.ReactNode> = {
   install: <Download className="w-3.5 h-3.5" />,
@@ -32,10 +37,98 @@ const COLORS: Record<FunnelEventName, string> = {
   paid_conversion: 'hsl(45 90% 50%)',
 };
 
+// Escape a value for CSV (RFC 4180): wrap in quotes, double internal quotes.
+const csvCell = (v: unknown): string => {
+  if (v === null || v === undefined) return '';
+  const s = typeof v === 'string' ? v : JSON.stringify(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+};
+
 export const PulseFunnelEvents = () => {
   const { t } = useTranslation();
   const [rangeDays, setRangeDays] = useState(30);
+  const [exporting, setExporting] = useState(false);
   const m = useFunnelEventsMetrics(rangeDays);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const since = new Date(Date.now() - rangeDays * 24 * 60 * 60 * 1000).toISOString();
+
+      // Paginate to bypass the 1000-row Supabase default cap.
+      const PAGE = 1000;
+      let from = 0;
+      const all: any[] = [];
+      // Hard safety cap to avoid runaway loops (200k rows).
+      const MAX_ROWS = 200_000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from('funnel_events')
+          .select('id, user_id, session_id, event_name, platform, metadata, occurred_at, created_at')
+          .gte('occurred_at', since)
+          .order('occurred_at', { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE || all.length >= MAX_ROWS) break;
+        from += PAGE;
+      }
+
+      if (all.length === 0) {
+        showError(t('admin.funnel.exportEmpty', 'Nema eventova za odabrani period.'));
+        return;
+      }
+
+      const headers = [
+        'id',
+        'user_id',
+        'session_id',
+        'event_name',
+        'platform',
+        'occurred_at',
+        'created_at',
+        'metadata',
+      ];
+      const lines = [headers.join(',')];
+      for (const r of all) {
+        lines.push([
+          csvCell(r.id),
+          csvCell(r.user_id),
+          csvCell(r.session_id),
+          csvCell(r.event_name),
+          csvCell(r.platform),
+          csvCell(r.occurred_at),
+          csvCell(r.created_at),
+          csvCell(r.metadata),
+        ].join(','));
+      }
+
+      // Prepend BOM so Excel detects UTF-8 correctly.
+      const csv = '\uFEFF' + lines.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const stamp = new Date().toISOString().slice(0, 10);
+      const fileName = `funnel_events_${rangeDays}d_${stamp}.csv`;
+
+      const ok = await exportFile(blob, fileName, 'save');
+      if (ok) {
+        showSuccess(
+          t('admin.funnel.exportSuccess', 'Izvezeno {{count}} eventova', { count: all.length })
+        );
+      }
+    } catch (e: any) {
+      console.error('[funnel export]', e);
+      showError(
+        t('admin.funnel.exportError', 'Greška pri izvozu: {{msg}}', {
+          msg: e?.message ?? String(e),
+        })
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const labels: Record<FunnelEventName, string> = {
     install: t('admin.funnel.install', 'Instalacija'),
@@ -71,6 +164,21 @@ export const PulseFunnelEvents = () => {
               <SelectItem value="90">{t('admin.funnel.range90d', '90 dana')}</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleExport}
+            disabled={exporting || m.loading}
+            className="h-7 text-xs gap-1"
+            title={t('admin.funnel.exportTooltip', 'Izvezi sirove eventove kao CSV')}
+          >
+            {exporting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <FileDown className="w-3 h-3" />
+            )}
+            CSV
+          </Button>
         </div>
       </div>
 
