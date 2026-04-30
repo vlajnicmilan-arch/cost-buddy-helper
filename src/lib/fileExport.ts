@@ -35,6 +35,7 @@ function getMimeType(fileName: string): string {
     case 'json': return 'application/json';
     case 'ics': return 'text/calendar';
     case 'html': return 'text/html';
+    case 'zip': return 'application/zip';
     default: return 'application/octet-stream';
   }
 }
