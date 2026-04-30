@@ -11,13 +11,32 @@
     <meta name="apple-mobile-web-app-title" content="V&M Balance" />
     <meta name="theme-color" content="#2db8a0" />
 
-    <!-- Preconnect to font origins -->
+    <!-- Preconnect to font origins (high priority handshake) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Load Inter with display=swap so text renders immediately with fallback,
-         then swaps when Inter loads. Eliminates FOIT and reduces CLS. Only the
-         300/400/500/700 weights actually used in the UI are requested. -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" />
+
+    <!-- Preload LCP hero image with responsive sources so the browser starts
+         downloading it BEFORE the JS bundle parses. This is the single biggest
+         LCP win on /. Mobile gets a 16KB variant, desktop the full 41KB. -->
+    <link
+      rel="preload"
+      as="image"
+      href="/hero-receipt-scan-mobile.webp"
+      imagesrcset="/hero-receipt-scan-mobile.webp 640w, /hero-receipt-scan.webp 1024w"
+      imagesizes="(max-width: 1023px) 100vw, 50vw"
+      fetchpriority="high"
+    />
+
+    <!-- Async (non-blocking) Inter load. We swap rel=preload->stylesheet on
+         load so the browser doesn't block first paint waiting for fonts.
+         display=swap ensures fallback text shows immediately. -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" /></noscript>
 
     <meta name="mobile-web-app-capable" content="yes" />
     <title>V&M Balance - Upravljaj svojim financijama</title>

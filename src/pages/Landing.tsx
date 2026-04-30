@@ -13,7 +13,7 @@ import { downloadApk } from '@/lib/downloadApk';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import logo from '@/assets/logo.webp';
-import heroImage from '@/assets/hero-receipt-scan.webp';
+// heroImage is now served from /public (preloaded in index.html for LCP).
 import cardsImage from '@/assets/cards-floating.webp';
 import mockupDashboard from '@/assets/app-mockup-dashboard.webp';
 import mockupBudget from '@/assets/app-mockup-budget.webp';
@@ -138,22 +138,19 @@ const HeroSection = () => {
             </span>
           </motion.div>
 
-          <motion.h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6"
-            initial="hidden" animate="visible" variants={fadeUp} custom={1}
-          >
+          {/* H1 renders immediately (no motion wrapper) so it qualifies as
+              the FCP element and ships in the first frame. Animations on
+              text were a measurable FCP regression. */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6">
             {t('landing.hero.title')}{' '}
             <span className="bg-gradient-to-r from-primary via-accent to-income bg-clip-text text-transparent">
               {t('landing.hero.titleHighlight')}
             </span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            className="text-lg text-muted-foreground max-w-lg mb-8"
-            initial="hidden" animate="visible" variants={fadeUp} custom={2}
-          >
+          <p className="text-lg text-muted-foreground max-w-lg mb-8">
             {t('landing.hero.subtitle')}
-          </motion.p>
+          </p>
 
           <motion.div
             className="flex flex-col sm:flex-row items-start gap-4"
@@ -191,7 +188,13 @@ const HeroSection = () => {
             whileHover={{ scale: 1.02, rotate: 1 }}
             transition={{ type: 'spring', stiffness: 300 }}
           >
-            <img src={heroImage} alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="1024" height="1024" fetchPriority="high" decoding="async" />
+            {/* Static /public path matches the <link rel=preload> in
+                index.html, so the browser reuses the already-downloaded
+                bytes for LCP instead of waiting for the JS bundle. */}
+            <picture>
+              <source media="(min-width: 1024px)" srcSet="/hero-receipt-scan.webp" type="image/webp" />
+              <img src="/hero-receipt-scan-mobile.webp" alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="1024" height="1024" fetchPriority="high" decoding="async" />
+            </picture>
 
             <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
           </motion.div>
@@ -207,17 +210,17 @@ const HeroSection = () => {
         </motion.div>
       </div>
 
-      {/* Mobile hero image */}
-      <motion.div
-        className="mt-10 lg:hidden flex justify-center"
-        initial={{ opacity: 0, scale: 0.8, y: 40 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.5, type: 'spring', stiffness: 150 }}
-      >
+      {/* Mobile hero image — no entrance animation so paint is immediate.
+          Uses the same /public asset preloaded in index.html, eliminating
+          a separate image fetch on the LCP-critical mobile viewport. */}
+      <div className="mt-10 lg:hidden flex justify-center">
         <div className="rounded-2xl overflow-hidden shadow-xl max-w-sm">
-          <img src={heroImage} alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="1024" height="1024" fetchPriority="high" decoding="async" />
+          <picture>
+            <source media="(min-width: 1024px)" srcSet="/hero-receipt-scan.webp" type="image/webp" />
+            <img src="/hero-receipt-scan-mobile.webp" alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="640" height="640" fetchPriority="high" decoding="async" />
+          </picture>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 };
