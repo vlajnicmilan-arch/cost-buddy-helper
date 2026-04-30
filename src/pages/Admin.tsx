@@ -2,79 +2,26 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Bug, Monitor, ArrowLeft, RefreshCw, User, Users, Mail, Clock, Smartphone, BarChart3, ShieldCheck, ShieldOff, Ban, UserCheck, Bell, Send, MessageSquareReply, CreditCard, Crown, Briefcase, Star, Activity, Package, BellRing, Heart } from 'lucide-react';
+import {
+  Loader2, Bug, ArrowLeft, Users, BarChart3, Bell, CreditCard,
+  MessageSquareReply, Activity, Package, BellRing, Heart,
+} from 'lucide-react';
 import { DiagnosticLogsTab } from '@/components/admin/DiagnosticLogsTab';
 import { APKManagerTab } from '@/components/admin/APKManagerTab';
 import { PushLogsTab } from '@/components/admin/PushLogsTab';
 import { PulseTab } from '@/components/admin/PulseTab';
 import { FeedbackInboxTab } from '@/components/admin/FeedbackInboxTab';
-import { SubscriptionMigrationPanel } from '@/components/admin/SubscriptionMigrationPanel';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { StatsTab } from '@/components/admin/StatsTab';
+import { UsersTab } from '@/components/admin/UsersTab';
+import { BillingTab } from '@/components/admin/BillingTab';
+import { ReportsTab } from '@/components/admin/ReportsTab';
+import { NotifyTab } from '@/components/admin/NotifyTab';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { format } from 'date-fns';
-import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { friendlyError } from '@/lib/errorMessages';
-
-interface BugReport {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  device_info: any;
-  status: string;
-  created_at: string;
-  user_display_name?: string;
-}
-
-interface AppUser {
-  id: string;
-  email: string;
-  display_name: string | null;
-  currency: string | null;
-  created_at: string;
-  last_sign_in_at: string | null;
-  confirmed_at: string | null;
-  banned_until: string | null;
-  roles: string[];
-  last_device_info: any;
-  last_login_at: string | null;
-  referral_count: number;
-  app_version: string | null;
-}
-
-interface Stats {
-  total_users: number;
-  active_users_7d: number;
-  active_users_30d: number;
-  total_expenses: number;
-  expenses_7d: number;
-  total_projects: number;
-  total_budgets: number;
-  total_savings: number;
-  open_bug_reports: number;
-  total_referrals: number;
-}
-
-const statusColors: Record<string, string> = {
-  open: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400',
-  in_progress: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
-  resolved: 'bg-green-500/15 text-green-700 dark:text-green-400',
-  closed: 'bg-muted text-muted-foreground',
-};
-
-const statusLabels: Record<string, string> = {
-  open: 'Otvoreno',
-  in_progress: 'U tijeku',
-  resolved: 'Riješeno',
-  closed: 'Zatvoreno',
-};
+import { type AppUser, type AdminStats, type BugReport, statusLabels } from '@/components/admin/types';
 
 const Admin = () => {
   const { t } = useTranslation();
@@ -82,7 +29,7 @@ const Admin = () => {
   const { user, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<BugReport[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -103,6 +50,7 @@ const Admin = () => {
       activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   }, [activeTab]);
+
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [notifTitle, setNotifTitle] = useState('');
   const [notifMessage, setNotifMessage] = useState('');
@@ -123,6 +71,7 @@ const Admin = () => {
       return;
     }
     checkAdminAndLoad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
   const checkAdminAndLoad = async () => {
@@ -239,7 +188,7 @@ const Admin = () => {
       );
       if (!response.ok) throw new Error('Failed to load users');
       const result = await response.json();
-      
+
       if (page === 1) {
         setUsers(result?.users || []);
       } else {
@@ -328,61 +277,6 @@ const Admin = () => {
     setSendingReply(null);
   };
 
-  const parseUserAgent = (ua: string) => {
-    if (!ua) return 'Nepoznat';
-    if (ua.includes('Android')) return 'Android';
-    if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
-    if (ua.includes('Windows')) return 'Windows';
-    if (ua.includes('Mac')) return 'macOS';
-    if (ua.includes('Linux')) return 'Linux';
-    return 'Ostalo';
-  };
-
-  const parseDetailedUA = (ua: string) => {
-    if (!ua) return { os: 'Nepoznat', browser: 'Nepoznat', device: 'Nepoznat' };
-    
-    let os = 'Nepoznat';
-    if (ua.includes('Android')) {
-      const match = ua.match(/Android\s([\d.]+)/);
-      os = match ? `Android ${match[1]}` : 'Android';
-    } else if (ua.includes('iPhone')) {
-      const match = ua.match(/iPhone OS ([\d_]+)/);
-      os = match ? `iOS ${match[1].replace(/_/g, '.')}` : 'iOS';
-    } else if (ua.includes('iPad')) {
-      os = 'iPadOS';
-    } else if (ua.includes('Windows NT 10')) {
-      os = 'Windows 10/11';
-    } else if (ua.includes('Windows')) {
-      os = 'Windows';
-    } else if (ua.includes('Mac OS X')) {
-      const match = ua.match(/Mac OS X ([\d_]+)/);
-      os = match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS';
-    } else if (ua.includes('Linux')) {
-      os = 'Linux';
-    }
-
-    let browser = 'Nepoznat';
-    if (ua.includes('Edg/')) {
-      const match = ua.match(/Edg\/([\d.]+)/);
-      browser = match ? `Edge ${match[1].split('.')[0]}` : 'Edge';
-    } else if (ua.includes('Chrome/') && !ua.includes('Edg/')) {
-      const match = ua.match(/Chrome\/([\d.]+)/);
-      browser = match ? `Chrome ${match[1].split('.')[0]}` : 'Chrome';
-    } else if (ua.includes('Firefox/')) {
-      const match = ua.match(/Firefox\/([\d.]+)/);
-      browser = match ? `Firefox ${match[1].split('.')[0]}` : 'Firefox';
-    } else if (ua.includes('Safari/') && !ua.includes('Chrome')) {
-      const match = ua.match(/Version\/([\d.]+)/);
-      browser = match ? `Safari ${match[1].split('.')[0]}` : 'Safari';
-    }
-
-    let device = 'Desktop';
-    if (ua.includes('Mobile') || ua.includes('Android')) device = 'Mobitel';
-    if (ua.includes('iPad') || ua.includes('Tablet')) device = 'Tablet';
-
-    return { os, browser, device };
-  };
-
   if (loading) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
@@ -402,18 +296,7 @@ const Admin = () => {
     );
   }
 
-  const StatCard = ({ label, value, sub }: { label: string; value: number | string; sub?: string }) => (
-    <div className="bg-card border rounded-xl p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-2xl font-bold">{value}</p>
-      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-    </div>
-  );
-
-  const isBanned = (u: AppUser) => {
-    if (!u.banned_until) return false;
-    return new Date(u.banned_until) > new Date();
-  };
+  const tabBtnClass = "flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight";
 
   return (
     <div className="min-h-dvh bg-background">
@@ -431,511 +314,121 @@ const Admin = () => {
               ref={tabsListRef}
               className="w-full h-auto flex items-stretch justify-start gap-1 overflow-x-auto overflow-y-hidden p-1 rounded-md [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
-              {/* Pregled */}
-              <TabsTrigger
-                value="pulse"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <Heart className="w-4 h-4 shrink-0" />
-                <span>Pulse</span>
+              <TabsTrigger value="pulse" className={tabBtnClass}>
+                <Heart className="w-4 h-4 shrink-0" /><span>Pulse</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="stats"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <BarChart3 className="w-4 h-4 shrink-0" />
-                <span>Statistika</span>
+              <TabsTrigger value="stats" className={tabBtnClass}>
+                <BarChart3 className="w-4 h-4 shrink-0" /><span>Statistika</span>
               </TabsTrigger>
 
               <div className="w-px self-stretch bg-border/60 mx-1 flex-shrink-0" aria-hidden="true" />
 
-              {/* Korisnici */}
-              <TabsTrigger
-                value="users"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <Users className="w-4 h-4 shrink-0" />
-                <span>Korisnici</span>
+              <TabsTrigger value="users" className={tabBtnClass}>
+                <Users className="w-4 h-4 shrink-0" /><span>Korisnici</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="billing"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <CreditCard className="w-4 h-4 shrink-0" />
-                <span>Pretplate</span>
+              <TabsTrigger value="billing" className={tabBtnClass}>
+                <CreditCard className="w-4 h-4 shrink-0" /><span>Pretplate</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="reports"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <Bug className="w-4 h-4 shrink-0" />
-                <span>Prijave</span>
+              <TabsTrigger value="reports" className={tabBtnClass}>
+                <Bug className="w-4 h-4 shrink-0" /><span>Prijave</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="feedback"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <MessageSquareReply className="w-4 h-4 shrink-0" />
-                <span>Feedback</span>
+              <TabsTrigger value="feedback" className={tabBtnClass}>
+                <MessageSquareReply className="w-4 h-4 shrink-0" /><span>Feedback</span>
               </TabsTrigger>
 
               <div className="w-px self-stretch bg-border/60 mx-1 flex-shrink-0" aria-hidden="true" />
 
-              {/* Komunikacija */}
-              <TabsTrigger
-                value="notify"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <Bell className="w-4 h-4 shrink-0" />
-                <span>Obavijesti</span>
+              <TabsTrigger value="notify" className={tabBtnClass}>
+                <Bell className="w-4 h-4 shrink-0" /><span>Obavijesti</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="pushlogs"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <BellRing className="w-4 h-4 shrink-0" />
-                <span>Push log</span>
+              <TabsTrigger value="pushlogs" className={tabBtnClass}>
+                <BellRing className="w-4 h-4 shrink-0" /><span>Push log</span>
               </TabsTrigger>
 
               <div className="w-px self-stretch bg-border/60 mx-1 flex-shrink-0" aria-hidden="true" />
 
-              {/* Sustav */}
-              <TabsTrigger
-                value="apk"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <Package className="w-4 h-4 shrink-0" />
-                <span>APK</span>
+              <TabsTrigger value="apk" className={tabBtnClass}>
+                <Package className="w-4 h-4 shrink-0" /><span>APK</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="diagnostics"
-                className="flex-shrink-0 min-w-[72px] h-14 flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-medium leading-tight"
-              >
-                <Activity className="w-4 h-4 shrink-0" />
-                <span>Dijagnostika</span>
+              <TabsTrigger value="diagnostics" className={tabBtnClass}>
+                <Activity className="w-4 h-4 shrink-0" /><span>Dijagnostika</span>
               </TabsTrigger>
             </TabsList>
           </div>
 
-          {/* STATS TAB */}
           <TabsContent value="stats" className="space-y-4 mt-4">
-            {usersLoading && !stats ? (
-              <div className="text-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-              </div>
-            ) : stats ? (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <StatCard label="Ukupno korisnika" value={stats.total_users} />
-                  <StatCard label="Aktivni (7 dana)" value={stats.active_users_7d} sub={`${stats.active_users_30d} u zadnjih 30 dana`} />
-                  <StatCard label="Ukupno transakcija" value={stats.total_expenses} sub={`${stats.expenses_7d} u zadnjih 7 dana`} />
-                  <StatCard label="Otvorene prijave" value={stats.open_bug_reports} />
-                  <StatCard label="Projekti" value={stats.total_projects} />
-                  <StatCard label="Budžeti" value={stats.total_budgets} />
-                  <StatCard label="Pozivnice" value={stats.total_referrals} />
-                </div>
-                <div className="flex justify-end">
-                  <Button variant="outline" size="sm" onClick={() => loadUsers(1)} disabled={usersLoading}>
-                    {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
-                    Osvježi
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">Nema podataka</p>
-            )}
+            <StatsTab stats={stats} loading={usersLoading} onRefresh={() => loadUsers(1)} />
           </TabsContent>
 
-          {/* USERS TAB */}
-          <TabsContent value="users" className="space-y-3 mt-4">
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">{users.length} korisnika</p>
-              <Button variant="outline" size="sm" onClick={() => loadUsers(1)} disabled={usersLoading}>
-                {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
-                Osvježi
-              </Button>
-            </div>
-
-            {usersLoading && users.length === 0 ? (
-              <div className="text-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Učitavanje...</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {users.map((u) => (
-                  <div key={u.id} className={`bg-card border rounded-xl p-4 space-y-2 ${isBanned(u) ? 'opacity-60 border-destructive/30' : ''}`}>
-                    <div className="cursor-pointer" onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isBanned(u) ? 'bg-destructive/10' : 'bg-primary/10'}`}>
-                            <User className={`w-4 h-4 ${isBanned(u) ? 'text-destructive' : 'text-primary'}`} />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold">{u.display_name || 'Bez imena'}</p>
-                              {u.roles.includes('admin') && (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">Admin</Badge>
-                              )}
-                              {isBanned(u) && (
-                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Blokiran</Badge>
-                              )}
-                              {u.referral_count > 0 && (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-accent/50">{u.referral_count} pozvan{u.referral_count === 1 ? '' : 'ih'}</Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Mail className="w-3 h-3" /> {u.email}
-                            </p>
-                          </div>
-                        </div>
-                        {u.last_device_info && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Smartphone className="w-3 h-3 mr-1" />
-                            {parseUserAgent(u.last_device_info?.userAgent)}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {format(new Date(u.created_at), 'dd.MM.yyyy.', { locale: hr })}
-                        </span>
-                        {(() => {
-                          const latestLoginAt = u.last_login_at ?? u.last_sign_in_at;
-                          if (!latestLoginAt) return null;
-
-                          return (
-                            <span>Zadnja prijava: {format(new Date(latestLoginAt), 'dd.MM. HH:mm', { locale: hr })}</span>
-                          );
-                        })()}
-                        {u.app_version && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
-                            v{u.app_version}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {expandedUserId === u.id && (
-                      <div className="pt-2 border-t space-y-3">
-                        <div className="text-xs space-y-1 text-muted-foreground">
-                          <p><strong>ID:</strong> <span className="font-mono text-[10px]">{u.id}</span></p>
-                          <p><strong>Valuta:</strong> {u.currency || 'EUR'}</p>
-                          <p><strong>Email potvrđen:</strong> {u.confirmed_at ? format(new Date(u.confirmed_at), 'dd.MM.yyyy. HH:mm', { locale: hr }) : 'Ne'}</p>
-                          {u.last_login_at && (
-                            <p><strong>Zadnje korištenje:</strong> {format(new Date(u.last_login_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}</p>
-                          )}
-                          <p><strong>Verzija aplikacije:</strong> {u.app_version || 'Nepoznato (starija verzija)'}</p>
-                        </div>
-
-                        {u.last_device_info && (() => {
-                          const details = parseDetailedUA(u.last_device_info?.userAgent || '');
-                          return (
-                            <div>
-                              <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-                                <Smartphone className="w-3 h-3" /> Zadnji uređaj:
-                              </p>
-                              <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 space-y-1.5">
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                  <p><strong>Uređaj:</strong> {details.device}</p>
-                                  <p><strong>OS:</strong> {details.os}</p>
-                                  <p><strong>Browser:</strong> {details.browser}</p>
-                                  <p><strong>Jezik:</strong> {u.last_device_info.language || '—'}</p>
-                                  <p><strong>Ekran:</strong> {u.last_device_info.screenWidth}×{u.last_device_info.screenHeight}</p>
-                                  <p><strong>Viewport:</strong> {u.last_device_info.viewportWidth}×{u.last_device_info.viewportHeight}</p>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Admin actions */}
-                        {u.id !== user?.id && (
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            {isBanned(u) ? (
-                              <Button size="sm" variant="outline" onClick={() => manageUser('unban', u.id)} disabled={actionLoading === u.id}>
-                                {actionLoading === u.id ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <UserCheck className="w-3.5 h-3.5 mr-1" />}
-                                Odblokiraj
-                              </Button>
-                            ) : (
-                              <Button size="sm" variant="destructive" onClick={() => manageUser('ban', u.id)} disabled={actionLoading === u.id}>
-                                {actionLoading === u.id ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Ban className="w-3.5 h-3.5 mr-1" />}
-                                Blokiraj
-                              </Button>
-                            )}
-                            {u.roles.includes('admin') ? (
-                              <Button size="sm" variant="outline" onClick={() => manageUser('remove_role', u.id, 'admin')} disabled={actionLoading === u.id}>
-                                <ShieldOff className="w-3.5 h-3.5 mr-1" /> Ukloni admin
-                              </Button>
-                            ) : (
-                              <Button size="sm" variant="outline" onClick={() => manageUser('add_role', u.id, 'admin')} disabled={actionLoading === u.id}>
-                                <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Dodaj admin
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {hasMoreUsers && (
-                  <div className="text-center pt-2">
-                    <Button variant="outline" size="sm" onClick={() => loadUsers(usersPage + 1)} disabled={usersLoading}>
-                      {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                      Učitaj više
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+          <TabsContent value="users">
+            <UsersTab
+              users={users}
+              usersLoading={usersLoading}
+              hasMoreUsers={hasMoreUsers}
+              usersPage={usersPage}
+              expandedUserId={expandedUserId}
+              setExpandedUserId={setExpandedUserId}
+              actionLoading={actionLoading}
+              currentUserId={user?.id}
+              onRefresh={() => loadUsers(1)}
+              onLoadMore={() => loadUsers(usersPage + 1)}
+              onManageUser={manageUser}
+            />
           </TabsContent>
 
-          {/* BILLING TAB */}
-          <TabsContent value="billing" className="space-y-4 mt-4">
-            {/* Global billing toggle */}
-            <div className="bg-card border rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-primary" />
-                  <div>
-                    <h3 className="font-semibold text-sm">Globalna naplata</h3>
-                    <p className="text-xs text-muted-foreground">Uključi/isključi sustav pretplata za sve korisnike</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={billingEnabled}
-                  onCheckedChange={toggleBilling}
-                  disabled={billingLoading}
-                />
-              </div>
-              <div className={`text-xs px-3 py-2 rounded-lg ${billingEnabled ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>
-                {billingEnabled ? '✓ Naplata je aktivna — korisnici vide ograničenja prema razini' : '○ Naplata je isključena — svi korisnici imaju puni pristup'}
-              </div>
-            </div>
-
-            {/* User tier management */}
-            <div className="bg-card border rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Crown className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold text-sm">Razine korisnika</h3>
-              </div>
-
-              {users.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">Učitajte korisnike na tabu "Korisnici"</p>
-              ) : (
-                <div className="space-y-2">
-                  {users.map((u) => {
-                    const currentTier = subscriptions[u.id] || 'free';
-                    const tierIcon = currentTier === 'business' ? Briefcase : currentTier === 'pro' ? Star : User;
-                    const TierIcon = tierIcon;
-                    return (
-                      <div key={u.id} className="flex items-center justify-between gap-2 py-2 border-b last:border-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <TierIcon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{u.display_name || u.email}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>
-                          </div>
-                        </div>
-                        <Select
-                          value={currentTier}
-                          onValueChange={(val) => setUserTier(u.id, val)}
-                          disabled={subLoading === u.id}
-                        >
-                          <SelectTrigger className="w-[110px] h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="free">Free</SelectItem>
-                            <SelectItem value="pro">Pro</SelectItem>
-                            <SelectItem value="business">Business</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <SubscriptionMigrationPanel />
-
-            <p className="text-xs text-muted-foreground text-center">
-              Stripe migracija: prvo Dry Run, zatim live. Postojeći trialovi se ne diraju.
-            </p>
+          <TabsContent value="billing">
+            <BillingTab
+              billingEnabled={billingEnabled}
+              billingLoading={billingLoading}
+              onToggleBilling={toggleBilling}
+              users={users}
+              subscriptions={subscriptions}
+              subLoading={subLoading}
+              onSetUserTier={setUserTier}
+            />
           </TabsContent>
 
-          {/* REPORTS TAB */}
-          <TabsContent value="reports" className="space-y-3 mt-4">
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">{reports.length} prijava</p>
-              <Button variant="outline" size="sm" onClick={loadReports}>
-                <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Osvježi
-              </Button>
-            </div>
-
-            {reports.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Bug className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>Nema prijavljenih problema</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {reports.map((report) => (
-                  <div key={report.id} className="bg-card border rounded-xl p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 cursor-pointer" onClick={() => setExpandedId(expandedId === report.id ? null : report.id)}>
-                        <h3 className="font-semibold text-sm">{report.title}</h3>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {report.user_display_name || 'Nepoznat korisnik'} · {format(new Date(report.created_at), 'dd. MMM yyyy. HH:mm', { locale: hr })}
-                        </p>
-                      </div>
-                      <Badge className={statusColors[report.status] || statusColors.open} variant="secondary">
-                        {statusLabels[report.status] || report.status}
-                      </Badge>
-                    </div>
-
-                    {expandedId === report.id && (
-                      <div className="space-y-3 pt-2 border-t">
-                        <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-1">Opis:</p>
-                          <p className="text-sm whitespace-pre-wrap">{report.description}</p>
-                        </div>
-                        {report.device_info && (
-                          <div>
-                            <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1">
-                              <Monitor className="w-3 h-3" /> Uređaj:
-                            </p>
-                            <div className="text-xs text-muted-foreground space-y-0.5 bg-muted/50 rounded-lg p-2">
-                              <p>Ekran: {report.device_info.screenWidth}×{report.device_info.screenHeight}</p>
-                              <p>Viewport: {report.device_info.viewportWidth}×{report.device_info.viewportHeight}</p>
-                              <p>Verzija: {report.device_info.appVersion}</p>
-                              <p>Pohrana: {report.device_info.storageMode}</p>
-                              <p className="break-all">UA: {report.device_info.userAgent}</p>
-                            </div>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-1">Promijeni status:</p>
-                          <Select value={report.status} onValueChange={(val) => updateStatus(report.id, val)}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="open">Otvoreno</SelectItem>
-                              <SelectItem value="in_progress">U tijeku</SelectItem>
-                              <SelectItem value="resolved">Riješeno</SelectItem>
-                              <SelectItem value="closed">Zatvoreno</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Reply to reporter */}
-                        <div className="pt-2 border-t">
-                          <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-                            <MessageSquareReply className="w-3 h-3" /> Pošalji poruku korisniku:
-                          </p>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder={`Poruka za ${report.user_display_name || 'korisnika'}...`}
-                              value={replyMessages[report.id] || ''}
-                              onChange={(e) => setReplyMessages(prev => ({ ...prev, [report.id]: e.target.value }))}
-                              className="text-sm"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault();
-                                  sendReplyToReporter(report);
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              onClick={() => sendReplyToReporter(report)}
-                              disabled={sendingReply === report.id || !replyMessages[report.id]?.trim()}
-                            >
-                              {sendingReply === report.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Send className="w-3.5 h-3.5" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+          <TabsContent value="reports">
+            <ReportsTab
+              reports={reports}
+              expandedId={expandedId}
+              setExpandedId={setExpandedId}
+              replyMessages={replyMessages}
+              setReplyMessages={setReplyMessages}
+              sendingReply={sendingReply}
+              onRefresh={loadReports}
+              onUpdateStatus={updateStatus}
+              onSendReply={sendReplyToReporter}
+            />
           </TabsContent>
 
-          {/* NOTIFY TAB */}
-          <TabsContent value="notify" className="space-y-4 mt-4">
-            <div className="bg-card border rounded-xl p-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold text-sm">Pošalji obavijest svim korisnicima</h3>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Naslov</label>
-                  <Input
-                    placeholder={t('placeholders.notificationTitle')}
-                    value={notifTitle}
-                    onChange={(e) => setNotifTitle(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Poruka</label>
-                  <Textarea
-                    placeholder="Unesite tekst obavijesti..."
-                    value={notifMessage}
-                    onChange={(e) => setNotifMessage(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-                <Button
-                  onClick={sendBroadcastNotification}
-                  disabled={sendingNotif || !notifTitle.trim() || !notifMessage.trim()}
-                  className="w-full"
-                >
-                  {sendingNotif ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4 mr-2" />
-                  )}
-                  Pošalji obavijest
-                </Button>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Obavijest će biti poslana svim registriranim korisnicima i pojavit će se u njihovim push obavijestima.
-            </p>
+          <TabsContent value="notify">
+            <NotifyTab
+              notifTitle={notifTitle}
+              setNotifTitle={setNotifTitle}
+              notifMessage={notifMessage}
+              setNotifMessage={setNotifMessage}
+              sendingNotif={sendingNotif}
+              onSend={sendBroadcastNotification}
+            />
           </TabsContent>
 
-          {/* PUSH LOGS TAB */}
           <TabsContent value="pushlogs" className="space-y-3 mt-4">
             <PushLogsTab />
           </TabsContent>
 
-          {/* APK TAB */}
           <TabsContent value="apk" className="space-y-3 mt-4">
             <APKManagerTab />
           </TabsContent>
 
-          {/* DIAGNOSTICS TAB */}
           <TabsContent value="diagnostics" className="space-y-3 mt-4">
             <DiagnosticLogsTab />
           </TabsContent>
 
-          {/* PULSE TAB */}
           <TabsContent value="pulse" className="space-y-3 mt-4">
             <PulseTab />
           </TabsContent>
 
-          {/* FEEDBACK TAB */}
           <TabsContent value="feedback" className="space-y-3 mt-4">
             <FeedbackInboxTab initialId={new URLSearchParams(window.location.search).get('id')} />
           </TabsContent>
