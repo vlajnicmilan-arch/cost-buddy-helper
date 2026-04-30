@@ -282,6 +282,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       setIsExportingZip(false);
     }
   };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setIsImporting(true);
