@@ -5,15 +5,25 @@ import "./index.css";
 import "./i18n";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { logDiagnostic } from "./lib/diagnosticLogger";
-import { initSentry } from "./lib/sentry";
 
-// Init Sentry as early as possible — must run before any errors can fire.
-initSentry();
+// Defer Sentry init + boot diagnostics until the browser is idle. These are
+// observability tools — they MUST NOT block first paint or LCP. They run
+// after the initial render is committed.
+const idle = (cb: () => void) => {
+  if (typeof (window as any).requestIdleCallback === 'function') {
+    (window as any).requestIdleCallback(cb, { timeout: 2000 });
+  } else {
+    setTimeout(cb, 1);
+  }
+};
 
-// Boot diagnostic event — first thing logged from the JS bundle.
-logDiagnostic('boot_start', {
-  href: window.location.href,
-  pathname: window.location.pathname,
+idle(() => {
+  // Dynamic import keeps Sentry out of the initial JS bundle entirely.
+  import('./lib/sentry').then(({ initSentry }) => initSentry()).catch(() => {});
+  logDiagnostic('boot_start', {
+    href: window.location.href,
+    pathname: window.location.pathname,
+  });
 });
 
 // Aggressively kill any leftover Service Worker + PWA caches.
