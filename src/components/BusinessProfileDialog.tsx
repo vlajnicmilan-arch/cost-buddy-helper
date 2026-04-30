@@ -312,10 +312,19 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
           {profiles.map(p => (
             <div
               key={p.id}
-              className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-muted/50 ${
+              role="button"
+              tabIndex={0}
+              aria-label={`${t('common.edit', 'Uredi')}: ${p.company_name}`}
+              className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 p.is_active ? 'border-primary bg-primary/5' : 'border-border'
               }`}
               onClick={() => handleEdit(p)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleEdit(p);
+                }
+              }}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

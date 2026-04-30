@@ -527,7 +527,10 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
                       return (
                         <div 
                           key={idx} 
-                          className={`rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden ${
+                          role="checkbox"
+                          tabIndex={0}
+                          aria-checked={selectedFuzzy.has(idx)}
+                          className={`rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                             selectedFuzzy.has(idx) 
                               ? 'border-primary/30' 
                               : 'border-amber-500/20'
@@ -536,6 +539,14 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
                             const next = new Set(selectedFuzzy);
                             next.has(idx) ? next.delete(idx) : next.add(idx);
                             setSelectedFuzzy(next);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              const next = new Set(selectedFuzzy);
+                              next.has(idx) ? next.delete(idx) : next.add(idx);
+                              setSelectedFuzzy(next);
+                            }
                           }}
                         >
                           {/* Existing transaction */}
