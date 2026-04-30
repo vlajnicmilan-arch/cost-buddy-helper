@@ -28,6 +28,7 @@ import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { EmptyState } from '@/components/EmptyState';
 
 interface CustomPaymentSourcesPanelProps {
   hideHeader?: boolean;
@@ -286,10 +287,16 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
 
       {/* Existing custom sources */}
       {customPaymentSources.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          {t('common.noCustomPaymentSources')}<br />
-          {t('common.clickNewToAdd')}
-        </p>
+        <EmptyState
+          variant="wallet"
+          title={t('common.noCustomPaymentSources')}
+          description={t('common.clickNewToAdd')}
+          action={{
+            label: t('common.new'),
+            onClick: openNewDialog,
+          }}
+          compact
+        />
       ) : (
         <div className="space-y-2">
           {customPaymentSources.map((source, index) => (

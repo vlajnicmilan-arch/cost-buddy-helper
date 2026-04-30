@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type EmptyStateVariant = 'transactions' | 'budgets' | 'projects' | 'chart' | 'generic';
+type EmptyStateVariant = 'transactions' | 'budgets' | 'projects' | 'chart' | 'wallet' | 'generic';
 
 interface EmptyStateProps {
   variant?: EmptyStateVariant;
@@ -100,11 +100,32 @@ const ChartIllustration = () => (
   </svg>
 );
 
+const WalletIllustration = () => (
+  <svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+    {/* Wallet body */}
+    <rect x="15" y="30" width="90" height="55" rx="8" fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="1.5" />
+    {/* Wallet flap */}
+    <path d="M15 38 Q15 30 23 30 L82 30 Q90 30 90 38 L90 50 L15 50 Z" fill="hsl(var(--primary) / 0.15)" />
+    {/* Card slot */}
+    <rect x="60" y="55" width="38" height="22" rx="4" fill="hsl(var(--primary) / 0.85)" />
+    <rect x="65" y="62" width="14" height="3" rx="1.5" fill="white" opacity="0.85" />
+    <rect x="65" y="68" width="22" height="2.5" rx="1.25" fill="white" opacity="0.6" />
+    {/* Coins / cash hint */}
+    <circle cx="32" cy="65" r="9" fill="hsl(var(--primary) / 0.25)" stroke="hsl(var(--primary))" strokeWidth="1.5" />
+    <text x="32" y="69" textAnchor="middle" fontSize="9" fontWeight="700" fill="hsl(var(--primary))">€</text>
+    {/* Plus badge */}
+    <circle cx="95" cy="32" r="10" fill="hsl(var(--primary))" />
+    <rect x="90.5" y="31" width="9" height="2" rx="1" fill="white" />
+    <rect x="94" y="27.5" width="2" height="9" rx="1" fill="white" />
+  </svg>
+);
+
 const illustrationMap: Record<EmptyStateVariant, React.FC> = {
   transactions: TransactionsIllustration,
   budgets: BudgetsIllustration,
   projects: ProjectsIllustration,
   chart: ChartIllustration,
+  wallet: WalletIllustration,
   generic: ChartIllustration,
 };
 
