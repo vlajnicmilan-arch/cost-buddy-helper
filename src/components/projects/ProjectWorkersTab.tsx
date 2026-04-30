@@ -24,6 +24,7 @@ import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { ProjectWorker, ProjectWorkEntry } from '@/types/projectWorker';
 import { ProjectWorkerDialog } from './ProjectWorkerDialog';
 import { WorkerScheduleDialog } from './WorkerScheduleDialog';
+import { WorkerDataDisclaimerDialog, hasAcceptedWorkerDisclaimer } from '@/components/legal/WorkerDataDisclaimerDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List, Download, FileText, FileSpreadsheet, FileJson, Search, Filter } from 'lucide-react';
@@ -94,6 +95,7 @@ export const ProjectWorkersTab = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
   const [scheduleWorker, setScheduleWorker] = useState<ProjectWorker | null>(null);
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
     try {
@@ -141,6 +143,10 @@ export const ProjectWorkersTab = ({
 
   const handleAdd = () => {
     setEditingWorker(null);
+    if (!hasAcceptedWorkerDisclaimer()) {
+      setDisclaimerOpen(true);
+      return;
+    }
     setDialogOpen(true);
   };
 
@@ -490,6 +496,13 @@ export const ProjectWorkersTab = ({
           <WorkCalendarOverview projectId={projectId} milestones={milestones} />
         </TabsContent>
       </Tabs>
+
+      {/* GDPR disclaimer (first add only) */}
+      <WorkerDataDisclaimerDialog
+        open={disclaimerOpen}
+        onOpenChange={setDisclaimerOpen}
+        onAccept={() => setDialogOpen(true)}
+      />
 
       {/* Add/Edit Dialog */}
       <ProjectWorkerDialog
