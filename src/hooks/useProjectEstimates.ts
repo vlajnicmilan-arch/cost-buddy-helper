@@ -93,7 +93,7 @@ export const useProjectEstimates = () => {
       return data as ProjectEstimate;
     } catch (err: any) {
       console.error('addEstimate failed', err);
-      showError(err?.message || 'Greška');
+      showError(friendlyError(err, "errors.generic"));
       return null;
     }
   };
@@ -108,7 +108,7 @@ export const useProjectEstimates = () => {
       showSuccess('Ponuda ažurirana');
       await fetchEstimates();
     } catch (err: any) {
-      showError(err?.message || 'Greška');
+      showError(friendlyError(err, "errors.generic"));
     }
   };
 
@@ -122,7 +122,7 @@ export const useProjectEstimates = () => {
       showSuccess('Ponuda obrisana');
       await fetchEstimates();
     } catch (err: any) {
-      showError(err?.message || 'Greška');
+      showError(friendlyError(err, "errors.generic"));
     }
   };
 
@@ -153,7 +153,7 @@ export const useProjectEstimates = () => {
       await fetchEstimates();
       return project.id;
     } catch (err: any) {
-      showError(err?.message || 'Greška pri konverziji');
+      showError(friendlyError(err, "errors.project.estimateConvert"));
       return null;
     }
   };

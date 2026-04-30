@@ -84,7 +84,7 @@ export const useProjectDocuments = (projectId: string | null) => {
       return data as ProjectDocumentRow;
     } catch (err: any) {
       console.error('uploadDocument failed', err);
-      showError(err?.message || 'Greška pri uploadu');
+      showError(friendlyError(err, "errors.project.uploadDoc"));
       return null;
     }
   };
@@ -101,7 +101,7 @@ export const useProjectDocuments = (projectId: string | null) => {
       await fetchDocuments();
     } catch (err: any) {
       console.error('removeDocument failed', err);
-      showError(err?.message || 'Greška pri brisanju');
+      showError(friendlyError(err, "errors.delete.generic"));
     }
   };
 
