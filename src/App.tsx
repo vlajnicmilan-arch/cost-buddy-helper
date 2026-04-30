@@ -18,6 +18,7 @@ import { useStatusBar } from "@/hooks/useStatusBar";
 import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { DiagnosticRouteTracker } from "@/components/DiagnosticRouteTracker";
+import { CrispChat } from "@/components/CrispChat";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { isPublicRoute } from "@/lib/publicRoutes";
 import { Loader2 } from "lucide-react";
@@ -292,6 +293,7 @@ const App = () => (
                       <DiagnosticRouteTracker />
                       <BusinessModeGuard />
                       <RouteAwareGlobalOverlays />
+                      <CrispChat />
                       <AppRoutes />
                     </BackButtonProvider>
                   </BrowserRouter>
