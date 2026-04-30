@@ -473,7 +473,6 @@ const FooterSection = () => {
 
 const APKDownloadSection = ({ referralCode }: { referralCode: string }) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   // Cache-busting: rotate every 5 min so new APK uploads propagate quickly past CDN
   const cacheBust = Math.floor(Date.now() / (5 * 60 * 1000));
