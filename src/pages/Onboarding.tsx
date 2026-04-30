@@ -193,7 +193,8 @@ const Onboarding = () => {
       // Funnel: log onboarding completion (best-effort)
       import('@/lib/funnelTracking')
         .then(({ logFunnelEvent }) => logFunnelEvent('onboarding_complete', {
-          sources_count: paymentSources.length,
+          selected_sources: selectedSources.length,
+          custom_sources: customSources.length,
         }))
         .catch(() => {});
       navigate('/home', { replace: true });
