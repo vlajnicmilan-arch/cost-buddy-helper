@@ -145,7 +145,7 @@ export const useExpenseFetch = () => {
         }
       }
       console.error('Error fetching expenses:', error);
-      showError('Greška pri učitavanju troškova');
+      showError(tr('errors.fetch.expenses', 'Greška pri učitavanju troškova'));
     } finally {
       setLoading(false);
     }
