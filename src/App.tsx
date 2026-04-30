@@ -27,6 +27,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
 import { autoRegisterIfEnabled } from "@/lib/nativePush";
+// Landing is the public marketing page and the LCP for SEO traffic on
+// vmbalance.com. Eager-loading it removes a chunk-fetch waterfall on the
+// most-visited route and dramatically improves FCP/LCP for first-time
+// visitors. All other pages stay lazy.
+import Landing from "./pages/Landing";
 
 const Index = lazy(() => import("./pages/Index"));
 const Business = lazy(() => import("./pages/Business"));
@@ -49,7 +54,6 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Paywall = lazy(() => import("./pages/Paywall"));
-const Landing = lazy(() => import("./pages/Landing"));
 const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
