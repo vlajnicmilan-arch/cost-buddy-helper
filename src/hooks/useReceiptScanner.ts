@@ -109,8 +109,13 @@ export const useReceiptScanner = () => {
   ): Promise<ParsedReceipt | null> => {
     setScanning(true);
     setParsedData(null);
+    const totalBytes = imagesBase64.reduce((s, b) => s + (b?.length || 0), 0);
     try {
-      logDiagnostic('receipt_scan_start', { pages: imagesBase64.length });
+      logDiagnostic('receipt_scan_start', {
+        pages: imagesBase64.length,
+        total_base64_bytes: totalBytes,
+        is_native: Capacitor.isNativePlatform(),
+      });
     } catch {}
 
     try {
@@ -148,22 +153,43 @@ export const useReceiptScanner = () => {
 
         if (Capacitor.isNativePlatform()) {
           try { logDiagnostic('receipt_scan_native_http_start', { image_count: payloadImages.length }); } catch {}
-          const nativeResponse = await CapacitorHttp.post({
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${sessionData.session.access_token}`,
-            },
-            data: payload,
-            connectTimeout: 15000,
-            readTimeout: 60000,
-            responseType: 'json',
-          });
-          return {
-            ok: nativeResponse.status >= 200 && nativeResponse.status < 300,
-            status: nativeResponse.status,
-            json: () => Promise.resolve(parseReceiptResponseBody(nativeResponse.data)),
-          };
+          try {
+            const nativeResponse = await CapacitorHttp.post({
+              url,
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionData.session.access_token}`,
+              },
+              data: payload,
+              connectTimeout: 15000,
+              readTimeout: 60000,
+              responseType: 'json',
+            });
+            try {
+              logDiagnostic('receipt_scan_native_http_done', {
+                status: nativeResponse.status,
+                has_data: !!nativeResponse.data,
+                data_type: typeof nativeResponse.data,
+              });
+            } catch {}
+            return {
+              ok: nativeResponse.status >= 200 && nativeResponse.status < 300,
+              status: nativeResponse.status,
+              json: () => Promise.resolve(parseReceiptResponseBody(nativeResponse.data)),
+            };
+          } catch (httpErr: any) {
+            try {
+              logDiagnostic({
+                event: 'receipt_scan_native_http_failed',
+                severity: 'error',
+                details: {
+                  message: httpErr?.message || String(httpErr),
+                  name: httpErr?.name,
+                },
+              });
+            } catch {}
+            throw httpErr;
+          }
         }
 
         const webResponse = await fetch(url, {
