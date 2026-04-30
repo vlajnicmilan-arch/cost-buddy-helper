@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Wallet, PieChart, TrendingUp, Users, BarChart3, Receipt, Check, Star } from 'lucide-react';
+import { Wallet, PieChart, TrendingUp, Users, BarChart3, Receipt, Check, Star, Crown, Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import cardsImage from '@/assets/cards-floating.webp';
 import mockupDashboard from '@/assets/app-mockup-dashboard.webp';
 import mockupBudget from '@/assets/app-mockup-budget.webp';
