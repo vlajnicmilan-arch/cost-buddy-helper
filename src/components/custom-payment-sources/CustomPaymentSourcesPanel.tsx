@@ -287,10 +287,16 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
 
       {/* Existing custom sources */}
       {customPaymentSources.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          {t('common.noCustomPaymentSources')}<br />
-          {t('common.clickNewToAdd')}
-        </p>
+        <EmptyState
+          variant="generic"
+          title={t('common.noCustomPaymentSources')}
+          description={t('common.clickNewToAdd')}
+          action={{
+            label: t('common.new'),
+            onClick: openNewDialog,
+          }}
+          compact
+        />
       ) : (
         <div className="space-y-2">
           {customPaymentSources.map((source, index) => (
