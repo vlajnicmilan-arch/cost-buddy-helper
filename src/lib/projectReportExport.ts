@@ -2,6 +2,7 @@
 import type { jsPDF as JsPDFType } from 'jspdf';
 import { ProjectMilestone, MILESTONE_STATUS_LABELS } from '@/types/project';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { addNotOfficialFooter } from '@/lib/pdfFooter';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -275,6 +276,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
+  addNotOfficialFooter(doc);
   await exportPDFDoc(doc, fileName, mode);
 };
 
@@ -452,6 +454,7 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: Ex
 
   const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `dnevnik_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
+  addNotOfficialFooter(doc);
   await exportPDFDoc(doc, fileName, mode);
 };
 

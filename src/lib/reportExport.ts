@@ -3,6 +3,7 @@
 import type { jsPDF as JsPDFType } from 'jspdf';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo } from '@/types/expense';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { addNotOfficialFooter } from '@/lib/pdfFooter';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -162,6 +163,7 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
   });
 
   const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
+  addNotOfficialFooter(doc);
   await exportPDFDoc(doc, fileName, mode);
 };
 
@@ -312,6 +314,7 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
   });
 
   const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
+  addNotOfficialFooter(doc);
   await exportPDFDoc(doc, fileName, mode);
 };
 
