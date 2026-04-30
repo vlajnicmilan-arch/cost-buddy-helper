@@ -101,7 +101,18 @@ export const useAuth = () => {
           .eq('user_id', data.user!.id);
       }, 0);
     }
-    
+
+    // Funnel: log signup (best-effort, only when session is immediately available;
+    // for email-confirm flows the signup is logged on first SIGNED_IN below).
+    if (data?.user && data?.session && !error) {
+      import('@/lib/funnelTracking')
+        .then(({ logFunnelEvent }) => logFunnelEvent('signup', {
+          method: 'email',
+          needs_confirmation: false,
+        }))
+        .catch(() => {});
+    }
+
     return { data, error, needsEmailConfirmation };
   };
 
