@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 import { useTranslation } from 'react-i18next';
 import { APP_VERSION } from '@/lib/version';
 import {
@@ -24,7 +25,7 @@ const createNativeUpdateChecker = () => {
     const result = await fetchLatestVersion();
 
     if (!result.version) {
-      showError(`Provjera web verzije nije uspjela. Nijedan server nije odgovorio.`);
+      showError(tr('errors.appUpdate.webCheckFailed', 'Provjera web verzije nije uspjela. Nijedan server nije odgovorio.'));
       console.error('[NativeUpdate] All origins failed');
       return;
     }
@@ -66,7 +67,7 @@ export const checkForNativeUpdates = async () => {
     await checkForUpdatesRef();
     return;
   }
-  showError('Provjera ažuriranja nije dostupna na ovoj platformi.');
+  showError(tr('errors.appUpdate.platformUnsupported', 'Provjera ažuriranja nije dostupna na ovoj platformi.'));
 };
 
 export const NativeUpdateInitializer = () => {
