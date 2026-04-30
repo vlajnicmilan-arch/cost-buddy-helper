@@ -283,7 +283,7 @@ const Install = () => {
     <div className="min-h-dvh bg-background flex flex-col p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/home')} className="rounded-xl">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/home')} className="rounded-xl" aria-label={t('common.back')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex items-center gap-2">

@@ -120,7 +120,7 @@ const Calendar = () => {
       <div className="max-w-lg mx-auto px-4 pt-4">
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="icon" onClick={prevMonth}>
+          <Button variant="ghost" size="icon" onClick={prevMonth} aria-label={t('common.previousMonth')}>
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <h2 className="text-lg font-semibold capitalize">{monthName}</h2>
@@ -144,7 +144,7 @@ const Calendar = () => {
                 } catch { showError(t('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); }
               }}
             />
-            <Button variant="ghost" size="icon" onClick={nextMonth}>
+            <Button variant="ghost" size="icon" onClick={nextMonth} aria-label={t('common.nextMonth')}>
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
