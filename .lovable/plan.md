@@ -1,154 +1,91 @@
-# Plan: GDPR usklađenost za projekte sa suradnicima
 
-Tri sloja zaštite koji jasno pozicioniraju V&M Balance kao **interni alat za upravljanje projektima**, a ne službenu evidenciju, te omogućuju Business korisnicima da budu GDPR-compliant kad unose podatke radnika/suradnika.
+# Error poruke: human-friendly i prevedene
 
----
+## Trenutno stanje
 
-## Sloj 1 — Disclaimer "nije službena evidencija"
+Brzi audit kroz codebase pokazuje:
 
-Cilj: pravno odvojiti app od službenih evidencija (Zakon o radu, Zakon o računovodstvu, Porezna).
+- **352** ukupnih `showError()` / `toast.error()` poziva
+- **103** od njih su **hardkodirane na hrvatskom** (zaobilaze `t()` funkciju → engleski/njemački korisnici vide hrvatski tekst)
+- **2** mjesta prikazuju **sirovu Supabase grešku** (`error.message`) korisniku — npr. "Invalid JWT", "Network request failed"
+- Postojeći `errors` namespace u prijevodima ima samo 6 generičkih ključeva — premalo
 
-**1.1 Terms of Service (`src/pages/TermsOfService.tsx` + `i18n/locales/*.json`)**
-- Nova sekcija `tos.s9` "Namjena usluge i ograničenja" (HR/EN/DE):
-  - App je alat za interno upravljanje projektima i osobne/poslovne financije
-  - Podaci NISU službena evidencija u smislu Zakona o radu, Zakona o računovodstvu, Zakona o porezu na dohodak/dobit, niti se mogu koristiti pred Poreznom upravom, Inspektoratom rada ili sudom kao primarni dokaz
-  - Korisnik je dužan voditi službene evidencije u ovlaštenim sustavima
+Najgori prekršitelji (po broju hardkodiranih poruka):
+- `useFamilyGroups.ts` — 6+ poruka tipa "Račun je već dodan u grupu"
+- `useCustomCategories.ts` — 5 poruka
+- `useReceiptScanner.ts` — 6 poruka uklj. "Previše zahtjeva", "Nedostaje kredita"
+- `useRecurringTransactions.ts`, `useCustomPaymentSources.ts`, `useExpenseCRUD.ts`, `NativeUpdateChecker.tsx`, `fileExport.ts`...
 
-**1.2 Modal pri prvom dodavanju radnika/suradnika**
-- Novi `WorkerDataDisclaimerDialog` komponent
-- Prikazuje se jednom (localStorage flag `workerDisclaimerAccepted`) pri prvom otvaranju forme za dodavanje u:
-  - `project_workers` (komponenta koja koristi `useProjectWorkers`)
-  - `project_collaborators` (komponenta koja koristi `useProjectCollaborators`)
-- Tekst: "Unosom osobnih podataka treće osobe potvrđujete da imate pravnu osnovu (privola, ugovor) i da ste tu osobu informirali o obradi. Podaci se koriste isključivo za interno praćenje projekta i ne predstavljaju službenu evidenciju."
-- Checkbox "Razumijem i prihvaćam" + "Nastavi"
+## Plan rada
 
-**1.3 Footer u PDF/Excel izvozima**
-- `src/lib/projectReportExport.ts`, `src/lib/workRecordsExport.ts`, `src/lib/reportExport.ts`
-- Dodati footer liniju: "Generirano iz V&M Balance — interni alat. Nije službena evidencija po Zakonu o radu/računovodstvu."
+### 1. Proširiti `errors` namespace u sva 3 jezika
 
----
+Dodajem strukturirane podgrupe pokrivene tipičnim scenarijima:
 
-## Sloj 2 — DPA Lite PDF (Data Processing Agreement)
+```text
+errors:
+  generic, network, unauthorized, notFound, forbidden, timeout
+  fetch:    expenses, categories, sources, projects, budgets, members, recurring, installments
+  save:     generic, expense, category, source, project, budget, recurring
+  delete:   generic, expense, category, source, project, budget
+  family:   accountAlreadyAdded, budgetAlreadyAdded, projectAlreadyAdded, goalAlreadyAdded
+            createGroupFailed, joinGroupFailed
+  receipt:  cloudRequired, rateLimit, noCredits, scanCancelled, scanFailed
+  auth:     mustBeLoggedIn, sessionExpired
+  limits:   paymentSourcesReached, projectsReached, budgetsReached
+  update:   webCheckFailed, platformUnsupported
+  files:    saveFailed, shareFailed, importFailed
+```
 
-Cilj: pokriti čl. 28 GDPR-a kad Business korisnik (controller) unosi podatke svojih radnika/suradnika koje V&M Balance (processor) pohranjuje.
+### 2. Mapper za sirove backend greške → prijateljske poruke
 
-**2.1 Generator PDF-a (`supabase/functions/generate-dpa/index.ts`)**
-- Nova edge funkcija koja generira pre-popunjeni DPA PDF na jeziku korisnika (HR/EN/DE)
-- Koristi `pdf-lib` (već dostupno u Deno preko esm.sh) ili HTML→PDF kroz `puppeteer`-alternative — preferirati `pdf-lib` za jednostavnost
-- Ulaz: `userId`, `companyName`, `companyOib`, `companyAddress`, `email`, `language`
-- Izlaz: PDF buffer s pre-popunjenim podacima
+Novi helper `src/lib/errorMessages.ts`:
 
-**2.2 Sadržaj DPA Lite (3-4 stranice)**
-1. **Strane**: Voditelj obrade (korisnik, popunjeno) + Obrađivač (V&M Balance, fiksno)
-2. **Predmet**: pohranjivanje i obrada osobnih podataka u kontekstu upravljanja projektima (imena, kontakti, sati rada, iznosi)
-3. **Trajanje**: dok traje pretplata + 30 dana grace period
-4. **Vrste podataka**: identifikacijski (ime/prezime/firma), kontakt (email/telefon), profesionalni (pozicija, sati, satnica)
-5. **Kategorije ispitanika**: zaposlenici, suradnici, podizvođači korisnika
-6. **Sub-procesori**: Lovable Cloud (Supabase, EU regija), Stripe (plaćanja), Resend (emailovi), Google FCM (push notifikacije)
-7. **Sigurnosne mjere**: RLS, šifriranje u tranzitu (TLS), enkripcija u mirovanju (Supabase managed), 2FA opcija, brisanje računa GDPR
-8. **Prava ispitanika**: korisnik je odgovoran odgovoriti na zahtjeve; V&M Balance pruža alate (export, brisanje)
-9. **Obavijest o povredi**: 72h rok od V&M Balance prema korisniku
-10. **Završne odredbe**: pravo HR-a, Općinski sud u Zagrebu (mjesto sjedišta)
+```text
+formatErrorForUser(error, t, fallbackKey?) → string
+```
 
-**2.3 Settings UI**
-- Nova sekcija u `Settings` → "Pravna dokumentacija" (samo za Business tier kroz `useFeatureAccess`)
-- Forma: ime tvrtke, OIB, sjedište (auto-popunjava iz business profile)
-- Button "Generiraj DPA" → poziva edge funkciju → download PDF
-- Linkovi na Privacy Policy, ToS, i Privacy Notice template (Sloj 3)
+Prepoznaje uobičajene Supabase / Postgres / Network signature (npr. `PGRST116`, `23505` duplicate, `42501` permission, `JWT expired`, `Failed to fetch`, `AbortError`) i vraća lokalizirani prijateljski tekst umjesto tehničkog stringa. Nepoznate greške → `errors.generic` + sirova poruka u `console.error` za dijagnostiku.
 
-**2.4 Database**
-- Nova tablica `dpa_requests` (audit trail):
-  - `id`, `user_id`, `company_name`, `company_oib`, `language`, `generated_at`, `download_count`
-  - RLS: korisnik vidi/kreira samo svoje; admin vidi sve
-- Nije obavezno za pravnu valjanost ali korisno za praćenje
+### 3. Refaktor 103 hardkodiranih poziva
 
----
+Sustavno proći datoteke i zamijeniti `showError('Greška...')` sa `showError(t('errors.<grupa>.<ključ>'))`. Tamo gdje se danas šalje `error.message` direktno → koristiti novi mapper.
 
-## Sloj 3 — Privacy Notice template za radnike/suradnike
+Prioritet (najveći utjecaj na korisnika):
+1. **Auth flow** (`Auth.tsx`) — sirove Supabase poruke
+2. **Hooks koje korisnik najčešće okida**: `useExpenseCRUD`, `useCustomCategories`, `useCustomPaymentSources`, `useRecurringTransactions`
+3. **Family / collaboration** — `useFamilyGroups`
+4. **Receipt scanner, native update, file export**
 
-Cilj: dati Business korisniku gotov dokument koji **on** može dati svojim radnicima/suradnicima da ispuni svoju obavezu informiranja po čl. 13/14 GDPR-a.
+### 4. Lint pravilo (lagano)
 
-**3.1 Generator (`supabase/functions/generate-privacy-notice/index.ts`)**
-- Slično kao DPA generator, generira PDF
-- Pre-popunjen tvrtkom korisnika
-- Tekst u prvom licu firme korisnika ("Naša tvrtka [X] koristi alat V&M Balance za interno upravljanje projektima...")
-
-**3.2 Sadržaj (1-2 stranice, jasno i čitljivo, bez pravnog žargona)**
-- Tko obrađuje podatke (firma korisnika)
-- Koji se podaci obrađuju (ime, kontakt, sati rada, plaća/honorar po satu)
-- Svrha (interno praćenje projekta i obračuna)
-- Pravna osnova (ugovor o radu / ugovor o suradnji / legitimni interes)
-- Tko može vidjeti (samo članovi projekta unutar firme korisnika + V&M Balance kao processor)
-- Gdje se čuvaju (EU regija)
-- Koliko dugo (trajanje suradnje + zakonski rokovi)
-- Prava (pristup, ispravak, brisanje, prenosivost, prigovor)
-- Kontakt za zahtjeve (email firme korisnika)
-
-**3.3 Settings UI**
-- Pored "Generiraj DPA" — button "Generiraj Privacy Notice za radnike"
-- Dostupno svim Business korisnicima
-
----
+Dodati komentar `// LINT: hardcoded user-facing string` provjeru u CI nije u opsegu — samo dokumentirati pravilo u memory: "Sve `showError` poruke moraju ići kroz `t()` ili `formatErrorForUser`".
 
 ## Tehnički detalji
 
-**i18n ključevi za dodati (HR/EN/DE):**
-- `tos.s9.*` (5 ključeva za novu ToS sekciju)
-- `disclaimer.workerData.*` (modal: title, body, accept, cancel)
-- `settings.legal.*` (new sekcija: title, dpaButton, privacyNoticeButton, companyInfoForm, language)
-- `exports.footer.notOfficial` (footer string)
+- **Datoteke koje će se mijenjati**:
+  - `src/i18n/locales/hr.json`, `en.json`, `de.json` — proširenje `errors` namespacea (~50 novih ključeva)
+  - `src/lib/errorMessages.ts` — **NOVA** datoteka s mapperom
+  - ~20 hook/komponentnih datoteka — zamjena hardkodiranih stringova
 
-**Edge funkcije** (oba: `verify_jwt = true`, JSON odgovor s base64 PDF-om):
-- `supabase/functions/generate-dpa/index.ts`
-- `supabase/functions/generate-privacy-notice/index.ts`
-- Koriste `pdf-lib` iz esm.sh
-- Standard CORS headers
+- **Ne mijenja se**:
+  - `useStatusFeedback.ts` (showError API ostaje isti — string in, status feedback out)
+  - Postojeći `t()` pozivi koji već rade (249 od 352)
+  - DB shema, edge funkcije
 
-**Migracija:**
-```sql
-CREATE TABLE public.dpa_requests (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  company_name text NOT NULL,
-  company_oib text,
-  company_address text,
-  language text NOT NULL DEFAULT 'hr',
-  generated_at timestamptz NOT NULL DEFAULT now(),
-  download_count integer NOT NULL DEFAULT 1
-);
-ALTER TABLE public.dpa_requests ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "users_select_own_dpa" ON public.dpa_requests FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "users_insert_own_dpa" ON public.dpa_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "admins_select_all_dpa" ON public.dpa_requests FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
-```
+- **Backwards compat**: Sve nove poruke imaju `defaultValue` fallback (drugi argument u `t()`) tako da ako prijevod nedostaje, korisnik dobije razuman hrvatski tekst umjesto raw key-a.
 
-**Komponente za dodati:**
-- `src/components/legal/WorkerDataDisclaimerDialog.tsx`
-- `src/components/settings/LegalDocumentsSection.tsx` (rendera se uvjetno za Business tier)
+- **Verifikacija**: nakon refaktora pokrenem `rg "showError\(['\"]"` da potvrdim 0 hardkodiranih stringova ostaje, te `rg "showError\((error|err|e)\.message\)"` mora biti 0.
 
-**Komponente za izmijeniti:**
-- Forma za `project_workers` (potraga: `useProjectWorkers` consumer) — wrap u disclaimer guard
-- Forma za `project_collaborators` (potraga: `useProjectCollaborators` consumer) — wrap u disclaimer guard
-- `src/pages/TermsOfService.tsx` — dodati sekciju s9
-- `src/lib/projectReportExport.ts`, `workRecordsExport.ts`, `reportExport.ts` — footer string
-- `Settings` stranica — dodati LegalDocumentsSection
+## Što korisnik dobiva
 
----
+| Prije | Nakon |
+|---|---|
+| EN korisnik vidi: "Greška pri kreiranju grupe" | "Failed to create group. Please try again." |
+| DE korisnik vidi: "Račun je već dodan u grupu" | "Dieses Konto ist bereits in der Gruppe." |
+| Korisnik vidi: "Invalid JWT: token expired" | "Vaša sesija je istekla. Prijavite se ponovno." |
+| Korisnik vidi: "duplicate key value violates unique constraint" | "Stavka s tim nazivom već postoji." |
 
-## Što plan ne uključuje (svjesno)
+## Opseg potvrde
 
-- Punu DPA verziju (s dodatkom za posebne kategorije podataka po čl. 9 GDPR-a) — nepotrebno jer app ne obrađuje zdravstvene/biometrijske/itd. podatke
-- DPIA proceduru — opseg premali
-- Multi-controller scenarije (više firmi dijeli podatke) — pokriveno postojećim DPA tekstom dovoljno
-- Automatsko slanje DPA potpisanog ugovora kroz DocuSign/sl. — korisnik download i potpiše ručno/elektronički
-
----
-
-## Redoslijed izvedbe
-
-1. Sloj 1 (disclaimer) — najmanje riskantno, najviše efekta odmah
-2. Migracija + edge funkcija za DPA
-3. Settings UI za Sloj 2
-4. Edge funkcija + UI za Sloj 3
-5. i18n prijevodi (HR primarni, EN i DE paralelno)
-6. Test: Business korisnik generira oba PDF-a, otvori, provjeri popunjenost
+Ovo je srednje velika promjena (~20 datoteka, ~50 novih i18n ključeva × 3 jezika = ~150 prijevoda + novi helper). Bez DB migracija, bez novih dependency-ja. Implementiram nakon odobrenja.
