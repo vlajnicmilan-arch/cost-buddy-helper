@@ -38,7 +38,7 @@ export const DataSection = ({
   autoUpdate, onAutoUpdateChange, onCheckForUpdates, isCheckingUpdate,
   currencyCode, onCurrencyChange,
   multiCurrencyEnabled, onMultiCurrencyChange,
-  onExport, isExporting, onShowImportDialog
+  onExport, isExporting, onExportZip, isExportingZip, onShowImportDialog
 }: DataSectionProps) => {
   const { t } = useTranslation();
 
