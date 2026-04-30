@@ -41,6 +41,11 @@ export const useAuth = () => {
             user_id: session.user.id,
             device_info: deviceInfo,
           } as any).then(() => {});
+
+          // Auto-otkaži pending brisanje računa ako se korisnik prijavi unutar grace perioda
+          supabase.functions.invoke('cancel-account-deletion').then(({ data }) => {
+            if (data?.success) console.log('[auth] Pending account deletion cancelled on sign-in');
+          }).catch(() => {});
         }
       }
     );
