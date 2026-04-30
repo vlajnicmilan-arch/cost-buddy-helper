@@ -77,6 +77,27 @@ serve(async (req) => {
       }
     }
 
+    // Check for Lifetime Pro purchase (one-time payment)
+    const { data: lifetime } = await supabaseClient
+      .from("lifetime_purchases")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (lifetime) {
+      logStep("Lifetime Pro purchase found", { foundingMember: lifetime.founding_member_number });
+      return new Response(JSON.stringify({
+        subscribed: true,
+        tier: "pro",
+        subscription_end: null,
+        source: "lifetime",
+        founding_member_number: lifetime.founding_member_number,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     // Check Stripe subscription
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
