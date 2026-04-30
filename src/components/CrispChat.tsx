@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Capacitor } from "@capacitor/core";
 
 /**
  * Crisp live chat loader.
@@ -76,9 +75,6 @@ export const CrispChat = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Never load in native app — they use in-app feedback FAB instead.
-    if (Capacitor.getPlatform() !== "web") return;
-
     const shouldShow = isPublicLandingPath(location.pathname);
 
     if (shouldShow) {
