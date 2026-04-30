@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { HelpCircle, Mail, Clock, ChevronRight } from 'lucide-react';
+import { HelpCircle, Mail, Clock, ChevronRight, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ContactSupportDialog } from '@/components/support/ContactSupportDialog';
 
@@ -12,6 +13,7 @@ interface HelpDialogContentProps {
 
 export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [showSupport, setShowSupport] = useState(false);
   
   const sections = [
