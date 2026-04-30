@@ -2746,5 +2746,33 @@
       "syncIssues": "Make sure you're signed in with the same account on all devices. Pull-to-refresh on the home screen manually triggers sync. If the problem persists, contact support.",
       "contact": "Email: support@vmbalance.com — we reply within 24 hours. You can also use the contact form on this page (the \"Contact support\" button below) — you'll get an instant email confirmation."
     }
+  },
+  "feedbackForm": {
+    "fabLabel": "Send feedback",
+    "title": "Send feedback",
+    "subtitle": "Help us improve the app. Your input goes straight to the team.",
+    "typeLabel": "Type",
+    "typeBug": "Bug",
+    "typeIdea": "Idea",
+    "typeQuestion": "Question",
+    "message": "Your message",
+    "placeholderBug": "What were you trying to do? What happened? What did you expect?",
+    "placeholderIdea": "Describe your idea or suggestion...",
+    "placeholderQuestion": "Ask your question...",
+    "ratingLabel": "App rating (optional)",
+    "ratingStar": "{{n}} stars",
+    "emailOptional": "Email (optional, for a reply)",
+    "attachDiagnostics": "Attach diagnostics",
+    "diagnosticsHelp": "Current page, version, and recent console logs. Helps the team resolve issues faster.",
+    "showPreview": "Show what is sent",
+    "hidePreview": "Hide preview",
+    "send": "Send",
+    "sending": "Sending...",
+    "thanks": "Thanks for your feedback!",
+    "successTitle": "Thanks! Received.",
+    "successBody": "We'll review your feedback as soon as possible. If you left an email, we'll get back to you if needed.",
+    "errorMessageTooShort": "Please describe briefly (min. 5 characters)",
+    "errorInvalidEmail": "Invalid email address",
+    "submitFailed": "Submission failed. Please try again."
   }
 }

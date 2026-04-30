@@ -1462,6 +1462,66 @@ export type Database = {
           },
         ]
       }
+      feedback_submissions: {
+        Row: {
+          app_version: string | null
+          console_tail: Json | null
+          created_at: string
+          diagnostics: Json | null
+          email: string | null
+          id: string
+          language: string | null
+          message: string
+          platform: string | null
+          rating: number | null
+          route: string | null
+          status: string
+          type: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+          viewport: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          console_tail?: Json | null
+          created_at?: string
+          diagnostics?: Json | null
+          email?: string | null
+          id?: string
+          language?: string | null
+          message: string
+          platform?: string | null
+          rating?: number | null
+          route?: string | null
+          status?: string
+          type: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+          viewport?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          console_tail?: Json | null
+          created_at?: string
+          diagnostics?: Json | null
+          email?: string | null
+          id?: string
+          language?: string | null
+          message?: string
+          platform?: string | null
+          rating?: number | null
+          route?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+          viewport?: string | null
+        }
+        Relationships: []
+      }
       health_summaries: {
         Row: {
           created_at: string

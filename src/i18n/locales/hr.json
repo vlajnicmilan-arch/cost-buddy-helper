@@ -2749,5 +2749,33 @@
       "syncIssues": "Provjerite jeste li prijavljeni s istim računom na svim uređajima. Pull-to-refresh na početnoj stranici ručno aktivira sinkronizaciju. Ako problem traje, kontaktirajte podršku.",
       "contact": "Email: support@vmbalance.com — odgovaramo unutar 24 sata. Možete koristiti i kontakt formu na ovoj stranici (gumb \"Kontaktirajte podršku\" ispod) — dobit ćete trenutnu email potvrdu."
     }
+  },
+  "feedbackForm": {
+    "fabLabel": "Pošalji povratnu informaciju",
+    "title": "Pošalji povratnu informaciju",
+    "subtitle": "Pomozite nam poboljšati aplikaciju. Vaš input ide direktno timu.",
+    "typeLabel": "Vrsta",
+    "typeBug": "Greška",
+    "typeIdea": "Ideja",
+    "typeQuestion": "Pitanje",
+    "message": "Vaša poruka",
+    "placeholderBug": "Što ste pokušavali? Što se dogodilo? Što ste očekivali?",
+    "placeholderIdea": "Opišite svoju ideju ili prijedlog...",
+    "placeholderQuestion": "Postavite svoje pitanje...",
+    "ratingLabel": "Ocjena aplikacije (opcionalno)",
+    "ratingStar": "{{n}} zvjezdica",
+    "emailOptional": "Email (opcionalno, za odgovor)",
+    "attachDiagnostics": "Priloži dijagnostiku",
+    "diagnosticsHelp": "Trenutna stranica, verzija i posljednje console poruke. Pomaže timu brže riješiti problem.",
+    "showPreview": "Prikaži što se šalje",
+    "hidePreview": "Sakrij pregled",
+    "send": "Pošalji",
+    "sending": "Šaljem...",
+    "thanks": "Hvala na povratnoj informaciji!",
+    "successTitle": "Hvala! Zaprimljeno.",
+    "successBody": "Pregledat ćemo vašu povratnu informaciju što prije. Ako ste ostavili email, javit ćemo vam se po potrebi.",
+    "errorMessageTooShort": "Molimo opišite barem nakratko (min. 5 znakova)",
+    "errorInvalidEmail": "Neispravna email adresa",
+    "submitFailed": "Slanje nije uspjelo. Pokušajte ponovno."
   }
 }
