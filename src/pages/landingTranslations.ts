@@ -111,8 +111,8 @@ const translations: Record<LandingLanguage, TranslationTree> = {
       pricing: {
         title: 'Simple, Transparent Pricing', subtitle: 'Start free, upgrade when you need more', month: 'mo', popular: 'Most Popular', cta: 'Get Started',
         free: { name: 'Free', price: '€0', f1: 'Up to 30 transactions/mo', f2: '1 payment source', f3: '1 budget', f4: 'Receipt scanning (5/mo)' },
-        pro: { name: 'Pro', price: '€4.99', f1: 'Everything in Free', f2: 'Unlimited projects & budgets', f3: 'AI insights & reports', f4: 'Personal + business tracking' },
-        business: { name: 'Business', price: '€9.99', f1: 'Everything in Pro', f2: 'Workers & timesheets', f3: 'Team & multi-user access', f4: 'Advanced projects with collaborators' },
+        pro: { name: 'Pro', price: '€7.99', f1: 'Everything in Free', f2: 'Unlimited projects & budgets', f3: 'AI insights & reports', f4: 'Personal + business tracking' },
+        business: { name: 'Business', price: '€14.99', f1: 'Everything in Pro', f2: 'Workers & timesheets', f3: 'Team & multi-user access', f4: 'Advanced projects with collaborators' },
       },
       testimonials: {
         title: 'Loved by Users', subtitle: 'See what our users are saying',
