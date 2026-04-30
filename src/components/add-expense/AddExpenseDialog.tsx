@@ -806,7 +806,7 @@ export const AddExpenseDialog = ({
     <>
     <Dialog open={open} onOpenChange={(isOpen) => {
       console.warn('🚪 AddExpenseDialog onOpenChange', { isOpen, scanning, showScannedPreview, isSaving, cameraActive: cameraActiveRef.current });
-      if (!isOpen && (scanning || showScannedPreview || isSaving || cameraActiveRef.current)) return;
+      if (!isOpen && (scanning || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current)) return;
       setOpen(isOpen);
       if (isOpen) {
         try {
