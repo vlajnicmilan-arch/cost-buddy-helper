@@ -210,14 +210,17 @@ async function fetchFont(url: string): Promise<Uint8Array> {
 
 const FONT_URLS = {
   reg: [
-    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-latin-ext-400-normal.ttf',
-    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.3/files/noto-sans-latin-ext-400-normal.ttf',
+    'https://github.com/notofonts/notofonts.github.io/raw/main/fonts/NotoSans/hinted/ttf/NotoSans-Regular.ttf',
+    'https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSans/hinted/ttf/NotoSans-Regular.ttf',
   ],
   bold: [
-    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.22/files/noto-sans-latin-ext-700-normal.ttf',
-    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.3/files/noto-sans-latin-ext-700-normal.ttf',
+    'https://github.com/notofonts/notofonts.github.io/raw/main/fonts/NotoSans/hinted/ttf/NotoSans-Bold.ttf',
+    'https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSans/hinted/ttf/NotoSans-Bold.ttf',
   ],
 };
+
+// In-memory cache so we don't refetch on every invocation of the same isolate.
+let CACHED_FONTS: { reg: Uint8Array; bold: Uint8Array } | null = null;
 
 async function tryFetch(urls: string[]): Promise<Uint8Array> {
   let lastErr: unknown;
@@ -228,8 +231,10 @@ async function tryFetch(urls: string[]): Promise<Uint8Array> {
 }
 
 async function loadFonts() {
+  if (CACHED_FONTS) return CACHED_FONTS;
   const [reg, bold] = await Promise.all([tryFetch(FONT_URLS.reg), tryFetch(FONT_URLS.bold)]);
-  return { reg, bold };
+  CACHED_FONTS = { reg, bold };
+  return CACHED_FONTS;
 }
 
 async function buildDpaPdf(input: DpaInput): Promise<Uint8Array> {
