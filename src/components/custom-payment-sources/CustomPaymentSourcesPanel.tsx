@@ -288,7 +288,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
       {/* Existing custom sources */}
       {customPaymentSources.length === 0 ? (
         <EmptyState
-          variant="generic"
+          variant="wallet"
           title={t('common.noCustomPaymentSources')}
           description={t('common.clickNewToAdd')}
           action={{
