@@ -23,6 +23,21 @@ const isInstalledApp = () => {
 
 const path = window.location.pathname;
 const isFastLanding = (path === "/" || path === "/landing") && !isInstalledApp();
+const CRISP_WEBSITE_ID = "83888a2d-5927-4961-a7b1-eb91af074a0d";
+const CRISP_SCRIPT_ID = "crisp-chat-loader";
+
+const loadFastLandingCrisp = () => {
+  const w = window as any;
+  w.$crisp = w.$crisp || [];
+  w.CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
+  if (document.getElementById(CRISP_SCRIPT_ID)) return;
+
+  const script = document.createElement("script");
+  script.id = CRISP_SCRIPT_ID;
+  script.src = "https://client.crisp.chat/l.js";
+  script.async = true;
+  document.head.appendChild(script);
+};
 
 if (!isFastLanding) idle(() => {
   // Dynamic import keeps Sentry out of the initial JS bundle entirely.
@@ -118,6 +133,7 @@ try {
 const root = createRoot(document.getElementById("root")!);
 
 if (isFastLanding) {
+  idle(loadFastLandingCrisp);
   root.render(
     <React.StrictMode>
       <Landing />

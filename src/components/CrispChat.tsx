@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Capacitor } from "@capacitor/core";
 
 /**
  * Crisp live chat loader.
@@ -25,6 +24,7 @@ const PUBLIC_PATH_PREFIXES = [
 
 const CRISP_WEBSITE_ID = "83888a2d-5927-4961-a7b1-eb91af074a0d";
 const CRISP_SCRIPT_ID = "crisp-chat-loader";
+const CRISP_CONTAINER_ID = "crisp-chatbox";
 
 const isPublicLandingPath = (pathname: string): boolean => {
   if (pathname === "/" || pathname === "/landing") return true;
@@ -35,12 +35,13 @@ const isPublicLandingPath = (pathname: string): boolean => {
 
 const loadCrisp = () => {
   if (typeof window === "undefined") return;
-  if (document.getElementById(CRISP_SCRIPT_ID)) return;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).$crisp = [];
+  (window as any).$crisp = (window as any).$crisp || [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
+
+  if (document.getElementById(CRISP_SCRIPT_ID)) return;
 
   const script = document.createElement("script");
   script.id = CRISP_SCRIPT_ID;
@@ -63,19 +64,25 @@ const hideCrisp = () => {
   if (Array.isArray(w.$crisp)) {
     w.$crisp.push(["do", "chat:hide"]);
   }
+
+  const crispContainer = document.getElementById(CRISP_CONTAINER_ID);
+  if (crispContainer) {
+    crispContainer.style.display = "none";
+  }
 };
 
 export const CrispChat = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Never load in native app — they use in-app feedback FAB instead.
-    if (Capacitor.isNativePlatform()) return;
-
     const shouldShow = isPublicLandingPath(location.pathname);
 
     if (shouldShow) {
       loadCrisp();
+      const crispContainer = document.getElementById(CRISP_CONTAINER_ID);
+      if (crispContainer) {
+        crispContainer.style.display = "";
+      }
       // If already loaded from a previous visit, make sure it's visible.
       showCrisp();
     } else {
