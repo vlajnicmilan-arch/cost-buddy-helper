@@ -188,7 +188,13 @@ const HeroSection = () => {
             whileHover={{ scale: 1.02, rotate: 1 }}
             transition={{ type: 'spring', stiffness: 300 }}
           >
-            <img src={heroImage} alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="1024" height="1024" fetchPriority="high" decoding="async" />
+            {/* Static /public path matches the <link rel=preload> in
+                index.html, so the browser reuses the already-downloaded
+                bytes for LCP instead of waiting for the JS bundle. */}
+            <picture>
+              <source media="(min-width: 1024px)" srcSet="/hero-receipt-scan.webp" type="image/webp" />
+              <img src="/hero-receipt-scan-mobile.webp" alt="Pametni telefon, kalkulator i novčanice na stolu" className="w-full h-auto object-cover" width="1024" height="1024" fetchPriority="high" decoding="async" />
+            </picture>
 
             <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
           </motion.div>
