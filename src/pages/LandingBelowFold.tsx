@@ -241,4 +241,5 @@ export const LandingBelowFold = ({ t, goToSignup }: LandingBelowFoldProps) => {
       </div>
     </section>
   </>
-);
+  );
+};
