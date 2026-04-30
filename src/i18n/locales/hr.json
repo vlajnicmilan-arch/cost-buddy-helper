@@ -685,6 +685,8 @@
     "no": "Ne",
     "back": "Natrag",
     "next": "Dalje",
+    "previousMonth": "Prethodni mjesec",
+    "nextMonth": "Sljedeći mjesec",
     "search": "Pretraži",
     "filter": "Filtriraj",
     "all": "Sve",

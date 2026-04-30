@@ -676,6 +676,8 @@
     "yes": "Yes",
     "no": "No",
     "back": "Back",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
     "next": "Next",
     "search": "Search",
     "filter": "Filter",
