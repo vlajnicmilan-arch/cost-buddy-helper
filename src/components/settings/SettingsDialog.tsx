@@ -66,6 +66,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [tempName, setTempName] = useState('');
   
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingZip, setIsExportingZip] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ expenses: number; items: number } | null>(null);
   const [importError, setImportError] = useState('');
