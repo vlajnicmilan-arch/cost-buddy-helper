@@ -533,6 +533,22 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
 
+              <button
+                onClick={() => { setOpen(false); setShowSupportDialog(true); }}
+                className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Mail className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">{t('settings.contactSupport', 'Kontakt podrška')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.contactSupportDesc', 'Odgovor unutar 24h • support@vmbalance.com')}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+
               {!isLocalMode && user && (
                 <>
                   <button
