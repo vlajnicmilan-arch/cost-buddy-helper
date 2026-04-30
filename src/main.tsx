@@ -26,7 +26,16 @@ const isFastLanding = (path === "/" || path === "/landing") && !isInstalledApp()
 
 if (!isFastLanding) idle(() => {
   // Dynamic import keeps Sentry out of the initial JS bundle entirely.
-  import('./lib/sentry').then(({ initSentry }) => initSentry()).catch(() => {});
+  // Sentry self-checks analytics consent before initializing; we also re-init
+  // when the user opts in later via the cookie banner.
+  import('./lib/sentry').then(({ initSentry }) => {
+    initSentry();
+    import('./lib/consentManager').then(({ onConsentChange }) => {
+      onConsentChange((state) => {
+        if (state.analytics) initSentry();
+      });
+    }).catch(() => {});
+  }).catch(() => {});
   import('./lib/diagnosticLogger')
     .then(({ logDiagnostic }) => logDiagnostic('boot_start', {
       href: window.location.href,

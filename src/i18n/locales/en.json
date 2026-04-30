@@ -1671,14 +1671,27 @@
     }
   },
   "gdpr": {
-    "bannerTitle": "Privacy & data storage",
+    "bannerTitle": "Privacy & cookies",
     "bannerText": "This app uses localStorage and IndexedDB to store your settings and financial data on your device. We do not use marketing cookies or track your activities outside the app.",
+    "bannerTextV2": "We use cookies and local storage to run the app. Analytics and marketing cookies are only used with your consent. You can accept all, reject all, or customize.",
     "accept": "I accept",
+    "acceptAll": "Accept all",
+    "rejectAll": "Reject all",
+    "customize": "Customize",
+    "savePreferences": "Save preferences",
     "privacyPolicy": "Privacy Policy",
     "consentLabel": "I accept the {link} and consent to the processing of personal data in accordance with GDPR regulations.",
     "privacyPolicyLink": "Privacy Policy",
     "settingsPrivacyTitle": "Privacy Policy",
-    "settingsPrivacyDesc": "GDPR rights and data processing"
+    "settingsPrivacyDesc": "GDPR rights and data processing",
+    "cat": {
+      "necessary": "Necessary",
+      "necessaryDesc": "Required for the app to work: login, security, language, PIN. Cannot be disabled.",
+      "analytics": "Analytics",
+      "analyticsDesc": "Error tracking (Sentry) to improve stability. No personal data collected.",
+      "marketing": "Marketing",
+      "marketingDesc": "We currently do not use marketing cookies. Reserved for future promotional activities."
+    }
   },
   "lock": {
     "title": "App is locked",
