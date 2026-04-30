@@ -108,7 +108,7 @@ export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPan
           </div>
         ) : recurringTransactions.length === 0 ? (
           <div className="py-20 text-center space-y-3">
-            <Repeat className="w-12 h-12 mx-auto text-muted-foreground/30" />
+            <Repeat className="w-12 h-12 mx-auto text-muted-foreground/50" />
             <p className="text-muted-foreground">{t('recurring.noTransactions')}</p>
             <p className="text-sm text-muted-foreground/70">
               {t('recurring.noTransactionsHint')}

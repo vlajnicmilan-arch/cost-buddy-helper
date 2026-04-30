@@ -292,7 +292,10 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                 {sharedSources.map(source => (
                   <div
                     key={source.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={source.source_name || 'Račun'}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     onClick={() => {
                       const fullSource: CustomPaymentSource = {
                         id: source.payment_source_id,
@@ -307,6 +310,12 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                       setSelectedPaymentSource(fullSource);
                       setPaymentSourceDialogOpen(true);
                       refetchExpenses();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        (e.currentTarget as HTMLDivElement).click();
+                      }
                     }}
                   >
                     <span className="text-lg">{source.source_icon || '💳'}</span>
@@ -368,13 +377,22 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
                   return (
                   <div
                     key={budget.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={budget.budget_name || 'Budžet'}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     onClick={() => {
                       if (fullBudget) {
                         setSelectedBudget(fullBudget);
                         setBudgetDialogOpen(true);
                       } else {
                         toast.info(t('family.budgetNotAvailable'));
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        (e.currentTarget as HTMLDivElement).click();
                       }
                     }}
                   >

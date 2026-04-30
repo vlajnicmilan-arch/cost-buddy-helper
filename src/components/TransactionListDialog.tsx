@@ -343,7 +343,7 @@ export const TransactionListDialog = ({
                           </p>
                           <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
                             <span>{paymentInfo.icon} {paymentInfo.name}</span>
-                            <span className="text-muted-foreground/40">•</span>
+                            <span className="text-muted-foreground/50">•</span>
                             <span className="truncate max-w-[60px]">{categoryInfo.name}</span>
                           </div>
                         </div>

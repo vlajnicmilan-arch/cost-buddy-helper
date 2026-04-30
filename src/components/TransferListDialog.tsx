@@ -92,7 +92,7 @@ export const TransferListDialog = ({
         <div className="flex-1 overflow-y-auto -mx-6 px-6" style={{ maxHeight: 'calc(85vh - 280px)' }}>
           {filteredTransfers.length === 0 ? (
             <div className="py-12 text-center">
-              <ArrowLeftRight className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+              <ArrowLeftRight className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
               <p className="text-muted-foreground">
                 {transfers.length === 0 
                   ? t('transactions.noTransfers')

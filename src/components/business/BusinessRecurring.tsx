@@ -137,7 +137,7 @@ export const BusinessRecurring = () => {
 
       {items.length === 0 && !loading && (
         <div className="text-center py-8">
-          <Calendar className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+          <Calendar className="w-8 h-8 mx-auto text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">{t('business.recurring.noRecurring', 'Nema ponavljajućih obveza')}</p>
         </div>
       )}

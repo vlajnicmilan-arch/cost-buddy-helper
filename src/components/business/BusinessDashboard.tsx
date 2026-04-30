@@ -195,7 +195,7 @@ export const BusinessDashboard = ({ expenses, totalReceivable, totalPayable }: P
       {expenses.length === 0 && (
         <Card className="border-none shadow-sm">
           <CardContent className="p-6 text-center">
-            <DollarSign className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
+            <DollarSign className="w-10 h-10 mx-auto text-muted-foreground/50 mb-2" />
             <p className="text-sm text-muted-foreground">{t('business.dashboard.noTransactions', 'Još nema poslovnih transakcija')}</p>
             <p className="text-xs text-muted-foreground/70 mt-1">{t('business.dashboard.addFirstHint', 'Dodajte prvu transakciju u kartici "Transakcije"')}</p>
           </CardContent>
