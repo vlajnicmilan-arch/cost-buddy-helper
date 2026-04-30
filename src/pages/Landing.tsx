@@ -138,22 +138,19 @@ const HeroSection = () => {
             </span>
           </motion.div>
 
-          <motion.h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6"
-            initial="hidden" animate="visible" variants={fadeUp} custom={1}
-          >
+          {/* H1 renders immediately (no motion wrapper) so it qualifies as
+              the FCP element and ships in the first frame. Animations on
+              text were a measurable FCP regression. */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6">
             {t('landing.hero.title')}{' '}
             <span className="bg-gradient-to-r from-primary via-accent to-income bg-clip-text text-transparent">
               {t('landing.hero.titleHighlight')}
             </span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            className="text-lg text-muted-foreground max-w-lg mb-8"
-            initial="hidden" animate="visible" variants={fadeUp} custom={2}
-          >
+          <p className="text-lg text-muted-foreground max-w-lg mb-8">
             {t('landing.hero.subtitle')}
-          </motion.p>
+          </p>
 
           <motion.div
             className="flex flex-col sm:flex-row items-start gap-4"
