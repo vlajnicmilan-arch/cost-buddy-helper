@@ -1,6 +1,8 @@
 export type LandingLanguage = 'hr' | 'en' | 'de';
 
-type TranslationTree = Record<string, string | TranslationTree>;
+interface TranslationTree {
+  [key: string]: string | TranslationTree;
+}
 
 const translations: Record<LandingLanguage, TranslationTree> = {
   hr: {
