@@ -141,7 +141,7 @@ const Calendar = () => {
                     mode
                   );
                   showSuccess(t('calendar.monthExported', 'Mjesec izvezen'));
-                } catch { showError('Greška'); }
+                } catch { showError(t('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); }
               }}
             />
             <Button variant="ghost" size="icon" onClick={nextMonth}>

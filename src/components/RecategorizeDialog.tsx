@@ -63,7 +63,7 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
       .in('expense_id', expenseIds.length > 0 ? expenseIds : ['none']);
 
     if (error || !itemsData || itemsData.length === 0) {
-      showError('Nema transakcija s artiklima za analizu');
+      showError(t('errors.transactions.noItemsForAnalysis', 'Nema transakcija s artiklima za analizu'));
       setPhase('idle');
       return;
     }
@@ -138,7 +138,7 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
   const applySuggestions = async () => {
     const toApply = suggestions.filter(s => s.accepted);
     if (toApply.length === 0) {
-      showError('Nema odabranih prijedloga');
+      showError(t('errors.transactions.noSuggestionsSelected', 'Nema odabranih prijedloga'));
       return;
     }
 

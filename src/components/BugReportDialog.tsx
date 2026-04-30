@@ -46,7 +46,7 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
     }
 
     if (!user) {
-      showError('Morate biti prijavljeni za prijavu problema');
+      showError(t('errors.bug.loginRequired', 'Morate biti prijavljeni za prijavu problema'));
       return;
     }
 
