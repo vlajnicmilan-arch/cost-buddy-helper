@@ -25,7 +25,7 @@ import {
   TrendingDown, CheckCircle2, Clock, AlertTriangle, History, BookOpen
 } from 'lucide-react';
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend
+  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid
 } from 'recharts';
 import { ProjectRevisionsReport } from './ProjectRevisionsReport';
 
@@ -529,15 +529,22 @@ export const ProjectReportsDialog = ({
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={milestoneProgressData} layout="vertical">
-                          <XAxis type="number" tickFormatter={(v) => formatAmount(v)} />
-                          <YAxis type="category" dataKey="name" width={100} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis type="number" tickFormatter={(v) => formatAmount(v)} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                          <YAxis type="category" dataKey="name" width={100} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                           <Tooltip 
                             formatter={(value: number) => formatAmount(value)}
                             labelFormatter={(label) => milestoneProgressData.find(d => d.name === label)?.fullName || label}
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                              color: 'hsl(var(--popover-foreground))',
+                            }}
                           />
-                          <Legend />
-                          <Bar dataKey="budget" name={t('projects.budget', 'Budžet')} fill="#94a3b8" />
-                          <Bar dataKey="spent" name={t('projects.spent', 'Potrošeno')} fill="#3b82f6" />
+                          <Legend wrapperStyle={{ color: 'hsl(var(--muted-foreground))' }} />
+                          <Bar dataKey="budget" name={t('projects.budget', 'Budžet')} fill="hsl(var(--muted-foreground))" opacity={0.4} />
+                          <Bar dataKey="spent" name={t('projects.spent', 'Potrošeno')} fill="hsl(var(--primary))" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -634,9 +641,18 @@ export const ProjectReportsDialog = ({
                       <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={spendingByMember}>
-                            <XAxis dataKey="name" />
-                            <YAxis tickFormatter={(v) => formatAmount(v)} />
-                            <Tooltip formatter={(value: number) => formatAmount(value)} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                            <YAxis tickFormatter={(v) => formatAmount(v)} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                            <Tooltip
+                              formatter={(value: number) => formatAmount(value)}
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--popover))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px',
+                                color: 'hsl(var(--popover-foreground))',
+                              }}
+                            />
                             <Bar dataKey="spent" name={t('projects.spent', 'Potrošeno')}>
                               {spendingByMember.map((entry, index) => (
                                 <Cell key={index} fill={entry.color} />

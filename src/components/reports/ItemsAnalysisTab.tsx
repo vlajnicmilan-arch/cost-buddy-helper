@@ -376,8 +376,8 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
               ) : (
                 <BarChart data={chartData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" tickFormatter={(v) => formatAmount(v)} />
-                  <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12 }} />
+                  <XAxis type="number" tickFormatter={(v) => formatAmount(v)} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
                   <Tooltip
                     formatter={(value: number) => formatAmount(value)}
                     contentStyle={{
