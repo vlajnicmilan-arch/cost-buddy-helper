@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { saveDocument, deleteDocument, ProjectDocumentRow, StorageMode } from '@/lib/documentStorage';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 
 export type DocumentKind = 'document' | 'progress_photo' | 'receipt';
 

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Expense } from '@/types/expense';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { tr } from '@/lib/errorMessages';
 
 export const usePendingTransactions = (incomeSourceId: string | null) => {
   const { user } = useAuth();
