@@ -13,7 +13,7 @@ import { downloadApk } from '@/lib/downloadApk';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import logo from '@/assets/logo.webp';
-import heroImage from '@/assets/hero-receipt-scan.webp';
+// heroImage is now served from /public (preloaded in index.html for LCP).
 import cardsImage from '@/assets/cards-floating.webp';
 import mockupDashboard from '@/assets/app-mockup-dashboard.webp';
 import mockupBudget from '@/assets/app-mockup-budget.webp';
