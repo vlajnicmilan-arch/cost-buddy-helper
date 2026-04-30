@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Coins, Globe, Download, Upload, Loader2, Zap, RefreshCw, Database, ChevronRight } from 'lucide-react';
+import { Coins, Globe, Download, Upload, Loader2, Zap, RefreshCw, Database, ChevronRight, Archive } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
