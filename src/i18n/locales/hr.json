@@ -1,4 +1,13 @@
 {
+  "disclaimer": {
+    "workerData": {
+      "title": "Obrada osobnih podataka",
+      "body": "Unosom osobnih podataka treće osobe (ime, kontakt, sati rada, satnica) potvrđujete da imate pravnu osnovu (ugovor, privola) i da ste tu osobu informirali o obradi.",
+      "notOfficialTitle": "Nije službena evidencija",
+      "notOfficialBody": "Podaci se koriste isključivo za interno praćenje projekta i ne predstavljaju službenu evidenciju u smislu Zakona o radu, Zakona o računovodstvu ni Zakona o porezu.",
+      "accept": "Razumijem i prihvaćam"
+    }
+  },
   "fileExport": {
     "download": "Preuzmi",
     "share": "Podijeli",
