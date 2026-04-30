@@ -134,6 +134,19 @@ serve(async (req) => {
 
     logStep("Active subscription found", { tier, subscriptionEnd });
 
+    // Funnel: log paid_conversion (idempotent — unique index per user dedups).
+    try {
+      await supabaseClient.from('funnel_events').insert({
+        user_id: user.id,
+        event_name: 'paid_conversion',
+        platform: 'stripe',
+        metadata: { tier, source: 'stripe', product_id: productId } as any,
+      });
+    } catch (e) {
+      // Ignore duplicate / non-critical errors
+      logStep("funnel insert skipped", { reason: (e as Error)?.message });
+    }
+
     return new Response(JSON.stringify({
       subscribed: true,
       tier,
