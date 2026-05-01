@@ -1019,6 +1019,7 @@ export const AddExpenseDialog = ({
               isNative={isNative}
               onNativeCapture={handleNativeCapture}
               onImageCapture={handleImageCapture}
+              onOpenFileInputCapture={openFileInputCapture}
               onScanMultipleImages={handleScanMultipleImages}
               onToggleMultiMode={() => setShowMultiImageCollector(true)}
               onRemoveReceiptImage={(idx) => setReceiptImages(prev => prev.filter((_, i) => i !== idx))}
