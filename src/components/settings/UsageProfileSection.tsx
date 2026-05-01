@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Wallet, FolderKanban, Check } from 'lucide-react';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -34,6 +35,7 @@ export const UsageProfileSection = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { usageProfile, setUsageProfile } = useAppState();
+  const { isProTier } = useFeatureAccess();
 
   const [pendingHide, setPendingHide] = useState(false);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
