@@ -47,6 +47,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('current');
   const [milestoneFilter, setMilestoneFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [view, setView] = useState<'list' | 'monthly'>('list');
 
   const filteredLogs = useMemo(() => {
     const now = new Date();
