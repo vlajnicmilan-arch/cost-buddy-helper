@@ -62,10 +62,12 @@ export const ProjectDetailDialog = ({
   const { hasAccess } = useFeatureAccess();
   
   const isBusinessView = !!activeBusinessProfileId && project?.business_profile_id === activeBusinessProfileId;
-  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce');
-  
+  const canSeeWorkers = hasAccess('workforce');
+  const canSeeCollaborators = isBusinessView && hasAccess('collaborators');
+
   const canSeeTab = (tabKey: string) => {
-    if ((tabKey === 'workers' || tabKey === 'collaborators') && !canAccessBusinessTabs) return false;
+    if (tabKey === 'workers' && !canSeeWorkers) return false;
+    if (tabKey === 'collaborators' && !canSeeCollaborators) return false;
     return isManager || isTabVisible(tabKey);
   };
 
