@@ -39,12 +39,21 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { type, targetId, invitedEmail, role, suggestedContext, defaultPermissions } = body;
-    console.log("[SEND-MEMBER-INVITATION] Request body:", { type, targetId, invitedEmail, role, suggestedContext, defaultPermissions });
+    const { type, targetId, invitedEmail, role, suggestedContext, defaultPermissions, workerId, sendEmail } = body;
+    console.log("[SEND-MEMBER-INVITATION] Request body:", { type, targetId, invitedEmail, role, suggestedContext, defaultPermissions, workerId, sendEmail });
 
     if (!type || !targetId || !invitedEmail || !role) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(invitedEmail)) {
+      return new Response(
+        JSON.stringify({ error: "invalid_email", message: "Neispravna email adresa" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
