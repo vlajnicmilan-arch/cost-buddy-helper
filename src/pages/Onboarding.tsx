@@ -201,6 +201,10 @@ const Onboarding = () => {
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('show_welcome_animation', 'true');
       localStorage.setItem('pwa-auto-update', 'true');
+      // Persist usage profile (default to finance_only if user somehow skipped step 2)
+      const profileToSave = usageProfileChoice ?? 'finance_only';
+      localStorage.setItem('usage_profile', profileToSave);
+      setUsageProfile(profileToSave);
       if (displayName.trim()) setContextDisplayName(displayName.trim());
       setOnboardingCompleted(true);
       // Funnel: log onboarding completion (best-effort)
@@ -208,6 +212,8 @@ const Onboarding = () => {
         .then(({ logFunnelEvent }) => logFunnelEvent('onboarding_complete', {
           selected_sources: selectedSources.length,
           custom_sources: customSources.length,
+          usage_profile: profileToSave,
+          plan_choice: planChoice,
         }))
         .catch(() => {});
       navigate('/home', { replace: true });
