@@ -118,13 +118,76 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (existingMember) {
-      console.log('User is already a member');
+      console.log('User is already a member - checking worker auto-mapping before exit');
+
+      // Even if already a member, if this invitation links to a worker record,
+      // ensure the worker row is mapped to this user so their work logs count.
+      if (type === 'project') {
+        const { data: invWorkerRow } = await supabaseAdmin
+          .from('project_invitations')
+          .select('worker_id')
+          .eq('id', invitation.invitation_id)
+          .maybeSingle();
+
+        const workerId = (invWorkerRow as any)?.worker_id;
+        if (workerId) {
+          const { data: workerRow } = await supabaseAdmin
+            .from('project_workers')
+            .select('id, user_id, project_id')
+            .eq('id', workerId)
+            .maybeSingle();
+
+          if (workerRow && workerRow.project_id === invitation.target_id &&
+              (!workerRow.user_id || workerRow.user_id === user.id)) {
+            const { data: existingMap } = await supabaseAdmin
+              .from('project_workers')
+              .select('id')
+              .eq('project_id', invitation.target_id)
+              .eq('user_id', user.id)
+              .neq('id', workerId)
+              .maybeSingle();
+
+            if (!existingMap && !workerRow.user_id) {
+              await supabaseAdmin
+                .from('project_workers')
+                .update({ user_id: user.id })
+                .eq('id', workerId);
+              console.log('Worker auto-mapped (existing member path):', workerId, '→', user.id);
+
+              // Backfill: copy existing work_logs hours into project_work_entries
+              const { data: existingLogs } = await supabaseAdmin
+                .from('project_work_logs')
+                .select('log_date, hours, summary, milestone_id')
+                .eq('project_id', invitation.target_id)
+                .eq('user_id', user.id)
+                .not('hours', 'is', null);
+
+              if (existingLogs && existingLogs.length > 0) {
+                const entryRows = existingLogs.map((l: any) => ({
+                  worker_id: workerId,
+                  project_id: invitation.target_id,
+                  work_date: l.log_date,
+                  scheduled_hours: l.hours,
+                  actual_hours: l.hours,
+                  note: l.summary,
+                  milestone_ids: l.milestone_id ? [l.milestone_id] : null,
+                }));
+                await supabaseAdmin
+                  .from('project_work_entries')
+                  .upsert(entryRows, { onConflict: 'worker_id,work_date' });
+                console.log('Backfilled', entryRows.length, 'work entries for newly mapped worker');
+              }
+            }
+          }
+        }
+      }
+
       // Mark as accepted since token was already consumed
       await supabaseAdmin
         .from(invitationTable)
         .update({ status: 'accepted' })
         .eq('id', invitation.invitation_id);
-        
+
       return new Response(
         JSON.stringify({ error: type === 'project' ? 'Već ste član ovog projekta' : 'Već ste član ovog budžeta' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
