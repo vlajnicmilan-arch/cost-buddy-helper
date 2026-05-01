@@ -146,6 +146,25 @@ export const WorkLogDialog = ({
             </div>
           )}
 
+          {/* Hours */}
+          <div className="space-y-1.5">
+            <Label htmlFor="worklog-hours">{t('workLog.hours', 'Sati rada')}</Label>
+            <Input
+              id="worklog-hours"
+              type="number"
+              inputMode="decimal"
+              step="0.25"
+              min="0"
+              max="24"
+              value={hours}
+              onChange={(e) => setHours(e.target.value)}
+              placeholder={t('workLog.hoursPlaceholder', 'npr. 8')}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t('workLog.hoursHint', 'Tvoji sati će se automatski zbrojiti u mjesečnu satnicu.')}
+            </p>
+          </div>
+
           {/* Weather */}
           <div className="space-y-1.5">
             <Label>{t('workLog.weather', 'Vrijeme (opcionalno)')}</Label>
