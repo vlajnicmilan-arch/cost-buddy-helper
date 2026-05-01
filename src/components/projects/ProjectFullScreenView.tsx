@@ -446,12 +446,6 @@ export const ProjectFullScreenView = ({
                               </Tooltip>
                             </TabsTrigger>
                           )}
-                          {canAccessBusinessTabs && (
-                            <TabsTrigger value="timeclock" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                              <Clock className="w-3.5 h-3.5" />
-                              {t('timeClock.title', 'Šihterica')}
-                            </TabsTrigger>
-                          )}
                         </TooltipProvider>
                       )}
 
