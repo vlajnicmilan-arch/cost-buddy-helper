@@ -44,6 +44,7 @@ import { NotificationsSection } from './NotificationsSection';
 import { DataSection } from './DataSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
+import { UsageProfileSection } from './UsageProfileSection';
 import { HelpDialogContent } from './HelpDialogContent';
 import { MyFeedbackSection } from '@/components/feedback/MyFeedbackSection';
 import { ContactSupportDialog } from '@/components/support/ContactSupportDialog';
@@ -706,6 +707,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onShowBusinessProfile={() => setShowBusinessProfile(true)}
               isLocalMode={isLocalMode}
             />
+
+            <Separator />
+
+            <UsageProfileSection />
 
             <Separator />
 
