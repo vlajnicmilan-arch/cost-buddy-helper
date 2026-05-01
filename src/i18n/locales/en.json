@@ -301,7 +301,11 @@
       "startFrom": "Start from a template (optional)",
       "phases": "phases",
       "willCreatePhases": "Will be auto-created"
-    }
+    },
+    "inviteWorkerToApp": "Invite to app",
+    "workerLinked": "Linked",
+    "inviteWorkerHint": "Generate a link and send it to the worker. When they open it and sign in, they're automatically linked to this record and can log their work — no paid plan needed.",
+    "generateWorkerLink": "Generate invite link"
   },
   "estimates": {
     "title": "Quotes & Estimates",
@@ -2614,7 +2618,10 @@
       "last3": "Last 3 months",
       "all": "All",
       "allPhases": "All phases"
-    }
+    },
+    "hours": "Work hours",
+    "hoursPlaceholder": "e.g. 8",
+    "hoursHint": "Your hours will be automatically added to the monthly timesheet."
   },
   "support": {
     "title": "Contact support",

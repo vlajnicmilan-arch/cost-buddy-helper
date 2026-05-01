@@ -304,7 +304,11 @@
       "startFrom": "Započni iz šablone (opcionalno)",
       "phases": "faza",
       "willCreatePhases": "Bit će automatski kreirano"
-    }
+    },
+    "inviteWorkerToApp": "Pozovi u aplikaciju",
+    "workerLinked": "Povezan",
+    "inviteWorkerHint": "Generiraj link i pošalji ga radniku. Kad ga otvori i prijavi se, automatski se povezuje s ovim zapisom i može unositi svoj dnevnik rada — bez plaćene verzije.",
+    "generateWorkerLink": "Generiraj pozivni link"
   },
   "estimates": {
     "title": "Ponude i predračuni",
@@ -2617,7 +2621,10 @@
       "last3": "Zadnja 3 mjeseca",
       "all": "Sve",
       "allPhases": "Sve faze"
-    }
+    },
+    "hours": "Sati rada",
+    "hoursPlaceholder": "npr. 8",
+    "hoursHint": "Tvoji sati će se automatski zbrojiti u mjesečnu satnicu."
   },
   "support": {
     "title": "Kontaktirajte podršku",

@@ -283,7 +283,11 @@
     "ofAvailableFunds": "der verfügbaren Mittel",
     "milestoneOverBudget": "Meilenstein hat das Budget überschritten",
     "milestonesOverBudget": "Meilensteine haben das Budget überschritten",
-    "overBudgetBy": "Überschreitung"
+    "overBudgetBy": "Überschreitung",
+    "inviteWorkerToApp": "In die App einladen",
+    "workerLinked": "Verbunden",
+    "inviteWorkerHint": "Erzeuge einen Link und sende ihn dem Mitarbeiter. Beim Öffnen und Anmelden wird er automatisch mit diesem Datensatz verknüpft — ohne kostenpflichtigen Plan.",
+    "generateWorkerLink": "Einladungslink erzeugen"
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",
@@ -2596,7 +2600,10 @@
       "last3": "Letzte 3 Monate",
       "all": "Alle",
       "allPhases": "Alle Phasen"
-    }
+    },
+    "hours": "Arbeitsstunden",
+    "hoursPlaceholder": "z. B. 8",
+    "hoursHint": "Deine Stunden werden automatisch zur monatlichen Stundenliste hinzugefügt."
   },
   "support": {
     "title": "Support kontaktieren",
