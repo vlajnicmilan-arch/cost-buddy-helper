@@ -119,35 +119,53 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is already a member
-    const { data: existingMember } = await adminClient
-      .from(memberTable)
-      .select("id")
-      .eq(idColumn, targetId)
-      .eq("user_id", invitedUser.id)
-      .single();
+    // Check if user is already a member (only when they exist in the system)
+    if (invitedUser) {
+      const { data: existingMember } = await adminClient
+        .from(memberTable)
+        .select("id")
+        .eq(idColumn, targetId)
+        .eq("user_id", invitedUser.id)
+        .maybeSingle();
 
-    if (existingMember) {
-      return new Response(
-        JSON.stringify({ error: "already_member", message: "Korisnik je već član" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+      if (existingMember) {
+        return new Response(
+          JSON.stringify({ error: "already_member", message: "Korisnik je već član" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    // Check for existing pending invitation
-    const { data: existingInvitation } = await adminClient
-      .from(invitationTable)
-      .select("id")
-      .eq(idColumn, targetId)
-      .eq("invited_user_id", invitedUser.id)
-      .eq("status", "pending")
-      .single();
+      // Check for existing pending invitation
+      const { data: existingInvitation } = await adminClient
+        .from(invitationTable)
+        .select("id")
+        .eq(idColumn, targetId)
+        .eq("invited_user_id", invitedUser.id)
+        .eq("status", "pending")
+        .maybeSingle();
 
-    if (existingInvitation) {
-      return new Response(
-        JSON.stringify({ error: "already_invited", message: "Korisnik već ima aktivnu pozivnicu" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (existingInvitation) {
+        return new Response(
+          JSON.stringify({ error: "already_invited", message: "Korisnik već ima aktivnu pozivnicu" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      // For email-only invites, check there isn't already a pending invite for the same email
+      const { data: existingEmailInvite } = await adminClient
+        .from(invitationTable)
+        .select("id")
+        .eq(idColumn, targetId)
+        .eq("email", invitedEmail.toLowerCase())
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (existingEmailInvite) {
+        return new Response(
+          JSON.stringify({ error: "already_invited", message: "Već postoji aktivna pozivnica za tu email adresu" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Get target name
@@ -172,13 +190,13 @@ serve(async (req) => {
     const insertData: Record<string, unknown> = {
       [idColumn]: targetId,
       email: invitedEmail.toLowerCase(),
-      invited_user_id: invitedUser.id,
+      invited_user_id: invitedUser?.id ?? null,
       role: role,
       invited_by: user.id,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    // For project invitations, add suggested context (personal | business) and default permissions
+    // For project invitations, add suggested context, default permissions, optional worker_id
     if (type === "project") {
       if (suggestedContext) {
         insertData.suggested_context = suggestedContext === "business" ? "business" : "personal";
@@ -186,10 +204,10 @@ serve(async (req) => {
       if (defaultPermissions && typeof defaultPermissions === "object") {
         insertData.default_permissions = defaultPermissions;
       }
+      if (workerId) {
+        insertData.worker_id = workerId;
+      }
     }
-
-    // All invitation types now store invited_user_id for proper RLS scoping
-    // (project, budget, payment_source all support invited_user_id column)
 
     const { data: invitation, error: invitationError } = await adminClient
       .from(invitationTable)
@@ -202,7 +220,6 @@ serve(async (req) => {
       throw invitationError;
     }
 
-    // Create notification for the invited user
     const notificationTypeMap: Record<string, string> = {
       project: "project_invitation",
       budget: "budget_invitation",
@@ -217,46 +234,91 @@ serve(async (req) => {
       family: "Pozivnica za obiteljsku grupu",
     };
 
-    const { error: notificationError } = await adminClient
-      .from("notifications")
-      .insert({
+    // Resolve worker name (best-effort) for the email greeting
+    let workerName: string | undefined;
+    if (type === "project" && workerId) {
+      const { data: workerRow } = await adminClient
+        .from("project_workers")
+        .select("first_name, last_name")
+        .eq("id", workerId)
+        .maybeSingle();
+      if (workerRow) {
+        workerName = `${(workerRow as any).first_name || ""} ${(workerRow as any).last_name || ""}`.trim() || undefined;
+      }
+    }
+
+    // In-app notification + push only when user exists
+    if (invitedUser) {
+      const { error: notificationError } = await adminClient
+        .from("notifications")
+        .insert({
+          user_id: invitedUser.id,
+          type: notificationTypeMap[type],
+          title: titleMap[type],
+          message: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
+          data: {
+            invitation_id: invitation.id,
+            target_id: targetId,
+            target_name: targetName,
+            role: role,
+            invited_by: user.id,
+            inviter_name: inviterName,
+            type: type,
+          },
+        });
+
+      if (notificationError) {
+        console.error("Error creating notification:", notificationError);
+      }
+
+      await sendPushNotification({
         user_id: invitedUser.id,
-        type: notificationTypeMap[type],
         title: titleMap[type],
-        message: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
+        body: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
         data: {
           invitation_id: invitation.id,
           target_id: targetId,
-          target_name: targetName,
-          role: role,
-          invited_by: user.id,
-          inviter_name: inviterName,
-          type: type,
+          type: notificationTypeMap[type],
+          category: type === 'family' ? 'chat' : type === 'budget' ? 'budgets' : type === 'payment_source' ? 'transactions' : 'projects',
         },
+        source: "send-member-invitation",
       });
-
-    if (notificationError) {
-      console.error("Error creating notification:", notificationError);
     }
 
-    // Best-effort push to invited user
-    await sendPushNotification({
-      user_id: invitedUser.id,
-      title: titleMap[type],
-      body: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
-      data: {
-        invitation_id: invitation.id,
-        target_id: targetId,
-        type: notificationTypeMap[type],
-        category: type === 'family' ? 'chat' : type === 'budget' ? 'budgets' : type === 'payment_source' ? 'transactions' : 'projects',
-      },
-      source: "send-member-invitation",
-    });
+    // Send transactional email when sendEmail flag is set (or always for email-only invites)
+    let emailSent = false;
+    if (sendEmail || !invitedUser) {
+      try {
+        const inviteUrl = `https://vmbalance.com/join-project/${(invitation as any).token}`;
+        const { error: emailError } = await adminClient.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'project-worker-invitation',
+            recipientEmail: invitedEmail.toLowerCase(),
+            idempotencyKey: `worker-invite-${invitation.id}`,
+            templateData: {
+              inviterName,
+              projectName: targetName,
+              workerName,
+              inviteUrl,
+              isNewUser,
+            },
+          },
+        });
+        if (emailError) {
+          console.error("[SEND-MEMBER-INVITATION] Email send error:", emailError);
+        } else {
+          emailSent = true;
+          console.log("[SEND-MEMBER-INVITATION] Email sent to", invitedEmail);
+        }
+      } catch (e) {
+        console.error("[SEND-MEMBER-INVITATION] Email exception:", e);
+      }
+    }
 
-    console.log(`Invitation sent to ${invitedEmail} for ${type} ${targetId}`);
+    console.log(`Invitation sent to ${invitedEmail} for ${type} ${targetId} (isNewUser=${isNewUser}, emailSent=${emailSent})`);
 
     return new Response(
-      JSON.stringify({ success: true, invitation }),
+      JSON.stringify({ success: true, invitation, mode: invitedUser ? "in_system" : "email_only", emailSent }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
