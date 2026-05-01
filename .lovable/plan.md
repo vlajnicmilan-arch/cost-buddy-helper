@@ -1,67 +1,116 @@
+## Cilj
 
-## Stručna analiza: Trebaš li šihterica modul?
+Dodati profilni izbor u onboarding tako da novi korisnici sami biraju razinu kompleksnosti aplikacije:
 
-### Kontekst
-Aplikacija nije službeni alat za knjigovodstvo/računovodstvo, već **interna evidencija** za tebe i tvoje radnike. Trenutno postoje **dva paralelna sustava** koji prate iste podatke (radne sate):
+1. **Korak A** (svima): "Što želiš pratiti?" → samo osobne financije / financije + projekte
+2. **Korak B** (samo ako odabere projekte): usporedba Free / Pro / Business planova
+3. **Sakriti** "Projekti" iz BottomNav-a ako korisnik odabere samo financije
+4. **Postavke** dobivaju "Profil korištenja" sekciju za promjenu kasnije
+5. **Postojeći korisnici se ne diraju** — zadržavaju trenutno stanje
 
-1. **Dnevnik rada** (`project_work_logs` + `project_work_entries`) — radnik upiše datum, sažetak i ukupne sate. Ovo je primarni tok koji upravo gradimo.
-2. **Šihterica / TimeClock** (`time_clock_entries`) — radnik klikne "dolazak", "pauza", "odlazak"; aplikacija sama broji minute. 17 kolona prema NN 55/2024 (regular/overtime/night/sunday/holiday/standby/field hours), tipovi odsutnosti (godišnji, bolovanje HZZO, roditeljski...).
+## Korisničko iskustvo
 
-### Što trenutno koristiš
-- 4 zapisa ukupno u `time_clock_entries`, samo 1 korisnik (vjerojatno tvoj test).
-- Modul ima ~1490 linija koda + dedicirane RLS politike + monthly report export prema NN 55/2024 formi.
+```text
+Step 1 [name]  →  Step 2 [NEW: profil]  →  Step 3 [NEW: planovi*]  →  Step 4 [sources]  →  Step 5 [cards]
+                                          (* samo ako "i projekte")
+```
 
-### Stručna procjena
+**Korak 2 — "Što želiš pratiti?"**
+Dvije velike kartice:
+- 🪙 **Samo osobne financije** — "Praćenje prihoda, rashoda i budžeta. Idealno za osobnu upotrebu." (preporučeno za većinu)
+- 🗂️ **Financije + projekti** — "Sve gore + vođenje projekata, klijenata, radnika i milestoneova. Za freelance, obrt i tvrtke."
 
-**Šihterica je dizajnirana za pravnu usklađenost prema Pravilniku NN 55/2024** (službena evidencija radnog vremena u Hrvatskoj). Konkretno:
-- 7 tipova sati (regular/overtime/night/sunday/holiday/standby/field) — postoji **isključivo zato** što inspekcija rada to traži
-- 8 tipova odsutnosti s razlikom HZZO vs poslodavac — relevantno za **obračun plaća**
-- Monthly report u formatu koji se predaje računovodstvu
+**Korak 3 — "Odaberi plan"** (samo ako odabrao projekte)
+Tablica/3 kartice s usporedbom (Free / Pro / Business). Reuse postojeći paywall stil.
+- Korisnik MOŽE odabrati Free i nastaviti → ide u Pro/Business onboarding kasnije kad udari u limit
+- Korisnik MOŽE kliknuti "Aktiviraj Pro/Business" → ide na checkout, po povratku nastavlja sources korak
 
-**Ako ne predaješ ništa računovodstvu/inspekciji, sve to je overhead.** Za internu kontrolu tko je koliko radio, dovoljno je:
-- Datum + ukupni sati + napomena (= dnevnik rada koji već imaš)
-- Eventualno tip dana (radni / vikend / godišnji) ako ti to treba za pregled
+## Tehnička izvedba
 
-### Preporuka
+### 1. Novi flag: `usage_profile`
+- Vrijednosti: `'finance_only'` | `'finance_projects'`
+- Pohrana: `localStorage` + Postavke koriste isti pristup kao `business_mode_enabled`
+- Migracija postojećih korisnika: ako `onboarding_completed === 'true'` i nema `usage_profile`, **NE postavljaj ništa** — tretiraj kao "legacy" → pokaži sve tabove (bez promjena u UX-u, kao i dosad)
 
-**Ukloni šihterica modul.** Razlozi:
+Dodati u `AppStateContext.tsx`:
+```ts
+const [usageProfile, setUsageProfileState] = useState<'finance_only' | 'finance_projects' | null>(
+  () => (localStorage.getItem('usage_profile') as any) || null
+);
+const setUsageProfile = (p) => { localStorage.setItem('usage_profile', p); setUsageProfileState(p); };
+```
 
-1. **Duplikacija s dnevnikom rada.** Već imamo `project_work_entries` koji bilježi sate po radniku po danu. Šihterica radi isto, samo s više kolona koje ti ne trebaš.
-2. **Loša korisnička priča za radnika.** Tvoji radnici (Test, Ivan, Dominik...) trebaju **jedan jednostavan flow**: otvori dnevnik → upiši što si radio i koliko sati. Klikanje "dolazak/pauza/odlazak" 3× dnevno je friction kojeg neće raditi.
-3. **Nije potrebno za zakonsku usklađenost** jer aplikacija nije službeni alat.
-4. **Manje koda za održavanje** (~1500 linija + RLS + export).
+### 2. BottomNav: sakrij Projekte za `finance_only`
+U `src/components/BottomNav.tsx`:
+```ts
+const navItems = allNavItems.filter(item => {
+  if (item.path === '/family') return familyModeEnabled && !activeBusinessProfileId;
+  if (item.path === '/projects') {
+    // Legacy korisnici (null) i 'finance_projects' → vidljivo. 'finance_only' → sakriveno.
+    return usageProfile !== 'finance_only';
+  }
+  return true;
+});
+```
 
-### Što dodati u dnevnik rada da pokrije rupe
+Također sakriti druge ulaze u projekte: `ActiveProjectsStrip`, `ProjectOnboardingHint` na Dashboardu, eventualne quick-action gumbe u Home view-u.
 
-Da ne izgubiš korisne stvari iz šihterice, predlažem proširenje `project_work_logs`:
+### 3. Onboarding flow (`src/pages/Onboarding.tsx`)
+- Promijeniti `totalSteps` iz 3 u **dinamički** (4 ili 5, ovisno o izboru)
+- Step 2 (novi): `OnboardingUsageProfileStep` — dvije velike kartice
+- Step 3 (novi, conditional): `OnboardingPlanStep` — usporedba Free/Pro/Business; reuse logiku iz `src/pages/Paywall.tsx` (postojeći checkout flow)
+- Step 4: postojeći "izvori"
+- Step 5: postojeći "kartice"
+- Skip gumb i dalje radi (postavi `usage_profile = 'finance_only'` kao siguran default)
 
-- **Tip dana** (dropdown): radni / vikend / godišnji / bolovanje / neradan — samo za tvoj pregled, bez pravnih implikacija
-- **Mjesečni pregled radnika** (jednostavan): tablica radnika × dana s ukupnim satima; export u PDF/CSV za internu upotrebu (ne službeni obrazac)
-- **Opcionalno: dolazak/odlazak vrijeme** kao 2 polja u istom formularu (npr. "07:00 - 15:30") ako želiš zadržati tu informaciju — ali bez automatskog brojanja, bez 7 kategorija sati
+### 4. Postavke — "Profil korištenja"
+Nova sekcija u `Settings` (provjeriti gdje se već nalazi `business_mode_enabled` toggle pa staviti pored):
+- Radio/segmented control: "Samo financije" | "Financije + projekti"
+- Promjena trenutno samo (ne)skriva tab — ne briše podatke
+- Ako prebaci s "projekti" na "samo financije" i ima aktivnih projekata → confirm dialog ("Tvoji projekti ostaju spremljeni, samo se sakrivaju iz navigacije")
 
-### Plan implementacije (ako odobriš)
+### 5. Funnel tracking
+Dodati novi event u `logFunnelEvent`:
+- `usage_profile_selected` s `{ profile: 'finance_only' | 'finance_projects' }`
+- Pri završetku onboardinga već postojeći `onboarding_complete` event proširi s `usage_profile`
 
-1. **Sigurnosna kopija**: izvezi `time_clock_entries` u CSV (ima samo 4 zapisa) — za svaki slučaj
-2. **Ukloniti UI**: `TimeClockTab` iz `ProjectFullScreenView`, izbrisati `src/components/timeclock/`, `useTimeClock.ts`, `types/timeClock.ts`, `lib/workRecordsExport.ts`
-3. **Ukloniti DB tablicu**: `DROP TABLE time_clock_entries` (migracija)
-4. **Očistiti i18n**: ukloniti `timeClock.*` ključeve iz hr/en/de
-5. **Proširiti dnevnik rada**:
-   - Dodati `day_type` kolonu u `project_work_logs` (radni/vikend/godišnji/bolovanje/neradan)
-   - Dodati opcijska polja `clock_in_time` i `clock_out_time` (samo string "HH:MM", bez kalkulacije)
-   - Dodati **mjesečni pregled radnika** komponentu unutar Dnevnik rada taba — tablica dana × radnika sa zbrojem sati po radniku
-   - Jednostavan PDF/CSV export tog pregleda
+Update `PulseFunnelEvents` admin widget da prikaže razdiobu profila.
 
-### Tehnički detalji
+### 6. i18n ključevi (HR, EN, DE)
+Novi namespace `onboarding.usageProfile.*`:
+- `title`, `subtitle`
+- `financeOnly.label`, `financeOnly.desc`, `financeOnly.recommended`
+- `financeProjects.label`, `financeProjects.desc`
+- `plan.title`, `plan.subtitle`, `plan.startFree`, `plan.activatePro`, `plan.activateBusiness`
 
-- Šihterica zapisi (`time_clock_entries`) i dnevnik (`project_work_entries`) **nisu povezani**, pa migracija nije potrebna — samo backup.
-- Trigger `sync_work_log_to_entry` (već postoji) automatski održava `project_work_entries` iz `project_work_logs` — ostaje netaknut.
-- `time_clock_entries` ima RLS politike koje će biti uklonjene zajedno s tablicom.
-- Routing/lazy-loading: `TimeClockTab` se trenutno učitava direktno (ne lazy), pa nakon brisanja nema mrtvih chunkova.
+I `settings.usageProfile.*` za Postavke sekciju.
 
-### Alternativa (ako ipak želiš zadržati)
+## Lista promjena
 
-Ako misliš da bi nekad u budućnosti htio službenu usklađenost s NN 55/2024 (npr. ako pretvoriš ovo u SaaS za male obrte), zadrži šihtericu **ali sakrij iz UI-ja** dok ti ne zatreba. Tada modul postoji u kodu ali ne zbunjuje tebe ni radnike. Manje preporučeno — i dalje je teret za održavanje.
+**Novi fajlovi:**
+- `src/components/onboarding/OnboardingUsageProfileStep.tsx`
+- `src/components/onboarding/OnboardingPlanStep.tsx`
+- `src/components/settings/UsageProfileSection.tsx`
 
----
+**Izmijenjeni fajlovi:**
+- `src/contexts/AppStateContext.tsx` (dodati `usageProfile`, `setUsageProfile`)
+- `src/pages/Onboarding.tsx` (dinamički stepovi, integracija novih koraka)
+- `src/components/BottomNav.tsx` (filter za `/projects`)
+- `src/pages/Dashboard.tsx` ili `src/components/home/PersonalModeView.tsx` (sakriti `ActiveProjectsStrip` i `ProjectOnboardingHint` ako `finance_only`)
+- Settings stranica/komponenta (mount `UsageProfileSection`)
+- `src/lib/funnelTracking.ts` (novi event tip)
+- `src/components/admin/PulseFunnelEvents.tsx` (prikaz profila)
+- `src/i18n/locales/{hr,en,de}.json` (novi ključevi)
 
-**Moja preporuka: ukloni šihtericu, proširi dnevnik rada s `day_type` + opcijskim vremenom + mjesečnim pregledom.** Reci mi što odlučuješ pa ću implementirati.
+**DB:** nema promjena — sve u `localStorage`. (Možemo sinkronizirati u `profiles.usage_profile` u kasnijoj fazi ako bude potrebno za cross-device, ali za sad lokalno je dovoljno i konzistentno s `business_mode_enabled`.)
+
+## Što NIJE u opsegu
+
+- Promjena postojećeg paywall ekrana (samo ga reusamo u Korak 3)
+- Auto-detekcija profila iz postojećih podataka (postojeći korisnici se ne diraju)
+- Brisanje projekata kad korisnik prebaci na "samo financije" (samo skrivanje)
+- Posebne preset templates po profilu (to je drugi prioritet iz prethodne analize)
+
+## Pitanja za potvrdu prije implementacije
+
+Nemam blokirajućih pitanja — sve potrebne odluke su pokrivene tvojim odgovorima. Ako odobriš plan, krećem redom: AppStateContext → Onboarding stepovi → BottomNav filter → Settings sekcija → i18n → funnel.
