@@ -235,7 +235,7 @@ export const WorkLogDialog = ({
           {/* Summary */}
           <div className="space-y-1.5">
             <Label>
-              {t('workLog.summary', 'Što je rađeno')} <span className="text-destructive">*</span>
+              {t('workLog.summary', 'Što je rađeno')}{!isAbsence && <span className="text-destructive"> *</span>}
             </Label>
             <div className="relative">
               <Textarea
