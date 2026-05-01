@@ -2613,7 +2613,43 @@
     },
     "hours": "Arbeitsstunden",
     "hoursPlaceholder": "z. B. 8",
-    "hoursHint": "Deine Stunden werden automatisch zur monatlichen Stundenliste hinzugefügt."
+    "hoursHint": "Deine Stunden werden automatisch zur monatlichen Stundenliste hinzugefügt.",
+    "clockIn": "Ankunft (optional)",
+    "clockOut": "Feierabend (optional)",
+    "dayTypeLabel": "Tagestyp",
+    "viewList": "Liste",
+    "viewMonthly": "Monatsübersicht",
+    "dayType": {
+      "work": "Arbeitstag",
+      "weekend": "Wochenende / frei",
+      "vacation": "Urlaub",
+      "sick": "Krankheit",
+      "holiday": "Feiertag"
+    },
+    "dayTypeShort": {
+      "work": "A",
+      "weekend": "–",
+      "vacation": "U",
+      "sick": "K",
+      "holiday": "F"
+    },
+    "monthly": {
+      "worker": "Mitarbeiter",
+      "totalLabel": "Mitarbeiter gesamt",
+      "totalHours": "Stunden im Monat",
+      "noWorkers": "Keine Mitarbeiter im Projekt.",
+      "legend": "Legende"
+    },
+    "export": {
+      "title": "Monatliche Arbeitsübersicht",
+      "project": "Projekt",
+      "month": "Monat",
+      "worker": "Mitarbeiter",
+      "total": "Gesamt (h)",
+      "grandTotal": "Gesamtsumme",
+      "done": "Export abgeschlossen",
+      "note": "Internes Dokument — keine offizielle Arbeitszeitaufzeichnung."
+    }
   },
   "support": {
     "title": "Support kontaktieren",

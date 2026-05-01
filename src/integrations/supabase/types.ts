@@ -3241,7 +3241,10 @@ export type Database = {
       }
       project_work_logs: {
         Row: {
+          clock_in_time: string | null
+          clock_out_time: string | null
           created_at: string
+          day_type: string
           hours: number | null
           id: string
           log_date: string
@@ -3254,7 +3257,10 @@ export type Database = {
           weather: string | null
         }
         Insert: {
+          clock_in_time?: string | null
+          clock_out_time?: string | null
           created_at?: string
+          day_type?: string
           hours?: number | null
           id?: string
           log_date?: string
@@ -3267,7 +3273,10 @@ export type Database = {
           weather?: string | null
         }
         Update: {
+          clock_in_time?: string | null
+          clock_out_time?: string | null
           created_at?: string
+          day_type?: string
           hours?: number | null
           id?: string
           log_date?: string

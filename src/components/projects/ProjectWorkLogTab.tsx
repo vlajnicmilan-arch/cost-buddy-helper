@@ -4,7 +4,7 @@ import { format, parseISO, startOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import {
   BookOpen, Plus, Pencil, Trash2, Loader2, Search,
-  CloudSun, Target, Users, ClipboardList, MoreVertical
+  CloudSun, Target, Users, ClipboardList, MoreVertical, CalendarDays, List,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,16 +20,18 @@ import { useProjectWorkLogs } from '@/hooks/useProjectWorkLogs';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useAuth } from '@/hooks/useAuth';
 import { WorkLogDialog } from './WorkLogDialog';
+import { WorkLogMonthlyOverview } from './WorkLogMonthlyOverview';
 import type { ProjectWorkLog } from '@/types/projectWorkLog';
 
 interface ProjectWorkLogTabProps {
   projectId: string;
   isManager: boolean;
+  projectName?: string;
 }
 
 type MonthFilter = 'current' | 'previous' | 'last3' | 'all';
 
-export const ProjectWorkLogTab = ({ projectId, isManager }: ProjectWorkLogTabProps) => {
+export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: ProjectWorkLogTabProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
@@ -45,6 +47,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager }: ProjectWorkLogTabPro
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('current');
   const [milestoneFilter, setMilestoneFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [view, setView] = useState<'list' | 'monthly'>('list');
 
   const filteredLogs = useMemo(() => {
     const now = new Date();
@@ -99,7 +102,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager }: ProjectWorkLogTabPro
         <h3 className="font-medium flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-primary" />
           {t('workLog.title', 'Dnevnik rada')}
-          {filteredLogs.length > 0 && (
+          {view === 'list' && filteredLogs.length > 0 && (
             <Badge variant="secondary" className="text-[10px]">{filteredLogs.length}</Badge>
           )}
         </h3>
@@ -108,6 +111,33 @@ export const ProjectWorkLogTab = ({ projectId, isManager }: ProjectWorkLogTabPro
           {t('workLog.newEntry', 'Novi zapis')}
         </Button>
       </div>
+
+      {/* View toggle */}
+      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+        <Button
+          variant={view === 'list' ? 'default' : 'ghost'}
+          size="sm"
+          className="h-7 px-2 text-xs gap-1"
+          onClick={() => setView('list')}
+        >
+          <List className="w-3.5 h-3.5" />
+          {t('workLog.viewList', 'Lista')}
+        </Button>
+        <Button
+          variant={view === 'monthly' ? 'default' : 'ghost'}
+          size="sm"
+          className="h-7 px-2 text-xs gap-1"
+          onClick={() => setView('monthly')}
+        >
+          <CalendarDays className="w-3.5 h-3.5" />
+          {t('workLog.viewMonthly', 'Mjesečni pregled')}
+        </Button>
+      </div>
+
+      {view === 'monthly' ? (
+        <WorkLogMonthlyOverview projectId={projectId} projectName={projectName || t('workLog.title', 'Dnevnik rada')} />
+      ) : (
+      <>
 
       {/* Filters */}
       <div className="space-y-2">
@@ -268,6 +298,8 @@ export const ProjectWorkLogTab = ({ projectId, isManager }: ProjectWorkLogTabPro
             );
           })}
         </div>
+      )}
+      </>
       )}
 
       {/* Create/Edit dialog */}

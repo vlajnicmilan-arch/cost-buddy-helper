@@ -2634,7 +2634,43 @@
     },
     "hours": "Sati rada",
     "hoursPlaceholder": "npr. 8",
-    "hoursHint": "Tvoji sati će se automatski zbrojiti u mjesečnu satnicu."
+    "hoursHint": "Tvoji sati će se automatski zbrojiti u mjesečnu satnicu.",
+    "clockIn": "Dolazak (opcionalno)",
+    "clockOut": "Odlazak (opcionalno)",
+    "dayTypeLabel": "Tip dana",
+    "viewList": "Lista",
+    "viewMonthly": "Mjesečni pregled",
+    "dayType": {
+      "work": "Radni dan",
+      "weekend": "Vikend / neradan",
+      "vacation": "Godišnji odmor",
+      "sick": "Bolovanje",
+      "holiday": "Praznik"
+    },
+    "dayTypeShort": {
+      "work": "R",
+      "weekend": "–",
+      "vacation": "GO",
+      "sick": "B",
+      "holiday": "P"
+    },
+    "monthly": {
+      "worker": "Radnik",
+      "totalLabel": "Ukupno radnika",
+      "totalHours": "Sati u mjesecu",
+      "noWorkers": "Nema radnika na projektu.",
+      "legend": "Legenda"
+    },
+    "export": {
+      "title": "Mjesečni pregled rada",
+      "project": "Projekt",
+      "month": "Mjesec",
+      "worker": "Radnik",
+      "total": "Ukupno (h)",
+      "grandTotal": "Sveukupno",
+      "done": "Izvoz završen",
+      "note": "Interni dokument — nije službena evidencija radnog vremena."
+    }
   },
   "support": {
     "title": "Kontaktirajte podršku",

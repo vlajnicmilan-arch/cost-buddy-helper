@@ -2631,7 +2631,43 @@
     },
     "hours": "Work hours",
     "hoursPlaceholder": "e.g. 8",
-    "hoursHint": "Your hours will be automatically added to the monthly timesheet."
+    "hoursHint": "Your hours will be automatically added to the monthly timesheet.",
+    "clockIn": "Arrival (optional)",
+    "clockOut": "Departure (optional)",
+    "dayTypeLabel": "Day type",
+    "viewList": "List",
+    "viewMonthly": "Monthly view",
+    "dayType": {
+      "work": "Work day",
+      "weekend": "Weekend / off",
+      "vacation": "Vacation",
+      "sick": "Sick leave",
+      "holiday": "Holiday"
+    },
+    "dayTypeShort": {
+      "work": "W",
+      "weekend": "–",
+      "vacation": "V",
+      "sick": "S",
+      "holiday": "H"
+    },
+    "monthly": {
+      "worker": "Worker",
+      "totalLabel": "Total workers",
+      "totalHours": "Hours this month",
+      "noWorkers": "No workers on this project.",
+      "legend": "Legend"
+    },
+    "export": {
+      "title": "Monthly work overview",
+      "project": "Project",
+      "month": "Month",
+      "worker": "Worker",
+      "total": "Total (h)",
+      "grandTotal": "Grand total",
+      "done": "Export complete",
+      "note": "Internal document — not an official working time record."
+    }
   },
   "support": {
     "title": "Contact support",

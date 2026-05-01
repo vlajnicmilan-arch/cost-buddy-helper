@@ -603,7 +603,7 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
 
                 <TabsContent value="worklog" className="m-0">
-                  <ProjectWorkLogTab projectId={project.id} isManager={isManager} />
+                  <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
                 </TabsContent>
 
                 {canSeeTab('funding') && (

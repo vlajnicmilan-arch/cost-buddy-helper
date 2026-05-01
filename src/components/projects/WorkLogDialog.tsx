@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import type { ProjectMilestone } from '@/types/project';
-import type { ProjectWorkLog, ProjectWorkLogInput } from '@/types/projectWorkLog';
+import type { ProjectWorkLog, ProjectWorkLogInput, WorkLogDayType } from '@/types/projectWorkLog';
 
 interface WorkLogDialogProps {
   open: boolean;
@@ -46,6 +46,9 @@ export const WorkLogDialog = ({
   const [summary, setSummary] = useState('');
   const [notes, setNotes] = useState('');
   const [hours, setHours] = useState<string>('');
+  const [dayType, setDayType] = useState<WorkLogDayType>('work');
+  const [clockIn, setClockIn] = useState<string>('');
+  const [clockOut, setClockOut] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   // Hydrate state when dialog opens or log changes
@@ -58,6 +61,9 @@ export const WorkLogDialog = ({
       setSummary(log.summary || '');
       setNotes(log.notes || '');
       setHours(log.hours != null ? String(log.hours) : '');
+      setDayType((log.day_type as WorkLogDayType) || 'work');
+      setClockIn(log.clock_in_time || '');
+      setClockOut(log.clock_out_time || '');
     } else {
       setLogDate(defaultDate ? new Date(defaultDate) : new Date());
       setMilestoneId(defaultMilestoneId || 'none');
@@ -65,21 +71,31 @@ export const WorkLogDialog = ({
       setSummary('');
       setNotes('');
       setHours('');
+      setDayType('work');
+      setClockIn('');
+      setClockOut('');
     }
   }, [open, log, defaultDate, defaultMilestoneId]);
 
+  const isAbsence = dayType !== 'work';
+
   const handleSubmit = async () => {
-    if (!summary.trim()) return;
+    // For absence days, summary is auto-generated if missing
+    const finalSummary = summary.trim() || (isAbsence ? t(`workLog.dayType.${dayType}`, dayType) : '');
+    if (!finalSummary) return;
     const parsedHours = hours.trim() === '' ? null : Number(hours);
     if (parsedHours != null && (isNaN(parsedHours) || parsedHours < 0 || parsedHours > 24)) return;
     setSaving(true);
     const ok = await onSubmit({
       log_date: format(logDate, 'yyyy-MM-dd'),
       milestone_id: milestoneId === 'none' ? null : milestoneId,
-      weather: weather.trim() || null,
-      summary: summary.trim(),
+      weather: isAbsence ? null : (weather.trim() || null),
+      summary: finalSummary,
       notes: notes.trim() || null,
-      hours: parsedHours,
+      hours: isAbsence ? null : parsedHours,
+      day_type: dayType,
+      clock_in_time: isAbsence ? null : (clockIn.trim() || null),
+      clock_out_time: isAbsence ? null : (clockOut.trim() || null),
     });
     setSaving(false);
     if (ok) onOpenChange(false);
@@ -126,7 +142,22 @@ export const WorkLogDialog = ({
             </Popover>
           </div>
 
-          {/* Milestone */}
+          {/* Day type */}
+          <div className="space-y-1.5">
+            <Label>{t('workLog.dayTypeLabel', 'Tip dana')}</Label>
+            <Select value={dayType} onValueChange={(v) => setDayType(v as WorkLogDayType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[80]">
+                <SelectItem value="work">{t('workLog.dayType.work', 'Radni dan')}</SelectItem>
+                <SelectItem value="weekend">{t('workLog.dayType.weekend', 'Vikend / neradan')}</SelectItem>
+                <SelectItem value="vacation">{t('workLog.dayType.vacation', 'Godišnji odmor')}</SelectItem>
+                <SelectItem value="sick">{t('workLog.dayType.sick', 'Bolovanje')}</SelectItem>
+                <SelectItem value="holiday">{t('workLog.dayType.holiday', 'Praznik')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {milestones.length > 0 && (
             <div className="space-y-1.5">
               <Label>{t('workLog.milestone', 'Faza (opcionalno)')}</Label>
@@ -146,39 +177,65 @@ export const WorkLogDialog = ({
             </div>
           )}
 
-          {/* Hours */}
-          <div className="space-y-1.5">
-            <Label htmlFor="worklog-hours">{t('workLog.hours', 'Sati rada')}</Label>
-            <Input
-              id="worklog-hours"
-              type="number"
-              inputMode="decimal"
-              step="0.25"
-              min="0"
-              max="24"
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              placeholder={t('workLog.hoursPlaceholder', 'npr. 8')}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {t('workLog.hoursHint', 'Tvoji sati će se automatski zbrojiti u mjesečnu satnicu.')}
-            </p>
-          </div>
+          {!isAbsence && (
+            <>
+              {/* Hours */}
+              <div className="space-y-1.5">
+                <Label htmlFor="worklog-hours">{t('workLog.hours', 'Sati rada')}</Label>
+                <Input
+                  id="worklog-hours"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.25"
+                  min="0"
+                  max="24"
+                  value={hours}
+                  onChange={(e) => setHours(e.target.value)}
+                  placeholder={t('workLog.hoursPlaceholder', 'npr. 8')}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t('workLog.hoursHint', 'Tvoji sati će se automatski zbrojiti u mjesečnu satnicu.')}
+                </p>
+              </div>
 
-          {/* Weather */}
-          <div className="space-y-1.5">
-            <Label>{t('workLog.weather', 'Vrijeme (opcionalno)')}</Label>
-            <Input
-              value={weather}
-              onChange={(e) => setWeather(e.target.value)}
-              placeholder={t('workLog.weatherPlaceholder', 'npr. Sunčano, 18°C')}
-            />
-          </div>
+              {/* Clock in / out (optional, just text HH:MM) */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="worklog-clockin">{t('workLog.clockIn', 'Dolazak (opcionalno)')}</Label>
+                  <Input
+                    id="worklog-clockin"
+                    type="time"
+                    value={clockIn}
+                    onChange={(e) => setClockIn(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="worklog-clockout">{t('workLog.clockOut', 'Odlazak (opcionalno)')}</Label>
+                  <Input
+                    id="worklog-clockout"
+                    type="time"
+                    value={clockOut}
+                    onChange={(e) => setClockOut(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Weather */}
+              <div className="space-y-1.5">
+                <Label>{t('workLog.weather', 'Vrijeme (opcionalno)')}</Label>
+                <Input
+                  value={weather}
+                  onChange={(e) => setWeather(e.target.value)}
+                  placeholder={t('workLog.weatherPlaceholder', 'npr. Sunčano, 18°C')}
+                />
+              </div>
+            </>
+          )}
 
           {/* Summary */}
           <div className="space-y-1.5">
             <Label>
-              {t('workLog.summary', 'Što je rađeno')} <span className="text-destructive">*</span>
+              {t('workLog.summary', 'Što je rađeno')}{!isAbsence && <span className="text-destructive"> *</span>}
             </Label>
             <div className="relative">
               <Textarea
@@ -220,7 +277,7 @@ export const WorkLogDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             {t('common.cancel', 'Odustani')}
           </Button>
-          <Button onClick={handleSubmit} disabled={saving || !summary.trim()}>
+          <Button onClick={handleSubmit} disabled={saving || (!isAbsence && !summary.trim())}>
             {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
             {t('common.save', 'Spremi')}
           </Button>

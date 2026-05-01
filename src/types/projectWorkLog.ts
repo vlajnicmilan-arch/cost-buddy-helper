@@ -1,3 +1,5 @@
+export type WorkLogDayType = 'work' | 'weekend' | 'vacation' | 'sick' | 'holiday';
+
 export interface ProjectWorkLog {
   id: string;
   project_id: string;
@@ -8,6 +10,9 @@ export interface ProjectWorkLog {
   summary: string;
   notes?: string | null;
   hours?: number | null;
+  day_type: WorkLogDayType;
+  clock_in_time?: string | null;
+  clock_out_time?: string | null;
   created_at: string;
   updated_at: string;
   // Enriched
