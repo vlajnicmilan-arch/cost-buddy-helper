@@ -32,6 +32,9 @@ interface AppStateContextValue {
   setActiveBusinessProfileId: (id: string | null) => void;
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
+  // Usage profile: 'finance_only' | 'finance_projects' | null (legacy)
+  usageProfile: UsageProfile;
+  setUsageProfile: (p: UsageProfile) => void;
   appStateReady: boolean;
   onAvatarEvent: (handler: AvatarEventHandler) => () => void;
   emitAvatarEvent: (mood: AvatarMood, message?: string) => void;
