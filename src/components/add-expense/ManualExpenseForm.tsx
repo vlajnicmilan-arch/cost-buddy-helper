@@ -97,6 +97,7 @@ interface ManualExpenseFormProps {
   isNative: boolean;
   onNativeCapture: (source: 'camera' | 'gallery', multiMode?: boolean) => void;
   onImageCapture: (event: React.ChangeEvent<HTMLInputElement>, multiMode?: boolean) => void;
+  onOpenFileInputCapture: (inputRef: React.RefObject<HTMLInputElement>) => void;
   onScanMultipleImages: () => void;
   onToggleMultiMode: () => void;
   onRemoveReceiptImage: (index: number) => void;
@@ -122,6 +123,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         isNative={props.isNative}
         onNativeCapture={props.onNativeCapture}
         onImageCapture={props.onImageCapture}
+        onOpenFileInputCapture={props.onOpenFileInputCapture}
         onScanMultipleImages={props.onScanMultipleImages}
         onToggleMultiMode={props.onToggleMultiMode}
         onRemoveImage={props.onRemoveReceiptImage}
