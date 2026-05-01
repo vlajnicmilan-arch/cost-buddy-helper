@@ -25,6 +25,7 @@ import { Smartphone, ArrowRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/lib/version';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface PersonalModeViewProps {
   displayName: string | null;
@@ -125,6 +126,8 @@ interface PersonalModeViewProps {
 export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { usageProfile } = useAppState();
+  const projectsHidden = usageProfile === 'finance_only';
 
   const accountBalance = props.customPaymentSources.reduce((sum, s) => {
     const bal = s.balance || 0;
@@ -211,14 +214,16 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           onSourceClick={props.onPaymentSourceClick}
         />
 
-        {/* Active Projects Strip — primary feature highlight */}
-        <ActiveProjectsStrip
-          projects={props.projects}
-          isLocalMode={props.isLocalMode}
-          simpleModeEnabled={props.simpleModeEnabled}
-          isBusinessMode={props.isBusinessMode}
-          loading={props.expensesLoading}
-        />
+        {/* Active Projects Strip — primary feature highlight (hidden for finance-only profile) */}
+        {!projectsHidden && (
+          <ActiveProjectsStrip
+            projects={props.projects}
+            isLocalMode={props.isLocalMode}
+            simpleModeEnabled={props.simpleModeEnabled}
+            isBusinessMode={props.isBusinessMode}
+            loading={props.expensesLoading}
+          />
+        )}
 
         {/* Summary Cards */}
         <SummarySection

@@ -472,7 +472,20 @@
     "resetComplete": "Podaci uspješno resetirani",
     "version": "Verzija",
     "contactSupport": "Kontakt podrška",
-    "contactSupportDesc": "Odgovor unutar 24h • support@vmbalance.com"
+    "contactSupportDesc": "Odgovor unutar 24h • support@vmbalance.com",
+    "usageProfile": {
+      "title": "Profil korištenja",
+      "subtitle": "Što želiš pratiti u aplikaciji. Možeš mijenjati u bilo kojem trenutku.",
+      "financeOnly": "Samo financije",
+      "financeOnlyDesc": "Sakriva tab Projekti iz navigacije.",
+      "financeProjects": "Financije + projekti",
+      "financeProjectsDesc": "Pune značajke aplikacije.",
+      "enabled": "Projektni modul uključen",
+      "disabled": "Projektni modul sakriven",
+      "confirmTitle": "Sakriti projektni modul?",
+      "confirmDesc": "Tab Projekti i sve preporuke vezane za projekte bit će skrivene iz navigacije. Tvoji postojeći projekti i podaci ostaju spremljeni i bit će dostupni ako ponovno uključiš ovu opciju.",
+      "confirmHide": "Sakrij projekte"
+    }
   },
   "transactions": {
     "title": "Transakcije",
@@ -1281,7 +1294,48 @@
     "manualEntryPrompt": "Unesite tip kartice ručno ili odaberite iz popisa ispod.",
     "enterCardType": "Unesite tip kartice",
     "cardTypePlaceholder": "npr. Visa, Mastercard...",
-    "cardRecognized": "Kartica prepoznata: {{type}}"
+    "cardRecognized": "Kartica prepoznata: {{type}}",
+    "usageProfile": {
+      "title": "Što želiš pratiti?",
+      "subtitle": "Aplikaciju ćemo prilagoditi tvojim potrebama. Ovo možeš kasnije promijeniti u Postavkama.",
+      "required": "Molimo odaberi što želiš pratiti",
+      "financeOnly": {
+        "label": "Samo osobne financije",
+        "desc": "Praćenje prihoda, rashoda i budžeta. Idealno za osobnu upotrebu.",
+        "recommended": "Preporučeno"
+      },
+      "financeProjects": {
+        "label": "Financije + projekti",
+        "desc": "Sve gore + vođenje projekata, klijenata, radnika i milestoneova. Za freelance, obrt i tvrtke."
+      },
+      "plan": {
+        "title": "Odaberi plan",
+        "subtitle": "Možeš početi besplatno i nadograditi kasnije.",
+        "activate": "Aktiviraj odabrani plan",
+        "activateHint": "Otvara plaćanje u novoj kartici — onboarding ostaje sačuvan.",
+        "free": {
+          "name": "Besplatno",
+          "price": "0 €",
+          "b1": "1 aktivni projekt",
+          "b2": "Osnovne značajke",
+          "b3": "Bez naplate"
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "4,99 €/mj",
+          "b1": "Neograničeni projekti",
+          "b2": "Radnici i dnevnik rada",
+          "b3": "AI prepoznavanje računa"
+        },
+        "business": {
+          "name": "Business",
+          "price": "9,99 €/mj",
+          "b1": "Više tvrtki / OIB-a",
+          "b2": "P&L analitika i izvješća",
+          "b3": "Tim i suradnici"
+        }
+      }
+    }
   },
   "welcome": {
     "title": "Dobrodošli",

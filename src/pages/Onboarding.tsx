@@ -11,11 +11,13 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { OnboardingPaymentSourceCard } from '@/components/onboarding/OnboardingPaymentSourceCard';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
+import { OnboardingUsageProfileStep } from '@/components/onboarding/OnboardingUsageProfileStep';
 import { CustomPaymentSource, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
 import { ChevronRight, ChevronLeft, User, Wallet, CreditCard, Briefcase, Gift, Sparkles, Check, Plus, ScanLine } from 'lucide-react';
 import logo from '@/assets/logo.webp';
 import { showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
+import type { UsageProfile } from '@/contexts/AppStateContext';
 
 
 interface PaymentSourceSetup {
@@ -49,9 +51,11 @@ const Onboarding = () => {
   const PRESET_SOURCES = getPresetSources(t);
   const INCOME_SOURCES = getIncomeSources(t);
   const { addCustomPaymentSource, addCard } = useCustomPaymentSources();
-  const { setOnboardingCompleted, setDisplayName: setContextDisplayName } = useAppState();
-  
+  const { setOnboardingCompleted, setDisplayName: setContextDisplayName, setUsageProfile } = useAppState();
+
   const [step, setStep] = useState(1);
+  const [usageProfileChoice, setUsageProfileChoice] = useState<UsageProfile>(null);
+  const [planChoice, setPlanChoice] = useState<'free' | 'pro' | 'business'>('free');
   const [displayName, setDisplayName] = useState(() => {
     // Pre-fill from context if user entered name during signup
     return localStorage.getItem('user_display_name') || '';
@@ -79,11 +83,20 @@ const Onboarding = () => {
       showError(t('onboarding.nameRequired', 'Molimo unesite svoje ime'));
       return;
     }
+    if (step === 2 && !usageProfileChoice) {
+      showError(t('onboarding.usageProfile.required', 'Molimo odaberi što želiš pratiti'));
+      return;
+    }
     setStep(step + 1);
   };
 
   const handleBack = () => {
     setStep(step - 1);
+  };
+
+  const handleOpenPaywall = () => {
+    // Open paywall in a new tab so onboarding state is preserved.
+    window.open('/paywall', '_blank');
   };
 
   const toggleSource = (sourceId: string) => {
@@ -188,6 +201,10 @@ const Onboarding = () => {
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('show_welcome_animation', 'true');
       localStorage.setItem('pwa-auto-update', 'true');
+      // Persist usage profile (default to finance_only if user somehow skipped step 2)
+      const profileToSave = usageProfileChoice ?? 'finance_only';
+      localStorage.setItem('usage_profile', profileToSave);
+      setUsageProfile(profileToSave);
       if (displayName.trim()) setContextDisplayName(displayName.trim());
       setOnboardingCompleted(true);
       // Funnel: log onboarding completion (best-effort)
@@ -195,6 +212,8 @@ const Onboarding = () => {
         .then(({ logFunnelEvent }) => logFunnelEvent('onboarding_complete', {
           selected_sources: selectedSources.length,
           custom_sources: customSources.length,
+          usage_profile: profileToSave,
+          plan_choice: planChoice,
         }))
         .catch(() => {});
       navigate('/home', { replace: true });
@@ -206,7 +225,7 @@ const Onboarding = () => {
     }
   };
 
-  const totalSteps = 3;
+  const totalSteps = 4;
   const progress = (step / totalSteps) * 100;
 
   return (
@@ -274,6 +293,24 @@ const Onboarding = () => {
 
           {step === 2 && (
             <motion.div
+              key="step2-profile"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              className="w-full max-w-2xl"
+            >
+              <OnboardingUsageProfileStep
+                selected={usageProfileChoice}
+                onSelect={setUsageProfileChoice}
+                selectedPlan={planChoice}
+                onSelectPlan={setPlanChoice}
+                onOpenPaywall={handleOpenPaywall}
+              />
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div
               key="step2"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -328,9 +365,9 @@ const Onboarding = () => {
             </motion.div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <motion.div
-              key="step3"
+              key="step4"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
@@ -427,6 +464,10 @@ const Onboarding = () => {
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
                   localStorage.setItem('pwa-auto-update', 'true');
+                  // Persist usage profile (default to finance_only on skip)
+                  const profileToSave = usageProfileChoice ?? 'finance_only';
+                  localStorage.setItem('usage_profile', profileToSave);
+                  setUsageProfile(profileToSave);
                   setOnboardingCompleted(true);
                   navigate('/home', { replace: true });
                 } catch (error) {

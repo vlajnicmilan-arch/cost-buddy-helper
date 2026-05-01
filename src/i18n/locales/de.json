@@ -451,7 +451,20 @@
     "multiCurrencyEnabled": "Mehrwährungsmodus aktiviert",
     "multiCurrencyDisabled": "Mehrwährungsmodus deaktiviert",
     "contactSupport": "Support kontaktieren",
-    "contactSupportDesc": "Antwort innerhalb von 24h • support@vmbalance.com"
+    "contactSupportDesc": "Antwort innerhalb von 24h • support@vmbalance.com",
+    "usageProfile": {
+      "title": "Nutzungsprofil",
+      "subtitle": "Was du in der App verfolgen möchtest. Jederzeit änderbar.",
+      "financeOnly": "Nur Finanzen",
+      "financeOnlyDesc": "Blendet den Tab Projekte aus der Navigation aus.",
+      "financeProjects": "Finanzen + Projekte",
+      "financeProjectsDesc": "Alle App-Funktionen.",
+      "enabled": "Projektmodul aktiviert",
+      "disabled": "Projektmodul ausgeblendet",
+      "confirmTitle": "Projektmodul ausblenden?",
+      "confirmDesc": "Der Tab Projekte und alle projektbezogenen Vorschläge werden aus der Navigation ausgeblendet. Deine bestehenden Projekte und Daten bleiben erhalten und sind verfügbar, wenn du diese Option wieder aktivierst.",
+      "confirmHide": "Projekte ausblenden"
+    }
   },
   "transactions": {
     "title": "Transaktionen",
@@ -1260,7 +1273,48 @@
     "manualEntryPrompt": "Geben Sie den Kartentyp manuell ein oder wählen Sie aus der Liste unten.",
     "enterCardType": "Kartentyp eingeben",
     "cardTypePlaceholder": "z.B. Visa, Mastercard...",
-    "cardRecognized": "Karte erkannt: {{type}}"
+    "cardRecognized": "Karte erkannt: {{type}}",
+    "usageProfile": {
+      "title": "Was möchtest du verfolgen?",
+      "subtitle": "Wir passen die App an deine Bedürfnisse an. Du kannst dies später in den Einstellungen ändern.",
+      "required": "Bitte wähle aus, was du verfolgen möchtest",
+      "financeOnly": {
+        "label": "Nur persönliche Finanzen",
+        "desc": "Einnahmen, Ausgaben und Budgets verfolgen. Ideal für den privaten Gebrauch.",
+        "recommended": "Empfohlen"
+      },
+      "financeProjects": {
+        "label": "Finanzen + Projekte",
+        "desc": "Alles oben + Projekte, Kunden, Mitarbeiter und Meilensteine verwalten. Für Freelancer, Handwerker und Unternehmen."
+      },
+      "plan": {
+        "title": "Plan wählen",
+        "subtitle": "Du kannst kostenlos starten und später upgraden.",
+        "activate": "Ausgewählten Plan aktivieren",
+        "activateHint": "Öffnet die Bezahlung in einem neuen Tab — das Onboarding bleibt erhalten.",
+        "free": {
+          "name": "Kostenlos",
+          "price": "0 €",
+          "b1": "1 aktives Projekt",
+          "b2": "Grundfunktionen",
+          "b3": "Keine Gebühren"
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "4,99 €/Mon",
+          "b1": "Unbegrenzte Projekte",
+          "b2": "Mitarbeiter & Arbeitsbuch",
+          "b3": "KI-Belegerkennung"
+        },
+        "business": {
+          "name": "Business",
+          "price": "9,99 €/Mon",
+          "b1": "Mehrere Firmen",
+          "b2": "GuV-Analytik & Berichte",
+          "b3": "Team & Mitarbeiter"
+        }
+      }
+    }
   },
   "welcome": {
     "title": "Willkommen",

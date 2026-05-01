@@ -17,11 +17,16 @@ export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { familyModeEnabled, activeBusinessProfileId } = useAppState();
+  const { familyModeEnabled, activeBusinessProfileId, usageProfile } = useAppState();
   const { lightTap } = useHaptics();
 
   const navItems = allNavItems.filter(item => {
     if (item.path === '/family') return familyModeEnabled && !activeBusinessProfileId;
+    if (item.path === '/projects') {
+      // Hide for users who explicitly chose finance-only.
+      // Legacy users (null) and 'finance_projects' → visible.
+      return usageProfile !== 'finance_only';
+    }
     return true;
   });
 
