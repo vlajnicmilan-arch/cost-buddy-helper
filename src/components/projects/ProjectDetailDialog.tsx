@@ -27,7 +27,7 @@ import { ProjectMembersTab } from './ProjectMembersTab';
 import { ProjectTransactionsTab } from './ProjectTransactionsTab';
 import { ProjectTimelineTab } from './ProjectTimelineTab';
 import { ProjectReportsDialog } from './ProjectReportsDialog';
-import { TimeClockTab } from '../timeclock/TimeClockTab';
+
 
 interface ProjectDetailDialogProps {
   open: boolean;
@@ -220,12 +220,6 @@ export const ProjectDetailDialog = ({
               <span className="hidden sm:inline">{t('projects.transactions')}</span>
             </TabsTrigger>
             )}
-            {canAccessBusinessTabs && (
-            <TabsTrigger value="timeclock" className="gap-1 flex-1">
-              <Clock className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('timeClock.title', 'Šihterica')}</span>
-            </TabsTrigger>
-            )}
           </TabsList>
 
           <div className="flex-1 overflow-y-auto mt-4">
@@ -364,15 +358,6 @@ export const ProjectDetailDialog = ({
                   refetchMilestones();
                   onRefreshExpenses?.();
                 }}
-              />
-            </TabsContent>
-            )}
-
-            {canAccessBusinessTabs && (
-            <TabsContent value="timeclock" className="m-0">
-              <TimeClockTab
-                projectId={project.id}
-                isManager={isManager}
               />
             </TabsContent>
             )}

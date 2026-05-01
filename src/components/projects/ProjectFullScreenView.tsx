@@ -37,7 +37,7 @@ import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
-import { TimeClockTab } from '../timeclock/TimeClockTab';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -128,7 +128,7 @@ export const ProjectFullScreenView = ({
     collaborators: 'people',
     funding: 'money',
     transactions: 'money',
-    timeclock: 'people',
+    
   };
 
   useEffect(() => {
@@ -446,12 +446,6 @@ export const ProjectFullScreenView = ({
                               </Tooltip>
                             </TabsTrigger>
                           )}
-                          {canAccessBusinessTabs && (
-                            <TabsTrigger value="timeclock" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                              <Clock className="w-3.5 h-3.5" />
-                              {t('timeClock.title', 'Šihterica')}
-                            </TabsTrigger>
-                          )}
                         </TooltipProvider>
                       )}
 
@@ -658,14 +652,6 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
                 )}
 
-                {canAccessBusinessTabs && (
-                <TabsContent value="timeclock" className="m-0">
-                  <TimeClockTab
-                    projectId={project.id}
-                    isManager={isManager}
-                  />
-                </TabsContent>
-                )}
               </Tabs>
             </div>
 

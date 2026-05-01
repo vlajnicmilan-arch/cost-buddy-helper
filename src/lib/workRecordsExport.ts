@@ -1,303 +1,150 @@
-// jspdf is loaded on demand to keep it out of the initial bundle.
-import type { jsPDF as JsPDFType } from 'jspdf';
-import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
-import { addNotOfficialFooter } from '@/lib/pdfFooter';
-
-let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
-const loadPdfLibs = () => {
-  if (!pdfLibsPromise) {
-    pdfLibsPromise = Promise.all([
-      import('jspdf'),
-      import('jspdf-autotable'),
-    ]).then(([jspdf, autotable]) => ({
-      jsPDF: jspdf.default,
-      autoTable: autotable.default,
-    }));
-  }
-  return pdfLibsPromise;
-};
-
-export interface WorkerExportData {
-  id: string;
-  first_name: string;
-  last_name: string;
-  position: string;
-  hourly_rate: number;
-  work_start_time?: string;
-  work_end_time?: string;
-  actualHoursTotal: number;
-  actualCostTotal: number;
-}
-
-export interface WorkEntryExportData {
-  id: string;
-  worker_id: string;
-  work_date: string;
-  scheduled_hours: number;
-  actual_hours: number;
-  note?: string | null;
-  milestone_ids?: string[] | null;
-}
+import { loadJsPdf } from './loadJsPdf';
+import { exportFile } from './fileExport';
 
 export interface WorkExportConfig {
-  workers: WorkerExportData[];
-  entries: WorkEntryExportData[];
-  milestones: { id: string; name: string }[];
+  workers: Array<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    position?: string | null;
+    hourly_rate?: number | null;
+    work_start_time?: string | null;
+    work_end_time?: string | null;
+    actualHoursTotal: number;
+    actualCostTotal: number;
+  }>;
+  entries: Array<{
+    id: string;
+    worker_id: string;
+    work_date: string;
+    scheduled_hours: number;
+    actual_hours: number;
+    note?: string | null;
+    milestone_ids?: string[] | null;
+  }>;
+  milestones: Array<{ id: string; name: string }>;
   projectName: string;
   currency?: { code: string; symbol: string; locale: string };
 }
 
-const formatDate = (date: Date): string => date.toLocaleDateString('hr-HR');
-
-const formatCurrency = (amount: number, currency?: { code: string; locale: string }): string => {
-  return new Intl.NumberFormat(currency?.locale || 'hr-HR', {
-    style: 'currency',
-    currency: currency?.code || 'EUR',
-  }).format(amount);
+const fmtCurrency = (n: number, c?: WorkExportConfig['currency']) => {
+  if (!c) return n.toFixed(2);
+  try {
+    return new Intl.NumberFormat(c.locale, { style: 'currency', currency: c.code }).format(n);
+  } catch {
+    return `${n.toFixed(2)} ${c.symbol}`;
+  }
 };
 
-const toAscii = (text: string): string => {
-  return text
-    .replace(/č/g, 'c').replace(/Č/g, 'C')
-    .replace(/ć/g, 'c').replace(/Ć/g, 'C')
-    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
-    .replace(/š/g, 's').replace(/Š/g, 'S')
-    .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
-};
+const safeFilename = (name: string) =>
+  name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
 
-const getWorkerName = (workerId: string, workers: WorkerExportData[]) => {
-  const w = workers.find(w => w.id === workerId);
-  return w ? `${w.first_name} ${w.last_name}` : 'Nepoznato';
-};
+export async function generateWorkRecordsCSV(config: WorkExportConfig): Promise<void> {
+  const { workers, entries, milestones, projectName, currency } = config;
+  const msMap = new Map(milestones.map(m => [m.id, m.name]));
+  const wMap = new Map(workers.map(w => [w.id, `${w.first_name} ${w.last_name}`.trim()]));
 
-const getMilestoneNames = (ids: string[] | null | undefined, milestones: { id: string; name: string }[]) => {
-  if (!ids || ids.length === 0) return '-';
-  return ids.map(id => milestones.find(m => m.id === id)?.name || '?').join(', ');
-};
+  const lines: string[] = [];
+  lines.push(`Projekt;${projectName}`);
+  lines.push('');
+  lines.push('Radnik;Datum;Planirano (h);Stvarno (h);Faze;Napomena');
 
-// ============= PDF =============
+  const sorted = [...entries].sort((a, b) => a.work_date.localeCompare(b.work_date));
+  for (const e of sorted) {
+    const phases = (e.milestone_ids || []).map(id => msMap.get(id) || '').filter(Boolean).join(', ');
+    const note = (e.note || '').replace(/[\r\n;]+/g, ' ').trim();
+    lines.push([
+      wMap.get(e.worker_id) || e.worker_id,
+      e.work_date,
+      e.scheduled_hours.toString(),
+      e.actual_hours.toString(),
+      phases,
+      note,
+    ].join(';'));
+  }
 
-export const generateWorkRecordsPDF = async (data: WorkExportConfig, mode: ExportMode = 'save'): Promise<void> => {
-  const { jsPDF, autoTable } = await loadPdfLibs();
-  const doc = new jsPDF();
+  lines.push('');
+  lines.push('Sažetak po radniku;Sati;Trošak');
+  for (const w of workers) {
+    lines.push([
+      `${w.first_name} ${w.last_name}`.trim(),
+      w.actualHoursTotal.toFixed(2),
+      currency ? fmtCurrency(w.actualCostTotal, currency) : w.actualCostTotal.toFixed(2),
+    ].join(';'));
+  }
 
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text(toAscii(`Evidencija rada - ${data.projectName}`), 14, 20);
+  const csv = '\uFEFF' + lines.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  await exportFile(blob, `${safeFilename(projectName)}_radni_sati.csv`, "save");
+}
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Generirano: ${formatDate(new Date())}`, 14, 28);
+export async function generateWorkRecordsJSON(config: WorkExportConfig): Promise<void> {
+  const json = JSON.stringify(config, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  await exportFile(blob, `${safeFilename(config.projectName)}_radni_sati.json`, "save");
+}
 
-  // Summary
-  const totalHours = data.entries.reduce((s, e) => s + e.actual_hours, 0);
-  const scheduledHours = data.entries.reduce((s, e) => s + e.scheduled_hours, 0);
-  const totalCost = data.workers.reduce((s, w) => s + w.actualCostTotal, 0);
-  const workDays = new Set(data.entries.map(e => e.work_date)).size;
+export async function generateWorkRecordsPDF(config: WorkExportConfig): Promise<void> {
+  const { workers, entries, milestones, projectName, currency } = config;
+  const { jsPDF } = await loadJsPdf();
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
+  const msMap = new Map(milestones.map(m => [m.id, m.name]));
+  const wMap = new Map(workers.map(w => [w.id, `${w.first_name} ${w.last_name}`.trim()]));
+
+  let y = 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text(toAscii('Sazetak'), 14, 40);
-
-  autoTable(doc, {
-    startY: 44,
-    head: [['Stavka', 'Vrijednost']],
-    body: [
-      ['Broj radnika', data.workers.length.toString()],
-      ['Radnih dana', workDays.toString()],
-      ['Planirano sati', `${scheduledHours}h`],
-      [toAscii('Odradjeno sati'), `${totalHours}h`],
-      [toAscii('Ukupni trosak'), formatCurrency(totalCost, data.currency)],
-    ],
-    theme: 'striped',
-    headStyles: { fillColor: [59, 130, 246] },
-    margin: { left: 14 },
-    tableWidth: 100,
-  });
+  doc.text(`Radni sati — ${projectName}`, 15, y);
+  y += 8;
+  doc.setFontSize(9);
+  doc.text(`Generirano: ${new Date().toLocaleString('hr-HR')}`, 15, y);
+  y += 8;
 
   // Per-worker summary
-  const workerY = (doc as any).lastAutoTable.finalY + 15;
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text(toAscii('Pregled po djelatnicima'), 14, workerY);
-
-  const workerRows = data.workers.map(w => [
-    toAscii(`${w.first_name} ${w.last_name}`),
-    toAscii(w.position),
-    formatCurrency(w.hourly_rate, data.currency) + '/h',
-    `${w.actualHoursTotal}h`,
-    formatCurrency(w.actualCostTotal, data.currency),
-  ]);
-
-  autoTable(doc, {
-    startY: workerY + 4,
-    head: [['Ime', 'Pozicija', 'Satnica', 'Sati', toAscii('Trosak')]],
-    body: workerRows,
-    theme: 'striped',
-    headStyles: { fillColor: [139, 92, 246] },
-    margin: { left: 14 },
-  });
-
-  // Per-milestone summary
-  if (data.milestones.length > 0) {
-    const msY = (doc as any).lastAutoTable.finalY + 15;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Pregled po fazama', 14, msY);
-
-    const msRows = data.milestones.map(m => {
-      const msEntries = data.entries.filter(e => e.milestone_ids?.includes(m.id));
-      const hours = msEntries.reduce((s, e) => s + e.actual_hours, 0);
-      const cost = msEntries.reduce((s, e) => {
-        const w = data.workers.find(w => w.id === e.worker_id);
-        return s + (w ? e.actual_hours * w.hourly_rate : 0);
-      }, 0);
-      return [toAscii(m.name), `${hours}h`, formatCurrency(cost, data.currency)];
-    });
-
-    autoTable(doc, {
-      startY: msY + 4,
-      head: [['Faza', 'Sati', toAscii('Trosak')]],
-      body: msRows,
-      theme: 'striped',
-      headStyles: { fillColor: [34, 197, 94] },
-      margin: { left: 14 },
-      tableWidth: 120,
-    });
+  doc.setFontSize(11);
+  doc.text('Sažetak po radniku', 15, y);
+  y += 6;
+  doc.setFontSize(9);
+  doc.text('Radnik', 15, y);
+  doc.text('Sati', 120, y, { align: 'right' });
+  doc.text('Trošak', 190, y, { align: 'right' });
+  y += 5;
+  doc.line(15, y - 2, 195, y - 2);
+  for (const w of workers) {
+    if (y > 280) { doc.addPage(); y = 15; }
+    doc.text(`${w.first_name} ${w.last_name}`.trim(), 15, y);
+    doc.text(w.actualHoursTotal.toFixed(2), 120, y, { align: 'right' });
+    doc.text(fmtCurrency(w.actualCostTotal, currency), 190, y, { align: 'right' });
+    y += 5;
   }
 
-  // Detailed entries (new page)
-  if (data.entries.length > 0) {
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Popis svih radnih dana', 14, 20);
+  // Entries
+  y += 6;
+  if (y > 270) { doc.addPage(); y = 15; }
+  doc.setFontSize(11);
+  doc.text('Detaljni unosi', 15, y);
+  y += 6;
+  doc.setFontSize(8);
+  doc.text('Radnik', 15, y);
+  doc.text('Datum', 70, y);
+  doc.text('h plan', 100, y, { align: 'right' });
+  doc.text('h stvarno', 125, y, { align: 'right' });
+  doc.text('Faze', 130, y);
+  y += 4;
+  doc.line(15, y - 2, 195, y - 2);
 
-    const entryRows = [...data.entries]
-      .sort((a, b) => a.work_date.localeCompare(b.work_date))
-      .map(e => {
-        const w = data.workers.find(w => w.id === e.worker_id);
-        const cost = w ? e.actual_hours * w.hourly_rate : 0;
-        return [
-          e.work_date.split('-').reverse().join('.'),
-          toAscii(getWorkerName(e.worker_id, data.workers)),
-          `${e.scheduled_hours}h`,
-          `${e.actual_hours}h`,
-          formatCurrency(cost, data.currency),
-          toAscii(getMilestoneNames(e.milestone_ids, data.milestones)),
-          toAscii(e.note || '-'),
-        ];
-      });
-
-    autoTable(doc, {
-      startY: 24,
-      head: [['Datum', 'Djelatnik', 'Plan', toAscii('Odradj.'), toAscii('Trosak'), 'Faze', 'Napomena']],
-      body: entryRows,
-      theme: 'striped',
-      headStyles: { fillColor: [107, 114, 128] },
-      margin: { left: 14 },
-      styles: { fontSize: 7 },
-      columnStyles: {
-        0: { cellWidth: 20 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 15 },
-        3: { cellWidth: 15 },
-        4: { cellWidth: 25 },
-        5: { cellWidth: 40 },
-        6: { cellWidth: 35 },
-      },
-    });
+  const sorted = [...entries].sort((a, b) => a.work_date.localeCompare(b.work_date));
+  for (const e of sorted) {
+    if (y > 285) { doc.addPage(); y = 15; }
+    const phases = (e.milestone_ids || []).map(id => msMap.get(id) || '').filter(Boolean).join(', ');
+    doc.text((wMap.get(e.worker_id) || '').slice(0, 28), 15, y);
+    doc.text(e.work_date, 70, y);
+    doc.text(e.scheduled_hours.toFixed(2), 100, y, { align: 'right' });
+    doc.text(e.actual_hours.toFixed(2), 125, y, { align: 'right' });
+    doc.text(phases.slice(0, 40), 130, y);
+    y += 4.5;
   }
 
-  const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
-  addNotOfficialFooter(doc);
-  await exportPDFDoc(doc, fileName, mode);
-};
-
-// ============= CSV =============
-
-export const generateWorkRecordsCSV = async (data: WorkExportConfig, mode: ExportMode = 'save'): Promise<void> => {
-  const rows: string[] = [];
-
-  // Workers summary
-  rows.push('"--- DJELATNICI ---"');
-  rows.push('"Ime","Prezime","Pozicija","Satnica","Odrađeno sati","Ukupni trošak"');
-  data.workers.forEach(w => {
-    rows.push(`"${w.first_name}","${w.last_name}","${w.position}","${w.hourly_rate}","${w.actualHoursTotal}","${w.actualCostTotal}"`);
-  });
-
-  rows.push('');
-  rows.push('"--- RADNI DANI ---"');
-  rows.push('"Datum","Djelatnik","Pozicija","Planirano","Odrađeno","Trošak","Faze","Napomena"');
-
-  [...data.entries]
-    .sort((a, b) => a.work_date.localeCompare(b.work_date))
-    .forEach(e => {
-      const w = data.workers.find(w => w.id === e.worker_id);
-      const cost = w ? e.actual_hours * w.hourly_rate : 0;
-      rows.push([
-        `"${e.work_date}"`,
-        `"${getWorkerName(e.worker_id, data.workers)}"`,
-        `"${w?.position || ''}"`,
-        `"${e.scheduled_hours}"`,
-        `"${e.actual_hours}"`,
-        `"${cost}"`,
-        `"${getMilestoneNames(e.milestone_ids, data.milestones)}"`,
-        `"${(e.note || '').replace(/"/g, '""')}"`,
-      ].join(','));
-    });
-
-  const csvContent = rows.join('\n');
-  const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.csv`;
-  await exportTextFile(csvContent, fileName, 'text/csv', true, mode);
-};
-
-// ============= JSON =============
-
-export const generateWorkRecordsJSON = async (data: WorkExportConfig, mode: ExportMode = 'save'): Promise<void> => {
-  const exportData = {
-    generatedAt: new Date().toISOString(),
-    project: data.projectName,
-    summary: {
-      totalWorkers: data.workers.length,
-      totalWorkDays: new Set(data.entries.map(e => e.work_date)).size,
-      totalScheduledHours: data.entries.reduce((s, e) => s + e.scheduled_hours, 0),
-      totalActualHours: data.entries.reduce((s, e) => s + e.actual_hours, 0),
-      totalCost: data.workers.reduce((s, w) => s + w.actualCostTotal, 0),
-    },
-    workers: data.workers.map(w => ({
-      name: `${w.first_name} ${w.last_name}`,
-      position: w.position,
-      hourlyRate: w.hourly_rate,
-      totalHours: w.actualHoursTotal,
-      totalCost: w.actualCostTotal,
-    })),
-    milestones: data.milestones.map(m => {
-      const msEntries = data.entries.filter(e => e.milestone_ids?.includes(m.id));
-      return {
-        name: m.name,
-        totalHours: msEntries.reduce((s, e) => s + e.actual_hours, 0),
-        totalCost: msEntries.reduce((s, e) => {
-          const w = data.workers.find(w => w.id === e.worker_id);
-          return s + (w ? e.actual_hours * w.hourly_rate : 0);
-        }, 0),
-      };
-    }),
-    entries: [...data.entries]
-      .sort((a, b) => a.work_date.localeCompare(b.work_date))
-      .map(e => ({
-        date: e.work_date,
-        worker: getWorkerName(e.worker_id, data.workers),
-        scheduledHours: e.scheduled_hours,
-        actualHours: e.actual_hours,
-        milestones: getMilestoneNames(e.milestone_ids, data.milestones),
-        note: e.note || null,
-      })),
-  };
-
-  const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  const fileName = `evidencija_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.json`;
-  await exportTextFile(JSON.stringify(exportData, null, 2), fileName, 'application/json', false, mode);
-};
+  const blob = doc.output('blob');
+  await exportFile(blob, `${safeFilename(projectName)}_radni_sati.pdf`, "save");
+}
