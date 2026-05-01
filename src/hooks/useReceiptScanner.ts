@@ -274,12 +274,16 @@ export const useReceiptScanner = () => {
         paymentSource = 'cash';
       }
 
+      const merchantName = (typeof data.merchant === 'string' && data.merchant.trim().length > 0)
+        ? data.merchant.trim()
+        : ((typeof data.issuer_name === 'string' && data.issuer_name.trim().length > 0) ? data.issuer_name.trim() : '');
+
       const result: ParsedReceipt = {
         amount: data.amount,
-        merchant: data.merchant,
+        merchant: merchantName,
         description: (typeof data.description === 'string' && data.description.trim().length > 0)
           ? data.description.trim()
-          : ((typeof data.merchant === 'string' && data.merchant.trim().length > 0) ? data.merchant.trim() : 'Račun'),
+          : (merchantName || 'Račun'),
         category: data.category as Category,
         date: data.date || null,
         payment_source: paymentSource,
@@ -291,7 +295,7 @@ export const useReceiptScanner = () => {
         transaction_type: data.transaction_type || 'expense',
         transfer_destination_name: data.transfer_destination_name || null,
         recipient_name: data.recipient_name || null,
-        issuer_name: data.issuer_name || data.merchant || null,
+        issuer_name: data.issuer_name || merchantName || null,
         issuer_oib: data.issuer_oib || null,
         items: (data.items || []).map((item: any) => ({
           name: item.name || '',
