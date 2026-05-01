@@ -307,6 +307,60 @@ export const ProjectWorkerDialog = ({
                       </Button>
                     </div>
                   )}
+
+                  {/* Email invite */}
+                  <div className="pt-3 mt-3 border-t border-dashed space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      {t('projects.orSendByEmail', 'Ili pošalji pozivnicu mailom — radi i ako korisnik još nema račun.')}
+                    </p>
+                    {emailSentTo ? (
+                      <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                        <div className="text-xs">
+                          <span className="font-medium">{t('projects.emailSentLabel', 'Poslano')}: </span>
+                          <span className="text-muted-foreground break-all">{emailSentTo}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="ml-auto text-xs h-7"
+                          onClick={() => { setEmailSentTo(null); setInviteEmail(''); }}
+                        >
+                          {t('projects.sendAnother', 'Pošalji još jedan')}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          type="email"
+                          inputMode="email"
+                          autoComplete="email"
+                          placeholder={t('projects.workerEmailPlaceholder', 'radnik@email.com')}
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          disabled={sendingEmail}
+                          className="text-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={handleSendEmail}
+                          disabled={sendingEmail || !inviteEmail.trim()}
+                        >
+                          {sendingEmail ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Mail className="w-4 h-4 mr-1" />
+                              {t('projects.sendEmail', 'Pošalji')}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
