@@ -336,8 +336,7 @@ export const AddExpenseDialog = ({
     console.warn('📸 handleNativeCapture start', { source, multiMode, isNative });
     // Dismiss keyboard before opening camera so it doesn't reappear during scanning
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
-    cameraActiveRef.current = true;
-    setNativeFlowActive(true);
+    activateCaptureGuard();
     try {
       const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
       console.warn('📸 handleNativeCapture got base64?', !!base64, 'len=', base64?.length || 0);
@@ -350,10 +349,7 @@ export const AddExpenseDialog = ({
       showError(t('errors.save.expense', 'Greška pri spremanju transakcije'));
     } finally {
       // Slight delay so any popstate that fires on activity return is still blocked.
-      setTimeout(() => {
-        cameraActiveRef.current = false;
-        setNativeFlowActive(false);
-      }, 2500);
+      releaseCaptureGuardSoon();
     }
   };
 
