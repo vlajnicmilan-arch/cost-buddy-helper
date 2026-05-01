@@ -1,91 +1,66 @@
+## Problem (potvrđeno čitanjem koda)
 
-# Error poruke: human-friendly i prevedene
+U **osobnim transakcijama** gumb "Skeniraj" RADI jer je realiziran kao:
 
-## Trenutno stanje
-
-Brzi audit kroz codebase pokazuje:
-
-- **352** ukupnih `showError()` / `toast.error()` poziva
-- **103** od njih su **hardkodirane na hrvatskom** (zaobilaze `t()` funkciju → engleski/njemački korisnici vide hrvatski tekst)
-- **2** mjesta prikazuju **sirovu Supabase grešku** (`error.message`) korisniku — npr. "Invalid JWT", "Network request failed"
-- Postojeći `errors` namespace u prijevodima ima samo 6 generičkih ključeva — premalo
-
-Najgori prekršitelji (po broju hardkodiranih poruka):
-- `useFamilyGroups.ts` — 6+ poruka tipa "Račun je već dodan u grupu"
-- `useCustomCategories.ts` — 5 poruka
-- `useReceiptScanner.ts` — 6 poruka uklj. "Previše zahtjeva", "Nedostaje kredita"
-- `useRecurringTransactions.ts`, `useCustomPaymentSources.ts`, `useExpenseCRUD.ts`, `NativeUpdateChecker.tsx`, `fileExport.ts`...
-
-## Plan rada
-
-### 1. Proširiti `errors` namespace u sva 3 jezika
-
-Dodajem strukturirane podgrupe pokrivene tipičnim scenarijima:
-
-```text
-errors:
-  generic, network, unauthorized, notFound, forbidden, timeout
-  fetch:    expenses, categories, sources, projects, budgets, members, recurring, installments
-  save:     generic, expense, category, source, project, budget, recurring
-  delete:   generic, expense, category, source, project, budget
-  family:   accountAlreadyAdded, budgetAlreadyAdded, projectAlreadyAdded, goalAlreadyAdded
-            createGroupFailed, joinGroupFailed
-  receipt:  cloudRequired, rateLimit, noCredits, scanCancelled, scanFailed
-  auth:     mustBeLoggedIn, sessionExpired
-  limits:   paymentSourcesReached, projectsReached, budgetsReached
-  update:   webCheckFailed, platformUnsupported
-  files:    saveFailed, shareFailed, importFailed
+```tsx
+<AddExpenseDialog autoScan triggerVariant="scan" triggerLabel="Skeniraj" />
 ```
 
-### 2. Mapper za sirove backend greške → prijateljske poruke
+Dijalog koristi **vlastiti ugrađeni trigger gumb** (Radix `DialogTrigger`). Klik → Radix interno mountira dijalog → tek onda `autoScan` useEffect okida kameru. Sve refove (`cameraActiveRef`, `useBackButton`) su već registrirani prije nego što kamera startuje.
 
-Novi helper `src/lib/errorMessages.ts`:
+U **poslovnim transakcijama** isti gumb NE radi jer je realiziran kao:
 
-```text
-formatErrorForUser(error, t, fallbackKey?) → string
+```tsx
+<Button onClick={() => setBusinessScannerOpen(true)}>Skeniraj</Button>
+<AddExpenseDialog autoScan externalOpen={...} onOpenChange={...} hideTrigger />
 ```
 
-Prepoznaje uobičajene Supabase / Postgres / Network signature (npr. `PGRST116`, `23505` duplicate, `42501` permission, `JWT expired`, `Failed to fetch`, `AbortError`) i vraća lokalizirani prijateljski tekst umjesto tehničkog stringa. Nepoznate greške → `errors.generic` + sirova poruka u `console.error` za dijagnostiku.
+Trigger je **van dijaloga**, na roditeljskoj komponenti (`BusinessModeView.tsx`, `Business.tsx`). Kad Android prebaci na Camera activity i vrati se, popstate ili neki effect na roditeljskoj komponenti može uzrokovati re-render/odmount, što sruši dijalog s njim. Plus — state se postavlja na roditelju, dijalog se mountira tek nakon što React commit-a, što daje race s `autoScan` timerom.
 
-### 3. Refaktor 103 hardkodiranih poziva
+## Rješenje
 
-Sustavno proći datoteke i zamijeniti `showError('Greška...')` sa `showError(t('errors.<grupa>.<ključ>'))`. Tamo gdje se danas šalje `error.message` direktno → koristiti novi mapper.
+Pretvoriti poslovni "Skeniraj" gumb u **identičan obrazac** kao osobni — koristiti ugrađeni trigger dijaloga.
 
-Prioritet (najveći utjecaj na korisnika):
-1. **Auth flow** (`Auth.tsx`) — sirove Supabase poruke
-2. **Hooks koje korisnik najčešće okida**: `useExpenseCRUD`, `useCustomCategories`, `useCustomPaymentSources`, `useRecurringTransactions`
-3. **Family / collaboration** — `useFamilyGroups`
-4. **Receipt scanner, native update, file export**
+### Promjene
 
-### 4. Lint pravilo (lagano)
+**1. `src/components/home/BusinessModeView.tsx`**
+- Ukloniti `businessScannerOpen` state (linija ~116)
+- Ukloniti zaseban `<Button onClick={() => setBusinessScannerOpen(true)}>` (linije ~290–294)
+- Ukloniti zaseban `<AddExpenseDialog ... externalOpen={businessScannerOpen}>` na dnu (linije ~350–357)
+- Zamijeniti scanAction da bude direktno:
+  ```tsx
+  scanAction={
+    <AddExpenseDialog
+      onAdd={props.onAddExpense}
+      autoScan
+      triggerVariant="scan"
+      triggerLabel={t('common.scan', 'Skeniraj')}
+      triggerClassName="h-9 gap-1 border-primary/30 text-primary"
+      businessProfileId={activeBusinessProfileId}
+    />
+  }
+  ```
 
-Dodati komentar `// LINT: hardcoded user-facing string` provjeru u CI nije u opsegu — samo dokumentirati pravilo u memory: "Sve `showError` poruke moraju ići kroz `t()` ili `formatErrorForUser`".
+**2. `src/pages/Business.tsx`**
+- Ista preinaka: maknuti `scannerOpen` state (linija 45)
+- Maknuti zaseban `<Button onClick={() => setScannerOpen(true)}>` (linije 146–154)
+- Maknuti zaseban `<AddExpenseDialog ... externalOpen={scannerOpen}>` (linije 174–181)
+- `scanAction` postaje ugrađeni `AddExpenseDialog` s `triggerVariant="scan"`
 
-## Tehnički detalji
+**3. Provjeriti `triggerVariant="scan"` u AddExpenseDialog.tsx**
+Potvrditi da postoji "scan" varijanta trigger gumba. Ako ne — dodati je da prikazuje `<ScanLine>` ikonu i odgovarajući teal stil koji je već korišten u osobnim transakcijama.
 
-- **Datoteke koje će se mijenjati**:
-  - `src/i18n/locales/hr.json`, `en.json`, `de.json` — proširenje `errors` namespacea (~50 novih ključeva)
-  - `src/lib/errorMessages.ts` — **NOVA** datoteka s mapperom
-  - ~20 hook/komponentnih datoteka — zamjena hardkodiranih stringova
+### Što ovaj plan NE radi
 
-- **Ne mijenja se**:
-  - `useStatusFeedback.ts` (showError API ostaje isti — string in, status feedback out)
-  - Postojeći `t()` pozivi koji već rade (249 od 352)
-  - DB shema, edge funkcije
+- Ne dira `useReceiptScanner.ts` — taj kod je dokazano funkcionalan
+- Ne dira logiku `parse-receipt` edge funkcije
+- Ne dira `handleNativeCapture` ni `useBackButton` — radi u osobnom modu, znači radi
+- Ne mijenja `autoScan` mehanizam — samo uklanja roditeljski state koji ga sabotira
 
-- **Backwards compat**: Sve nove poruke imaju `defaultValue` fallback (drugi argument u `t()`) tako da ako prijevod nedostaje, korisnik dobije razuman hrvatski tekst umjesto raw key-a.
+### Rizici
 
-- **Verifikacija**: nakon refaktora pokrenem `rg "showError\(['\"]"` da potvrdim 0 hardkodiranih stringova ostaje, te `rg "showError\((error|err|e)\.message\)"` mora biti 0.
+Nema regresije za osobne transakcije (nemamo dirati taj kod). Jedini rizik je da poslovni `activeBusinessProfileId` mora biti dostupan unutar `AddExpenseDialog` — već je riješeno kroz `useBusinessMode` kontekst koji dijalog već čita (vidjeli smo `effectiveBusinessProfileId` u kodu).
 
-## Što korisnik dobiva
+### Testiranje
 
-| Prije | Nakon |
-|---|---|
-| EN korisnik vidi: "Greška pri kreiranju grupe" | "Failed to create group. Please try again." |
-| DE korisnik vidi: "Račun je već dodan u grupu" | "Dieses Konto ist bereits in der Gruppe." |
-| Korisnik vidi: "Invalid JWT: token expired" | "Vaša sesija je istekla. Prijavite se ponovno." |
-| Korisnik vidi: "duplicate key value violates unique constraint" | "Stavka s tim nazivom već postoji." |
-
-## Opseg potvrde
-
-Ovo je srednje velika promjena (~20 datoteka, ~50 novih i18n ključeva × 3 jezika = ~150 prijevoda + novi helper). Bez DB migracija, bez novih dependency-ja. Implementiram nakon odobrenja.
+Nakon primjene: u poslovnom modu klikni "Skeniraj" → kamera se otvori → snimi → vrati se → dijalog mora ostati otvoren s preview rezultatima (isto kao u osobnom modu).
