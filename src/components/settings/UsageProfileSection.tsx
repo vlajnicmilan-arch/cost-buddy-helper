@@ -53,7 +53,13 @@ export const UsageProfileSection = () => {
       setPendingHide(true);
       return;
     }
-    // Enabling project module → show plan comparison dialog (same UX as onboarding).
+    // If user already has Pro/Business, just enable the module — no paywall.
+    if (isProTier) {
+      setUsageProfile('finance_projects');
+      showSuccess(t('settings.usageProfile.enabled', 'Projektni modul uključen'));
+      return;
+    }
+    // Free users → show plan comparison dialog (same UX as onboarding).
     setDraftProfile('finance_projects');
     setDraftPlan('free');
     setPlanDialogOpen(true);
