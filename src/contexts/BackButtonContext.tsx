@@ -112,18 +112,6 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // SAFETY WINDOW: if we just returned from the background (e.g. native
-    // camera activity finished), Android may emit a spurious popstate. Don't
-    // navigate away — re-push the guard state instead so a real subsequent
-    // back press still works.
-    if (lastForegroundAtRef.current > 0 && sinceForeground < VISIBILITY_GRACE_MS) {
-      if (import.meta.env.DEV) {
-        console.log('[BackButton] popstate ignored — within visibility grace window:', sinceForeground, 'ms');
-      }
-      window.history.pushState(null, '');
-      return;
-    }
-
     // No dialogs open — handle page-level back navigation in app area
     if (!isRootAppRoute(currentPath)) {
       navigate('/home', { replace: false });
