@@ -2,14 +2,18 @@
  * UsageProfileSection — Settings panel allowing the user to change between
  * 'finance_only' and 'finance_projects' after onboarding.
  *
- * - Switching to 'finance_only' hides the Projects tab from BottomNav and
- *   the ActiveProjectsStrip from the home view. Projects themselves are NOT
- *   deleted — only hidden from navigation.
- * - Legacy users (usageProfile === null) see the section pre-selected as
- *   'finance_projects' (since that mirrors the legacy "show everything"
- *   behaviour) and can opt out at any time.
+ * Behaviour:
+ * - Switching to 'finance_only' shows a confirm dialog (Projects tab/strip
+ *   becomes hidden but data is preserved).
+ * - Switching to 'finance_projects' opens a plan-comparison dialog (same
+ *   component as in onboarding). The user can:
+ *     - keep Free and just enable the module, OR
+ *     - tap "Activate plan" → navigates to /paywall.
+ *   This keeps Settings consistent with the onboarding flow.
+ * - Legacy users (usageProfile === null) are treated as 'finance_projects'.
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Wallet, FolderKanban, Check } from 'lucide-react';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -17,13 +21,25 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { OnboardingUsageProfileStep } from '@/components/onboarding/OnboardingUsageProfileStep';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
+import type { UsageProfile } from '@/contexts/AppStateContext';
 
 export const UsageProfileSection = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { usageProfile, setUsageProfile } = useAppState();
-  const [pendingChange, setPendingChange] = useState<'finance_only' | null>(null);
+
+  const [pendingHide, setPendingHide] = useState(false);
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
+  const [draftProfile, setDraftProfile] =
+    useState<Exclude<UsageProfile, null>>('finance_projects');
+  const [draftPlan, setDraftPlan] = useState<'free' | 'pro' | 'business'>('free');
 
   // Treat legacy (null) as finance_projects for display purposes.
   const effective: 'finance_only' | 'finance_projects' =
@@ -32,18 +48,32 @@ export const UsageProfileSection = () => {
   const handlePick = (next: 'finance_only' | 'finance_projects') => {
     if (next === effective) return;
     if (next === 'finance_only') {
-      // Confirm — hides Projects tab from navigation.
-      setPendingChange('finance_only');
+      setPendingHide(true);
       return;
     }
-    setUsageProfile('finance_projects');
-    showSuccess(t('settings.usageProfile.enabled', 'Projektni modul uključen'));
+    // Enabling project module → show plan comparison dialog (same UX as onboarding).
+    setDraftProfile('finance_projects');
+    setDraftPlan('free');
+    setPlanDialogOpen(true);
   };
 
   const confirmHideProjects = () => {
     setUsageProfile('finance_only');
-    setPendingChange(null);
+    setPendingHide(false);
     showSuccess(t('settings.usageProfile.disabled', 'Projektni modul sakriven'));
+  };
+
+  const confirmEnableWithFree = () => {
+    setUsageProfile('finance_projects');
+    setPlanDialogOpen(false);
+    showSuccess(t('settings.usageProfile.enabled', 'Projektni modul uključen'));
+  };
+
+  const handleOpenPaywall = () => {
+    // Persist the profile change first so the user lands back into the right UI.
+    setUsageProfile('finance_projects');
+    setPlanDialogOpen(false);
+    navigate('/paywall');
   };
 
   const options: Array<{
@@ -115,7 +145,8 @@ export const UsageProfileSection = () => {
         })}
       </div>
 
-      <AlertDialog open={pendingChange === 'finance_only'} onOpenChange={(o) => !o && setPendingChange(null)}>
+      {/* Confirm hiding the Projects module */}
+      <AlertDialog open={pendingHide} onOpenChange={(o) => !o && setPendingHide(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -136,6 +167,36 @@ export const UsageProfileSection = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Plan comparison dialog — when enabling the project module */}
+      <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {t('settings.usageProfile.enableTitle', 'Uključi projektni modul')}
+            </DialogTitle>
+          </DialogHeader>
+
+          <OnboardingUsageProfileStep
+            selected={draftProfile}
+            onSelect={setDraftProfile}
+            selectedPlan={draftPlan}
+            onSelectPlan={setDraftPlan}
+            onOpenPaywall={handleOpenPaywall}
+          />
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPlanDialogOpen(false)}>
+              {t('common.cancel', 'Odustani')}
+            </Button>
+            <Button onClick={confirmEnableWithFree}>
+              {draftPlan === 'free'
+                ? t('settings.usageProfile.continueFree', 'Nastavi s besplatnim')
+                : t('settings.usageProfile.enableModule', 'Uključi modul')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

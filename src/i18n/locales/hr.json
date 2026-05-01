@@ -484,7 +484,10 @@
       "disabled": "Projektni modul sakriven",
       "confirmTitle": "Sakriti projektni modul?",
       "confirmDesc": "Tab Projekti i sve preporuke vezane za projekte bit će skrivene iz navigacije. Tvoji postojeći projekti i podaci ostaju spremljeni i bit će dostupni ako ponovno uključiš ovu opciju.",
-      "confirmHide": "Sakrij projekte"
+      "confirmHide": "Sakrij projekte",
+      "enableTitle": "Uključi projektni modul",
+      "continueFree": "Nastavi s besplatnim",
+      "enableModule": "Uključi modul"
     }
   },
   "transactions": {
