@@ -672,6 +672,8 @@
   },
   "common": {
     "save": "Spremi",
+    "user": "Korisnik",
+    "previous": "Prethodno",
     "tapToExpand": "klikni za prikaz",
     "cancel": "Odustani",
     "delete": "Obriši",

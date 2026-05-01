@@ -669,6 +669,8 @@
   },
   "common": {
     "save": "Save",
+    "user": "User",
+    "previous": "Previous",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
