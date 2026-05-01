@@ -91,14 +91,17 @@ export const ProjectFullScreenView = ({
     project?.business_profile_id === activeBusinessProfileId ||
     (project?.member_context === 'business' && project?.member_business_profile_id === activeBusinessProfileId)
   );
-  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce') && !isWorkerOnly;
+  const canSeeWorkers = hasAccess('workforce') && !isWorkerOnly;
+  const canSeeCollaborators = isBusinessView && hasAccess('collaborators') && !isWorkerOnly;
+  // Business-only UI bits (P&L card, budget history) — kept gated to Business tier in business view
+  const canAccessBusinessTabs = isBusinessView && hasAccess('collaborators') && !isWorkerOnly;
 
   // Determine if current user can see a tab (with business-level filtering)
   const canSeeTab = (tabKey: string) => {
     // Workers (restricted role) only see the work log
     if (isWorkerOnly) return tabKey === 'worklog';
-    // Workers and collaborators only visible in business view
-    if ((tabKey === 'workers' || tabKey === 'collaborators') && !canAccessBusinessTabs) return false;
+    if (tabKey === 'workers' && !canSeeWorkers) return false;
+    if (tabKey === 'collaborators' && !canSeeCollaborators) return false;
     // Documents always visible to project members
     if (tabKey === 'documents') return true;
     return isManager || isTabVisible(tabKey);

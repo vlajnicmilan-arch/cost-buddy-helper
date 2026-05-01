@@ -39,11 +39,11 @@ const FEATURE_TIERS: Record<Feature, SubscriptionTier> = {
   business_module: 'pro',
   installments: 'pro',
   custom_categories: 'pro',
+  workforce: 'pro',
   // Business-tier features
   team_access: 'business',
   collaborators: 'business',
   advanced_projects: 'business',
-  workforce: 'business',
 };
 
 // Free tier limits
