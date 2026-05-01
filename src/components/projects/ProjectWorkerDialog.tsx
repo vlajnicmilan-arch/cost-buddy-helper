@@ -75,6 +75,8 @@ export const ProjectWorkerDialog = ({
     }
     setInviteLink(null);
     setLinkedUserName(null);
+    setInviteEmail('');
+    setEmailSentTo(null);
   }, [worker, open]);
 
   // Resolve linked user display name
@@ -127,6 +129,37 @@ export const ProjectWorkerDialog = ({
     if (!inviteLink) return;
     await navigator.clipboard.writeText(inviteLink);
     showSuccess(t('projects.linkCopied', 'Link kopiran'));
+  };
+
+  const handleSendEmail = async () => {
+    if (!worker?.id) return;
+    const email = inviteEmail.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showError(t('projects.invalidEmail', 'Neispravna email adresa'));
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const result = await sendInviteEmail(email, 'member', worker.id, 'personal');
+      if (result.success) {
+        setEmailSentTo(email);
+        showSuccess(
+          result.mode === 'email_only'
+            ? t('projects.workerEmailSentNew', 'Pozivnica poslana — korisnik će dobiti email s linkom za registraciju')
+            : t('projects.workerEmailSent', 'Pozivnica poslana na {{email}}', { email })
+        );
+      } else {
+        const map: Record<string, string> = {
+          already_member: t('projects.alreadyMember', 'Korisnik je već član projekta'),
+          already_invited: t('projects.alreadyInvited', 'Korisnik već ima aktivnu pozivnicu'),
+          invalid_email: t('projects.invalidEmail', 'Neispravna email adresa'),
+        };
+        showError(map[result.error || ''] || t('common.error'));
+      }
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   return (
