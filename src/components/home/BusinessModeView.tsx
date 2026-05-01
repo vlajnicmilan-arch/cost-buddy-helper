@@ -176,7 +176,11 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
                   />
                 </>
               )}
-              <AddExpenseDialog onAdd={props.onAddExpense} checkDuplicate={props.checkDuplicate} />
+              <AddExpenseDialog
+                onAdd={props.onAddExpense}
+                checkDuplicate={props.checkDuplicate}
+                businessProfileId={props.businessProfile?.id ?? null}
+              />
             </div>
 
             {/* Payment Sources */}
