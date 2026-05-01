@@ -187,6 +187,50 @@ export const useProjectMembers = (projectId: string | null) => {
   };
 
   /**
+   * Send a worker/member invitation by email.
+   * Works for both existing app users (in-app + push + email) and brand-new users (email only).
+   * Returns { success, mode } so the UI can show appropriate feedback.
+   */
+  const sendInviteEmail = async (
+    email: string,
+    role: ProjectRole = 'member',
+    workerId?: string | null,
+    suggestedContext: 'personal' | 'business' = 'personal'
+  ): Promise<{ success: boolean; mode?: 'in_system' | 'email_only'; error?: string }> => {
+    if (!projectId || !user) return { success: false, error: 'no_session' };
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-member-invitation', {
+        body: {
+          type: 'project',
+          targetId: projectId,
+          invitedEmail: email.trim().toLowerCase(),
+          role,
+          suggestedContext,
+          workerId: workerId ?? undefined,
+          sendEmail: true,
+        },
+      });
+
+      if (error) {
+        const errBody = (error as any)?.context?.body
+          ? (() => { try { return JSON.parse((error as any).context.body); } catch { return null; } })()
+          : null;
+        const code = errBody?.error || (error as any)?.message || 'unknown';
+        return { success: false, error: code };
+      }
+
+      const code = (data as any)?.error;
+      if (code) return { success: false, error: code };
+
+      return { success: true, mode: (data as any)?.mode };
+    } catch (e) {
+      console.error('Error sending invite email:', e);
+      return { success: false, error: 'unknown' };
+    }
+  };
+
+  /**
    * Allow the current member to relocate the project on their side
    * (Personal vs a specific Business profile of theirs).
    * Updates the member's own row only — RLS enforces this.
