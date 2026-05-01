@@ -6,11 +6,12 @@ import { BottomNav } from '@/components/BottomNav';
 import { PageHeader } from '@/components/PageHeader';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { supabase } from '@/integrations/supabase/client';
 
 const Projects = () => {
   const { t } = useTranslation();
@@ -20,11 +21,27 @@ const Projects = () => {
   const { refetch } = useExpenses();
   const { hasAccess, getRequiredTier } = useFeatureAccess();
 
+  // Free users get access if they are a member of at least one project (invited as worker/member)
+  const [hasMemberships, setHasMemberships] = useState<boolean | null>(null);
+
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
       navigate('/', { replace: true });
     }
   }, [user, authLoading, navigate, storageMode]);
+
+  useEffect(() => {
+    const check = async () => {
+      if (!user) { setHasMemberships(false); return; }
+      if (hasAccess('projects')) { setHasMemberships(true); return; }
+      const { count } = await supabase
+        .from('project_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      setHasMemberships((count || 0) > 0);
+    };
+    check();
+  }, [user, hasAccess]);
 
   if (authLoading && storageMode === 'cloud') {
     return (
@@ -33,6 +50,9 @@ const Projects = () => {
       </div>
     );
   }
+
+  const canSeePanel = hasAccess('projects') || hasMemberships === true;
+  const canCreate = hasAccess('projects');
 
   return (
     <div className="min-h-dvh bg-background pb-20">
@@ -46,8 +66,12 @@ const Projects = () => {
           title={t('nav.projects', 'Projekti')}
           onDataImported={refetch}
         />
-        {hasAccess('projects') ? (
-          <ProjectsPanel onRefreshExpenses={refetch} />
+        {hasMemberships === null ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : canSeePanel ? (
+          <ProjectsPanel onRefreshExpenses={refetch} canCreate={canCreate} />
         ) : (
           <UpgradePrompt feature={t('nav.projects', 'Projekti')} requiredTier={getRequiredTier('projects')} />
         )}
