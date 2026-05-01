@@ -107,10 +107,13 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      setActiveTab('timeline');
+      setActiveTab(isWorkerOnly ? 'worklog' : 'timeline');
+      setActiveGroup('work');
+    } else if (isWorkerOnly) {
+      setActiveTab('worklog');
       setActiveGroup('work');
     }
-  }, [open, project?.id]);
+  }, [open, project?.id, isWorkerOnly]);
 
   // Map tab to its group (for auto-switching group when initialTab is set)
   const TAB_TO_GROUP: Record<string, TabGroup> = {
