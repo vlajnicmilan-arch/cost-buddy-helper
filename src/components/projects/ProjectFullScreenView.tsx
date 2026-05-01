@@ -37,7 +37,7 @@ import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
-import { TimeClockTab } from '../timeclock/TimeClockTab';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 
