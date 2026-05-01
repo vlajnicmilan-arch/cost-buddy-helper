@@ -82,6 +82,7 @@ export const ProjectFullScreenView = ({
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
   
   const currentUserRole = project?.role || 'viewer';
+  const isWorkerOnly = currentUserRole === 'worker' && !isManager;
   const { activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
 
@@ -90,10 +91,12 @@ export const ProjectFullScreenView = ({
     project?.business_profile_id === activeBusinessProfileId ||
     (project?.member_context === 'business' && project?.member_business_profile_id === activeBusinessProfileId)
   );
-  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce');
+  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce') && !isWorkerOnly;
 
   // Determine if current user can see a tab (with business-level filtering)
   const canSeeTab = (tabKey: string) => {
+    // Workers (restricted role) only see the work log
+    if (isWorkerOnly) return tabKey === 'worklog';
     // Workers and collaborators only visible in business view
     if ((tabKey === 'workers' || tabKey === 'collaborators') && !canAccessBusinessTabs) return false;
     // Documents always visible to project members
@@ -104,10 +107,13 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      setActiveTab('timeline');
+      setActiveTab(isWorkerOnly ? 'worklog' : 'timeline');
+      setActiveGroup('work');
+    } else if (isWorkerOnly) {
+      setActiveTab('worklog');
       setActiveGroup('work');
     }
-  }, [open, project?.id]);
+  }, [open, project?.id, isWorkerOnly]);
 
   // Map tab to its group (for auto-switching group when initialTab is set)
   const TAB_TO_GROUP: Record<string, TabGroup> = {
@@ -207,6 +213,7 @@ export const ProjectFullScreenView = ({
                   )}
                 </div>
 
+                {!isWorkerOnly && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -217,7 +224,9 @@ export const ProjectFullScreenView = ({
                   <Share2 className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">{t('projects.share.button', 'Podijeli')}</span>
                 </Button>
+                )}
 
+                {!isWorkerOnly && (
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -227,6 +236,7 @@ export const ProjectFullScreenView = ({
                   <BarChart3 className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">{t('projects.reports', 'Izvještaji')}</span>
                 </Button>
+                )}
               </div>
             </div>
 
@@ -315,7 +325,8 @@ export const ProjectFullScreenView = ({
 
               {/* Tabs - reorganized in 3 groups: Posao / Ljudi / Novac */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                {/* Top group selector */}
+                {/* Top group selector — hidden for restricted workers */}
+                {!isWorkerOnly && (
                 <div className="grid grid-cols-3 gap-2 mb-3 p-1 bg-muted/40 rounded-2xl border border-border/30">
                   {([
                     { id: 'work' as TabGroup, icon: Briefcase, label: t('projects.tabs.work', 'Posao') },
@@ -347,8 +358,10 @@ export const ProjectFullScreenView = ({
                     </button>
                   ))}
                 </div>
+                )}
 
                 {/* Sub-tabs for active group */}
+                {!isWorkerOnly && (
                 <div className="relative mb-6">
                   <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <TabsList className="inline-flex gap-1 h-auto p-1 bg-transparent w-auto min-w-max">
@@ -467,6 +480,7 @@ export const ProjectFullScreenView = ({
                   {/* Fade hint za scroll */}
                   <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
                 </div>
+                )}
 
                 <TabsContent value="overview" className="m-0 space-y-4">
                   {/* Quick stats */}

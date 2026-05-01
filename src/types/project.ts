@@ -1,4 +1,4 @@
-export type ProjectRole = 'manager' | 'member' | 'viewer';
+export type ProjectRole = 'manager' | 'member' | 'viewer' | 'worker';
 export type ProjectStatus = 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
 export type MilestoneStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
 
@@ -118,5 +118,6 @@ export const MILESTONE_STATUS_LABELS: Record<MilestoneStatus, string> = {
 export const PROJECT_ROLE_LABELS: Record<ProjectRole, string> = {
   manager: 'Voditelj',
   member: 'Punopravni član',
-  viewer: 'Promatrač'
+  viewer: 'Promatrač',
+  worker: 'Radnik'
 };

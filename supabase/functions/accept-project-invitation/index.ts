@@ -140,11 +140,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const memberName = profile?.display_name || 'Nepoznato';
 
+    // If this is a project invitation tied to a worker record, force the role
+    // to 'worker' (restricted access: only the work log).
+    let effectiveRole: string = invitation.role;
+    let isWorkerInvite = false;
+    if (type === 'project') {
+      const { data: invMeta } = await supabaseAdmin
+        .from('project_invitations')
+        .select('worker_id')
+        .eq('id', invitation.invitation_id)
+        .maybeSingle();
+      if ((invMeta as any)?.worker_id) {
+        effectiveRole = 'worker';
+        isWorkerInvite = true;
+      }
+    }
+
     // Add user as member
     const memberData: Record<string, unknown> = {
       [idColumn]: invitation.target_id,
       user_id: user.id,
-      role: invitation.role,
+      role: effectiveRole,
     };
 
     // For project_members, add display_name + member context
@@ -220,7 +236,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         project_id: invitation.target_id,
         user_id: user.id,
         tab_key,
-        visible: hasDefaults ? defaults[tab_key] === true : false,
+        // Worker-only invites: always hide all optional tabs.
+        visible: isWorkerInvite ? false : (hasDefaults ? defaults[tab_key] === true : false),
       }));
 
       const { error: permError } = await supabaseAdmin
