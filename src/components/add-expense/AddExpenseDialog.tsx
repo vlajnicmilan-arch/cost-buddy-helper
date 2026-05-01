@@ -403,11 +403,16 @@ export const AddExpenseDialog = ({
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving) return;
-    if (effectiveBusinessProfileId) {
-      const missing: string[] = [];
-      if (!scannedData.merchant?.trim()) missing.push('partner/trgovac');
-      if (!scannedData.date) missing.push('datum');
-      if (missing.length > 0) {
+      if (effectiveBusinessProfileId) {
+        const fallbackMerchant = scannedData.issuer_name?.trim() || scannedData.description?.trim();
+        if (!scannedData.merchant?.trim() && fallbackMerchant) {
+          scannedData.merchant = fallbackMerchant;
+        }
+
+        const missing: string[] = [];
+        if (!scannedData.merchant?.trim()) missing.push('partner/trgovac');
+        if (!scannedData.date) missing.push('datum');
+        if (missing.length > 0) {
         try {
           logDiagnostic('receipt_scan_blocked_business', {
             missing,
@@ -467,7 +472,7 @@ export const AddExpenseDialog = ({
         type: finalType,
         payment_source: finalPaymentSource,
         payment_source_card_id: finalCardId,
-        merchant_name: scannedData.merchant || undefined,
+        merchant_name: scannedData.merchant?.trim() || scannedData.issuer_name?.trim() || undefined,
         receipt_url: receiptUrl,
         ai_extracted: true,
         project_id: selectedProjectId || undefined,

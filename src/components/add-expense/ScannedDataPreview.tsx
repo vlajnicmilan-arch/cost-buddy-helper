@@ -204,18 +204,24 @@ export const ScannedDataPreview = ({
             <p className="font-bold text-lg">€{scannedData.amount.toFixed(2)}</p>
           </div>
           <div>
-            <span className="text-muted-foreground">{t('scanner.merchant')}:</span>
-            <p className="font-medium">{scannedData.merchant || '-'}</p>
-          </div>
-          <div>
             <span className="text-muted-foreground">{t('common.date')}:</span>
-            <p className="font-medium">
-              {scannedData.date 
-                ? new Date(scannedData.date).toLocaleDateString('hr-HR')
-                : t('scanner.dateNotFound')
-              }
-            </p>
+            <Input
+              type="date"
+              value={scannedData.date || ''}
+              onChange={(e) => onScannedDataChange({ ...scannedData, date: e.target.value || null })}
+              className="mt-1 h-10 rounded-lg text-sm"
+            />
           </div>
+        </div>
+
+        <div className="space-y-1">
+          <span className="text-muted-foreground text-sm">{t('scanner.merchant')}:</span>
+          <Input
+            value={scannedData.merchant || ''}
+            onChange={(e) => onScannedDataChange({ ...scannedData, merchant: e.target.value })}
+            className="rounded-lg text-sm"
+            placeholder={t('scanner.merchant')}
+          />
         </div>
 
         {/* Editable Category */}
