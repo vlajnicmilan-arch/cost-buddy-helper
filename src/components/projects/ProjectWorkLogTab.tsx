@@ -4,7 +4,7 @@ import { format, parseISO, startOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import {
   BookOpen, Plus, Pencil, Trash2, Loader2, Search,
-  CloudSun, Target, Users, ClipboardList, MoreVertical
+  CloudSun, Target, Users, ClipboardList, MoreVertical, CalendarDays, List,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,16 +20,18 @@ import { useProjectWorkLogs } from '@/hooks/useProjectWorkLogs';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useAuth } from '@/hooks/useAuth';
 import { WorkLogDialog } from './WorkLogDialog';
+import { WorkLogMonthlyOverview } from './WorkLogMonthlyOverview';
 import type { ProjectWorkLog } from '@/types/projectWorkLog';
 
 interface ProjectWorkLogTabProps {
   projectId: string;
   isManager: boolean;
+  projectName?: string;
 }
 
 type MonthFilter = 'current' | 'previous' | 'last3' | 'all';
 
-export const ProjectWorkLogTab = ({ projectId, isManager }: ProjectWorkLogTabProps) => {
+export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: ProjectWorkLogTabProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
