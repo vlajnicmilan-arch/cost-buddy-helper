@@ -77,13 +77,7 @@ export const WorkLogMonthlyOverview = ({ projectId, projectName }: WorkLogMonthl
     return m;
   }, [logs, currentMonth]);
 
-  // Worker hours per day from project_work_entries via useProjectWorkers... we already have workers.
-  // We need actual entries per worker per day. Re-fetch via hook? Simpler: derive from logs hoursByDate?
-  // Better: query directly. For now, reuse monthly via workers + entries from useProjectWorkers internal.
-  // But useProjectWorkers exposes only totals. We'll fetch entries via a small inline state.
-
-  // Use hoursByDate from useProjectWorkLogs
-  const { hoursByDate } = useProjectWorkLogs(projectId);
+  // hoursByDate already provided above by useProjectWorkLogs
 
   const grid = useMemo(() => {
     // worker_id -> date -> hours
