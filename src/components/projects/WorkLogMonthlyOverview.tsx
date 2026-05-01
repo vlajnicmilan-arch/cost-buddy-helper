@@ -148,12 +148,8 @@ export const WorkLogMonthlyOverview = ({ projectId, projectName }: WorkLogMonthl
 
       const csv = '\uFEFF' + lines.join('\r\n');
       const filename = `dnevnik-rada-${format(currentMonth, 'yyyy-MM')}.csv`;
-      await exportFile({
-        filename,
-        data: csv,
-        mimeType: 'text/csv;charset=utf-8',
-        mode,
-      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      await exportFile(blob, filename, mode);
       showSuccess(t('workLog.export.done', 'Izvoz završen'));
     } catch (e) {
       console.error(e);
