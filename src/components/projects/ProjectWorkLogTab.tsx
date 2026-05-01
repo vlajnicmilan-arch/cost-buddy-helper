@@ -299,6 +299,8 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
           })}
         </div>
       )}
+      </>
+      )}
 
       {/* Create/Edit dialog */}
       <WorkLogDialog
