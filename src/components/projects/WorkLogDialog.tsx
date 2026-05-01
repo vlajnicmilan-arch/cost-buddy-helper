@@ -277,7 +277,7 @@ export const WorkLogDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             {t('common.cancel', 'Odustani')}
           </Button>
-          <Button onClick={handleSubmit} disabled={saving || !summary.trim()}>
+          <Button onClick={handleSubmit} disabled={saving || (!isAbsence && !summary.trim())}>
             {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
             {t('common.save', 'Spremi')}
           </Button>
