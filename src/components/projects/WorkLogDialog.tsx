@@ -45,6 +45,7 @@ export const WorkLogDialog = ({
   const [weather, setWeather] = useState('');
   const [summary, setSummary] = useState('');
   const [notes, setNotes] = useState('');
+  const [hours, setHours] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   // Hydrate state when dialog opens or log changes
@@ -56,17 +57,21 @@ export const WorkLogDialog = ({
       setWeather(log.weather || '');
       setSummary(log.summary || '');
       setNotes(log.notes || '');
+      setHours(log.hours != null ? String(log.hours) : '');
     } else {
       setLogDate(defaultDate ? new Date(defaultDate) : new Date());
       setMilestoneId(defaultMilestoneId || 'none');
       setWeather('');
       setSummary('');
       setNotes('');
+      setHours('');
     }
   }, [open, log, defaultDate, defaultMilestoneId]);
 
   const handleSubmit = async () => {
     if (!summary.trim()) return;
+    const parsedHours = hours.trim() === '' ? null : Number(hours);
+    if (parsedHours != null && (isNaN(parsedHours) || parsedHours < 0 || parsedHours > 24)) return;
     setSaving(true);
     const ok = await onSubmit({
       log_date: format(logDate, 'yyyy-MM-dd'),
@@ -74,6 +79,7 @@ export const WorkLogDialog = ({
       weather: weather.trim() || null,
       summary: summary.trim(),
       notes: notes.trim() || null,
+      hours: parsedHours,
     });
     setSaving(false);
     if (ok) onOpenChange(false);
