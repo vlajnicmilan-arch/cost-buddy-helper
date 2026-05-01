@@ -177,34 +177,60 @@ export const WorkLogDialog = ({
             </div>
           )}
 
-          {/* Hours */}
-          <div className="space-y-1.5">
-            <Label htmlFor="worklog-hours">{t('workLog.hours', 'Sati rada')}</Label>
-            <Input
-              id="worklog-hours"
-              type="number"
-              inputMode="decimal"
-              step="0.25"
-              min="0"
-              max="24"
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              placeholder={t('workLog.hoursPlaceholder', 'npr. 8')}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {t('workLog.hoursHint', 'Tvoji sati će se automatski zbrojiti u mjesečnu satnicu.')}
-            </p>
-          </div>
+          {!isAbsence && (
+            <>
+              {/* Hours */}
+              <div className="space-y-1.5">
+                <Label htmlFor="worklog-hours">{t('workLog.hours', 'Sati rada')}</Label>
+                <Input
+                  id="worklog-hours"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.25"
+                  min="0"
+                  max="24"
+                  value={hours}
+                  onChange={(e) => setHours(e.target.value)}
+                  placeholder={t('workLog.hoursPlaceholder', 'npr. 8')}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t('workLog.hoursHint', 'Tvoji sati će se automatski zbrojiti u mjesečnu satnicu.')}
+                </p>
+              </div>
 
-          {/* Weather */}
-          <div className="space-y-1.5">
-            <Label>{t('workLog.weather', 'Vrijeme (opcionalno)')}</Label>
-            <Input
-              value={weather}
-              onChange={(e) => setWeather(e.target.value)}
-              placeholder={t('workLog.weatherPlaceholder', 'npr. Sunčano, 18°C')}
-            />
-          </div>
+              {/* Clock in / out (optional, just text HH:MM) */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="worklog-clockin">{t('workLog.clockIn', 'Dolazak (opcionalno)')}</Label>
+                  <Input
+                    id="worklog-clockin"
+                    type="time"
+                    value={clockIn}
+                    onChange={(e) => setClockIn(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="worklog-clockout">{t('workLog.clockOut', 'Odlazak (opcionalno)')}</Label>
+                  <Input
+                    id="worklog-clockout"
+                    type="time"
+                    value={clockOut}
+                    onChange={(e) => setClockOut(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Weather */}
+              <div className="space-y-1.5">
+                <Label>{t('workLog.weather', 'Vrijeme (opcionalno)')}</Label>
+                <Input
+                  value={weather}
+                  onChange={(e) => setWeather(e.target.value)}
+                  placeholder={t('workLog.weatherPlaceholder', 'npr. Sunčano, 18°C')}
+                />
+              </div>
+            </>
+          )}
 
           {/* Summary */}
           <div className="space-y-1.5">
