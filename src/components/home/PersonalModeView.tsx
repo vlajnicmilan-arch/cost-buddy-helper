@@ -25,6 +25,7 @@ import { Smartphone, ArrowRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/lib/version';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface PersonalModeViewProps {
   displayName: string | null;
