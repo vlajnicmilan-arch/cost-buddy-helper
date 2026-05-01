@@ -287,7 +287,17 @@
     "inviteWorkerToApp": "In die App einladen",
     "workerLinked": "Verbunden",
     "inviteWorkerHint": "Erzeuge einen Link und sende ihn dem Mitarbeiter. Beim Öffnen und Anmelden wird er automatisch mit diesem Datensatz verknüpft — ohne kostenpflichtigen Plan.",
-    "generateWorkerLink": "Einladungslink erzeugen"
+    "generateWorkerLink": "Einladungslink erzeugen",
+    "orSendByEmail": "Oder per E-Mail einladen — funktioniert auch, wenn der Nutzer noch kein Konto hat.",
+    "workerEmailPlaceholder": "mitarbeiter@email.com",
+    "sendEmail": "Senden",
+    "workerEmailSent": "Einladung gesendet an {{email}}",
+    "workerEmailSentNew": "Einladung gesendet — der Nutzer erhält eine E-Mail mit einem Registrierungslink",
+    "emailSentLabel": "Gesendet",
+    "sendAnother": "Weitere senden",
+    "invalidEmail": "Ungültige E-Mail-Adresse",
+    "alreadyMember": "Benutzer ist bereits Mitglied des Projekts",
+    "alreadyInvited": "Benutzer hat bereits eine ausstehende Einladung"
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",

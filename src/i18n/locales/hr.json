@@ -308,7 +308,17 @@
     "inviteWorkerToApp": "Pozovi u aplikaciju",
     "workerLinked": "Povezan",
     "inviteWorkerHint": "Generiraj link i pošalji ga radniku. Kad ga otvori i prijavi se, automatski se povezuje s ovim zapisom i može unositi svoj dnevnik rada — bez plaćene verzije.",
-    "generateWorkerLink": "Generiraj pozivni link"
+    "generateWorkerLink": "Generiraj pozivni link",
+    "orSendByEmail": "Ili pošalji pozivnicu mailom — radi i ako korisnik još nema račun.",
+    "workerEmailPlaceholder": "radnik@email.com",
+    "sendEmail": "Pošalji",
+    "workerEmailSent": "Pozivnica poslana na {{email}}",
+    "workerEmailSentNew": "Pozivnica poslana — korisnik će dobiti email s linkom za registraciju",
+    "emailSentLabel": "Poslano",
+    "sendAnother": "Pošalji još jedan",
+    "invalidEmail": "Neispravna email adresa",
+    "alreadyMember": "Korisnik je već član projekta",
+    "alreadyInvited": "Korisnik već ima aktivnu pozivnicu"
   },
   "estimates": {
     "title": "Ponude i predračuni",
