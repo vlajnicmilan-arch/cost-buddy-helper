@@ -128,7 +128,7 @@ export const ProjectFullScreenView = ({
     collaborators: 'people',
     funding: 'money',
     transactions: 'money',
-    timeclock: 'people',
+    
   };
 
   useEffect(() => {
