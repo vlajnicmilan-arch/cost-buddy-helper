@@ -481,7 +481,10 @@
       "disabled": "Project module hidden",
       "confirmTitle": "Hide project module?",
       "confirmDesc": "The Projects tab and all project-related suggestions will be hidden from navigation. Your existing projects and data are kept and will be available if you re-enable this option.",
-      "confirmHide": "Hide projects"
+      "confirmHide": "Hide projects",
+      "enableTitle": "Enable project module",
+      "continueFree": "Continue with Free",
+      "enableModule": "Enable module"
     }
   },
   "transactions": {
