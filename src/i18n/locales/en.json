@@ -469,7 +469,20 @@
     "multiCurrencyEnabled": "Multi-currency mode enabled",
     "multiCurrencyDisabled": "Multi-currency mode disabled",
     "contactSupport": "Contact support",
-    "contactSupportDesc": "Reply within 24h • support@vmbalance.com"
+    "contactSupportDesc": "Reply within 24h • support@vmbalance.com",
+    "usageProfile": {
+      "title": "Usage profile",
+      "subtitle": "What you want to track in the app. You can change this anytime.",
+      "financeOnly": "Finances only",
+      "financeOnlyDesc": "Hides the Projects tab from navigation.",
+      "financeProjects": "Finances + projects",
+      "financeProjectsDesc": "Full app features.",
+      "enabled": "Project module enabled",
+      "disabled": "Project module hidden",
+      "confirmTitle": "Hide project module?",
+      "confirmDesc": "The Projects tab and all project-related suggestions will be hidden from navigation. Your existing projects and data are kept and will be available if you re-enable this option.",
+      "confirmHide": "Hide projects"
+    }
   },
   "transactions": {
     "title": "Transactions",
@@ -1278,7 +1291,48 @@
     "manualEntryPrompt": "Enter the card type manually or select from the list below.",
     "enterCardType": "Enter card type",
     "cardTypePlaceholder": "e.g. Visa, Mastercard...",
-    "cardRecognized": "Card recognized: {{type}}"
+    "cardRecognized": "Card recognized: {{type}}",
+    "usageProfile": {
+      "title": "What do you want to track?",
+      "subtitle": "We will tailor the app to your needs. You can change this later in Settings.",
+      "required": "Please choose what you want to track",
+      "financeOnly": {
+        "label": "Personal finances only",
+        "desc": "Track income, expenses and budgets. Ideal for personal use.",
+        "recommended": "Recommended"
+      },
+      "financeProjects": {
+        "label": "Finances + projects",
+        "desc": "Everything above + manage projects, clients, workers and milestones. For freelancers, tradespeople and businesses."
+      },
+      "plan": {
+        "title": "Choose a plan",
+        "subtitle": "You can start free and upgrade later.",
+        "activate": "Activate selected plan",
+        "activateHint": "Opens checkout in a new tab — onboarding stays preserved.",
+        "free": {
+          "name": "Free",
+          "price": "€0",
+          "b1": "1 active project",
+          "b2": "Core features",
+          "b3": "No charge"
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "€4.99/mo",
+          "b1": "Unlimited projects",
+          "b2": "Workers & work log",
+          "b3": "AI receipt recognition"
+        },
+        "business": {
+          "name": "Business",
+          "price": "€9.99/mo",
+          "b1": "Multiple companies",
+          "b2": "P&L analytics & reports",
+          "b3": "Team & collaborators"
+        }
+      }
+    }
   },
   "welcome": {
     "title": "Welcome",
