@@ -1,4 +1,4 @@
-export type ProjectRole = 'manager' | 'member' | 'viewer';
+export type ProjectRole = 'manager' | 'member' | 'viewer' | 'worker';
 export type ProjectStatus = 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
 export type MilestoneStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
 
