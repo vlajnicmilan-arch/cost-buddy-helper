@@ -234,6 +234,51 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    // If invitation was for a specific worker (project type), auto-map worker.user_id
+    if (type === 'project') {
+      const { data: invWorkerRow } = await supabaseAdmin
+        .from('project_invitations')
+        .select('worker_id')
+        .eq('id', invitation.invitation_id)
+        .maybeSingle();
+
+      const workerId = (invWorkerRow as any)?.worker_id;
+      if (workerId) {
+        // Only set user_id if the worker row is unmapped or already maps to this user
+        const { data: workerRow } = await supabaseAdmin
+          .from('project_workers')
+          .select('id, user_id, project_id')
+          .eq('id', workerId)
+          .maybeSingle();
+
+        if (workerRow && workerRow.project_id === invitation.target_id &&
+            (!workerRow.user_id || workerRow.user_id === user.id)) {
+          // Ensure no other worker in this project already maps to this user
+          const { data: existingMap } = await supabaseAdmin
+            .from('project_workers')
+            .select('id')
+            .eq('project_id', invitation.target_id)
+            .eq('user_id', user.id)
+            .neq('id', workerId)
+            .maybeSingle();
+
+          if (!existingMap) {
+            const { error: mapError } = await supabaseAdmin
+              .from('project_workers')
+              .update({ user_id: user.id })
+              .eq('id', workerId);
+            if (mapError) {
+              console.log('Worker auto-mapping failed:', mapError.message);
+            } else {
+              console.log('Worker auto-mapped to user:', workerId, '→', user.id);
+            }
+          } else {
+            console.log('User already mapped to another worker in this project, skipping');
+          }
+        }
+      }
+    }
+
     // Update invitation status to accepted
     const { error: updateError } = await supabaseAdmin
       .from(invitationTable)
