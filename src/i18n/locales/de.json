@@ -463,7 +463,10 @@
       "disabled": "Projektmodul ausgeblendet",
       "confirmTitle": "Projektmodul ausblenden?",
       "confirmDesc": "Der Tab Projekte und alle projektbezogenen Vorschläge werden aus der Navigation ausgeblendet. Deine bestehenden Projekte und Daten bleiben erhalten und sind verfügbar, wenn du diese Option wieder aktivierst.",
-      "confirmHide": "Projekte ausblenden"
+      "confirmHide": "Projekte ausblenden",
+      "enableTitle": "Projektmodul aktivieren",
+      "continueFree": "Mit Kostenlos fortfahren",
+      "enableModule": "Modul aktivieren"
     }
   },
   "transactions": {
