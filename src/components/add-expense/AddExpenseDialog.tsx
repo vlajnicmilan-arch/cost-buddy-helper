@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type RefObject } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Save, ScanLine } from 'lucide-react';
@@ -180,6 +180,53 @@ export const AddExpenseDialog = ({
   const cameraActiveRef = useRef(false);
   const scanInProgressRef = useRef(false);
   const scannedPreviewActiveRef = useRef(false);
+  const nativeFlowReleaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearNativeFlowReleaseTimer = useCallback(() => {
+    if (nativeFlowReleaseTimeoutRef.current) {
+      clearTimeout(nativeFlowReleaseTimeoutRef.current);
+      nativeFlowReleaseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const activateCaptureGuard = useCallback(() => {
+    clearNativeFlowReleaseTimer();
+    cameraActiveRef.current = true;
+    setNativeFlowActive(true);
+  }, [clearNativeFlowReleaseTimer]);
+
+  const releaseCaptureGuardSoon = useCallback((delay = 2500) => {
+    clearNativeFlowReleaseTimer();
+    nativeFlowReleaseTimeoutRef.current = setTimeout(() => {
+      cameraActiveRef.current = false;
+      setNativeFlowActive(false);
+      nativeFlowReleaseTimeoutRef.current = null;
+    }, delay);
+  }, [clearNativeFlowReleaseTimer]);
+
+  const openFileInputCapture = useCallback((inputRef: RefObject<HTMLInputElement>) => {
+    try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
+    activateCaptureGuard();
+    inputRef.current?.click();
+  }, [activateCaptureGuard]);
+
+  useEffect(() => {
+    if (!open) return;
+    const releaseAfterReturn = () => {
+      if (cameraActiveRef.current && !scanInProgressRef.current) {
+        releaseCaptureGuardSoon();
+      }
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') releaseAfterReturn();
+    };
+    window.addEventListener('focus', releaseAfterReturn);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', releaseAfterReturn);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [open, releaseCaptureGuardSoon]);
 
   const selectedSourceCurrencyCode = useMemo(() => {
     if (!multiCurrencyEnabled) return primaryCurrency.code;
