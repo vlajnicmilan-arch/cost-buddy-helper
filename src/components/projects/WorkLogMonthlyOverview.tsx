@@ -57,7 +57,7 @@ export const WorkLogMonthlyOverview = ({ projectId, projectName }: WorkLogMonthl
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date()));
   const [exporting, setExporting] = useState(false);
 
-  const { logs, loading: logsLoading } = useProjectWorkLogs(projectId);
+  const { logs, hoursByDate, loading: logsLoading } = useProjectWorkLogs(projectId);
   const { workers, loading: workersLoading } = useProjectWorkers(projectId);
 
   const loading = logsLoading || workersLoading;
