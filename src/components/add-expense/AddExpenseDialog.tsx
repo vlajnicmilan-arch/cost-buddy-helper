@@ -348,18 +348,32 @@ export const AddExpenseDialog = ({
     // Dismiss keyboard before opening camera so it doesn't reappear during scanning
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     activateCaptureGuard();
+    armCaptureGuardSafetyNet();
+    // Mark scan-in-progress IMMEDIATELY (before the await). The popstate that
+    // Android emits when the camera activity returns can arrive in the same
+    // microtask as the resolved promise — without this flag the dialog can
+    // be unmounted before processImageBase64 ever runs.
+    scanInProgressRef.current = true;
     try {
       const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
       console.warn('📸 handleNativeCapture got base64?', !!base64, 'len=', base64?.length || 0);
       if (base64) {
         console.warn('📤 Sending to processImageBase64');
         await processImageBase64(base64, multiMode);
+      } else {
+        // User cancelled — release guard so the dialog can be closed normally.
+        releaseCaptureGuardSoon(500);
+        scanInProgressRef.current = false;
       }
     } catch (err: any) {
       console.error('📸 handleNativeCapture error:', err);
       showError(t('errors.save.expense', 'Greška pri spremanju transakcije'));
+      releaseCaptureGuardSoon(500);
+      scanInProgressRef.current = false;
     } finally {
-      // Slight delay so any popstate that fires on activity return is still blocked.
+      // If we got here with a successful scan, processImageBase64 has already
+      // released scanInProgressRef. Schedule a final guard release so the
+      // user can close the dialog after seeing the preview.
       releaseCaptureGuardSoon();
     }
   };
@@ -367,12 +381,16 @@ export const AddExpenseDialog = ({
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
     if (!file) {
-      releaseCaptureGuardSoon();
+      // User cancelled the file picker.
+      scanInProgressRef.current = false;
+      releaseCaptureGuardSoon(500);
       return;
     }
     // Dismiss keyboard so it doesn't stay open during scanning
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     clearNativeFlowReleaseTimer();
+    armCaptureGuardSafetyNet();
+    scanInProgressRef.current = true;
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
@@ -382,7 +400,10 @@ export const AddExpenseDialog = ({
         releaseCaptureGuardSoon();
       }
     };
-    reader.onerror = () => releaseCaptureGuardSoon();
+    reader.onerror = () => {
+      scanInProgressRef.current = false;
+      releaseCaptureGuardSoon(500);
+    };
     reader.readAsDataURL(file);
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
