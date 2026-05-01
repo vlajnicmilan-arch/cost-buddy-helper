@@ -1,116 +1,74 @@
 ## Cilj
 
-Dodati profilni izbor u onboarding tako da novi korisnici sami biraju razinu kompleksnosti aplikacije:
+Omogućiti **Pro korisnicima** (i u Personal i u Business modu) da koriste tab **Radnici** i **Dnevnik rada** na projektima. Trenutno je to zaključano samo na Business tarifu + aktivan Business mod, što neopravdano isključuje paušalne obrte i Pro korisnike koji vode projekte privatno.
 
-1. **Korak A** (svima): "Što želiš pratiti?" → samo osobne financije / financije + projekte
-2. **Korak B** (samo ako odabere projekte): usporedba Free / Pro / Business planova
-3. **Sakriti** "Projekti" iz BottomNav-a ako korisnik odabere samo financije
-4. **Postavke** dobivaju "Profil korištenja" sekciju za promjenu kasnije
-5. **Postojeći korisnici se ne diraju** — zadržavaju trenutno stanje
+## Tvoje odluke (potvrđene)
 
-## Korisničko iskustvo
+- **Pristup:** Pro i Business, u Personal i Business modu
+- **Free korisnici:** tab potpuno sakriven
+- **Workforce u tier sustavu:** moja preporuka ispod
 
-```text
-Step 1 [name]  →  Step 2 [NEW: profil]  →  Step 3 [NEW: planovi*]  →  Step 4 [sources]  →  Step 5 [cards]
-                                          (* samo ako "i projekte")
-```
+## Preporuka za workforce/Business razgraničenje
 
-**Korak 2 — "Što želiš pratiti?"**
-Dvije velike kartice:
-- 🪙 **Samo osobne financije** — "Praćenje prihoda, rashoda i budžeta. Idealno za osobnu upotrebu." (preporučeno za većinu)
-- 🗂️ **Financije + projekti** — "Sve gore + vođenje projekata, klijenata, radnika i milestoneova. Za freelance, obrt i tvrtke."
+| Feature | Tier | Obrazloženje |
+|---|---|---|
+| `workforce` (Radnici + Dnevnik rada) | **Pro** | Osnovna evidencija sati treba svim profesionalcima |
+| `collaborators` (vanjski suradnici/podizvođači na projektu) | Business | Već je Business — multi-firma scenarij |
+| `advanced_projects` | Business | Ostaje |
+| `team_access` (više korisnika unutar firme) | Business | Ostaje |
 
-**Korak 3 — "Odaberi plan"** (samo ako odabrao projekte)
-Tablica/3 kartice s usporedbom (Free / Pro / Business). Reuse postojeći paywall stil.
-- Korisnik MOŽE odabrati Free i nastaviti → ide u Pro/Business onboarding kasnije kad udari u limit
-- Korisnik MOŽE kliknuti "Aktiviraj Pro/Business" → ide na checkout, po povratku nastavlja sources korak
+**Razlog:** Radnici su **operativni alat** (vodi sate, plaća satnicu) — treba ga svaki paušalac. Suradnici su **B2B koncept** (ugovorna suradnja s drugom firmom/OIB-om) — to opravdano ostaje Business.
 
-## Tehnička izvedba
+## Izmjene u kodu
 
-### 1. Novi flag: `usage_profile`
-- Vrijednosti: `'finance_only'` | `'finance_projects'`
-- Pohrana: `localStorage` + Postavke koriste isti pristup kao `business_mode_enabled`
-- Migracija postojećih korisnika: ako `onboarding_completed === 'true'` i nema `usage_profile`, **NE postavljaj ništa** — tretiraj kao "legacy" → pokaži sve tabove (bez promjena u UX-u, kao i dosad)
-
-Dodati u `AppStateContext.tsx`:
+### 1. `src/hooks/useFeatureAccess.ts`
+Premjestiti `workforce` iz `business` u `pro`:
 ```ts
-const [usageProfile, setUsageProfileState] = useState<'finance_only' | 'finance_projects' | null>(
-  () => (localStorage.getItem('usage_profile') as any) || null
-);
-const setUsageProfile = (p) => { localStorage.setItem('usage_profile', p); setUsageProfileState(p); };
+workforce: 'pro',  // bilo: 'business'
 ```
 
-### 2. BottomNav: sakrij Projekte za `finance_only`
-U `src/components/BottomNav.tsx`:
+### 2. `src/components/projects/ProjectDetailDialog.tsx` (linija 64–70)
+Razdvojiti gating za workers vs collaborators:
 ```ts
-const navItems = allNavItems.filter(item => {
-  if (item.path === '/family') return familyModeEnabled && !activeBusinessProfileId;
-  if (item.path === '/projects') {
-    // Legacy korisnici (null) i 'finance_projects' → vidljivo. 'finance_only' → sakriveno.
-    return usageProfile !== 'finance_only';
-  }
-  return true;
-});
+const isBusinessView = !!activeBusinessProfileId && project?.business_profile_id === activeBusinessProfileId;
+const canSeeWorkers = hasAccess('workforce');           // Pro+ svuda
+const canSeeCollaborators = isBusinessView && hasAccess('collaborators'); // Business + Business view
+
+const canSeeTab = (tabKey: string) => {
+  if (tabKey === 'workers' && !canSeeWorkers) return false;
+  if (tabKey === 'collaborators' && !canSeeCollaborators) return false;
+  return isManager || isTabVisible(tabKey);
+};
 ```
 
-Također sakriti druge ulaze u projekte: `ActiveProjectsStrip`, `ProjectOnboardingHint` na Dashboardu, eventualne quick-action gumbe u Home view-u.
+### 3. Provjera ostalih ulaznih točaka
+Pretražiti i uskladiti gdje god se renderira Workers tab/CTA:
+- `src/components/projects/ProjectMembersTab.tsx` (default permissions matrix)
+- bilo koji `hasAccess('workforce')` poziv
+- BottomNav / projektne kartice — trebao bi raditi automatski
 
-### 3. Onboarding flow (`src/pages/Onboarding.tsx`)
-- Promijeniti `totalSteps` iz 3 u **dinamički** (4 ili 5, ovisno o izboru)
-- Step 2 (novi): `OnboardingUsageProfileStep` — dvije velike kartice
-- Step 3 (novi, conditional): `OnboardingPlanStep` — usporedba Free/Pro/Business; reuse logiku iz `src/pages/Paywall.tsx` (postojeći checkout flow)
-- Step 4: postojeći "izvori"
-- Step 5: postojeći "kartice"
-- Skip gumb i dalje radi (postavi `usage_profile = 'finance_only'` kao siguran default)
+### 4. Free korisnik — sakrivanje
+Već pokriveno: `hasAccess('workforce')` vraća `false` za Free, pa `canSeeTab('workers')` vraća false → tab se ne renderira. Bez dodatnog UpgradePrompt jer si izabrala "potpuno sakriti".
 
-### 4. Postavke — "Profil korištenja"
-Nova sekcija u `Settings` (provjeriti gdje se već nalazi `business_mode_enabled` toggle pa staviti pored):
-- Radio/segmented control: "Samo financije" | "Financije + projekti"
-- Promjena trenutno samo (ne)skriva tab — ne briše podatke
-- Ako prebaci s "projekti" na "samo financije" i ima aktivnih projekata → confirm dialog ("Tvoji projekti ostaju spremljeni, samo se sakrivaju iz navigacije")
+### 5. i18n
+Bez novih stringova — postojeći `workers.*` ključevi već postoje na HR/EN/DE.
 
-### 5. Funnel tracking
-Dodati novi event u `logFunnelEvent`:
-- `usage_profile_selected` s `{ profile: 'finance_only' | 'finance_projects' }`
-- Pri završetku onboardinga već postojeći `onboarding_complete` event proširi s `usage_profile`
+### 6. Test plan
+- **Free korisnik** → otvori projekt → tab **Radnici** se NE vidi ✓
+- **Pro u Personal modu** → otvori osobni projekt → tab **Radnici** se vidi, Dnevnik rada radi, Suradnici se NE vidi ✓
+- **Pro u Business modu** → tab **Radnici** se vidi, Suradnici se NE vidi (treba Business) ✓
+- **Business tarifa** → vidi i Radnike i Suradnike ✓
 
-Update `PulseFunnelEvents` admin widget da prikaže razdiobu profila.
+### 7. Memory update
+Ažurirati `mem://features/dual-level-project-system` da reflektira novu Pro/Business podjelu tabova.
 
-### 6. i18n ključevi (HR, EN, DE)
-Novi namespace `onboarding.usageProfile.*`:
-- `title`, `subtitle`
-- `financeOnly.label`, `financeOnly.desc`, `financeOnly.recommended`
-- `financeProjects.label`, `financeProjects.desc`
-- `plan.title`, `plan.subtitle`, `plan.startFree`, `plan.activatePro`, `plan.activateBusiness`
+## Što se NE mijenja
 
-I `settings.usageProfile.*` za Postavke sekciju.
+- Baza podataka (project_workers, project_work_logs, project_work_entries) — ostaje kako jest
+- Kod tabova (ProjectWorkersTab, WorkLogMonthlyOverview) — bez izmjena
+- Business mod scoping (radnici i dalje vezani uz business_profile_id kad postoji)
+- Postojeći podaci postojećih korisnika
 
-## Lista promjena
+## Rizici
 
-**Novi fajlovi:**
-- `src/components/onboarding/OnboardingUsageProfileStep.tsx`
-- `src/components/onboarding/OnboardingPlanStep.tsx`
-- `src/components/settings/UsageProfileSection.tsx`
-
-**Izmijenjeni fajlovi:**
-- `src/contexts/AppStateContext.tsx` (dodati `usageProfile`, `setUsageProfile`)
-- `src/pages/Onboarding.tsx` (dinamički stepovi, integracija novih koraka)
-- `src/components/BottomNav.tsx` (filter za `/projects`)
-- `src/pages/Dashboard.tsx` ili `src/components/home/PersonalModeView.tsx` (sakriti `ActiveProjectsStrip` i `ProjectOnboardingHint` ako `finance_only`)
-- Settings stranica/komponenta (mount `UsageProfileSection`)
-- `src/lib/funnelTracking.ts` (novi event tip)
-- `src/components/admin/PulseFunnelEvents.tsx` (prikaz profila)
-- `src/i18n/locales/{hr,en,de}.json` (novi ključevi)
-
-**DB:** nema promjena — sve u `localStorage`. (Možemo sinkronizirati u `profiles.usage_profile` u kasnijoj fazi ako bude potrebno za cross-device, ali za sad lokalno je dovoljno i konzistentno s `business_mode_enabled`.)
-
-## Što NIJE u opsegu
-
-- Promjena postojećeg paywall ekrana (samo ga reusamo u Korak 3)
-- Auto-detekcija profila iz postojećih podataka (postojeći korisnici se ne diraju)
-- Brisanje projekata kad korisnik prebaci na "samo financije" (samo skrivanje)
-- Posebne preset templates po profilu (to je drugi prioritet iz prethodne analize)
-
-## Pitanja za potvrdu prije implementacije
-
-Nemam blokirajućih pitanja — sve potrebne odluke su pokrivene tvojim odgovorima. Ako odobriš plan, krećem redom: AppStateContext → Onboarding stepovi → BottomNav filter → Settings sekcija → i18n → funnel.
+Minimalni. Promjena je **proširenje pristupa** (više korisnika dobiva feature), ne restrikcija. Postojeći Business korisnici i dalje imaju sve. Postojeći Pro korisnici dobivaju novu mogućnost.
