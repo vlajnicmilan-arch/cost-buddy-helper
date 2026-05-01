@@ -82,6 +82,7 @@ export const ProjectFullScreenView = ({
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
   
   const currentUserRole = project?.role || 'viewer';
+  const isWorkerOnly = currentUserRole === 'worker' && !isManager;
   const { activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
 
@@ -90,10 +91,12 @@ export const ProjectFullScreenView = ({
     project?.business_profile_id === activeBusinessProfileId ||
     (project?.member_context === 'business' && project?.member_business_profile_id === activeBusinessProfileId)
   );
-  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce');
+  const canAccessBusinessTabs = isBusinessView && hasAccess('workforce') && !isWorkerOnly;
 
   // Determine if current user can see a tab (with business-level filtering)
   const canSeeTab = (tabKey: string) => {
+    // Workers (restricted role) only see the work log
+    if (isWorkerOnly) return tabKey === 'worklog';
     // Workers and collaborators only visible in business view
     if ((tabKey === 'workers' || tabKey === 'collaborators') && !canAccessBusinessTabs) return false;
     // Documents always visible to project members
