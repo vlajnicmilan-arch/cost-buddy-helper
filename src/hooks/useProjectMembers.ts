@@ -278,6 +278,7 @@ export const useProjectMembers = (projectId: string | null) => {
     removeMember,
     cancelInvitation,
     generateInviteLink,
+    sendInviteEmail,
     updateMemberContext,
     refetch: fetchMembers
   };
