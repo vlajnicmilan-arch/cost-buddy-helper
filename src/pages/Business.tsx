@@ -42,6 +42,7 @@ const Business = () => {
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('dashboard');
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
 
   useBackButton(activeTab !== 'dashboard', () => setActiveTab('dashboard'));
@@ -143,16 +144,14 @@ const Business = () => {
               />
             }
             scanAction={
-              <AddExpenseDialog
-                onAdd={addExpense}
-                checkDuplicate={checkDuplicate}
-                businessProfileId={activeBusinessProfileId}
-                autoScan
-                triggerVariant="scan"
-                triggerIcon={<ScanLine className="w-3.5 h-3.5" />}
-                triggerLabel={t('common.scan', 'Skeniraj')}
-                triggerClassName="h-9 gap-1 px-3 text-sm"
-              />
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="h-9 gap-1 px-3 text-sm inline-flex items-center justify-center rounded-md border border-primary/30 text-primary bg-background hover:bg-accent transition-colors"
+              >
+                <ScanLine className="w-3.5 h-3.5" />
+                {t('common.scan', 'Skeniraj')}
+              </button>
             }
             onEditExpense={handleEditExpense}
             onDeleteExpense={deleteExpense}
@@ -171,6 +170,16 @@ const Business = () => {
           <BusinessMore expenses={dashboardExpenses} />
         )}
       </div>
+
+      <AddExpenseDialog
+        onAdd={addExpense}
+        checkDuplicate={checkDuplicate}
+        businessProfileId={activeBusinessProfileId}
+        autoScan
+        externalOpen={scannerOpen}
+        onOpenChange={setScannerOpen}
+        hideTrigger
+      />
 
       <BusinessBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
