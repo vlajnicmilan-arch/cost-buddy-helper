@@ -293,6 +293,24 @@ const Onboarding = () => {
 
           {step === 2 && (
             <motion.div
+              key="step2-profile"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              className="w-full max-w-2xl"
+            >
+              <OnboardingUsageProfileStep
+                selected={usageProfileChoice}
+                onSelect={setUsageProfileChoice}
+                selectedPlan={planChoice}
+                onSelectPlan={setPlanChoice}
+                onOpenPaywall={handleOpenPaywall}
+              />
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div
               key="step2"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -347,9 +365,9 @@ const Onboarding = () => {
             </motion.div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <motion.div
-              key="step3"
+              key="step4"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
