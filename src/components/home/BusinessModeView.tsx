@@ -343,6 +343,15 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         onRecurringMatchConfirm={props.onRecurringMatchConfirm}
       />
 
+      <AddExpenseDialog
+        onAdd={props.onAddExpense}
+        checkDuplicate={props.checkDuplicate}
+        businessProfileId={props.businessProfile?.id ?? null}
+        autoScan
+        externalOpen={businessScannerOpen}
+        onOpenChange={setBusinessScannerOpen}
+        hideTrigger
+      />
 
 
       <BusinessBottomNav activeTab={businessTab} onTabChange={onBusinessTabChange} />
