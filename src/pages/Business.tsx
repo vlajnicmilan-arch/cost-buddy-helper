@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, ArrowLeft, Plus, ScanLine } from 'lucide-react';
+import { Building2, ArrowLeft, Plus } from 'lucide-react';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';

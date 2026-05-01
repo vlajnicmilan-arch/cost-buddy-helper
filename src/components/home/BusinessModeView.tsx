@@ -18,7 +18,7 @@ import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { BusinessProjects } from '@/components/business/BusinessProjects';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, FileSpreadsheet, Plus, ScanLine } from 'lucide-react';
+import { ArrowLeft, Building2, FileSpreadsheet, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 
