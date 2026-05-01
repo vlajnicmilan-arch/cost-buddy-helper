@@ -204,29 +204,40 @@ export const AddExpenseDialog = ({
     }, delay);
   }, [clearNativeFlowReleaseTimer]);
 
+  // Safety net: never let the guard stay locked forever if something goes
+  // very wrong (camera plugin hangs, user kills the app, etc.). 20s is well
+  // beyond any realistic scan duration but short enough that the back button
+  // works again before the user gives up.
+  const armCaptureGuardSafetyNet = useCallback(() => {
+    clearNativeFlowReleaseTimer();
+    nativeFlowReleaseTimeoutRef.current = setTimeout(() => {
+      cameraActiveRef.current = false;
+      scanInProgressRef.current = false;
+      setNativeFlowActive(false);
+      nativeFlowReleaseTimeoutRef.current = null;
+    }, 20000);
+  }, [clearNativeFlowReleaseTimer]);
+
   const openFileInputCapture = useCallback((inputRef: RefObject<HTMLInputElement>) => {
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     activateCaptureGuard();
+    armCaptureGuardSafetyNet();
+    // Mark scan-in-progress immediately. The popstate that Android emits when
+    // the camera/file-picker activity returns can race ahead of the change
+    // event on the file input. Without this flag the BackButtonContext sees
+    // an "idle" dialog and navigates to /home, unmounting us mid-scan.
+    scanInProgressRef.current = true;
     inputRef.current?.click();
-  }, [activateCaptureGuard]);
+  }, [activateCaptureGuard, armCaptureGuardSafetyNet]);
 
-  useEffect(() => {
-    if (!open) return;
-    const releaseAfterReturn = () => {
-      if (cameraActiveRef.current && !scanInProgressRef.current) {
-        releaseCaptureGuardSoon();
-      }
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') releaseAfterReturn();
-    };
-    window.addEventListener('focus', releaseAfterReturn);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      window.removeEventListener('focus', releaseAfterReturn);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [open, releaseCaptureGuardSoon]);
+  // IMPORTANT: We intentionally do NOT release the capture guard on `focus`
+  // or `visibilitychange`. Android emits popstate exactly at the moment the
+  // WebView regains focus after the camera activity finishes — releasing the
+  // guard there causes the global BackButtonContext to treat that popstate as
+  // a real "back" press, navigate to /home, and unmount the dialog before
+  // scanning even starts. The guard is now released ONLY when the scan flow
+  // explicitly completes (success/failure/cancel) via releaseCaptureGuardSoon
+  // or by the safety-net timer above.
 
   const selectedSourceCurrencyCode = useMemo(() => {
     if (!multiCurrencyEnabled) return primaryCurrency.code;
