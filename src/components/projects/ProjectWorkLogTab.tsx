@@ -102,7 +102,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
         <h3 className="font-medium flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-primary" />
           {t('workLog.title', 'Dnevnik rada')}
-          {filteredLogs.length > 0 && (
+          {view === 'list' && filteredLogs.length > 0 && (
             <Badge variant="secondary" className="text-[10px]">{filteredLogs.length}</Badge>
           )}
         </h3>
@@ -111,6 +111,33 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
           {t('workLog.newEntry', 'Novi zapis')}
         </Button>
       </div>
+
+      {/* View toggle */}
+      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+        <Button
+          variant={view === 'list' ? 'default' : 'ghost'}
+          size="sm"
+          className="h-7 px-2 text-xs gap-1"
+          onClick={() => setView('list')}
+        >
+          <List className="w-3.5 h-3.5" />
+          {t('workLog.viewList', 'Lista')}
+        </Button>
+        <Button
+          variant={view === 'monthly' ? 'default' : 'ghost'}
+          size="sm"
+          className="h-7 px-2 text-xs gap-1"
+          onClick={() => setView('monthly')}
+        >
+          <CalendarDays className="w-3.5 h-3.5" />
+          {t('workLog.viewMonthly', 'Mjesečni pregled')}
+        </Button>
+      </div>
+
+      {view === 'monthly' ? (
+        <WorkLogMonthlyOverview projectId={projectId} projectName={projectName || t('workLog.title', 'Dnevnik rada')} />
+      ) : (
+      <>
 
       {/* Filters */}
       <div className="space-y-2">
