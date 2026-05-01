@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type RefObject } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Save, ScanLine } from 'lucide-react';
@@ -180,6 +180,53 @@ export const AddExpenseDialog = ({
   const cameraActiveRef = useRef(false);
   const scanInProgressRef = useRef(false);
   const scannedPreviewActiveRef = useRef(false);
+  const nativeFlowReleaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearNativeFlowReleaseTimer = useCallback(() => {
+    if (nativeFlowReleaseTimeoutRef.current) {
+      clearTimeout(nativeFlowReleaseTimeoutRef.current);
+      nativeFlowReleaseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const activateCaptureGuard = useCallback(() => {
+    clearNativeFlowReleaseTimer();
+    cameraActiveRef.current = true;
+    setNativeFlowActive(true);
+  }, [clearNativeFlowReleaseTimer]);
+
+  const releaseCaptureGuardSoon = useCallback((delay = 2500) => {
+    clearNativeFlowReleaseTimer();
+    nativeFlowReleaseTimeoutRef.current = setTimeout(() => {
+      cameraActiveRef.current = false;
+      setNativeFlowActive(false);
+      nativeFlowReleaseTimeoutRef.current = null;
+    }, delay);
+  }, [clearNativeFlowReleaseTimer]);
+
+  const openFileInputCapture = useCallback((inputRef: RefObject<HTMLInputElement>) => {
+    try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
+    activateCaptureGuard();
+    inputRef.current?.click();
+  }, [activateCaptureGuard]);
+
+  useEffect(() => {
+    if (!open) return;
+    const releaseAfterReturn = () => {
+      if (cameraActiveRef.current && !scanInProgressRef.current) {
+        releaseCaptureGuardSoon();
+      }
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') releaseAfterReturn();
+    };
+    window.addEventListener('focus', releaseAfterReturn);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', releaseAfterReturn);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [open, releaseCaptureGuardSoon]);
 
   const selectedSourceCurrencyCode = useMemo(() => {
     if (!multiCurrencyEnabled) return primaryCurrency.code;
@@ -257,12 +304,12 @@ export const AddExpenseDialog = ({
         if (isNative) {
           handleNativeCapture('camera', false);
         } else {
-          cameraInputRef.current?.click();
+          openFileInputCapture(cameraInputRef);
         }
       }, 150);
       return () => clearTimeout(t);
     }
-  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId]);
+  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId, openFileInputCapture]);
 
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
     // Defensive blur: ensure keyboard is dismissed before scan/AI analysis kicks in
@@ -289,8 +336,7 @@ export const AddExpenseDialog = ({
     console.warn('📸 handleNativeCapture start', { source, multiMode, isNative });
     // Dismiss keyboard before opening camera so it doesn't reappear during scanning
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
-    cameraActiveRef.current = true;
-    setNativeFlowActive(true);
+    activateCaptureGuard();
     try {
       const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
       console.warn('📸 handleNativeCapture got base64?', !!base64, 'len=', base64?.length || 0);
@@ -303,23 +349,29 @@ export const AddExpenseDialog = ({
       showError(t('errors.save.expense', 'Greška pri spremanju transakcije'));
     } finally {
       // Slight delay so any popstate that fires on activity return is still blocked.
-      setTimeout(() => {
-        cameraActiveRef.current = false;
-        setNativeFlowActive(false);
-      }, 2500);
+      releaseCaptureGuardSoon();
     }
   };
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      releaseCaptureGuardSoon();
+      return;
+    }
     // Dismiss keyboard so it doesn't stay open during scanning
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
+    clearNativeFlowReleaseTimer();
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
-      await processImageBase64(base64, multiMode);
+      try {
+        await processImageBase64(base64, multiMode);
+      } finally {
+        releaseCaptureGuardSoon();
+      }
     };
+    reader.onerror = () => releaseCaptureGuardSoon();
     reader.readAsDataURL(file);
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
@@ -967,6 +1019,7 @@ export const AddExpenseDialog = ({
               isNative={isNative}
               onNativeCapture={handleNativeCapture}
               onImageCapture={handleImageCapture}
+              onOpenFileInputCapture={openFileInputCapture}
               onScanMultipleImages={handleScanMultipleImages}
               onToggleMultiMode={() => setShowMultiImageCollector(true)}
               onRemoveReceiptImage={(idx) => setReceiptImages(prev => prev.filter((_, i) => i !== idx))}
