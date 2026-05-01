@@ -480,6 +480,7 @@ export const ProjectFullScreenView = ({
                   {/* Fade hint za scroll */}
                   <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
                 </div>
+                )}
 
                 <TabsContent value="overview" className="m-0 space-y-4">
                   {/* Quick stats */}
