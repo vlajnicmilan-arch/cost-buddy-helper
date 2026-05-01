@@ -464,6 +464,10 @@ const Onboarding = () => {
                   localStorage.setItem('onboarding_completed', 'true');
                   localStorage.setItem('show_welcome_animation', 'true');
                   localStorage.setItem('pwa-auto-update', 'true');
+                  // Persist usage profile (default to finance_only on skip)
+                  const profileToSave = usageProfileChoice ?? 'finance_only';
+                  localStorage.setItem('usage_profile', profileToSave);
+                  setUsageProfile(profileToSave);
                   setOnboardingCompleted(true);
                   navigate('/home', { replace: true });
                 } catch (error) {
