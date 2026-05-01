@@ -113,6 +113,7 @@ interface BusinessModeViewProps {
 export const BusinessModeView = (props: BusinessModeViewProps) => {
   const { t } = useTranslation();
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
+  const [businessScannerOpen, setBusinessScannerOpen] = useState(false);
 
 
   const {
@@ -283,16 +284,10 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               />
             }
             scanAction={
-              <AddExpenseDialog
-                onAdd={props.onAddExpense}
-                checkDuplicate={props.checkDuplicate}
-                businessProfileId={props.businessProfile?.id ?? null}
-                autoScan
-                triggerVariant="scan"
-                triggerIcon={<ScanLine className="w-3.5 h-3.5" />}
-                triggerLabel={t('common.scan', 'Skeniraj')}
-                triggerClassName="h-9 gap-1 px-3 text-sm"
-              />
+              <Button size="sm" variant="outline" className="h-9 gap-1 border-primary/30 text-primary" onClick={() => setBusinessScannerOpen(true)}>
+                <ScanLine className="w-3.5 h-3.5" />
+                {t('common.scan', 'Skeniraj')}
+              </Button>
             }
             onEditExpense={props.onUpdateExpense}
             onDeleteExpense={props.onDeleteExpense}
@@ -348,6 +343,15 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
         onRecurringMatchConfirm={props.onRecurringMatchConfirm}
       />
 
+      <AddExpenseDialog
+        onAdd={props.onAddExpense}
+        checkDuplicate={props.checkDuplicate}
+        businessProfileId={props.businessProfile?.id ?? null}
+        autoScan
+        externalOpen={businessScannerOpen}
+        onOpenChange={setBusinessScannerOpen}
+        hideTrigger
+      />
 
 
       <BusinessBottomNav activeTab={businessTab} onTabChange={onBusinessTabChange} />
