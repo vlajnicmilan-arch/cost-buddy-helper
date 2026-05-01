@@ -16,6 +16,7 @@ import { template as accountDeletionCancelled } from './account-deletion-cancell
 import { template as accountDeletionCompleted } from './account-deletion-completed.tsx'
 import { template as supportAutoResponder } from './support-auto-responder.tsx'
 import { template as feedbackAdminAlert } from './feedback-admin-alert.tsx'
+import { template as projectWorkerInvitation } from './project-worker-invitation.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'budget-alert': budgetAlert,
@@ -25,4 +26,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'account-deletion-completed': accountDeletionCompleted,
   'support-auto-responder': supportAutoResponder,
   'feedback-admin-alert': feedbackAdminAlert,
+  'project-worker-invitation': projectWorkerInvitation,
 }
