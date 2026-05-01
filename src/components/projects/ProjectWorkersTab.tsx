@@ -27,7 +27,7 @@ import { WorkerScheduleDialog } from './WorkerScheduleDialog';
 import { WorkerDataDisclaimerDialog, hasAcceptedWorkerDisclaimer } from '@/components/legal/WorkerDataDisclaimerDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List, Download, FileText, FileSpreadsheet, FileJson, Search, Filter } from 'lucide-react';
+import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List, Download, FileText, FileSpreadsheet, FileJson, Search, Filter, CheckCircle2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WorkCalendarOverview } from './WorkCalendarOverview';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
@@ -434,6 +434,12 @@ export const ProjectWorkersTab = ({
                             {worker.first_name} {worker.last_name}
                           </h4>
                           <Badge variant="outline">{worker.position}</Badge>
+                          {worker.user_id && (
+                            <Badge variant="secondary" className="gap-1 text-[10px]">
+                              <CheckCircle2 className="w-3 h-3 text-primary" />
+                              {t('projects.workerLinked', 'Povezan')}
+                            </Badge>
+                          )}
                         </div>
                         
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
@@ -509,6 +515,7 @@ export const ProjectWorkersTab = ({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         worker={editingWorker}
+        projectId={projectId}
         onSave={handleSave}
       />
 
