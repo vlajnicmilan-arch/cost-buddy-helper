@@ -304,12 +304,12 @@ export const AddExpenseDialog = ({
         if (isNative) {
           handleNativeCapture('camera', false);
         } else {
-          cameraInputRef.current?.click();
+          openFileInputCapture(cameraInputRef);
         }
       }, 150);
       return () => clearTimeout(t);
     }
-  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId]);
+  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId, openFileInputCapture]);
 
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
     // Defensive blur: ensure keyboard is dismissed before scan/AI analysis kicks in
@@ -359,14 +359,23 @@ export const AddExpenseDialog = ({
 
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>, multiMode = false) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      releaseCaptureGuardSoon();
+      return;
+    }
     // Dismiss keyboard so it doesn't stay open during scanning
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
+    clearNativeFlowReleaseTimer();
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
-      await processImageBase64(base64, multiMode);
+      try {
+        await processImageBase64(base64, multiMode);
+      } finally {
+        releaseCaptureGuardSoon();
+      }
     };
+    reader.onerror = () => releaseCaptureGuardSoon();
     reader.readAsDataURL(file);
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
