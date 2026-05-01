@@ -213,6 +213,7 @@ export const ProjectFullScreenView = ({
                   )}
                 </div>
 
+                {!isWorkerOnly && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -223,7 +224,9 @@ export const ProjectFullScreenView = ({
                   <Share2 className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">{t('projects.share.button', 'Podijeli')}</span>
                 </Button>
+                )}
 
+                {!isWorkerOnly && (
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -233,6 +236,7 @@ export const ProjectFullScreenView = ({
                   <BarChart3 className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">{t('projects.reports', 'Izvještaji')}</span>
                 </Button>
+                )}
               </div>
             </div>
 
