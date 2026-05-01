@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import type { ProjectMilestone } from '@/types/project';
-import type { ProjectWorkLog, ProjectWorkLogInput } from '@/types/projectWorkLog';
+import type { ProjectWorkLog, ProjectWorkLogInput, WorkLogDayType } from '@/types/projectWorkLog';
 
 interface WorkLogDialogProps {
   open: boolean;
@@ -46,6 +46,9 @@ export const WorkLogDialog = ({
   const [summary, setSummary] = useState('');
   const [notes, setNotes] = useState('');
   const [hours, setHours] = useState<string>('');
+  const [dayType, setDayType] = useState<WorkLogDayType>('work');
+  const [clockIn, setClockIn] = useState<string>('');
+  const [clockOut, setClockOut] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   // Hydrate state when dialog opens or log changes
@@ -58,6 +61,9 @@ export const WorkLogDialog = ({
       setSummary(log.summary || '');
       setNotes(log.notes || '');
       setHours(log.hours != null ? String(log.hours) : '');
+      setDayType((log.day_type as WorkLogDayType) || 'work');
+      setClockIn(log.clock_in_time || '');
+      setClockOut(log.clock_out_time || '');
     } else {
       setLogDate(defaultDate ? new Date(defaultDate) : new Date());
       setMilestoneId(defaultMilestoneId || 'none');
@@ -65,21 +71,31 @@ export const WorkLogDialog = ({
       setSummary('');
       setNotes('');
       setHours('');
+      setDayType('work');
+      setClockIn('');
+      setClockOut('');
     }
   }, [open, log, defaultDate, defaultMilestoneId]);
 
+  const isAbsence = dayType !== 'work';
+
   const handleSubmit = async () => {
-    if (!summary.trim()) return;
+    // For absence days, summary is auto-generated if missing
+    const finalSummary = summary.trim() || (isAbsence ? t(`workLog.dayType.${dayType}`, dayType) : '');
+    if (!finalSummary) return;
     const parsedHours = hours.trim() === '' ? null : Number(hours);
     if (parsedHours != null && (isNaN(parsedHours) || parsedHours < 0 || parsedHours > 24)) return;
     setSaving(true);
     const ok = await onSubmit({
       log_date: format(logDate, 'yyyy-MM-dd'),
       milestone_id: milestoneId === 'none' ? null : milestoneId,
-      weather: weather.trim() || null,
-      summary: summary.trim(),
+      weather: isAbsence ? null : (weather.trim() || null),
+      summary: finalSummary,
       notes: notes.trim() || null,
-      hours: parsedHours,
+      hours: isAbsence ? null : parsedHours,
+      day_type: dayType,
+      clock_in_time: isAbsence ? null : (clockIn.trim() || null),
+      clock_out_time: isAbsence ? null : (clockOut.trim() || null),
     });
     setSaving(false);
     if (ok) onOpenChange(false);
