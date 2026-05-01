@@ -10,6 +10,7 @@ interface ReceiptCaptureButtonsProps {
   isNative: boolean;
   onNativeCapture: (source: 'camera' | 'gallery', multiMode?: boolean) => void;
   onImageCapture: (event: React.ChangeEvent<HTMLInputElement>, multiMode?: boolean) => void;
+  onOpenFileInputCapture: (inputRef: React.RefObject<HTMLInputElement>) => void;
   onScanMultipleImages: () => void;
   onToggleMultiMode: () => void;
   onRemoveImage: (index: number) => void;
@@ -26,6 +27,7 @@ export const ReceiptCaptureButtons = ({
   isNative,
   onNativeCapture,
   onImageCapture,
+  onOpenFileInputCapture,
   onScanMultipleImages,
   onToggleMultiMode,
   onRemoveImage,
@@ -77,7 +79,7 @@ export const ReceiptCaptureButtons = ({
           type="button"
           variant="outline"
           className="flex-1 gap-2 rounded-xl border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50"
-          onClick={() => isNative ? onNativeCapture('camera') : cameraInputRef.current?.click()}
+          onClick={() => isNative ? onNativeCapture('camera') : onOpenFileInputCapture(cameraInputRef)}
           disabled={scanning || showMultiImageCollector}
         >
           {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -87,7 +89,7 @@ export const ReceiptCaptureButtons = ({
           type="button"
           variant="outline"
           className="flex-1 gap-2 rounded-xl border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-400 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
-          onClick={() => isNative ? onNativeCapture('gallery') : galleryInputRef.current?.click()}
+          onClick={() => isNative ? onNativeCapture('gallery') : onOpenFileInputCapture(galleryInputRef)}
           disabled={scanning || showMultiImageCollector}
         >
           {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
@@ -136,7 +138,7 @@ export const ReceiptCaptureButtons = ({
               variant="outline"
               size="sm"
               className="flex-1 gap-1 text-xs"
-              onClick={() => isNative ? onNativeCapture('camera', true) : multiCameraInputRef.current?.click()}
+              onClick={() => isNative ? onNativeCapture('camera', true) : onOpenFileInputCapture(multiCameraInputRef)}
               disabled={scanning || receiptImages.length >= 5}
             >
               <Camera className="w-3 h-3" />
@@ -147,7 +149,7 @@ export const ReceiptCaptureButtons = ({
               variant="outline"
               size="sm"
               className="flex-1 gap-1 text-xs"
-              onClick={() => isNative ? onNativeCapture('gallery', true) : multiGalleryInputRef.current?.click()}
+              onClick={() => isNative ? onNativeCapture('gallery', true) : onOpenFileInputCapture(multiGalleryInputRef)}
               disabled={scanning || receiptImages.length >= 5}
             >
               <Image className="w-3 h-3" />
