@@ -652,14 +652,6 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
                 )}
 
-                {canAccessBusinessTabs && (
-                <TabsContent value="timeclock" className="m-0">
-                  <TimeClockTab
-                    projectId={project.id}
-                    isManager={isManager}
-                  />
-                </TabsContent>
-                )}
               </Tabs>
             </div>
 
