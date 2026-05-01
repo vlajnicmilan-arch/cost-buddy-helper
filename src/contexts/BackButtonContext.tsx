@@ -1,6 +1,7 @@
 import { createContext, useContext, useRef, useCallback, useEffect, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { isPublicRoute, isRootAppRoute } from '@/lib/publicRoutes';
+import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
 
 /**
  * Global Back Button Manager
@@ -44,7 +45,7 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
   // that as a user "back" press, otherwise we'd navigate away and unmount
   // dialogs that are mid-flight (e.g. AddExpenseDialog while scanning).
   const lastForegroundAtRef = useRef<number>(0);
-  const VISIBILITY_GRACE_MS = 800;
+  const VISIBILITY_GRACE_MS = 2500;
 
   const location = useLocation();
   useEffect(() => {
@@ -94,6 +95,12 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       .filter(h => h.isOpen)
       .sort((a, b) => b.priority - a.priority || b.openedAt - a.openedAt);
 
+    const sinceForeground = Date.now() - lastForegroundAtRef.current;
+    if (isNativeFlowActive() || (lastForegroundAtRef.current > 0 && sinceForeground < VISIBILITY_GRACE_MS)) {
+      window.history.pushState(null, '');
+      return;
+    }
+
     if (openHandlers.length > 0) {
       const handler = openHandlers[0];
       // Important: do NOT eagerly mark the handler as closed here.
@@ -109,7 +116,6 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
     // camera activity finished), Android may emit a spurious popstate. Don't
     // navigate away — re-push the guard state instead so a real subsequent
     // back press still works.
-    const sinceForeground = Date.now() - lastForegroundAtRef.current;
     if (lastForegroundAtRef.current > 0 && sinceForeground < VISIBILITY_GRACE_MS) {
       if (import.meta.env.DEV) {
         console.log('[BackButton] popstate ignored — within visibility grace window:', sinceForeground, 'ms');
