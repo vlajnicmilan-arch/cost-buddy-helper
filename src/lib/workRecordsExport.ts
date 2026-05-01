@@ -86,7 +86,7 @@ export async function generateWorkRecordsJSON(config: WorkExportConfig): Promise
 
 export async function generateWorkRecordsPDF(config: WorkExportConfig): Promise<void> {
   const { workers, entries, milestones, projectName, currency } = config;
-  const jsPDF = await loadJsPdf();
+  const { jsPDF } = await loadJsPdf();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   const msMap = new Map(milestones.map(m => [m.id, m.name]));
