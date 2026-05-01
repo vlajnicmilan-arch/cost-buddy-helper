@@ -75,18 +75,18 @@ export async function generateWorkRecordsCSV(config: WorkExportConfig): Promise<
 
   const csv = '\uFEFF' + lines.join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  await triggerDownload(blob, `${safeFilename(projectName)}_radni_sati.csv`, 'text/csv');
+  await exportFile(blob, `${safeFilename(projectName)}_radni_sati.csv`, "save");
 }
 
 export async function generateWorkRecordsJSON(config: WorkExportConfig): Promise<void> {
   const json = JSON.stringify(config, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
-  await triggerDownload(blob, `${safeFilename(config.projectName)}_radni_sati.json`, 'application/json');
+  await exportFile(blob, `${safeFilename(config.projectName)}_radni_sati.json`, "save");
 }
 
 export async function generateWorkRecordsPDF(config: WorkExportConfig): Promise<void> {
   const { workers, entries, milestones, projectName, currency } = config;
-  const jsPDF = await loadJsPDF();
+  const jsPDF = await loadJsPdf();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   const msMap = new Map(milestones.map(m => [m.id, m.name]));
@@ -146,5 +146,5 @@ export async function generateWorkRecordsPDF(config: WorkExportConfig): Promise<
   }
 
   const blob = doc.output('blob');
-  await triggerDownload(blob, `${safeFilename(projectName)}_radni_sati.pdf`, 'application/pdf');
+  await exportFile(blob, `${safeFilename(projectName)}_radni_sati.pdf`, "save");
 }
