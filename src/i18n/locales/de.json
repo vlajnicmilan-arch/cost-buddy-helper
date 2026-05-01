@@ -651,6 +651,8 @@
   },
   "common": {
     "save": "Speichern",
+    "user": "Benutzer",
+    "previous": "Zurück",
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "edit": "Bearbeiten",
