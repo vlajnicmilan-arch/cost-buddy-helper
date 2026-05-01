@@ -139,29 +139,34 @@ export const useProjectMembers = (projectId: string | null) => {
   const generateInviteLink = async (
     role: ProjectRole = 'member',
     suggestedContext: 'personal' | 'business' = 'personal',
-    defaultPermissions?: Record<string, boolean>
+    defaultPermissions?: Record<string, boolean>,
+    workerId?: string | null
   ): Promise<string | null> => {
     if (!projectId || !user) return null;
 
     try {
-      // Delete existing link invites
-      await supabase
+      // Delete existing link invites (scoped: per-worker if workerId, else generic)
+      const delQuery = supabase
         .from('project_invitations')
         .delete()
         .eq('project_id', projectId)
-        .eq('email', 'link-invite');
+        .eq('email', workerId ? `worker-invite:${workerId}` : 'link-invite');
+      await delQuery;
 
       // Create new invitation
       const insertPayload: Record<string, unknown> = {
         project_id: projectId,
-        email: 'link-invite',
+        email: workerId ? `worker-invite:${workerId}` : 'link-invite',
         role: role,
         invited_by: user.id,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7d for worker invites
         suggested_context: suggestedContext,
       };
       if (defaultPermissions && Object.keys(defaultPermissions).length > 0) {
         insertPayload.default_permissions = defaultPermissions;
+      }
+      if (workerId) {
+        insertPayload.worker_id = workerId;
       }
 
       const { data, error } = await supabase

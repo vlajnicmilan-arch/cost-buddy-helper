@@ -24,9 +24,10 @@ import type { ProjectTemplate } from '@/hooks/useProjectTemplates';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
+  canCreate?: boolean;
 }
 
-export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
+export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsPanelProps) => {
   const { t } = useTranslation();
   const location = useLocation();
   const { projects, loading, addProject, updateProject, deleteProject, archiveProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
@@ -251,10 +252,12 @@ export const ProjectsPanel = ({ onRefreshExpenses }: ProjectsPanelProps) => {
               {showArchived ? t('projects.showActive', 'Aktivni') : t('projects.showArchived', `Arhiva (${archivedCount})`)}
             </Button>
           )}
-          <Button onClick={handleOpenBlankDialog} size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            {t('projects.add')}
-          </Button>
+          {canCreate && (
+            <Button onClick={handleOpenBlankDialog} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              {t('projects.add')}
+            </Button>
+          )}
         </div>
       </div>
 

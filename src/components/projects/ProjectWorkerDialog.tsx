@@ -3,13 +3,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { ProjectWorker } from '@/types/projectWorker';
 import { useTranslation } from 'react-i18next';
+import { useProjectMembers } from '@/hooks/useProjectMembers';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { supabase } from '@/integrations/supabase/client';
+import { Link2, Copy, CheckCircle2, Loader2, UserPlus } from 'lucide-react';
 
 interface ProjectWorkerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   worker?: ProjectWorker | null;
+  projectId?: string | null;
   onSave: (data: {
     first_name: string;
     last_name: string;
@@ -25,6 +31,7 @@ export const ProjectWorkerDialog = ({
   open,
   onOpenChange,
   worker,
+  projectId,
   onSave
 }: ProjectWorkerDialogProps) => {
   const { t } = useTranslation();
@@ -35,6 +42,13 @@ export const ProjectWorkerDialog = ({
   const [hourlyRate, setHourlyRate] = useState('');
   const [workStartTime, setWorkStartTime] = useState('08:00');
   const [workEndTime, setWorkEndTime] = useState('16:00');
+
+  // Invite state (only for existing workers)
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [linkedUserName, setLinkedUserName] = useState<string | null>(null);
+
+  const { generateInviteLink } = useProjectMembers(projectId || null);
 
   const isEditing = !!worker;
 
@@ -56,11 +70,30 @@ export const ProjectWorkerDialog = ({
       setWorkStartTime('08:00');
       setWorkEndTime('16:00');
     }
+    setInviteLink(null);
+    setLinkedUserName(null);
   }, [worker, open]);
+
+  // Resolve linked user display name
+  useEffect(() => {
+    const loadLinkedUser = async () => {
+      if (!worker?.user_id) {
+        setLinkedUserName(null);
+        return;
+      }
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', worker.user_id)
+        .maybeSingle();
+      setLinkedUserName((data as any)?.display_name || t('common.user', 'Korisnik'));
+    };
+    loadLinkedUser();
+  }, [worker?.user_id, t]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!firstName.trim() || !lastName.trim() || !position.trim()) return;
 
     onSave({
@@ -76,9 +109,26 @@ export const ProjectWorkerDialog = ({
     onOpenChange(false);
   };
 
+  const handleGenerateInvite = async () => {
+    if (!worker?.id) return;
+    setGeneratingLink(true);
+    try {
+      const link = await generateInviteLink('member', 'personal', undefined, worker.id);
+      if (link) setInviteLink(link);
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    showSuccess(t('projects.linkCopied', 'Link kopiran'));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? t('workers.edit', 'Uredi radnika') : t('workers.add', 'Dodaj radnika')}
@@ -175,6 +225,56 @@ export const ProjectWorkerDialog = ({
               />
             </div>
           </div>
+
+          {/* Invite-to-app section — only for existing workers */}
+          {isEditing && projectId && (
+            <div className="space-y-2 pt-3 border-t">
+              <Label className="flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-primary" />
+                {t('projects.inviteWorkerToApp', 'Pozovi u aplikaciju')}
+              </Label>
+
+              {worker?.user_id ? (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                  <div className="text-sm">
+                    <span className="font-medium">{t('projects.workerLinked', 'Povezan')}: </span>
+                    <span className="text-muted-foreground">{linkedUserName || '...'}</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    {t('projects.inviteWorkerHint', 'Generiraj link i pošalji ga radniku. Kad ga otvori i prijavi se, automatski se povezuje s ovim zapisom i može unositi svoj dnevnik rada — bez plaćene verzije.')}
+                  </p>
+                  {!inviteLink ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateInvite}
+                      disabled={generatingLink}
+                      className="w-full"
+                    >
+                      {generatingLink ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Link2 className="w-4 h-4 mr-2" />
+                      )}
+                      {t('projects.generateWorkerLink', 'Generiraj pozivni link')}
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input value={inviteLink} readOnly className="text-xs" />
+                      <Button type="button" variant="outline" size="icon" onClick={handleCopyLink}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

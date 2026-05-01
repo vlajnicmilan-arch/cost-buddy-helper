@@ -45,6 +45,7 @@ export const WorkLogDialog = ({
   const [weather, setWeather] = useState('');
   const [summary, setSummary] = useState('');
   const [notes, setNotes] = useState('');
+  const [hours, setHours] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   // Hydrate state when dialog opens or log changes
@@ -56,17 +57,21 @@ export const WorkLogDialog = ({
       setWeather(log.weather || '');
       setSummary(log.summary || '');
       setNotes(log.notes || '');
+      setHours(log.hours != null ? String(log.hours) : '');
     } else {
       setLogDate(defaultDate ? new Date(defaultDate) : new Date());
       setMilestoneId(defaultMilestoneId || 'none');
       setWeather('');
       setSummary('');
       setNotes('');
+      setHours('');
     }
   }, [open, log, defaultDate, defaultMilestoneId]);
 
   const handleSubmit = async () => {
     if (!summary.trim()) return;
+    const parsedHours = hours.trim() === '' ? null : Number(hours);
+    if (parsedHours != null && (isNaN(parsedHours) || parsedHours < 0 || parsedHours > 24)) return;
     setSaving(true);
     const ok = await onSubmit({
       log_date: format(logDate, 'yyyy-MM-dd'),
@@ -74,6 +79,7 @@ export const WorkLogDialog = ({
       weather: weather.trim() || null,
       summary: summary.trim(),
       notes: notes.trim() || null,
+      hours: parsedHours,
     });
     setSaving(false);
     if (ok) onOpenChange(false);
@@ -139,6 +145,25 @@ export const WorkLogDialog = ({
               </Select>
             </div>
           )}
+
+          {/* Hours */}
+          <div className="space-y-1.5">
+            <Label htmlFor="worklog-hours">{t('workLog.hours', 'Sati rada')}</Label>
+            <Input
+              id="worklog-hours"
+              type="number"
+              inputMode="decimal"
+              step="0.25"
+              min="0"
+              max="24"
+              value={hours}
+              onChange={(e) => setHours(e.target.value)}
+              placeholder={t('workLog.hoursPlaceholder', 'npr. 8')}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t('workLog.hoursHint', 'Tvoji sati će se automatski zbrojiti u mjesečnu satnicu.')}
+            </p>
+          </div>
 
           {/* Weather */}
           <div className="space-y-1.5">

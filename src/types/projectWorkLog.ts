@@ -7,6 +7,7 @@ export interface ProjectWorkLog {
   weather?: string | null;
   summary: string;
   notes?: string | null;
+  hours?: number | null;
   created_at: string;
   updated_at: string;
   // Enriched

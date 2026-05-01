@@ -2865,6 +2865,7 @@ export type Database = {
           suggested_context: string
           token: string
           used_at: string | null
+          worker_id: string | null
         }
         Insert: {
           created_at?: string
@@ -2880,6 +2881,7 @@ export type Database = {
           suggested_context?: string
           token?: string
           used_at?: string | null
+          worker_id?: string | null
         }
         Update: {
           created_at?: string
@@ -2895,6 +2897,7 @@ export type Database = {
           suggested_context?: string
           token?: string
           used_at?: string | null
+          worker_id?: string | null
         }
         Relationships: [
           {
@@ -2902,6 +2905,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invitations_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "project_workers"
             referencedColumns: ["id"]
           },
         ]
@@ -3232,6 +3242,7 @@ export type Database = {
       project_work_logs: {
         Row: {
           created_at: string
+          hours: number | null
           id: string
           log_date: string
           milestone_id: string | null
@@ -3244,6 +3255,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          hours?: number | null
           id?: string
           log_date?: string
           milestone_id?: string | null
@@ -3256,6 +3268,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          hours?: number | null
           id?: string
           log_date?: string
           milestone_id?: string | null
@@ -3294,6 +3307,7 @@ export type Database = {
           position: string
           project_id: string | null
           updated_at: string
+          user_id: string | null
           work_end_time: string | null
           work_hours: number
           work_start_time: string | null
@@ -3308,6 +3322,7 @@ export type Database = {
           position: string
           project_id?: string | null
           updated_at?: string
+          user_id?: string | null
           work_end_time?: string | null
           work_hours?: number
           work_start_time?: string | null
@@ -3322,6 +3337,7 @@ export type Database = {
           position?: string
           project_id?: string | null
           updated_at?: string
+          user_id?: string | null
           work_end_time?: string | null
           work_hours?: number
           work_start_time?: string | null
