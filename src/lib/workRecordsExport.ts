@@ -1,5 +1,5 @@
-import { loadJsPDF } from './loadJsPdf';
-import { triggerDownload } from './fileExport';
+import { loadJsPdf } from './loadJsPdf';
+import { exportFile } from './fileExport';
 
 export interface WorkExportConfig {
   workers: Array<{
