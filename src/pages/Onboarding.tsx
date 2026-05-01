@@ -83,11 +83,20 @@ const Onboarding = () => {
       showError(t('onboarding.nameRequired', 'Molimo unesite svoje ime'));
       return;
     }
+    if (step === 2 && !usageProfileChoice) {
+      showError(t('onboarding.usageProfile.required', 'Molimo odaberi što želiš pratiti'));
+      return;
+    }
     setStep(step + 1);
   };
 
   const handleBack = () => {
     setStep(step - 1);
+  };
+
+  const handleOpenPaywall = () => {
+    // Open paywall in a new tab so onboarding state is preserved.
+    window.open('/paywall', '_blank');
   };
 
   const toggleSource = (sourceId: string) => {
@@ -210,7 +219,7 @@ const Onboarding = () => {
     }
   };
 
-  const totalSteps = 3;
+  const totalSteps = 4;
   const progress = (step / totalSteps) * 100;
 
   return (
