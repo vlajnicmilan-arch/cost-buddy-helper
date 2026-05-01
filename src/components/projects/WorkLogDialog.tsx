@@ -142,7 +142,22 @@ export const WorkLogDialog = ({
             </Popover>
           </div>
 
-          {/* Milestone */}
+          {/* Day type */}
+          <div className="space-y-1.5">
+            <Label>{t('workLog.dayTypeLabel', 'Tip dana')}</Label>
+            <Select value={dayType} onValueChange={(v) => setDayType(v as WorkLogDayType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[80]">
+                <SelectItem value="work">{t('workLog.dayType.work', 'Radni dan')}</SelectItem>
+                <SelectItem value="weekend">{t('workLog.dayType.weekend', 'Vikend / neradan')}</SelectItem>
+                <SelectItem value="vacation">{t('workLog.dayType.vacation', 'Godišnji odmor')}</SelectItem>
+                <SelectItem value="sick">{t('workLog.dayType.sick', 'Bolovanje')}</SelectItem>
+                <SelectItem value="holiday">{t('workLog.dayType.holiday', 'Praznik')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {milestones.length > 0 && (
             <div className="space-y-1.5">
               <Label>{t('workLog.milestone', 'Faza (opcionalno)')}</Label>
