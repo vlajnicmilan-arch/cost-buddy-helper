@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
-import { Link2, Copy, CheckCircle2, Loader2, UserPlus } from 'lucide-react';
+import { Link2, Copy, CheckCircle2, Loader2, UserPlus, Mail } from 'lucide-react';
 
 interface ProjectWorkerDialogProps {
   open: boolean;
@@ -47,8 +47,11 @@ export const ProjectWorkerDialog = ({
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [linkedUserName, setLinkedUserName] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSentTo, setEmailSentTo] = useState<string | null>(null);
 
-  const { generateInviteLink } = useProjectMembers(projectId || null);
+  const { generateInviteLink, sendInviteEmail } = useProjectMembers(projectId || null);
 
   const isEditing = !!worker;
 
