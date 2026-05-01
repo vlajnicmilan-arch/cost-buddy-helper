@@ -11,11 +11,13 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { OnboardingPaymentSourceCard } from '@/components/onboarding/OnboardingPaymentSourceCard';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
+import { OnboardingUsageProfileStep } from '@/components/onboarding/OnboardingUsageProfileStep';
 import { CustomPaymentSource, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
 import { ChevronRight, ChevronLeft, User, Wallet, CreditCard, Briefcase, Gift, Sparkles, Check, Plus, ScanLine } from 'lucide-react';
 import logo from '@/assets/logo.webp';
 import { showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
+import type { UsageProfile } from '@/contexts/AppStateContext';
 
 
 interface PaymentSourceSetup {
@@ -49,9 +51,11 @@ const Onboarding = () => {
   const PRESET_SOURCES = getPresetSources(t);
   const INCOME_SOURCES = getIncomeSources(t);
   const { addCustomPaymentSource, addCard } = useCustomPaymentSources();
-  const { setOnboardingCompleted, setDisplayName: setContextDisplayName } = useAppState();
-  
+  const { setOnboardingCompleted, setDisplayName: setContextDisplayName, setUsageProfile } = useAppState();
+
   const [step, setStep] = useState(1);
+  const [usageProfileChoice, setUsageProfileChoice] = useState<UsageProfile>(null);
+  const [planChoice, setPlanChoice] = useState<'free' | 'pro' | 'business'>('free');
   const [displayName, setDisplayName] = useState(() => {
     // Pre-fill from context if user entered name during signup
     return localStorage.getItem('user_display_name') || '';
