@@ -32,6 +32,7 @@ import { useInAppReview } from '@/hooks/useInAppReview';
 import { useLocation } from '@/hooks/useLocation';
 import { useBackButton } from '@/hooks/useBackButton';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
@@ -177,6 +178,7 @@ export const AddExpenseDialog = ({
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
   const cameraActiveRef = useRef(false);
+  const scanInProgressRef = useRef(false);
   const scannedPreviewActiveRef = useRef(false);
 
   const selectedSourceCurrencyCode = useMemo(() => {
@@ -270,10 +272,15 @@ export const AddExpenseDialog = ({
       setReceiptImage(base64);
       if (!showMultiImageCollector) setShowMultiImageCollector(true);
     } else {
+      scanInProgressRef.current = true;
       setReceiptImage(base64);
-      const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
-      if (result) {
-        applyScannedResult(result);
+      try {
+        const result = await scanReceipt(base64, customPaymentSources, customCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon })));
+        if (result) {
+          applyScannedResult(result);
+        }
+      } finally {
+        scanInProgressRef.current = false;
       }
     }
   };
@@ -283,6 +290,7 @@ export const AddExpenseDialog = ({
     // Dismiss keyboard before opening camera so it doesn't reappear during scanning
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     cameraActiveRef.current = true;
+    setNativeFlowActive(true);
     try {
       const base64 = source === 'camera' ? await nativeTakePhoto() : await nativePickFromGallery();
       console.warn('📸 handleNativeCapture got base64?', !!base64, 'len=', base64?.length || 0);
@@ -295,7 +303,10 @@ export const AddExpenseDialog = ({
       showError(t('errors.save.expense', 'Greška pri spremanju transakcije'));
     } finally {
       // Slight delay so any popstate that fires on activity return is still blocked.
-      setTimeout(() => { cameraActiveRef.current = false; }, 800);
+      setTimeout(() => {
+        cameraActiveRef.current = false;
+        setNativeFlowActive(false);
+      }, 2500);
     }
   };
 
