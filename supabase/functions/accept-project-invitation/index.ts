@@ -236,7 +236,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         project_id: invitation.target_id,
         user_id: user.id,
         tab_key,
-        visible: hasDefaults ? defaults[tab_key] === true : false,
+        // Worker-only invites: always hide all optional tabs.
+        visible: isWorkerInvite ? false : (hasDefaults ? defaults[tab_key] === true : false),
       }));
 
       const { error: permError } = await supabaseAdmin
