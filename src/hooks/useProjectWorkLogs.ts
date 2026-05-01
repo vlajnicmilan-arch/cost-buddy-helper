@@ -120,6 +120,7 @@ export const useProjectWorkLogs = (projectId: string | null) => {
         summary: input.summary,
         notes: input.notes || null,
         milestone_id: input.milestone_id || null,
+        hours: input.hours ?? null,
       });
       if (error) throw error;
       showSuccess(t('workLog.saved', 'Dnevnik spremljen'));
@@ -144,6 +145,7 @@ export const useProjectWorkLogs = (projectId: string | null) => {
       if (input.summary !== undefined) patch.summary = input.summary;
       if (input.notes !== undefined) patch.notes = input.notes || null;
       if (input.milestone_id !== undefined) patch.milestone_id = input.milestone_id || null;
+      if (input.hours !== undefined) patch.hours = input.hours ?? null;
       const { error } = await (supabase as any).from('project_work_logs').update(patch).eq('id', id);
       if (error) throw error;
       showSuccess(t('workLog.updated', 'Dnevnik ažuriran'));

@@ -8,6 +8,7 @@ export interface ProjectWorker {
   hourly_rate: number;
   work_start_time?: string;
   work_end_time?: string;
+  user_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }
