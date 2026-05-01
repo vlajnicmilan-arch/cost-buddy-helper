@@ -218,12 +218,7 @@ export const WorkLogMonthlyOverview = ({ projectId, projectName }: WorkLogMonthl
 
       const blob = doc.output('blob');
       const filename = `dnevnik-rada-${format(currentMonth, 'yyyy-MM')}.pdf`;
-      await exportFile({
-        filename,
-        data: blob,
-        mimeType: 'application/pdf',
-        mode,
-      });
+      await exportFile(blob, filename, mode);
       showSuccess(t('workLog.export.done', 'Izvoz završen'));
     } catch (e) {
       console.error(e);
