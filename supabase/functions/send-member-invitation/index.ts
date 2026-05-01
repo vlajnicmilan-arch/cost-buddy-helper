@@ -69,7 +69,12 @@ serve(async (req) => {
     console.log("[SEND-MEMBER-INVITATION] Found", usersData?.users?.length || 0, "users");
     const invitedUser = usersData?.users.find(u => u.email?.toLowerCase() === invitedEmail.toLowerCase());
 
-    if (!invitedUser) {
+    const isNewUser = !invitedUser;
+
+    // For project worker invitations we allow inviting users that don't exist yet —
+    // we'll create an email-only invitation row (invited_user_id = NULL) and send the
+    // invite link via email. For other types, keep the previous behavior.
+    if (!invitedUser && !(type === "project" && (workerId || sendEmail))) {
       return new Response(
         JSON.stringify({ error: "user_not_found", message: "Korisnik s tim emailom nije pronađen u sustavu" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
