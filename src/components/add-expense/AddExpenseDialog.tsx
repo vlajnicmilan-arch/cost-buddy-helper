@@ -407,7 +407,7 @@ export const AddExpenseDialog = ({
   // native camera activity returns) does NOT navigate the app to /home and
   // unmount this dialog mid-scan.
   const handleBackClose = useCallback(() => {
-    if (scanning || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current) return;
+    if (scanning || scanInProgressRef.current || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current) return;
     setOpen(false);
   }, [scanning, showScannedPreview, isSaving]);
   useBackButton(open, handleBackClose, 10);
@@ -821,8 +821,8 @@ export const AddExpenseDialog = ({
   return (
     <>
     <Dialog open={open} onOpenChange={(isOpen) => {
-      console.warn('🚪 AddExpenseDialog onOpenChange', { isOpen, scanning, showScannedPreview, isSaving, cameraActive: cameraActiveRef.current });
-      if (!isOpen && (scanning || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current)) return;
+      console.warn('🚪 AddExpenseDialog onOpenChange', { isOpen, scanning, scanInProgress: scanInProgressRef.current, showScannedPreview, isSaving, cameraActive: cameraActiveRef.current });
+      if (!isOpen && (scanning || scanInProgressRef.current || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current)) return;
       setOpen(isOpen);
       if (isOpen) {
         try {
