@@ -92,6 +92,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean>(
     () => localStorage.getItem('onboarding_completed') === 'true'
   );
+  const [usageProfile, setUsageProfileState] = useState<UsageProfile>(() => {
+    const v = localStorage.getItem('usage_profile');
+    return v === 'finance_only' || v === 'finance_projects' ? v : null;
+  });
   const [appStateReady, setAppStateReady] = useState(false);
 
   // Auto-select for invitation-acceptance flow runs only WITHIN the session
@@ -253,6 +257,15 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     if (completed) localStorage.setItem('onboarding_completed', 'true');
   }, []);
 
+  const setUsageProfile = useCallback((p: UsageProfile) => {
+    setUsageProfileState(p);
+    if (p === null) {
+      localStorage.removeItem('usage_profile');
+    } else {
+      localStorage.setItem('usage_profile', p);
+    }
+  }, []);
+
   const onAvatarEvent = useCallback((handler: AvatarEventHandler) => {
     avatarHandlers.current.add(handler);
     return () => { avatarHandlers.current.delete(handler); };
@@ -297,6 +310,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setActiveBusinessProfileId,
     onboardingCompleted,
     setOnboardingCompleted,
+    usageProfile,
+    setUsageProfile,
     appStateReady,
     onAvatarEvent,
     emitAvatarEvent,
@@ -313,6 +328,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     businessModeEnabled, setBusinessModeEnabled,
     activeBusinessProfileId, setActiveBusinessProfileId,
     onboardingCompleted, setOnboardingCompleted,
+    usageProfile, setUsageProfile,
     appStateReady,
     onAvatarEvent, emitAvatarEvent,
     onFinancialReset, emitFinancialReset,
