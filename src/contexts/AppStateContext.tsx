@@ -9,6 +9,10 @@ type AvatarEventHandler = (mood: AvatarMood, message?: string) => void;
 type FinancialResetHandler = () => void;
 type PaymentSourcesHandler = (sources: CustomPaymentSource[]) => void;
 
+// Usage profile chosen during onboarding. `null` = legacy user (pre-feature) →
+// treat as "show everything", do not retro-actively force a choice.
+export type UsageProfile = 'finance_only' | 'finance_projects' | null;
+
 interface AppStateContextValue {
   displayName: string;
   setDisplayName: (name: string) => void;
