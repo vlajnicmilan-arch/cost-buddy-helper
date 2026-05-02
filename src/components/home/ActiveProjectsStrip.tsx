@@ -38,6 +38,7 @@ interface ProjectCardData {
   margin: number | null;
   kpiKind: KpiKind;
   kpiValue: number;
+  statusLine: StatusLine | null;
 }
 
 /**
@@ -152,9 +153,24 @@ export const ActiveProjectsStrip = React.memo(({
         kpiValue = txCount;
       }
 
-      return { project: p, spent, income, profit, remaining, txCount, health, margin, kpiKind, kpiValue };
+      const statusLine = getProjectStatusLine(
+        {
+          status: p.status,
+          start_date: p.start_date,
+          end_date: p.end_date,
+          income,
+          spent,
+          budget,
+          margin,
+          txCount,
+          health,
+        },
+        t,
+      );
+
+      return { project: p, spent, income, profit, remaining, txCount, health, margin, kpiKind, kpiValue, statusLine };
     });
-  }, [projects, summary]);
+  }, [projects, summary, t]);
 
   // Early returns AFTER all hooks
   if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
