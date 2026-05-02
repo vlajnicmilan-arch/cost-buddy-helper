@@ -179,6 +179,11 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           onSelectExpense={props.onTransactionClick}
         />
 
+        {/* Wallet view mode chips: Sve / Osobno / Poslovno */}
+        <div className="mt-3 mb-2">
+          <WalletViewModeChips />
+        </div>
+
         {/* Trial Banner */}
         <TrialBanner />
 
