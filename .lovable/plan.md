@@ -1,67 +1,47 @@
 ## Cilj
 
-Tekstovi na karticama projekata u "Aktivni projekti" stripu su trenutno predugi i opisni. Korisnik treba na **prvi pogled** vidjeti:
-1. **Stanje** projekta (semafor + profit — već postoji)
-2. **Zaključak** (kratko, jedna fraza)
-3. **Što treba napraviti** (kratka akcija)
+Kartice projekata na dashboardu i "Novi projekt" CTA trenutno samo navigiraju na `/projects` (lista). Korisnik mora još jednom kliknuti. Želimo da klik na karticu **odmah otvori taj projekt**, a klik na "Novi projekt" **odmah otvori dialog za novi projekt** — bez međukoraka.
 
-Bez tablice podataka, bez dugih rečenica.
+## Princip — reuse postojećeg
 
-## Princip
+`ProjectsPanel` već ima logiku koja sluša `location.state.openProjectId` i automatski otvara `ProjectFullScreenView` za taj projekt (vidi `src/components/projects/ProjectsPanel.tsx` linije 58-72). Iskoristit ćemo isti obrazac i za "novi projekt".
 
-- Raspored kartica ostaje isti — semafor i profit blok netaknuti.
-- Mijenja se samo **tekst** u dva mjesta: AI warning red (žuto/crveno) i status linija (zeleno).
-- Format: **`Zaključak — akcija`**, max ~6 riječi.
-- I dalje deterministički iz podataka, bez AI poziva.
+Dakle: **bez novih ruta, bez nove arhitekture** — samo proširujemo postojeći state pattern.
 
-## Konkretni novi tekstovi (HR primjer)
+## Promjene
 
-### AI warning (žuto / crveno)
-Trenutno:
-- Žuto: *"Marža je 17% — pregledajte troškove projekta dok je još vrijeme."*
-- Crveno: *"Marža je samo 6% — profit je kritičan, hitno reagirajte."*
+### 1. `src/components/home/ActiveProjectsStrip.tsx`
 
-Novo:
-- Žuto: *"Marža niska · 17% — smanji troškove"*
-- Crveno: *"Marža kritična · 6% — hitno reagiraj"*
+- `handleNav` proširiti da prima opcionalni `state` koji se proslijedi `navigate`.
+- Klik na **karticu projekta**:  
+  `handleNav('/projects', { openProjectId: project.id })`
+- Klik na **"Novi projekt" CTA karticu**:  
+  `handleNav('/projects', { openNewProject: true })`
+- Klik na header **"Pogledaj sve"** ostaje običan `handleNav('/projects')` (lista).
+- Empty state CTA "Kreiraj prvi projekt" (linija 217) → `handleNav('/projects', { openNewProject: true })`.
 
-### Status linija (zelene kartice)
-Trenutno → Novo:
-- *"Projekt je pauziran"* → *"Pauzirano"*
-- *"Kreće za 5 dana"* → *"Kreće za 5 dana"* (već kratko, ostaje)
-- *"Čeka početak · kreće 15.5.2026"* → *"Čeka početak · 15.5."*
-- *"Rok prošao — projekt još otvoren"* → *"Rok prošao · zatvori projekt"*
-- *"Tek započeo — još nema unosa"* → *"Tek započeo · dodaj unos"*
-- *"Stabilan — bravo!"* → *"Sve pod kontrolom"*
-- *"Pripremna faza · 16% budžeta"* → *"Priprema · 16% budžeta"*
-- *"U punom zamahu · 45% budžeta"* → *"U tijeku · 45% budžeta"*
-- *"Pred kraj · preostalo 18%"* → *"Pri kraju · 18% budžeta"*
-- *"U tijeku · 12 unosa"* → *"U tijeku · 12 unosa"* (ostaje)
+### 2. `src/components/projects/ProjectsPanel.tsx`
 
-Sve poruke uvijek imaju jasan **zaključak** (stanje), a gdje god je moguće još i **mikro-akciju** (`smanji troškove`, `hitno reagiraj`, `dodaj unos`, `zatvori projekt`).
+Postojeći `useEffect` (linije 58-72) koji čita `state.openProjectId` proširiti tako da:
+- Ako je `state.openNewProject === true` → pozvati `handleOpenBlankDialog()` i očistiti history state.
+- Postojeća grana za `openProjectId` ostaje netaknuta.
 
-## Promjene u kodu
-
-### 1. `src/i18n/locales/hr.json` / `en.json` / `de.json`
-- Skratiti vrijednosti pod `projects.health.aiWarning.yellow` i `projects.health.aiWarning.red`.
-- Skratiti vrijednosti pod `projects.statusLine.*` (paused, waitingStart, overdueOpen, justStarted, stable, prepPhase, inFullSwing, nearEnd).
-- Dodati varijantu `waitingStart` koja koristi kraći datum (samo `dd.mm.`).
-
-### 2. `src/lib/projectStatusLine.ts`
-- `waitingStart` formatirati datum kao `dd.MM.` umjesto `toLocaleDateString()` (kraće, čišće).
-- Ostalo ostaje (logika hijerarhije je ispravna).
-
-### 3. `src/components/home/ActiveProjectsStrip.tsx`
-- Bez strukturnih promjena. Render funkcije (`renderAiWarning`, `renderStatusLine`) već konzumiraju i18n ključeve — samim updateom prijevoda dobivamo nove kratke tekstove.
+Tipiziranje state objekta proširiti: `{ openProjectId?: string; openExpenseId?: string; openNewProject?: boolean }`.
 
 ## Što se NE dira
-- Semafor, profit blok, marža badge, layout, animacije.
-- Logika za izračun health/margin.
-- Hooks i fetch.
+
+- Ruta `/projects` ostaje ista — i dalje vodi na listu kad se otvori bez statea.
+- `ProjectFullScreenView`, dialog za kreiranje, hooks — netaknuto.
+- Nema novih query parametara u URL-u (state ide kroz React Router, ne URL).
+
+## Edge slučajevi
+
+- Ako projekt iz `openProjectId` više ne postoji (obrisan, arhiviran nije u `projects` listi) — postojeća logika tiho odustaje (`if (project)`), korisnik vidi listu. Ostavljamo to ponašanje.
+- Native back gumb iz `ProjectFullScreenView`-a vraća na listu projekata (postojeće ponašanje), pa korisnik može lako prijeći na drugi projekt.
 
 ## QA
-- Dujo (marža 17%) → *"Marža niska · 17% — smanji troškove"* (žuto).
-- Radiona (stabilan, marža 50%) → *"Sve pod kontrolom"* (zeleno).
-- Lucija i Mate (start_date u budućnosti) → *"Kreće za N dana"*.
-- Projekt s 0 unosa → *"Tek započeo · dodaj unos"*.
-- HR/EN/DE prijevodi rade i stanu u jedan red bez wrapanja na 200px širokoj kartici.
+
+- Klik na karticu "Dujo" → odmah se otvori detalj Duje, bez liste.
+- Klik na "Novi projekt" karticu → odmah se otvori dialog "Kreiraj projekt".
+- Klik na "Pogledaj sve" u headeru → otvara se lista (kao i sada).
+- Klik na "Kreiraj prvi projekt" u empty state → otvara dialog odmah.
