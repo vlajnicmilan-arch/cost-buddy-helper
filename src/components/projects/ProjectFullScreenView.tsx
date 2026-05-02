@@ -68,6 +68,8 @@ export const ProjectFullScreenView = ({
   const [reportsOpen, setReportsOpen] = useState(false);
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [completeWizardOpen, setCompleteWizardOpen] = useState(false);
+  const [reopening, setReopening] = useState(false);
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
