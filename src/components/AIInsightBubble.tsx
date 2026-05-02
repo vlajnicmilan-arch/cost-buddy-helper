@@ -160,6 +160,13 @@ export const AIInsightBubble = ({
     return () => clearInterval(interval);
   }, [insights.length]);
 
+  // Reset index when insights array shrinks (avoid out-of-bounds undefined access)
+  useEffect(() => {
+    if (currentInsightIndex >= insights.length) {
+      setCurrentInsightIndex(0);
+    }
+  }, [insights.length, currentInsightIndex]);
+
   // Dismiss only hides for current session - bubble reappears on next visit
   const handleDismiss = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -170,7 +177,8 @@ export const AIInsightBubble = ({
     onOpenAssistant();
   }, [onOpenAssistant]);
 
-  const currentInsight = insights[currentInsightIndex];
+  const currentInsight = insights[currentInsightIndex] ?? insights[0];
+  if (!currentInsight) return null;
 
   const getBackgroundClass = (type: InsightType) => {
     switch (type) {
