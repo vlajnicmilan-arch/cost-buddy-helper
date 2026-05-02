@@ -69,8 +69,11 @@ export const useHiddenPaymentSources = () => {
       else next.add(sourceId);
       setHiddenIds(next);
 
+      const emit = () => window.dispatchEvent(new CustomEvent('hidden-payment-sources-changed'));
+
       if (isLocalMode) {
         persistLocal(next);
+        emit();
         showSuccess(
           isCurrentlyHidden
             ? t('paymentSources.shownOnDashboard', 'Prikazano na dashboardu')
@@ -95,6 +98,7 @@ export const useHiddenPaymentSources = () => {
             .insert({ user_id: user.id, source_id: sourceId });
           if (error) throw error;
         }
+        emit();
         showSuccess(
           isCurrentlyHidden
             ? t('paymentSources.shownOnDashboard', 'Prikazano na dashboardu')
@@ -109,6 +113,13 @@ export const useHiddenPaymentSources = () => {
     },
     [hiddenIds, isLocalMode, user, t],
   );
+
+  // Listen for cross-instance updates so multiple consumers stay in sync
+  useEffect(() => {
+    const handler = () => fetchHidden();
+    window.addEventListener('hidden-payment-sources-changed', handler);
+    return () => window.removeEventListener('hidden-payment-sources-changed', handler);
+  }, [fetchHidden]);
 
   const isHidden = useCallback((sourceId: string) => hiddenIds.has(sourceId), [hiddenIds]);
 
