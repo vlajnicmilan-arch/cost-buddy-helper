@@ -422,8 +422,10 @@ export const ActiveProjectsStrip = React.memo(({
                 {renderProfitBlock(data)}
               </div>
 
-              {/* AI warning (only when yellow / red) */}
+              {/* AI warning (yellow / red) — has priority over status line */}
               {renderAiWarning(data)}
+              {/* Status line (green cards only — fills empty space with factual context) */}
+              {renderStatusLine(data)}
             </motion.button>
           );
         })}
