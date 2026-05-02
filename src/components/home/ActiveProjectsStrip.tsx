@@ -69,9 +69,9 @@ const BigTrafficLight = React.forwardRef<HTMLDivElement, { level: HealthLevel; l
         role="img"
         title={label}
       >
-        {dot(level === 'green', 'hsl(var(--income))')}
-        {dot(level === 'yellow', 'hsl(var(--warning))', 'traffic-dot-warn')}
         {dot(level === 'red', 'hsl(var(--destructive))', 'traffic-dot-crit')}
+        {dot(level === 'yellow', 'hsl(var(--warning))', 'traffic-dot-warn')}
+        {dot(level === 'green', 'hsl(var(--income))')}
       </div>
     );
   }

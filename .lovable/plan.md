@@ -1,34 +1,15 @@
-## Inline kreiranje tvrtke iz dijaloga izvora plaćanja
+## Semafor: ispravan horizontalni redoslijed
 
-Korisnik može dodati novu tvrtku direktno iz `CustomPaymentSourceDialog`, bez odlaska u Postavke → Tvrtke. Strukturirani entitet `business_profiles` se zadržava (potreban za fakture, radnike, dugove, izvještaje).
+Na pravom cestovnom semaforu položenom horizontalno boje idu slijeva nadesno: **crveno → žuto → zeleno**. Trenutno je u `ActiveProjectsStrip.tsx` (komponenta `BigTrafficLight`) obrnuto (zeleno → žuto → crveno).
 
-### 1. Nova komponenta `src/components/business/QuickBusinessProfileDialog.tsx`
+### Promjena
 
-Minimalni dijalog s dva polja:
-- **Naziv tvrtke*** (obavezno) → `company_name`
-- **Pravni oblik** (opcionalno, dropdown: d.o.o. / j.d.o.o. / obrt / paušalni obrt / udruga / ostalo) → `legal_form`
+`src/components/home/ActiveProjectsStrip.tsx`, linije 72–74 — zamijeni redoslijed `dot(...)` poziva tako da je crveno prvo, žuto u sredini, zeleno zadnje. Logika, boje, pulsiranje i a11y label ostaju iste.
 
-Insert u `business_profiles` (`user_id`, `company_name`, `legal_form`, `is_active=false`).
-Dispatch `business-profiles-changed` event (već se sluša u `useBusinessProfiles`).
-`onCreated(newId)` callback. `z-[70]` za nested dialog. Footer napomena upućuje na Postavke za detalje.
+```tsx
+{dot(level === 'red', 'hsl(var(--destructive))', 'traffic-dot-crit')}
+{dot(level === 'yellow', 'hsl(var(--warning))', 'traffic-dot-warn')}
+{dot(level === 'green', 'hsl(var(--income))')}
+```
 
-### 2. Izmjena `CustomPaymentSourceDialog.tsx`
-
-U `<SelectContent>` "Vlasnik izvora", ispod liste profila, dodaj non-select stavku **"+ Nova tvrtka"** koja:
-- Zatvara select
-- Otvara `QuickBusinessProfileDialog`
-- Po `onCreated(id)` → `refetchBusinessProfiles()` → `setBusinessProfileId(id)`
-
-### 3. i18n — `hr.json`, `en.json`, `de.json`
-
-Dodaj pod `business.quickCreate.*`:
-- `title`, `namePlaceholder`, `legalForm`, `legalFormOptional`, `hint`, `save`, `success`
-
-I `wallet.source.addCompany` ("+ Nova tvrtka" / "+ New company" / "+ Neue Firma").
-
-### Ne mijenja se
-
-- Bez DB migracije
-- `BusinessProfileDialog` (puni edit) ostaje netaknut
-- `is_active` se ne mijenja — quick-create ne mijenja aktivnu tvrtku
-- Filter logika Osobno/Poslovno na Walletu nepromijenjena
+To je sve — jedna mikroizmjena, bez i18n/RLS/DB promjena.
