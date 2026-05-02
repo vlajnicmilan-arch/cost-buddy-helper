@@ -19,8 +19,11 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen
+  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { CompleteProjectWizard } from './CompleteProjectWizard';
 import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
