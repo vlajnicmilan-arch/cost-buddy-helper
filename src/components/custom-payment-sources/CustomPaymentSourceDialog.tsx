@@ -279,7 +279,13 @@ export const CustomPaymentSourceDialog = ({
             </Label>
             <Select
               value={businessProfileId ?? '__personal__'}
-              onValueChange={(v) => setBusinessProfileId(v === '__personal__' ? null : v)}
+              onValueChange={(v) => {
+                if (v === '__add_company__') {
+                  setQuickCompanyOpen(true);
+                  return;
+                }
+                setBusinessProfileId(v === '__personal__' ? null : v);
+              }}
             >
               <SelectTrigger id="owner-select">
                 <SelectValue />
@@ -299,6 +305,12 @@ export const CustomPaymentSourceDialog = ({
                     </span>
                   </SelectItem>
                 ))}
+                <SelectItem value="__add_company__" className="text-primary font-medium border-t mt-1 pt-2">
+                  <span className="flex items-center gap-2">
+                    <Plus className="w-3.5 h-3.5" />
+                    {t('wallet.source.addCompany', '+ Nova tvrtka')}
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
