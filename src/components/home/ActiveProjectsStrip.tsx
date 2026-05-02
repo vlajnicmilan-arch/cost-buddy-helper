@@ -2,13 +2,16 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { FolderKanban, Plus, ChevronRight, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { FolderKanban, Plus, ChevronRight, AlertTriangle, AlertOctagon, Sparkles, Clock, Pause, Info, AlertCircle } from 'lucide-react';
 import { ProjectWithOwnership, DEFAULT_PROJECT_COLORS } from '@/types/project';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
 import { cn } from '@/lib/utils';
+import { getProjectStatusLine, type StatusLine } from '@/lib/projectStatusLine';
+
+const STATUS_ICON_MAP = { Sparkles, Clock, Pause, Info, AlertCircle } as const;
 
 interface ActiveProjectsStripProps {
   projects: ProjectWithOwnership[];
