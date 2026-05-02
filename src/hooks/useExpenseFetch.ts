@@ -9,11 +9,12 @@ import { tr } from '@/lib/errorMessages';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
 import { useHiddenPaymentSources } from './useHiddenPaymentSources';
+import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
-  const { activeBusinessProfileId } = useAppState();
+  const { mode: viewMode } = useWalletViewMode();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
