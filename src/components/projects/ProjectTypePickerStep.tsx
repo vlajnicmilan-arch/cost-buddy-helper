@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { ProjectType, PROJECT_TYPE_PRESETS } from '@/lib/projectTypes';
 import { cn } from '@/lib/utils';
-import { clickableProps } from '@/lib/a11y';
 
 interface ProjectTypePickerStepProps {
   selectedId: ProjectType | null;
@@ -33,15 +32,17 @@ export const ProjectTypePickerStep = ({ selectedId, onSelect }: ProjectTypePicke
         {PROJECT_TYPE_PRESETS.map((preset) => {
           const selected = selectedId === preset.id;
           return (
-            <div
+            <button
               key={preset.id}
-              {...clickableProps(() => onSelect(preset.id))}
+              type="button"
               role="radio"
               aria-checked={selected}
+              onClick={() => onSelect(preset.id)}
               className={cn(
                 'min-h-[44px] p-3 rounded-xl border text-left transition-all',
-                'flex flex-col gap-1 cursor-pointer',
+                'flex flex-col gap-1',
                 'hover:border-primary/50 hover:bg-muted/40',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 selected
                   ? 'border-primary bg-primary/5 ring-2 ring-primary'
                   : 'border-border',
@@ -61,7 +62,7 @@ export const ProjectTypePickerStep = ({ selectedId, onSelect }: ProjectTypePicke
               <p className="text-[11px] text-muted-foreground line-clamp-2">
                 {t(`projectTypes.${preset.id}.tagline`, '')}
               </p>
-            </div>
+            </button>
           );
         })}
       </div>
