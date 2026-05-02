@@ -279,29 +279,31 @@ const App = () => (
     <TooltipProvider>
       <StorageProvider>
         <AppStateProvider>
-          <AppLockProvider>
-            <CurrencyProvider>
-              <SubscriptionProvider>
-                <TutorialProvider>
-                  <NativeInit />
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
-                    <BackButtonProvider>
-                      <ScrollToTop />
-                      <DeepLinkInit />
-                      <PushAutoRegister />
-                      <DiagnosticRouteTracker />
-                      <BusinessModeGuard />
-                      <RouteAwareGlobalOverlays />
-                      <CrispChat />
-                      <AppRoutes />
-                    </BackButtonProvider>
-                  </BrowserRouter>
-                </TutorialProvider>
-              </SubscriptionProvider>
-            </CurrencyProvider>
-          </AppLockProvider>
+          <WalletViewModeProvider>
+            <AppLockProvider>
+              <CurrencyProvider>
+                <SubscriptionProvider>
+                  <TutorialProvider>
+                    <NativeInit />
+                    <Toaster />
+                    <Sonner />
+                    <BrowserRouter>
+                      <BackButtonProvider>
+                        <ScrollToTop />
+                        <DeepLinkInit />
+                        <PushAutoRegister />
+                        <DiagnosticRouteTracker />
+                        <BusinessModeGuard />
+                        <RouteAwareGlobalOverlays />
+                        <CrispChat />
+                        <AppRoutes />
+                      </BackButtonProvider>
+                    </BrowserRouter>
+                  </TutorialProvider>
+                </SubscriptionProvider>
+              </CurrencyProvider>
+            </AppLockProvider>
+          </WalletViewModeProvider>
         </AppStateProvider>
       </StorageProvider>
     </TooltipProvider>
