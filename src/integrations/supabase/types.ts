@@ -850,6 +850,24 @@ export type Database = {
           },
         ]
       }
+      dashboard_hidden_sources: {
+        Row: {
+          created_at: string
+          source_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          source_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          source_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       dpa_requests: {
         Row: {
           company_address: string | null
