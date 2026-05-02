@@ -126,13 +126,22 @@ export const ProjectFullScreenView = ({
     documents: 'work',
     activity: 'work',
     worklog: 'work',
+    team: 'people',
+    // legacy aliases — still resolve to people group, ProjectTeamTab opens the right sub-tab
     members: 'people',
     workers: 'people',
     collaborators: 'people',
     funding: 'money',
     transactions: 'money',
-    
   };
+
+  // Resolve legacy tab keys to the unified team tab
+  const resolvedActiveTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
+    ? 'team'
+    : activeTab;
+  const teamInitialSubTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
+    ? (activeTab as 'members' | 'workers' | 'collaborators')
+    : undefined;
 
   useEffect(() => {
     const grp = TAB_TO_GROUP[activeTab];
