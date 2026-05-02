@@ -56,6 +56,7 @@ export const CustomPaymentSourceDialog = ({
   const [description, setDescription] = useState('');
   const [sourceCurrency, setSourceCurrency] = useState<CurrencyCode>('EUR');
   const [cards, setCards] = useState<CardInput[]>([]);
+  const [isBusiness, setIsBusiness] = useState(false);
   const [saving, setSaving] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
