@@ -30,6 +30,10 @@ interface ProjectsPanelProps {
 export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsPanelProps) => {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
+  // Remembers where user came from (e.g. '/home') so close (X) returns there
+  // instead of leaving them stranded on the projects list they never asked for.
+  const returnToRef = useRef<string | null>(null);
   const { projects, loading, addProject, updateProject, deleteProject, archiveProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
   const { formatAmount } = useCurrency();
   const { businessModeEnabled } = useAppState();
