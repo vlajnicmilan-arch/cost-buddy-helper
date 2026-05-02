@@ -37,6 +37,7 @@ import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
+import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,6 +86,7 @@ export const ProjectFullScreenView = ({
   const isWorkerOnly = currentUserRole === 'worker' && !isManager;
   const { activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
+  const labels = useProjectTypeLabels(project);
 
   // Business view supports both owned business projects and shared projects joined under this business profile.
   const isBusinessView = !!activeBusinessProfileId && (
