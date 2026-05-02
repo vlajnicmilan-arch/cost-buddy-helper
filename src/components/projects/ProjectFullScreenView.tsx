@@ -353,7 +353,7 @@ export const ProjectFullScreenView = ({
                         // jump to first visible sub-tab in that group
                         const firstSub: Record<TabGroup, string> = {
                           work: 'overview',
-                          people: 'members',
+                          people: 'team',
                           money: canSeeTab('funding') ? 'funding' : 'transactions',
                         };
                         setActiveTab(firstSub[id]);
