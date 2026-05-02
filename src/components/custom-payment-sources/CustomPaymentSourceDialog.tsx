@@ -71,6 +71,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance(source.balance?.toString() || '0');
         setDescription(source.description || '');
         setSourceCurrency((source.currency as CurrencyCode) || currency.code);
+        setIsBusiness(!!source.is_business);
         setCards((source.cards || []).map(c => ({
           id: c.id,
           card_name: c.card_name,
@@ -84,6 +85,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance(initialData.balance?.toString() || '0');
         setDescription(initialData.description || '');
         setSourceCurrency(currency.code);
+        setIsBusiness(!!initialData.is_business);
         setCards(initialData.cards || []);
       } else {
         setName('');
@@ -92,6 +94,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance('0');
         setDescription('');
         setSourceCurrency(currency.code);
+        setIsBusiness(false);
         setCards([]);
       }
     }
