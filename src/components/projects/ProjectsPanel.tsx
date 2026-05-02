@@ -61,11 +61,12 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   // Handle navigation from notification click or dashboard quick-actions
   useEffect(() => {
     const state = location.state as
-      | { openProjectId?: string; openExpenseId?: string; openNewProject?: boolean }
+      | { openProjectId?: string; openExpenseId?: string; openNewProject?: boolean; from?: string }
       | null;
     if (!state) return;
 
     if (state.openNewProject) {
+      if (state.from) returnToRef.current = state.from;
       handleOpenBlankDialog();
       window.history.replaceState({}, '');
       return;
@@ -74,6 +75,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     if (state.openProjectId && projects.length > 0) {
       const project = projects.find(p => p.id === state.openProjectId);
       if (project) {
+        if (state.from) returnToRef.current = state.from;
         setSelectedProject(project as ProjectWithOwnership);
         setDetailDialogOpen(true);
         if (state.openExpenseId) {
