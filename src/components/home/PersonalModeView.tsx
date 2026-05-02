@@ -4,6 +4,7 @@ import { FilterState } from '@/components/TransactionFilters';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { RecurringMatch } from '@/hooks/useRecurringMatcher';
 import { HomeHeader } from '@/components/home/HomeHeader';
+import { WalletViewModeChips } from '@/components/wallet/WalletViewModeChips';
 import { PaymentSourcesSection } from '@/components/home/PaymentSourcesSection';
 import { SummarySection } from '@/components/home/SummarySection';
 import { QuickLinksSection } from '@/components/home/QuickLinksSection';
