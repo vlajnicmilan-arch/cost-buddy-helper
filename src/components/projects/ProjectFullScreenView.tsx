@@ -556,26 +556,21 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
                 )}
 
-                {canSeeTab('workers') && (
-                <TabsContent value="workers" className="m-0">
-                  <ProjectWorkersTab
+                <TabsContent value="team" className="m-0">
+                  <ProjectTeamTab
                     projectId={project.id}
                     projectName={project.name}
+                    members={members}
+                    invitations={invitations}
                     isManager={isManager}
-                    onRefetch={() => {}}
-                  />
-                </TabsContent>
-                )}
-
-                {canSeeTab('collaborators') && (
-                <TabsContent value="collaborators" className="m-0">
-                  <ProjectCollaboratorsTab
-                    projectId={project.id}
+                    membersLoading={membersLoading}
+                    onRefetchMembers={refetchMembers}
                     milestones={milestones}
-                    isManager={isManager}
+                    canSeeWorkers={canSeeTab('workers')}
+                    canSeeCollaborators={canSeeTab('collaborators')}
+                    initialSubTab={teamInitialSubTab}
                   />
                 </TabsContent>
-                )}
 
                 <TabsContent value="documents" className="m-0">
                   <ProjectDocumentsTab projectId={project.id} />
