@@ -248,17 +248,24 @@ export const useExpenseFetch = () => {
     };
   }, [user, isLocalMode, parseExpense]);
 
+  // Helper: determine if an expense belongs to a business source
+  const isBusinessExpense = useCallback((e: Expense) => {
+    const ps = e.payment_source?.replace('custom:', '');
+    if (ps && businessSourceIds.has(ps)) return true;
+    if (e.type === 'transfer' && e.income_source_id && businessSourceIds.has(e.income_source_id)) return true;
+    return false;
+  }, [businessSourceIds]);
+
+  // Apply view-mode filter (Sve / Osobno / Poslovno)
+  const applyViewMode = useCallback((list: Expense[]) => {
+    if (viewMode === 'all') return list;
+    if (viewMode === 'business') return list.filter(isBusinessExpense);
+    return list.filter(e => !isBusinessExpense(e));
+  }, [viewMode, isBusinessExpense]);
+
   // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
-    // First filter by business profile context
-    let filtered = expenses;
-    if (activeBusinessProfileId) {
-      // Business mode: show only transactions for this business
-      filtered = expenses.filter(e => e.business_profile_id === activeBusinessProfileId);
-    } else {
-      // Personal mode: show only personal transactions (no business_profile_id)
-      filtered = expenses.filter(e => !e.business_profile_id);
-    }
+    let filtered = applyViewMode(expenses);
 
     // Exclude transactions whose payment source is hidden from dashboard
     if (hiddenPaymentSourceIds.size > 0) {
@@ -297,15 +304,10 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isLocalMode, user, activeBusinessProfileId]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isLocalMode, user, applyViewMode]);
 
-  // Business/personal isolated expenses (no payment source filtering)
-  const contextFilteredExpenses = useMemo(() => {
-    if (activeBusinessProfileId) {
-      return expenses.filter(e => e.business_profile_id === activeBusinessProfileId);
-    }
-    return expenses.filter(e => !e.business_profile_id);
-  }, [expenses, activeBusinessProfileId]);
+  // View-mode filtered expenses (no payment source access filtering)
+  const contextFilteredExpenses = useMemo(() => applyViewMode(expenses), [expenses, applyViewMode]);
 
   return {
     expenses: contextFilteredExpenses, // isolated by business/personal context
