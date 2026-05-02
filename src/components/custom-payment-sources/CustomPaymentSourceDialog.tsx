@@ -263,24 +263,39 @@ export const CustomPaymentSourceDialog = ({
             </div>
           </div>
 
-          {/* Business toggle */}
-          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
-            <div className="mt-0.5">
-              <Briefcase className={`w-5 h-5 ${isBusiness ? 'text-amber-600' : 'text-muted-foreground'}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <Label htmlFor="is-business" className="cursor-pointer font-medium">
-                {t('wallet.source.isBusiness', 'Poslovni izvor')}
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {t('wallet.source.isBusinessHint', 'Transakcije s ovog izvora bit će označene kao poslovne i mogu se filtrirati zasebno.')}
-              </p>
-            </div>
-            <Switch
-              id="is-business"
-              checked={isBusiness}
-              onCheckedChange={setIsBusiness}
-            />
+          {/* Owner / company assignment */}
+          <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
+            <Label htmlFor="owner-select" className="flex items-center gap-2 font-medium">
+              {isBusiness ? <Briefcase className="w-4 h-4 text-amber-600" /> : <User className="w-4 h-4 text-muted-foreground" />}
+              {t('wallet.source.owner', 'Vlasnik izvora')}
+            </Label>
+            <Select
+              value={businessProfileId ?? '__personal__'}
+              onValueChange={(v) => setBusinessProfileId(v === '__personal__' ? null : v)}
+            >
+              <SelectTrigger id="owner-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__personal__">
+                  <span className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5" />
+                    {t('wallet.source.ownerPersonal', 'Osobno')}
+                  </span>
+                </SelectItem>
+                {businessProfiles.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <span className="flex items-center gap-2">
+                      <Briefcase className="w-3.5 h-3.5 text-amber-600" />
+                      {p.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {t('wallet.source.ownerHint', 'Odredi pripada li ovaj izvor osobi ili točno jednoj tvrtki. Filter "Sve / Osobno / Tvrtka" koristi ovu vezu.')}
+            </p>
           </div>
 
           {/* Cards Section */}
