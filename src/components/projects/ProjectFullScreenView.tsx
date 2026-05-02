@@ -414,50 +414,21 @@ export const ProjectFullScreenView = ({
                         </>
                       )}
 
-                      {/* PEOPLE group */}
+                      {/* PEOPLE group — single unified "Tim projekta" tab with internal sub-tabs */}
                       {activeGroup === 'people' && (
                         <TooltipProvider delayDuration={200}>
-                          <TabsTrigger value="members" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
+                          <TabsTrigger value="team" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                             <Users className="w-3.5 h-3.5" />
-                            {t('projects.team', 'Tim')}
-                            <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{members.length}</Badge>
+                            {t('projects.projectTeam', 'Tim projekta')}
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
                               </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                                {t('projects.tooltips.team', 'Drugi korisnici aplikacije s pristupom projektu')}
+                              <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                                {t('projects.tooltips.projectTeam', 'Svi ljudi na projektu: članovi aplikacije, radnici i vanjski suradnici')}
                               </TooltipContent>
                             </Tooltip>
                           </TabsTrigger>
-                          {canSeeTab('workers') && (
-                            <TabsTrigger value="workers" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                              <ClipboardList className="w-3.5 h-3.5" />
-                              {labels.workersLabel}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                                  {t('projects.tooltips.workers', 'Tvoji zaposlenici (vodiš ih ti, plaćaš ih, evidencija sati)')}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TabsTrigger>
-                          )}
-                          {canSeeTab('collaborators') && (
-                            <TabsTrigger value="collaborators" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                              <Handshake className="w-3.5 h-3.5" />
-                              {labels.collaboratorsLabel}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                                  {t('projects.tooltips.collaborators', 'Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)')}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TabsTrigger>
-                          )}
                         </TooltipProvider>
                       )}
 
