@@ -896,7 +896,12 @@
     "digitalWallets": "Digital Wallets",
     "shared": "Shared",
     "sharedByYou": "Shared with {{count}} people",
-    "sharedWithYou": "Shared by: {{owner}}"
+    "sharedWithYou": "Shared by: {{owner}}",
+    "hideFromDashboard": "Hide from dashboard",
+    "showOnDashboard": "Show on dashboard",
+    "hiddenFromDashboard": "Hidden from dashboard",
+    "shownOnDashboard": "Shown on dashboard",
+    "hiddenBadge": "Hidden"
   },
   "incomeSources": {
     "title": "Sources",
