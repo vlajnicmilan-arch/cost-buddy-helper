@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/lib/version';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 
 interface PersonalModeViewProps {
   displayName: string | null;
@@ -128,8 +129,10 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const navigate = useNavigate();
   const { usageProfile } = useAppState();
   const projectsHidden = usageProfile === 'finance_only';
+  const { hiddenIds } = useHiddenPaymentSources();
 
   const accountBalance = props.customPaymentSources.reduce((sum, s) => {
+    if (hiddenIds.has(s.id)) return sum;
     const bal = s.balance || 0;
     if (props.multiCurrencyEnabled && s.currency && s.currency !== props.currencyCode) {
       return sum + props.convert(bal, s.currency, props.currencyCode);
