@@ -295,7 +295,8 @@
     "tooltips": {
       "team": "Other app users with access to the project",
       "workers": "Your employees (you manage them, pay them, track hours)",
-      "collaborators": "External subcontractors (other companies with agreed amounts)"
+      "collaborators": "External subcontractors (other companies with agreed amounts)",
+      "projectTeam": "Everyone on the project: app members, workers and external collaborators"
     },
     "templates": {
       "startFrom": "Start from a template (optional)",
@@ -318,7 +319,10 @@
     "sendAnother": "Send another",
     "invalidEmail": "Invalid email address",
     "alreadyMember": "User is already a project member",
-    "alreadyInvited": "User already has a pending invitation"
+    "alreadyInvited": "User already has a pending invitation",
+    "projectTeam": "Project Team",
+    "workers": "Workers",
+    "collaborators": "Collaborators"
   },
   "estimates": {
     "title": "Quotes & Estimates",
