@@ -398,8 +398,8 @@ export const ProjectMembersTab = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">{PROJECT_ROLE_LABELS.member}</SelectItem>
-                  <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
+                  <SelectItem value="member">{t(`projectRoles.member`, PROJECT_ROLE_LABELS.member)}</SelectItem>
+                  <SelectItem value="viewer">{t(`projectRoles.viewer`, PROJECT_ROLE_LABELS.viewer)}</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleSendInvite} disabled={sendingInvite}>
@@ -424,8 +424,8 @@ export const ProjectMembersTab = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">{PROJECT_ROLE_LABELS.member}</SelectItem>
-                  <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
+                  <SelectItem value="member">{t(`projectRoles.member`, PROJECT_ROLE_LABELS.member)}</SelectItem>
+                  <SelectItem value="viewer">{t(`projectRoles.viewer`, PROJECT_ROLE_LABELS.viewer)}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -481,7 +481,7 @@ export const ProjectMembersTab = ({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {PROJECT_ROLE_LABELS[member.role]}
+                {t(`projectRoles.${member.role}`, PROJECT_ROLE_LABELS[member.role])}
               </p>
             </div>
 
@@ -495,8 +495,8 @@ export const ProjectMembersTab = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="member">{PROJECT_ROLE_LABELS.member}</SelectItem>
-                    <SelectItem value="viewer">{PROJECT_ROLE_LABELS.viewer}</SelectItem>
+                    <SelectItem value="member">{t(`projectRoles.member`, PROJECT_ROLE_LABELS.member)}</SelectItem>
+                    <SelectItem value="viewer">{t(`projectRoles.viewer`, PROJECT_ROLE_LABELS.viewer)}</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -544,7 +544,7 @@ export const ProjectMembersTab = ({
                   }
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {PROJECT_ROLE_LABELS[invitation.role]}
+                  {t(`projectRoles.${invitation.role}`, PROJECT_ROLE_LABELS[invitation.role])}
                 </p>
               </div>
               
