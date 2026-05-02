@@ -42,7 +42,7 @@ export const useExpenseFetch = () => {
         supabase.from('income_sources').select('id').eq('user_id', user.id),
         supabase.from('payment_source_members').select('payment_source_id, role').eq('user_id', user.id),
         supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
-        supabase.from('custom_payment_sources').select('id, is_business'),
+        supabase.from('custom_payment_sources').select('id, business_profile_id'),
       ]);
 
       if (incomeRes.error) throw incomeRes.error;
@@ -61,11 +61,12 @@ export const useExpenseFetch = () => {
       setSharedPaymentSourceIds(psIds);
       setFullAccessSourceIds(fullIds);
 
-      const busIds = new Set<string>();
+      // Map source.id -> business_profile_id (or null when personal)
+      const map = new Map<string, string | null>();
       (allPsRes.data || []).forEach((s: any) => {
-        if (s.is_business) busIds.add(s.id);
+        map.set(s.id, s.business_profile_id || null);
       });
-      setBusinessSourceIds(busIds);
+      setSourceBusinessMap(map);
     } catch (error) {
       console.error('Error fetching owned sources:', error);
     }

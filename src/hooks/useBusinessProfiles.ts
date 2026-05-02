@@ -26,11 +26,14 @@ export const useBusinessProfiles = () => {
     try {
       const { data, error } = await supabase
         .from('business_profiles')
-        .select('id, name')
+        .select('id, company_name')
         .eq('user_id', user.id)
-        .order('name', { ascending: true });
+        .order('company_name', { ascending: true });
       if (error) throw error;
-      setProfiles((data || []) as BusinessProfileLite[]);
+      setProfiles(((data || []) as Array<{ id: string; company_name: string }>).map(p => ({
+        id: p.id,
+        name: p.company_name,
+      })));
     } catch (err) {
       console.error('[useBusinessProfiles] fetch failed', err);
       setProfiles([]);
