@@ -13,6 +13,7 @@ import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { QuickBusinessProfileDialog } from '@/components/business/QuickBusinessProfileDialog';
 interface CardInput {
   id?: string;
   card_name: string;
