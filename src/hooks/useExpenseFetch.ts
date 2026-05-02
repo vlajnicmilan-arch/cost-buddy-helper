@@ -14,13 +14,13 @@ import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 export const useExpenseFetch = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
-  const { mode: viewMode } = useWalletViewMode();
+  const { mode: viewMode, businessProfileId: viewBusinessProfileId, isPersonalView, isBusinessView } = useWalletViewMode();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
   const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
-  const [businessSourceIds, setBusinessSourceIds] = useState<Set<string>>(new Set());
+  const [sourceBusinessMap, setSourceBusinessMap] = useState<Map<string, string | null>>(new Map());
   // Hidden source ids come from a shared, sessionStorage-seeded cache to avoid
   // any flicker when navigating back to the dashboard.
   const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
@@ -249,20 +249,25 @@ export const useExpenseFetch = () => {
     };
   }, [user, isLocalMode, parseExpense]);
 
-  // Helper: determine if an expense belongs to a business source
-  const isBusinessExpense = useCallback((e: Expense) => {
+  // Helper: business_profile_id of the source attached to an expense (null if personal)
+  const expenseBusinessProfileId = useCallback((e: Expense): string | null => {
     const ps = e.payment_source?.replace('custom:', '');
-    if (ps && businessSourceIds.has(ps)) return true;
-    if (e.type === 'transfer' && e.income_source_id && businessSourceIds.has(e.income_source_id)) return true;
-    return false;
-  }, [businessSourceIds]);
+    if (ps && sourceBusinessMap.has(ps)) return sourceBusinessMap.get(ps) || null;
+    if (e.type === 'transfer' && e.income_source_id && sourceBusinessMap.has(e.income_source_id)) {
+      return sourceBusinessMap.get(e.income_source_id) || null;
+    }
+    return null;
+  }, [sourceBusinessMap]);
 
-  // Apply view-mode filter (Sve / Osobno / Poslovno)
+  // Apply view-mode filter (Sve / Osobno / per-company)
   const applyViewMode = useCallback((list: Expense[]) => {
     if (viewMode === 'all') return list;
-    if (viewMode === 'business') return list.filter(isBusinessExpense);
-    return list.filter(e => !isBusinessExpense(e));
-  }, [viewMode, isBusinessExpense]);
+    if (isPersonalView) return list.filter(e => expenseBusinessProfileId(e) === null);
+    if (isBusinessView && viewBusinessProfileId) {
+      return list.filter(e => expenseBusinessProfileId(e) === viewBusinessProfileId);
+    }
+    return list;
+  }, [viewMode, isPersonalView, isBusinessView, viewBusinessProfileId, expenseBusinessProfileId]);
 
   // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
