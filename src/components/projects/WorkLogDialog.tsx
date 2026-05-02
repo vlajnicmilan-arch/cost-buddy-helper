@@ -48,6 +48,7 @@ export const WorkLogDialog = ({
   const [hours, setHours] = useState<string>('');
   const [dayType, setDayType] = useState<WorkLogDayType>('work');
   const [clockIn, setClockIn] = useState<string>('');
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [clockOut, setClockOut] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
@@ -120,7 +121,7 @@ export const WorkLogDialog = ({
           {/* Date */}
           <div className="space-y-1.5">
             <Label>{t('workLog.date', 'Datum')}</Label>
-            <Popover>
+            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -134,7 +135,12 @@ export const WorkLogDialog = ({
                 <Calendar
                   mode="single"
                   selected={logDate}
-                  onSelect={(d) => d && setLogDate(d)}
+                  onSelect={(d) => {
+                    if (d) {
+                      setLogDate(d);
+                      setDatePopoverOpen(false);
+                    }
+                  }}
                   initialFocus
                   className={cn('p-3 pointer-events-auto')}
                 />
