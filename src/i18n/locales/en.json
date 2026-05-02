@@ -242,20 +242,20 @@
         "red": "Critical: margin below 10%"
       },
       "aiWarning": {
-        "yellow": "Margin is {{pct}}% — review project costs while there is still time.",
-        "red": "Margin is only {{pct}}% — profit is critical, act now."
+        "yellow": "Margin low · {{pct}}% — cut costs",
+        "red": "Margin critical · {{pct}}% — act now"
       }
     },
     "statusLine": {
-      "paused": "Project is paused",
-      "waitingStart": "Waiting to start · begins {{date}}",
+      "paused": "Paused",
+      "waitingStart": "Waiting to start · {{date}}",
       "waitingStartSoon": "Begins in {{days}} days",
-      "overdueOpen": "Deadline passed — still open",
-      "justStarted": "Just started — no entries yet",
-      "stable": "Stable — well done!",
-      "prepPhase": "Prep phase · {{pct}}% of budget",
-      "inFullSwing": "In full swing · {{pct}}% of budget",
-      "nearEnd": "Near the end · {{pct}}% left",
+      "overdueOpen": "Deadline passed · close project",
+      "justStarted": "Just started · add an entry",
+      "stable": "All under control",
+      "prepPhase": "Prep · {{pct}}% of budget",
+      "inFullSwing": "In progress · {{pct}}% of budget",
+      "nearEnd": "Near the end · {{pct}}% of budget",
       "inProgress": "In progress · {{count}} entries"
     },
     "quickPhoto": {

@@ -64,9 +64,10 @@ export function getProjectStatusLine(
           icon: 'Clock',
         };
       }
-      const dateStr = new Date(data.start_date).toLocaleDateString();
+      const startDate = new Date(data.start_date);
+      const dateStr = `${String(startDate.getDate()).padStart(2, '0')}.${String(startDate.getMonth() + 1).padStart(2, '0')}.`;
       return {
-        text: t('projects.statusLine.waitingStart', 'Čeka početak · kreće {{date}}', { date: dateStr }),
+        text: t('projects.statusLine.waitingStart', 'Čeka početak · {{date}}', { date: dateStr }),
         tone: 'info',
         icon: 'Clock',
       };

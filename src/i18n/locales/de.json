@@ -238,20 +238,20 @@
         "red": "Kritisch: Marge unter 10%"
       },
       "aiWarning": {
-        "yellow": "Marge beträgt {{pct}}% — prüfen Sie die Projektkosten, solange noch Zeit ist.",
-        "red": "Marge beträgt nur {{pct}}% — der Gewinn ist kritisch, handeln Sie sofort."
+        "yellow": "Marge niedrig · {{pct}}% — Kosten senken",
+        "red": "Marge kritisch · {{pct}}% — sofort handeln"
       }
     },
     "statusLine": {
-      "paused": "Projekt pausiert",
-      "waitingStart": "Wartet auf Start · beginnt {{date}}",
+      "paused": "Pausiert",
+      "waitingStart": "Wartet auf Start · {{date}}",
       "waitingStartSoon": "Beginnt in {{days}} Tagen",
-      "overdueOpen": "Frist überschritten — noch offen",
-      "justStarted": "Gerade begonnen — noch keine Einträge",
-      "stable": "Stabil — gut gemacht!",
+      "overdueOpen": "Frist überschritten · Projekt schließen",
+      "justStarted": "Gerade begonnen · Eintrag hinzufügen",
+      "stable": "Alles unter Kontrolle",
       "prepPhase": "Vorbereitung · {{pct}}% des Budgets",
-      "inFullSwing": "In vollem Gange · {{pct}}% des Budgets",
-      "nearEnd": "Endphase · {{pct}}% übrig",
+      "inFullSwing": "Läuft · {{pct}}% des Budgets",
+      "nearEnd": "Endphase · {{pct}}% des Budgets",
       "inProgress": "Läuft · {{count}} Einträge"
     },
     "quickPhoto": {
