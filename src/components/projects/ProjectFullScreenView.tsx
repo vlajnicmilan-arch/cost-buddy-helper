@@ -336,7 +336,7 @@ export const ProjectFullScreenView = ({
               )}
 
               {/* Tabs - reorganized in 3 groups: Posao / Ljudi / Novac */}
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <Tabs value={resolvedActiveTab} onValueChange={setActiveTab}>
                 {/* Top group selector — hidden for restricted workers */}
                 {!isWorkerOnly && (
                 <div className="grid grid-cols-3 gap-2 mb-3 p-1 bg-muted/40 rounded-2xl border border-border/30">
