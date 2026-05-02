@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
@@ -30,6 +30,10 @@ interface ProjectsPanelProps {
 export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsPanelProps) => {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
+  // Remembers where user came from (e.g. '/home') so close (X) returns there
+  // instead of leaving them stranded on the projects list they never asked for.
+  const returnToRef = useRef<string | null>(null);
   const { projects, loading, addProject, updateProject, deleteProject, archiveProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
   const { formatAmount } = useCurrency();
   const { businessModeEnabled } = useAppState();
@@ -57,11 +61,12 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   // Handle navigation from notification click or dashboard quick-actions
   useEffect(() => {
     const state = location.state as
-      | { openProjectId?: string; openExpenseId?: string; openNewProject?: boolean }
+      | { openProjectId?: string; openExpenseId?: string; openNewProject?: boolean; from?: string }
       | null;
     if (!state) return;
 
     if (state.openNewProject) {
+      if (state.from) returnToRef.current = state.from;
       handleOpenBlankDialog();
       window.history.replaceState({}, '');
       return;
@@ -70,6 +75,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     if (state.openProjectId && projects.length > 0) {
       const project = projects.find(p => p.id === state.openProjectId);
       if (project) {
+        if (state.from) returnToRef.current = state.from;
         setSelectedProject(project as ProjectWithOwnership);
         setDetailDialogOpen(true);
         if (state.openExpenseId) {
@@ -191,6 +197,20 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setPendingExpenseId(null);
     refetch();
     fetchAllStats();
+    if (returnToRef.current) {
+      const target = returnToRef.current;
+      returnToRef.current = null;
+      navigate(target);
+    }
+  };
+
+  const handleCreateDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open && returnToRef.current) {
+      const target = returnToRef.current;
+      returnToRef.current = null;
+      navigate(target);
+    }
   };
 
   const handleSave = async (
@@ -321,7 +341,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       {/* Create/Edit Dialog */}
       <ProjectDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleCreateDialogOpenChange}
         project={editingProject}
         onSave={handleSave}
         onUpdate={handleUpdate}
