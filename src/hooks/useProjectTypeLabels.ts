@@ -26,8 +26,8 @@ export const useProjectTypeLabels = (
     // 2. Preset i18n key
     const presetKey = preset.labelKeys[key];
     if (presetKey) {
-      const translated = t(presetKey, { defaultValue: '' });
-      if (translated && translated.trim().length > 0) return translated;
+      const translated = t(presetKey, '');
+      if (typeof translated === 'string' && translated.trim().length > 0) return translated;
     }
 
     // 3. Global fallback

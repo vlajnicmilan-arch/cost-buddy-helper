@@ -1,6 +1,14 @@
+import type { ProjectType } from '@/lib/projectTypes';
+
 export type ProjectRole = 'manager' | 'member' | 'viewer' | 'worker';
 export type ProjectStatus = 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
 export type MilestoneStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
+
+/** Per-project tab label overrides. Reserved for future "Customize project" UI. */
+export type ProjectLabelOverrides = Partial<Record<
+  'milestones' | 'workers' | 'collaborators' | 'documents' | 'members',
+  string
+>>;
 
 export interface Project {
   id: string;
@@ -15,6 +23,10 @@ export interface Project {
   end_date?: string | null;
   business_profile_id?: string | null;
   archived_at?: string | null;
+  /** Locked at creation. Drives default tab labels and template suggestions. */
+  project_type?: ProjectType;
+  /** Optional per-project tab label overrides (future-ready, currently unused). */
+  label_overrides?: ProjectLabelOverrides | null;
   created_at?: string;
   updated_at?: string;
 }
