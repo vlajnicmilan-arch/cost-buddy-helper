@@ -3378,7 +3378,9 @@ export type Database = {
           end_date: string | null
           icon: string | null
           id: string
+          label_overrides: Json | null
           name: string
+          project_type: string
           start_date: string | null
           status: string
           total_budget: number
@@ -3394,7 +3396,9 @@ export type Database = {
           end_date?: string | null
           icon?: string | null
           id?: string
+          label_overrides?: Json | null
           name: string
+          project_type?: string
           start_date?: string | null
           status?: string
           total_budget?: number
@@ -3410,7 +3414,9 @@ export type Database = {
           end_date?: string | null
           icon?: string | null
           id?: string
+          label_overrides?: Json | null
           name?: string
+          project_type?: string
           start_date?: string | null
           status?: string
           total_budget?: number
