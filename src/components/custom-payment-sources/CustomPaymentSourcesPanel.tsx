@@ -385,6 +385,24 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
+                      onClick={(e) => { e.stopPropagation(); toggleHidden(source.id); }}
+                      title={
+                        hidden
+                          ? t('paymentSources.showOnDashboard', 'Prikaži na dashboardu')
+                          : t('paymentSources.hideFromDashboard', 'Sakrij s dashboarda')
+                      }
+                      aria-label={
+                        hidden
+                          ? t('paymentSources.showOnDashboard', 'Prikaži na dashboardu')
+                          : t('paymentSources.hideFromDashboard', 'Sakrij s dashboarda')
+                      }
+                    >
+                      {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
                       onClick={(e) => { e.stopPropagation(); setMembersDialogSource(source); }}
                       title={t('common.members', 'Članovi')}
                     >
