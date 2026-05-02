@@ -269,17 +269,12 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       )}
 
       {visibleProjects.length === 0 ? (
-        <>
-          {!showArchived && (
-            <ProjectOnboardingHint onPickSuggestion={handlePickQuickStart} />
-          )}
-          <EmptyState
-            variant="projects"
-            title={showArchived ? t('projects.noArchived', 'Nema arhiviranih projekata') : t('projects.noProjects')}
-            description={showArchived ? '' : t('projects.noProjectsHint')}
-            action={showArchived ? undefined : { label: t('projects.add'), onClick: handleOpenBlankDialog }}
-          />
-        </>
+        <EmptyState
+          variant="projects"
+          title={showArchived ? t('projects.noArchived', 'Nema arhiviranih projekata') : t('projects.noProjects')}
+          description={showArchived ? '' : t('projects.noProjectsHint')}
+          action={showArchived ? undefined : { label: t('projects.add'), onClick: handleOpenBlankDialog }}
+        />
       ) : (
         <AnimatePresence mode="popLayout">
           <div className="space-y-3">
@@ -316,12 +311,8 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       {/* Create/Edit Dialog */}
       <ProjectDialog
         open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setDialogPreset(null);
-        }}
+        onOpenChange={setDialogOpen}
         project={editingProject}
-        preset={dialogPreset}
         onSave={handleSave}
         onUpdate={handleUpdate}
       />
