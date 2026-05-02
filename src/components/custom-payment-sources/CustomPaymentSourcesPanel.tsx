@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
 import { BalanceCorrectionDialog } from './BalanceCorrectionDialog';
 import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
@@ -38,6 +39,7 @@ interface CustomPaymentSourcesPanelProps {
 
 export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, onRefetchExpenses }: CustomPaymentSourcesPanelProps) => {
   const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
+  const { isHidden, toggleHidden } = useHiddenPaymentSources();
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const isLocalMode = storageMode === 'local' && !user;
