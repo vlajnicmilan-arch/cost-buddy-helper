@@ -245,20 +245,20 @@
         "red": "Kritično: marža ispod 10%"
       },
       "aiWarning": {
-        "yellow": "Marža je {{pct}}% — pregledajte troškove projekta dok je još vrijeme.",
-        "red": "Marža je samo {{pct}}% — profit je kritičan, hitno reagirajte."
+        "yellow": "Marža niska · {{pct}}% — smanji troškove",
+        "red": "Marža kritična · {{pct}}% — hitno reagiraj"
       }
     },
     "statusLine": {
-      "paused": "Projekt je pauziran",
-      "waitingStart": "Čeka početak · kreće {{date}}",
+      "paused": "Pauzirano",
+      "waitingStart": "Čeka početak · {{date}}",
       "waitingStartSoon": "Kreće za {{days}} dana",
-      "overdueOpen": "Rok prošao — projekt još otvoren",
-      "justStarted": "Tek započeo — još nema unosa",
-      "stable": "Stabilan — bravo!",
-      "prepPhase": "Pripremna faza · {{pct}}% budžeta",
-      "inFullSwing": "U punom zamahu · {{pct}}% budžeta",
-      "nearEnd": "Pred kraj · preostalo {{pct}}%",
+      "overdueOpen": "Rok prošao · zatvori projekt",
+      "justStarted": "Tek započeo · dodaj unos",
+      "stable": "Sve pod kontrolom",
+      "prepPhase": "Priprema · {{pct}}% budžeta",
+      "inFullSwing": "U tijeku · {{pct}}% budžeta",
+      "nearEnd": "Pri kraju · {{pct}}% budžeta",
       "inProgress": "U tijeku · {{count}} unosa"
     },
     "quickPhoto": {
