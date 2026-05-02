@@ -27,6 +27,7 @@ import { ProjectMembersTab } from './ProjectMembersTab';
 import { ProjectTransactionsTab } from './ProjectTransactionsTab';
 import { ProjectTimelineTab } from './ProjectTimelineTab';
 import { ProjectReportsDialog } from './ProjectReportsDialog';
+import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
 
 
 interface ProjectDetailDialogProps {
@@ -64,6 +65,7 @@ export const ProjectDetailDialog = ({
   const isBusinessView = !!activeBusinessProfileId && project?.business_profile_id === activeBusinessProfileId;
   const canSeeWorkers = hasAccess('workforce');
   const canSeeCollaborators = isBusinessView && hasAccess('collaborators');
+  const labels = useProjectTypeLabels(project);
 
   const canSeeTab = (tabKey: string) => {
     if (tabKey === 'workers' && !canSeeWorkers) return false;
@@ -197,7 +199,7 @@ export const ProjectDetailDialog = ({
             {canSeeTab('milestones') && (
             <TabsTrigger value="milestones" className="gap-1 flex-1">
               <Target className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('projects.milestones')}</span>
+              <span className="hidden sm:inline">{labels.milestonesLabel}</span>
               {milestones.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1">
                   {completedMilestones}/{milestones.length}
