@@ -3097,7 +3097,10 @@
     "source": {
       "isBusiness": "Business source",
       "isBusinessHint": "Transactions from this source will be marked as business and can be filtered separately.",
-      "businessBadge": "Business"
+      "businessBadge": "Business",
+      "owner": "Source owner",
+      "ownerPersonal": "Personal",
+      "ownerHint": "Choose whether this source belongs to you personally or to exactly one company. The \"All / Personal / Company\" filter uses this link."
     },
     "viewMode": {
       "all": "All",

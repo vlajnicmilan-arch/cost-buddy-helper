@@ -3086,7 +3086,10 @@
     "source": {
       "isBusiness": "Geschäftliche Quelle",
       "isBusinessHint": "Transaktionen aus dieser Quelle werden als geschäftlich markiert und können separat gefiltert werden.",
-      "businessBadge": "Geschäftlich"
+      "businessBadge": "Geschäftlich",
+      "owner": "Inhaber der Quelle",
+      "ownerPersonal": "Privat",
+      "ownerHint": "Wählen Sie, ob diese Quelle persönlich oder genau einem Unternehmen gehört. Der Filter \"Alle / Privat / Unternehmen\" nutzt diese Verknüpfung."
     },
     "viewMode": {
       "all": "Alle",
