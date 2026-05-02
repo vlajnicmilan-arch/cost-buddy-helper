@@ -311,6 +311,34 @@
     "collaborators": "Mitwirkende",
     "tooltips": {
       "projectTeam": "Alle Personen im Projekt: App-Mitglieder, Arbeiter und externe Mitwirkende"
+    },
+    "complete": {
+      "headerCta": "Projekt abschließen",
+      "reopenCta": "Wieder öffnen",
+      "reopened": "Projekt wieder geöffnet",
+      "dialogKicker": "Projekt abschließen",
+      "step1Title": "Meilensteine prüfen",
+      "step1Hint": "Markiere die tatsächlich erledigten Meilensteine. Nicht markierte bleiben offen.",
+      "step2Title": "Abschlussbericht",
+      "step2Hint": "Erstelle vor dem Abschluss einen Abschlussbericht. Du kannst ihn als PDF oder CSV herunterladen.",
+      "step3Title": "Abschluss und Archiv",
+      "overdueWarn": "Du hast {{count}} überfällige Meilensteine. Prüfe sie, bevor du sie als erledigt markierst.",
+      "allDone": "Alle Meilensteine sind bereits erledigt. Weiter geht's.",
+      "summary": "{{done}} von {{total}} Meilensteinen werden abgeschlossen",
+      "milestonesUpdated": "Meilensteine aktualisiert",
+      "openReports": "Berichte öffnen (PDF / CSV)",
+      "reportAck": "Ich habe den Abschlussbericht erstellt oder benötige keinen.",
+      "netResult": "Ergebnis",
+      "noteLabel": "Abschlussnotizen / Lessons learned (optional)",
+      "notePlaceholder": "Was lief gut, was beim nächsten Mal verbessern...",
+      "notePrefix": "Abgeschlossen",
+      "optArchive": "Abschließen und archivieren",
+      "optArchiveHint": "Entfernt das Projekt aus der aktiven Liste. Wiederherstellen aus Archiv möglich.",
+      "optKeep": "Abschließen, in der Liste behalten",
+      "optKeepHint": "Status wird Abgeschlossen, bleibt aber bei Projekten sichtbar.",
+      "recommended": "Empfohlen",
+      "finishCta": "Projekt abschließen",
+      "success": "Projekt abgeschlossen"
     }
   },
   "estimates": {
