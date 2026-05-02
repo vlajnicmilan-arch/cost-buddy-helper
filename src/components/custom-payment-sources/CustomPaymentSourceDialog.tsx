@@ -502,6 +502,16 @@ export const CustomPaymentSourceDialog = ({
         onOpenChange={setScannerOpen}
         onCardDetected={handleCardScanned}
       />
+
+      {/* Quick "+ New company" inline dialog */}
+      <QuickBusinessProfileDialog
+        open={quickCompanyOpen}
+        onOpenChange={setQuickCompanyOpen}
+        onCreated={async (newId) => {
+          await refetchBusinessProfiles();
+          setBusinessProfileId(newId);
+        }}
+      />
     </Dialog>
   );
 };
