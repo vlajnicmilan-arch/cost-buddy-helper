@@ -274,7 +274,7 @@ export const useExpenseFetch = () => {
     };
   }, [user, isLocalMode, parseExpense]);
 
-  // Filtered view for dashboard (respects payment source access levels)
+  // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
     // First filter by business profile context
     let filtered = expenses;
@@ -284,6 +284,19 @@ export const useExpenseFetch = () => {
     } else {
       // Personal mode: show only personal transactions (no business_profile_id)
       filtered = expenses.filter(e => !e.business_profile_id);
+    }
+
+    // Exclude transactions whose payment source is hidden from dashboard
+    if (hiddenPaymentSourceIds.size > 0) {
+      filtered = filtered.filter(e => {
+        const cleanPs = e.payment_source?.replace('custom:', '');
+        if (cleanPs && hiddenPaymentSourceIds.has(cleanPs)) return false;
+        // For transfers, also exclude if destination source is hidden
+        if (e.type === 'transfer' && e.income_source_id && hiddenPaymentSourceIds.has(e.income_source_id)) {
+          return false;
+        }
+        return true;
+      });
     }
 
     if (isLocalMode || !user) return filtered;
@@ -310,7 +323,7 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, isLocalMode, user, activeBusinessProfileId]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isLocalMode, user, activeBusinessProfileId]);
 
   // Business/personal isolated expenses (no payment source filtering)
   const contextFilteredExpenses = useMemo(() => {
@@ -323,6 +336,7 @@ export const useExpenseFetch = () => {
   return {
     expenses: contextFilteredExpenses, // isolated by business/personal context
     dashboardExpenses,                 // further filtered for display
+    hiddenPaymentSourceIds,            // for UI badges & dashboard balance aggregation
     loading,
     isLocalMode,
     setExpenses,
