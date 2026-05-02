@@ -298,7 +298,8 @@
     "tooltips": {
       "team": "Drugi korisnici aplikacije s pristupom projektu",
       "workers": "Tvoji zaposlenici (vodiš ih ti, plaćaš ih, evidencija sati)",
-      "collaborators": "Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)"
+      "collaborators": "Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)",
+      "projectTeam": "Svi ljudi na projektu: članovi aplikacije, radnici i vanjski suradnici"
     },
     "templates": {
       "startFrom": "Započni iz šablone (opcionalno)",
@@ -321,7 +322,10 @@
     "sendAnother": "Pošalji još jedan",
     "invalidEmail": "Neispravna email adresa",
     "alreadyMember": "Korisnik je već član projekta",
-    "alreadyInvited": "Korisnik već ima aktivnu pozivnicu"
+    "alreadyInvited": "Korisnik već ima aktivnu pozivnicu",
+    "projectTeam": "Tim projekta",
+    "workers": "Radnici",
+    "collaborators": "Suradnici"
   },
   "estimates": {
     "title": "Ponude i predračuni",
@@ -757,7 +761,6 @@
     "saving": "Spremanje...",
     "created": "Kreirano",
     "updated": "Ažurirano",
-    "you": "Ti",
     "member": "Član",
     "deleted": "Obrisano",
     "merchant": "Trgovac",
@@ -778,10 +781,7 @@
     "editCategory": "Uredi kategoriju",
     "deletePaymentSource": "Obrisati izvor plaćanja?",
     "deletePaymentSourceConfirm": "Jeste li sigurni da želite obrisati izvor plaćanja",
-    "balance": "Stanje",
     "name": "Naziv",
-    "icon": "Ikona",
-    "color": "Boja",
     "addCard": "Dodaj karticu",
     "cardName": "Naziv kartice",
     "lastFourDigits": "Zadnje 4 znamenke",

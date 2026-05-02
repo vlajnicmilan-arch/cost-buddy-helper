@@ -28,12 +28,10 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { ProjectMilestonesTab } from './ProjectMilestonesTab';
 import { ProjectFundingTab } from './ProjectFundingTab';
-import { ProjectMembersTab } from './ProjectMembersTab';
 import { ProjectTransactionsTab } from './ProjectTransactionsTab';
 import { ProjectTimelineTab } from './ProjectTimelineTab';
 import { ProjectReportsDialog } from './ProjectReportsDialog';
-import { ProjectWorkersTab } from './ProjectWorkersTab';
-import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
+import { ProjectTeamTab } from './ProjectTeamTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
@@ -128,13 +126,22 @@ export const ProjectFullScreenView = ({
     documents: 'work',
     activity: 'work',
     worklog: 'work',
+    team: 'people',
+    // legacy aliases — still resolve to people group, ProjectTeamTab opens the right sub-tab
     members: 'people',
     workers: 'people',
     collaborators: 'people',
     funding: 'money',
     transactions: 'money',
-    
   };
+
+  // Resolve legacy tab keys to the unified team tab
+  const resolvedActiveTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
+    ? 'team'
+    : activeTab;
+  const teamInitialSubTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
+    ? (activeTab as 'members' | 'workers' | 'collaborators')
+    : undefined;
 
   useEffect(() => {
     const grp = TAB_TO_GROUP[activeTab];
@@ -329,7 +336,7 @@ export const ProjectFullScreenView = ({
               )}
 
               {/* Tabs - reorganized in 3 groups: Posao / Ljudi / Novac */}
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <Tabs value={resolvedActiveTab} onValueChange={setActiveTab}>
                 {/* Top group selector — hidden for restricted workers */}
                 {!isWorkerOnly && (
                 <div className="grid grid-cols-3 gap-2 mb-3 p-1 bg-muted/40 rounded-2xl border border-border/30">
@@ -346,7 +353,7 @@ export const ProjectFullScreenView = ({
                         // jump to first visible sub-tab in that group
                         const firstSub: Record<TabGroup, string> = {
                           work: 'overview',
-                          people: 'members',
+                          people: 'team',
                           money: canSeeTab('funding') ? 'funding' : 'transactions',
                         };
                         setActiveTab(firstSub[id]);
@@ -407,50 +414,21 @@ export const ProjectFullScreenView = ({
                         </>
                       )}
 
-                      {/* PEOPLE group */}
+                      {/* PEOPLE group — single unified "Tim projekta" tab with internal sub-tabs */}
                       {activeGroup === 'people' && (
                         <TooltipProvider delayDuration={200}>
-                          <TabsTrigger value="members" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
+                          <TabsTrigger value="team" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                             <Users className="w-3.5 h-3.5" />
-                            {t('projects.team', 'Tim')}
-                            <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{members.length}</Badge>
+                            {t('projects.projectTeam', 'Tim projekta')}
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
                               </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                                {t('projects.tooltips.team', 'Drugi korisnici aplikacije s pristupom projektu')}
+                              <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                                {t('projects.tooltips.projectTeam', 'Svi ljudi na projektu: članovi aplikacije, radnici i vanjski suradnici')}
                               </TooltipContent>
                             </Tooltip>
                           </TabsTrigger>
-                          {canSeeTab('workers') && (
-                            <TabsTrigger value="workers" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                              <ClipboardList className="w-3.5 h-3.5" />
-                              {labels.workersLabel}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                                  {t('projects.tooltips.workers', 'Tvoji zaposlenici (vodiš ih ti, plaćaš ih, evidencija sati)')}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TabsTrigger>
-                          )}
-                          {canSeeTab('collaborators') && (
-                            <TabsTrigger value="collaborators" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                              <Handshake className="w-3.5 h-3.5" />
-                              {labels.collaboratorsLabel}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                                  {t('projects.tooltips.collaborators', 'Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)')}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TabsTrigger>
-                          )}
                         </TooltipProvider>
                       )}
 
@@ -578,26 +556,21 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
                 )}
 
-                {canSeeTab('workers') && (
-                <TabsContent value="workers" className="m-0">
-                  <ProjectWorkersTab
+                <TabsContent value="team" className="m-0">
+                  <ProjectTeamTab
                     projectId={project.id}
                     projectName={project.name}
+                    members={members}
+                    invitations={invitations}
                     isManager={isManager}
-                    onRefetch={() => {}}
-                  />
-                </TabsContent>
-                )}
-
-                {canSeeTab('collaborators') && (
-                <TabsContent value="collaborators" className="m-0">
-                  <ProjectCollaboratorsTab
-                    projectId={project.id}
+                    membersLoading={membersLoading}
+                    onRefetchMembers={refetchMembers}
                     milestones={milestones}
-                    isManager={isManager}
+                    canSeeWorkers={canSeeTab('workers')}
+                    canSeeCollaborators={canSeeTab('collaborators')}
+                    initialSubTab={teamInitialSubTab}
                   />
                 </TabsContent>
-                )}
 
                 <TabsContent value="documents" className="m-0">
                   <ProjectDocumentsTab projectId={project.id} />
@@ -628,16 +601,7 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
                 )}
 
-                <TabsContent value="members" className="m-0">
-                  <ProjectMembersTab
-                    projectId={project.id}
-                    members={members}
-                    invitations={invitations}
-                    isManager={isManager}
-                    loading={membersLoading}
-                    onRefetch={refetchMembers}
-                  />
-                </TabsContent>
+
 
                 {canSeeTab('transactions') && (
                 <TabsContent value="transactions" className="m-0">

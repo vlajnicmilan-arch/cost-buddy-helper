@@ -305,7 +305,13 @@
     "sendAnother": "Weitere senden",
     "invalidEmail": "Ungültige E-Mail-Adresse",
     "alreadyMember": "Benutzer ist bereits Mitglied des Projekts",
-    "alreadyInvited": "Benutzer hat bereits eine ausstehende Einladung"
+    "alreadyInvited": "Benutzer hat bereits eine ausstehende Einladung",
+    "projectTeam": "Projektteam",
+    "workers": "Arbeiter",
+    "collaborators": "Mitwirkende",
+    "tooltips": {
+      "projectTeam": "Alle Personen im Projekt: App-Mitglieder, Arbeiter und externe Mitwirkende"
+    }
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",
