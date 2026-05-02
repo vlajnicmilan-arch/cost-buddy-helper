@@ -26,7 +26,7 @@ export interface Project {
   /** Locked at creation. Drives default tab labels and template suggestions. Stored as string for forward-compat. */
   project_type?: ProjectType | string;
   /** Optional per-project tab label overrides (future-ready, currently unused). Stored as JSONB. */
-  label_overrides?: ProjectLabelOverrides | Record<string, unknown> | null;
+  label_overrides?: ProjectLabelOverrides | unknown | null;
   created_at?: string;
   updated_at?: string;
 }
