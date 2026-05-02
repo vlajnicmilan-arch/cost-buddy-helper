@@ -246,6 +246,18 @@
         "red": "Margin is only {{pct}}% — profit is critical, act now."
       }
     },
+    "statusLine": {
+      "paused": "Project is paused",
+      "waitingStart": "Waiting to start · begins {{date}}",
+      "waitingStartSoon": "Begins in {{days}} days",
+      "overdueOpen": "Deadline passed — still open",
+      "justStarted": "Just started — no entries yet",
+      "stable": "Stable — well done!",
+      "prepPhase": "Prep phase · {{pct}}% of budget",
+      "inFullSwing": "In full swing · {{pct}}% of budget",
+      "nearEnd": "Near the end · {{pct}}% left",
+      "inProgress": "In progress · {{count}} entries"
+    },
     "quickPhoto": {
       "title": "Quick receipt capture",
       "button": "Quick receipt",

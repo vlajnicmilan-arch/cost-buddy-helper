@@ -242,6 +242,18 @@
         "red": "Marge beträgt nur {{pct}}% — der Gewinn ist kritisch, handeln Sie sofort."
       }
     },
+    "statusLine": {
+      "paused": "Projekt pausiert",
+      "waitingStart": "Wartet auf Start · beginnt {{date}}",
+      "waitingStartSoon": "Beginnt in {{days}} Tagen",
+      "overdueOpen": "Frist überschritten — noch offen",
+      "justStarted": "Gerade begonnen — noch keine Einträge",
+      "stable": "Stabil — gut gemacht!",
+      "prepPhase": "Vorbereitung · {{pct}}% des Budgets",
+      "inFullSwing": "In vollem Gange · {{pct}}% des Budgets",
+      "nearEnd": "Endphase · {{pct}}% übrig",
+      "inProgress": "Läuft · {{count}} Einträge"
+    },
     "quickPhoto": {
       "title": "Schnelle Belegerfassung",
       "button": "Schnellbeleg",
