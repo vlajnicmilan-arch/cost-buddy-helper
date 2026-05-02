@@ -8,6 +8,7 @@ import { showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
+import { useHiddenPaymentSources } from './useHiddenPaymentSources';
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
@@ -18,7 +19,9 @@ export const useExpenseFetch = () => {
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
   const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
-  const [hiddenPaymentSourceIds, setHiddenPaymentSourceIds] = useState<Set<string>>(new Set());
+  // Hidden source ids come from a shared, sessionStorage-seeded cache to avoid
+  // any flicker when navigating back to the dashboard.
+  const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
   const [loading, setLoading] = useState(true);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -165,49 +168,11 @@ export const useExpenseFetch = () => {
     currency: (raw as any).currency || null,
   }), []);
 
-  // Fetch user's hidden payment sources (per-user dashboard toggle)
-  const fetchHiddenSources = useCallback(async () => {
-    if (isLocalMode) {
-      try {
-        const stored = localStorage.getItem('dashboardHiddenSources');
-        const parsed = stored ? (JSON.parse(stored) as string[]) : [];
-        setHiddenPaymentSourceIds(new Set(parsed));
-      } catch {
-        setHiddenPaymentSourceIds(new Set());
-      }
-      return;
-    }
-    if (!user) {
-      setHiddenPaymentSourceIds(new Set());
-      return;
-    }
-    try {
-      const { data, error } = await supabase
-        .from('dashboard_hidden_sources' as any)
-        .select('source_id')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      setHiddenPaymentSourceIds(new Set((data || []).map((r: any) => r.source_id as string)));
-    } catch (err) {
-      console.error('Error fetching hidden payment sources:', err);
-    }
-  }, [user, isLocalMode]);
-
-  // Initial data load
+  // Initial data load (hiddenIds handled by useHiddenPaymentSources hook)
   useEffect(() => {
     fetchOwnedSources();
-    fetchHiddenSources();
     fetchExpenses();
-  }, [fetchOwnedSources, fetchHiddenSources, fetchExpenses]);
-
-  // Listen for hidden-source toggle events to keep dashboard filter in sync
-  useEffect(() => {
-    const handler = () => {
-      fetchHiddenSources();
-    };
-    window.addEventListener('hidden-payment-sources-changed', handler);
-    return () => window.removeEventListener('hidden-payment-sources-changed', handler);
-  }, [fetchHiddenSources]);
+  }, [fetchOwnedSources, fetchExpenses]);
 
   // Realtime subscription for cloud mode
   useEffect(() => {
