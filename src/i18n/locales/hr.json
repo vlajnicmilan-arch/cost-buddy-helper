@@ -2890,5 +2890,128 @@
     "errorMessageTooShort": "Molimo opišite barem nakratko (min. 5 znakova)",
     "errorInvalidEmail": "Neispravna email adresa",
     "submitFailed": "Slanje nije uspjelo. Pokušajte ponovno."
+  },
+  "projectTypes": {
+    "step": {
+      "title": "Za što ćeš koristiti ovaj projekt?",
+      "subtitle": "Odaberi vrstu — prilagodit ćemo nazive faza i tabova. Vrsta se kasnije ne mijenja.",
+      "changeType": "← Promijeni vrstu",
+      "lockedBadge": "Vrsta: {{name}}"
+    },
+    "general": {
+      "name": "Općenito",
+      "tagline": "Bilo koji projekt",
+      "labels": {}
+    },
+    "construction_new": {
+      "name": "Gradilište",
+      "tagline": "Novogradnja, gradilišta, javni radovi",
+      "labels": {
+        "milestones": "Etape gradnje",
+        "collaborators": "Podizvođači",
+        "documents": "Nacrti & Dozvole"
+      }
+    },
+    "renovation": {
+      "name": "Adaptacija",
+      "tagline": "Renovacija, preuređenje, sanacija",
+      "labels": {
+        "milestones": "Faze radova",
+        "collaborators": "Majstori",
+        "documents": "Ponude & Računi"
+      }
+    },
+    "interior": {
+      "name": "Uređenje interijera",
+      "tagline": "Dizajn interijera, opremanje",
+      "labels": {
+        "milestones": "Faze uređenja",
+        "collaborators": "Dobavljači"
+      }
+    },
+    "it_software": {
+      "name": "IT / Software",
+      "tagline": "Razvoj softvera, web, app",
+      "labels": {
+        "milestones": "Sprintovi",
+        "workers": "Tim",
+        "collaborators": "Klijenti / Vendori",
+        "documents": "Specifikacije"
+      }
+    },
+    "marketing": {
+      "name": "Marketing",
+      "tagline": "Kampanje, oglašavanje, branding",
+      "labels": {
+        "milestones": "Faze kampanje",
+        "collaborators": "Vanjski suradnici",
+        "documents": "Materijali"
+      }
+    },
+    "education": {
+      "name": "Edukacija",
+      "tagline": "Tečajevi, treninzi, radionice",
+      "labels": {
+        "milestones": "Moduli / Lekcije",
+        "workers": "Predavači",
+        "members": "Polaznici",
+        "documents": "Materijali"
+      }
+    },
+    "beauty": {
+      "name": "Beauty / Wellness",
+      "tagline": "Kozmetika, frizerstvo, wellness",
+      "labels": {
+        "milestones": "Tretmani / Paketi",
+        "workers": "Osoblje",
+        "documents": "Cjenik & Protokoli"
+      }
+    },
+    "hospitality_event": {
+      "name": "Ugostiteljstvo / Event",
+      "tagline": "Catering, restorani, eventi",
+      "labels": {
+        "milestones": "Faze priprema",
+        "workers": "Osoblje",
+        "collaborators": "Dobavljači",
+        "documents": "Menu & Ugovori"
+      }
+    },
+    "healthcare": {
+      "name": "Zdravstvo",
+      "tagline": "Ordinacije, klinike, terapije",
+      "labels": {
+        "milestones": "Etape projekta",
+        "workers": "Osoblje",
+        "documents": "Protokoli"
+      }
+    },
+    "retail_opening": {
+      "name": "Trgovina",
+      "tagline": "Otvorenje dućana, retail",
+      "labels": {
+        "milestones": "Faze otvaranja",
+        "collaborators": "Dobavljači",
+        "documents": "Ugovori"
+      }
+    },
+    "manufacturing": {
+      "name": "Proizvodnja",
+      "tagline": "Manufaktura, narudžbe, izrada",
+      "labels": {
+        "milestones": "Faze proizvodnje",
+        "collaborators": "Dobavljači",
+        "documents": "Tehnička dokumentacija"
+      }
+    },
+    "private_event": {
+      "name": "Privatni event",
+      "tagline": "Vjenčanja, slavlja, proslave",
+      "labels": {
+        "milestones": "Faze planiranja",
+        "collaborators": "Dobavljači",
+        "documents": "Ugovori & Računi"
+      }
+    }
   }
 }

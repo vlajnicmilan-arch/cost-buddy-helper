@@ -2887,5 +2887,128 @@
     "errorMessageTooShort": "Please describe briefly (min. 5 characters)",
     "errorInvalidEmail": "Invalid email address",
     "submitFailed": "Submission failed. Please try again."
+  },
+  "projectTypes": {
+    "step": {
+      "title": "What will you use this project for?",
+      "subtitle": "Pick a type — we will tailor phase and tab labels. The type cannot be changed later.",
+      "changeType": "← Change type",
+      "lockedBadge": "Type: {{name}}"
+    },
+    "general": {
+      "name": "General",
+      "tagline": "Any kind of project",
+      "labels": {}
+    },
+    "construction_new": {
+      "name": "Construction",
+      "tagline": "New builds, construction sites, public works",
+      "labels": {
+        "milestones": "Construction stages",
+        "collaborators": "Subcontractors",
+        "documents": "Drawings & Permits"
+      }
+    },
+    "renovation": {
+      "name": "Renovation",
+      "tagline": "Refurbishment, remodeling, repairs",
+      "labels": {
+        "milestones": "Work phases",
+        "collaborators": "Tradespeople",
+        "documents": "Quotes & Invoices"
+      }
+    },
+    "interior": {
+      "name": "Interior design",
+      "tagline": "Interior design, furnishing",
+      "labels": {
+        "milestones": "Design phases",
+        "collaborators": "Suppliers"
+      }
+    },
+    "it_software": {
+      "name": "IT / Software",
+      "tagline": "Software, web, app development",
+      "labels": {
+        "milestones": "Sprints",
+        "workers": "Team",
+        "collaborators": "Clients / Vendors",
+        "documents": "Specifications"
+      }
+    },
+    "marketing": {
+      "name": "Marketing",
+      "tagline": "Campaigns, advertising, branding",
+      "labels": {
+        "milestones": "Campaign phases",
+        "collaborators": "External partners",
+        "documents": "Materials"
+      }
+    },
+    "education": {
+      "name": "Education",
+      "tagline": "Courses, training, workshops",
+      "labels": {
+        "milestones": "Modules / Lessons",
+        "workers": "Instructors",
+        "members": "Students",
+        "documents": "Materials"
+      }
+    },
+    "beauty": {
+      "name": "Beauty / Wellness",
+      "tagline": "Cosmetics, hair, wellness",
+      "labels": {
+        "milestones": "Treatments / Packages",
+        "workers": "Staff",
+        "documents": "Pricing & Protocols"
+      }
+    },
+    "hospitality_event": {
+      "name": "Hospitality / Event",
+      "tagline": "Catering, restaurants, events",
+      "labels": {
+        "milestones": "Preparation phases",
+        "workers": "Staff",
+        "collaborators": "Suppliers",
+        "documents": "Menu & Contracts"
+      }
+    },
+    "healthcare": {
+      "name": "Healthcare",
+      "tagline": "Practices, clinics, treatments",
+      "labels": {
+        "milestones": "Project stages",
+        "workers": "Staff",
+        "documents": "Protocols"
+      }
+    },
+    "retail_opening": {
+      "name": "Retail",
+      "tagline": "Store openings, retail",
+      "labels": {
+        "milestones": "Opening phases",
+        "collaborators": "Suppliers",
+        "documents": "Contracts"
+      }
+    },
+    "manufacturing": {
+      "name": "Manufacturing",
+      "tagline": "Production, orders, manufacturing",
+      "labels": {
+        "milestones": "Production phases",
+        "collaborators": "Suppliers",
+        "documents": "Technical documentation"
+      }
+    },
+    "private_event": {
+      "name": "Private event",
+      "tagline": "Weddings, celebrations, parties",
+      "labels": {
+        "milestones": "Planning phases",
+        "collaborators": "Suppliers",
+        "documents": "Contracts & Invoices"
+      }
+    }
   }
 }
