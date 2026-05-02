@@ -18,6 +18,7 @@ export const useExpenseFetch = () => {
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
   const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
+  const [hiddenPaymentSourceIds, setHiddenPaymentSourceIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
