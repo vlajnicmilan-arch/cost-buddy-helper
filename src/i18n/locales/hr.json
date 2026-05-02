@@ -235,7 +235,19 @@
       "overdueDays_one": "{{count}} d kašnjenja",
       "overdueDays_few": "{{count}} d kašnjenja",
       "overdueDays_other": "{{count}} d kašnjenja",
-      "dueToday": "Rok danas"
+      "dueToday": "Rok danas",
+      "margin": "Marža",
+      "profit": "Profit",
+      "noIncomeYet": "Još nema prihoda",
+      "trafficLight": {
+        "green": "Zdravo: marža iznad 30%",
+        "yellow": "Pažnja: marža ispod 30%",
+        "red": "Kritično: marža ispod 10%"
+      },
+      "aiWarning": {
+        "yellow": "Marža je {{pct}}% — pregledajte troškove projekta dok je još vrijeme.",
+        "red": "Marža je samo {{pct}}% — profit je kritičan, hitno reagirajte."
+      }
     },
     "quickPhoto": {
       "title": "Brzi unos računa",
