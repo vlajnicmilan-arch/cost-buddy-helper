@@ -1693,6 +1693,15 @@
       "emptyTitle": "Dodajte prvi poslovni račun",
       "emptyHint": "Npr. Žiroračun tvrtke, Blagajna, Devizni račun. Bez izvora plaćanja saldo se ne ažurira automatski."
     },
+    "quickCreate": {
+      "title": "Nova tvrtka",
+      "namePlaceholder": "npr. Mjugh d.o.o.",
+      "legalForm": "Pravni oblik",
+      "legalFormOptional": "(opcionalno)",
+      "hint": "Detalje (OIB, adresa, IBAN, logo) možeš dodati kasnije u Postavkama → Tvrtke.",
+      "save": "Spremi tvrtku",
+      "success": "Tvrtka kreirana"
+    },
     "title": "Poslovni profil",
     "editProfile": "Uredi poslovni profil",
     "basicInfo": "Osnovni podaci",
