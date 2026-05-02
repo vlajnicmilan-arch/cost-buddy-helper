@@ -110,7 +110,8 @@ export const CustomPaymentSourceDialog = ({
         color, 
         balance: parseFloat(balance) || 0,
         currency: multiCurrencyEnabled ? sourceCurrency : undefined,
-        description: description.trim() || undefined
+        description: description.trim() || undefined,
+        is_business: isBusiness,
       });
 
       // Handle cards for existing sources
