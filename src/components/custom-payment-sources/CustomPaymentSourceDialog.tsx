@@ -62,6 +62,7 @@ export const CustomPaymentSourceDialog = ({
   const [saving, setSaving] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
+  const [quickCompanyOpen, setQuickCompanyOpen] = useState(false);
   const { t } = useTranslation();
   const { currency, multiCurrencyEnabled } = useCurrency();
   const { profiles: businessProfiles, refetch: refetchBusinessProfiles } = useBusinessProfiles();
