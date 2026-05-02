@@ -232,7 +232,19 @@
       "daysLeft_other": "{{count}} d left",
       "overdueDays_one": "{{count}} d overdue",
       "overdueDays_other": "{{count}} d overdue",
-      "dueToday": "Due today"
+      "dueToday": "Due today",
+      "margin": "Margin",
+      "profit": "Profit",
+      "noIncomeYet": "No income yet",
+      "trafficLight": {
+        "green": "Healthy: margin above 30%",
+        "yellow": "Caution: margin below 30%",
+        "red": "Critical: margin below 10%"
+      },
+      "aiWarning": {
+        "yellow": "Margin is {{pct}}% — review project costs while there is still time.",
+        "red": "Margin is only {{pct}}% — profit is critical, act now."
+      }
     },
     "quickPhoto": {
       "title": "Quick receipt capture",

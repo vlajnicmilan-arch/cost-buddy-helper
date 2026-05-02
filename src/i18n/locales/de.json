@@ -228,7 +228,19 @@
       "daysLeft_other": "{{count}} T verbleibend",
       "overdueDays_one": "{{count}} T überfällig",
       "overdueDays_other": "{{count}} T überfällig",
-      "dueToday": "Heute fällig"
+      "dueToday": "Heute fällig",
+      "margin": "Marge",
+      "profit": "Gewinn",
+      "noIncomeYet": "Noch keine Einnahmen",
+      "trafficLight": {
+        "green": "Gesund: Marge über 30%",
+        "yellow": "Achtung: Marge unter 30%",
+        "red": "Kritisch: Marge unter 10%"
+      },
+      "aiWarning": {
+        "yellow": "Marge beträgt {{pct}}% — prüfen Sie die Projektkosten, solange noch Zeit ist.",
+        "red": "Marge beträgt nur {{pct}}% — der Gewinn ist kritisch, handeln Sie sofort."
+      }
     },
     "quickPhoto": {
       "title": "Schnelle Belegerfassung",
