@@ -1679,6 +1679,15 @@
       "emptyTitle": "Erstes Geschäftskonto hinzufügen",
       "emptyHint": "Z. B. Geschäftskonto, Kasse, Fremdwährungskonto. Ohne Zahlungsquelle wird der Saldo nicht automatisch aktualisiert."
     },
+    "quickCreate": {
+      "title": "Neue Firma",
+      "namePlaceholder": "z. B. Muster GmbH",
+      "legalForm": "Rechtsform",
+      "legalFormOptional": "(optional)",
+      "hint": "Details (Steuer-ID, Adresse, IBAN, Logo) kannst du später in Einstellungen → Firmen ergänzen.",
+      "save": "Firma speichern",
+      "success": "Firma erstellt"
+    },
     "title": "Firmenprofil",
     "editProfile": "Firmenprofil bearbeiten",
     "basicInfo": "Grunddaten",
@@ -3089,7 +3098,8 @@
       "businessBadge": "Geschäftlich",
       "owner": "Inhaber der Quelle",
       "ownerPersonal": "Privat",
-      "ownerHint": "Wählen Sie, ob diese Quelle persönlich oder genau einem Unternehmen gehört. Der Filter \"Alle / Privat / Unternehmen\" nutzt diese Verknüpfung."
+      "ownerHint": "Wählen Sie, ob diese Quelle persönlich oder genau einem Unternehmen gehört. Der Filter \"Alle / Privat / Unternehmen\" nutzt diese Verknüpfung.",
+      "addCompany": "+ Neue Firma"
     },
     "viewMode": {
       "all": "Alle",

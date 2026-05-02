@@ -13,6 +13,7 @@ import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { QuickBusinessProfileDialog } from '@/components/business/QuickBusinessProfileDialog';
 interface CardInput {
   id?: string;
   card_name: string;
@@ -61,6 +62,7 @@ export const CustomPaymentSourceDialog = ({
   const [saving, setSaving] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
+  const [quickCompanyOpen, setQuickCompanyOpen] = useState(false);
   const { t } = useTranslation();
   const { currency, multiCurrencyEnabled } = useCurrency();
   const { profiles: businessProfiles, refetch: refetchBusinessProfiles } = useBusinessProfiles();
@@ -277,7 +279,13 @@ export const CustomPaymentSourceDialog = ({
             </Label>
             <Select
               value={businessProfileId ?? '__personal__'}
-              onValueChange={(v) => setBusinessProfileId(v === '__personal__' ? null : v)}
+              onValueChange={(v) => {
+                if (v === '__add_company__') {
+                  setQuickCompanyOpen(true);
+                  return;
+                }
+                setBusinessProfileId(v === '__personal__' ? null : v);
+              }}
             >
               <SelectTrigger id="owner-select">
                 <SelectValue />
@@ -297,6 +305,12 @@ export const CustomPaymentSourceDialog = ({
                     </span>
                   </SelectItem>
                 ))}
+                <SelectItem value="__add_company__" className="text-primary font-medium border-t mt-1 pt-2">
+                  <span className="flex items-center gap-2">
+                    <Plus className="w-3.5 h-3.5" />
+                    {t('wallet.source.addCompany', '+ Nova tvrtka')}
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
@@ -487,6 +501,16 @@ export const CustomPaymentSourceDialog = ({
         open={scannerOpen}
         onOpenChange={setScannerOpen}
         onCardDetected={handleCardScanned}
+      />
+
+      {/* Quick "+ New company" inline dialog */}
+      <QuickBusinessProfileDialog
+        open={quickCompanyOpen}
+        onOpenChange={setQuickCompanyOpen}
+        onCreated={async (newId) => {
+          await refetchBusinessProfiles();
+          setBusinessProfileId(newId);
+        }}
       />
     </Dialog>
   );

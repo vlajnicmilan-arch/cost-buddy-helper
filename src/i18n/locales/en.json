@@ -1820,6 +1820,15 @@
       "emptyTitle": "Add your first business account",
       "emptyHint": "E.g. company current account, cash register, foreign currency account. Without a payment source the balance is not updated automatically."
     },
+    "quickCreate": {
+      "title": "New company",
+      "namePlaceholder": "e.g. Acme Ltd.",
+      "legalForm": "Legal form",
+      "legalFormOptional": "(optional)",
+      "hint": "You can add details (Tax ID, address, IBAN, logo) later in Settings → Companies.",
+      "save": "Save company",
+      "success": "Company created"
+    },
     "title": "Business Profile",
     "editProfile": "Edit business profile",
     "basicInfo": "Basic Information",
@@ -3100,7 +3109,8 @@
       "businessBadge": "Business",
       "owner": "Source owner",
       "ownerPersonal": "Personal",
-      "ownerHint": "Choose whether this source belongs to you personally or to exactly one company. The \"All / Personal / Company\" filter uses this link."
+      "ownerHint": "Choose whether this source belongs to you personally or to exactly one company. The \"All / Personal / Company\" filter uses this link.",
+      "addCompany": "+ New company"
     },
     "viewMode": {
       "all": "All",
