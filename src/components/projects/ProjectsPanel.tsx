@@ -341,7 +341,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       {/* Create/Edit Dialog */}
       <ProjectDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleCreateDialogOpenChange}
         project={editingProject}
         onSave={handleSave}
         onUpdate={handleUpdate}
