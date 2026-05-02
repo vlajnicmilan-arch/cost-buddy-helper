@@ -7,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { CustomPaymentSource, PaymentSourceCard, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
-import { Plus, X, CreditCard, ScanLine, Briefcase } from 'lucide-react';
+import { Plus, X, CreditCard, ScanLine, Briefcase, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 interface CardInput {
   id?: string;
   card_name: string;
@@ -26,7 +27,7 @@ interface PaymentSourceData {
   balance: number;
   currency?: string;
   description?: string;
-  is_business?: boolean;
+  business_profile_id?: string | null;
   cards?: CardInput[];
 }
 
@@ -56,12 +57,14 @@ export const CustomPaymentSourceDialog = ({
   const [description, setDescription] = useState('');
   const [sourceCurrency, setSourceCurrency] = useState<CurrencyCode>('EUR');
   const [cards, setCards] = useState<CardInput[]>([]);
-  const [isBusiness, setIsBusiness] = useState(false);
+  const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
   const { t } = useTranslation();
   const { currency, multiCurrencyEnabled } = useCurrency();
+  const { profiles: businessProfiles } = useBusinessProfiles();
+  const isBusiness = businessProfileId !== null;
   useEffect(() => {
     if (open) {
       if (source) {
@@ -71,7 +74,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance(source.balance?.toString() || '0');
         setDescription(source.description || '');
         setSourceCurrency((source.currency as CurrencyCode) || currency.code);
-        setIsBusiness(!!source.is_business);
+        setBusinessProfileId(source.business_profile_id || null);
         setCards((source.cards || []).map(c => ({
           id: c.id,
           card_name: c.card_name,
@@ -85,7 +88,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance(initialData.balance?.toString() || '0');
         setDescription(initialData.description || '');
         setSourceCurrency(currency.code);
-        setIsBusiness(!!initialData.is_business);
+        setBusinessProfileId(initialData.business_profile_id || null);
         setCards(initialData.cards || []);
       } else {
         setName('');
@@ -94,7 +97,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance('0');
         setDescription('');
         setSourceCurrency(currency.code);
-        setIsBusiness(false);
+        setBusinessProfileId(null);
         setCards([]);
       }
     }
@@ -111,7 +114,7 @@ export const CustomPaymentSourceDialog = ({
         balance: parseFloat(balance) || 0,
         currency: multiCurrencyEnabled ? sourceCurrency : undefined,
         description: description.trim() || undefined,
-        is_business: isBusiness,
+        business_profile_id: businessProfileId,
       });
 
       // Handle cards for existing sources
