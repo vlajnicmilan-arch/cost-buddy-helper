@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -6,6 +6,7 @@ import { Wallet, ChevronDown, Users } from 'lucide-react';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
+import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 
 interface PaymentSourcesSectionProps {
   customPaymentSources: CustomPaymentSource[];
@@ -16,10 +17,17 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
   const { t } = useTranslation();
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
+  const { hiddenIds } = useHiddenPaymentSources();
 
-  if (customPaymentSources.length === 0) return null;
+  // Exclude sources hidden from dashboard (per-user toggle)
+  const visibleSources = useMemo(
+    () => customPaymentSources.filter(s => !hiddenIds.has(s.id)),
+    [customPaymentSources, hiddenIds],
+  );
 
-  const totalBalance = customPaymentSources.reduce((sum, s) => {
+  if (visibleSources.length === 0) return null;
+
+  const totalBalance = visibleSources.reduce((sum, s) => {
     const bal = s.balance || 0;
     if (multiCurrencyEnabled && s.currency && s.currency !== currency.code) {
       return sum + convert(bal, s.currency, currency.code);
