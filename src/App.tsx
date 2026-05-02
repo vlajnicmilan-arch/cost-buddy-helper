@@ -32,7 +32,7 @@ import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
 import { autoRegisterIfEnabled } from "@/lib/nativePush";
 
 const Index = lazy(() => import("./pages/Index"));
-const Business = lazy(() => import("./pages/Business"));
+
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Projects = lazy(() => import("./pages/Projects"));
 const CalendarPage = lazy(() => import("./pages/Calendar"));
@@ -244,7 +244,8 @@ const AppRoutes = () => {
       <Route path="/" element={<RootRoute />} />
       <Route path="/app" element={<Navigate to={appEntryRoute!} replace />} />
       <Route path="/home" element={<Suspense fallback={<HomeSkeleton />}>{requireOnboarding(<Index />)}</Suspense>} />
-      <Route path="/business" element={<Suspense fallback={<HomeSkeleton />}><Business /></Suspense>} />
+      {/* Legacy /business route removed — business view now lives in Wallet via owner chips */}
+      <Route path="/business" element={<Navigate to="/wallet" replace />} />
       <Route path="/onboarding" element={<Suspense fallback={<PageLoader />}>{onboardingCompleted ? <Navigate to="/home" replace /> : <Onboarding />}</Suspense>} />
       <Route path="/dashboard" element={<Suspense fallback={<DashboardSkeleton />}><Dashboard /></Suspense>} />
       <Route path="/projects" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Projects />)}</Suspense>} />
