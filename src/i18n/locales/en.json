@@ -3109,7 +3109,8 @@
       "businessBadge": "Business",
       "owner": "Source owner",
       "ownerPersonal": "Personal",
-      "ownerHint": "Choose whether this source belongs to you personally or to exactly one company. The \"All / Personal / Company\" filter uses this link."
+      "ownerHint": "Choose whether this source belongs to you personally or to exactly one company. The \"All / Personal / Company\" filter uses this link.",
+      "addCompany": "+ New company"
     },
     "viewMode": {
       "all": "All",
