@@ -197,6 +197,20 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setPendingExpenseId(null);
     refetch();
     fetchAllStats();
+    if (returnToRef.current) {
+      const target = returnToRef.current;
+      returnToRef.current = null;
+      navigate(target);
+    }
+  };
+
+  const handleCreateDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open && returnToRef.current) {
+      const target = returnToRef.current;
+      returnToRef.current = null;
+      navigate(target);
+    }
   };
 
   const handleSave = async (
