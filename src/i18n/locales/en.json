@@ -1406,7 +1406,8 @@
   "projectRoles": {
     "manager": "Manager",
     "member": "Member",
-    "viewer": "Viewer"
+    "viewer": "Viewer",
+    "worker": "Worker"
   },
   "notifications": {
     "title": "Notifications",
