@@ -436,7 +436,7 @@ export const ActiveProjectsStrip = React.memo(({
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: activeProjects.length * 0.04 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => handleNav('/projects', { openNewProject: true })}
+          onClick={() => handleNav('/projects', { openNewProject: true, from: '/home' })}
           className="snap-start min-w-[200px] max-w-[220px] min-h-[170px] p-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
         >
           <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
