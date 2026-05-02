@@ -299,6 +299,9 @@
     },
     "templates": {
       "startFrom": "Start from a template (optional)",
+      "suggestedPhases": "Suggested phases for this project type (optional)",
+      "help": "A template only seeds an initial list of phases that you can change later. It does not change the project type.",
+      "empty": "We don't have suggested phases for this project type yet. You can add them manually or later.",
       "phases": "phases",
       "willCreatePhases": "Will be auto-created"
     },

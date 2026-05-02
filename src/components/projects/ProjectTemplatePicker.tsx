@@ -20,13 +20,14 @@ export const ProjectTemplatePicker = ({ selectedId, onSelect, categoryFilter }: 
   const { t } = useTranslation();
   const { templates, loading } = useProjectTemplates();
 
+  // STRICT match only — no "general" fallback. If the project type has no
+  // templateCategory, the picker is not rendered at all (parent decides).
   const filtered = useMemo(() => {
-    if (!categoryFilter) return templates;
-    // Show templates matching the project type's category, plus the always-relevant "general" ones.
-    return templates.filter(
-      (tpl) => tpl.category === categoryFilter || tpl.category === 'general' || !tpl.category,
-    );
+    if (!categoryFilter) return [];
+    return templates.filter((tpl) => tpl.category === categoryFilter);
   }, [templates, categoryFilter]);
+
+  if (!categoryFilter) return null;
 
   if (loading) {
     return (
@@ -36,14 +37,12 @@ export const ProjectTemplatePicker = ({ selectedId, onSelect, categoryFilter }: 
     );
   }
 
-  if (filtered.length === 0) return null;
-
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <Sparkles className="w-3 h-3" />
-          {t('projects.templates.startFrom', 'Započni iz šablone (opcionalno)')}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-primary" />
+          {t('projects.templates.suggestedPhases', 'Predložene faze za ovu vrstu projekta (opcionalno)')}
         </p>
         {selectedId && (
           <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => onSelect(null)}>
@@ -51,6 +50,15 @@ export const ProjectTemplatePicker = ({ selectedId, onSelect, categoryFilter }: 
           </Button>
         )}
       </div>
+      <p className="text-[10px] text-muted-foreground leading-snug">
+        {t('projects.templates.help', 'Šablona daje samo početni popis faza koje kasnije možeš mijenjati. Ne mijenja vrstu projekta.')}
+      </p>
+
+      {filtered.length === 0 && (
+        <div className="text-[11px] text-muted-foreground italic p-2 rounded border border-dashed">
+          {t('projects.templates.empty', 'Za ovu vrstu projekta još nemamo predložene faze. Možeš ih unijeti ručno ili dodati kasnije.')}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2 max-h-[180px] overflow-y-auto">
         {filtered.map((tpl) => (
           <button

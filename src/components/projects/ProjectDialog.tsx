@@ -118,14 +118,14 @@ export const ProjectDialog = ({
     if (!preset?.icon) setIcon(p.icon);
     if (!preset?.color) setColor(p.color);
 
-    // Auto pre-select first matching template (user can change/clear in step 2).
+    // Auto pre-select ONLY on exact category match. No "general" fallback,
+    // never overwrite fields the user already typed, never overwrite the
+    // type-preset icon/color silently.
     if (p.templateCategory && templates.length > 0) {
       const match = templates.find((t) => t.category === p.templateCategory) ?? null;
       setSelectedTemplate(match);
       if (match) {
         if (!name.trim() && match.name) setName(match.name);
-        if (match.icon) setIcon(match.icon);
-        if (match.color) setColor(match.color);
         if (!description.trim() && match.description) setDescription(match.description);
       }
     } else {

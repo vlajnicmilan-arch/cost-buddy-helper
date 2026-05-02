@@ -302,6 +302,9 @@
     },
     "templates": {
       "startFrom": "Započni iz šablone (opcionalno)",
+      "suggestedPhases": "Predložene faze za ovu vrstu projekta (opcionalno)",
+      "help": "Šablona daje samo početni popis faza koje kasnije možeš mijenjati. Ne mijenja vrstu projekta.",
+      "empty": "Za ovu vrstu projekta još nemamo predložene faze. Možeš ih unijeti ručno ili dodati kasnije.",
       "phases": "faza",
       "willCreatePhases": "Bit će automatski kreirano"
     },
