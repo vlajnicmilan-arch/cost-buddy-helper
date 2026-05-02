@@ -1388,7 +1388,8 @@
   "projectRoles": {
     "manager": "Manager",
     "member": "Mitglied",
-    "viewer": "Betrachter"
+    "viewer": "Betrachter",
+    "worker": "Arbeiter"
   },
   "notifications": {
     "title": "Benachrichtigungen",

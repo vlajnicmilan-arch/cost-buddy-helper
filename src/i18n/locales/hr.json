@@ -1409,7 +1409,8 @@
   "projectRoles": {
     "manager": "Voditelj",
     "member": "Član",
-    "viewer": "Promatrač"
+    "viewer": "Promatrač",
+    "worker": "Radnik"
   },
   "notifications": {
     "title": "Obavijesti",
