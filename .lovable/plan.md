@@ -1,172 +1,70 @@
-## Problem
+## Provjera: nedostaje li workflow?
 
-Kad se vraćaš na Pregled iz Novčanika ili druge sekcije, **na sekundu** se vidi 5 računa, pa skoči na 4 (jer je jedan sakriven). Razlog:
+Da, korisnik je u pravu. U kodu trenutno postoji:
 
-1. `useHiddenPaymentSources` se poziva u 3 odvojene komponente (`PersonalModeView`, `PaymentSourcesSection`, `CustomPaymentSourcesPanel`) — svaka ima vlastiti `useState(new Set())` koji **kreće prazan**.
-2. Hook radi async Supabase fetch tek nakon mounta → 100–400 ms se prikazuju SVI izvori (kao da nijedan nije sakriven).
-3. `useExpenseFetch` ima dodatni vlastiti fetch istih podataka (4. fetch po povratku).
-4. Nema persistencije između navigacija → svaki povratak na Pregled = novi fetch = novo treptanje.
+- **Status `completed`** — postavlja se ručno preko `ProjectDialog` Select polja (lako se preskoči)
+- **Arhiviranje** — `archiveProject()` u `useProjects.ts`, gumb na `ProjectCard` (toggle)
+- **Final report** — `ProjectReportsDialog` (PDF/CSV/JSON), ali nije vezan za zatvaranje projekta
+- **Milestone status `completed`** — mijenja se po milestoneu u `ProjectMilestonesTab`
 
-## Rješenje
+Ali **nigdje** ne postoji povezani workflow koji vodi korisnika kroz: "provjeri otvorene milestone-e → generiraj final report → označi projekt završenim → arhiviraj". To je upravo ono što mali biznis treba za zatvaranje obračuna.
 
-Module-level cache (singleton) koji:
-- pamti `hiddenIds` između navigacija unutar iste sesije,
-- seedan iz `sessionStorage` već **pri prvom renderu** (sinkrono, prije nego React mountira komponente),
-- dijeljen kroz svih 4 konzumenata kroz mali pub/sub pattern,
-- i dalje fetcha iz Supabase u pozadini za prvu autentikaciju i osvježavanje (ali tek nakon što UI već prikazuje točno stanje).
+## Što ćemo dodati
 
-Rezultat: kad se vratiš na Pregled, hidden state je **odmah dostupan** iz cachea, nema treptanja.
+Novi **`CompleteProjectWizard`** dijalog (3 koraka), pristupačan iz `ProjectFullScreenView` headera kao primarna akcija "Završi projekt" (vidljiva samo kad `status !== 'completed'` i kad je korisnik manager/owner).
 
-Ne diramo:
-- bazu, RLS, migracije,
-- toggleHidden logiku (write path),
-- filtriranje u `useExpenseFetch.dashboardExpenses`,
-- ponašanje u Local modu (samo čitanje iz localStorage je već sinkrono).
+### Korak 1 — Provjera milestone-a
+- Lista svih milestone-a koji **nisu** `completed` (pending / in_progress / overdue)
+- Za svaki: checkbox "označi kao završen" (preselected za in_progress) + opcija "preskoči (ostaje otvoren)"
+- Sažetak: `X od Y milestone-a završeno`, upozorenje ako ima `overdue`
+- Ako korisnik označi → bulk update `project_milestones.status = 'completed'` + `completed_at = now()`
 
-## Tehnička implementacija
+### Korak 2 — Final report
+- Sažetak P&L-a iz `useProjectStats` + `useProjectProfitLoss` (budžet, potrošeno, alocirano, profit/loss)
+- Dva CTA-a: **Generiraj PDF** i **Generiraj CSV** (reuse `generateProjectPDFReport` / `generateProjectCSVReport` iz `projectReportExport.ts`)
+- Checkbox "Final report generiran" (mora biti čekiran ili eksplicitno preskočen prije nastavka)
 
-### 1. `src/hooks/useHiddenPaymentSources.ts` — refactor na shared cache
+### Korak 3 — Završetak i arhiva
+- Polje "Datum završetka" (default: danas, upiše se u `projects.end_date` ako nije već postavljen)
+- Opcionalna napomena (zaključci/lessons learned) → upiše se u `projects.description` kao append `\n\n--- Završeno DD.MM.YYYY ---\n{note}` (bez nove kolone)
+- Dva radio izbora:
+  - **Završi i zadrži aktivnim u listi** → `status = 'completed'`, `archived_at = null`
+  - **Završi i arhiviraj** (preporučeno) → `status = 'completed'` + `archived_at = now()`
+- Gumb "Završi projekt" → atomski update + `showSuccess` + zatvori wizard + zatvori `ProjectFullScreenView`
 
-Dodati na vrh fajla (izvan hooka):
+### Reverzibilnost
+- Već postojeći "Vrati iz arhive" gumb na `ProjectCard` ostaje
+- Dodat ćemo "Ponovo otvori" akciju u headeru `ProjectFullScreenView` kad je `status === 'completed'` (vraća na `active`, ne dira arhivu)
 
-```ts
-// Module-level singleton cache
-let cachedIds: Set<string> | null = null;
-let inFlight: Promise<void> | null = null;
-const listeners = new Set<(s: Set<string>) => void>();
-const SESSION_KEY = 'dashboardHiddenSources:cache';
+## Tehnički detalji
 
-// Synchronous seed from sessionStorage on module load
-try {
-  const seed = sessionStorage.getItem(SESSION_KEY);
-  if (seed) cachedIds = new Set(JSON.parse(seed) as string[]);
-} catch { /* ignore */ }
+**Nove datoteke**
+- `src/components/projects/CompleteProjectWizard.tsx` — glavni dijalog, 3 koraka kroz lokalni `step` state
+- `src/components/projects/CompleteProjectStepMilestones.tsx`
+- `src/components/projects/CompleteProjectStepReport.tsx`
+- `src/components/projects/CompleteProjectStepFinalize.tsx`
 
-const persistSession = (ids: Set<string>) => {
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify([...ids])); } catch { /* ignore */ }
-};
+**Izmjene**
+- `src/components/projects/ProjectFullScreenView.tsx` — dodaj gumb "Završi projekt" u header (CheckCircle2 ikona), state `completeWizardOpen`, prosljeđuje `project`, `milestones`, `stats`. Dodaj "Ponovo otvori" za completed projekte.
+- `src/hooks/useProjects.ts` — proširi `updateProject` ili dodaj `completeProject(id, { endDate, note, archive })` koji radi atomski update
+- `src/i18n/locales/{hr,en,de}.json` — novi namespace `projects.complete.*` (title, steps, buttons, warnings, success)
 
-const setCache = (next: Set<string>) => {
-  cachedIds = next;
-  persistSession(next);
-  listeners.forEach(l => l(next));
-};
-```
+**Bez DB migracije** — koristimo postojeće kolone: `projects.status`, `projects.archived_at`, `projects.end_date`, `projects.description`, `project_milestones.status`, `project_milestones.completed_at`.
 
-Hook postaje:
+**Reuse**
+- `generateProjectPDFReport` / `generateProjectCSVReport` iz `src/lib/projectReportExport.ts`
+- `useProjectStats`, `useProjectMilestones`, `useProjects.archiveProject` (interno preko novog `completeProject`)
+- `StatusFeedback` (1200ms) za success poruke
+- `useBackButton` za zatvaranje wizarda na Androidu
 
-```ts
-export const useHiddenPaymentSources = () => {
-  const { user } = useAuth();
-  const { storageMode } = useStorage();
-  const isLocalMode = storageMode === 'local' && !user;
+**A11y / dizajn**
+- `clickableProps()` za sve interaktivne divove
+- Min 44px touch targets
+- Teal primary za primarne CTA-e
+- Wizard koristi `Dialog` iz shadcn s `z-[60]` (postojeća konvencija)
 
-  // CRITICAL: initialize from cache synchronously — no flicker
-  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => cachedIds ?? new Set());
-  const [loading, setLoading] = useState(cachedIds === null);
+## Što NE radimo
 
-  // Subscribe to cache updates from other instances
-  useEffect(() => {
-    const listener = (s: Set<string>) => setHiddenIds(s);
-    listeners.add(listener);
-    return () => { listeners.delete(listener); };
-  }, []);
-
-  const fetchHidden = useCallback(async () => {
-    if (isLocalMode) {
-      try {
-        const stored = localStorage.getItem(LOCAL_KEY);
-        const parsed = stored ? (JSON.parse(stored) as string[]) : [];
-        setCache(new Set(parsed));
-      } catch { setCache(new Set()); }
-      setLoading(false);
-      return;
-    }
-    if (!user) { setCache(new Set()); setLoading(false); return; }
-
-    // Deduplicate concurrent fetches across all hook instances
-    if (inFlight) { await inFlight; setLoading(false); return; }
-
-    inFlight = (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('dashboard_hidden_sources' as any)
-          .select('source_id')
-          .eq('user_id', user.id);
-        if (error) throw error;
-        setCache(new Set((data || []).map((r: any) => r.source_id as string)));
-      } catch (err) {
-        console.error('Error fetching hidden payment sources:', err);
-        if (cachedIds === null) setCache(new Set());
-      } finally {
-        inFlight = null;
-      }
-    })();
-    await inFlight;
-    setLoading(false);
-  }, [user, isLocalMode]);
-
-  useEffect(() => { fetchHidden(); }, [fetchHidden]);
-  // ... rest unchanged (toggleHidden, isHidden, refetch, event listener)
-};
-```
-
-`toggleHidden` već optimistično postavlja state — promijeniti `setHiddenIds(next)` u `setCache(next)` da se promjena propagira svim instancama bez čekanja eventa.
-
-Na revertu greške: `setCache(hiddenIds)`.
-
-### 2. `src/hooks/useExpenseFetch.ts` — ukloniti duplikat fetcha
-
-Ima vlastiti `fetchHiddenSources` koji radi isto što i hook. Zamijeniti pozivom hooka:
-
-```ts
-import { useHiddenPaymentSources } from './useHiddenPaymentSources';
-// ...
-const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
-```
-
-Maknuti:
-- lokalni `useState<Set<string>>(new Set())` za `hiddenPaymentSourceIds`,
-- `fetchHiddenSources` callback,
-- `fetchHiddenSources()` poziv iz initial load `useEffect`a,
-- event listener za `hidden-payment-sources-changed` (hook to već radi interno).
-
-Dependency array u `dashboardExpenses` `useMemo` ostaje isti (`hiddenPaymentSourceIds`).
-
-### 3. Logout cleanup
-
-U `useAuth` postoji signOut. Provjerit ću i u tom mjestu očistiti cache:
-
-```ts
-// nakon supabase.auth.signOut()
-sessionStorage.removeItem('dashboardHiddenSources:cache');
-```
-
-Ako je jednostavnije, dodati listener na auth state change u samom modulu hooka:
-
-```ts
-supabase.auth.onAuthStateChange((event) => {
-  if (event === 'SIGNED_OUT') {
-    cachedIds = null;
-    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
-    listeners.forEach(l => l(new Set()));
-  }
-});
-```
-
-Ovo je sigurnije — cache se automatski briše kad se korisnik odjavi.
-
-## Ponašanje nakon promjene
-
-- **Prvi posjet u sesiji** (cold start): kratki async fetch; ako brži način — UI nakratko može pokazati sve izvore. Acceptable, događa se jednom po sesiji.
-- **Svaki sljedeći povratak na Pregled**: cache je već pun → instant točno stanje, bez treptanja.
-- **Reload stranice**: sessionStorage seed odmah popuni cache prije prvog rendera → nema treptanja čak ni nakon F5.
-- **Toggle u Novčaniku**: `setCache` odmah obavještava sve instance (PersonalModeView, PaymentSourcesSection, ...) — sinkrono, bez round-tripa kroz event.
-- **Promjena korisnika**: SIGNED_OUT cleanup briše cache.
-
-## Verifikacija
-
-1. Uključi/sakrij jedan izvor → vrati se na Pregled → otvori Novčanik → vrati se na Pregled. Broj računa mora **odmah** biti ispravan, bez bljeska.
-2. Reload stranice (F5) na Pregledu sa sakrivenim izvorom → mora odmah pokazati ispravan broj.
-3. Logout + login s drugim računom → ne smiju se vidjeti tuđi sakriveni izvori.
-4. Saldo na Dashboardu (Saldo/Prihodi/Rashodi) i dalje ispravno isključuje sakrivene izvore — `useExpenseFetch` sada čita iz istog cachea, dakle sinkronizirano.
+- Ne dodajemo novu DB kolonu za "lessons learned" (ide u `description` append) — može kasnije ako se traži pravi audit field
+- Ne diramo `ProjectDialog` Select za status (ostaje za napredne korisnike koji žele ručnu kontrolu)
+- Ne radimo automatsko slanje reporta članovima — ostaje ručni download (može u kasnijoj iteraciji)
