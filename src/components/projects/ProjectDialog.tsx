@@ -180,7 +180,7 @@ export const ProjectDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showBackButton={false} className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
             {!isEdit && step === 2 && (
               <Button
                 type="button"
@@ -193,7 +193,13 @@ export const ProjectDialog = ({
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            {project ? t('projects.edit') : t('projects.add')}
+            <span>{project ? t('projects.edit') : t('projects.add')}</span>
+            {(isEdit || step === 2) && (
+              <Badge variant="secondary" className="gap-1 font-normal">
+                <span aria-hidden>{activePreset.icon}</span>
+                <span className="text-xs">{typeName}</span>
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -208,24 +214,19 @@ export const ProjectDialog = ({
         {/* STEP 2 — project details */}
         {(isEdit || step === 2) && (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Locked type badge */}
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="gap-1">
-                <span>{activePreset.icon}</span>
-                <span>{t('projectTypes.step.lockedBadge', 'Vrsta: {{name}}', { name: typeName })}</span>
-              </Badge>
-              {!isEdit && (
+            {!isEdit && (
+              <div className="flex justify-end -mt-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 text-xs"
+                  className="h-6 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => setStep(1)}
                 >
                   {t('projectTypes.step.changeType', '← Promijeni vrstu')}
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Template picker - only for new projects, filtered by type */}
             {!isEdit && (

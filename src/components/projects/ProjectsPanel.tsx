@@ -8,7 +8,7 @@ import { Project, ProjectWithOwnership } from '@/types/project';
 import { ProjectCard } from './ProjectCard';
 import { ProjectDialog } from './ProjectDialog';
 import { ProjectFullScreenView } from './ProjectFullScreenView';
-import { ProjectOnboardingHint, type QuickStartSuggestion } from './ProjectOnboardingHint';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -39,7 +39,6 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [dialogPreset, setDialogPreset] = useState<{ name?: string; icon?: string; color?: string; description?: string; totalBudget?: number } | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -50,21 +49,8 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
-  const handlePickQuickStart = (s: QuickStartSuggestion) => {
-    setEditingProject(null);
-    setDialogPreset({
-      name: s.name,
-      icon: s.emoji,
-      color: s.color,
-      description: s.description,
-      totalBudget: s.defaultBudget,
-    });
-    setDialogOpen(true);
-  };
-
   const handleOpenBlankDialog = () => {
     setEditingProject(null);
-    setDialogPreset(null);
     setDialogOpen(true);
   };
 
@@ -283,17 +269,12 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       )}
 
       {visibleProjects.length === 0 ? (
-        <>
-          {!showArchived && (
-            <ProjectOnboardingHint onPickSuggestion={handlePickQuickStart} />
-          )}
-          <EmptyState
-            variant="projects"
-            title={showArchived ? t('projects.noArchived', 'Nema arhiviranih projekata') : t('projects.noProjects')}
-            description={showArchived ? '' : t('projects.noProjectsHint')}
-            action={showArchived ? undefined : { label: t('projects.add'), onClick: handleOpenBlankDialog }}
-          />
-        </>
+        <EmptyState
+          variant="projects"
+          title={showArchived ? t('projects.noArchived', 'Nema arhiviranih projekata') : t('projects.noProjects')}
+          description={showArchived ? '' : t('projects.noProjectsHint')}
+          action={showArchived ? undefined : { label: t('projects.add'), onClick: handleOpenBlankDialog }}
+        />
       ) : (
         <AnimatePresence mode="popLayout">
           <div className="space-y-3">
@@ -330,12 +311,8 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       {/* Create/Edit Dialog */}
       <ProjectDialog
         open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setDialogPreset(null);
-        }}
+        onOpenChange={setDialogOpen}
         project={editingProject}
-        preset={dialogPreset}
         onSave={handleSave}
         onUpdate={handleUpdate}
       />
