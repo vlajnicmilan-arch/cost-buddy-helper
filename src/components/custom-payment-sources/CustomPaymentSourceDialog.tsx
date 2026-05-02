@@ -7,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { CustomPaymentSource, PaymentSourceCard, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
-import { Plus, X, CreditCard, ScanLine, Briefcase } from 'lucide-react';
+import { Plus, X, CreditCard, ScanLine, Briefcase, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 interface CardInput {
   id?: string;
   card_name: string;
@@ -26,7 +27,7 @@ interface PaymentSourceData {
   balance: number;
   currency?: string;
   description?: string;
-  is_business?: boolean;
+  business_profile_id?: string | null;
   cards?: CardInput[];
 }
 
@@ -56,12 +57,14 @@ export const CustomPaymentSourceDialog = ({
   const [description, setDescription] = useState('');
   const [sourceCurrency, setSourceCurrency] = useState<CurrencyCode>('EUR');
   const [cards, setCards] = useState<CardInput[]>([]);
-  const [isBusiness, setIsBusiness] = useState(false);
+  const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
   const { t } = useTranslation();
   const { currency, multiCurrencyEnabled } = useCurrency();
+  const { profiles: businessProfiles } = useBusinessProfiles();
+  const isBusiness = businessProfileId !== null;
   useEffect(() => {
     if (open) {
       if (source) {
@@ -71,7 +74,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance(source.balance?.toString() || '0');
         setDescription(source.description || '');
         setSourceCurrency((source.currency as CurrencyCode) || currency.code);
-        setIsBusiness(!!source.is_business);
+        setBusinessProfileId(source.business_profile_id || null);
         setCards((source.cards || []).map(c => ({
           id: c.id,
           card_name: c.card_name,
@@ -85,7 +88,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance(initialData.balance?.toString() || '0');
         setDescription(initialData.description || '');
         setSourceCurrency(currency.code);
-        setIsBusiness(!!initialData.is_business);
+        setBusinessProfileId(initialData.business_profile_id || null);
         setCards(initialData.cards || []);
       } else {
         setName('');
@@ -94,7 +97,7 @@ export const CustomPaymentSourceDialog = ({
         setBalance('0');
         setDescription('');
         setSourceCurrency(currency.code);
-        setIsBusiness(false);
+        setBusinessProfileId(null);
         setCards([]);
       }
     }
@@ -111,7 +114,7 @@ export const CustomPaymentSourceDialog = ({
         balance: parseFloat(balance) || 0,
         currency: multiCurrencyEnabled ? sourceCurrency : undefined,
         description: description.trim() || undefined,
-        is_business: isBusiness,
+        business_profile_id: businessProfileId,
       });
 
       // Handle cards for existing sources
@@ -260,24 +263,39 @@ export const CustomPaymentSourceDialog = ({
             </div>
           </div>
 
-          {/* Business toggle */}
-          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
-            <div className="mt-0.5">
-              <Briefcase className={`w-5 h-5 ${isBusiness ? 'text-amber-600' : 'text-muted-foreground'}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <Label htmlFor="is-business" className="cursor-pointer font-medium">
-                {t('wallet.source.isBusiness', 'Poslovni izvor')}
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {t('wallet.source.isBusinessHint', 'Transakcije s ovog izvora bit će označene kao poslovne i mogu se filtrirati zasebno.')}
-              </p>
-            </div>
-            <Switch
-              id="is-business"
-              checked={isBusiness}
-              onCheckedChange={setIsBusiness}
-            />
+          {/* Owner / company assignment */}
+          <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
+            <Label htmlFor="owner-select" className="flex items-center gap-2 font-medium">
+              {isBusiness ? <Briefcase className="w-4 h-4 text-amber-600" /> : <User className="w-4 h-4 text-muted-foreground" />}
+              {t('wallet.source.owner', 'Vlasnik izvora')}
+            </Label>
+            <Select
+              value={businessProfileId ?? '__personal__'}
+              onValueChange={(v) => setBusinessProfileId(v === '__personal__' ? null : v)}
+            >
+              <SelectTrigger id="owner-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__personal__">
+                  <span className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5" />
+                    {t('wallet.source.ownerPersonal', 'Osobno')}
+                  </span>
+                </SelectItem>
+                {businessProfiles.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <span className="flex items-center gap-2">
+                      <Briefcase className="w-3.5 h-3.5 text-amber-600" />
+                      {p.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {t('wallet.source.ownerHint', 'Odredi pripada li ovaj izvor osobi ili točno jednoj tvrtki. Filter "Sve / Osobno / Tvrtka" koristi ovu vezu.')}
+            </p>
           </div>
 
           {/* Cards Section */}
@@ -418,9 +436,9 @@ export const CustomPaymentSourceDialog = ({
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{name || t('common.name')}</span>
                       {isBusiness && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-semibold uppercase tracking-wide">
-                          <Briefcase className="w-3 h-3" />
-                          {t('wallet.source.businessBadge', 'Poslovno')}
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-semibold uppercase tracking-wide max-w-[140px] truncate">
+                          <Briefcase className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{businessProfiles.find(p => p.id === businessProfileId)?.name || t('wallet.source.businessBadge', 'Poslovno')}</span>
                         </span>
                       )}
                     </div>

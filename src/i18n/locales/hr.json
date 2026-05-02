@@ -3100,7 +3100,10 @@
     "source": {
       "isBusiness": "Poslovni izvor",
       "isBusinessHint": "Transakcije s ovog izvora bit će označene kao poslovne i mogu se filtrirati zasebno.",
-      "businessBadge": "Poslovno"
+      "businessBadge": "Poslovno",
+      "owner": "Vlasnik izvora",
+      "ownerPersonal": "Osobno",
+      "ownerHint": "Odredi pripada li ovaj izvor osobi ili točno jednoj tvrtki. Filter \"Sve / Osobno / Tvrtka\" koristi ovu vezu."
     },
     "viewMode": {
       "all": "Sve",

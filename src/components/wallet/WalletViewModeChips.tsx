@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Briefcase, User, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWalletViewMode, WalletViewMode } from '@/contexts/WalletViewModeContext';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 
 interface WalletViewModeChipsProps {
   className?: string;
@@ -12,12 +13,21 @@ interface WalletViewModeChipsProps {
 export const WalletViewModeChips = ({ className, hideAll }: WalletViewModeChipsProps) => {
   const { t } = useTranslation();
   const { mode, setMode } = useWalletViewMode();
+  const { profiles } = useBusinessProfiles();
 
-  const items: Array<{ key: WalletViewMode; label: string; icon: typeof Layers }> = [
+  type Item = { key: WalletViewMode; label: string; icon: typeof Layers };
+  const items: Item[] = [
     ...(!hideAll ? [{ key: 'all' as WalletViewMode, label: t('wallet.viewMode.all', 'Sve'), icon: Layers }] : []),
-    { key: 'personal', label: t('wallet.viewMode.personal', 'Osobno'), icon: User },
-    { key: 'business', label: t('wallet.viewMode.business', 'Poslovno'), icon: Briefcase },
+    { key: 'personal' as WalletViewMode, label: t('wallet.viewMode.personal', 'Osobno'), icon: User },
+    ...profiles.map<Item>(p => ({
+      key: `business:${p.id}` as WalletViewMode,
+      label: p.name,
+      icon: Briefcase,
+    })),
   ];
+
+  // Only render if there is something meaningful beyond just "Personal"
+  if (items.length <= 1) return null;
 
   return (
     <div className={cn('flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1', className)}>
@@ -37,7 +47,7 @@ export const WalletViewModeChips = ({ className, hideAll }: WalletViewModeChipsP
             )}
           >
             <Icon className="w-3.5 h-3.5" />
-            <span>{label}</span>
+            <span className="truncate max-w-[140px]">{label}</span>
           </button>
         );
       })}

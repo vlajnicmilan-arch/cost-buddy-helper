@@ -807,7 +807,6 @@ export type Database = {
           description: string | null
           icon: string
           id: string
-          is_business: boolean
           name: string
           sort_order: number | null
           updated_at: string
@@ -822,7 +821,6 @@ export type Database = {
           description?: string | null
           icon?: string
           id?: string
-          is_business?: boolean
           name: string
           sort_order?: number | null
           updated_at?: string
@@ -837,7 +835,6 @@ export type Database = {
           description?: string | null
           icon?: string
           id?: string
-          is_business?: boolean
           name?: string
           sort_order?: number | null
           updated_at?: string
