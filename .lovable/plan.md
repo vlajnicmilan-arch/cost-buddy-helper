@@ -1,70 +1,70 @@
-## Provjera: nedostaje li workflow?
+## Cilj
 
-Da, korisnik je u pravu. U kodu trenutno postoji:
+Na glavnom dashboardu (sekcija "Aktivni projekti") preraditi kartice tako da:
 
-- **Status `completed`** — postavlja se ručno preko `ProjectDialog` Select polja (lako se preskoči)
-- **Arhiviranje** — `archiveProject()` u `useProjects.ts`, gumb na `ProjectCard` (toggle)
-- **Final report** — `ProjectReportsDialog` (PDF/CSV/JSON), ali nije vezan za zatvaranje projekta
-- **Milestone status `completed`** — mijenja se po milestoneu u `ProjectMilestonesTab`
+1. **Semafor postaje vizualni centar** kartice — velik, jasan, emocionalan.
+2. **Boja semafora ovisi o profitnoj marži** (profit / ukupni prihod ili budžet projekta):
+   - Zeleno: marža ≥ 30%
+   - Žuto: marža < 30% (warning)
+   - Crveno: marža < 10% (critical)
+3. Na kartici se uvijek **vidi iznos profita** (i postotak marže).
+4. Kod žute/crvene **AI generira kratko upozorenje** (1 rečenica), prikazano ispod ili u tooltipu.
+5. Kartice se po potrebi **povećaju** (trenutno 150–170px wide / 110px high → veće da stane semafor + KPI + warning).
 
-Ali **nigdje** ne postoji povezani workflow koji vodi korisnika kroz: "provjeri otvorene milestone-e → generiraj final report → označi projekt završenim → arhiviraj". To je upravo ono što mali biznis treba za zatvaranje obračuna.
+## Promjene u kodu
 
-## Što ćemo dodati
+### 1. `src/components/home/ActiveProjectsStrip.tsx` (glavni rad)
 
-Novi **`CompleteProjectWizard`** dijalog (3 koraka), pristupačan iz `ProjectFullScreenView` headera kao primarna akcija "Završi projekt" (vidljiva samo kad `status !== 'completed'` i kad je korisnik manager/owner).
+- **Nova logika `health`** za "income-bearing" projekte:
+  - `margin = profit / income`
+  - `margin < 0.10` → `red`
+  - `margin < 0.30` → `yellow`
+  - `margin ≥ 0.30` → `green`
+  - Za projekte bez prihoda zadržati postojeću budget-based logiku.
+- **Novi `BigTrafficLight` komponenta** (zamjenjuje mali u uglu):
+  - 3 horizontalna kruga ~14px svaki, samo aktivni svijetli s glow + pulsiranjem (yellow/red).
+  - Smješten u headeru kartice, lijevo od KPI-ja, ne više u uglu.
+  - Emocionalni efekt: yellow = blagi pulse (2s), red = brži pulse (1s) + suptilni shake.
+  - Tooltip s kratkim opisom statusa.
+- **Layout kartice**:
+  - Min-width 180px, min-height 150px (s mjesta za warning red).
+  - Header: ikona + ime projekta.
+  - Centralni red: **veliki semafor** + vrijednost profita (npr. `+1.250 €`) + marža u % (`24%`).
+  - Footer: AI upozorenje (1 rečenica, samo za yellow/red) ili izostavljeno.
+- Ako projekt nema prihoda, prikazati postojeći KPI (remaining/items) bez marže.
 
-### Korak 1 — Provjera milestone-a
-- Lista svih milestone-a koji **nisu** `completed` (pending / in_progress / overdue)
-- Za svaki: checkbox "označi kao završen" (preselected za in_progress) + opcija "preskoči (ostaje otvoren)"
-- Sažetak: `X od Y milestone-a završeno`, upozorenje ako ima `overdue`
-- Ako korisnik označi → bulk update `project_milestones.status = 'completed'` + `completed_at = now()`
+### 2. AI upozorenje (lightweight, bez novih API poziva)
 
-### Korak 2 — Final report
-- Sažetak P&L-a iz `useProjectStats` + `useProjectProfitLoss` (budžet, potrošeno, alocirano, profit/loss)
-- Dva CTA-a: **Generiraj PDF** i **Generiraj CSV** (reuse `generateProjectPDFReport` / `generateProjectCSVReport` iz `projectReportExport.ts`)
-- Checkbox "Final report generiran" (mora biti čekiran ili eksplicitno preskočen prije nastavka)
+- Da izbjegnemo trošak/latenciju na svaki render dashboarda, **AI tekst se generira lokalno** iz template-a temeljem statusa:
+  - `yellow` (margin <30%): npr. "Marža je niska ({pct}%) — provjerite troškove."
+  - `red` (margin <10%): "Profit ispod 10% — projekt je ugrožen."
+- Tekstovi su **i18n ključevi** (`projects.health.aiWarning.yellow`, `.red`) u sva 3 jezika (HR, EN, DE).
+- Kasnije se može uplugati `project-insights` edge function za detaljnije poruke (out of scope za sad).
 
-### Korak 3 — Završetak i arhiva
-- Polje "Datum završetka" (default: danas, upiše se u `projects.end_date` ako nije već postavljen)
-- Opcionalna napomena (zaključci/lessons learned) → upiše se u `projects.description` kao append `\n\n--- Završeno DD.MM.YYYY ---\n{note}` (bez nove kolone)
-- Dva radio izbora:
-  - **Završi i zadrži aktivnim u listi** → `status = 'completed'`, `archived_at = null`
-  - **Završi i arhiviraj** (preporučeno) → `status = 'completed'` + `archived_at = now()`
-- Gumb "Završi projekt" → atomski update + `showSuccess` + zatvori wizard + zatvori `ProjectFullScreenView`
+### 3. i18n (`hr.json`, `en.json`, `de.json`)
 
-### Reverzibilnost
-- Već postojeći "Vrati iz arhive" gumb na `ProjectCard` ostaje
-- Dodat ćemo "Ponovo otvori" akciju u headeru `ProjectFullScreenView` kad je `status === 'completed'` (vraća na `active`, ne dira arhivu)
+Dodati pod `projects.health`:
+- `margin` ("Marža")
+- `aiWarning.yellow` ("Marža {{pct}}% — pregledajte troškove projekta.")
+- `aiWarning.red` ("Marža {{pct}}% — profit kritičan, hitna intervencija.")
+- `trafficLight.green` / `.yellow` / `.red` (tooltip labeli)
 
-## Tehnički detalji
+### 4. Stil & a11y
 
-**Nove datoteke**
-- `src/components/projects/CompleteProjectWizard.tsx` — glavni dijalog, 3 koraka kroz lokalni `step` state
-- `src/components/projects/CompleteProjectStepMilestones.tsx`
-- `src/components/projects/CompleteProjectStepReport.tsx`
-- `src/components/projects/CompleteProjectStepFinalize.tsx`
+- Boje preko HSL tokena: `--income`, `--warning`, `--destructive`.
+- Pulsiranje preko Tailwind `animate-pulse` ili custom keyframe u `index.css` (`@keyframes traffic-pulse-warn` / `-crit`).
+- Min touch target ostaje 44px (cijela kartica je klikabilna).
+- ARIA: `role="img"` + `aria-label` za semafor (npr. "Status projekta: kritično, marža 6%").
 
-**Izmjene**
-- `src/components/projects/ProjectFullScreenView.tsx` — dodaj gumb "Završi projekt" u header (CheckCircle2 ikona), state `completeWizardOpen`, prosljeđuje `project`, `milestones`, `stats`. Dodaj "Ponovo otvori" za completed projekte.
-- `src/hooks/useProjects.ts` — proširi `updateProject` ili dodaj `completeProject(id, { endDate, note, archive })` koji radi atomski update
-- `src/i18n/locales/{hr,en,de}.json` — novi namespace `projects.complete.*` (title, steps, buttons, warnings, success)
+## Što se NE mijenja
 
-**Bez DB migracije** — koristimo postojeće kolone: `projects.status`, `projects.archived_at`, `projects.end_date`, `projects.description`, `project_milestones.status`, `project_milestones.completed_at`.
+- Hookovi za dohvat podataka (`useActiveProjectsSummary`) ostaju isti — već vraćaju `spent`/`income`.
+- Ostale rute, projekti page (`ProjectCard.tsx`) — ne diramo, ovo je samo dashboard strip.
+- Bez DB migracija, bez novih edge functiona.
 
-**Reuse**
-- `generateProjectPDFReport` / `generateProjectCSVReport` iz `src/lib/projectReportExport.ts`
-- `useProjectStats`, `useProjectMilestones`, `useProjects.archiveProject` (interno preko novog `completeProject`)
-- `StatusFeedback` (1200ms) za success poruke
-- `useBackButton` za zatvaranje wizarda na Androidu
+## QA
 
-**A11y / dizajn**
-- `clickableProps()` za sve interaktivne divove
-- Min 44px touch targets
-- Teal primary za primarne CTA-e
-- Wizard koristi `Dialog` iz shadcn s `z-[60]` (postojeća konvencija)
-
-## Što NE radimo
-
-- Ne dodajemo novu DB kolonu za "lessons learned" (ide u `description` append) — može kasnije ako se traži pravi audit field
-- Ne diramo `ProjectDialog` Select za status (ostaje za napredne korisnike koji žele ručnu kontrolu)
-- Ne radimo automatsko slanje reporta članovima — ostaje ručni download (može u kasnijoj iteraciji)
+- Provjeriti 3 scenarija po projektu: (a) profit ≥ 30% → zeleno, mirno, (b) 10–30% → žuto + pulse + warning text, (c) <10% → crveno + brže pulse + warning.
+- Provjeriti projekte bez prihoda (zadržava staru logiku).
+- Mobilni viewport 384px — kartice ne lome layout, horizontalni scroll radi.
+- HR/EN/DE tekstovi lokalizirani.
