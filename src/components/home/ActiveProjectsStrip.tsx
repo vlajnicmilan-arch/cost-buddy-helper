@@ -176,9 +176,9 @@ export const ActiveProjectsStrip = React.memo(({
   if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
   if (!hasAccess('projects')) return null;
 
-  const handleNav = (path: string) => {
+  const handleNav = (path: string, state?: Record<string, unknown>) => {
     lightTap();
-    navigate(path);
+    navigate(path, state ? { state } : undefined);
   };
 
   // Loading skeleton
