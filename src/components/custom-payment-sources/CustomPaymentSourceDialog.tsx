@@ -436,9 +436,9 @@ export const CustomPaymentSourceDialog = ({
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{name || t('common.name')}</span>
                       {isBusiness && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-semibold uppercase tracking-wide">
-                          <Briefcase className="w-3 h-3" />
-                          {t('wallet.source.businessBadge', 'Poslovno')}
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-semibold uppercase tracking-wide max-w-[140px] truncate">
+                          <Briefcase className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{businessProfiles.find(p => p.id === businessProfileId)?.name || t('wallet.source.businessBadge', 'Poslovno')}</span>
                         </span>
                       )}
                     </div>
