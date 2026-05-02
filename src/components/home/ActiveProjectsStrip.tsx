@@ -214,7 +214,7 @@ export const ActiveProjectsStrip = React.memo(({
         <motion.button
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
-          onClick={() => handleNav('/projects', { openNewProject: true })}
+          onClick={() => handleNav('/projects', { openNewProject: true, from: '/home' })}
           className="w-full p-5 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors flex items-center justify-between text-left group"
         >
           <div className="flex items-center gap-3">
