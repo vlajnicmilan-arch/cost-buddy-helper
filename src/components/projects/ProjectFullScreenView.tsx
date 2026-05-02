@@ -19,8 +19,11 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { 
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen
+  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { CompleteProjectWizard } from './CompleteProjectWizard';
 import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
@@ -65,6 +68,8 @@ export const ProjectFullScreenView = ({
   const [reportsOpen, setReportsOpen] = useState(false);
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [completeWizardOpen, setCompleteWizardOpen] = useState(false);
+  const [reopening, setReopening] = useState(false);
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -249,6 +254,50 @@ export const ProjectFullScreenView = ({
                   <span className="hidden sm:inline">{t('projects.reports', 'Izvještaji')}</span>
                 </Button>
                 )}
+
+                {!isWorkerOnly && isManager && project.status !== 'completed' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setCompleteWizardOpen(true)}
+                  className="shrink-0 gap-1"
+                  title={t('projects.complete.headerCta', 'Završi projekt')}
+                >
+                  <Flag className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">{t('projects.complete.headerCta', 'Završi projekt')}</span>
+                </Button>
+                )}
+
+                {!isWorkerOnly && isManager && project.status === 'completed' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={reopening}
+                  onClick={async () => {
+                    setReopening(true);
+                    try {
+                      const { error } = await supabase
+                        .from('projects')
+                        .update({ status: 'active', archived_at: null })
+                        .eq('id', project.id);
+                      if (error) throw error;
+                      showSuccess(t('projects.complete.reopened', 'Projekt ponovo otvoren'));
+                      onRefreshExpenses?.();
+                      onClose();
+                    } catch (e) {
+                      console.error('Reopen project error:', e);
+                      showError(t('common.error'));
+                    } finally {
+                      setReopening(false);
+                    }
+                  }}
+                  className="shrink-0 gap-1"
+                  title={t('projects.complete.reopenCta', 'Ponovo otvori projekt')}
+                >
+                  <RotateCcw className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">{t('projects.complete.reopenCta', 'Ponovo otvori')}</span>
+                </Button>
+                )}
               </div>
             </div>
 
@@ -269,6 +318,22 @@ export const ProjectFullScreenView = ({
               expenses={expenses}
               totalSpent={totalSpent}
               totalAllocated={totalAllocated}
+            />
+
+            {/* Complete Project Wizard */}
+            <CompleteProjectWizard
+              open={completeWizardOpen}
+              onOpenChange={setCompleteWizardOpen}
+              project={project}
+              milestones={milestones}
+              totalSpent={totalSpent}
+              totalAllocated={totalAllocated}
+              onOpenReports={() => setReportsOpen(true)}
+              onCompleted={() => {
+                refetchMilestones();
+                onRefreshExpenses?.();
+                onClose();
+              }}
             />
 
             {/* Main content */}
