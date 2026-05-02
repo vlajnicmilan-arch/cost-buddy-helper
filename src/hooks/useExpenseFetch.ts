@@ -3,22 +3,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
-import { useAppState } from '@/contexts/AppStateContext';
+
 import { showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
 import { useHiddenPaymentSources } from './useHiddenPaymentSources';
+import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
-  const { activeBusinessProfileId } = useAppState();
+  const { mode: viewMode } = useWalletViewMode();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
   const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
+  const [businessSourceIds, setBusinessSourceIds] = useState<Set<string>>(new Set());
   // Hidden source ids come from a shared, sessionStorage-seeded cache to avoid
   // any flicker when navigating back to the dashboard.
   const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
@@ -36,10 +38,11 @@ export const useExpenseFetch = () => {
     }
 
     try {
-      const [incomeRes, memberRes, ownedPsRes] = await Promise.all([
+      const [incomeRes, memberRes, ownedPsRes, allPsRes] = await Promise.all([
         supabase.from('income_sources').select('id').eq('user_id', user.id),
         supabase.from('payment_source_members').select('payment_source_id, role').eq('user_id', user.id),
         supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
+        supabase.from('custom_payment_sources').select('id, is_business'),
       ]);
 
       if (incomeRes.error) throw incomeRes.error;
@@ -57,6 +60,12 @@ export const useExpenseFetch = () => {
       });
       setSharedPaymentSourceIds(psIds);
       setFullAccessSourceIds(fullIds);
+
+      const busIds = new Set<string>();
+      (allPsRes.data || []).forEach((s: any) => {
+        if (s.is_business) busIds.add(s.id);
+      });
+      setBusinessSourceIds(busIds);
     } catch (error) {
       console.error('Error fetching owned sources:', error);
     }
@@ -239,17 +248,24 @@ export const useExpenseFetch = () => {
     };
   }, [user, isLocalMode, parseExpense]);
 
+  // Helper: determine if an expense belongs to a business source
+  const isBusinessExpense = useCallback((e: Expense) => {
+    const ps = e.payment_source?.replace('custom:', '');
+    if (ps && businessSourceIds.has(ps)) return true;
+    if (e.type === 'transfer' && e.income_source_id && businessSourceIds.has(e.income_source_id)) return true;
+    return false;
+  }, [businessSourceIds]);
+
+  // Apply view-mode filter (Sve / Osobno / Poslovno)
+  const applyViewMode = useCallback((list: Expense[]) => {
+    if (viewMode === 'all') return list;
+    if (viewMode === 'business') return list.filter(isBusinessExpense);
+    return list.filter(e => !isBusinessExpense(e));
+  }, [viewMode, isBusinessExpense]);
+
   // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
-    // First filter by business profile context
-    let filtered = expenses;
-    if (activeBusinessProfileId) {
-      // Business mode: show only transactions for this business
-      filtered = expenses.filter(e => e.business_profile_id === activeBusinessProfileId);
-    } else {
-      // Personal mode: show only personal transactions (no business_profile_id)
-      filtered = expenses.filter(e => !e.business_profile_id);
-    }
+    let filtered = applyViewMode(expenses);
 
     // Exclude transactions whose payment source is hidden from dashboard
     if (hiddenPaymentSourceIds.size > 0) {
@@ -288,15 +304,10 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isLocalMode, user, activeBusinessProfileId]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isLocalMode, user, applyViewMode]);
 
-  // Business/personal isolated expenses (no payment source filtering)
-  const contextFilteredExpenses = useMemo(() => {
-    if (activeBusinessProfileId) {
-      return expenses.filter(e => e.business_profile_id === activeBusinessProfileId);
-    }
-    return expenses.filter(e => !e.business_profile_id);
-  }, [expenses, activeBusinessProfileId]);
+  // View-mode filtered expenses (no payment source access filtering)
+  const contextFilteredExpenses = useMemo(() => applyViewMode(expenses), [expenses, applyViewMode]);
 
   return {
     expenses: contextFilteredExpenses, // isolated by business/personal context

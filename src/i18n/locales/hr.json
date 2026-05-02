@@ -3095,5 +3095,17 @@
         "documents": "Ugovori & Računi"
       }
     }
+  },
+  "wallet": {
+    "source": {
+      "isBusiness": "Poslovni izvor",
+      "isBusinessHint": "Transakcije s ovog izvora bit će označene kao poslovne i mogu se filtrirati zasebno.",
+      "businessBadge": "Poslovno"
+    },
+    "viewMode": {
+      "all": "Sve",
+      "personal": "Osobno",
+      "business": "Poslovno"
+    }
   }
 }

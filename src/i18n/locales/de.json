@@ -3081,5 +3081,17 @@
         "documents": "Verträge & Rechnungen"
       }
     }
+  },
+  "wallet": {
+    "source": {
+      "isBusiness": "Geschäftliche Quelle",
+      "isBusinessHint": "Transaktionen aus dieser Quelle werden als geschäftlich markiert und können separat gefiltert werden.",
+      "businessBadge": "Geschäftlich"
+    },
+    "viewMode": {
+      "all": "Alle",
+      "personal": "Privat",
+      "business": "Geschäftlich"
+    }
   }
 }

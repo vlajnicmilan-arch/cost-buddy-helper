@@ -8,6 +8,7 @@ import { BackButtonProvider } from "@/contexts/BackButtonContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
+import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { LockScreen } from "@/components/LockScreen";
@@ -278,29 +279,31 @@ const App = () => (
     <TooltipProvider>
       <StorageProvider>
         <AppStateProvider>
-          <AppLockProvider>
-            <CurrencyProvider>
-              <SubscriptionProvider>
-                <TutorialProvider>
-                  <NativeInit />
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
-                    <BackButtonProvider>
-                      <ScrollToTop />
-                      <DeepLinkInit />
-                      <PushAutoRegister />
-                      <DiagnosticRouteTracker />
-                      <BusinessModeGuard />
-                      <RouteAwareGlobalOverlays />
-                      <CrispChat />
-                      <AppRoutes />
-                    </BackButtonProvider>
-                  </BrowserRouter>
-                </TutorialProvider>
-              </SubscriptionProvider>
-            </CurrencyProvider>
-          </AppLockProvider>
+          <WalletViewModeProvider>
+            <AppLockProvider>
+              <CurrencyProvider>
+                <SubscriptionProvider>
+                  <TutorialProvider>
+                    <NativeInit />
+                    <Toaster />
+                    <Sonner />
+                    <BrowserRouter>
+                      <BackButtonProvider>
+                        <ScrollToTop />
+                        <DeepLinkInit />
+                        <PushAutoRegister />
+                        <DiagnosticRouteTracker />
+                        <BusinessModeGuard />
+                        <RouteAwareGlobalOverlays />
+                        <CrispChat />
+                        <AppRoutes />
+                      </BackButtonProvider>
+                    </BrowserRouter>
+                  </TutorialProvider>
+                </SubscriptionProvider>
+              </CurrencyProvider>
+            </AppLockProvider>
+          </WalletViewModeProvider>
         </AppStateProvider>
       </StorageProvider>
     </TooltipProvider>

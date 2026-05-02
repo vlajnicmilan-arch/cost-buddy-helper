@@ -3092,5 +3092,17 @@
         "documents": "Contracts & Invoices"
       }
     }
+  },
+  "wallet": {
+    "source": {
+      "isBusiness": "Business source",
+      "isBusinessHint": "Transactions from this source will be marked as business and can be filtered separately.",
+      "businessBadge": "Business"
+    },
+    "viewMode": {
+      "all": "All",
+      "personal": "Personal",
+      "business": "Business"
+    }
   }
 }
