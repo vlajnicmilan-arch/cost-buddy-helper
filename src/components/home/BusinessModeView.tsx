@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Building2, FileSpreadsheet, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 
 interface BusinessModeViewProps {
   businessTab: BusinessTab;
@@ -113,6 +114,7 @@ interface BusinessModeViewProps {
 export const BusinessModeView = (props: BusinessModeViewProps) => {
   const { t } = useTranslation();
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
+  const { hiddenIds } = useHiddenPaymentSources();
 
 
   const {
@@ -191,6 +193,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
             {/* Summary Cards */}
             <SummarySection
               balance={props.customPaymentSources.reduce((sum, s) => {
+                if (hiddenIds.has(s.id)) return sum;
                 const bal = s.balance || 0;
                 if (props.multiCurrencyEnabled && s.currency && s.currency !== props.currencyCode) {
                   return sum + props.convert(bal, s.currency, props.currencyCode);
