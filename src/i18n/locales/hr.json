@@ -249,6 +249,18 @@
         "red": "Marža je samo {{pct}}% — profit je kritičan, hitno reagirajte."
       }
     },
+    "statusLine": {
+      "paused": "Projekt je pauziran",
+      "waitingStart": "Čeka početak · kreće {{date}}",
+      "waitingStartSoon": "Kreće za {{days}} dana",
+      "overdueOpen": "Rok prošao — projekt još otvoren",
+      "justStarted": "Tek započeo — još nema unosa",
+      "stable": "Stabilan — bravo!",
+      "prepPhase": "Pripremna faza · {{pct}}% budžeta",
+      "inFullSwing": "U punom zamahu · {{pct}}% budžeta",
+      "nearEnd": "Pred kraj · preostalo {{pct}}%",
+      "inProgress": "U tijeku · {{count}} unosa"
+    },
     "quickPhoto": {
       "title": "Brzi unos računa",
       "button": "Brzi račun",

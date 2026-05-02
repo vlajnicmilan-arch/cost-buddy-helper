@@ -1,70 +1,82 @@
 ## Cilj
 
-Na glavnom dashboardu (sekcija "Aktivni projekti") preraditi kartice tako da:
+Kartice u "Aktivni projekti" stripu na dashboardu trenutno znaju izgledati prazno (npr. Duje, Lucija i Mate) — semafor je tu, ali ispod njega ostaje vizualna rupa kad nema upozorenja. Dodati **kratku statusnu rečenicu** koja popunjava prostor i daje korisniku odmah kontekst u kojem je projekt.
 
-1. **Semafor postaje vizualni centar** kartice — velik, jasan, emocionalan.
-2. **Boja semafora ovisi o profitnoj marži** (profit / ukupni prihod ili budžet projekta):
-   - Zeleno: marža ≥ 30%
-   - Žuto: marža < 30% (warning)
-   - Crveno: marža < 10% (critical)
-3. Na kartici se uvijek **vidi iznos profita** (i postotak marže).
-4. Kod žute/crvene **AI generira kratko upozorenje** (1 rečenica), prikazano ispod ili u tooltipu.
-5. Kartice se po potrebi **povećaju** (trenutno 150–170px wide / 110px high → veće da stane semafor + KPI + warning).
+## Princip
+
+Tekst se generira **deterministički iz već dohvaćenih podataka projekta** (status, datumi, prihodi, troškovi, marža, txCount). To znači:
+
+- **Bez AI/edge poziva** → bez latencije, bez troška, **uvijek točno** (poštuje pravilo "AI samo s točnim podacima").
+- Tekstovi su **i18n ključevi** (HR/EN/DE), s placeholderima (npr. `{{days}}`, `{{pct}}`).
+- **Crveno/žuto upozorenje ima prioritet** — kad postoji AI warning, ne dupliciramo statusnu rečenicu.
+
+## Status hijerarhija (prvi koji se podudara, taj se prikaže)
+
+Za svaku karticu:
+
+1. **Crveno/žuto** (margin <30%) → već imamo `aiWarning` red — **ostaje, status se ne dodaje** (izbjegavamo dupli tekst).
+2. **`status === 'paused'`** → `"Projekt je pauziran"`.
+3. **`start_date` u budućnosti** → `"Projekt čeka početak — kreće {{date}}"` (ili `"za {{days}} dana"`).
+4. **`end_date` prošao i nije completed** → `"Rok prošao — projekt još otvoren"`.
+5. **`txCount === 0` i nema prihoda/troška** → `"Projekt je tek započeo — još nema unosa"`.
+6. **Marža ≥ 30% i ima prihoda** → `"Projekt je stabilan — bravo!"` (motivacijski).
+7. **Ima budgeta i remaining > 70% budgeta** (rano u potrošnji) → `"U pripremnoj fazi — iskorišteno {{pct}}% budžeta"`.
+8. **Ima budgeta i remaining 30–70%** → `"U punom zamahu — iskorišteno {{pct}}% budžeta"`.
+9. **Ima budgeta, remaining < 30% ali ≥ 0** → `"Pred kraj — preostalo {{pct}}% budžeta"`.
+10. **Fallback** → `"Projekt je u tijeku · {{count}} unosa"`.
 
 ## Promjene u kodu
 
-### 1. `src/components/home/ActiveProjectsStrip.tsx` (glavni rad)
+### 1. Novi helper `src/lib/projectStatusLine.ts`
 
-- **Nova logika `health`** za "income-bearing" projekte:
-  - `margin = profit / income`
-  - `margin < 0.10` → `red`
-  - `margin < 0.30` → `yellow`
-  - `margin ≥ 0.30` → `green`
-  - Za projekte bez prihoda zadržati postojeću budget-based logiku.
-- **Novi `BigTrafficLight` komponenta** (zamjenjuje mali u uglu):
-  - 3 horizontalna kruga ~14px svaki, samo aktivni svijetli s glow + pulsiranjem (yellow/red).
-  - Smješten u headeru kartice, lijevo od KPI-ja, ne više u uglu.
-  - Emocionalni efekt: yellow = blagi pulse (2s), red = brži pulse (1s) + suptilni shake.
-  - Tooltip s kratkim opisom statusa.
-- **Layout kartice**:
-  - Min-width 180px, min-height 150px (s mjesta za warning red).
-  - Header: ikona + ime projekta.
-  - Centralni red: **veliki semafor** + vrijednost profita (npr. `+1.250 €`) + marža u % (`24%`).
-  - Footer: AI upozorenje (1 rečenica, samo za yellow/red) ili izostavljeno.
-- Ako projekt nema prihoda, prikazati postojeći KPI (remaining/items) bez marže.
+Pure funkcija:
+```ts
+getProjectStatusLine(data: {
+  status, start_date, end_date,
+  income, spent, budget, margin, txCount, health
+}, t): { text: string; tone: 'info' | 'success' | 'muted' } | null
+```
+Vraća `null` kada se ne treba prikazati (kada postoji AI warning) — tako kartica ostaje čista.
 
-### 2. AI upozorenje (lightweight, bez novih API poziva)
+### 2. `src/components/home/ActiveProjectsStrip.tsx`
 
-- Da izbjegnemo trošak/latenciju na svaki render dashboarda, **AI tekst se generira lokalno** iz template-a temeljem statusa:
-  - `yellow` (margin <30%): npr. "Marža je niska ({pct}%) — provjerite troškove."
-  - `red` (margin <10%): "Profit ispod 10% — projekt je ugrožen."
-- Tekstovi su **i18n ključevi** (`projects.health.aiWarning.yellow`, `.red`) u sva 3 jezika (HR, EN, DE).
-- Kasnije se može uplugati `project-insights` edge function za detaljnije poruke (out of scope za sad).
+- U `activeProjects` mapiranju pozvati `getProjectStatusLine(...)` i pohraniti `statusLine` na `ProjectCardData`.
+- Renderirati ispod centerpiece reda **samo ako nema AI warninga** (zelena kartica). Mali decentni red s ikonom (`Sparkles` za success, `Clock` za waiting/pause, `Info` za ostalo) i prigušenom bojom — ne natječe se sa semaforom.
+- Ako AI warning ipak postoji → prikazuje se on (kao i sad), statusna rečenica se preskače.
 
 ### 3. i18n (`hr.json`, `en.json`, `de.json`)
 
-Dodati pod `projects.health`:
-- `margin` ("Marža")
-- `aiWarning.yellow` ("Marža {{pct}}% — pregledajte troškove projekta.")
-- `aiWarning.red` ("Marža {{pct}}% — profit kritičan, hitna intervencija.")
-- `trafficLight.green` / `.yellow` / `.red` (tooltip labeli)
+Dodati pod `projects.statusLine`:
+- `paused` — "Projekt je pauziran" / "Project is paused" / "Projekt pausiert"
+- `waitingStart` — "Čeka početak · kreće {{date}}" / ekv.
+- `waitingStartSoon` — "Kreće za {{days}} dana"
+- `overdueOpen` — "Rok prošao — projekt još otvoren"
+- `justStarted` — "Tek započeo — još nema unosa"
+- `stable` — "Stabilan — bravo!"
+- `prepPhase` — "Pripremna faza · {{pct}}% budžeta"
+- `inFullSwing` — "U punom zamahu · {{pct}}% budžeta"
+- `nearEnd` — "Pred kraj · preostalo {{pct}}%"
+- `inProgress` — "U tijeku · {{count}} unosa"
 
-### 4. Stil & a11y
+### 4. Stil
 
-- Boje preko HSL tokena: `--income`, `--warning`, `--destructive`.
-- Pulsiranje preko Tailwind `animate-pulse` ili custom keyframe u `index.css` (`@keyframes traffic-pulse-warn` / `-crit`).
-- Min touch target ostaje 44px (cijela kartica je klikabilna).
-- ARIA: `role="img"` + `aria-label` za semafor (npr. "Status projekta: kritično, marža 6%").
+Status red:
+- `text-[11px] text-muted-foreground` u sivom tonu za info/muted.
+- `text-income/80` za `success` (stabilno).
+- Tanka 1-line truncate, ikona 12px lijevo.
+- Visina ~18px → popunjava prostor bez da kartica "buja".
 
-## Što se NE mijenja
+## Što se NE dira
 
-- Hookovi za dohvat podataka (`useActiveProjectsSummary`) ostaju isti — već vraćaju `spent`/`income`.
-- Ostale rute, projekti page (`ProjectCard.tsx`) — ne diramo, ovo je samo dashboard strip.
-- Bez DB migracija, bez novih edge functiona.
+- Health/margin logika i `aiWarning` ostaju netaknuti.
+- Hookovi za podatke, ostali ekrani, projekti page — ništa se ne mijenja.
+- Bez DB migracije, bez novih API poziva, bez novih dependency-ja.
 
 ## QA
 
-- Provjeriti 3 scenarija po projektu: (a) profit ≥ 30% → zeleno, mirno, (b) 10–30% → žuto + pulse + warning text, (c) <10% → crveno + brže pulse + warning.
-- Provjeriti projekte bez prihoda (zadržava staru logiku).
-- Mobilni viewport 384px — kartice ne lome layout, horizontalni scroll radi.
-- HR/EN/DE tekstovi lokalizirani.
+- Projekt s prihodom i maržom 50% → "Stabilan — bravo!" (zeleno).
+- Projekt s budgetom 5000 €, potrošeno 800 € → "Pripremna faza · 16% budžeta".
+- Projekt sa `start_date` u budućnosti → "Kreće za N dana".
+- Projekt s 0 unosa → "Tek započeo".
+- Projekt s maržom 8% → AI warning crveni, status linija se NE prikazuje (bez dupliranja).
+- HR/EN/DE prijevodi rade.

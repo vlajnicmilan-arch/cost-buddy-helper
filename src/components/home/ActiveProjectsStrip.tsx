@@ -2,13 +2,16 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { FolderKanban, Plus, ChevronRight, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { FolderKanban, Plus, ChevronRight, AlertTriangle, AlertOctagon, Sparkles, Clock, Pause, Info, AlertCircle } from 'lucide-react';
 import { ProjectWithOwnership, DEFAULT_PROJECT_COLORS } from '@/types/project';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
 import { cn } from '@/lib/utils';
+import { getProjectStatusLine, type StatusLine } from '@/lib/projectStatusLine';
+
+const STATUS_ICON_MAP = { Sparkles, Clock, Pause, Info, AlertCircle } as const;
 
 interface ActiveProjectsStripProps {
   projects: ProjectWithOwnership[];
@@ -35,6 +38,7 @@ interface ProjectCardData {
   margin: number | null;
   kpiKind: KpiKind;
   kpiValue: number;
+  statusLine: StatusLine | null;
 }
 
 /**
@@ -149,9 +153,24 @@ export const ActiveProjectsStrip = React.memo(({
         kpiValue = txCount;
       }
 
-      return { project: p, spent, income, profit, remaining, txCount, health, margin, kpiKind, kpiValue };
+      const statusLine = getProjectStatusLine(
+        {
+          status: p.status,
+          start_date: p.start_date,
+          end_date: p.end_date,
+          income,
+          spent,
+          budget,
+          margin,
+          txCount,
+          health,
+        },
+        t,
+      );
+
+      return { project: p, spent, income, profit, remaining, txCount, health, margin, kpiKind, kpiValue, statusLine };
     });
-  }, [projects, summary]);
+  }, [projects, summary, t]);
 
   // Early returns AFTER all hooks
   if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
@@ -324,6 +343,27 @@ export const ActiveProjectsStrip = React.memo(({
     );
   };
 
+  // Status line — short factual sentence shown on green cards to fill the empty space.
+  // Skipped automatically by getProjectStatusLine when AI warning will render.
+  const renderStatusLine = (data: ProjectCardData) => {
+    const line = data.statusLine;
+    if (!line) return null;
+    const Icon = STATUS_ICON_MAP[line.icon];
+    const toneClass =
+      line.tone === 'success'
+        ? 'text-income'
+        : line.tone === 'warning'
+        ? 'text-warning'
+        : line.tone === 'info'
+        ? 'text-foreground/70'
+        : 'text-muted-foreground';
+    return (
+      <div className={cn('mt-2 flex items-center gap-1.5', toneClass)}>
+        <Icon className="w-3 h-3 shrink-0" />
+        <p className="text-[11px] leading-snug font-medium truncate">{line.text}</p>
+      </div>
+    );
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -382,8 +422,10 @@ export const ActiveProjectsStrip = React.memo(({
                 {renderProfitBlock(data)}
               </div>
 
-              {/* AI warning (only when yellow / red) */}
+              {/* AI warning (yellow / red) — has priority over status line */}
               {renderAiWarning(data)}
+              {/* Status line (green cards only — fills empty space with factual context) */}
+              {renderStatusLine(data)}
             </motion.button>
           );
         })}
