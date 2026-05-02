@@ -425,7 +425,8 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
