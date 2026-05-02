@@ -37,6 +37,7 @@ import { ProjectCollaboratorsTab } from './ProjectCollaboratorsTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
+import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,6 +86,7 @@ export const ProjectFullScreenView = ({
   const isWorkerOnly = currentUserRole === 'worker' && !isManager;
   const { activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
+  const labels = useProjectTypeLabels(project);
 
   // Business view supports both owned business projects and shared projects joined under this business profile.
   const isBusinessView = !!activeBusinessProfileId && (
@@ -384,7 +386,7 @@ export const ProjectFullScreenView = ({
                           {canSeeTab('milestones') && (
                             <TabsTrigger value="milestones" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                               <Target className="w-3.5 h-3.5" />
-                              {t('projects.milestones', 'Faze')}
+                              {labels.milestonesLabel}
                               {milestones.length > 0 && (
                                 <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
                               )}
@@ -392,7 +394,7 @@ export const ProjectFullScreenView = ({
                           )}
                           <TabsTrigger value="documents" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                             <FolderOpen className="w-3.5 h-3.5" />
-                            {t('projects.documents.tab', 'Dokumenti')}
+                            {labels.documentsLabel}
                           </TabsTrigger>
                           <TabsTrigger value="activity" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                             <Activity className="w-3.5 h-3.5" />
@@ -424,7 +426,7 @@ export const ProjectFullScreenView = ({
                           {canSeeTab('workers') && (
                             <TabsTrigger value="workers" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                               <ClipboardList className="w-3.5 h-3.5" />
-                              {t('workers.tab', 'Radnici')}
+                              {labels.workersLabel}
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
@@ -438,7 +440,7 @@ export const ProjectFullScreenView = ({
                           {canSeeTab('collaborators') && (
                             <TabsTrigger value="collaborators" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                               <Handshake className="w-3.5 h-3.5" />
-                              {t('collaborators.tab', 'Suradnici')}
+                              {labels.collaboratorsLabel}
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>

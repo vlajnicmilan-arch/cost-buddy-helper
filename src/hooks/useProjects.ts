@@ -176,6 +176,8 @@ export const useProjects = () => {
           start_date: project.start_date,
           end_date: project.end_date,
           business_profile_id: (project as any).business_profile_id || activeBusinessProfileId || null,
+          // project_type is locked at creation. Default 'general' if not provided.
+          project_type: project.project_type || 'general',
         })
         .select()
         .single();
