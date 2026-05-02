@@ -26,6 +26,7 @@ interface PaymentSourceData {
   balance: number;
   currency?: string;
   description?: string;
+  is_business?: boolean;
   cards?: CardInput[];
 }
 
