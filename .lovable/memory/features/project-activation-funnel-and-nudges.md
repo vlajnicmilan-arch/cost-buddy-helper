@@ -9,6 +9,7 @@ type: feature
 - BottomNav: Pregled → **Projekti** (2.) → Novčanik → Budžeti → (Obitelj). Kalendar uklonjen iz primarnog nava.
 - `ActiveProjectsStrip` (src/components/home/) — horizontalni strip aktivnih projekata iznad `SummarySection` u `PersonalModeView`. Empty-state CTA "Kreiraj prvi projekt".
 - Sakriva se: simple mode, local mode, business mode, bez Pro pristupa.
+- **Kartica (v2)**: 200x170 px. Centerpiece je `BigTrafficLight` (3 horizontalna kruga 14px) + iznos profita + margin badge. Health po profitnoj marži: ≥30% zeleno, <30% žuto + AI warning, <10% crveno + AI alert. Žuti i crveni kružić emocionalno pulsiraju (CSS `traffic-pulse-warn` / `traffic-pulse-crit` u `index.css`). AI tekst je lokalni i18n (`projects.health.aiWarning.{yellow|red}` s `{{pct}}`), bez API poziva. Za projekte bez prihoda margin se računa iz `total_budget`; ako nema ni budgeta ni prihoda, fallback na txCount.
 
 ## Faza 2 — Aktivacija
 - `useActivationFunnel` hook + `PulseActivationFunnel` u admin Pulse panelu (Registrirani → Ima projekt → Ima transakciju).
