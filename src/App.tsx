@@ -8,6 +8,7 @@ import { BackButtonProvider } from "@/contexts/BackButtonContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
+import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { LockScreen } from "@/components/LockScreen";
