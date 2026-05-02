@@ -899,7 +899,12 @@
     "digitalWallets": "Digitalni novčanici",
     "shared": "Dijeljeno",
     "sharedByYou": "Dijelite s {{count}} osoba",
-    "sharedWithYou": "Dijeli: {{owner}}"
+    "sharedWithYou": "Dijeli: {{owner}}",
+    "hideFromDashboard": "Sakrij s dashboarda",
+    "showOnDashboard": "Prikaži na dashboardu",
+    "hiddenFromDashboard": "Sakriveno s dashboarda",
+    "shownOnDashboard": "Prikazano na dashboardu",
+    "hiddenBadge": "Sakriveno"
   },
   "incomeSources": {
     "title": "Izvori",
