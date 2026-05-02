@@ -165,11 +165,49 @@ export const useExpenseFetch = () => {
     currency: (raw as any).currency || null,
   }), []);
 
+  // Fetch user's hidden payment sources (per-user dashboard toggle)
+  const fetchHiddenSources = useCallback(async () => {
+    if (isLocalMode) {
+      try {
+        const stored = localStorage.getItem('dashboardHiddenSources');
+        const parsed = stored ? (JSON.parse(stored) as string[]) : [];
+        setHiddenPaymentSourceIds(new Set(parsed));
+      } catch {
+        setHiddenPaymentSourceIds(new Set());
+      }
+      return;
+    }
+    if (!user) {
+      setHiddenPaymentSourceIds(new Set());
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('dashboard_hidden_sources' as any)
+        .select('source_id')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setHiddenPaymentSourceIds(new Set((data || []).map((r: any) => r.source_id as string)));
+    } catch (err) {
+      console.error('Error fetching hidden payment sources:', err);
+    }
+  }, [user, isLocalMode]);
+
   // Initial data load
   useEffect(() => {
     fetchOwnedSources();
+    fetchHiddenSources();
     fetchExpenses();
-  }, [fetchOwnedSources, fetchExpenses]);
+  }, [fetchOwnedSources, fetchHiddenSources, fetchExpenses]);
+
+  // Listen for hidden-source toggle events to keep dashboard filter in sync
+  useEffect(() => {
+    const handler = () => {
+      fetchHiddenSources();
+    };
+    window.addEventListener('hidden-payment-sources-changed', handler);
+    return () => window.removeEventListener('hidden-payment-sources-changed', handler);
+  }, [fetchHiddenSources]);
 
   // Realtime subscription for cloud mode
   useEffect(() => {
