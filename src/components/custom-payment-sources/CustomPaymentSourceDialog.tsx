@@ -63,7 +63,7 @@ export const CustomPaymentSourceDialog = ({
   const [scanningCardIndex, setScanningCardIndex] = useState<number | null>(null);
   const { t } = useTranslation();
   const { currency, multiCurrencyEnabled } = useCurrency();
-  const { profiles: businessProfiles } = useBusinessProfiles();
+  const { profiles: businessProfiles, refetch: refetchBusinessProfiles } = useBusinessProfiles();
   const isBusiness = businessProfileId !== null;
   useEffect(() => {
     if (open) {
@@ -102,6 +102,12 @@ export const CustomPaymentSourceDialog = ({
       }
     }
   }, [open, source, initialData, currency.code]);
+
+  // Always re-fetch the business profile list when the dialog opens so a newly
+  // created company shows up immediately in the owner select.
+  useEffect(() => {
+    if (open) refetchBusinessProfiles();
+  }, [open, refetchBusinessProfiles]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
