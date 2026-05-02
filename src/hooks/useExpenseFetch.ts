@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
-import { useAppState } from '@/contexts/AppStateContext';
+
 import { showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
