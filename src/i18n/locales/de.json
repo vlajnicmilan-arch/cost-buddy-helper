@@ -17,6 +17,14 @@
     "shareDialogTitle": "Datei speichern oder teilen"
   },
   "projects": {
+    "templates": {
+      "startFrom": "Aus Vorlage starten (optional)",
+      "suggestedPhases": "Vorgeschlagene Phasen für diesen Projekttyp (optional)",
+      "help": "Eine Vorlage liefert nur eine erste Phasenliste, die du später ändern kannst. Sie ändert nicht den Projekttyp.",
+      "empty": "Für diesen Projekttyp haben wir noch keine vorgeschlagenen Phasen. Du kannst sie manuell oder später hinzufügen.",
+      "phases": "Phasen",
+      "willCreatePhases": "Wird automatisch erstellt"
+    },
     "noPaymentSource": "Keine Quelle",
     "title": "Projekte",
     "add": "Neues Projekt",

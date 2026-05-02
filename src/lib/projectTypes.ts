@@ -68,7 +68,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       milestones: 'projectTypes.interior.labels.milestones',
       collaborators: 'projectTypes.interior.labels.collaborators',
     },
-    templateCategory: 'renovation',
+    templateCategory: 'interior',
   },
   {
     id: 'it_software',
@@ -80,6 +80,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       collaborators: 'projectTypes.it_software.labels.collaborators',
       documents: 'projectTypes.it_software.labels.documents',
     },
+    templateCategory: 'it_software',
   },
   {
     id: 'marketing',
@@ -90,6 +91,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       collaborators: 'projectTypes.marketing.labels.collaborators',
       documents: 'projectTypes.marketing.labels.documents',
     },
+    templateCategory: 'marketing',
   },
   {
     id: 'education',
@@ -101,6 +103,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       members: 'projectTypes.education.labels.members',
       documents: 'projectTypes.education.labels.documents',
     },
+    templateCategory: 'education',
   },
   {
     id: 'beauty',
@@ -111,6 +114,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       workers: 'projectTypes.beauty.labels.workers',
       documents: 'projectTypes.beauty.labels.documents',
     },
+    templateCategory: 'beauty',
   },
   {
     id: 'hospitality_event',
@@ -122,6 +126,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       collaborators: 'projectTypes.hospitality_event.labels.collaborators',
       documents: 'projectTypes.hospitality_event.labels.documents',
     },
+    templateCategory: 'hospitality_event',
   },
   {
     id: 'healthcare',
@@ -132,6 +137,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       workers: 'projectTypes.healthcare.labels.workers',
       documents: 'projectTypes.healthcare.labels.documents',
     },
+    templateCategory: 'healthcare',
   },
   {
     id: 'retail_opening',
@@ -142,6 +148,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       collaborators: 'projectTypes.retail_opening.labels.collaborators',
       documents: 'projectTypes.retail_opening.labels.documents',
     },
+    templateCategory: 'retail_opening',
   },
   {
     id: 'manufacturing',
@@ -152,6 +159,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       collaborators: 'projectTypes.manufacturing.labels.collaborators',
       documents: 'projectTypes.manufacturing.labels.documents',
     },
+    templateCategory: 'manufacturing',
   },
   {
     id: 'private_event',
@@ -162,6 +170,7 @@ export const PROJECT_TYPE_PRESETS: ProjectTypePreset[] = [
       collaborators: 'projectTypes.private_event.labels.collaborators',
       documents: 'projectTypes.private_event.labels.documents',
     },
+    templateCategory: 'private_event',
   },
 ];
 
