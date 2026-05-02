@@ -343,6 +343,27 @@ export const ActiveProjectsStrip = React.memo(({
     );
   };
 
+  // Status line — short factual sentence shown on green cards to fill the empty space.
+  // Skipped automatically by getProjectStatusLine when AI warning will render.
+  const renderStatusLine = (data: ProjectCardData) => {
+    const line = data.statusLine;
+    if (!line) return null;
+    const Icon = STATUS_ICON_MAP[line.icon];
+    const toneClass =
+      line.tone === 'success'
+        ? 'text-income'
+        : line.tone === 'warning'
+        ? 'text-warning'
+        : line.tone === 'info'
+        ? 'text-foreground/70'
+        : 'text-muted-foreground';
+    return (
+      <div className={cn('mt-2 flex items-center gap-1.5', toneClass)}>
+        <Icon className="w-3 h-3 shrink-0" />
+        <p className="text-[11px] leading-snug font-medium truncate">{line.text}</p>
+      </div>
+    );
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
