@@ -19,6 +19,7 @@ export interface CustomPaymentSource {
   description?: string | null;
   sort_order?: number;
   business_profile_id?: string | null;
+  is_business?: boolean;
   created_at: string;
   updated_at: string;
   cards?: PaymentSourceCard[];
