@@ -38,10 +38,11 @@ export const useExpenseFetch = () => {
     }
 
     try {
-      const [incomeRes, memberRes, ownedPsRes] = await Promise.all([
+      const [incomeRes, memberRes, ownedPsRes, allPsRes] = await Promise.all([
         supabase.from('income_sources').select('id').eq('user_id', user.id),
         supabase.from('payment_source_members').select('payment_source_id, role').eq('user_id', user.id),
         supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
+        supabase.from('custom_payment_sources').select('id, is_business'),
       ]);
 
       if (incomeRes.error) throw incomeRes.error;
@@ -59,6 +60,12 @@ export const useExpenseFetch = () => {
       });
       setSharedPaymentSourceIds(psIds);
       setFullAccessSourceIds(fullIds);
+
+      const busIds = new Set<string>();
+      (allPsRes.data || []).forEach((s: any) => {
+        if (s.is_business) busIds.add(s.id);
+      });
+      setBusinessSourceIds(busIds);
     } catch (error) {
       console.error('Error fetching owned sources:', error);
     }
