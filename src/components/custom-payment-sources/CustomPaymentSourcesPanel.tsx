@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
 import { BalanceCorrectionDialog } from './BalanceCorrectionDialog';
 import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
@@ -38,6 +39,7 @@ interface CustomPaymentSourcesPanelProps {
 
 export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, onRefetchExpenses }: CustomPaymentSourcesPanelProps) => {
   const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
+  const { isHidden, toggleHidden } = useHiddenPaymentSources();
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const isLocalMode = storageMode === 'local' && !user;
@@ -299,7 +301,9 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
         />
       ) : (
         <div className="space-y-2">
-          {customPaymentSources.map((source, index) => (
+          {customPaymentSources.map((source, index) => {
+            const hidden = isHidden(source.id);
+            return (
             <div
               key={source.id}
               ref={(el) => { itemRefs.current[index] = el; }}
@@ -318,7 +322,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
               } ${draggedIndex === index
                 ? 'scale-105 shadow-xl shadow-primary/20 border-primary z-10 relative bg-card/95 backdrop-blur-sm' 
                 : ''
-              }`}
+              } ${hidden ? 'opacity-60' : ''}`}
               style={draggedIndex === index ? { 
                 boxShadow: `0 20px 40px -10px ${source.color}40, 0 10px 20px -5px rgba(0,0,0,0.2)`,
                 borderColor: source.color 
@@ -351,6 +355,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                         {t('paymentSources.shared', 'Dijeljeno')}
                       </span>
                     )}
+                    {hidden && (
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium"
+                        title={t('paymentSources.hiddenFromDashboard', 'Sakriveno s dashboarda')}
+                      >
+                        <EyeOff className="w-2.5 h-2.5" />
+                        {t('paymentSources.hiddenBadge', 'Sakriveno')}
+                      </span>
+                    )}
                   </div>
                   {source.description && (
                     <p className="text-xs text-muted-foreground">{source.description}</p>
@@ -368,6 +381,24 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                 </span>
                 {!reorderMode && (
                   <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={(e) => { e.stopPropagation(); toggleHidden(source.id); }}
+                      title={
+                        hidden
+                          ? t('paymentSources.showOnDashboard', 'Prikaži na dashboardu')
+                          : t('paymentSources.hideFromDashboard', 'Sakrij s dashboarda')
+                      }
+                      aria-label={
+                        hidden
+                          ? t('paymentSources.showOnDashboard', 'Prikaži na dashboardu')
+                          : t('paymentSources.hideFromDashboard', 'Sakrij s dashboarda')
+                      }
+                    >
+                      {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -412,7 +443,8 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

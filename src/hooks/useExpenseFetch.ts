@@ -18,6 +18,7 @@ export const useExpenseFetch = () => {
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
   const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
+  const [hiddenPaymentSourceIds, setHiddenPaymentSourceIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -164,11 +165,49 @@ export const useExpenseFetch = () => {
     currency: (raw as any).currency || null,
   }), []);
 
+  // Fetch user's hidden payment sources (per-user dashboard toggle)
+  const fetchHiddenSources = useCallback(async () => {
+    if (isLocalMode) {
+      try {
+        const stored = localStorage.getItem('dashboardHiddenSources');
+        const parsed = stored ? (JSON.parse(stored) as string[]) : [];
+        setHiddenPaymentSourceIds(new Set(parsed));
+      } catch {
+        setHiddenPaymentSourceIds(new Set());
+      }
+      return;
+    }
+    if (!user) {
+      setHiddenPaymentSourceIds(new Set());
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('dashboard_hidden_sources' as any)
+        .select('source_id')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setHiddenPaymentSourceIds(new Set((data || []).map((r: any) => r.source_id as string)));
+    } catch (err) {
+      console.error('Error fetching hidden payment sources:', err);
+    }
+  }, [user, isLocalMode]);
+
   // Initial data load
   useEffect(() => {
     fetchOwnedSources();
+    fetchHiddenSources();
     fetchExpenses();
-  }, [fetchOwnedSources, fetchExpenses]);
+  }, [fetchOwnedSources, fetchHiddenSources, fetchExpenses]);
+
+  // Listen for hidden-source toggle events to keep dashboard filter in sync
+  useEffect(() => {
+    const handler = () => {
+      fetchHiddenSources();
+    };
+    window.addEventListener('hidden-payment-sources-changed', handler);
+    return () => window.removeEventListener('hidden-payment-sources-changed', handler);
+  }, [fetchHiddenSources]);
 
   // Realtime subscription for cloud mode
   useEffect(() => {
@@ -235,7 +274,7 @@ export const useExpenseFetch = () => {
     };
   }, [user, isLocalMode, parseExpense]);
 
-  // Filtered view for dashboard (respects payment source access levels)
+  // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
     // First filter by business profile context
     let filtered = expenses;
@@ -245,6 +284,19 @@ export const useExpenseFetch = () => {
     } else {
       // Personal mode: show only personal transactions (no business_profile_id)
       filtered = expenses.filter(e => !e.business_profile_id);
+    }
+
+    // Exclude transactions whose payment source is hidden from dashboard
+    if (hiddenPaymentSourceIds.size > 0) {
+      filtered = filtered.filter(e => {
+        const cleanPs = e.payment_source?.replace('custom:', '');
+        if (cleanPs && hiddenPaymentSourceIds.has(cleanPs)) return false;
+        // For transfers, also exclude if destination source is hidden
+        if (e.type === 'transfer' && e.income_source_id && hiddenPaymentSourceIds.has(e.income_source_id)) {
+          return false;
+        }
+        return true;
+      });
     }
 
     if (isLocalMode || !user) return filtered;
@@ -271,7 +323,7 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, isLocalMode, user, activeBusinessProfileId]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isLocalMode, user, activeBusinessProfileId]);
 
   // Business/personal isolated expenses (no payment source filtering)
   const contextFilteredExpenses = useMemo(() => {
@@ -284,6 +336,7 @@ export const useExpenseFetch = () => {
   return {
     expenses: contextFilteredExpenses, // isolated by business/personal context
     dashboardExpenses,                 // further filtered for display
+    hiddenPaymentSourceIds,            // for UI badges & dashboard balance aggregation
     loading,
     isLocalMode,
     setExpenses,

@@ -885,7 +885,12 @@
     "digitalWallets": "Digitale Geldbörsen",
     "shared": "Geteilt",
     "sharedByYou": "Geteilt mit {{count}} Personen",
-    "sharedWithYou": "Geteilt von: {{owner}}"
+    "sharedWithYou": "Geteilt von: {{owner}}",
+    "hideFromDashboard": "Vom Dashboard ausblenden",
+    "showOnDashboard": "Im Dashboard anzeigen",
+    "hiddenFromDashboard": "Vom Dashboard ausgeblendet",
+    "shownOnDashboard": "Im Dashboard angezeigt",
+    "hiddenBadge": "Ausgeblendet"
   },
   "incomeSources": {
     "title": "Quellen",

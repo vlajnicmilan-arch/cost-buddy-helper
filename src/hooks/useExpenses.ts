@@ -12,6 +12,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   const {
     expenses,
     dashboardExpenses,
+    hiddenPaymentSourceIds,
     loading,
     isLocalMode,
     setExpenses,
@@ -268,6 +269,7 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   return {
     expenses: dashboardExpenses,
     allExpenses: expenses,
+    hiddenPaymentSourceIds,
     loading,
     isLocalMode,
     addExpense,
