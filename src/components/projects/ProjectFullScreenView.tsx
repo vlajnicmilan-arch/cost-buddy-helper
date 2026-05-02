@@ -601,16 +601,7 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
                 )}
 
-                <TabsContent value="members" className="m-0">
-                  <ProjectMembersTab
-                    projectId={project.id}
-                    members={members}
-                    invitations={invitations}
-                    isManager={isManager}
-                    loading={membersLoading}
-                    onRefetch={refetchMembers}
-                  />
-                </TabsContent>
+
 
                 {canSeeTab('transactions') && (
                 <TabsContent value="transactions" className="m-0">
