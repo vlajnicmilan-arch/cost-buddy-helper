@@ -260,6 +260,26 @@ export const CustomPaymentSourceDialog = ({
             </div>
           </div>
 
+          {/* Business toggle */}
+          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
+            <div className="mt-0.5">
+              <Briefcase className={`w-5 h-5 ${isBusiness ? 'text-amber-600' : 'text-muted-foreground'}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label htmlFor="is-business" className="cursor-pointer font-medium">
+                {t('wallet.source.isBusiness', 'Poslovni izvor')}
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {t('wallet.source.isBusinessHint', 'Transakcije s ovog izvora bit će označene kao poslovne i mogu se filtrirati zasebno.')}
+              </p>
+            </div>
+            <Switch
+              id="is-business"
+              checked={isBusiness}
+              onCheckedChange={setIsBusiness}
+            />
+          </div>
+
           {/* Cards Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
