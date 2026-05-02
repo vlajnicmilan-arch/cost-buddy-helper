@@ -23,8 +23,8 @@ export interface Project {
   end_date?: string | null;
   business_profile_id?: string | null;
   archived_at?: string | null;
-  /** Locked at creation. Drives default tab labels and template suggestions. */
-  project_type?: ProjectType;
+  /** Locked at creation. Drives default tab labels and template suggestions. Stored as string for forward-compat. */
+  project_type?: ProjectType | string;
   /** Optional per-project tab label overrides (future-ready, currently unused). */
   label_overrides?: ProjectLabelOverrides | null;
   created_at?: string;
