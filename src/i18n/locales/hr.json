@@ -983,7 +983,13 @@
     "registerAgain": "Registriraj se ponovo",
     "minPassword": "Minimalno 6 znakova",
     "registrationSuccess": "Registracija uspješna! Provjerite email.",
-    "accountCreated": "Račun kreiran! Možete se prijaviti."
+    "accountCreated": "Račun kreiran! Možete se prijaviti.",
+    "nativeOAuth": {
+      "title": "Vraćamo vas u aplikaciju",
+      "description": "Ako se aplikacija ne otvori automatski, dodirnite gumb ispod.",
+      "openApp": "Otvori V&M Balance",
+      "help": "Nakon povratka prijava će se dovršiti u aplikaciji."
+    }
   },
   "categories": {
     "food": "Hrana",
