@@ -81,7 +81,9 @@ export const WelcomeChecklist = ({
 
   const handleDismiss = () => {
     setDismissed(true);
-    localStorage.setItem('welcome_checklist_dismissed', 'true');
+    if (user?.id) {
+      localStorage.setItem(`${DISMISS_KEY_PREFIX}${user.id}`, 'true');
+    }
   };
 
   return (
