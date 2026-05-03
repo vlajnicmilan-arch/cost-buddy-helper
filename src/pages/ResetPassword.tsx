@@ -97,6 +97,8 @@ const ResetPassword = () => {
       
       setSuccess(true);
       showSuccess(t('toasts.passwordChanged'));
+      // Sign out so the user must log in with the new password
+      await supabase.auth.signOut();
     } finally {
       setLoading(false);
     }
@@ -179,9 +181,9 @@ const ResetPassword = () => {
 
             <Button
               className="w-full h-12 rounded-xl"
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/auth')}
             >
-              Nastavi na aplikaciju
+              Nastavi na prijavu
             </Button>
           </div>
         </div>
