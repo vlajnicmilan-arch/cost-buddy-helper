@@ -22,7 +22,45 @@ const isInstalledApp = () => {
 };
 
 const path = window.location.pathname;
-const isFastLanding = (path === "/" || path === "/landing") && !isInstalledApp();
+
+// Detect OAuth callback fragments/queries (e.g. when an OAuth provider redirects
+// back to the root URL with #access_token=... or ?error=...). In that case we
+// must boot the full app so the auth flow can complete instead of rendering
+// the static landing page.
+const hasAuthHashOrQuery = (() => {
+  const hash = window.location.hash || "";
+  const search = window.location.search || "";
+  return (
+    hash.includes("access_token=") ||
+    hash.includes("refresh_token=") ||
+    hash.includes("error=") ||
+    hash.includes("error_description=") ||
+    search.includes("code=") ||
+    search.includes("error=") ||
+    search.includes("error_description=")
+  );
+})();
+
+// Detect an existing Supabase auth session in localStorage. If the user is
+// already signed in, never short-circuit to the landing page.
+const hasStoredAuthSession = (() => {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || "";
+      if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        const value = localStorage.getItem(key);
+        if (value && value !== "null") return true;
+      }
+    }
+  } catch {}
+  return false;
+})();
+
+const isFastLanding =
+  (path === "/" || path === "/landing") &&
+  !isInstalledApp() &&
+  !hasAuthHashOrQuery &&
+  !hasStoredAuthSession;
 const CRISP_WEBSITE_ID = "83888a2d-5927-4961-a7b1-eb91af074a0d";
 const CRISP_SCRIPT_ID = "crisp-chat-loader";
 
