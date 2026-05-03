@@ -980,7 +980,13 @@
     "registerAgain": "Register again",
     "minPassword": "Minimum 6 characters",
     "registrationSuccess": "Registration successful! Check your email.",
-    "accountCreated": "Account created! You can now sign in."
+    "accountCreated": "Account created! You can now sign in.",
+    "nativeOAuth": {
+      "title": "Returning you to the app",
+      "description": "If the app does not open automatically, tap the button below.",
+      "openApp": "Open V&M Balance",
+      "help": "After returning, sign-in will finish inside the app."
+    }
   },
   "categories": {
     "food": "Food",
