@@ -1,74 +1,87 @@
-## Problem
+Razumijem frustraciju. Provjerio sam stvarno stanje datoteka prije nego što išta tvrdim, i potvrđujem da su oba problema realna i rješiva u istom buildu.
 
-Na laptopu (web) sve radi. Na mobitelu, kada user u **APK aplikaciji** klikne "Prijava s Google":
+## Što sam konkretno provjerio
 
-1. Otvara se Google OAuth (u Custom Tab / browseru).
-2. Login uspijeva, Google preusmjerava na `https://vmbalance.com/app#access_token=...`.
-3. Android **ne zna** da je ta URL "u vlasništvu" naše instalirane APK aplikacije, pa je otvara u browseru ili u već instaliranoj PWA verziji.
-4. Native APK ostaje na ekranu prijave — session se nikad ne preda natrag u WebView APK-a.
+**Logo problem — DOKAZANO:**
+- `src/assets/logo.png`, `public/logo-512.png`, `public/logo-192.png`, `public/favicon.png` — svi imaju **isti MD5 hash** (`2dcb0bfffd69b985ca408ae1091d9a44`). To je tvoj pravi V&M Balance logo, koristi se na webu i u PWA.
+- `android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png` — **drugačiji MD5** (`9e029293...`)
+- `android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png` — **drugačiji MD5** (`ed3696b7...`)
+- `android/app/src/main/res/drawable-port-xxxhdpi/splash.png` — **drugačiji MD5** (`b5b1b22b...`)
+- `android/app/src/main/res/drawable/splash.png` — **drugačiji MD5** (`acc976d4...`)
 
-## Root Cause
+To su zadane Capacitor placeholder slike koje su se generirale kad je `android/` folder dodan. Niti jedna ranija verzija nije ih nikad zamijenila s tvojim logom. Zato se u APK-u "vraća stari logo" — on nikad nije bio ni promijenjen u nativeu, samo na webu.
 
-Dva problema koja se kombiniraju:
+**OAuth problem — DOKAZANO:**
+- `src/hooks/useNativeOAuth.ts` šalje Google login na bridge `https://vmbalance.com/native-oauth/callback`
+- `src/pages/NativeOAuthCallback.tsx` je upravo ekran "Vraćamo vas u aplikaciju" — i sad ne uspijeva otvoriti APK natrag
+- intent-filter u `AndroidManifest.xml` je trenutno preusko vezan na `host="auth"` + `pathPrefix="/callback"`
 
-**A. Auth.tsx ne razlikuje native od weba.** Google i Apple gumbi uvijek pozivaju `lovable.auth.signInWithOAuth(...)` s `redirect_uri: window.location.origin + '/app'`. Postoji `useNativeOAuth` hook, ali se nigdje ne koristi.
+## Plan popravka (jedan build, oba problema)
 
-**B. Nema Android App Linksa za vmbalance.com.** Da bi Android otvorio našu APK na URL-u `https://vmbalance.com/app`, trebamo:
-- `assetlinks.json` na `https://vmbalance.com/.well-known/assetlinks.json` koji veže paket `app.lovable.costbuddy` + SHA-256 fingerprint potpisa s domenom.
-- `intent-filter` u `AndroidManifest.xml` s `android:autoVerify="true"` za `https://vmbalance.com/*`.
+### A. Logo u Androidu — zamijeniti sve placeholder ikone
 
-Bez toga sustav uvijek pita "browser ili PWA?" ili automatski bira PWA jer je već "installed handler" za tu domenu.
+Generirati iz `src/assets/logo.png` sve potrebne Android resurse na pravilnim rezolucijama i prepisati postojeće placeholdere:
 
-## Plan
+**Launcher ikone** (`android/app/src/main/res/`):
+- `mipmap-mdpi/ic_launcher.png` 48×48
+- `mipmap-hdpi/ic_launcher.png` 72×72
+- `mipmap-xhdpi/ic_launcher.png` 96×96
+- `mipmap-xxhdpi/ic_launcher.png` 144×144
+- `mipmap-xxxhdpi/ic_launcher.png` 192×192
+- isto za `ic_launcher_round.png` (kvadratni s alpha) i `ic_launcher_foreground.png` (108×108 dp safe zone, scale ~70%)
 
-### 1. Hook OAuth gumbe u Auth.tsx na native flow
+**Splash slike** (logo centriran na `#0f172a` pozadini, već postavljenoj u `capacitor.config.ts`):
+- `drawable/splash.png`
+- `drawable-port-mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi/splash.png`
+- `drawable-land-mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi/splash.png`
 
-`src/pages/Auth.tsx` (Google + Apple onClick): ako je `Capacitor.isNativePlatform()`, koristi `useNativeOAuth().signInWithOAuth(provider)` umjesto direktnog `lovable.auth.signInWithOAuth`. Web ostaje nepromijenjen.
+Generiranje radim Pythonom u izvršnom modu (Pillow je dostupan), pa su slike točno usklađene s `src/assets/logo.png`. Nema ručnog dizajna, nema pogađanja.
 
-### 2. Native OAuth flow koji se vraća u APK
+### B. Native OAuth — maknuti web bridge iz glavnog flowa
 
-`src/hooks/useNativeOAuth.ts` — ispravna implementacija:
-- Pozovi `supabase.auth.signInWithOAuth({ provider, options: { redirectTo: 'app.lovable.costbuddy://oauth-callback', skipBrowserRedirect: true, queryParams: provider==='google' ? { prompt: 'select_account' } : undefined } })` da dobiješ `data.url`.
-- Otvori taj URL u **Capacitor Browser** plugin-u (`@capacitor/browser` → `Browser.open({ url, presentationStyle: 'popover' })`).
-- Slušaj `App.addListener('appUrlOpen', ...)` i kad URL počinje s `app.lovable.costbuddy://oauth-callback`, izvuci `code`, zatvori browser (`Browser.close()`), pozovi `supabase.auth.exchangeCodeForSession(code)`.
-- `useDeepLinks.ts` već preskače OAuth callback URL-ove — proširi guard na custom scheme.
+1. `src/hooks/useNativeOAuth.ts` — promijeniti `redirectTo` s
+   `https://vmbalance.com/native-oauth/callback` na
+   `app.lovable.costbuddy://auth/callback`.
 
-### 3. Registracija custom scheme u AndroidManifest
+2. `android/app/src/main/AndroidManifest.xml` — zamijeniti uski filter (`host="auth"` + `pathPrefix="/callback"`) službenim Capacitor obrascem koji hvata sve unutar custom scheme:
 
-`android/app/src/main/AndroidManifest.xml` u glavni `MainActivity` dodaj intent-filter:
+   ```xml
+   <intent-filter>
+     <action android:name="android.intent.action.VIEW" />
+     <category android:name="android.intent.category.DEFAULT" />
+     <category android:name="android.intent.category.BROWSABLE" />
+     <data android:scheme="@string/custom_url_scheme" />
+   </intent-filter>
+   ```
+
+   `custom_url_scheme` je već `app.lovable.costbuddy` u `strings.xml`.
+
+3. `src/pages/NativeOAuthCallback.tsx` — ostaje samo kao fallback za stare buildove; u glavnom Google flowu se više neće prikazivati.
+
+4. Backend redirect lista mora dopustiti `app.lovable.costbuddy://auth/callback`. Ako alat to dopusti nakon odobrenja, postavit ću izravno; inače ću ti dati točan link.
+
+### C. Bez novih hardcoded tekstova
+
+Nema novog UI texta — sve postojeće `auth.nativeOAuth.*` ključeve ostavljam jer i dalje vrijede za rijetki fallback slučaj.
+
+## Lokalni koraci nakon mojih promjena
+
+```bat
+git pull
+npm install --legacy-peer-deps
+npm run build
+npx cap sync android
+npx cap open android
 ```
-<intent-filter>
-  <action android:name="android.intent.action.VIEW"/>
-  <category android:name="android.intent.category.DEFAULT"/>
-  <category android:name="android.intent.category.BROWSABLE"/>
-  <data android:scheme="app.lovable.costbuddy"/>
-</intent-filter>
-```
 
-### 4. Supabase redirect URL whitelist
+U Android Studiju:
+- **Build → Clean Project**
+- **Build → Rebuild Project**
+- **Build → Build Bundle(s) / APK(s) → Build APK(s)**
 
-U Lovable Cloud → Auth → URL Configuration dodaj `app.lovable.costbuddy://oauth-callback` u **Redirect URLs**. Bez toga Supabase odbija callback. (Korisniku ću dati direktan link kad pređemo u build mode.)
+Na mobitelu: **deinstaliraj** staru aplikaciju pa instaliraj novi APK. Bez deinstalacije Android može zadržati staru ikonu u cacheu launchera.
 
-### 5. (Opcionalno, kasnije) Android App Links za vmbalance.com
+## Očekivani rezultat
 
-Da bi i postojeći `https://vmbalance.com/app` linkovi (push notifikacije, dijeljeni linkovi) otvarali APK umjesto PWA-e, kasnije ćemo dodati:
-- `public/.well-known/assetlinks.json` s package name + SHA-256 release potpisa.
-- `intent-filter` s `android:autoVerify="true"` za `https://vmbalance.com`.
-
-Ovo nije nužno za samu OAuth prijavu jer custom scheme rješenje (#2-#4) ne ovisi o domeni.
-
-## Files to change
-
-- `src/pages/Auth.tsx` — Google/Apple gumbi delegiraju na `useNativeOAuth` na nativu.
-- `src/hooks/useNativeOAuth.ts` — prava implementacija s `@capacitor/browser`, deep link listenerom i `exchangeCodeForSession`.
-- `src/hooks/useDeepLinks.ts` — proširi OAuth-callback guard na custom scheme.
-- `android/app/src/main/AndroidManifest.xml` — intent-filter za `app.lovable.costbuddy://` scheme.
-- (možda) `package.json` — dodati `@capacitor/browser` ako nije već instaliran.
-
-## After approval
-
-Nakon implementacije korisnik mora:
-1. Klikni **Publish** (web side promjene).
-2. Otvori Lovable Cloud Auth postavke i dodaj `app.lovable.costbuddy://oauth-callback` u Redirect URLs (dat ću link).
-3. Lokalno: `git pull` → `npm install --legacy-peer-deps` → `npx cap sync android` → rebuild APK.
-4. Instaliraj novi APK i testiraj Google login.
+- Ikona aplikacije i splash u APK-u su tvoj V&M Balance logo, identičan webu.
+- Google prijava u APK-u više ne prolazi kroz "Vraćamo vas u aplikaciju" — povratak ide direktno u APK.
