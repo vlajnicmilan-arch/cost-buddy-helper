@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 
-const NATIVE_REDIRECT = 'app.lovable.costbuddy://oauth-callback';
+const NATIVE_REDIRECT = 'app.lovable.costbuddy://auth/callback';
 
 /**
  * Native OAuth flow for Capacitor APK.
@@ -15,7 +15,7 @@ const NATIVE_REDIRECT = 'app.lovable.costbuddy://oauth-callback';
  *
  * Native flow instead:
  * 1. Ask Supabase for the OAuth URL with redirectTo set to a custom scheme
- *    (`app.lovable.costbuddy://oauth-callback`) that only the APK can handle.
+ *    (`app.lovable.costbuddy://auth/callback`) that only the APK can handle.
  * 2. Open that URL in Capacitor Browser (Chrome Custom Tab on Android).
  * 3. After the user authenticates, the provider → Supabase → custom scheme
  *    chain fires `appUrlOpen` inside the APK with the auth `code` in the URL.
@@ -38,7 +38,7 @@ export const useNativeOAuth = () => {
       const { App } = await import('@capacitor/app');
       const handle = await App.addListener('appUrlOpen', async (event) => {
         const url = event.url || '';
-        if (!url.startsWith('app.lovable.costbuddy://oauth-callback')) return;
+        if (!url.startsWith(NATIVE_REDIRECT)) return;
 
         try {
           const { Browser } = await import('@capacitor/browser');
