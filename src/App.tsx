@@ -112,11 +112,15 @@ const RootRoute = () => {
 
 const RouteAwareGlobalOverlays = () => {
   const location = useLocation();
-  if (isPublicRoute(location.pathname)) {
+  const publicRoute = isPublicRoute(location.pathname);
+
+  if (publicRoute) {
     if (import.meta.env.DEV) {
       console.log('[Overlays] suppressed on public route:', location.pathname);
     }
-    return null;
+    // StatusFeedback must remain available on public routes (e.g. /auth)
+    // so login errors and other inline feedback are visible.
+    return <StatusFeedback />;
   }
 
   return (
