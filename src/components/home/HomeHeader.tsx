@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Smartphone, Cloud, LayoutDashboard, FileSpreadsheet } from 'lucide-react';
+import { Smartphone, Cloud, LayoutDashboard, FileSpreadsheet, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
@@ -52,7 +53,35 @@ export const HomeHeader = ({
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [importOpen, setImportOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    if (isLocalMode) {
+      navigate('/setup');
+      return;
+    }
+    try {
+      await signOut();
+    } catch (e) {
+      console.error('Sign out error:', e);
+    } finally {
+      const theme = localStorage.getItem('theme');
+      const storageConfig = localStorage.getItem('finmate-storage-config');
+      const aiAssistant = localStorage.getItem('ai_assistant_enabled');
+      const simpleMode = localStorage.getItem('simple_mode_enabled');
+      const familyMode = localStorage.getItem('family_mode_enabled');
+      const businessMode = localStorage.getItem('business_mode_enabled');
+      localStorage.clear();
+      if (theme) localStorage.setItem('theme', theme);
+      if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
+      if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
+      if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
+      if (familyMode) localStorage.setItem('family_mode_enabled', familyMode);
+      if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
+      navigate('/');
+    }
+  };
 
   return (
     <header className="flex flex-col gap-3 mb-4 sm:mb-6" data-tutorial="header">
@@ -118,6 +147,26 @@ export const HomeHeader = ({
             </Tooltip>
           </TooltipProvider>
           <SettingsDialog onDataImported={onRefetch} />
+          {!isLocalMode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleSignOut}
+                    className="rounded-xl h-8 w-8 sm:h-9 sm:w-9"
+                    aria-label={t('common.signOut', 'Odjava')}
+                  >
+                    <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('common.signOut', 'Odjava')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
 
