@@ -1,56 +1,81 @@
 
-# Usklađivanje politike naplate s aplikacijom
+## Cilj
+Otkloniti tehničke smetnje koje su izronile u prošlom auditu i pripremiti regression checklist prije javnog lansiranja. Fokus: stvarni runtime problemi, ne kozmetika.
 
-Cilj: sve što piše u marketingu (Landing, Paywall, FAQ) i u `subscriptionTiers` mora odgovarati onome što kod stvarno radi. **Skeniranje računa s PDV-om se NE implementira** — samo se uklanjaju lažne tvrdnje.
+## 1. "signal is aborted without reason" — status check
 
-## 1. Ukloniti tvrdnju o R-1 / PDV skeniranju (FAQ)
+Pregledom koda potvrđeno:
+- `src/lib/sentry.ts` već ignorira ovu poruku (ne ide u Sentry).
+- `src/lib/diagnosticLogger.ts` (linija 326) je ne logira u dijagnostiku.
+- `src/hooks/useReceiptScanner.ts` ju tretira kao "abort-like" i ne prikazuje korisniku.
+- Auth logs (zadnja 2 sata) pokazuju samo `200 OK` na `/user`, `/token` te uspješne `Login` evente za 2 različita korisnika. Nema 4xx/5xx.
+- Runtime errors snapshot: prazan.
 
-`src/i18n/locales/hr.json` (i isti ključevi u `en.json`, `de.json`):
+**Zaključak:** "/auth runtime error" iz prethodnog audita je bio false alarm — poruka postoji u kodu samo kao filter, a ne kao stvarna greška. Nema šta popravljati u Auth flow-u po toj osnovi.
 
-- `faq.questions.businessReceiptVat` → preformulirati pitanje u "Mogu li skenirati račune u poslovnom načinu?"
-- `faq.answers.businessReceiptVat` → ukloniti rečenicu "AI prepoznaje neto iznos, PDV i ukupno" i zamijeniti s istinitom: AI prepoznaje ukupan iznos, izdavatelja, datum i stavke; **PDV se ne razdvaja automatski** — ako trebaš razlomak po stopama, unesi ručno na transakciji.
+Akcija: ukloniti tu stavku s liste blockera prije launcha.
 
-## 2. Limit od 5 skeniranja računa mjesečno
+## 2. Stvarni warning koji vidimo u konzoli
 
-Trenutno se nigdje ne provodi (`useReceiptScanner.ts` i `parse-receipt` edge funkcija nemaju brojač). Dvije opcije — **biram opciju B (uklanjanje tvrdnje)** jer je manje rizično i u skladu s tvojim pravilom "ne lijepi guard/quick fixe":
+Console log:
+```
+Warning: Function components cannot be given refs.
+Check the render method of `PopoverContent`.
+... at BusinessProfileSwitcher.tsx:32
+```
 
-- Provjeriti gdje se u marketingu (Landing / Paywall / `landingTranslations.ts` / `i18n` `subscription.*`) spominje "5 skeniranja" i ukloniti / zamijeniti s "AI skeniranje računa" bez broja.
-- Ostaviti zaista provedene Free limite (broj transakcija, projekata, budžeta, izvora plaćanja) kako jesu.
+Ovo je React forwardRef warning u `BusinessProfileSwitcher` — ne ruši app, ali zagađuje dev konzolu i može maskirati prave greške tijekom QA. Popravit ću tako da se `PopoverTrigger asChild` koristi nad ispravnim children-om (ili dodati `forwardRef` u custom wrapper).
 
-## 3. Paywall — i18n refaktor
+## 3. Regression smoke test checklist (kreirati kao `docs/PRE_LAUNCH_REGRESSION.md`)
 
-`src/pages/Paywall.tsx` ima hardkodirane hrvatske stringove za feature liste. Zamijeniti s `t()` ključevima pod `paywall.features.*` u sve tri locale datoteke. Format prikaza i logika ostaju isti — samo zamjena stringova.
+Lista konkretnih putanja za ručnu provjeru, fokus na nedavno mijenjano:
 
-## 4. Landing — ažuriranje feature liste
+**Auth / Onboarding**
+- Email signup → email verify → onboarding usage_profile (finance_only / finance_projects)
+- Google OAuth na webu i nativeu
+- Logout → login zadržava aktivni business profil
 
-`src/pages/landingTranslations.ts` i `src/pages/LandingBelowFold.tsx` ne spominju recentno isporučene module. Dodati u feature mrežu (HR/EN/DE):
-- Recurring transactions (auto-prepoznavanje uplata/troškova)
-- Cashflow forecast (8 tjedana)
-- Multi-currency (više valuta po izvoru, ECB tečajevi)
-- Push notifikacije (FCM v1)
-- Završetak projekta + status linije na karticama (recentno)
+**Projekti (najveći adut — nedavne promjene)**
+- Kreiranje projekta s preset tipom (svih 13)
+- "Tim projekta" tab: members / workers / collaborators podtabovi
+- Project status line na karticama (paused/justStarted/inProgress/nearEnd)
+- Project completion wizard (3 koraka) → archive / reopen
+- Funding vs actual P&L izračun
 
-Tier opisi u istoj datoteci dobivaju jednu rečenicu o više profila tvrtki za Business.
+**Naplata / Paywall (upravo refaktorirano)**
+- Free → Pro upgrade flow (Stripe checkout + 5s polling)
+- Lifetime tier dostupnost banner
+- Sve i18n stringovi prikazani u HR / EN / DE
+- Feature gating: useFeatureAccess granice (recurring, multi-currency, scan)
 
-## 5. Konzistentnost `subscriptionTiers.ts`
+**Mobile / native**
+- BottomNav redoslijed s usage_profile
+- Receipt scanner: capture → process → save (Personal i Business)
+- Back button handling u dijalozima
 
-Nema promjena cijena (već se podudaraju sa Stripe live). Samo proširiti `features` arrays Pro/Business stringovima koje ćemo prevoditi (gore navedeni moduli) tako da `Paywall` i Landing crpe iz istog izvora gdje god je moguće.
+**Admin / Pulse**
+- Funnel events widget
+- Feedback submissions tablica
 
-## Što NE radim
+## 4. Tehničke izmjene koje ću napraviti
 
-- Ne uvodim PDV ekstrakciju u `parse-receipt` (potvrđeno).
-- Ne uvodim brojač skeniranja računa (uklanjam tvrdnju umjesto toga).
-- Ne mijenjam cijene ni Stripe konfiguraciju.
-- Ne diram RLS, edge funkcije osim ako se to tiče gornjih tvrdnji (ne tiče se).
+### a) `src/components/BusinessProfileSwitcher.tsx`
+Popraviti React ref warning oko `PopoverContent` / `PopoverTrigger`. Vjerojatno treba `forwardRef` na custom child ili `asChild` ispravno propagirati ref.
 
-## Tehnički sažetak izmjena
+### b) `docs/PRE_LAUNCH_REGRESSION.md` (novi file)
+Strukturirana checklist iz točke 3, s checkbox stavkama, odgovornom osobom (ti) i statusom (✅ / ⚠️ / ❌). Hrvatski jezik, jer je za internu upotrebu prije launcha.
 
-| File | Change |
-|---|---|
-| `src/i18n/locales/{hr,en,de}.json` | FAQ R-1 tekst, novi `paywall.features.*` ključevi, eventualno `landing.*` proširenja |
-| `src/pages/Paywall.tsx` | hardkodirani stringovi → `t()` |
-| `src/pages/landingTranslations.ts` | dodati nove feature retke + Business opis |
-| `src/pages/LandingBelowFold.tsx` | render novih featurea ako nije već dinamičan |
-| `src/lib/subscriptionTiers.ts` | proširene `features` liste (bez promjene tier ID/cijena) |
+### c) Bez izmjena na:
+- `useAuth.ts` — radi ispravno
+- `Auth.tsx` — radi ispravno
+- `sentry.ts` / `diagnosticLogger.ts` — filtri su namjerno postavljeni
 
-Procjena: ~6 datoteka, bez DB migracija, bez Stripe izmjena.
+## 5. Što NE radim u ovom koraku
+- Redizajn landinga (to je opcija B u idućem koraku)
+- Demo projekt onboarding (opcija C)
+- Nove feature
+
+## Ishod
+- Konzola čista od "Function components cannot be given refs" warninga
+- Pisani regression checklist koji možeš proći prije nego klikneš "Publish"
+- Potvrda da `/auth` nije blocker
