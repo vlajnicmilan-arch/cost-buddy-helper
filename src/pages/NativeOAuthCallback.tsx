@@ -136,7 +136,7 @@ const NativeOAuthCallback = () => {
         </div>
         <button
           type="button"
-          onClick={openApp}
+          onClick={() => void openApp('manual')}
           className="min-h-11 w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <span className="inline-flex items-center justify-center gap-2">
