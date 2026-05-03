@@ -2,13 +2,37 @@
   "paywall": {
     "trialExpiredTitle": "Vaš 14-dnevni probni period je istekao",
     "chooseToContinue": "Odaberite plan za nastavak korištenja V&M Balance",
-    "interval": { "monthly": "Mjesečno", "yearly": "Godišnje", "lifetime": "Lifetime" },
+    "interval": {
+      "monthly": "Mjesečno",
+      "yearly": "Godišnje",
+      "lifetime": "Lifetime"
+    },
     "yearlyBadge": "-25%",
     "lifetimeBadge": "-75%",
-    "period": { "monthly": "/mj", "yearly": "/god", "oneTime": "jednokratno" },
-    "free": { "name": "Free", "tagline": "Za početak", "priceSuffix": "zauvijek", "cta": "Nastavi besplatno", "comingSoon": "Free plan dolazi uskoro" },
-    "pro": { "name": "Pro", "tagline": "Za većinu ljudi", "cta": "Odaberi Pro", "yearlySavings": "Ušteda {amount}€ godišnje (~25%)" },
-    "business": { "name": "Business", "tagline": "Za ozbiljne korisnike", "cta": "Odaberi Business", "yearlySavings": "Ušteda {amount}€ godišnje (~25%)" },
+    "period": {
+      "monthly": "/mj",
+      "yearly": "/god",
+      "oneTime": "jednokratno"
+    },
+    "free": {
+      "name": "Free",
+      "tagline": "Za početak",
+      "priceSuffix": "zauvijek",
+      "cta": "Nastavi besplatno",
+      "comingSoon": "Free plan dolazi uskoro"
+    },
+    "pro": {
+      "name": "Pro",
+      "tagline": "Za većinu ljudi",
+      "cta": "Odaberi Pro",
+      "yearlySavings": "Ušteda {amount}€ godišnje (~25%)"
+    },
+    "business": {
+      "name": "Business",
+      "tagline": "Za ozbiljne korisnike",
+      "cta": "Odaberi Business",
+      "yearlySavings": "Ušteda {amount}€ godišnje (~25%)"
+    },
     "popular": "Najpopularniji",
     "lifetime": {
       "badge": "Founding Member · Limitirano",
@@ -929,7 +953,8 @@
     "goBack": "Povratak",
     "clear": "Očisti",
     "privacyPolicy": "Pravila privatnosti",
-    "termsOfService": "Uvjeti korištenja"
+    "termsOfService": "Uvjeti korištenja",
+    "signOut": "Odjava"
   },
   "auth": {
     "login": "Prijava",

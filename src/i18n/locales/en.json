@@ -2,13 +2,37 @@
   "paywall": {
     "trialExpiredTitle": "Your 14-day trial has ended",
     "chooseToContinue": "Choose a plan to keep using V&M Balance",
-    "interval": { "monthly": "Monthly", "yearly": "Yearly", "lifetime": "Lifetime" },
+    "interval": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "lifetime": "Lifetime"
+    },
     "yearlyBadge": "-25%",
     "lifetimeBadge": "-75%",
-    "period": { "monthly": "/mo", "yearly": "/yr", "oneTime": "one-time" },
-    "free": { "name": "Free", "tagline": "To get started", "priceSuffix": "forever", "cta": "Continue free", "comingSoon": "Free plan coming soon" },
-    "pro": { "name": "Pro", "tagline": "For most people", "cta": "Choose Pro", "yearlySavings": "Save {amount}€ per year (~25%)" },
-    "business": { "name": "Business", "tagline": "For serious users", "cta": "Choose Business", "yearlySavings": "Save {amount}€ per year (~25%)" },
+    "period": {
+      "monthly": "/mo",
+      "yearly": "/yr",
+      "oneTime": "one-time"
+    },
+    "free": {
+      "name": "Free",
+      "tagline": "To get started",
+      "priceSuffix": "forever",
+      "cta": "Continue free",
+      "comingSoon": "Free plan coming soon"
+    },
+    "pro": {
+      "name": "Pro",
+      "tagline": "For most people",
+      "cta": "Choose Pro",
+      "yearlySavings": "Save {amount}€ per year (~25%)"
+    },
+    "business": {
+      "name": "Business",
+      "tagline": "For serious users",
+      "cta": "Choose Business",
+      "yearlySavings": "Save {amount}€ per year (~25%)"
+    },
     "popular": "Most popular",
     "lifetime": {
       "badge": "Founding Member · Limited",
@@ -926,7 +950,8 @@
     "goBack": "Go back",
     "clear": "Clear",
     "privacyPolicy": "Privacy Policy",
-    "termsOfService": "Terms of Service"
+    "termsOfService": "Terms of Service",
+    "signOut": "Sign out"
   },
   "auth": {
     "login": "Login",
