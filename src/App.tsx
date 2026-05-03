@@ -103,10 +103,21 @@ const isInstalledApp = () => {
   return false;
 };
 
-const RootRoute = () => {
+type RootRouteProps = {
+  storageMode: ReturnType<typeof useStorage>['storageMode'];
+  user: ReturnType<typeof useAuth>['user'];
+  ready: boolean;
+};
+
+const RootRoute = ({ storageMode, user, ready }: RootRouteProps) => {
   if (isInstalledApp()) {
     return <Navigate to="/app" replace />;
   }
+
+  if (ready && user) {
+    return <Navigate to="/app" replace />;
+  }
+
   return <Suspense fallback={<PageLoader />}><Landing /></Suspense>;
 };
 
@@ -167,7 +178,7 @@ const AppRoutes = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<RootRoute />} />
+          <Route path="/" element={<RootRoute storageMode={storageMode} user={user} ready={allReady} />} />
           <Route path="/app" element={allReady ? <Navigate to={appEntryRoute!} replace /> : <PageLoader />} />
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
@@ -218,7 +229,7 @@ const AppRoutes = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<RootRoute />} />
+          <Route path="/" element={<RootRoute storageMode={storageMode} user={user} ready={allReady} />} />
           <Route path="/app" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -245,7 +256,7 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<RootRoute />} />
+      <Route path="/" element={<RootRoute storageMode={storageMode} user={user} ready={allReady} />} />
       <Route path="/app" element={<Navigate to={appEntryRoute!} replace />} />
       <Route path="/home" element={<Suspense fallback={<HomeSkeleton />}>{requireOnboarding(<Index />)}</Suspense>} />
       {/* Legacy /business route removed — business view now lives in Wallet via owner chips */}

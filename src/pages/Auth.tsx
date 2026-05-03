@@ -623,10 +623,8 @@ const Auth = () => {
                   setStorageMode('cloud');
                 }
 
-                // Redirect back to /auth so the Lovable OAuth library can process
-                // the returned tokens; Auth page then redirects authenticated users to /home.
                 const { error } = await lovable.auth.signInWithOAuth("google", {
-                  redirect_uri: `${window.location.origin}/auth`,
+                  redirect_uri: window.location.origin,
                 });
                 if (error) {
                   showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
@@ -663,7 +661,7 @@ const Auth = () => {
                 }
 
                 const { error } = await lovable.auth.signInWithOAuth("apple", {
-                  redirect_uri: `${window.location.origin}/auth`,
+                  redirect_uri: window.location.origin,
                 });
                 if (error) {
                   showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
