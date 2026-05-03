@@ -36,10 +36,10 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "cost-buddy-helper"
+const SITE_NAME = "V&M Balance"
 const SENDER_DOMAIN = "notify.vmbalance.com"
 const ROOT_DOMAIN = "vmbalance.com"
-const FROM_DOMAIN = "notify.vmbalance.com" // Domain shown in From address (may be root or sender subdomain)
+const FROM_DOMAIN = "vmbalance.com" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
