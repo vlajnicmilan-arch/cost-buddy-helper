@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { supabase } from '@/integrations/supabase/client';
 
 const PACKAGE = 'app.lovable.costbuddy';
 const NATIVE_OAUTH_PAYLOAD_KEY = 'vmb-native-oauth-callback-payload';
@@ -55,13 +56,32 @@ const buildPayloadQuery = () => {
   return qs ? `?${qs}` : '';
 };
 
-const buildIntentUrl = () => {
+const hasOAuthPayload = (query: string) => {
+  const params = new URLSearchParams(query.replace(/^\?/, ''));
+  return params.has('code') || params.has('access_token') || params.has('refresh_token') || params.has('error') || params.has('error_description');
+};
+
+const resolvePayloadQuery = async () => {
   const query = buildPayloadQuery();
+  if (hasOAuthPayload(query)) return query;
+
+  const { data } = await supabase.auth.getSession();
+  const session = data.session;
+  if (!session?.access_token || !session.refresh_token) return query;
+
+  const params = new URLSearchParams();
+  params.set('access_token', session.access_token);
+  params.set('refresh_token', session.refresh_token);
+  params.set('token_type', session.token_type || 'bearer');
+  logDiagnostic('native_oauth_bridge_session_payload', { hasSession: true });
+  return `?${params.toString()}`;
+};
+
+const buildIntentUrl = (query: string) => {
   return `intent://auth/callback${query}#Intent;scheme=${PACKAGE};package=${PACKAGE};end`;
 };
 
-const buildSchemeUrl = () => {
-  const query = buildPayloadQuery();
+const buildSchemeUrl = (query: string) => {
   return `${PACKAGE}://auth/callback${query}`;
 };
 
@@ -89,23 +109,19 @@ const NativeOAuthCallback = () => {
     return 'unknown';
   }, []);
 
-  const openApp = () => {
-    logDiagnostic('native_oauth_bridge_open_app', { kind: callbackKind, mode: 'manual' });
-    window.location.href = buildIntentUrl();
+  const openApp = async (mode: 'manual' | 'auto' = 'manual') => {
+    const query = await resolvePayloadQuery();
+    logDiagnostic('native_oauth_bridge_open_app', { kind: callbackKind, mode, hasPayload: hasOAuthPayload(query) });
+    window.location.href = buildIntentUrl(query);
     setTimeout(() => {
-      window.location.href = buildSchemeUrl();
+      window.location.href = buildSchemeUrl(query);
     }, 800);
   };
 
   useEffect(() => {
     logDiagnostic('native_oauth_bridge_received', { kind: callbackKind });
     // Auto-launch the APK as soon as the bridge page renders.
-    window.location.href = buildIntentUrl();
-    // Fallback to plain custom-scheme in case the intent handler picker is suppressed.
-    const t1 = setTimeout(() => {
-      window.location.href = buildSchemeUrl();
-    }, 1200);
-    return () => clearTimeout(t1);
+    void openApp('auto');
   }, [callbackKind]);
 
   return (
