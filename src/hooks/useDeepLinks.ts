@@ -24,6 +24,7 @@ export const useDeepLinks = () => {
 
             // Skip OAuth callback URLs — handled by useNativeOAuth
             const isOAuthCallback =
+              event.url.startsWith('app.lovable.costbuddy://auth/callback') ||
               event.url.startsWith('app.lovable.costbuddy://oauth-callback') ||
               params.has('code') ||
               hashParams.has('access_token') ||
