@@ -1,4 +1,78 @@
 {
+  "paywall": {
+    "trialExpiredTitle": "Ihre 14-tägige Testphase ist abgelaufen",
+    "chooseToContinue": "Wählen Sie einen Plan, um V&M Balance weiter zu nutzen",
+    "interval": { "monthly": "Monatlich", "yearly": "Jährlich", "lifetime": "Lifetime" },
+    "yearlyBadge": "-25%",
+    "lifetimeBadge": "-75%",
+    "period": { "monthly": "/Mo", "yearly": "/Jahr", "oneTime": "einmalig" },
+    "free": { "name": "Kostenlos", "tagline": "Zum Starten", "priceSuffix": "für immer", "cta": "Kostenlos weiter", "comingSoon": "Kostenloser Plan kommt bald" },
+    "pro": { "name": "Pro", "tagline": "Für die meisten", "cta": "Pro wählen", "yearlySavings": "Sparen Sie {amount}€ pro Jahr (~25%)" },
+    "business": { "name": "Business", "tagline": "Für ernsthafte Nutzer", "cta": "Business wählen", "yearlySavings": "Sparen Sie {amount}€ pro Jahr (~25%)" },
+    "popular": "Am beliebtesten",
+    "lifetime": {
+      "badge": "Founding Member · Limitiert",
+      "name": "Pro Lifetime",
+      "tagline": "Einmal zahlen — für immer nutzen",
+      "oneTime": "einmalig",
+      "equivalent": "💡 Entspricht ~16 Monaten Pro. Amortisiert sich in etwa eineinhalb Jahren.",
+      "remainingLabel": "Verbleibend",
+      "ofTotal": "von",
+      "soldSuffix": "verkauft",
+      "soldOut": "Ausverkauft",
+      "ctaBecome": "Founding Member werden · {price}€",
+      "backToMonthly": "Zurück zu Monatsplänen",
+      "teaserSubtitle": "Einmal zahlen · Noch {n} Plätze",
+      "teaserView": "Ansehen →"
+    },
+    "features": {
+      "free": [
+        "Bis zu 30 Transaktionen/Mo",
+        "1 Zahlungsquelle",
+        "1 Budget",
+        "KI-Belegscanning",
+        "Projekte & Budgets",
+        "KI-Assistent",
+        "Geschäftliche Verfolgung",
+        "Teamzugang"
+      ],
+      "pro": [
+        "Unbegrenzte Transaktionen",
+        "Unbegrenzte Projekte & Budgets",
+        "Mehrere Wallets & Karten",
+        "KI-Finanzassistent",
+        "Wiederkehrende Transaktionen & Raten",
+        "Cashflow-Prognose (8 Wochen)",
+        "Mehrere Währungen pro Quelle",
+        "Push-Benachrichtigungen",
+        "CSV/PDF-Import & Export",
+        "Detaillierte Berichte",
+        "Teilen & Familiengruppen",
+        "Privat + geschäftlich"
+      ],
+      "business": [
+        "Alles aus Pro",
+        "Mehrere Firmenprofile",
+        "Mitarbeiter & Zeiterfassung",
+        "Teamzugang",
+        "Projektmitarbeiter",
+        "Erweiterte Projekte",
+        "Mehrbenutzerzugang"
+      ],
+      "lifetime": [
+        "Alles aus Pro — für immer",
+        "Keine monatlichen Kosten",
+        "Alle zukünftigen Pro-Funktionen",
+        "Founding-Member-Status",
+        "Prioritätssupport",
+        "Limitiert auf 200 Nutzer"
+      ]
+    },
+    "footer": {
+      "secure": "Sichere Zahlung via Stripe. Jederzeit kündbar.",
+      "signInOther": "Mit anderem Konto anmelden"
+    }
+  },
   "disclaimer": {
     "workerData": {
       "title": "Verarbeitung personenbezogener Daten",

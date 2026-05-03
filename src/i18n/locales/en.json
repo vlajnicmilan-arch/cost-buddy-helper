@@ -1,4 +1,78 @@
 {
+  "paywall": {
+    "trialExpiredTitle": "Your 14-day trial has ended",
+    "chooseToContinue": "Choose a plan to keep using V&M Balance",
+    "interval": { "monthly": "Monthly", "yearly": "Yearly", "lifetime": "Lifetime" },
+    "yearlyBadge": "-25%",
+    "lifetimeBadge": "-75%",
+    "period": { "monthly": "/mo", "yearly": "/yr", "oneTime": "one-time" },
+    "free": { "name": "Free", "tagline": "To get started", "priceSuffix": "forever", "cta": "Continue free", "comingSoon": "Free plan coming soon" },
+    "pro": { "name": "Pro", "tagline": "For most people", "cta": "Choose Pro", "yearlySavings": "Save {amount}€ per year (~25%)" },
+    "business": { "name": "Business", "tagline": "For serious users", "cta": "Choose Business", "yearlySavings": "Save {amount}€ per year (~25%)" },
+    "popular": "Most popular",
+    "lifetime": {
+      "badge": "Founding Member · Limited",
+      "name": "Pro Lifetime",
+      "tagline": "Pay once — use forever",
+      "oneTime": "one-time",
+      "equivalent": "💡 Equivalent to ~16 months of Pro. Pays off in about a year and a half.",
+      "remainingLabel": "Left",
+      "ofTotal": "of",
+      "soldSuffix": "sold",
+      "soldOut": "Sold out",
+      "ctaBecome": "Become a Founding Member · {price}€",
+      "backToMonthly": "Back to monthly plans",
+      "teaserSubtitle": "Pay once · {n} spots left",
+      "teaserView": "View →"
+    },
+    "features": {
+      "free": [
+        "Up to 30 transactions/mo",
+        "1 payment source",
+        "1 budget",
+        "AI receipt scanning",
+        "Projects & budgets",
+        "AI assistant",
+        "Business tracking",
+        "Team access"
+      ],
+      "pro": [
+        "Unlimited transactions",
+        "Unlimited projects & budgets",
+        "Multiple wallets & cards",
+        "AI financial assistant",
+        "Recurring transactions & installments",
+        "Cashflow forecast (8 weeks)",
+        "Multi-currency per source",
+        "Push notifications",
+        "CSV/PDF import & export",
+        "Detailed reports",
+        "Sharing & family groups",
+        "Personal + business tracking"
+      ],
+      "business": [
+        "Everything in Pro",
+        "Multiple company profiles",
+        "Workers & timesheets",
+        "Team access",
+        "Project collaborators",
+        "Advanced projects",
+        "Multi-user access"
+      ],
+      "lifetime": [
+        "Everything in Pro — forever",
+        "No recurring monthly cost",
+        "All future Pro features",
+        "Founding Member status",
+        "Priority support",
+        "Limited to 200 users"
+      ]
+    },
+    "footer": {
+      "secure": "Secure payment via Stripe. Cancel anytime.",
+      "signInOther": "Sign in with a different account"
+    }
+  },
   "disclaimer": {
     "workerData": {
       "title": "Personal data processing",
