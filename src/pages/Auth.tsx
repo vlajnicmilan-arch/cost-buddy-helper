@@ -112,7 +112,22 @@ const Auth = () => {
         const { error } = await signIn(email.trim(), password);
         if (error) {
           if (error.message.includes('Invalid login')) {
-            showError(t('toasts.wrongEmailOrPassword'));
+            // Track failed attempts per email (sessionStorage)
+            const key = `failed_login_${email.trim().toLowerCase()}`;
+            const attempts = Number(sessionStorage.getItem(key) || '0') + 1;
+            sessionStorage.setItem(key, String(attempts));
+            const MAX_ATTEMPTS = 5;
+            const remaining = MAX_ATTEMPTS - attempts;
+            if (attempts >= MAX_ATTEMPTS) {
+              sessionStorage.removeItem(key);
+              showError(t('toasts.tooManyAttempts', 'Previše neuspjelih pokušaja. Resetirajte lozinku.'));
+              setShowForgotPassword(true);
+              setPassword('');
+              return;
+            }
+            showError(
+              `${t('toasts.wrongEmailOrPassword')} (${t('toasts.attemptsRemaining', 'preostalo pokušaja')}: ${remaining})`
+            );
           } else if (error.message.includes('Email not confirmed')) {
             showError(t('toasts.emailNotConfirmed'));
             setAwaitingVerification(true);
@@ -122,6 +137,8 @@ const Auth = () => {
           }
           return;
         }
+        // success → reset counter
+        sessionStorage.removeItem(`failed_login_${email.trim().toLowerCase()}`);
         if (!storageMode) {
           setStorageMode('cloud');
         }
