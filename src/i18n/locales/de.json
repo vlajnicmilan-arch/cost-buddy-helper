@@ -2471,7 +2471,9 @@
     "obligationsMarkedPaid": "{{count}} Verpflichtungen als bezahlt markiert",
     "joinedGroup": "Sie sind der Gruppe \"{{name}}\" beigetreten!",
     "passwordChanged": "Passwort erfolgreich geändert!",
-    "moduleSaveError": "Fehler beim Speichern der Module"
+    "moduleSaveError": "Fehler beim Speichern der Module",
+    "tooManyAttempts": "Zu viele fehlgeschlagene Versuche. Bitte Passwort zurücksetzen.",
+    "attemptsRemaining": "verbleibende Versuche"
   },
   "placeholders": {
     "selectDestinationAccount": "Zielkonto auswählen",
