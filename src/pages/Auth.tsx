@@ -44,6 +44,7 @@ const Auth = () => {
   const location = useLocation();
   const { storageMode, setStorageMode } = useStorage();
   const { t } = useTranslation();
+  const { signInWithOAuth: signInWithOAuthNative, isNative } = useNativeOAuth();
 
   // Auto-switch to signup mode if navigated with mode: 'signup'
   useEffect(() => {
@@ -625,13 +626,21 @@ const Auth = () => {
                   setStorageMode('cloud');
                 }
 
-                const { error } = await lovable.auth.signInWithOAuth("google", {
-                  redirect_uri: `${window.location.origin}/app`,
-                  extraParams: { prompt: "select_account" },
-                });
-                if (error) {
-                  showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
-                  console.error('Google OAuth error:', error);
+                if (isNative) {
+                  const { error } = await signInWithOAuthNative('google');
+                  if (error) {
+                    showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
+                    console.error('Google native OAuth error:', error);
+                  }
+                } else {
+                  const { error } = await lovable.auth.signInWithOAuth("google", {
+                    redirect_uri: `${window.location.origin}/app`,
+                    extraParams: { prompt: "select_account" },
+                  });
+                  if (error) {
+                    showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
+                    console.error('Google OAuth error:', error);
+                  }
                 }
               } catch (err) {
                 showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
@@ -663,12 +672,20 @@ const Auth = () => {
                   setStorageMode('cloud');
                 }
 
-                const { error } = await lovable.auth.signInWithOAuth("apple", {
-                  redirect_uri: `${window.location.origin}/app`,
-                });
-                if (error) {
-                  showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
-                  console.error('Apple OAuth error:', error);
+                if (isNative) {
+                  const { error } = await signInWithOAuthNative('apple');
+                  if (error) {
+                    showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
+                    console.error('Apple native OAuth error:', error);
+                  }
+                } else {
+                  const { error } = await lovable.auth.signInWithOAuth("apple", {
+                    redirect_uri: `${window.location.origin}/app`,
+                  });
+                  if (error) {
+                    showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
+                    console.error('Apple OAuth error:', error);
+                  }
                 }
               } catch (err) {
                 showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
