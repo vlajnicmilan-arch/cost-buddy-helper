@@ -1,81 +1,42 @@
+Razumijem nervozu. Provjerio sam stvarno stanje umjesto nagađanja i sada imamo konkretan uzrok.
 
-## Cilj
-Otkloniti tehničke smetnje koje su izronile u prošlom auditu i pripremiti regression checklist prije javnog lansiranja. Fokus: stvarni runtime problemi, ne kozmetika.
+Što sam provjerio:
+- Objavljena stranica je public, nije zaključana privatnim publish postavkama.
+- Backend auth logovi pokazuju da Google prijava sada uspijeva: postoji recent `login_method: oidc`, `provider: google`, status 200.
+- Nema više auth grešaka tipa `failed to sign in with vendor` ili `Unacceptable audience` u recent logovima.
+- App trenutno Google OAuth pokreće s `redirect_uri: window.location.origin`, što znači da se nakon Google prijave vraća na `https://vmbalance.com/`.
+- `src/main.tsx` ima “fast landing” optimizaciju: ako je putanja `/`, direktno renderira Landing stranicu i uopće ne učitava `App.tsx`, auth state ni routing.
 
-## 1. "signal is aborted without reason" — status check
+Zaključak:
+Google prijava više ne pada na backendu. Problem je frontend boot logika: uspješna prijava se vraća na `/`, a `/` kod objavljene stranice namjerno učita samo landing, pa korisnik izgleda kao da nije prijavljen.
 
-Pregledom koda potvrđeno:
-- `src/lib/sentry.ts` već ignorira ovu poruku (ne ide u Sentry).
-- `src/lib/diagnosticLogger.ts` (linija 326) je ne logira u dijagnostiku.
-- `src/hooks/useReceiptScanner.ts` ju tretira kao "abort-like" i ne prikazuje korisniku.
-- Auth logs (zadnja 2 sata) pokazuju samo `200 OK` na `/user`, `/token` te uspješne `Login` evente za 2 različita korisnika. Nema 4xx/5xx.
-- Runtime errors snapshot: prazan.
+Plan popravka:
 
-**Zaključak:** "/auth runtime error" iz prethodnog audita je bio false alarm — poruka postoji u kodu samo kao filter, a ne kao stvarna greška. Nema šta popravljati u Auth flow-u po toj osnovi.
+1. Promijeniti OAuth redirect za Google i Apple login
+- U `src/pages/Auth.tsx` promijeniti redirect iz:
+  - `window.location.origin`
+- u:
+  - `${window.location.origin}/app`
+- Tako se nakon Google odabira računa aplikacija vraća na app entry route, ne na landing.
 
-Akcija: ukloniti tu stavku s liste blockera prije launcha.
+2. Ojačati `src/main.tsx` fast-landing logiku
+- Fast landing smije ostati za obične posjetitelje na `/`, ali ne smije preskočiti aplikaciju ako postoji auth povratak ili spremljena auth sesija.
+- Dodati provjeru prije fast landing rendera:
+  - ako URL hash/query sadrži auth podatke ili auth grešku, učitati puni `App.tsx`
+  - ako localStorage već ima Supabase/Lovable auth session key, učitati puni `App.tsx`
+- Time se izbjegava ponavljanje problema čak i ako neki OAuth callback ipak završi na root URL-u.
 
-## 2. Stvarni warning koji vidimo u konzoli
+3. Ne dirati više backend/OAuth provider postavke
+- Trenutni logovi pokazuju da Google provider radi.
+- Daljnje resetiranje provider postavki bi samo povećalo rizik i trošilo vrijeme.
 
-Console log:
-```
-Warning: Function components cannot be given refs.
-Check the render method of `PopoverContent`.
-... at BusinessProfileSwitcher.tsx:32
-```
+4. Nakon implementacije
+- Objaviti frontend update, jer su ovo client-side promjene.
+- Testirati na `https://vmbalance.com/auth` u inkognito prozoru.
+- Očekivani rezultat: nakon odabira Google računa završavaš na `/app`, zatim `/home` ili `/onboarding`, ovisno o stanju onboardinga.
 
-Ovo je React forwardRef warning u `BusinessProfileSwitcher` — ne ruši app, ali zagađuje dev konzolu i može maskirati prave greške tijekom QA. Popravit ću tako da se `PopoverTrigger asChild` koristi nad ispravnim children-om (ili dodati `forwardRef` u custom wrapper).
+Ovo je mali i ciljano ograničen popravak u 2 datoteke, bez migracija i bez novih auth eksperimenata.
 
-## 3. Regression smoke test checklist (kreirati kao `docs/PRE_LAUNCH_REGRESSION.md`)
-
-Lista konkretnih putanja za ručnu provjeru, fokus na nedavno mijenjano:
-
-**Auth / Onboarding**
-- Email signup → email verify → onboarding usage_profile (finance_only / finance_projects)
-- Google OAuth na webu i nativeu
-- Logout → login zadržava aktivni business profil
-
-**Projekti (najveći adut — nedavne promjene)**
-- Kreiranje projekta s preset tipom (svih 13)
-- "Tim projekta" tab: members / workers / collaborators podtabovi
-- Project status line na karticama (paused/justStarted/inProgress/nearEnd)
-- Project completion wizard (3 koraka) → archive / reopen
-- Funding vs actual P&L izračun
-
-**Naplata / Paywall (upravo refaktorirano)**
-- Free → Pro upgrade flow (Stripe checkout + 5s polling)
-- Lifetime tier dostupnost banner
-- Sve i18n stringovi prikazani u HR / EN / DE
-- Feature gating: useFeatureAccess granice (recurring, multi-currency, scan)
-
-**Mobile / native**
-- BottomNav redoslijed s usage_profile
-- Receipt scanner: capture → process → save (Personal i Business)
-- Back button handling u dijalozima
-
-**Admin / Pulse**
-- Funnel events widget
-- Feedback submissions tablica
-
-## 4. Tehničke izmjene koje ću napraviti
-
-### a) `src/components/BusinessProfileSwitcher.tsx`
-Popraviti React ref warning oko `PopoverContent` / `PopoverTrigger`. Vjerojatno treba `forwardRef` na custom child ili `asChild` ispravno propagirati ref.
-
-### b) `docs/PRE_LAUNCH_REGRESSION.md` (novi file)
-Strukturirana checklist iz točke 3, s checkbox stavkama, odgovornom osobom (ti) i statusom (✅ / ⚠️ / ❌). Hrvatski jezik, jer je za internu upotrebu prije launcha.
-
-### c) Bez izmjena na:
-- `useAuth.ts` — radi ispravno
-- `Auth.tsx` — radi ispravno
-- `sentry.ts` / `diagnosticLogger.ts` — filtri su namjerno postavljeni
-
-## 5. Što NE radim u ovom koraku
-- Redizajn landinga (to je opcija B u idućem koraku)
-- Demo projekt onboarding (opcija C)
-- Nove feature
-
-## Ishod
-- Konzola čista od "Function components cannot be given refs" warninga
-- Pisani regression checklist koji možeš proći prije nego klikneš "Publish"
-- Potvrda da `/auth` nije blocker
+<lov-actions>
+<lov-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</lov-link>
+</lov-actions>
