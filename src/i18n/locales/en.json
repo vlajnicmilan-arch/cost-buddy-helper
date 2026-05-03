@@ -2482,7 +2482,9 @@
     "obligationsMarkedPaid": "{{count}} obligations marked as paid",
     "joinedGroup": "You have joined the group \"{{name}}\"!",
     "passwordChanged": "Password changed successfully!",
-    "moduleSaveError": "Error saving modules"
+    "moduleSaveError": "Error saving modules",
+    "tooManyAttempts": "Too many failed attempts. Please reset your password.",
+    "attemptsRemaining": "attempts remaining"
   },
   "placeholders": {
     "selectDestinationAccount": "Select destination account",

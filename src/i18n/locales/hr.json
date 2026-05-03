@@ -2485,7 +2485,9 @@
     "obligationsMarkedPaid": "{{count}} obveza označeno kao plaćeno",
     "joinedGroup": "Pridružili ste se grupi \"{{name}}\"!",
     "passwordChanged": "Lozinka je uspješno promijenjena!",
-    "moduleSaveError": "Greška pri spremanju modula"
+    "moduleSaveError": "Greška pri spremanju modula",
+    "tooManyAttempts": "Previše neuspjelih pokušaja. Resetirajte lozinku.",
+    "attemptsRemaining": "preostalo pokušaja"
   },
   "placeholders": {
     "selectDestinationAccount": "Odaberi odredišni račun",
