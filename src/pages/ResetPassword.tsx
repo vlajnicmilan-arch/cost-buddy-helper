@@ -97,6 +97,8 @@ const ResetPassword = () => {
       
       setSuccess(true);
       showSuccess(t('toasts.passwordChanged'));
+      // Sign out so the user must log in with the new password
+      await supabase.auth.signOut();
     } finally {
       setLoading(false);
     }
