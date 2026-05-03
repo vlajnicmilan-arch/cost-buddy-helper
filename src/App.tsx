@@ -58,6 +58,7 @@ const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/Landing"));
+const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -183,6 +184,7 @@ const AppRoutes = () => {
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/native-oauth/callback" element={<NativeOAuthCallback />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -232,6 +234,7 @@ const AppRoutes = () => {
           <Route path="/" element={<RootRoute storageMode={storageMode} user={user} ready={allReady} />} />
           <Route path="/app" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/native-oauth/callback" element={<NativeOAuthCallback />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
@@ -270,6 +273,7 @@ const AppRoutes = () => {
       <Route path="/family" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Family />)}</Suspense>} />
       <Route path="/join-family/:token" element={<Suspense fallback={<PageLoader />}><JoinFamily /></Suspense>} />
       <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <Navigate to="/home" replace /> : <Auth />}</Suspense>} />
+      <Route path="/native-oauth/callback" element={<Suspense fallback={<PageLoader />}><NativeOAuthCallback /></Suspense>} />
       <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
       <Route path="/setup" element={<Suspense fallback={<PageLoader />}><StorageSetup /></Suspense>} />
       <Route path="/install" element={<Suspense fallback={<PageLoader />}><Install /></Suspense>} />
