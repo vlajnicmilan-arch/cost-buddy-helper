@@ -1,24 +1,16 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
 const NATIVE_CALLBACK = 'app.lovable.costbuddy://auth/callback';
-const ANDROID_PACKAGE = 'app.lovable.costbuddy';
 
 const buildNativeUrl = () => `${NATIVE_CALLBACK}${window.location.search || ''}${window.location.hash || ''}`;
 
-const buildAndroidIntentUrl = () => {
-  const query = window.location.search || '';
-  const hash = window.location.hash || '';
-  return `intent://auth/callback${query}${hash}#Intent;scheme=app.lovable.costbuddy;package=${ANDROID_PACKAGE};end`;
-};
-
 const NativeOAuthCallback = () => {
   const { t } = useTranslation();
-  const isAndroid = useMemo(() => /android/i.test(navigator.userAgent || ''), []);
 
   const openApp = () => {
-    window.location.href = isAndroid ? buildAndroidIntentUrl() : buildNativeUrl();
+    window.location.href = buildNativeUrl();
   };
 
   useEffect(() => {
