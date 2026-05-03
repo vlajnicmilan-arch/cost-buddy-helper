@@ -1,87 +1,68 @@
-Razumijem frustraciju. Provjerio sam stvarno stanje datoteka prije nego što išta tvrdim, i potvrđujem da su oba problema realna i rješiva u istom buildu.
+Žao mi je. Ovaj put sam provjerio konkretno stanje u repozitoriju i postoje dva provjerljiva problema:
 
-## Što sam konkretno provjerio
+1. APK login trenutno koristi `redirectTo: app.lovable.costbuddy://auth/callback`, ali u stvarnom toku to može ostaviti sesiju u vanjskom browseru/PWA umjesto u WebView-u APK-a. To objašnjava zašto si završio u PWA.
+2. Logo nije promijenjen jer su PNG launcher ikone zamijenjene, ali su u Android resursima i dalje ostali stari adaptive-icon XML slojevi:
+   - `android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml` još sadrži stari Capacitor Android robot.
+   - `android/app/src/main/res/drawable/ic_launcher_background.xml` još sadrži stari Capacitor grid.
+   - `android/app/src/main/res/values/ic_launcher_background.xml` je još bijela pozadina.
+   - `mipmap-anydpi-v26/ic_launcher.xml` koristi adaptive icon sloj, pa Android 8+ može ignorirati nove PNG fallback ikone i prikazati stari XML sloj. Ovo se poklapa s tvojim screenshotom starog loga.
 
-**Logo problem — DOKAZANO:**
-- `src/assets/logo.png`, `public/logo-512.png`, `public/logo-192.png`, `public/favicon.png` — svi imaju **isti MD5 hash** (`2dcb0bfffd69b985ca408ae1091d9a44`). To je tvoj pravi V&M Balance logo, koristi se na webu i u PWA.
-- `android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png` — **drugačiji MD5** (`9e029293...`)
-- `android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png` — **drugačiji MD5** (`ed3696b7...`)
-- `android/app/src/main/res/drawable-port-xxxhdpi/splash.png` — **drugačiji MD5** (`b5b1b22b...`)
-- `android/app/src/main/res/drawable/splash.png` — **drugačiji MD5** (`acc976d4...`)
+Plan popravka:
 
-To su zadane Capacitor placeholder slike koje su se generirale kad je `android/` folder dodan. Niti jedna ranija verzija nije ih nikad zamijenila s tvojim logom. Zato se u APK-u "vraća stari logo" — on nikad nije bio ni promijenjen u nativeu, samo na webu.
+1. Popraviti native OAuth tok bez slanja korisnika u PWA
+   - Vratiti OAuth redirect na HTTPS callback rutu koju hosting i auth provider sigurno prihvaćaju:
+     `https://vmbalance.com/native-oauth/callback`
+   - `NativeOAuthCallback` zadržati samo kao most koji odmah pretvara callback u native deep link:
+     `app.lovable.costbuddy://auth/callback?...`
+   - Gumb “Otvori V&M Balance” promijeniti na Android intent URL s package-om:
+     `intent://auth/callback?...#Intent;scheme=app.lovable.costbuddy;package=app.lovable.costbuddy;end`
+   - Time browser neće otvoriti `/app` PWA kao završnu destinaciju, nego će callback pokušati otvoriti instalirani APK po package name-u.
 
-**OAuth problem — DOKAZANO:**
-- `src/hooks/useNativeOAuth.ts` šalje Google login na bridge `https://vmbalance.com/native-oauth/callback`
-- `src/pages/NativeOAuthCallback.tsx` je upravo ekran "Vraćamo vas u aplikaciju" — i sad ne uspijeva otvoriti APK natrag
-- intent-filter u `AndroidManifest.xml` je trenutno preusko vezan na `host="auth"` + `pathPrefix="/callback"`
+2. Pojačati Android intent-filter da hvata točan OAuth callback
+   - U `AndroidManifest.xml` dodati precizniji filter uz postojeći scheme:
+     - scheme: `app.lovable.costbuddy`
+     - host: `auth`
+     - pathPrefix: `/callback`
+   - Ostaviti postojeći opći filter za kompatibilnost s drugim deep linkovima.
 
-## Plan popravka (jedan build, oba problema)
+3. Trajno ukloniti stari Android logo iz svih native resursa
+   - Zamijeniti ili ukloniti stare XML adaptive-icon slojeve koji trenutno nose Capacitor robot/grid.
+   - Promijeniti `mipmap-anydpi-v26/ic_launcher.xml` i `ic_launcher_round.xml` da koriste nove bitmap drawable slojeve, ne stare XML slojeve.
+   - Postaviti adaptive background na tamni slate (`#0F172A`) umjesto bijele.
+   - Zadržati/generirati sve PNG launcher i splash datoteke iz provjerenog `src/assets/logo.png`.
 
-### A. Logo u Androidu — zamijeniti sve placeholder ikone
+4. Dodati provjerljiv “build marker” za APK
+   - Povisiti `versionCode`/`versionName` u `android/app/build.gradle`, npr. na `versionCode 2` i `versionName "1.0.1"`, da na mobitelu bude jasno da se instalirao novi APK, a ne stari.
 
-Generirati iz `src/assets/logo.png` sve potrebne Android resurse na pravilnim rezolucijama i prepisati postojeće placeholdere:
+5. Dodati zaštitu protiv ponavljanja ovog problema
+   - Dodati kratku skriptu/napomenu u projekt koja pri budućim buildovima provjerava da Android resursi ne sadrže stare Capacitor XML ikone (`M32,64`, `#26A69A`, grid path itd.).
+   - Time idući put ne možemo “misliti” da je logo zamijenjen dok Android 8+ i dalje koristi stari adaptive layer.
 
-**Launcher ikone** (`android/app/src/main/res/`):
-- `mipmap-mdpi/ic_launcher.png` 48×48
-- `mipmap-hdpi/ic_launcher.png` 72×72
-- `mipmap-xhdpi/ic_launcher.png` 96×96
-- `mipmap-xxhdpi/ic_launcher.png` 144×144
-- `mipmap-xxxhdpi/ic_launcher.png` 192×192
-- isto za `ic_launcher_round.png` (kvadratni s alpha) i `ic_launcher_foreground.png` (108×108 dp safe zone, scale ~70%)
+Nakon implementacije bit će obavezno napraviti clean native build, ne samo web build:
 
-**Splash slike** (logo centriran na `#0f172a` pozadini, već postavljenoj u `capacitor.config.ts`):
-- `drawable/splash.png`
-- `drawable-port-mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi/splash.png`
-- `drawable-land-mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi/splash.png`
-
-Generiranje radim Pythonom u izvršnom modu (Pillow je dostupan), pa su slike točno usklađene s `src/assets/logo.png`. Nema ručnog dizajna, nema pogađanja.
-
-### B. Native OAuth — maknuti web bridge iz glavnog flowa
-
-1. `src/hooks/useNativeOAuth.ts` — promijeniti `redirectTo` s
-   `https://vmbalance.com/native-oauth/callback` na
-   `app.lovable.costbuddy://auth/callback`.
-
-2. `android/app/src/main/AndroidManifest.xml` — zamijeniti uski filter (`host="auth"` + `pathPrefix="/callback"`) službenim Capacitor obrascem koji hvata sve unutar custom scheme:
-
-   ```xml
-   <intent-filter>
-     <action android:name="android.intent.action.VIEW" />
-     <category android:name="android.intent.category.DEFAULT" />
-     <category android:name="android.intent.category.BROWSABLE" />
-     <data android:scheme="@string/custom_url_scheme" />
-   </intent-filter>
-   ```
-
-   `custom_url_scheme` je već `app.lovable.costbuddy` u `strings.xml`.
-
-3. `src/pages/NativeOAuthCallback.tsx` — ostaje samo kao fallback za stare buildove; u glavnom Google flowu se više neće prikazivati.
-
-4. Backend redirect lista mora dopustiti `app.lovable.costbuddy://auth/callback`. Ako alat to dopusti nakon odobrenja, postavit ću izravno; inače ću ti dati točan link.
-
-### C. Bez novih hardcoded tekstova
-
-Nema novog UI texta — sve postojeće `auth.nativeOAuth.*` ključeve ostavljam jer i dalje vrijede za rijetki fallback slučaj.
-
-## Lokalni koraci nakon mojih promjena
-
-```bat
+```text
 git pull
 npm install --legacy-peer-deps
 npm run build
 npx cap sync android
-npx cap open android
 ```
 
-U Android Studiju:
-- **Build → Clean Project**
-- **Build → Rebuild Project**
-- **Build → Build Bundle(s) / APK(s) → Build APK(s)**
+Zatim u Android Studio:
 
-Na mobitelu: **deinstaliraj** staru aplikaciju pa instaliraj novi APK. Bez deinstalacije Android može zadržati staru ikonu u cacheu launchera.
+```text
+Build -> Clean Project
+Build -> Rebuild Project
+Build -> Build APK(s)
+```
 
-## Očekivani rezultat
+Na mobitelu prije instalacije:
 
-- Ikona aplikacije i splash u APK-u su tvoj V&M Balance logo, identičan webu.
-- Google prijava u APK-u više ne prolazi kroz "Vraćamo vas u aplikaciju" — povratak ide direktno u APK.
+```text
+Deinstalirati V&M Balance
+Deinstalirati PWA ikonu / Add-to-home-screen verziju ako postoji
+Instalirati novi APK
+```
+
+Razlog za deinstalaciju PWA je taj što sada vidimo da Android/Samsung Browser može preusmjeravanje vezati uz PWA iskustvo na `vmbalance.com`, a ne uz APK. Nakon novog APK-a i intent URL-a to više ne bi smjelo biti primarni tok, ali za test treba ukloniti PWA da ne maskira rezultat.
+
+Ako odobriš, u sljedećem koraku ću napraviti ove izmjene u kodu i resursima.

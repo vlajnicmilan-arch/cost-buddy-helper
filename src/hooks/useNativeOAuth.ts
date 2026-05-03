@@ -3,24 +3,25 @@ import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 
 const NATIVE_CALLBACK = 'app.lovable.costbuddy://auth/callback';
+const HTTPS_BRIDGE = 'https://vmbalance.com/native-oauth/callback';
 
 /**
  * Native OAuth flow for Capacitor APK.
  *
- * Why we don't use lovable.auth.signInWithOAuth on native:
- * The Lovable broker redirects back to a https://vmbalance.com URL. On a
- * device that has the PWA installed AND the native APK installed, Android
- * routes that https URL to the PWA (or the system browser), so the session
- * never lands inside the APK WebView.
- *
- * Native flow instead:
- * 1. Ask Supabase for the OAuth URL with redirectTo set to an allowed HTTPS
- *    bridge (`https://vmbalance.com/native-oauth/callback`).
+ * Flow:
+ * 1. Ask Supabase for the OAuth URL with redirectTo set to the HTTPS bridge
+ *    `https://vmbalance.com/native-oauth/callback`. Supabase + Google accept
+ *    only HTTPS redirect URLs, so we cannot point them directly at the custom
+ *    `app.lovable.costbuddy://` scheme.
  * 2. Open that URL in Capacitor Browser (Chrome Custom Tab on Android).
- * 3. After the user authenticates, the provider → Supabase → bridge route
- *    forwards the auth `code` to the custom scheme that only the APK handles.
- * 4. Close the in-app browser and call `exchangeCodeForSession(code)` so the
- *    APK WebView gets the session.
+ * 3. The bridge page (`/native-oauth/callback`) receives `?code=...` and
+ *    immediately forwards it to `app.lovable.costbuddy://auth/callback?code=...`,
+ *    using an Android `intent://` URL with the explicit package name. This
+ *    forces Android to open the installed APK by package, so the session
+ *    never lands in the PWA or the system browser.
+ * 4. The APK receives the deep link via `appUrlOpen`, closes the in-app
+ *    browser, and calls `exchangeCodeForSession(code)` so the WebView gets
+ *    the session.
  */
 export const useNativeOAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -48,7 +49,6 @@ export const useNativeOAuth = () => {
         }
 
         try {
-          // Parse code/error from either query or hash.
           const u = new URL(url);
           const search = new URLSearchParams(u.search || '');
           const hash = new URLSearchParams((u.hash || '').replace(/^#/, ''));
@@ -106,7 +106,7 @@ export const useNativeOAuth = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: NATIVE_CALLBACK,
+          redirectTo: HTTPS_BRIDGE,
           skipBrowserRedirect: true,
           queryParams,
         },

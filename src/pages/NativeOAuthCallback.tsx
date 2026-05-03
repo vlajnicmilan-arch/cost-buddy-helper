@@ -2,19 +2,40 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
-const NATIVE_CALLBACK = 'app.lovable.costbuddy://auth/callback';
+const PACKAGE = 'app.lovable.costbuddy';
 
-const buildNativeUrl = () => `${NATIVE_CALLBACK}${window.location.search || ''}${window.location.hash || ''}`;
+/**
+ * Build an Android `intent://` URL that explicitly targets the installed APK
+ * by package name. This bypasses the browser's default handler picker and
+ * prevents the OAuth callback from opening the PWA installed on the same
+ * domain.
+ *
+ * Format:
+ *   intent://auth/callback?code=...#Intent;scheme=app.lovable.costbuddy;package=app.lovable.costbuddy;end
+ */
+const buildIntentUrl = () => {
+  const search = window.location.search || '';
+  const hash = window.location.hash || '';
+  return `intent://auth/callback${search}${hash}#Intent;scheme=${PACKAGE};package=${PACKAGE};end`;
+};
+
+const buildSchemeUrl = () =>
+  `${PACKAGE}://auth/callback${window.location.search || ''}${window.location.hash || ''}`;
 
 const NativeOAuthCallback = () => {
   const { t } = useTranslation();
 
   const openApp = () => {
-    window.location.href = buildNativeUrl();
+    // Try the explicit intent first; fall back to plain scheme after a tick.
+    window.location.href = buildIntentUrl();
+    setTimeout(() => {
+      window.location.href = buildSchemeUrl();
+    }, 800);
   };
 
   useEffect(() => {
-    window.location.href = buildNativeUrl();
+    // Auto-launch the APK as soon as the bridge page renders.
+    window.location.href = buildIntentUrl();
   }, []);
 
   return (
