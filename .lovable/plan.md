@@ -1,68 +1,36 @@
-Žao mi je. Ovaj put sam provjerio konkretno stanje u repozitoriju i postoje dva provjerljiva problema:
+Potvrdio sam iz stvarnih dijagnostičkih logova da novi APK sada učitava dobar logo i app verziju, ali Google OAuth callback ne ulazi natrag u Capacitor aplikaciju.
 
-1. APK login trenutno koristi `redirectTo: app.lovable.costbuddy://auth/callback`, ali u stvarnom toku to može ostaviti sesiju u vanjskom browseru/PWA umjesto u WebView-u APK-a. To objašnjava zašto si završio u PWA.
-2. Logo nije promijenjen jer su PNG launcher ikone zamijenjene, ali su u Android resursima i dalje ostali stari adaptive-icon XML slojevi:
-   - `android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml` još sadrži stari Capacitor Android robot.
-   - `android/app/src/main/res/drawable/ic_launcher_background.xml` još sadrži stari Capacitor grid.
-   - `android/app/src/main/res/values/ic_launcher_background.xml` je još bijela pozadina.
-   - `mipmap-anydpi-v26/ic_launcher.xml` koristi adaptive icon sloj, pa Android 8+ može ignorirati nove PNG fallback ikone i prikazati stari XML sloj. Ovo se poklapa s tvojim screenshotom starog loga.
+Ključni nalaz:
+- APK starta na `https://vmbalance.com/app?forceHideBadge=true` s `isCapacitor:true`.
+- Nakon Google odabira račun se vraća na `https://vmbalance.com/native-oauth/callback...`, ali taj callback se izvršava kao običan web/PWA (`isCapacitor:false`), ne u APK-u.
+- Callback dolazi s tokenima u URL hash-u (`#access_token=...&refresh_token=...`), a trenutačni native handler očekuje uglavnom `code` i zato ne postavlja sesiju u WebView.
+- Zbog toga aplikacija ostane na login ekranu i prikaže “Prijava preko Googlea nije usp...”.
 
 Plan popravka:
 
-1. Popraviti native OAuth tok bez slanja korisnika u PWA
-   - Vratiti OAuth redirect na HTTPS callback rutu koju hosting i auth provider sigurno prihvaćaju:
-     `https://vmbalance.com/native-oauth/callback`
-   - `NativeOAuthCallback` zadržati samo kao most koji odmah pretvara callback u native deep link:
-     `app.lovable.costbuddy://auth/callback?...`
-   - Gumb “Otvori V&M Balance” promijeniti na Android intent URL s package-om:
-     `intent://auth/callback?...#Intent;scheme=app.lovable.costbuddy;package=app.lovable.costbuddy;end`
-   - Time browser neće otvoriti `/app` PWA kao završnu destinaciju, nego će callback pokušati otvoriti instalirani APK po package name-u.
+1. Učvrstiti native OAuth callback obradu
+   - Ažurirati `src/hooks/useNativeOAuth.ts` da podržava oba moguća OAuth rezultata:
+     - PKCE `code` callback preko `exchangeCodeForSession(code)`
+     - implicit token callback preko `access_token` + `refresh_token` i `supabase.auth.setSession(...)`
+   - Nakon uspješnog postavljanja sesije zatvoriti Capacitor Browser i vratiti korisnika u aplikaciju bez ostavljanja login ekrana.
+   - Dodati dijagnostičke evente za početak OAuth-a, primljen deep link, tip callbacka (`code` ili `tokens`) i grešku, bez zapisivanja stvarnih tokena.
 
-2. Pojačati Android intent-filter da hvata točan OAuth callback
-   - U `AndroidManifest.xml` dodati precizniji filter uz postojeći scheme:
-     - scheme: `app.lovable.costbuddy`
-     - host: `auth`
-     - pathPrefix: `/callback`
-   - Ostaviti postojeći opći filter za kompatibilnost s drugim deep linkovima.
+2. Učiniti HTTPS bridge robusnijim za Android
+   - Ažurirati `src/pages/NativeOAuthCallback.tsx` tako da pri povratku s Googlea eksplicitno šalje i `search` i `hash` natrag u app scheme/intent.
+   - Dodati jasniji fallback gumb “Otvori aplikaciju” za slučaj da Android automatski ne prebaci iz browsera u APK.
+   - Ne spremati tokene u logove i ne prikazivati ih u UI-u.
 
-3. Trajno ukloniti stari Android logo iz svih native resursa
-   - Zamijeniti ili ukloniti stare XML adaptive-icon slojeve koji trenutno nose Capacitor robot/grid.
-   - Promijeniti `mipmap-anydpi-v26/ic_launcher.xml` i `ic_launcher_round.xml` da koriste nove bitmap drawable slojeve, ne stare XML slojeve.
-   - Postaviti adaptive background na tamni slate (`#0F172A`) umjesto bijele.
-   - Zadržati/generirati sve PNG launcher i splash datoteke iz provjerenog `src/assets/logo.png`.
+3. Provjeriti Android deep link konfiguraciju
+   - Pregledati i po potrebi korigirati `AndroidManifest.xml` intent filtere za `app.lovable.costbuddy://auth/callback`.
+   - Zadržati eksplicitni package intent kako bi se izbjeglo otvaranje PWA/web verzije.
 
-4. Dodati provjerljiv “build marker” za APK
-   - Povisiti `versionCode`/`versionName` u `android/app/build.gradle`, npr. na `versionCode 2` i `versionName "1.0.1"`, da na mobitelu bude jasno da se instalirao novi APK, a ne stari.
+4. Ukloniti/ublažiti uzrok “bad_oauth_state” slučaja
+   - Trenutni logovi pokazuju i povratak na `/ ?error=bad_oauth_state` u browseru.
+   - U native toku neću se oslanjati na browser storage/state gdje god možemo izbjeći problem; callback s tokenima će se direktno prenijeti u APK i tamo postaviti sesiju.
 
-5. Dodati zaštitu protiv ponavljanja ovog problema
-   - Dodati kratku skriptu/napomenu u projekt koja pri budućim buildovima provjerava da Android resursi ne sadrže stare Capacitor XML ikone (`M32,64`, `#26A69A`, grid path itd.).
-   - Time idući put ne možemo “misliti” da je logo zamijenjen dok Android 8+ i dalje koristi stari adaptive layer.
+5. Lokalizacija i postojeći standardi
+   - Sve nove vidljive poruke idu kroz postojeće i18n ključeve u HR/EN/DE.
+   - Ne dirati auto-generirane backend client/type datoteke.
+   - Ne uvoditi novu auth arhitekturu; popravak ostaje u postojećem native OAuth toku.
 
-Nakon implementacije bit će obavezno napraviti clean native build, ne samo web build:
-
-```text
-git pull
-npm install --legacy-peer-deps
-npm run build
-npx cap sync android
-```
-
-Zatim u Android Studio:
-
-```text
-Build -> Clean Project
-Build -> Rebuild Project
-Build -> Build APK(s)
-```
-
-Na mobitelu prije instalacije:
-
-```text
-Deinstalirati V&M Balance
-Deinstalirati PWA ikonu / Add-to-home-screen verziju ako postoji
-Instalirati novi APK
-```
-
-Razlog za deinstalaciju PWA je taj što sada vidimo da Android/Samsung Browser može preusmjeravanje vezati uz PWA iskustvo na `vmbalance.com`, a ne uz APK. Nakon novog APK-a i intent URL-a to više ne bi smjelo biti primarni tok, ali za test treba ukloniti PWA da ne maskira rezultat.
-
-Ako odobriš, u sljedećem koraku ću napraviti ove izmjene u kodu i resursima.
+Nakon odobrenja ću napraviti ove izmjene u kodu. Nakon toga trebaš napraviti novi build/APK istim postupkom kao sada. Očekivani rezultat: nakon odabira Google računa Android se vraća u instalirani APK i korisnik je prijavljen, bez odlaska u PWA/web i bez poruke neuspješne prijave.
