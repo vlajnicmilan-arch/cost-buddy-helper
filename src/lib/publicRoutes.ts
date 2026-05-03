@@ -15,6 +15,7 @@ const PUBLIC_ROUTES: ReadonlyArray<string> = [
   "/",
   "/app", // transient redirect target — treat as public so overlays don't flash
   "/auth",
+  "/native-oauth/callback",
   "/setup",
   "/install",
   "/reset-password",
