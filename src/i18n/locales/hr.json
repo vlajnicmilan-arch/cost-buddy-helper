@@ -1,4 +1,78 @@
 {
+  "paywall": {
+    "trialExpiredTitle": "Vaš 14-dnevni probni period je istekao",
+    "chooseToContinue": "Odaberite plan za nastavak korištenja V&M Balance",
+    "interval": { "monthly": "Mjesečno", "yearly": "Godišnje", "lifetime": "Lifetime" },
+    "yearlyBadge": "-25%",
+    "lifetimeBadge": "-75%",
+    "period": { "monthly": "/mj", "yearly": "/god", "oneTime": "jednokratno" },
+    "free": { "name": "Free", "tagline": "Za početak", "priceSuffix": "zauvijek", "cta": "Nastavi besplatno", "comingSoon": "Free plan dolazi uskoro" },
+    "pro": { "name": "Pro", "tagline": "Za većinu ljudi", "cta": "Odaberi Pro", "yearlySavings": "Ušteda {amount}€ godišnje (~25%)" },
+    "business": { "name": "Business", "tagline": "Za ozbiljne korisnike", "cta": "Odaberi Business", "yearlySavings": "Ušteda {amount}€ godišnje (~25%)" },
+    "popular": "Najpopularniji",
+    "lifetime": {
+      "badge": "Founding Member · Limitirano",
+      "name": "Pro Lifetime",
+      "tagline": "Plati jednom — koristi zauvijek",
+      "oneTime": "jednokratno",
+      "equivalent": "💡 Ekvivalent ~16 mjeseci Pro pretplate. Otplati se za godinu i pol.",
+      "remainingLabel": "Ostalo",
+      "ofTotal": "od",
+      "soldSuffix": "prodano",
+      "soldOut": "Rasprodano",
+      "ctaBecome": "Postani Founding Member · {price}€",
+      "backToMonthly": "Vrati se na mjesečne planove",
+      "teaserSubtitle": "Plati jednom · Još {n} mjesta",
+      "teaserView": "Pogledaj →"
+    },
+    "features": {
+      "free": [
+        "Do 30 transakcija/mj",
+        "1 izvor plaćanja",
+        "1 budžet",
+        "AI skeniranje računa",
+        "Projekti i budžeti",
+        "AI asistent",
+        "Poslovno praćenje",
+        "Timski pristup"
+      ],
+      "pro": [
+        "Neograničene transakcije",
+        "Neograničeni projekti i budžeti",
+        "Više novčanika i kartica",
+        "AI financijski asistent",
+        "Recurring transakcije i ratna plaćanja",
+        "Cashflow prognoza (8 tjedana)",
+        "Više valuta po izvoru",
+        "Push notifikacije",
+        "CSV/PDF uvoz i izvoz",
+        "Detaljni izvještaji",
+        "Dijeljenje i obiteljske grupe",
+        "Osobno + poslovno praćenje"
+      ],
+      "business": [
+        "Sve iz Pro plana",
+        "Više profila tvrtki",
+        "Radnici i satnice",
+        "Timski pristup",
+        "Suradnici na projektima",
+        "Napredni projekti",
+        "Višekorisnički pristup"
+      ],
+      "lifetime": [
+        "Sve iz Pro plana — zauvijek",
+        "Bez ikakvih mjesečnih troškova",
+        "Sve buduće Pro značajke",
+        "Founding Member status",
+        "Prioritetna podrška",
+        "Limitirano na 200 korisnika"
+      ]
+    },
+    "footer": {
+      "secure": "Sigurno plaćanje putem Stripe. Otkazivanje u bilo kojem trenutku.",
+      "signInOther": "Prijavite se s drugim računom"
+    }
+  },
   "disclaimer": {
     "workerData": {
       "title": "Obrada osobnih podataka",
