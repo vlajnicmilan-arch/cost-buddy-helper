@@ -23,7 +23,7 @@ const FREE_FEATURES: PlanFeature[] = [
   { text: 'Do 30 transakcija/mj', included: true },
   { text: '1 izvor plaćanja', included: true },
   { text: '1 budžet', included: true },
-  { text: 'Skeniranje računa (5/mj)', included: true },
+  { text: 'AI skeniranje računa', included: true },
   { text: 'Projekti i budžeti', included: false },
   { text: 'AI asistent', included: false },
   { text: 'Poslovno praćenje', included: false },
