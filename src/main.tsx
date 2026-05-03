@@ -23,6 +23,26 @@ const isInstalledApp = () => {
 
 const path = window.location.pathname;
 
+// Native OAuth bridge must capture the original callback payload before any
+// auth client can detect the URL session and clean ?code=... / #access_token=...
+// from the address bar. The bridge page later forwards this saved payload to
+// the Capacitor deep link so the APK can finish sign-in.
+const NATIVE_OAUTH_PAYLOAD_KEY = 'vmb-native-oauth-callback-payload';
+if (path === '/native-oauth/callback') {
+  try {
+    const payload = `${window.location.search || ''}${window.location.hash || ''}`;
+    if (
+      payload.includes('code=') ||
+      payload.includes('access_token=') ||
+      payload.includes('refresh_token=') ||
+      payload.includes('error=') ||
+      payload.includes('error_description=')
+    ) {
+      sessionStorage.setItem(NATIVE_OAUTH_PAYLOAD_KEY, payload);
+    }
+  } catch {}
+}
+
 // Detect OAuth callback fragments/queries (e.g. when an OAuth provider redirects
 // back to the root URL with #access_token=... or ?error=...). In that case we
 // must boot the full app so the auth flow can complete instead of rendering
