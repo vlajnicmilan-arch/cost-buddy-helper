@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
@@ -109,20 +109,20 @@ const NativeOAuthCallback = () => {
     return 'unknown';
   }, []);
 
-  const openApp = async (mode: 'manual' | 'auto' = 'manual') => {
+  const openApp = useCallback(async (mode: 'manual' | 'auto' = 'manual') => {
     const query = await resolvePayloadQuery();
     logDiagnostic('native_oauth_bridge_open_app', { kind: callbackKind, mode, hasPayload: hasOAuthPayload(query) });
     window.location.href = buildIntentUrl(query);
     setTimeout(() => {
       window.location.href = buildSchemeUrl(query);
     }, 800);
-  };
+  }, [callbackKind]);
 
   useEffect(() => {
     logDiagnostic('native_oauth_bridge_received', { kind: callbackKind });
     // Auto-launch the APK as soon as the bridge page renders.
     void openApp('auto');
-  }, [callbackKind]);
+  }, [callbackKind, openApp]);
 
   return (
     <main className="min-h-dvh bg-background text-foreground flex items-center justify-center px-6">
