@@ -114,7 +114,7 @@ const RootRoute = ({ storageMode, user, ready }: RootRouteProps) => {
     return <Navigate to="/app" replace />;
   }
 
-  if (ready && storageMode === 'cloud' && user) {
+  if (ready && user) {
     return <Navigate to="/app" replace />;
   }
 
