@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Wallet, Receipt, Target, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+
+const DISMISS_KEY_PREFIX = 'welcome_checklist_dismissed:';
 
 interface WelcomeChecklistProps {
   hasPaymentSources: boolean;
@@ -23,25 +26,27 @@ export const WelcomeChecklist = ({
   onAddBudget,
 }: WelcomeChecklistProps) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    const wasDismissed = localStorage.getItem('welcome_checklist_dismissed');
-    if (wasDismissed === 'true') setDismissed(true);
-  }, []);
+    if (!user?.id) return;
+    const wasDismissed = localStorage.getItem(`${DISMISS_KEY_PREFIX}${user.id}`);
+    setDismissed(wasDismissed === 'true');
+  }, [user?.id]);
 
   const allDone = hasPaymentSources && hasTransactions && hasBudgets;
 
   // Auto-dismiss when all done
   useEffect(() => {
-    if (allDone) {
+    if (allDone && user?.id) {
       const timer = setTimeout(() => {
         setDismissed(true);
-        localStorage.setItem('welcome_checklist_dismissed', 'true');
+        localStorage.setItem(`${DISMISS_KEY_PREFIX}${user.id}`, 'true');
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [allDone]);
+  }, [allDone, user?.id]);
 
   if (dismissed) return null;
 
@@ -76,7 +81,9 @@ export const WelcomeChecklist = ({
 
   const handleDismiss = () => {
     setDismissed(true);
-    localStorage.setItem('welcome_checklist_dismissed', 'true');
+    if (user?.id) {
+      localStorage.setItem(`${DISMISS_KEY_PREFIX}${user.id}`, 'true');
+    }
   };
 
   return (

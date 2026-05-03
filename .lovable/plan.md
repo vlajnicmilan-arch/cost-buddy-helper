@@ -1,16 +1,16 @@
-## Promjena verzije aplikacije na 1.2.0
+## Per-user scope za WelcomeChecklist dismiss flag
 
-Ovo je probni test cijelog lanca: Lovable → vmbalance.com → admin lista u APK-u (preko Live Sync).
+### Problem
+`WelcomeChecklist` koristi globalni `localStorage` ključ `welcome_checklist_dismissed`. Kad se na istom uređaju prijavi novi korisnik (npr. tactura.hr nakon već postojeće sesije), banner se ne prikazuje iako bi trebao — flag iz prošle sesije ga gasi. Vidi se kao prazan prostor između trial banera i payment sources sekcije.
 
 ### Promjena
-- `public/version.json`: `"version": "1.3.10"` → `"version": "1.2.0"`
-
-### Što se događa nakon
-- Vite pri buildu čita `public/version.json` i ubacuje vrijednost u `__APP_VERSION__` koja se koristi kroz `src/lib/version.ts`.
-- Lovable preview se osvježi odmah; nakon publisha `vmbalance.com` također.
-- Postojeći APK-ovi koji učitavaju `vmbalance.com` (Live Sync iz `capacitor.config.ts`) prikazat će `v1.2.0` u admin listi nakon sljedećeg ulaska u app.
-- Native dio se ne dira — `android/app/build.gradle` ostaje `versionName "1.0.2"`, novi APK build nije potreban.
+`src/components/WelcomeChecklist.tsx`:
+- Uvesti `useAuth` da dobijemo `user.id`.
+- Promijeniti localStorage ključ na `welcome_checklist_dismissed:${user.id}` (prefix konstanta `DISMISS_KEY_PREFIX`).
+- Ako `user?.id` još nije dostupan, ne čitamo i ne pišemo flag (banner se neće dismisati prerano).
+- Auto-dismiss pri `allDone` također piše per-user ključ.
 
 ### Što ne radimo
-- Nema izmjena u `android/`, nema GitHub Actions buildova.
-- Nema migracija ni edge funkcija.
+- Ne diramo postojeće globalne ključeve (legacy `welcome_checklist_dismissed`) — neće praviti štetu, jednostavno se više ne čita.
+- Bez DB migracije, bez novih i18n ključeva.
+- Bez izmjena u logout flowu — per-user scope je dovoljan.
