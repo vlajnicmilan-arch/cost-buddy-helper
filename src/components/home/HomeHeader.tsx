@@ -147,6 +147,26 @@ export const HomeHeader = ({
             </Tooltip>
           </TooltipProvider>
           <SettingsDialog onDataImported={onRefetch} />
+          {!isLocalMode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleSignOut}
+                    className="rounded-xl h-8 w-8 sm:h-9 sm:w-9"
+                    aria-label={t('common.signOut', 'Odjava')}
+                  >
+                    <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('common.signOut', 'Odjava')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
 
