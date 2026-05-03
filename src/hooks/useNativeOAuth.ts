@@ -3,7 +3,6 @@ import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 
 const NATIVE_CALLBACK = 'app.lovable.costbuddy://auth/callback';
-const NATIVE_BRIDGE_REDIRECT = 'https://vmbalance.com/native-oauth/callback';
 
 /**
  * Native OAuth flow for Capacitor APK.
@@ -107,7 +106,7 @@ export const useNativeOAuth = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: NATIVE_BRIDGE_REDIRECT,
+          redirectTo: NATIVE_CALLBACK,
           skipBrowserRedirect: true,
           queryParams,
         },
