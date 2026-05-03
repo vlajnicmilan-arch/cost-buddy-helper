@@ -14,6 +14,8 @@ import logo from '@/assets/logo.webp';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { useStorage } from '@/contexts/StorageContext';
 import { lovable } from '@/integrations/lovable/index';
+import { Capacitor } from '@capacitor/core';
+import { useNativeOAuth } from '@/hooks/useNativeOAuth';
 
 const authSchema = z.object({
   email: z.string().trim().email('Nevažeća email adresa').max(255, 'Email je predugačak'),
