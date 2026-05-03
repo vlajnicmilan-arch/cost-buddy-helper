@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Wallet, Receipt, Target, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+
+const DISMISS_KEY_PREFIX = 'welcome_checklist_dismissed:';
 
 interface WelcomeChecklistProps {
   hasPaymentSources: boolean;
