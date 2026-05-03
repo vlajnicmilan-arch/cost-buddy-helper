@@ -4,6 +4,7 @@ import { ExternalLink, Loader2 } from 'lucide-react';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 const PACKAGE = 'app.lovable.costbuddy';
+const NATIVE_OAUTH_PAYLOAD_KEY = 'vmb-native-oauth-callback-payload';
 
 /**
  * Build the payload that must reach the APK. Supabase may return either:
@@ -18,6 +19,25 @@ const PACKAGE = 'app.lovable.costbuddy';
  */
 const buildPayloadQuery = () => {
   const params = new URLSearchParams();
+
+  let savedPayload = '';
+  try {
+    savedPayload = sessionStorage.getItem(NATIVE_OAUTH_PAYLOAD_KEY) || '';
+  } catch {
+    savedPayload = '';
+  }
+
+  const [savedSearch, savedHash] = savedPayload.split('#');
+
+  if (savedSearch?.startsWith('?')) {
+    const sp = new URLSearchParams(savedSearch.slice(1));
+    sp.forEach((v, k) => params.set(k, v));
+  }
+
+  if (savedHash) {
+    const hp = new URLSearchParams(savedHash);
+    hp.forEach((v, k) => params.set(k, v));
+  }
 
   const search = window.location.search || '';
   if (search.startsWith('?')) {
@@ -51,9 +71,21 @@ const NativeOAuthCallback = () => {
   const callbackKind = useMemo(() => {
     const search = new URLSearchParams(window.location.search || '');
     const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+    let saved = '';
+    try {
+      saved = sessionStorage.getItem(NATIVE_OAUTH_PAYLOAD_KEY) || '';
+    } catch {
+      saved = '';
+    }
+    const [savedSearchRaw, savedHashRaw] = saved.split('#');
+    const savedSearch = new URLSearchParams(savedSearchRaw?.replace(/^\?/, '') || '');
+    const savedHash = new URLSearchParams(savedHashRaw || '');
     if (search.has('code')) return 'code';
     if (hash.has('access_token') || search.has('access_token')) return 'tokens';
     if (search.has('error') || hash.has('error')) return 'error';
+    if (savedSearch.has('code')) return 'code';
+    if (savedHash.has('access_token') || savedSearch.has('access_token')) return 'tokens';
+    if (savedSearch.has('error') || savedHash.has('error')) return 'error';
     return 'unknown';
   }, []);
 
