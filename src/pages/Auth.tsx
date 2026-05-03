@@ -619,17 +619,17 @@ const Auth = () => {
             onClick={async () => {
               setLoading(true);
               try {
-                // Both web and native use Lovable managed OAuth.
-                // On native, the app runs inside a WebView pointing at vmbalance.com,
-                // so window.location.origin works the same as on web.
+                if (!storageMode) {
+                  setStorageMode('cloud');
+                }
+
+                // Return OAuth users to the app entry route, not the public landing page.
                 const { error } = await lovable.auth.signInWithOAuth("google", {
-                  redirect_uri: window.location.origin,
+                  redirect_uri: `${window.location.origin}/app`,
                 });
                 if (error) {
                   showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
                   console.error('Google OAuth error:', error);
-                } else if (!storageMode) {
-                  setStorageMode('cloud');
                 }
               } catch (err) {
                 showError(t('errors.auth.googleSignInFailed', 'Greška pri Google prijavi'));
@@ -657,14 +657,16 @@ const Auth = () => {
             onClick={async () => {
               setLoading(true);
               try {
+                if (!storageMode) {
+                  setStorageMode('cloud');
+                }
+
                 const { error } = await lovable.auth.signInWithOAuth("apple", {
-                  redirect_uri: window.location.origin,
+                  redirect_uri: `${window.location.origin}/app`,
                 });
                 if (error) {
                   showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
                   console.error('Apple OAuth error:', error);
-                } else if (!storageMode) {
-                  setStorageMode('cloud');
                 }
               } catch (err) {
                 showError(t('errors.auth.appleSignInFailed', 'Greška pri Apple prijavi'));
