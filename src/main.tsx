@@ -40,7 +40,10 @@ if (path === '/native-oauth/callback') {
     ) {
       sessionStorage.setItem(NATIVE_OAUTH_PAYLOAD_KEY, payload);
     }
-  } catch {}
+  } catch {
+    // Storage can be unavailable in restricted browser modes; bridge will then
+    // fall back to the live URL payload if it is still present.
+  }
 }
 
 // Detect OAuth callback fragments/queries (e.g. when an OAuth provider redirects
