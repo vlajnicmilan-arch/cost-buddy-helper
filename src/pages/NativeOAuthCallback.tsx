@@ -1,32 +1,64 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2 } from 'lucide-react';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 const PACKAGE = 'app.lovable.costbuddy';
 
 /**
- * Build an Android `intent://` URL that explicitly targets the installed APK
- * by package name. This bypasses the browser's default handler picker and
- * prevents the OAuth callback from opening the PWA installed on the same
- * domain.
+ * Build the payload that must reach the APK. Supabase may return either:
+ *   - PKCE: ?code=...&state=... in the search string
+ *   - Implicit: #access_token=...&refresh_token=...&...&token_type=bearer in the hash
  *
- * Format:
- *   intent://auth/callback?code=...#Intent;scheme=app.lovable.costbuddy;package=app.lovable.costbuddy;end
+ * Android `intent://` URLs only allow a single `#Intent;...;end` fragment, so
+ * we must NOT pass through a separate `#access_token=...` hash — it would be
+ * eaten by the intent parser. Instead we merge hash params into the query
+ * string so the deep link arrives in the APK as
+ *   app.lovable.costbuddy://auth/callback?access_token=...&refresh_token=...
  */
-const buildIntentUrl = () => {
+const buildPayloadQuery = () => {
+  const params = new URLSearchParams();
+
   const search = window.location.search || '';
-  const hash = window.location.hash || '';
-  return `intent://auth/callback${search}${hash}#Intent;scheme=${PACKAGE};package=${PACKAGE};end`;
+  if (search.startsWith('?')) {
+    const sp = new URLSearchParams(search.slice(1));
+    sp.forEach((v, k) => params.set(k, v));
+  }
+
+  const hash = (window.location.hash || '').replace(/^#/, '');
+  if (hash) {
+    const hp = new URLSearchParams(hash);
+    hp.forEach((v, k) => params.set(k, v));
+  }
+
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
 };
 
-const buildSchemeUrl = () =>
-  `${PACKAGE}://auth/callback${window.location.search || ''}${window.location.hash || ''}`;
+const buildIntentUrl = () => {
+  const query = buildPayloadQuery();
+  return `intent://auth/callback${query}#Intent;scheme=${PACKAGE};package=${PACKAGE};end`;
+};
+
+const buildSchemeUrl = () => {
+  const query = buildPayloadQuery();
+  return `${PACKAGE}://auth/callback${query}`;
+};
 
 const NativeOAuthCallback = () => {
   const { t } = useTranslation();
 
+  const callbackKind = useMemo(() => {
+    const search = new URLSearchParams(window.location.search || '');
+    const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+    if (search.has('code')) return 'code';
+    if (hash.has('access_token') || search.has('access_token')) return 'tokens';
+    if (search.has('error') || hash.has('error')) return 'error';
+    return 'unknown';
+  }, []);
+
   const openApp = () => {
-    // Try the explicit intent first; fall back to plain scheme after a tick.
+    logDiagnostic('native_oauth_bridge_open_app', { kind: callbackKind, mode: 'manual' });
     window.location.href = buildIntentUrl();
     setTimeout(() => {
       window.location.href = buildSchemeUrl();
@@ -34,9 +66,15 @@ const NativeOAuthCallback = () => {
   };
 
   useEffect(() => {
+    logDiagnostic('native_oauth_bridge_received', { kind: callbackKind });
     // Auto-launch the APK as soon as the bridge page renders.
     window.location.href = buildIntentUrl();
-  }, []);
+    // Fallback to plain custom-scheme in case the intent handler picker is suppressed.
+    const t1 = setTimeout(() => {
+      window.location.href = buildSchemeUrl();
+    }, 1200);
+    return () => clearTimeout(t1);
+  }, [callbackKind]);
 
   return (
     <main className="min-h-dvh bg-background text-foreground flex items-center justify-center px-6">

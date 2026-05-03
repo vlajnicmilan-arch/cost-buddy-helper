@@ -1,27 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 const NATIVE_CALLBACK = 'app.lovable.costbuddy://auth/callback';
 const HTTPS_BRIDGE = 'https://vmbalance.com/native-oauth/callback';
 
 /**
- * Native OAuth flow for Capacitor APK.
+ * Native OAuth flow for the Capacitor APK.
  *
- * Flow:
- * 1. Ask Supabase for the OAuth URL with redirectTo set to the HTTPS bridge
- *    `https://vmbalance.com/native-oauth/callback`. Supabase + Google accept
- *    only HTTPS redirect URLs, so we cannot point them directly at the custom
- *    `app.lovable.costbuddy://` scheme.
- * 2. Open that URL in Capacitor Browser (Chrome Custom Tab on Android).
- * 3. The bridge page (`/native-oauth/callback`) receives `?code=...` and
- *    immediately forwards it to `app.lovable.costbuddy://auth/callback?code=...`,
- *    using an Android `intent://` URL with the explicit package name. This
- *    forces Android to open the installed APK by package, so the session
- *    never lands in the PWA or the system browser.
+ * 1. Ask Supabase for an OAuth URL with `redirectTo` set to the HTTPS bridge.
+ *    Google/Supabase only accept HTTPS redirect URLs, so we cannot point them
+ *    directly at our `app.lovable.costbuddy://` scheme.
+ * 2. Open the URL in Capacitor Browser (Chrome Custom Tab on Android).
+ * 3. The bridge page (`/native-oauth/callback`) flattens any URL fragment
+ *    (`#access_token=...`) into the query string and immediately forwards
+ *    everything to `app.lovable.costbuddy://auth/callback?...` using an
+ *    explicit `intent://` URL targeted by package name. This forces the
+ *    callback into the installed APK instead of the PWA / system browser.
  * 4. The APK receives the deep link via `appUrlOpen`, closes the in-app
- *    browser, and calls `exchangeCodeForSession(code)` so the WebView gets
- *    the session.
+ *    browser, and either:
+ *      - calls `exchangeCodeForSession(code)` (PKCE flow), or
+ *      - calls `setSession({ access_token, refresh_token })` (implicit flow)
+ *    so the WebView ends up signed in.
  */
 export const useNativeOAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -52,31 +53,58 @@ export const useNativeOAuth = () => {
           const u = new URL(url);
           const search = new URLSearchParams(u.search || '');
           const hash = new URLSearchParams((u.hash || '').replace(/^#/, ''));
-          const code = search.get('code') || hash.get('code');
-          const errDesc =
-            search.get('error_description') ||
-            hash.get('error_description') ||
-            search.get('error') ||
-            hash.get('error');
 
+          const pick = (key: string) => search.get(key) || hash.get(key);
+
+          const errDesc =
+            pick('error_description') || pick('error');
           if (errDesc) {
+            logDiagnostic('native_oauth_callback_error', { message: errDesc });
             pendingRef.current?.resolve({ error: new Error(errDesc) });
             pendingRef.current = null;
             return;
           }
 
-          if (!code) {
-            pendingRef.current?.resolve({
-              error: new Error('Missing OAuth code in callback'),
-            });
+          const code = pick('code');
+          const accessToken = pick('access_token');
+          const refreshToken = pick('refresh_token');
+
+          if (code) {
+            logDiagnostic('native_oauth_callback_received', { kind: 'code' });
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) {
+              logDiagnostic('native_oauth_exchange_failed', { message: error.message });
+            }
+            pendingRef.current?.resolve({ error: error ?? undefined });
             pendingRef.current = null;
             return;
           }
 
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          pendingRef.current?.resolve({ error: error ?? undefined });
+          if (accessToken && refreshToken) {
+            logDiagnostic('native_oauth_callback_received', { kind: 'tokens' });
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            if (error) {
+              logDiagnostic('native_oauth_set_session_failed', { message: error.message });
+            }
+            pendingRef.current?.resolve({ error: error ?? undefined });
+            pendingRef.current = null;
+            return;
+          }
+
+          logDiagnostic('native_oauth_callback_missing_payload', {
+            hasSearch: !!u.search,
+            hasHash: !!u.hash,
+          });
+          pendingRef.current?.resolve({
+            error: new Error('Missing OAuth payload in callback'),
+          });
           pendingRef.current = null;
         } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          logDiagnostic('native_oauth_callback_exception', { message });
           pendingRef.current?.resolve({
             error: e instanceof Error ? e : new Error(String(e)),
           });
@@ -103,6 +131,8 @@ export const useNativeOAuth = () => {
       const queryParams: Record<string, string> | undefined =
         provider === 'google' ? { prompt: 'select_account' } : undefined;
 
+      logDiagnostic('native_oauth_start', { provider });
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -113,6 +143,9 @@ export const useNativeOAuth = () => {
       });
 
       if (error || !data?.url) {
+        logDiagnostic('native_oauth_url_failed', {
+          message: error?.message ?? 'no_url',
+        });
         return {
           error: error ?? new Error('Failed to start OAuth'),
         };
@@ -126,6 +159,8 @@ export const useNativeOAuth = () => {
         pendingRef.current = { resolve };
       });
     } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      logDiagnostic('native_oauth_exception', { message });
       return { error: e instanceof Error ? e : new Error(String(e)) };
     } finally {
       setLoading(false);
