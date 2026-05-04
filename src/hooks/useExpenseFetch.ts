@@ -10,6 +10,10 @@ import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
 import { useHiddenPaymentSources } from './useHiddenPaymentSources';
 import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
+import { instantCache } from '@/lib/instantCache';
+
+const expensesCacheKey = (userId: string | undefined) =>
+  `expenses:v1:${userId || 'anon'}`;
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
