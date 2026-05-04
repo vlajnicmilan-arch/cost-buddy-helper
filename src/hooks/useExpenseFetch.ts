@@ -30,6 +30,7 @@ export const useExpenseFetch = () => {
   const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
   const [loading, setLoading] = useState(true);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const hydratedKeyRef = useRef<string | null>(null);
 
   const isLocalMode = storageMode === 'local' && !user;
 
