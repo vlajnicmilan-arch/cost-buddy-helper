@@ -24,6 +24,8 @@ interface ProjectTeamTabProps {
   canSeeWorkers: boolean;
   canSeeCollaborators: boolean;
   initialSubTab?: SubTab;
+  projectStatus?: string;
+  archivedAt?: string | null;
 }
 
 export const ProjectTeamTab = ({
