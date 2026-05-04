@@ -27,13 +27,15 @@ interface UseCustomPaymentSourcesOptions {
 
 export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions = {}) => {
   const { includePersonal = false } = options;
-  const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
-  const hydratedKeyRef = useRef<string | null>(null);
+  const initialKey = paymentSourcesCacheKey(user?.id, activeBusinessProfileId, includePersonal);
+  const initialCached = user ? instantCache.read<CustomPaymentSource[]>(initialKey) : null;
+  const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>(initialCached || []);
+  const [loading, setLoading] = useState(!initialCached || initialCached.length === 0);
+  const hydratedKeyRef = useRef<string | null>(initialCached && initialCached.length > 0 ? initialKey : null);
 
   const isLocalMode = storageMode === 'local' && !user;
 
