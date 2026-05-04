@@ -40,6 +40,8 @@ export const ProjectTeamTab = ({
   canSeeWorkers,
   canSeeCollaborators,
   initialSubTab,
+  projectStatus,
+  archivedAt,
 }: ProjectTeamTabProps) => {
   const { t } = useTranslation();
   const { workers } = useProjectWorkers(projectId);
