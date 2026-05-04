@@ -25,6 +25,8 @@ interface ProjectMembersTabProps {
   isManager: boolean;
   loading: boolean;
   onRefetch: () => void;
+  projectStatus?: string;
+  archivedAt?: string | null;
 }
 
 interface PermDialogState {
