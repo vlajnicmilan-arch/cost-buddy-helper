@@ -829,6 +829,15 @@
     "dateTooFar": "Datum liegt zu weit entfernt",
     "dateAdjusted": "Datum wurde automatisch korrigiert"
   },
+  "trial": {
+    "featureChip": {
+      "label": "Probezeit",
+      "daysLeft": "Noch {{count}} Tage",
+      "oneDay": "Noch 1 Tag",
+      "lastDay": "letzter Tag",
+      "aria": "Funktion während der Probezeit verfügbar. Klicken zum Upgrade."
+    }
+  },
   "common": {
     "save": "Speichern",
     "create": "Erstellen",
