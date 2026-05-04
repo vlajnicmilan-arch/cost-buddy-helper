@@ -1,16 +1,38 @@
-## Per-user scope za WelcomeChecklist dismiss flag
+# Vizualna oznaka triala za projekte
 
-### Problem
-`WelcomeChecklist` koristi globalni `localStorage` ključ `welcome_checklist_dismissed`. Kad se na istom uređaju prijavi novi korisnik (npr. tactura.hr nakon već postojeće sesije), banner se ne prikazuje iako bi trebao — flag iz prošle sesije ga gasi. Vidi se kao prazan prostor između trial banera i payment sources sekcije.
+Mali chip koji jasno govori da je pristup projektima privremen (tijekom 14-dnevnog probnog perioda) i koliko dana je ostalo. Bez promjene logike pristupa.
 
-### Promjena
-`src/components/WelcomeChecklist.tsx`:
-- Uvesti `useAuth` da dobijemo `user.id`.
-- Promijeniti localStorage ključ na `welcome_checklist_dismissed:${user.id}` (prefix konstanta `DISMISS_KEY_PREFIX`).
-- Ako `user?.id` još nije dostupan, ne čitamo i ne pišemo flag (banner se neće dismisati prerano).
-- Auto-dismiss pri `allDone` također piše per-user ključ.
+## Što se mijenja
 
-### Što ne radimo
-- Ne diramo postojeće globalne ključeve (legacy `welcome_checklist_dismissed`) — neće praviti štetu, jednostavno se više ne čita.
-- Bez DB migracije, bez novih i18n ključeva.
-- Bez izmjena u logout flowu — per-user scope je dovoljan.
+1. **Nova komponenta** `src/components/TrialFeatureChip.tsx` (~70 linija)
+   - Props: `feature: Feature`, `className?`
+   - Prikazuje se samo kad: `storageMode === 'cloud'` && `trialActive` && `!subscribed` && `getRequiredTier(feature) !== 'free'`
+   - Sadržaj: ikona Sparkles + `Probni period · 12 dana` (ili `1 dan` / `zadnji dan`)
+   - Boja: teal (primary) kad >2 dana, destructive tint kad ≤2 (konzistentno s `TrialBanner`)
+   - Klik → `/paywall`
+   - `<button>` element (a11y native, focus-visible ring), `aria-label` + `title`
+
+2. **`src/components/home/ActiveProjectsStrip.tsx`**
+   - Pored `<h2>Aktivni projekti</h2>` u headeru dodaje se `<TrialFeatureChip feature="projects" />`
+   - Layout: `flex items-center gap-2` (chip do naslova, gumb "Pogledaj sve" ostaje desno)
+
+3. **`src/pages/Projects.tsx`**
+   - Ispod `<PageHeader>`, iznad `<ProjectsPanel>` / `<UpgradePrompt>` dodaje se `<TrialFeatureChip feature="projects" className="mb-3" />`
+   - Korisnik koji uđe u Projekte odmah vidi da je značajka u trialu
+
+## i18n ključevi (HR / EN / DE)
+
+Novi blok `trial.featureChip` u sva 3 locale fajla:
+- `label` → `Probni period` / `Trial` / `Probezeit`
+- `daysLeft` → `{{count}} dana` / `{{count}} days` / `{{count}} Tage`
+- `oneDay` → `1 dan` / `1 day` / `1 Tag`
+- `lastDay` → `zadnji dan` / `last day` / `letzter Tag`
+- `aria` → puna rečenica za screen reader
+
+## Tehnički detalji
+
+- Bez DB izmjena, bez novih hookova, bez migracija
+- Bez promjena u `useFeatureAccess`, `SubscriptionContext`, `Projects.tsx` access logici
+- Postojeći `TrialBanner` na Dashboardu ostaje netaknut (puni banner s gumbom)
+- Reuse: `useSubscription`, `useFeatureAccess`, `useStorage`, `cn`
+- Komponenta je generička — može se kasnije ubaciti i pored Reports/Family/Recurring naslova bez ikakve promjene
