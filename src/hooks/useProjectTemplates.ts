@@ -16,6 +16,7 @@ export interface ProjectTemplate {
   category: string | null;
   default_milestones: ProjectTemplateMilestone[];
   is_public: boolean;
+  is_active: boolean;
   created_by: string | null;
 }
 
