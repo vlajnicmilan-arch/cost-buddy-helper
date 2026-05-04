@@ -219,16 +219,6 @@ export const ProjectDialog = ({
               </div>
             )}
 
-            {/* Template picker - only for new projects, filtered by type */}
-            {!isEdit && (
-              <div className="p-3 rounded-lg border border-dashed bg-muted/30">
-                <ProjectTemplatePicker
-                  selectedId={selectedTemplate?.id || null}
-                  onSelect={handleTemplateSelect}
-                  categoryFilter={activePreset.templateCategory}
-                />
-              </div>
-            )}
 
             {/* Name */}
             <div className="space-y-2">
