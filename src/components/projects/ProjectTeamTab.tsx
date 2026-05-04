@@ -130,6 +130,8 @@ export const ProjectTeamTab = ({
           isManager={isManager}
           loading={membersLoading}
           onRefetch={onRefetchMembers}
+          projectStatus={projectStatus}
+          archivedAt={archivedAt}
         />
       )}
       {active === 'workers' && canSeeWorkers && (
