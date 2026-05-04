@@ -1,12 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Project, ProjectWithOwnership, ProjectRole, ProjectStatus } from '@/types/project';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
+import { instantCache } from '@/lib/instantCache';
 
 const LOCAL_PROJECTS_KEY = 'finmate.projects';
+
+const projectsCacheKey = (userId: string | undefined, businessProfileId: string | null | undefined) =>
+  `projects:v1:${userId || 'anon'}:${businessProfileId || 'personal'}`;
 
 export const useProjects = () => {
   const { user } = useAuth();
@@ -14,11 +18,15 @@ export const useProjects = () => {
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
   const [projects, setProjects] = useState<ProjectWithOwnership[]>([]);
   const [loading, setLoading] = useState(true);
+  const hydratedKeyRef = useRef<string | null>(null);
 
   const isLocalMode = !user;
 
   const fetchProjects = useCallback(async () => {
-    setLoading(true);
+    // Silent revalidate when we already have cached data for this context
+    const cacheKey = projectsCacheKey(user?.id, activeBusinessProfileId);
+    const hasHydrated = hydratedKeyRef.current === cacheKey;
+    if (!hasHydrated) setLoading(true);
     try {
       if (isLocalMode) {
         // Local mode - load from localStorage
