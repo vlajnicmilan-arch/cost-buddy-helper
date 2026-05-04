@@ -17,7 +17,7 @@ import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { clickableProps } from '@/lib/a11y';
 
 interface ProjectCardProps {
@@ -51,6 +51,7 @@ export const ProjectCard = ({
 }: ProjectCardProps) => {
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
+  const [actionsOpen, setActionsOpen] = useState(false);
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const projectColor = project.color || '#3b82f6';
@@ -272,21 +273,32 @@ export const ProjectCard = ({
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
         >
-          <DropdownMenu>
+          <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-11 w-11"
                 aria-label={t('common.actions', 'Akcije')}
+                aria-expanded={actionsOpen}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActionsOpen((open) => !open);
+                }}
               >
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[70]">
+            <DropdownMenuContent align="end" className="z-[70]" onCloseAutoFocus={(e) => e.preventDefault()}>
               <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setActionsOpen(false);
                   onEdit(project);
                 }}
               >
@@ -295,8 +307,9 @@ export const ProjectCard = ({
               </DropdownMenuItem>
               {onMigrateToBusiness && !project.business_profile_id && (
                 <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setActionsOpen(false);
                     onMigrateToBusiness(project);
                   }}
                 >
@@ -306,8 +319,9 @@ export const ProjectCard = ({
               )}
               {onArchive && (
                 <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setActionsOpen(false);
                     onArchive(project.id);
                   }}
                 >
@@ -324,8 +338,9 @@ export const ProjectCard = ({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setActionsOpen(false);
                   onDelete(project.id);
                 }}
               >
