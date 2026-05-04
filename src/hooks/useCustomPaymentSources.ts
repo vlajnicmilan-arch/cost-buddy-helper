@@ -33,6 +33,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
+  const hydratedKeyRef = useRef<string | null>(null);
 
   const isLocalMode = storageMode === 'local' && !user;
 
