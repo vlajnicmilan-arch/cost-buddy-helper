@@ -55,10 +55,14 @@ export const ProjectMembersTab = ({
   invitations,
   isManager,
   loading,
-  onRefetch
+  onRefetch,
+  projectStatus,
+  archivedAt,
 }: ProjectMembersTabProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isProjectClosed =
+    !!archivedAt || projectStatus === 'completed' || projectStatus === 'cancelled';
   const { updateMemberRole, removeMember, cancelInvitation, generateInviteLink, updateMemberContext } = useProjectMembers(projectId);
 
   const [inviteLink, setInviteLink] = useState<string | null>(null);
