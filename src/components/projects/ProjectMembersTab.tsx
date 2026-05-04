@@ -182,6 +182,8 @@ export const ProjectMembersTab = ({
           showError(t('projects.alreadyMember', t('toasts.alreadyMember')));
         } else if (data.error === 'already_invited') {
           showError(t('projects.alreadyInvited', t('toasts.alreadyInvited')));
+        } else if (data.error === 'project_closed') {
+          showError(t('projects.invitationsDisabledClosed', 'Projekt je završen ili arhiviran — pozivnice nisu moguće.'));
         } else {
           showError(data.message || t('common.error'));
         }
