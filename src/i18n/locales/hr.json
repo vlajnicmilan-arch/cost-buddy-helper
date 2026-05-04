@@ -843,6 +843,15 @@
     "dateTooFar": "Datum je previše udaljen",
     "dateAdjusted": "Datum je automatski ispravljen"
   },
+  "trial": {
+    "featureChip": {
+      "label": "Probni period",
+      "daysLeft": "{{count}} dana",
+      "oneDay": "1 dan",
+      "lastDay": "zadnji dan",
+      "aria": "Značajka dostupna tijekom probnog perioda. Klikni za nadogradnju."
+    }
+  },
   "common": {
     "save": "Spremi",
     "create": "Kreiraj",
