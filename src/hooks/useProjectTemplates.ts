@@ -16,6 +16,7 @@ export interface ProjectTemplate {
   category: string | null;
   default_milestones: ProjectTemplateMilestone[];
   is_public: boolean;
+  is_active: boolean;
   created_by: string | null;
 }
 
@@ -29,6 +30,7 @@ export const useProjectTemplates = () => {
       const { data, error } = await (supabase
         .from('project_templates') as any)
         .select('*')
+        .eq('is_active', true)
         .order('is_public', { ascending: false })
         .order('name', { ascending: true });
       if (error) throw error;

@@ -16,7 +16,7 @@ import { CalendarIcon, Loader2, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { ProjectTemplatePicker } from './ProjectTemplatePicker';
+
 import { ProjectTemplate, useProjectTemplates } from '@/hooks/useProjectTemplates';
 import { ProjectTypePickerStep } from './ProjectTypePickerStep';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
@@ -134,15 +134,6 @@ export const ProjectDialog = ({
     setStep(2);
   };
 
-  const handleTemplateSelect = (tpl: ProjectTemplate | null) => {
-    setSelectedTemplate(tpl);
-    if (tpl) {
-      if (!name.trim()) setName(tpl.name);
-      if (tpl.icon) setIcon(tpl.icon);
-      if (tpl.color) setColor(tpl.color);
-      if (!description.trim() && tpl.description) setDescription(tpl.description);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,16 +219,6 @@ export const ProjectDialog = ({
               </div>
             )}
 
-            {/* Template picker - only for new projects, filtered by type */}
-            {!isEdit && (
-              <div className="p-3 rounded-lg border border-dashed bg-muted/30">
-                <ProjectTemplatePicker
-                  selectedId={selectedTemplate?.id || null}
-                  onSelect={handleTemplateSelect}
-                  categoryFilter={activePreset.templateCategory}
-                />
-              </div>
-            )}
 
             {/* Name */}
             <div className="space-y-2">
