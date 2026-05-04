@@ -134,15 +134,6 @@ export const ProjectDialog = ({
     setStep(2);
   };
 
-  const handleTemplateSelect = (tpl: ProjectTemplate | null) => {
-    setSelectedTemplate(tpl);
-    if (tpl) {
-      if (!name.trim()) setName(tpl.name);
-      if (tpl.icon) setIcon(tpl.icon);
-      if (tpl.color) setColor(tpl.color);
-      if (!description.trim() && tpl.description) setDescription(tpl.description);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
