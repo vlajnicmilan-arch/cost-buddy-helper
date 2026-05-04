@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -7,6 +7,13 @@ import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSou
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { tr } from '@/lib/errorMessages';
+import { instantCache } from '@/lib/instantCache';
+
+const paymentSourcesCacheKey = (
+  userId: string | undefined,
+  businessProfileId: string | null | undefined,
+  includePersonal: boolean,
+) => `paymentSources:v1:${userId || 'anon'}:${businessProfileId || 'personal'}:${includePersonal ? 'incl' : 'excl'}`;
 
 
 interface UseCustomPaymentSourcesOptions {
@@ -26,6 +33,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
+  const hydratedKeyRef = useRef<string | null>(null);
 
   const isLocalMode = storageMode === 'local' && !user;
 
@@ -153,7 +161,15 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         };
       });
 
-      setCustomPaymentSources(sourcesWithCards as CustomPaymentSource[]);
+      const finalSources = sourcesWithCards as CustomPaymentSource[];
+      setCustomPaymentSources(finalSources);
+      if (!isLocalMode && user) {
+        instantCache.write(
+          paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal),
+          finalSources,
+        );
+        hydratedKeyRef.current = paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal);
+      }
     } catch (error) {
       const errMsg = String((error as any)?.message || error);
       if (/jwt|token.*expir|unauthorized/i.test(errMsg) || (error as any)?.status === 401) {
@@ -173,6 +189,20 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       setLoading(false);
     }
   }, [user, isLocalMode, activeBusinessProfileId, includePersonal]);
+
+  // Hydrate from cache instantly when context changes
+  useEffect(() => {
+    if (isLocalMode || !user) return;
+    const key = paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal);
+    const cached = instantCache.read<CustomPaymentSource[]>(key);
+    if (cached && cached.length > 0) {
+      setCustomPaymentSources(cached);
+      setLoading(false);
+      hydratedKeyRef.current = key;
+    } else {
+      hydratedKeyRef.current = null;
+    }
+  }, [user?.id, activeBusinessProfileId, includePersonal, isLocalMode, user]);
 
   useEffect(() => {
     fetchCustomPaymentSources();

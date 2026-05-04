@@ -1,55 +1,75 @@
+# Instant Cache — uklanjanje spinnera pri povratku u app
+
 ## Cilj
+Pri svakom povratku u app prikazati zadnje poznato stanje **odmah** (bez spinnera/praznog ekrana), a u pozadini tiho povući svježe podatke i ažurirati UI.
 
-Korisnik više ne bira šablon pri kreiranju projekta. Za svaku vrstu projekta automatski se primjenjuje jedan, unaprijed odabran šablon (faze, ime/ikona/boja samo ako korisnik nije već unio). Korisnik kasnije slobodno mijenja faze unutar projekta.
+## 1. Novi helper: `src/lib/instantCache.ts`
 
-## Konkretan izbor šablona za zadržati
+Mali (~50 linija) wrapper oko `sessionStorage` s `localStorage` fallbackom za perzistenciju preko zatvaranja appa.
 
-Za 11 kategorija već postoji točno 1 šablon — ostaje kako je.
+```ts
+read<T>(key: string): T | null
+write<T>(key: string, data: T): void
+remove(key: string): void
+clearAll(): void  // briše sve "cache:*" ključeve (logout)
+```
 
-Za 2 kategorije s više šablona zadržavamo najgenerički:
+- Custom JSON replacer/reviver za `Date` objekte (ključno za `expenses[].date`).
+- Tiho hvata `QuotaExceededError` i greške parsanja (samo `console.warn`, ne prekida flow).
+- Verzionirani ključevi (`v1`) za lakšu invalidaciju kad se shape promijeni.
 
-| Kategorija | Zadržati (active) | Deaktivirati (is_active=false) |
-|---|---|---|
-| **renovation** | **Adaptacija stana** (7 faza: Rušenje → Elektro → Voda → Žbukanje → Podovi → Bojanje → Završno) | Renovacija kuhinje, Renovacija kupaonice |
-| **it_software** | **MVP razvoj** (5 faza: Discovery → Dizajn → Razvoj → QA → Lansiranje) | Web stranica |
+## 2. Cache ključevi (per user + kontekst)
 
-Razlozi:
-- "Adaptacija stana" pokriva i kuhinju i kupaonicu kao podfaze većeg projekta; faze su generičke i lako se brišu/preimenuju.
-- "MVP razvoj" pokriva i web/app/SaaS; "Web stranica" je podset (Brief → Dizajn → Razvoj → Lansiranje), korisnik to lako dobije brisanjem QA faze iz MVP-a.
+- `cache:projects:v1:{userId}:{activeBusinessProfileId|personal}`
+- `cache:paymentSources:v1:{userId}:{activeBusinessProfileId|personal}:{includePersonal}`
+- `cache:expenses:v1:{userId}:{viewMode}:{viewBusinessProfileId|none}`
 
-3 deaktivirana šablona ostaju u bazi (oporavljivi), samo se ne prikazuju i ne primjenjuju.
+Kontekst u ključu = nema curenja podataka između Personal/Business profila.
 
-## Promjene u kodu i bazi
+## 3. Izmjene u `useProjects.ts`
 
-### 1. DB migracija
-- `ALTER TABLE project_templates ADD COLUMN is_active boolean NOT NULL DEFAULT true;`
-- Update: `is_active = false` za 3 šablona (Renovacija kuhinje, Renovacija kupaonice, Web stranica) — preko insert/data alata.
+- Na mountu: pročitaj cache za trenutni `(user, activeBusinessProfileId)`.
+  - Ako postoji → `setProjects(cached)` + `setLoading(false)` **odmah**.
+  - Ako ne postoji → ostavi `loading=true` (kao sada).
+- `fetchProjects` ne radi `setLoading(true)` ako već imamo nešto u stateu (silent revalidate).
+- Nakon uspješnog fetcha → `setProjects(fresh)` + `instantCache.write(...)`.
 
-### 2. `src/hooks/useProjectTemplates.ts`
-- U `select` filtrirati `.eq('is_active', true)` da deaktivirani ne uđu u listu.
-- Dodati `is_active: boolean` u TS interface.
+## 4. Izmjene u `useCustomPaymentSources.ts`
 
-### 3. `src/components/projects/ProjectDialog.tsx`
-- Ukloniti renderiranje `<ProjectTemplatePicker />` (linije 232-240) zajedno s okvirom.
-- Zadržati postojeću logiku auto-selekcije u `handleTypeSelected` (linije 124-133) — ona već primjenjuje 1 match po `templateCategory`. Pošto sad svaka kategorija ima točno 1 aktivan šablon, rezultat je deterministički.
-- Maknuti `handleTemplateSelect` funkciju (više se ne koristi).
-- Zadržati `selectedTemplate` state — koristi ga `onSave(..., selectedTemplate, ...)` da nasloni faze.
+Identičan pattern kao kod projekata, ključ uključuje `includePersonal` flag.
 
-### 4. `src/components/projects/ProjectTemplatePicker.tsx`
-- Datoteka se može zadržati za buduću upotrebu, ali izbrisati uvoz iz `ProjectDialog.tsx`. Alternativa: obrisati datoteku.
-- Preporuka: **obrisati** komponentu radi čistoće — admin/dev po potrebi može vidjeti šablone direktno u DB.
+## 5. Izmjene u `useExpenseFetch.ts`
 
-### 5. i18n
-- Maknuti ključeve koji se više ne koriste: `projects.templates.suggestedPhases`, `projects.templates.help`, `projects.templates.empty`, `projects.templates.phases`, `common.clear` (samo ako se nigdje drugdje ne koristi — provjeriti prije brisanja).
+- Cache se sprema **prije** primjene `applyViewMode` filtera (sirovi `expenses` array, jer `viewMode` se mijenja runtime).
+- Datumi se serijaliziraju kroz custom replacer; pri čitanju, helper vraća `Date` objekte (čime ostaje kompatibilno s postojećim `e.date.getTime()` pozivima).
+- Realtime subscription i ostala logika ostaju netaknute.
+- Local storage mode (`isLocalMode`) preskače cache (već je instant).
 
-## UX rezultat
+## 6. Invalidacija na logout
 
-- Korak 1: korisnik bira vrstu projekta (kao i dosad).
-- Korak 2: ime/datumi/budžet — bez "Predložene faze" boxa. Faze se tiho primjenjuju iz šablona kategorije.
-- Unutar kreiranog projekta korisnik briše/dodaje/preimenuje faze normalno.
+U `useAuth` (ili gdje god se zove `supabase.auth.signOut()`) pozvati `instantCache.clearAll()`. Tako sljedeći user neće vidjeti tuđe podatke ni na trenutak.
 
-## Rizici / napomene
+## 7. Što se NE mijenja
 
-- Postojeći projekti nisu dirani — `is_active` je samo filter za novu listu.
-- Ako u budućnosti netko želi "izabrati drugi šablon" — komponenta je već postojala, lako se vraća (zato samo deaktivacija, ne brisanje DB redaka).
-- Deaktivirana 3 šablona se neće više nikad pojaviti u UI. Ako želiš, mogu ih kasnije i obrisati nakon par tjedana.
+- RLS, business filteri, fetch logika, paginacija, retry on 401
+- Realtime subscription u `useExpenseFetch`
+- TanStack Query hooks (već imaju staleTime 5min)
+- Cold start (prvi login) — ostaje isti spinner
+- Lokalni storage mode
+
+## Tehnički detalji
+
+**Zašto sessionStorage + localStorage fallback?**
+- `sessionStorage`: brži, automatski izoliran po tabu, nestaje pri hard close. Dovoljno za "vratio sam se u app nakon par minuta".
+- `localStorage`: perzistira preko zatvaranja appa/Capacitor restarta. Helper čita iz oba (sessionStorage prvo), piše u oba.
+
+**Zašto ne TanStack Query persister?**
+- Uvodi dodatnu zavisnost i wrapper oko `QueryClient`, a hookovi `useProjects`/`useCustomPaymentSources`/`useExpenseFetch` ne koriste Query nego `useState`. Refaktor bi bio značajno veći.
+
+**Memorijska sigurnost:**
+- Maksimalna veličina ~5MB po origin (sessionStorage limit). Tipičan user: par stotina expenses + par desetaka projekata = <500KB. Ako prijeđemo limit, `QuotaExceededError` se hvata tiho.
+
+## Rezultat
+- Cold start: kao sada (~1-2s spinner)
+- Svaki sljedeći povratak u app: **instant prikaz** zadnjeg stanja, tiho ažuriranje u pozadini
+- Realtime promjene: i dalje stižu odmah preko subscription kanala

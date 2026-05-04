@@ -10,6 +10,10 @@ import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
 import { useHiddenPaymentSources } from './useHiddenPaymentSources';
 import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
+import { instantCache } from '@/lib/instantCache';
+
+const expensesCacheKey = (userId: string | undefined) =>
+  `expenses:v1:${userId || 'anon'}`;
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
@@ -26,6 +30,7 @@ export const useExpenseFetch = () => {
   const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
   const [loading, setLoading] = useState(true);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const hydratedKeyRef = useRef<string | null>(null);
 
   const isLocalMode = storageMode === 'local' && !user;
 
@@ -73,7 +78,9 @@ export const useExpenseFetch = () => {
   }, [user, isLocalMode]);
 
   const fetchExpenses = useCallback(async () => {
-    setLoading(true);
+    const cacheKey = expensesCacheKey(user?.id);
+    const hasHydrated = hydratedKeyRef.current === cacheKey;
+    if (!hasHydrated) setLoading(true);
     try {
       if (isLocalMode) {
         await initLocalDB();
@@ -105,7 +112,7 @@ export const useExpenseFetch = () => {
           from += pageSize;
         }
 
-        setExpenses(allData.map(e => ({
+        const mapped = allData.map(e => ({
           ...e,
           date: new Date(e.date),
           category: e.category as Category,
@@ -116,7 +123,9 @@ export const useExpenseFetch = () => {
           expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined,
           business_profile_id: (e as any).business_profile_id || null,
           currency: (e as any).currency || null,
-        })));
+        }));
+        setExpenses(mapped);
+        instantCache.write(cacheKey, mapped);
       }
     } catch (error) {
       const errMsg = String((error as any)?.message || error);
@@ -139,7 +148,7 @@ export const useExpenseFetch = () => {
             retryFrom += 1000;
           }
           if (retryData.length > 0) {
-            setExpenses(retryData.map(e => ({
+            const mappedRetry = retryData.map(e => ({
               ...e,
               date: new Date(e.date),
               category: e.category as Category,
@@ -150,7 +159,10 @@ export const useExpenseFetch = () => {
               expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined,
               business_profile_id: (e as any).business_profile_id || null,
               currency: (e as any).currency || null,
-            })));
+            }));
+            setExpenses(mappedRetry);
+            instantCache.write(cacheKey, mappedRetry);
+            hydratedKeyRef.current = cacheKey;
             setLoading(false);
             return;
           }
@@ -161,6 +173,7 @@ export const useExpenseFetch = () => {
       console.error('Error fetching expenses:', error);
       showError(tr('errors.fetch.expenses', 'Greška pri učitavanju troškova'));
     } finally {
+      hydratedKeyRef.current = cacheKey;
       setLoading(false);
     }
   }, [user, isLocalMode]);
@@ -177,6 +190,24 @@ export const useExpenseFetch = () => {
     business_profile_id: (raw as any).business_profile_id || null,
     currency: (raw as any).currency || null,
   }), []);
+
+  // Hydrate from cache instantly on user change
+  useEffect(() => {
+    if (isLocalMode || !user) return;
+    const key = expensesCacheKey(user.id);
+    const cached = instantCache.read<Expense[]>(key);
+    if (cached && cached.length > 0) {
+      // Defensive: ensure dates are Date objects (reviver should already do this)
+      setExpenses(cached.map(e => ({
+        ...e,
+        date: e.date instanceof Date ? e.date : new Date(e.date as unknown as string),
+      })));
+      setLoading(false);
+      hydratedKeyRef.current = key;
+    } else {
+      hydratedKeyRef.current = null;
+    }
+  }, [user?.id, isLocalMode, user]);
 
   // Initial data load (hiddenIds handled by useHiddenPaymentSources hook)
   useEffect(() => {
