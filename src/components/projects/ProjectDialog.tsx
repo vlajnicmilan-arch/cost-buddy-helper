@@ -16,7 +16,7 @@ import { CalendarIcon, Loader2, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { ProjectTemplatePicker } from './ProjectTemplatePicker';
+
 import { ProjectTemplate, useProjectTemplates } from '@/hooks/useProjectTemplates';
 import { ProjectTypePickerStep } from './ProjectTypePickerStep';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
