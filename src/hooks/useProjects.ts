@@ -16,9 +16,11 @@ export const useProjects = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
-  const [projects, setProjects] = useState<ProjectWithOwnership[]>([]);
-  const [loading, setLoading] = useState(true);
-  const hydratedKeyRef = useRef<string | null>(null);
+  const initialKey = projectsCacheKey(user?.id, activeBusinessProfileId);
+  const initialCached = user ? instantCache.read<ProjectWithOwnership[]>(initialKey) : null;
+  const [projects, setProjects] = useState<ProjectWithOwnership[]>(initialCached || []);
+  const [loading, setLoading] = useState(!initialCached || initialCached.length === 0);
+  const hydratedKeyRef = useRef<string | null>(initialCached && initialCached.length > 0 ? initialKey : null);
 
   const isLocalMode = !user;
 
