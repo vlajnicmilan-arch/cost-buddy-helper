@@ -1,38 +1,55 @@
-# Vizualna oznaka triala za projekte
+## Cilj
 
-Mali chip koji jasno govori da je pristup projektima privremen (tijekom 14-dnevnog probnog perioda) i koliko dana je ostalo. Bez promjene logike pristupa.
+Korisnik više ne bira šablon pri kreiranju projekta. Za svaku vrstu projekta automatski se primjenjuje jedan, unaprijed odabran šablon (faze, ime/ikona/boja samo ako korisnik nije već unio). Korisnik kasnije slobodno mijenja faze unutar projekta.
 
-## Što se mijenja
+## Konkretan izbor šablona za zadržati
 
-1. **Nova komponenta** `src/components/TrialFeatureChip.tsx` (~70 linija)
-   - Props: `feature: Feature`, `className?`
-   - Prikazuje se samo kad: `storageMode === 'cloud'` && `trialActive` && `!subscribed` && `getRequiredTier(feature) !== 'free'`
-   - Sadržaj: ikona Sparkles + `Probni period · 12 dana` (ili `1 dan` / `zadnji dan`)
-   - Boja: teal (primary) kad >2 dana, destructive tint kad ≤2 (konzistentno s `TrialBanner`)
-   - Klik → `/paywall`
-   - `<button>` element (a11y native, focus-visible ring), `aria-label` + `title`
+Za 11 kategorija već postoji točno 1 šablon — ostaje kako je.
 
-2. **`src/components/home/ActiveProjectsStrip.tsx`**
-   - Pored `<h2>Aktivni projekti</h2>` u headeru dodaje se `<TrialFeatureChip feature="projects" />`
-   - Layout: `flex items-center gap-2` (chip do naslova, gumb "Pogledaj sve" ostaje desno)
+Za 2 kategorije s više šablona zadržavamo najgenerički:
 
-3. **`src/pages/Projects.tsx`**
-   - Ispod `<PageHeader>`, iznad `<ProjectsPanel>` / `<UpgradePrompt>` dodaje se `<TrialFeatureChip feature="projects" className="mb-3" />`
-   - Korisnik koji uđe u Projekte odmah vidi da je značajka u trialu
+| Kategorija | Zadržati (active) | Deaktivirati (is_active=false) |
+|---|---|---|
+| **renovation** | **Adaptacija stana** (7 faza: Rušenje → Elektro → Voda → Žbukanje → Podovi → Bojanje → Završno) | Renovacija kuhinje, Renovacija kupaonice |
+| **it_software** | **MVP razvoj** (5 faza: Discovery → Dizajn → Razvoj → QA → Lansiranje) | Web stranica |
 
-## i18n ključevi (HR / EN / DE)
+Razlozi:
+- "Adaptacija stana" pokriva i kuhinju i kupaonicu kao podfaze većeg projekta; faze su generičke i lako se brišu/preimenuju.
+- "MVP razvoj" pokriva i web/app/SaaS; "Web stranica" je podset (Brief → Dizajn → Razvoj → Lansiranje), korisnik to lako dobije brisanjem QA faze iz MVP-a.
 
-Novi blok `trial.featureChip` u sva 3 locale fajla:
-- `label` → `Probni period` / `Trial` / `Probezeit`
-- `daysLeft` → `{{count}} dana` / `{{count}} days` / `{{count}} Tage`
-- `oneDay` → `1 dan` / `1 day` / `1 Tag`
-- `lastDay` → `zadnji dan` / `last day` / `letzter Tag`
-- `aria` → puna rečenica za screen reader
+3 deaktivirana šablona ostaju u bazi (oporavljivi), samo se ne prikazuju i ne primjenjuju.
 
-## Tehnički detalji
+## Promjene u kodu i bazi
 
-- Bez DB izmjena, bez novih hookova, bez migracija
-- Bez promjena u `useFeatureAccess`, `SubscriptionContext`, `Projects.tsx` access logici
-- Postojeći `TrialBanner` na Dashboardu ostaje netaknut (puni banner s gumbom)
-- Reuse: `useSubscription`, `useFeatureAccess`, `useStorage`, `cn`
-- Komponenta je generička — može se kasnije ubaciti i pored Reports/Family/Recurring naslova bez ikakve promjene
+### 1. DB migracija
+- `ALTER TABLE project_templates ADD COLUMN is_active boolean NOT NULL DEFAULT true;`
+- Update: `is_active = false` za 3 šablona (Renovacija kuhinje, Renovacija kupaonice, Web stranica) — preko insert/data alata.
+
+### 2. `src/hooks/useProjectTemplates.ts`
+- U `select` filtrirati `.eq('is_active', true)` da deaktivirani ne uđu u listu.
+- Dodati `is_active: boolean` u TS interface.
+
+### 3. `src/components/projects/ProjectDialog.tsx`
+- Ukloniti renderiranje `<ProjectTemplatePicker />` (linije 232-240) zajedno s okvirom.
+- Zadržati postojeću logiku auto-selekcije u `handleTypeSelected` (linije 124-133) — ona već primjenjuje 1 match po `templateCategory`. Pošto sad svaka kategorija ima točno 1 aktivan šablon, rezultat je deterministički.
+- Maknuti `handleTemplateSelect` funkciju (više se ne koristi).
+- Zadržati `selectedTemplate` state — koristi ga `onSave(..., selectedTemplate, ...)` da nasloni faze.
+
+### 4. `src/components/projects/ProjectTemplatePicker.tsx`
+- Datoteka se može zadržati za buduću upotrebu, ali izbrisati uvoz iz `ProjectDialog.tsx`. Alternativa: obrisati datoteku.
+- Preporuka: **obrisati** komponentu radi čistoće — admin/dev po potrebi može vidjeti šablone direktno u DB.
+
+### 5. i18n
+- Maknuti ključeve koji se više ne koriste: `projects.templates.suggestedPhases`, `projects.templates.help`, `projects.templates.empty`, `projects.templates.phases`, `common.clear` (samo ako se nigdje drugdje ne koristi — provjeriti prije brisanja).
+
+## UX rezultat
+
+- Korak 1: korisnik bira vrstu projekta (kao i dosad).
+- Korak 2: ime/datumi/budžet — bez "Predložene faze" boxa. Faze se tiho primjenjuju iz šablona kategorije.
+- Unutar kreiranog projekta korisnik briše/dodaje/preimenuje faze normalno.
+
+## Rizici / napomene
+
+- Postojeći projekti nisu dirani — `is_active` je samo filter za novu listu.
+- Ako u budućnosti netko želi "izabrati drugi šablon" — komponenta je već postojala, lako se vraća (zato samo deaktivacija, ne brisanje DB redaka).
+- Deaktivirana 3 šablona se neće više nikad pojaviti u UI. Ako želiš, mogu ih kasnije i obrisati nakon par tjedana.
