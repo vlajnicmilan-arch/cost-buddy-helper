@@ -78,7 +78,9 @@ export const useExpenseFetch = () => {
   }, [user, isLocalMode]);
 
   const fetchExpenses = useCallback(async () => {
-    setLoading(true);
+    const cacheKey = expensesCacheKey(user?.id);
+    const hasHydrated = hydratedKeyRef.current === cacheKey;
+    if (!hasHydrated) setLoading(true);
     try {
       if (isLocalMode) {
         await initLocalDB();
