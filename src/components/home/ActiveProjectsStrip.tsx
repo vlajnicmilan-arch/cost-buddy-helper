@@ -375,6 +375,7 @@ export const ActiveProjectsStrip = React.memo(({
         <h2 className="text-base font-semibold flex items-center gap-2">
           <FolderKanban className="w-4 h-4 text-primary" />
           {t('nav.activeProjects', 'Aktivni projekti')}
+          <TrialFeatureChip feature="projects" />
         </h2>
         <button
           onClick={() => handleNav('/projects')}
