@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { TrialFeatureChip } from '@/components/TrialFeatureChip';
 import { supabase } from '@/integrations/supabase/client';
 
 const Projects = () => {
@@ -66,6 +67,9 @@ const Projects = () => {
           title={t('nav.projects', 'Projekti')}
           onDataImported={refetch}
         />
+        <div className="mb-3">
+          <TrialFeatureChip feature="projects" />
+        </div>
         {hasMemberships === null ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />

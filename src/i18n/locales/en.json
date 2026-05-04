@@ -840,6 +840,15 @@
     "dateTooFar": "Date is too far away",
     "dateAdjusted": "Date was automatically corrected"
   },
+  "trial": {
+    "featureChip": {
+      "label": "Trial",
+      "daysLeft": "{{count}} days left",
+      "oneDay": "1 day left",
+      "lastDay": "last day",
+      "aria": "Feature available during trial. Click to upgrade."
+    }
+  },
   "common": {
     "save": "Save",
     "create": "Create",
