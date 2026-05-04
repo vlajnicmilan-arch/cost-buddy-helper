@@ -434,6 +434,7 @@
     "tooltips": {
       "projectTeam": "Alle Personen im Projekt: App-Mitglieder, Arbeiter und externe Mitwirkende"
     },
+    "invitationsDisabledClosed": "Projekt ist abgeschlossen oder archiviert — Einladungen sind nicht möglich.",
     "complete": {
       "headerCta": "Projekt abschließen",
       "reopenCta": "Wieder öffnen",
