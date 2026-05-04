@@ -67,6 +67,9 @@ const Projects = () => {
           title={t('nav.projects', 'Projekti')}
           onDataImported={refetch}
         />
+        <div className="mb-3">
+          <TrialFeatureChip feature="projects" />
+        </div>
         {hasMemberships === null ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
