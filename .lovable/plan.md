@@ -1,75 +1,45 @@
-# Instant Cache — uklanjanje spinnera pri povratku u app
+## Bug 1: Pozivnice idu i na završene projekte
 
-## Cilj
-Pri svakom povratku u app prikazati zadnje poznato stanje **odmah** (bez spinnera/praznog ekrana), a u pozadini tiho povući svježe podatke i ažurirati UI.
+**Uzrok:** `supabase/functions/send-member-invitation/index.ts` ne provjerava status projekta. UI također ne sakriva formu kada je projekt `completed`/`cancelled`/`archived_at != null`.
 
-## 1. Novi helper: `src/lib/instantCache.ts`
+**Popravak:**
 
-Mali (~50 linija) wrapper oko `sessionStorage` s `localStorage` fallbackom za perzistenciju preko zatvaranja appa.
+1. **Edge function** — prije provjere postojećeg člana, za `type === "project"` dohvatiti `projects.status` i `archived_at`:
+   - Ako `archived_at != null || status IN ('completed','cancelled')` → vratiti `400 { error: "project_closed", message: "..." }`.
+2. **Frontend `ProjectMembersTab.tsx`** — primiti `projectStatus` i `archivedAt` propse. Kada je projekt zatvoren:
+   - Sakriti cijelu "Invite section" (linije 295–451).
+   - Prikazati `Alert`/info blok s ključem `projects.invitationsDisabledClosed`.
+   - I dalje dopustiti listu članova, uklanjanje, promjenu uloga.
+3. **`ProjectTeamTab.tsx`** — dodati `projectStatus` i `archivedAt` propse i proslijediti ih.
+4. **`ProjectFullScreenView.tsx`** — proslijediti `project.status` i `project.archived_at` u `ProjectTeamTab`.
+5. **`useProjectMembers.ts`** — `sendInviteEmail` već vraća error code; mapirati `'project_closed'` → friendly toast u `ProjectMembersTab.handleSendInvite`.
+6. **i18n (hr/en/de)** — dodati pod `projects`:
+   - `invitationsDisabledClosed`: "Projekt je završen ili arhiviran — pozivnice nisu moguće."
+   - `projectClosed`: kratki toast za grešku.
 
-```ts
-read<T>(key: string): T | null
-write<T>(key: string, data: T): void
-remove(key: string): void
-clearAll(): void  // briše sve "cache:*" ključeve (logout)
-```
+## Bug 2: Gumbi (Uredi/Obriši/Arhiva) nevidljivi na kartici projekta
 
-- Custom JSON replacer/reviver za `Date` objekte (ključno za `expenses[].date`).
-- Tiho hvata `QuotaExceededError` i greške parsanja (samo `console.warn`, ne prekida flow).
-- Verzionirani ključevi (`v1`) za lakšu invalidaciju kad se shape promijeni.
+**Uzrok:** `ProjectCard.tsx` linija 254 — akcijski gumbi imaju `opacity-0 group-hover:opacity-100`. Na touch uređajima nema hovera; na desktopu su nedostupni dok korisnik ne pređe mišem precizno preko apsolutno pozicioniranog kontejnera. UX bug + a11y problem.
 
-## 2. Cache ključevi (per user + kontekst)
+**Popravak:** Zamijeniti grupu hover gumba s **uvijek vidljivim kebab menijem** (Lucide `MoreVertical`) koji otvara `DropdownMenu` (shadcn, već se koristi u projektu — `ProjectDocumentsTab`, `ProjectWorkersTab`).
 
-- `cache:projects:v1:{userId}:{activeBusinessProfileId|personal}`
-- `cache:paymentSources:v1:{userId}:{activeBusinessProfileId|personal}:{includePersonal}`
-- `cache:expenses:v1:{userId}:{viewMode}:{viewBusinessProfileId|none}`
+- Trigger: `Button variant="ghost" size="icon"` (44px touch target), pozicioniran `absolute top-2 right-2`.
+- Menu items: Uredi · Arhiviraj/Vrati · Premjesti u poslovni mod (samo ako uvjeti) · Obriši (destruktivno).
+- `e.stopPropagation()` na trigger i svaki item, da klik ne propagira na `onClick` kartice.
+- Vidljivost samo za `project.isOwner` ostaje.
+- i18n: reuse postojećih ključeva `projects.edit`, `projects.archive`, `projects.unarchive`, `projects.delete`, `projects.migrateToBusiness` (već koriste isti pattern).
 
-Kontekst u ključu = nema curenja podataka između Personal/Business profila.
+## Datoteke
 
-## 3. Izmjene u `useProjects.ts`
+- `supabase/functions/send-member-invitation/index.ts` — provjera statusa
+- `src/components/projects/ProjectMembersTab.tsx` — guard + handle `project_closed`
+- `src/components/projects/ProjectTeamTab.tsx` — proslijediti propse
+- `src/components/projects/ProjectFullScreenView.tsx` — proslijediti `project.status`/`archived_at`
+- `src/components/projects/ProjectCard.tsx` — kebab dropdown umjesto hover gumba
+- `src/i18n/locales/{hr,en,de}.json` — 2 nova ključa
 
-- Na mountu: pročitaj cache za trenutni `(user, activeBusinessProfileId)`.
-  - Ako postoji → `setProjects(cached)` + `setLoading(false)` **odmah**.
-  - Ako ne postoji → ostavi `loading=true` (kao sada).
-- `fetchProjects` ne radi `setLoading(true)` ako već imamo nešto u stateu (silent revalidate).
-- Nakon uspješnog fetcha → `setProjects(fresh)` + `instantCache.write(...)`.
+## Bez
 
-## 4. Izmjene u `useCustomPaymentSources.ts`
-
-Identičan pattern kao kod projekata, ključ uključuje `includePersonal` flag.
-
-## 5. Izmjene u `useExpenseFetch.ts`
-
-- Cache se sprema **prije** primjene `applyViewMode` filtera (sirovi `expenses` array, jer `viewMode` se mijenja runtime).
-- Datumi se serijaliziraju kroz custom replacer; pri čitanju, helper vraća `Date` objekte (čime ostaje kompatibilno s postojećim `e.date.getTime()` pozivima).
-- Realtime subscription i ostala logika ostaju netaknute.
-- Local storage mode (`isLocalMode`) preskače cache (već je instant).
-
-## 6. Invalidacija na logout
-
-U `useAuth` (ili gdje god se zove `supabase.auth.signOut()`) pozvati `instantCache.clearAll()`. Tako sljedeći user neće vidjeti tuđe podatke ni na trenutak.
-
-## 7. Što se NE mijenja
-
-- RLS, business filteri, fetch logika, paginacija, retry on 401
-- Realtime subscription u `useExpenseFetch`
-- TanStack Query hooks (već imaju staleTime 5min)
-- Cold start (prvi login) — ostaje isti spinner
-- Lokalni storage mode
-
-## Tehnički detalji
-
-**Zašto sessionStorage + localStorage fallback?**
-- `sessionStorage`: brži, automatski izoliran po tabu, nestaje pri hard close. Dovoljno za "vratio sam se u app nakon par minuta".
-- `localStorage`: perzistira preko zatvaranja appa/Capacitor restarta. Helper čita iz oba (sessionStorage prvo), piše u oba.
-
-**Zašto ne TanStack Query persister?**
-- Uvodi dodatnu zavisnost i wrapper oko `QueryClient`, a hookovi `useProjects`/`useCustomPaymentSources`/`useExpenseFetch` ne koriste Query nego `useState`. Refaktor bi bio značajno veći.
-
-**Memorijska sigurnost:**
-- Maksimalna veličina ~5MB po origin (sessionStorage limit). Tipičan user: par stotina expenses + par desetaka projekata = <500KB. Ako prijeđemo limit, `QuotaExceededError` se hvata tiho.
-
-## Rezultat
-- Cold start: kao sada (~1-2s spinner)
-- Svaki sljedeći povratak u app: **instant prikaz** zadnjeg stanja, tiho ažuriranje u pozadini
-- Realtime promjene: i dalje stižu odmah preko subscription kanala
+- DB migracije
+- Promjena RLS
+- Novih dependenciesa (DropdownMenu već postoji)

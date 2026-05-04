@@ -634,6 +634,8 @@ export const ProjectFullScreenView = ({
                     canSeeWorkers={canSeeTab('workers')}
                     canSeeCollaborators={canSeeTab('collaborators')}
                     initialSubTab={teamInitialSubTab}
+                    projectStatus={project.status}
+                    archivedAt={project.archived_at ?? null}
                   />
                 </TabsContent>
 

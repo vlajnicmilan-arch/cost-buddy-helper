@@ -24,6 +24,8 @@ interface ProjectTeamTabProps {
   canSeeWorkers: boolean;
   canSeeCollaborators: boolean;
   initialSubTab?: SubTab;
+  projectStatus?: string;
+  archivedAt?: string | null;
 }
 
 export const ProjectTeamTab = ({
@@ -38,6 +40,8 @@ export const ProjectTeamTab = ({
   canSeeWorkers,
   canSeeCollaborators,
   initialSubTab,
+  projectStatus,
+  archivedAt,
 }: ProjectTeamTabProps) => {
   const { t } = useTranslation();
   const { workers } = useProjectWorkers(projectId);
@@ -126,6 +130,8 @@ export const ProjectTeamTab = ({
           isManager={isManager}
           loading={membersLoading}
           onRefetch={onRefetchMembers}
+          projectStatus={projectStatus}
+          archivedAt={archivedAt}
         />
       )}
       {active === 'workers' && canSeeWorkers && (

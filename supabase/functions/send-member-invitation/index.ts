@@ -119,6 +119,31 @@ serve(async (req) => {
       );
     }
 
+    // Block invitations to closed/archived projects
+    if (type === "project") {
+      const { data: projectRow, error: projectErr } = await adminClient
+        .from("projects")
+        .select("status, archived_at")
+        .eq("id", targetId)
+        .maybeSingle();
+      if (projectErr || !projectRow) {
+        return new Response(
+          JSON.stringify({ error: "project_not_found", message: "Projekt nije pronađen" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (
+        projectRow.archived_at !== null ||
+        projectRow.status === "completed" ||
+        projectRow.status === "cancelled"
+      ) {
+        return new Response(
+          JSON.stringify({ error: "project_closed", message: "Projekt je završen ili arhiviran — pozivnice nisu moguće" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Check if user is already a member (only when they exist in the system)
     if (invitedUser) {
       const { data: existingMember } = await adminClient

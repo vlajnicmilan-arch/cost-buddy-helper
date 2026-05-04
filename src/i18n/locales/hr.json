@@ -448,6 +448,7 @@
     "projectTeam": "Tim projekta",
     "workers": "Radnici",
     "collaborators": "Suradnici",
+    "invitationsDisabledClosed": "Projekt je završen ili arhiviran — pozivnice nisu moguće.",
     "complete": {
       "headerCta": "Završi projekt",
       "reopenCta": "Ponovo otvori",
