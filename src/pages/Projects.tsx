@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { TrialFeatureChip } from '@/components/TrialFeatureChip';
 import { supabase } from '@/integrations/supabase/client';
 
 const Projects = () => {
