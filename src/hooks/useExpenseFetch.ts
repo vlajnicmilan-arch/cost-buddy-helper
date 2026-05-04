@@ -191,6 +191,24 @@ export const useExpenseFetch = () => {
     currency: (raw as any).currency || null,
   }), []);
 
+  // Hydrate from cache instantly on user change
+  useEffect(() => {
+    if (isLocalMode || !user) return;
+    const key = expensesCacheKey(user.id);
+    const cached = instantCache.read<Expense[]>(key);
+    if (cached && cached.length > 0) {
+      // Defensive: ensure dates are Date objects (reviver should already do this)
+      setExpenses(cached.map(e => ({
+        ...e,
+        date: e.date instanceof Date ? e.date : new Date(e.date as unknown as string),
+      })));
+      setLoading(false);
+      hydratedKeyRef.current = key;
+    } else {
+      hydratedKeyRef.current = null;
+    }
+  }, [user?.id, isLocalMode, user]);
+
   // Initial data load (hiddenIds handled by useHiddenPaymentSources hook)
   useEffect(() => {
     fetchOwnedSources();
