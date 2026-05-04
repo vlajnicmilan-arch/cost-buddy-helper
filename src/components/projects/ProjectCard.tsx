@@ -261,80 +261,81 @@ export const ProjectCard = ({
           )}
         </div>
 
-        {/* Actions - Always visible kebab menu, owners only */}
-        {project.isOwner && (
-          <div
-            className="absolute top-2 right-2"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-          >
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-label={t('common.actions', 'Akcije')}
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-[70]">
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(project);
-                  }}
-                >
-                  <Pencil className="w-4 h-4 mr-2" />
-                  {t('common.edit', 'Uredi')}
-                </DropdownMenuItem>
-                {onMigrateToBusiness && !project.business_profile_id && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMigrateToBusiness(project);
-                    }}
-                  >
-                    <Briefcase className="w-4 h-4 mr-2" />
-                    {t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
-                  </DropdownMenuItem>
-                )}
-                {onArchive && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onArchive(project.id);
-                    }}
-                  >
-                    {isArchived ? (
-                      <ArchiveRestore className="w-4 h-4 mr-2" />
-                    ) : (
-                      <Archive className="w-4 h-4 mr-2" />
-                    )}
-                    {isArchived
-                      ? t('projects.unarchive', 'Vrati iz arhive')
-                      : t('projects.archive', 'Arhiviraj')}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(project.id);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {t('common.delete', 'Obriši')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
       </div>
+
+      {/* Actions - sibling of clickable content so menu clicks never open the project */}
+      {project.isOwner && (
+        <div
+          className="absolute top-2 right-2 z-10"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11"
+                aria-label={t('common.actions', 'Akcije')}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[70]">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(project);
+                }}
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                {t('common.edit', 'Uredi')}
+              </DropdownMenuItem>
+              {onMigrateToBusiness && !project.business_profile_id && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMigrateToBusiness(project);
+                  }}
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  {t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
+                </DropdownMenuItem>
+              )}
+              {onArchive && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onArchive(project.id);
+                  }}
+                >
+                  {isArchived ? (
+                    <ArchiveRestore className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Archive className="w-4 h-4 mr-2" />
+                  )}
+                  {isArchived
+                    ? t('projects.unarchive', 'Vrati iz arhive')
+                    : t('projects.archive', 'Arhiviraj')}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(project.id);
+                }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {t('common.delete', 'Obriši')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </motion.div>
   );
 };
