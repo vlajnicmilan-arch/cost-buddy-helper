@@ -10,6 +10,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
 import { cn } from '@/lib/utils';
 import { getProjectStatusLine, type StatusLine } from '@/lib/projectStatusLine';
+import { TrialFeatureChip } from '@/components/TrialFeatureChip';
 
 const STATUS_ICON_MAP = { Sparkles, Clock, Pause, Info, AlertCircle } as const;
 
