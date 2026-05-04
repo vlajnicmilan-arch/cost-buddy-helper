@@ -190,6 +190,20 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     }
   }, [user, isLocalMode, activeBusinessProfileId, includePersonal]);
 
+  // Hydrate from cache instantly when context changes
+  useEffect(() => {
+    if (isLocalMode || !user) return;
+    const key = paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal);
+    const cached = instantCache.read<CustomPaymentSource[]>(key);
+    if (cached && cached.length > 0) {
+      setCustomPaymentSources(cached);
+      setLoading(false);
+      hydratedKeyRef.current = key;
+    } else {
+      hydratedKeyRef.current = null;
+    }
+  }, [user?.id, activeBusinessProfileId, includePersonal, isLocalMode, user]);
+
   useEffect(() => {
     fetchCustomPaymentSources();
   }, [fetchCustomPaymentSources]);
