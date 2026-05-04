@@ -300,8 +300,15 @@ export const ProjectMembersTab = ({
         </div>
       )}
 
-      {/* Invite section - managers only */}
-      {isManager && (
+      {/* Closed-project notice */}
+      {isManager && isProjectClosed && (
+        <div className="p-4 rounded-lg border border-warning/40 bg-warning/10 text-sm text-foreground">
+          {t('projects.invitationsDisabledClosed', 'Projekt je završen ili arhiviran — pozivnice nisu moguće.')}
+        </div>
+      )}
+
+      {/* Invite section - managers only, hidden when project closed */}
+      {isManager && !isProjectClosed && (
         <div className="p-4 rounded-lg border bg-muted/50 space-y-4">
           <div className="flex items-center gap-2">
             <UserPlus className="w-4 h-4" />
