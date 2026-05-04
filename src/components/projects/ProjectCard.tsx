@@ -274,17 +274,19 @@ export const ProjectCard = ({
           onTouchStart={(e) => e.stopPropagation()}
         >
           <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger
+              asChild
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-11 w-11"
                 aria-label={t('common.actions', 'Akcije')}
                 aria-expanded={actionsOpen}
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
