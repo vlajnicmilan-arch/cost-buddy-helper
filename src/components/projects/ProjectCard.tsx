@@ -258,7 +258,13 @@ export const ProjectCard = ({
 
         {/* Actions - Always visible kebab menu, owners only */}
         {project.isOwner && (
-          <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="absolute top-2 right-2"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -266,7 +272,6 @@ export const ProjectCard = ({
                   size="icon"
                   className="h-9 w-9"
                   aria-label={t('common.actions', 'Akcije')}
-                  onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="w-4 h-4" />
                 </Button>
