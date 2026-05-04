@@ -20,7 +20,13 @@ export const useExpenseFetch = () => {
   const { storageMode } = useStorage();
   const { mode: viewMode, businessProfileId: viewBusinessProfileId, isPersonalView, isBusinessView } = useWalletViewMode();
 
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const initialExpensesKey = expensesCacheKey(user?.id);
+  const initialExpensesCached = user ? instantCache.read<Expense[]>(initialExpensesKey) : null;
+  const initialExpenses = (initialExpensesCached || []).map(e => ({
+    ...e,
+    date: e.date instanceof Date ? e.date : new Date(e.date as unknown as string),
+  }));
+  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
   const [ownedSourceIds, setOwnedSourceIds] = useState<Set<string>>(new Set());
   const [sharedPaymentSourceIds, setSharedPaymentSourceIds] = useState<Set<string>>(new Set());
   const [fullAccessSourceIds, setFullAccessSourceIds] = useState<Set<string>>(new Set());
@@ -28,9 +34,9 @@ export const useExpenseFetch = () => {
   // Hidden source ids come from a shared, sessionStorage-seeded cache to avoid
   // any flicker when navigating back to the dashboard.
   const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialExpenses.length === 0);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const hydratedKeyRef = useRef<string | null>(null);
+  const hydratedKeyRef = useRef<string | null>(initialExpenses.length > 0 ? initialExpensesKey : null);
 
   const isLocalMode = storageMode === 'local' && !user;
 
