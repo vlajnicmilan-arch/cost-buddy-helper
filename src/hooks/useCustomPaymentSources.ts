@@ -161,7 +161,15 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         };
       });
 
-      setCustomPaymentSources(sourcesWithCards as CustomPaymentSource[]);
+      const finalSources = sourcesWithCards as CustomPaymentSource[];
+      setCustomPaymentSources(finalSources);
+      if (!isLocalMode && user) {
+        instantCache.write(
+          paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal),
+          finalSources,
+        );
+        hydratedKeyRef.current = paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal);
+      }
     } catch (error) {
       const errMsg = String((error as any)?.message || error);
       if (/jwt|token.*expir|unauthorized/i.test(errMsg) || (error as any)?.status === 401) {
