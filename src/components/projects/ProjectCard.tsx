@@ -18,6 +18,7 @@ import { hr, enUS, de } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
 import { useMemo } from 'react';
+import { clickableProps } from '@/lib/a11y';
 
 interface ProjectCardProps {
   project: ProjectWithOwnership;
@@ -100,14 +101,13 @@ export const ProjectCard = ({
         scale: 1.01,
         boxShadow: `0 4px 20px ${projectColor}18`
       }}
-      className="relative group p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 overflow-hidden"
+      className="relative group p-4 rounded-2xl border border-border/50 backdrop-blur-md transition-all duration-300 overflow-hidden"
       style={{ 
         borderLeftColor: projectColor, 
         borderLeftWidth: 3,
         background: `linear-gradient(135deg, ${projectColor}0A 0%, ${projectColor}04 50%, transparent 100%)`,
         boxShadow: `0 2px 12px ${projectColor}08`,
       }}
-      onClick={() => onClick(project)}
     >
       {/* Subtle radial glow */}
       <div
@@ -115,7 +115,12 @@ export const ProjectCard = ({
         style={{ background: `radial-gradient(circle, ${projectColor} 0%, transparent 70%)` }}
       />
 
-      <div className="flex items-start gap-3">
+      <div
+        {...clickableProps(() => onClick(project), {
+          label: project.name,
+          className: "flex items-start gap-3 cursor-pointer rounded-xl pr-10",
+        })}
+      >
         {/* Icon */}
         <div 
           className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-sm"
