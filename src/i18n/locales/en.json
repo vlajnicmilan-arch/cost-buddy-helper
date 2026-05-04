@@ -445,6 +445,7 @@
     "projectTeam": "Project Team",
     "workers": "Workers",
     "collaborators": "Collaborators",
+    "invitationsDisabledClosed": "Project is completed or archived — invitations are not allowed.",
     "complete": {
       "headerCta": "Complete project",
       "reopenCta": "Reopen",
