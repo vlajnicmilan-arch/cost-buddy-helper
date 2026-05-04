@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -7,6 +7,13 @@ import { CustomPaymentSource, PaymentSourceCard } from '@/types/customPaymentSou
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { tr } from '@/lib/errorMessages';
+import { instantCache } from '@/lib/instantCache';
+
+const paymentSourcesCacheKey = (
+  userId: string | undefined,
+  businessProfileId: string | null | undefined,
+  includePersonal: boolean,
+) => `paymentSources:v1:${userId || 'anon'}:${businessProfileId || 'personal'}:${includePersonal ? 'incl' : 'excl'}`;
 
 
 interface UseCustomPaymentSourcesOptions {
