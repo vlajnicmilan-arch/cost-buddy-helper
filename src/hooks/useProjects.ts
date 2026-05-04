@@ -133,14 +133,32 @@ export const useProjects = () => {
         );
 
         setProjects(allProjects);
+        if (!isLocalMode) {
+          instantCache.write(cacheKey, allProjects);
+        }
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
       showError(t('common.error'));
     } finally {
+      hydratedKeyRef.current = cacheKey;
       setLoading(false);
     }
   }, [user, isLocalMode, t, activeBusinessProfileId]);
+
+  // Hydrate from cache instantly on mount / context change
+  useEffect(() => {
+    if (isLocalMode) return;
+    const cacheKey = projectsCacheKey(user?.id, activeBusinessProfileId);
+    const cached = instantCache.read<ProjectWithOwnership[]>(cacheKey);
+    if (cached && cached.length > 0) {
+      setProjects(cached);
+      setLoading(false);
+      hydratedKeyRef.current = cacheKey;
+    } else {
+      hydratedKeyRef.current = null;
+    }
+  }, [user?.id, activeBusinessProfileId, isLocalMode]);
 
   useEffect(() => {
     fetchProjects();
