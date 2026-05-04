@@ -148,7 +148,7 @@ export const useExpenseFetch = () => {
             retryFrom += 1000;
           }
           if (retryData.length > 0) {
-            setExpenses(retryData.map(e => ({
+            const mappedRetry = retryData.map(e => ({
               ...e,
               date: new Date(e.date),
               category: e.category as Category,
@@ -159,7 +159,10 @@ export const useExpenseFetch = () => {
               expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined,
               business_profile_id: (e as any).business_profile_id || null,
               currency: (e as any).currency || null,
-            })));
+            }));
+            setExpenses(mappedRetry);
+            instantCache.write(cacheKey, mappedRetry);
+            hydratedKeyRef.current = cacheKey;
             setLoading(false);
             return;
           }
