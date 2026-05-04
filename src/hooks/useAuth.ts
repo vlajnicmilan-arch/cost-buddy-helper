@@ -134,6 +134,10 @@ export const useAuth = () => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    try {
+      const { instantCache } = await import('@/lib/instantCache');
+      instantCache.clearAll();
+    } catch { /* noop */ }
     return { error };
   };
 
