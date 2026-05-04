@@ -173,6 +173,7 @@ export const useExpenseFetch = () => {
       console.error('Error fetching expenses:', error);
       showError(tr('errors.fetch.expenses', 'Greška pri učitavanju troškova'));
     } finally {
+      hydratedKeyRef.current = cacheKey;
       setLoading(false);
     }
   }, [user, isLocalMode]);
