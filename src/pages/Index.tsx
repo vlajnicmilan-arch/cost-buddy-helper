@@ -16,8 +16,7 @@ import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useBulkActions } from '@/hooks/useBulkActions';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
-import { BusinessTab } from '@/components/business/BusinessBottomNav';
-import { BusinessModeView } from '@/components/home/BusinessModeView';
+// BusinessModeView removed: business chip is now a contextual filter on PersonalModeView.
 import { PersonalModeView } from '@/components/home/PersonalModeView';
 import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
