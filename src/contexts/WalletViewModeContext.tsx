@@ -1,14 +1,19 @@
-import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useMemo, ReactNode, useCallback } from 'react';
+import { useAppState } from '@/contexts/AppStateContext';
 
 /**
  * View mode values:
- *  - 'all'                  → show everything (personal + all businesses)
  *  - 'personal'             → only sources/transactions NOT tied to a company
  *  - `business:<uuid>`      → only sources/transactions tied to that company
+ *
+ * NOTE: This context is a thin DERIVATION over AppStateContext
+ * (`activeBusinessProfileId` + `businessModeEnabled`). It owns no state,
+ * no localStorage, so the header BusinessProfileSwitcher and any
+ * WalletViewModeChips can never desynchronise.
  */
-export type WalletViewMode = 'all' | 'personal' | `business:${string}`;
+export type WalletViewMode = 'personal' | `business:${string}`;
 
-const STORAGE_KEY = 'wallet_view_mode';
+const LEGACY_STORAGE_KEY = 'wallet_view_mode';
 
 interface WalletViewModeContextValue {
   mode: WalletViewMode;
@@ -19,41 +24,30 @@ interface WalletViewModeContextValue {
   isBusinessView: boolean;
 }
 
-const isValidMode = (v: string | null): v is WalletViewMode => {
-  if (!v) return false;
-  return v === 'all' || v === 'personal' || v.startsWith('business:');
-};
-
 const WalletViewModeContext = createContext<WalletViewModeContextValue | undefined>(undefined);
 
 export const WalletViewModeProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setModeState] = useState<WalletViewMode>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (isValidMode(stored)) return stored;
-    } catch {}
-    return 'all';
-  });
+  const { activeBusinessProfileId, setActiveBusinessProfileId, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+
+  // One-time cleanup of legacy localStorage key (no longer authoritative).
+  useEffect(() => {
+    try { localStorage.removeItem(LEGACY_STORAGE_KEY); } catch {}
+  }, []);
+
+  const mode: WalletViewMode = businessModeEnabled && activeBusinessProfileId
+    ? (`business:${activeBusinessProfileId}` as WalletViewMode)
+    : 'personal';
 
   const setMode = useCallback((m: WalletViewMode) => {
-    setModeState(m);
-    try {
-      localStorage.setItem(STORAGE_KEY, m);
-    } catch {}
-    try {
-      window.dispatchEvent(new CustomEvent('wallet-view-mode-changed', { detail: m }));
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && isValidMode(e.newValue)) {
-        setModeState(e.newValue);
-      }
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, []);
+    if (m === 'personal') {
+      setBusinessModeEnabled(false);
+      setActiveBusinessProfileId(null);
+    } else if (m.startsWith('business:')) {
+      const id = m.slice('business:'.length);
+      setActiveBusinessProfileId(id);
+      setBusinessModeEnabled(true);
+    }
+  }, [setActiveBusinessProfileId, setBusinessModeEnabled]);
 
   const value = useMemo<WalletViewModeContextValue>(() => ({
     mode,
