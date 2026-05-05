@@ -25,6 +25,7 @@ import { Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { useBusinessViewSync } from '@/hooks/useBusinessViewSync';
 import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 
@@ -36,6 +37,9 @@ const Index = () => {
   const { convert } = useExchangeRates(multiCurrencyEnabled);
   const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
   const { totalReceivable, totalPayable } = useBusinessDebts();
+  // Sync wallet view-mode chips ↔ activeBusinessProfileId so dashboard metrics
+  // (Saldo, Novčanici, Slobodno, Neto, Prihodi/Rashodi) all reflect the chosen context.
+  useBusinessViewSync();
   const isBusinessMode = businessFeatureEnabled && businessModeEnabled && !!activeBusinessProfileId;
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
@@ -246,9 +250,13 @@ const Index = () => {
       }
       return sum + bal;
     }, 0);
-    const remainingObligations = installmentPlans.reduce((sum, plan) => sum + (plan.remainingAmount || 0), 0);
+    // In a business view, installment plans are personal-context obligations and
+    // do not belong to the company's net worth. Subtract them only in personal view.
+    const remainingObligations = activeBusinessProfileId
+      ? 0
+      : installmentPlans.reduce((sum, plan) => sum + (plan.remainingAmount || 0), 0);
     return totalAccountBalances - remainingObligations;
-  }, [customPaymentSources, installmentPlans, multiCurrencyEnabled, currency.code, convert]);
+  }, [customPaymentSources, installmentPlans, multiCurrencyEnabled, currency.code, convert, activeBusinessProfileId]);
 
   useAutoBackup();
 
