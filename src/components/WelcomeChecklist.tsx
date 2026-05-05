@@ -5,7 +5,6 @@ import { Check, Wallet, Receipt, Target, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/contexts/SubscriptionContext';
 
 const DISMISS_KEY_PREFIX = 'welcome_checklist_dismissed:';
 
@@ -13,7 +12,6 @@ interface WelcomeChecklistProps {
   hasPaymentSources: boolean;
   hasTransactions: boolean;
   hasBudgets: boolean;
-  loading?: boolean;
   onAddPaymentSource: () => void;
   onAddTransaction: () => void;
   onAddBudget: () => void;
@@ -23,21 +21,13 @@ export const WelcomeChecklist = ({
   hasPaymentSources,
   hasTransactions,
   hasBudgets,
-  loading = false,
   onAddPaymentSource,
   onAddTransaction,
   onAddBudget,
 }: WelcomeChecklistProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const {
-    loading: subLoading,
-    subscribed,
-    tier,
-    trialActive,
-    source: subSource,
-  } = useSubscription();
-  const [dismissed, setDismissed] = useState(true); // start hidden, reveal only after stable check
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -45,25 +35,9 @@ export const WelcomeChecklist = ({
     setDismissed(wasDismissed === 'true');
   }, [user?.id]);
 
-  // Auto-dismiss for existing users (any activity already exists once data is loaded)
-  useEffect(() => {
-    if (loading || subLoading) return;
-    if (!user?.id) return;
-    if (hasPaymentSources || hasTransactions || hasBudgets) {
-      const key = `${DISMISS_KEY_PREFIX}${user.id}`;
-      if (localStorage.getItem(key) !== 'true') {
-        localStorage.setItem(key, 'true');
-      }
-      setDismissed(true);
-    }
-  }, [loading, subLoading, user?.id, hasPaymentSources, hasTransactions, hasBudgets]);
-
   const allDone = hasPaymentSources && hasTransactions && hasBudgets;
 
-  // Auto-dismiss when all done — MUST be declared before any early return so
-  // hook order stays stable across renders (Rules of Hooks). Otherwise React
-  // throws "Rendered more/fewer hooks than expected", which on Android WebView
-  // can take down the whole process.
+  // Auto-dismiss when all done
   useEffect(() => {
     if (allDone && user?.id) {
       const timer = setTimeout(() => {
@@ -73,13 +47,6 @@ export const WelcomeChecklist = ({
       return () => clearTimeout(timer);
     }
   }, [allDone, user?.id]);
-
-  // Hide while data/subscription state is still resolving (prevents flicker)
-  if (loading || subLoading) return null;
-
-  // Hide for any paid/admin/trial user
-  const isPaid = subscribed || tier !== 'free' || subSource === 'admin' || trialActive;
-  if (isPaid) return null;
 
   if (dismissed) return null;
 

@@ -296,14 +296,15 @@ export const useExpenseFetch = () => {
     return null;
   }, [sourceBusinessMap]);
 
-  // Apply view-mode filter (Osobno / per-company)
+  // Apply view-mode filter (Sve / Osobno / per-company)
   const applyViewMode = useCallback((list: Expense[]) => {
+    if (viewMode === 'all') return list;
     if (isPersonalView) return list.filter(e => expenseBusinessProfileId(e) === null);
     if (isBusinessView && viewBusinessProfileId) {
       return list.filter(e => expenseBusinessProfileId(e) === viewBusinessProfileId);
     }
     return list;
-  }, [isPersonalView, isBusinessView, viewBusinessProfileId, expenseBusinessProfileId]);
+  }, [viewMode, isPersonalView, isBusinessView, viewBusinessProfileId, expenseBusinessProfileId]);
 
   // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {
