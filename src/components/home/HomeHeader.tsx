@@ -11,7 +11,7 @@ import { TutorialButton } from '@/components/tutorial';
 import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
-import { BusinessProfileSwitcher } from '@/components/BusinessProfileSwitcher';
+
 import { CSVImportDialog } from '@/components/CSVImportDialog';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import logo from '@/assets/logo.webp';
@@ -96,31 +96,28 @@ export const HomeHeader = ({
               {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
             </h1>
             <div className="flex items-center gap-2 mt-0.5">
-              <div className="flex items-center gap-1.5">
-                <BusinessProfileSwitcher />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/50 text-xs text-muted-foreground">
-                        {isLocalMode ? (
-                          <>
-                            <Smartphone className="w-3 h-3" />
-                            {t('common.local')}
-                          </>
-                        ) : (
-                          <>
-                            <Cloud className="w-3 h-3" />
-                            {t('common.cloud')}
-                          </>
-                        )}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{isLocalMode ? t('common.localData') : t('common.cloudData')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/50 text-xs text-muted-foreground">
+                      {isLocalMode ? (
+                        <>
+                          <Smartphone className="w-3 h-3" />
+                          {t('common.local')}
+                        </>
+                      ) : (
+                        <>
+                          <Cloud className="w-3 h-3" />
+                          {t('common.cloud')}
+                        </>
+                      )}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isLocalMode ? t('common.localData') : t('common.cloudData')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
