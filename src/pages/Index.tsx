@@ -25,7 +25,7 @@ import { Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
-import { useBusinessViewSync } from '@/hooks/useBusinessViewSync';
+
 import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 
@@ -39,7 +39,6 @@ const Index = () => {
   const { totalReceivable, totalPayable } = useBusinessDebts();
   // Sync wallet view-mode chips ↔ activeBusinessProfileId so dashboard metrics
   // (Saldo, Novčanici, Slobodno, Neto, Prihodi/Rashodi) all reflect the chosen context.
-  useBusinessViewSync();
   const isBusinessMode = businessFeatureEnabled && businessModeEnabled && !!activeBusinessProfileId;
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
@@ -485,6 +484,7 @@ const Index = () => {
         displayName={displayName}
         onBackToPersonal={() => {
           setBusinessModeEnabled(false);
+          setActiveBusinessProfileId(null);
           setBusinessTab('dashboard');
         }}
         onAddExpense={addExpenseWithRecurringCheck}
