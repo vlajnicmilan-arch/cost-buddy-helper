@@ -1,45 +1,29 @@
-## Bug 1: Pozivnice idu i na završene projekte
+## Problem
 
-**Uzrok:** `supabase/functions/send-member-invitation/index.ts` ne provjerava status projekta. UI također ne sakriva formu kada je projekt `completed`/`cancelled`/`archived_at != null`.
+`WelcomeChecklist` (banner "Počnite s V&M Balance / Unesi prvu transakciju...") u `src/components/home/PersonalModeView.tsx` se nakratko pojavi kod svakog otvaranja Dashboarda — i kod korisnika s plaćenom verzijom i kod korisnika koji već imaju transakcije.
 
-**Popravak:**
+**Uzrok (root cause, ne simptom):**
+Banner se renderira odmah na mountu, prije nego što se učitaju podaci. Inicijalno je `expenses=[]`, `customPaymentSources=[]`, `budgetsCount=0` → checklist misli da je novi korisnik i prikaže se. Tek kad stigne odgovor iz baze, vrijednosti se popune i checklist se sakrije (a kod već "all done" se sakrije tek nakon 3s timeoutom). Otud bljesak.
 
-1. **Edge function** — prije provjere postojećeg člana, za `type === "project"` dohvatiti `projects.status` i `archived_at`:
-   - Ako `archived_at != null || status IN ('completed','cancelled')` → vratiti `400 { error: "project_closed", message: "..." }`.
-2. **Frontend `ProjectMembersTab.tsx`** — primiti `projectStatus` i `archivedAt` propse. Kada je projekt zatvoren:
-   - Sakriti cijelu "Invite section" (linije 295–451).
-   - Prikazati `Alert`/info blok s ključem `projects.invitationsDisabledClosed`.
-   - I dalje dopustiti listu članova, uklanjanje, promjenu uloga.
-3. **`ProjectTeamTab.tsx`** — dodati `projectStatus` i `archivedAt` propse i proslijediti ih.
-4. **`ProjectFullScreenView.tsx`** — proslijediti `project.status` i `project.archived_at` u `ProjectTeamTab`.
-5. **`useProjectMembers.ts`** — `sendInviteEmail` već vraća error code; mapirati `'project_closed'` → friendly toast u `ProjectMembersTab.handleSendInvite`.
-6. **i18n (hr/en/de)** — dodati pod `projects`:
-   - `invitationsDisabledClosed`: "Projekt je završen ili arhiviran — pozivnice nisu moguće."
-   - `projectClosed`: kratki toast za grešku.
+Trenutno jedina logika za skrivanje je `localStorage` "dismissed" flag — ne postoji ni provjera učitavanja ni provjera pretplate.
 
-## Bug 2: Gumbi (Uredi/Obriši/Arhiva) nevidljivi na kartici projekta
+## Rješenje
 
-**Uzrok:** `ProjectCard.tsx` linija 254 — akcijski gumbi imaju `opacity-0 group-hover:opacity-100`. Na touch uređajima nema hovera; na desktopu su nedostupni dok korisnik ne pređe mišem precizno preko apsolutno pozicioniranog kontejnera. UX bug + a11y problem.
+Sve gating se radi u `WelcomeChecklist` komponenti (čisti popravak na izvoru, bez patch-flag-ova u parentu):
 
-**Popravak:** Zamijeniti grupu hover gumba s **uvijek vidljivim kebab menijem** (Lucide `MoreVertical`) koji otvara `DropdownMenu` (shadcn, već se koristi u projektu — `ProjectDocumentsTab`, `ProjectWorkersTab`).
+1. **Dodati nove propse:** `loading: boolean` i učiniti komponentu svjesnom pretplate preko `useSubscription()` i `useStorage()`.
+2. **Ne renderiraj dok se podaci/pretplata učitavaju.** Dok je `loading === true` ili `subscription.loading === true` → return `null`. Time eliminiramo bljesak.
+3. **Ne renderiraj za plaćene korisnike.** Ako je `subscribed === true` ili `tier !== 'free'` ili `source === 'admin'` ili `trialActive === true` → return `null`. Pretplatnici (uključujući trial) više nikad ne vide checklist.
+4. **Ne renderiraj za korisnike koji već imaju ikakvu aktivnost.** Ako je bilo koji od `hasPaymentSources`, `hasTransactions`, `hasBudgets` već true u prvom stabilnom renderu (nakon što loading prođe), automatski tretiraj checklist kao "dismissed" (i upiši u localStorage) — tako da postojeći korisnici nikad više ne vide banner, čak ni kratko.
+5. **Lokalni mod:** ostavi postojeće ponašanje (lokalni korisnici nemaju pretplatu pa checklist i dalje ima smisla za potpuno nove instalacije, ali `loading` gate će svejedno spriječiti flicker).
 
-- Trigger: `Button variant="ghost" size="icon"` (44px touch target), pozicioniran `absolute top-2 right-2`.
-- Menu items: Uredi · Arhiviraj/Vrati · Premjesti u poslovni mod (samo ako uvjeti) · Obriši (destruktivno).
-- `e.stopPropagation()` na trigger i svaki item, da klik ne propagira na `onClick` kartice.
-- Vidljivost samo za `project.isOwner` ostaje.
-- i18n: reuse postojećih ključeva `projects.edit`, `projects.archive`, `projects.unarchive`, `projects.delete`, `projects.migrateToBusiness` (već koriste isti pattern).
+U `PersonalModeView.tsx` proslijediti `expensesLoading` (već postoji) kao `loading` prop.
 
 ## Datoteke
 
-- `supabase/functions/send-member-invitation/index.ts` — provjera statusa
-- `src/components/projects/ProjectMembersTab.tsx` — guard + handle `project_closed`
-- `src/components/projects/ProjectTeamTab.tsx` — proslijediti propse
-- `src/components/projects/ProjectFullScreenView.tsx` — proslijediti `project.status`/`archived_at`
-- `src/components/projects/ProjectCard.tsx` — kebab dropdown umjesto hover gumba
-- `src/i18n/locales/{hr,en,de}.json` — 2 nova ključa
+- `src/components/WelcomeChecklist.tsx` — dodati gating logiku, useSubscription, useStorage, novi `loading` prop, auto-dismiss za postojeće korisnike.
+- `src/components/home/PersonalModeView.tsx` — proslijediti `loading={props.expensesLoading}` na `WelcomeChecklist`.
 
-## Bez
+## Zašto ovaj pristup (a ne quick-fix)
 
-- DB migracije
-- Promjena RLS
-- Novih dependenciesa (DropdownMenu već postoji)
+Slijedimo pravilo iz project knowledge "Bug Fixing Strategy": uzrok je što komponenta donosi odluku o prikazu prije nego što ima sve potrebne informacije (auth/subscription/data ready). Rješenje pomiče odluku iza stabilnog stanja umjesto da dodajemo timeout/guard zakrpe. Subscription context već ima ispravan `loading` koji se ne flipa na `false` dok stvarno ne dobijemo odgovor iz backend-a, pa je idealan signal.

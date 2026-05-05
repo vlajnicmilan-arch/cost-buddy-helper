@@ -209,6 +209,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           hasPaymentSources={props.customPaymentSources.length > 0}
           hasTransactions={props.expenses.length > 0}
           hasBudgets={props.budgetsCount > 0}
+          loading={props.expensesLoading}
           onAddPaymentSource={() => navigate('/wallet')}
           onAddTransaction={() => {
             const addBtn = document.querySelector('[data-tutorial="add-buttons"] button:last-child') as HTMLButtonElement;
