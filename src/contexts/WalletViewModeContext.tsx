@@ -37,6 +37,15 @@ export const WalletViewModeProvider = ({ children }: { children: ReactNode }) =>
         localStorage.setItem(STORAGE_KEY, 'personal');
         return 'personal';
       }
+      // Seed from AppState persisted business context so dashboard doesn't
+      // flicker between business → personal on first mount.
+      const bp = localStorage.getItem('active_business_profile_id');
+      const bme = localStorage.getItem('business_mode_enabled') === 'true';
+      if (bp && bme) {
+        const seeded = `business:${bp}` as WalletViewMode;
+        localStorage.setItem(STORAGE_KEY, seeded);
+        return seeded;
+      }
     } catch {}
     return 'personal';
   });
