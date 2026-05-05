@@ -1,86 +1,36 @@
-Provjerio sam stvarni kod i problem se može objasniti točno, bez nagađanja.
+## Problem
 
-Do I know what the issue is? Da.
+Kada se na dashboardu klikne chip tvrtke, `WalletViewModeContext.setMode('business:<id>')` postavlja `businessModeEnabled = true` + `activeBusinessProfileId = id`. `Index.tsx` zatim na temelju `isBusinessMode` renderira potpuno odvojeni `BusinessModeView` (sa svojim bottom navom, dashboard/transakcije/projekti tabovima). To je "novi ekran" koji ne želiš.
 
-Problem nije screenshot ni vizualni CSS. Problem je u stanju aplikacije: nakon zadnjih izmjena postoje dva izvora istine za isti izbor prikaza:
+Želiš: jedan glavni dashboard (`PersonalModeView`), chipovi samo prebacuju **kontekst filtriranja** (Osobno vs. tvrtka X) — kartice, saldo, transakcije i izvori se filtriraju kroz već postojeću logiku u `useExpenseFetch` / `useCustomPaymentSources` koja gleda `activeBusinessProfileId`.
 
-1. `WalletViewModeContext` (`personal` ili `business:<id>`)
-2. `AppStateContext` (`activeBusinessProfileId` + `businessModeEnabled`)
+## Promjene
 
-Hook `useBusinessViewSync.ts` ih pokušava sinkronizirati u oba smjera kroz dva `useEffect`-a. Ako se pri otvaranju aplikacije vrijednosti razlikuju, efekti rade s vrijednostima iz prethodnog rendera i mogu se početi izmjenjivati ovako:
+### 1. `src/contexts/WalletViewModeContext.tsx`
+Decoupling od `businessModeEnabled`:
+- `mode` se derivira **samo** iz `activeBusinessProfileId` (ako je `null` → `'personal'`, inače `business:<id>`).
+- `setMode('personal')` postavlja samo `setActiveBusinessProfileId(null)` — **ne dira** `businessModeEnabled`.
+- `setMode('business:<id>')` postavlja samo `setActiveBusinessProfileId(id)` — **ne dira** `businessModeEnabled`.
 
-```text
-render 1: mode = personal, activeBusinessProfileId = tvrtka
-  effect A postavi activeBusinessProfileId = null
-  effect B postavi mode = business:tvrtka
+Time chip postaje čisti kontekstualni filter, u skladu s memory pravilom *"business_profile = samo kontekstualni filter"*.
 
-render 2: mode = business:tvrtka, activeBusinessProfileId = null
-  effect A postavi activeBusinessProfileId = tvrtka
-  effect B postavi mode = personal
+### 2. `src/pages/Index.tsx`
+- Ukloniti granu `if (isBusinessMode) return <BusinessModeView .../>;`. Uvijek se renderira `PersonalModeView`.
+- Ukloniti `businessTab` state, `useBackButton` za business tab, `onBackToPersonal` callback i učitavanje `businessProfile` (nije više potrebno za routing; ako trebamo prikazati naziv tvrtke u headeru, čitamo iz `useBusinessProfiles` po `activeBusinessProfileId`).
+- Ukloniti import `BusinessModeView`.
+- `isBusinessMode` koji se prosljeđuje `PersonalModeView` postaje `!!activeBusinessProfileId` (samo informativno za UI poput naslova "Posloval kontekst: X").
 
-... i tako stalno
-```
+### 3. Filtriranje podataka — bez izmjena
+- `useExpenseFetch` već filtrira `expenses`/`dashboardExpenses` po `WalletViewMode` preko `expenseBusinessProfileId`.
+- `useCustomPaymentSources` već filtrira po `activeBusinessProfileId`.
+- Saldo, novčanici, prihodi/rashodi, transakcije — sve koristi te hook-ove → automatski reagira na chip.
 
-Zato treperi sve: iznosi, kartice, novčanici i transakcije se neprestano prebacuju između osobnog i poslovnog konteksta.
+### 4. Što s ostalim mjestima koja koriste `businessModeEnabled`?
+Ostavljamo netaknuto. `businessModeEnabled` ostaje globalna postavka iz Settings (uključuje business modul: tab Projekti, BusinessModeGuard, business sekcije u postavkama, itd.). Chipovi je više ne dodiruju — što je i ispravno semantički.
 
-Dodatno sam potvrdio još dvije stvari iz stvarnog koda:
-- `HomeHeader.tsx` još uvijek renderira `BusinessProfileSwitcher`, iako je prema memoriji projekta taj switcher u headeru zabranjen. To ne mora biti glavni uzrok petlje, ali zadržava drugi put za promjenu istog stanja i treba ga ukloniti iz dashboard headera.
-- `AppStateContext.setBusinessModeEnabled(false)` namjerno ostavlja `activeBusinessProfileId`, a `useCustomPaymentSources` filtrira samo po `activeBusinessProfileId`. To može dovesti do toga da aplikacija izgleda kao osobni mod, ali podaci ostanu poslovni.
-
-Plan popravka:
-
-1. Ukloniti dvosmjerni ping-pong sync
-   - Izbaciti poziv `useBusinessViewSync()` iz `Index.tsx`.
-   - Prestati koristiti `useBusinessViewSync.ts` kao aktivni mehanizam sinkronizacije.
-   - Ne dodavati timeout, guard flag ili privremeni hack.
-
-2. Uvesti jedan izvor istine za dashboard mode
-   - `WalletViewModeContext` treba biti vezan uz `AppStateContext`, jer je `AppStateProvider` već iznad njega u `App.tsx`.
-   - `mode` se treba izračunavati iz:
-     - `businessModeEnabled && activeBusinessProfileId` → `business:<id>`
-     - inače → `personal`
-   - `setMode('personal')` mora postaviti:
-     - `businessModeEnabled = false`
-     - `activeBusinessProfileId = null`
-   - `setMode('business:<id>')` mora postaviti:
-     - `businessModeEnabled = true`
-     - `activeBusinessProfileId = id`
-   - Time se uklanja potreba za dvosmjernim efektima.
-
-3. Uskladiti dashboard povratak na osobni mod
-   - U `BusinessModeView` / `Index.tsx` povratak na osobno neće samo gasiti `businessModeEnabled`; mora očistiti i `activeBusinessProfileId` ili koristiti isti `setMode('personal')` put.
-   - Cilj: osobni mod nikad ne smije zadržati aktivni poslovni profil u podatkovnim hookovima.
-
-4. Ukloniti BusinessProfileSwitcher iz HomeHeadera
-   - Maknuti `BusinessProfileSwitcher` iz `src/components/home/HomeHeader.tsx`.
-   - Context switching ostaje isključivo kroz `WalletViewModeChips`, kako je već zapisano u memoriji projekta.
-   - Time dashboard na mobitelu ima samo jedan način promjene osobno/tvrtka.
-
-5. Provjeriti hookove koji hrane iznose
-   - `useCustomPaymentSources` mora koristiti efektivni poslovni profil samo kad je poslovni prikaz stvarno aktivan.
-   - `useExpenseFetch` mora ostati usklađen s istim modeom.
-   - `netWorth`, `PaymentSourcesSection`, `SummarySection`, `ActiveProjectsStrip` i transakcije tada dobivaju stabilne podatke iz jednog konteksta.
-
-6. Mobilna provjera nakon izmjena
-   - Testirati na viewportu oko 390x844 / 384px logici.
-   - Provjeriti početno otvaranje aplikacije.
-   - Provjeriti klik na `Osobno`.
-   - Provjeriti klik na tvrtku.
-   - Provjeriti povratak iz poslovnog prikaza na osobno.
-   - Provjeriti da iznosi više ne osciliraju između osobnog i poslovnog stanja.
-
-Očekivani rezultat:
-
-- Nema više stalnog treperenja.
-- Osobni mod prikazuje samo osobne salde, novčanike, slobodno i neto vrijednost.
-- Mod tvrtke prikazuje samo salde, novčanike, slobodno i neto vrijednost te tvrtke.
-- Nema skrivenog poslovnog profila dok je UI u osobnom modu.
-- Nema drugog switchera u headeru koji može razbiti stanje.
-
-<lov-actions>
-  <lov-open-history>View History</lov-open-history>
-</lov-actions>
-
-<lov-actions>
-<lov-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</lov-link>
-</lov-actions>
+## QA scenariji (viewport 384x709)
+1. Otvori dashboard → vidi se PersonalModeView s chipovima Osobno + tvrtke.
+2. Klik na "Osobno" → ostaje na istom ekranu, prikazani samo osobni izvori/transakcije/saldo.
+3. Klik na chip tvrtke → **ostaje na istom ekranu** (ne otvara se BusinessModeView), kartice/saldo/transakcije pokazuju samo podatke te tvrtke.
+4. Klik natrag na "Osobno" → sve se vraća na osobni kontekst, bez treperenja.
+5. Settings → "Poslovni modul" toggle i dalje funkcionira neovisno (utječe samo na vidljivost projekata/poslovnih sekcija, ne na chipove).

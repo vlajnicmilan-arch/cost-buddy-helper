@@ -25,29 +25,26 @@ const WalletViewModeContext = createContext<WalletViewModeContextValue | undefin
 
 export const WalletViewModeProvider = ({ children }: { children: ReactNode }) => {
   const {
-    businessModeEnabled,
     activeBusinessProfileId,
-    setBusinessModeEnabled,
     setActiveBusinessProfileId,
   } = useAppState();
 
-  const mode: WalletViewMode = businessModeEnabled && activeBusinessProfileId
+  // Chip = pure contextual filter. Decoupled from `businessModeEnabled` global setting.
+  const mode: WalletViewMode = activeBusinessProfileId
     ? (`business:${activeBusinessProfileId}` as WalletViewMode)
     : 'personal';
 
   const setMode = useCallback((m: WalletViewMode) => {
     if (m === 'personal') {
-      setBusinessModeEnabled(false);
       setActiveBusinessProfileId(null);
     } else if (m.startsWith('business:')) {
       const id = m.slice('business:'.length);
       setActiveBusinessProfileId(id);
-      setBusinessModeEnabled(true);
     }
     try {
       window.dispatchEvent(new CustomEvent('wallet-view-mode-changed', { detail: m }));
     } catch {}
-  }, [setBusinessModeEnabled, setActiveBusinessProfileId]);
+  }, [setActiveBusinessProfileId]);
 
   const value = useMemo<WalletViewModeContextValue>(() => ({
     mode,
