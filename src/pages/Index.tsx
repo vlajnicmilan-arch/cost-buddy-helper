@@ -25,6 +25,7 @@ import { Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { useBusinessViewSync } from '@/hooks/useBusinessViewSync';
 import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 
@@ -246,9 +247,13 @@ const Index = () => {
       }
       return sum + bal;
     }, 0);
-    const remainingObligations = installmentPlans.reduce((sum, plan) => sum + (plan.remainingAmount || 0), 0);
+    // In a business view, installment plans are personal-context obligations and
+    // do not belong to the company's net worth. Subtract them only in personal view.
+    const remainingObligations = activeBusinessProfileId
+      ? 0
+      : installmentPlans.reduce((sum, plan) => sum + (plan.remainingAmount || 0), 0);
     return totalAccountBalances - remainingObligations;
-  }, [customPaymentSources, installmentPlans, multiCurrencyEnabled, currency.code, convert]);
+  }, [customPaymentSources, installmentPlans, multiCurrencyEnabled, currency.code, convert, activeBusinessProfileId]);
 
   useAutoBackup();
 
