@@ -37,6 +37,9 @@ const Index = () => {
   const { convert } = useExchangeRates(multiCurrencyEnabled);
   const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
   const { totalReceivable, totalPayable } = useBusinessDebts();
+  // Sync wallet view-mode chips ↔ activeBusinessProfileId so dashboard metrics
+  // (Saldo, Novčanici, Slobodno, Neto, Prihodi/Rashodi) all reflect the chosen context.
+  useBusinessViewSync();
   const isBusinessMode = businessFeatureEnabled && businessModeEnabled && !!activeBusinessProfileId;
   const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
