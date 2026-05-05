@@ -73,7 +73,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
             'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
             !isBusinessMode ? 'bg-muted font-medium' : 'hover:bg-muted/50'
           )}
-          onClick={() => { setBusinessModeEnabled(false); setActiveBusinessProfileId(null); setOpen(false); }}
+          onClick={() => { setBusinessModeEnabled(false); setActiveBusinessProfileId(null); setMode('personal'); setOpen(false); }}
         >
           <User className="w-4 h-4" />
           {t('business.personal', 'Osobno')}
