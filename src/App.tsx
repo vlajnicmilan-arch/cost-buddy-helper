@@ -300,6 +300,7 @@ const App = () => (
       <StorageProvider>
         <AppStateProvider>
           <WalletViewModeProvider>
+            <BusinessViewSync />
             <AppLockProvider>
               <CurrencyProvider>
                 <SubscriptionProvider>
