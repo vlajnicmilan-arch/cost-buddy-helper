@@ -1,70 +1,86 @@
-## Cilj
+Provjerio sam stvarni kod i problem se može objasniti točno, bez nagađanja.
 
-Na glavnom dashboardu, kad korisnik klikne chip "Osobno" ili tvrtku, sve metrike (Saldo, Novčanici, Slobodno, Neto vrijednost, Prihodi/Rashodi) prikazuju **samo taj kontekst**.
+Do I know what the issue is? Da.
 
-## Što sam provjerio u kodu
+Problem nije screenshot ni vizualni CSS. Problem je u stanju aplikacije: nakon zadnjih izmjena postoje dva izvora istine za isti izbor prikaza:
 
-- `useCustomPaymentSources` već filtrira `custom_payment_sources` po `activeBusinessProfileId` (linije 69–78). Saldo, lista novčanika i "Slobodno" će se automatski prefiltrirati čim se ID promijeni.
-- `useExpenses` → `useExpenseFetch` već vraća `dashboardExpenses` filtrirane po `WalletViewMode` (linije 300–307). Mjesečni Prihodi/Rashodi već reagiraju na chip.
-- `WalletViewMode` (chips) i `activeBusinessProfileId` (AppState) **nisu spojeni** — chips mijenja samo transakcije, AppState mijenja samo novčanike. Memorija spominje `BusinessViewSync` hook, ali on **ne postoji** u kodu.
-- `useInstallments` ne filtrira po business kontekstu — to je razlog za odluku ispod.
+1. `WalletViewModeContext` (`personal` ili `business:<id>`)
+2. `AppStateContext` (`activeBusinessProfileId` + `businessModeEnabled`)
 
-## Izmjene
+Hook `useBusinessViewSync.ts` ih pokušava sinkronizirati u oba smjera kroz dva `useEffect`-a. Ako se pri otvaranju aplikacije vrijednosti razlikuju, efekti rade s vrijednostima iz prethodnog rendera i mogu se početi izmjenjivati ovako:
 
-### 1. Novi hook `useBusinessViewSync` (`src/hooks/useBusinessViewSync.ts`)
+```text
+render 1: mode = personal, activeBusinessProfileId = tvrtka
+  effect A postavi activeBusinessProfileId = null
+  effect B postavi mode = business:tvrtka
 
-Spaja `WalletViewMode` ↔ `AppState.activeBusinessProfileId` u oba smjera:
-- `personal` → `setActiveBusinessProfileId(null)`
-- `business:<uuid>` → `setActiveBusinessProfileId(uuid)`
-- Na mountu, ako je `activeBusinessProfileId` već postavljen a mode neusklađen, postavi mode na odgovarajuću vrijednost (čuva legacy ekrane koji još koriste `BusinessProfileSwitcher`).
+render 2: mode = business:tvrtka, activeBusinessProfileId = null
+  effect A postavi activeBusinessProfileId = tvrtka
+  effect B postavi mode = personal
 
-Mountira se jednom u `Index.tsx`.
-
-### 2. `WalletViewModeContext` — ukloniti `'all'`
-
-- Tip skupiti na `'personal' | \`business:${string}\``.
-- Init: legacy `'all'` iz `localStorage` → mapirati na `'personal'`.
-- Default kad nema ničeg: `'personal'`.
-
-### 3. `WalletViewModeChips.tsx`
-
-- Ukloniti `Sve` opciju i prop `hideAll` (sve točke poziva ionako šalju `hideAll` ili je nemaju potrebnu).
-- Prikazivati samo `Osobno` + jedan chip po poslovnom profilu.
-
-### 4. `useExpenseFetch.ts`
-
-- Ukloniti granu `if (viewMode === 'all') return list` (postaje nedostižna).
-
-### 5. `Index.tsx` — `netWorth` (opcija B)
-
-Ne diramo `useInstallments`. Mijenjamo formulu tako da **rate odbijamo samo u osobnom modu**:
-
-```ts
-const netWorth = useMemo(() => {
-  const totalAccountBalances = customPaymentSources.reduce(...); // već filtrirano
-  const obligations = activeBusinessProfileId
-    ? 0  // poslovni mod: neto = samo zbroj salda poslovnih računa
-    : installmentPlans.reduce((s, p) => s + (p.remainingAmount || 0), 0);
-  return totalAccountBalances - obligations;
-}, [customPaymentSources, installmentPlans, activeBusinessProfileId, ...]);
+... i tako stalno
 ```
 
-To je svjesno pojednostavljenje (dokumentirano u memoriji): poslovni neto = likvidnost na poslovnim računima, bez dugova po ratama. Kad se kasnije doda business kontekst na rate, lako se proširi.
+Zato treperi sve: iznosi, kartice, novčanici i transakcije se neprestano prebacuju između osobnog i poslovnog konteksta.
 
-## Što ne dirati
+Dodatno sam potvrdio još dvije stvari iz stvarnog koda:
+- `HomeHeader.tsx` još uvijek renderira `BusinessProfileSwitcher`, iako je prema memoriji projekta taj switcher u headeru zabranjen. To ne mora biti glavni uzrok petlje, ali zadržava drugi put za promjenu istog stanja i treba ga ukloniti iz dashboard headera.
+- `AppStateContext.setBusinessModeEnabled(false)` namjerno ostavlja `activeBusinessProfileId`, a `useCustomPaymentSources` filtrira samo po `activeBusinessProfileId`. To može dovesti do toga da aplikacija izgleda kao osobni mod, ali podaci ostanu poslovni.
 
-- Bez DB migracija.
-- Bez izmjena u `useInstallments`, `useExpenses`, `useCustomPaymentSources` (osim što već reagiraju na `activeBusinessProfileId`).
-- `BusinessProfileSwitcher` u `HomeHeader` — ostaje zabranjen (po memoriji). Sinkronizacija je dvosmjerna pa preostali ekrani koji ga koriste (npr. neki settings) i dalje rade.
-- Bez novih guardova/timeouta.
-- Sav novi tekst kroz postojeće i18n ključeve.
+Plan popravka:
 
-## Memorija nakon promjene
+1. Ukloniti dvosmjerni ping-pong sync
+   - Izbaciti poziv `useBusinessViewSync()` iz `Index.tsx`.
+   - Prestati koristiti `useBusinessViewSync.ts` kao aktivni mehanizam sinkronizacije.
+   - Ne dodavati timeout, guard flag ili privremeni hack.
 
-Ažurirat ću `mem://features/wallet-view-mode-unified` da odražava da je `BusinessViewSync` sad stvarno implementiran i da je `'all'` u potpunosti uklonjen, te dodati napomenu uz `mem://finance/dashboard-balance-logic` da je `netWorth` u poslovnom modu = samo zbroj salda (bez rata).
+2. Uvesti jedan izvor istine za dashboard mode
+   - `WalletViewModeContext` treba biti vezan uz `AppStateContext`, jer je `AppStateProvider` već iznad njega u `App.tsx`.
+   - `mode` se treba izračunavati iz:
+     - `businessModeEnabled && activeBusinessProfileId` → `business:<id>`
+     - inače → `personal`
+   - `setMode('personal')` mora postaviti:
+     - `businessModeEnabled = false`
+     - `activeBusinessProfileId = null`
+   - `setMode('business:<id>')` mora postaviti:
+     - `businessModeEnabled = true`
+     - `activeBusinessProfileId = id`
+   - Time se uklanja potreba za dvosmjernim efektima.
 
-## Očekivani rezultat
+3. Uskladiti dashboard povratak na osobni mod
+   - U `BusinessModeView` / `Index.tsx` povratak na osobno neće samo gasiti `businessModeEnabled`; mora očistiti i `activeBusinessProfileId` ili koristiti isti `setMode('personal')` put.
+   - Cilj: osobni mod nikad ne smije zadržati aktivni poslovni profil u podatkovnim hookovima.
 
-- Chip "Osobno" → Saldo/Novčanici/Slobodno = osobni računi; Neto = osobni računi − osobne rate; Prihodi/Rashodi = osobne transakcije mjeseca.
-- Chip s tvrtkom → Saldo/Novčanici/Slobodno = računi te tvrtke; Neto = zbroj salda te tvrtke; Prihodi/Rashodi = transakcije te tvrtke.
-- Projekti, recurring, kalendar, AI assistant — i dalje rade jer i dalje čitaju `activeBusinessProfileId` koji je sad u sinkronu.
+4. Ukloniti BusinessProfileSwitcher iz HomeHeadera
+   - Maknuti `BusinessProfileSwitcher` iz `src/components/home/HomeHeader.tsx`.
+   - Context switching ostaje isključivo kroz `WalletViewModeChips`, kako je već zapisano u memoriji projekta.
+   - Time dashboard na mobitelu ima samo jedan način promjene osobno/tvrtka.
+
+5. Provjeriti hookove koji hrane iznose
+   - `useCustomPaymentSources` mora koristiti efektivni poslovni profil samo kad je poslovni prikaz stvarno aktivan.
+   - `useExpenseFetch` mora ostati usklađen s istim modeom.
+   - `netWorth`, `PaymentSourcesSection`, `SummarySection`, `ActiveProjectsStrip` i transakcije tada dobivaju stabilne podatke iz jednog konteksta.
+
+6. Mobilna provjera nakon izmjena
+   - Testirati na viewportu oko 390x844 / 384px logici.
+   - Provjeriti početno otvaranje aplikacije.
+   - Provjeriti klik na `Osobno`.
+   - Provjeriti klik na tvrtku.
+   - Provjeriti povratak iz poslovnog prikaza na osobno.
+   - Provjeriti da iznosi više ne osciliraju između osobnog i poslovnog stanja.
+
+Očekivani rezultat:
+
+- Nema više stalnog treperenja.
+- Osobni mod prikazuje samo osobne salde, novčanike, slobodno i neto vrijednost.
+- Mod tvrtke prikazuje samo salde, novčanike, slobodno i neto vrijednost te tvrtke.
+- Nema skrivenog poslovnog profila dok je UI u osobnom modu.
+- Nema drugog switchera u headeru koji može razbiti stanje.
+
+<lov-actions>
+  <lov-open-history>View History</lov-open-history>
+</lov-actions>
+
+<lov-actions>
+<lov-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</lov-link>
+</lov-actions>

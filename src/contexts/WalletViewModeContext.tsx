@@ -1,15 +1,16 @@
-import { createContext, useContext, useEffect, useMemo, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useMemo, ReactNode, useCallback } from 'react';
+import { useAppState } from '@/contexts/AppStateContext';
 
 /**
  * View mode values:
  *  - 'personal'             → only sources/transactions NOT tied to a company
  *  - `business:<uuid>`      → only sources/transactions tied to that company
  *
- * Legacy 'all' value is migrated to 'personal' on read.
+ * SINGLE SOURCE OF TRUTH: derived directly from AppStateContext
+ * (`businessModeEnabled` + `activeBusinessProfileId`). This eliminates the
+ * dual-state ping-pong that previously caused dashboard flickering.
  */
 export type WalletViewMode = 'personal' | `business:${string}`;
-
-const STORAGE_KEY = 'wallet_view_mode';
 
 interface WalletViewModeContextValue {
   mode: WalletViewMode;
@@ -20,55 +21,33 @@ interface WalletViewModeContextValue {
   isBusinessView: boolean;
 }
 
-const isValidMode = (v: string | null): v is WalletViewMode => {
-  if (!v) return false;
-  return v === 'personal' || v.startsWith('business:');
-};
-
 const WalletViewModeContext = createContext<WalletViewModeContextValue | undefined>(undefined);
 
 export const WalletViewModeProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setModeState] = useState<WalletViewMode>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (isValidMode(stored)) return stored;
-      // Legacy 'all' → personal
-      if (stored === 'all') {
-        localStorage.setItem(STORAGE_KEY, 'personal');
-        return 'personal';
-      }
-      // Seed from AppState persisted business context so dashboard doesn't
-      // flicker between business → personal on first mount.
-      const bp = localStorage.getItem('active_business_profile_id');
-      const bme = localStorage.getItem('business_mode_enabled') === 'true';
-      if (bp && bme) {
-        const seeded = `business:${bp}` as WalletViewMode;
-        localStorage.setItem(STORAGE_KEY, seeded);
-        return seeded;
-      }
-    } catch {}
-    return 'personal';
-  });
+  const {
+    businessModeEnabled,
+    activeBusinessProfileId,
+    setBusinessModeEnabled,
+    setActiveBusinessProfileId,
+  } = useAppState();
+
+  const mode: WalletViewMode = businessModeEnabled && activeBusinessProfileId
+    ? (`business:${activeBusinessProfileId}` as WalletViewMode)
+    : 'personal';
 
   const setMode = useCallback((m: WalletViewMode) => {
-    setModeState(m);
-    try {
-      localStorage.setItem(STORAGE_KEY, m);
-    } catch {}
+    if (m === 'personal') {
+      setBusinessModeEnabled(false);
+      setActiveBusinessProfileId(null);
+    } else if (m.startsWith('business:')) {
+      const id = m.slice('business:'.length);
+      setActiveBusinessProfileId(id);
+      setBusinessModeEnabled(true);
+    }
     try {
       window.dispatchEvent(new CustomEvent('wallet-view-mode-changed', { detail: m }));
     } catch {}
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && isValidMode(e.newValue)) {
-        setModeState(e.newValue);
-      }
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, []);
+  }, [setBusinessModeEnabled, setActiveBusinessProfileId]);
 
   const value = useMemo<WalletViewModeContextValue>(() => ({
     mode,
