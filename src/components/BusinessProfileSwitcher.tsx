@@ -86,7 +86,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
               'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
               activeBusinessProfileId === p.id ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'
             )}
-            onClick={() => { setBusinessModeEnabled(true); setActiveBusinessProfileId(p.id); setOpen(false); }}
+            onClick={() => { setBusinessModeEnabled(true); setActiveBusinessProfileId(p.id); setMode(`business:${p.id}`); setOpen(false); }}
           >
             <Building2 className="w-4 h-4" />
             <span className="truncate">{p.company_name}</span>
