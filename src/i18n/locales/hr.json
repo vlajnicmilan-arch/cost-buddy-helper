@@ -3229,11 +3229,10 @@
       "businessBadge": "Poslovno",
       "owner": "Vlasnik izvora",
       "ownerPersonal": "Osobno",
-      "ownerHint": "Odredi pripada li ovaj izvor osobi ili točno jednoj tvrtki. Filter \"Sve / Osobno / Tvrtka\" koristi ovu vezu.",
+      "ownerHint": "Odredi pripada li ovaj izvor osobi ili točno jednoj tvrtki. Filter \"Osobno / Tvrtka\" koristi ovu vezu.",
       "addCompany": "+ Nova tvrtka"
     },
     "viewMode": {
-      "all": "Sve",
       "personal": "Osobno",
       "business": "Poslovno"
     }

@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 
 interface BusinessProfile {
   id: string;
@@ -18,6 +19,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+  const { setMode } = useWalletViewMode();
   const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -71,7 +73,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
             'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
             !isBusinessMode ? 'bg-muted font-medium' : 'hover:bg-muted/50'
           )}
-          onClick={() => { setBusinessModeEnabled(false); setActiveBusinessProfileId(null); setOpen(false); }}
+          onClick={() => { setBusinessModeEnabled(false); setActiveBusinessProfileId(null); setMode('personal'); setOpen(false); }}
         >
           <User className="w-4 h-4" />
           {t('business.personal', 'Osobno')}
@@ -84,7 +86,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
               'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
               activeBusinessProfileId === p.id ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'
             )}
-            onClick={() => { setBusinessModeEnabled(true); setActiveBusinessProfileId(p.id); setOpen(false); }}
+            onClick={() => { setBusinessModeEnabled(true); setActiveBusinessProfileId(p.id); setMode(`business:${p.id}`); setOpen(false); }}
           >
             <Building2 className="w-4 h-4" />
             <span className="truncate">{p.company_name}</span>
