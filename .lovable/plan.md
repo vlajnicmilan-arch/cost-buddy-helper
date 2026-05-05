@@ -1,45 +1,70 @@
-## Bug 1: Pozivnice idu i na završene projekte
+## Cilj
 
-**Uzrok:** `supabase/functions/send-member-invitation/index.ts` ne provjerava status projekta. UI također ne sakriva formu kada je projekt `completed`/`cancelled`/`archived_at != null`.
+Na glavnom dashboardu, kad korisnik klikne chip "Osobno" ili tvrtku, sve metrike (Saldo, Novčanici, Slobodno, Neto vrijednost, Prihodi/Rashodi) prikazuju **samo taj kontekst**.
 
-**Popravak:**
+## Što sam provjerio u kodu
 
-1. **Edge function** — prije provjere postojećeg člana, za `type === "project"` dohvatiti `projects.status` i `archived_at`:
-   - Ako `archived_at != null || status IN ('completed','cancelled')` → vratiti `400 { error: "project_closed", message: "..." }`.
-2. **Frontend `ProjectMembersTab.tsx`** — primiti `projectStatus` i `archivedAt` propse. Kada je projekt zatvoren:
-   - Sakriti cijelu "Invite section" (linije 295–451).
-   - Prikazati `Alert`/info blok s ključem `projects.invitationsDisabledClosed`.
-   - I dalje dopustiti listu članova, uklanjanje, promjenu uloga.
-3. **`ProjectTeamTab.tsx`** — dodati `projectStatus` i `archivedAt` propse i proslijediti ih.
-4. **`ProjectFullScreenView.tsx`** — proslijediti `project.status` i `project.archived_at` u `ProjectTeamTab`.
-5. **`useProjectMembers.ts`** — `sendInviteEmail` već vraća error code; mapirati `'project_closed'` → friendly toast u `ProjectMembersTab.handleSendInvite`.
-6. **i18n (hr/en/de)** — dodati pod `projects`:
-   - `invitationsDisabledClosed`: "Projekt je završen ili arhiviran — pozivnice nisu moguće."
-   - `projectClosed`: kratki toast za grešku.
+- `useCustomPaymentSources` već filtrira `custom_payment_sources` po `activeBusinessProfileId` (linije 69–78). Saldo, lista novčanika i "Slobodno" će se automatski prefiltrirati čim se ID promijeni.
+- `useExpenses` → `useExpenseFetch` već vraća `dashboardExpenses` filtrirane po `WalletViewMode` (linije 300–307). Mjesečni Prihodi/Rashodi već reagiraju na chip.
+- `WalletViewMode` (chips) i `activeBusinessProfileId` (AppState) **nisu spojeni** — chips mijenja samo transakcije, AppState mijenja samo novčanike. Memorija spominje `BusinessViewSync` hook, ali on **ne postoji** u kodu.
+- `useInstallments` ne filtrira po business kontekstu — to je razlog za odluku ispod.
 
-## Bug 2: Gumbi (Uredi/Obriši/Arhiva) nevidljivi na kartici projekta
+## Izmjene
 
-**Uzrok:** `ProjectCard.tsx` linija 254 — akcijski gumbi imaju `opacity-0 group-hover:opacity-100`. Na touch uređajima nema hovera; na desktopu su nedostupni dok korisnik ne pređe mišem precizno preko apsolutno pozicioniranog kontejnera. UX bug + a11y problem.
+### 1. Novi hook `useBusinessViewSync` (`src/hooks/useBusinessViewSync.ts`)
 
-**Popravak:** Zamijeniti grupu hover gumba s **uvijek vidljivim kebab menijem** (Lucide `MoreVertical`) koji otvara `DropdownMenu` (shadcn, već se koristi u projektu — `ProjectDocumentsTab`, `ProjectWorkersTab`).
+Spaja `WalletViewMode` ↔ `AppState.activeBusinessProfileId` u oba smjera:
+- `personal` → `setActiveBusinessProfileId(null)`
+- `business:<uuid>` → `setActiveBusinessProfileId(uuid)`
+- Na mountu, ako je `activeBusinessProfileId` već postavljen a mode neusklađen, postavi mode na odgovarajuću vrijednost (čuva legacy ekrane koji još koriste `BusinessProfileSwitcher`).
 
-- Trigger: `Button variant="ghost" size="icon"` (44px touch target), pozicioniran `absolute top-2 right-2`.
-- Menu items: Uredi · Arhiviraj/Vrati · Premjesti u poslovni mod (samo ako uvjeti) · Obriši (destruktivno).
-- `e.stopPropagation()` na trigger i svaki item, da klik ne propagira na `onClick` kartice.
-- Vidljivost samo za `project.isOwner` ostaje.
-- i18n: reuse postojećih ključeva `projects.edit`, `projects.archive`, `projects.unarchive`, `projects.delete`, `projects.migrateToBusiness` (već koriste isti pattern).
+Mountira se jednom u `Index.tsx`.
 
-## Datoteke
+### 2. `WalletViewModeContext` — ukloniti `'all'`
 
-- `supabase/functions/send-member-invitation/index.ts` — provjera statusa
-- `src/components/projects/ProjectMembersTab.tsx` — guard + handle `project_closed`
-- `src/components/projects/ProjectTeamTab.tsx` — proslijediti propse
-- `src/components/projects/ProjectFullScreenView.tsx` — proslijediti `project.status`/`archived_at`
-- `src/components/projects/ProjectCard.tsx` — kebab dropdown umjesto hover gumba
-- `src/i18n/locales/{hr,en,de}.json` — 2 nova ključa
+- Tip skupiti na `'personal' | \`business:${string}\``.
+- Init: legacy `'all'` iz `localStorage` → mapirati na `'personal'`.
+- Default kad nema ničeg: `'personal'`.
 
-## Bez
+### 3. `WalletViewModeChips.tsx`
 
-- DB migracije
-- Promjena RLS
-- Novih dependenciesa (DropdownMenu već postoji)
+- Ukloniti `Sve` opciju i prop `hideAll` (sve točke poziva ionako šalju `hideAll` ili je nemaju potrebnu).
+- Prikazivati samo `Osobno` + jedan chip po poslovnom profilu.
+
+### 4. `useExpenseFetch.ts`
+
+- Ukloniti granu `if (viewMode === 'all') return list` (postaje nedostižna).
+
+### 5. `Index.tsx` — `netWorth` (opcija B)
+
+Ne diramo `useInstallments`. Mijenjamo formulu tako da **rate odbijamo samo u osobnom modu**:
+
+```ts
+const netWorth = useMemo(() => {
+  const totalAccountBalances = customPaymentSources.reduce(...); // već filtrirano
+  const obligations = activeBusinessProfileId
+    ? 0  // poslovni mod: neto = samo zbroj salda poslovnih računa
+    : installmentPlans.reduce((s, p) => s + (p.remainingAmount || 0), 0);
+  return totalAccountBalances - obligations;
+}, [customPaymentSources, installmentPlans, activeBusinessProfileId, ...]);
+```
+
+To je svjesno pojednostavljenje (dokumentirano u memoriji): poslovni neto = likvidnost na poslovnim računima, bez dugova po ratama. Kad se kasnije doda business kontekst na rate, lako se proširi.
+
+## Što ne dirati
+
+- Bez DB migracija.
+- Bez izmjena u `useInstallments`, `useExpenses`, `useCustomPaymentSources` (osim što već reagiraju na `activeBusinessProfileId`).
+- `BusinessProfileSwitcher` u `HomeHeader` — ostaje zabranjen (po memoriji). Sinkronizacija je dvosmjerna pa preostali ekrani koji ga koriste (npr. neki settings) i dalje rade.
+- Bez novih guardova/timeouta.
+- Sav novi tekst kroz postojeće i18n ključeve.
+
+## Memorija nakon promjene
+
+Ažurirat ću `mem://features/wallet-view-mode-unified` da odražava da je `BusinessViewSync` sad stvarno implementiran i da je `'all'` u potpunosti uklonjen, te dodati napomenu uz `mem://finance/dashboard-balance-logic` da je `netWorth` u poslovnom modu = samo zbroj salda (bez rata).
+
+## Očekivani rezultat
+
+- Chip "Osobno" → Saldo/Novčanici/Slobodno = osobni računi; Neto = osobni računi − osobne rate; Prihodi/Rashodi = osobne transakcije mjeseca.
+- Chip s tvrtkom → Saldo/Novčanici/Slobodno = računi te tvrtke; Neto = zbroj salda te tvrtke; Prihodi/Rashodi = transakcije te tvrtke.
+- Projekti, recurring, kalendar, AI assistant — i dalje rade jer i dalje čitaju `activeBusinessProfileId` koji je sad u sinkronu.
