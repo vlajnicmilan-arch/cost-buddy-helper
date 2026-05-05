@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 
 interface BusinessProfile {
   id: string;
@@ -18,6 +19,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+  const { setMode } = useWalletViewMode();
   const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
   const [open, setOpen] = useState(false);
 
