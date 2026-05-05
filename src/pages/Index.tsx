@@ -38,11 +38,10 @@ const Index = () => {
   const { totalReceivable, totalPayable } = useBusinessDebts();
   // Sync wallet view-mode chips ↔ activeBusinessProfileId so dashboard metrics
   // (Saldo, Novčanici, Slobodno, Neto, Prihodi/Rashodi) all reflect the chosen context.
-  const isBusinessMode = businessFeatureEnabled && businessModeEnabled && !!activeBusinessProfileId;
-  const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
+  const isBusinessMode = !!activeBusinessProfileId;
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
 
-  // Load business profile data
+  // Load business profile data (used to show company name in PersonalModeView header)
   useEffect(() => {
     if (!activeBusinessProfileId || !user) { setBusinessProfile(null); return; }
     supabase
@@ -53,8 +52,6 @@ const Index = () => {
       .then(({ data }) => { if (data) setBusinessProfile(data as any); });
   }, [activeBusinessProfileId, user]);
 
-  // Back button for business tabs
-  useBackButton(isBusinessMode && businessTab !== 'dashboard', () => setBusinessTab('dashboard'));
   const navigate = useNavigate();
   const location = useLocation();
 
