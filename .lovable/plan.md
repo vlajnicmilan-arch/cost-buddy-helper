@@ -1,26 +1,38 @@
-## Hitno: vraćanje na sigurno stanje
+## Cilj
 
-Moja prošla izmjena je krivo povezala chip "Tvrtka" s `setBusinessModeEnabled(true)` i `setActiveBusinessProfileId(...)`. Te dvije zastavice okidaju cijeli **Business Mode** u `Index.tsx` (`isBusinessMode = businessFeatureEnabled && businessModeEnabled && !!activeBusinessProfileId`), što:
+Spremiti trajne `mem://` memorije koje će svaki budući AI (uključujući mene u novoj sesiji) automatski učitati, tako da nakon reverta na verziju prije 2. svibnja 23:33 ne dođe do ponavljanja istih grešaka ili prijedloga.
 
-- prebacuje render iz `PersonalModeView` u `BusinessModeView` ("novi prozor" koji vidiš),
-- mijenja BottomNav i ulazi u izolaciju projekata po tvrtki → tvoji **osobni projekti** se ne prikazuju jer su filtrirani po `business_profile_id` aktivne tvrtke.
+## Što ću spremiti
 
-**Projekti NISU obrisani** — samo su sakriveni jer si u Business modu. Vraćanjem chipa na čisto "view-only" stanje opet će se vidjeti.
+### 1. `mem://constraints/business-profile-switcher-in-header`
+Tip: **constraint** (nikad ne predlagati ponovno)
 
-### Što ću napraviti (samo 1 datoteka)
+Sadržaj:
+- 2. svibnja 2026 navečer (commit serija od 22:17–22:53) dodan je `BusinessProfileSwitcher` u `HomeHeader.tsx` ispod pozdrava ("Bok, Milan").
+- Korisnik to NE želi — switcher u headeru je vizualno preopterećenje i zbunjuje.
+- **Zabranjeno:** ponovno dodavati switcher konteksta u `HomeHeader` ili bilo koji globalni header.
+- **Pravilo:** prebacivanje između Osobno / Business profila ide isključivo preko `WalletViewModeChips` na dashboardu.
 
-**`src/contexts/WalletViewModeContext.tsx`** — vratiti na vlastiti `useState` + `localStorage` (kao prije moje izmjene), bez ikakvog diranja `AppStateContext`.
-- Chip "Osobno"/"Tvrtka" mijenja **samo** lokalni `mode` (filter za prikaz),
-- NE dira `businessModeEnabled` ni `activeBusinessProfileId`,
-- `BusinessProfileSwitcher` u headeru (s natpisom "Privatno/Tvrtka") ostaje JEDINI način za stvarno ulaženje u Business Mode.
+### 2. `mem://features/business-mode-strategic-direction`
+Tip: **feature** (strateški kontekst za buduće odluke)
 
-`useExpenseFetch.ts` i `WalletViewModeChips.tsx` ostaju kako jesu (tip `'personal' | business:<uuid>` je i dalje točan, ne treba revert tamo).
+Sadržaj:
+- Aplikacija **neće** biti službena hrvatska poslovna aplikacija (bez fiskalizacije, eRačuna, JOPPD, izvoza za knjigovođu).
+- Zbog toga je `business_profile` trenutno samo "kontekstualni filter" (OIB + naziv + ID za izolaciju transakcija) — bez prave dodane vrijednosti naspram projekta s timom.
+- **Otvoreno pitanje (ne odlučeno):** ukinuti business mode u korist projekata, ili zadržati kao tihi filter.
+- Prije bilo kakvog refactora business modea — pitati korisnika za potvrdu smjera.
 
-### Posljedica
+### 3. Update `mem://index.md`
+Dodati obje nove memorije u Memories sekciju, sačuvati sav postojeći sadržaj.
 
-- Projekti se odmah vraćaju (kad chip bude opet samo filter, `Index.tsx` ostaje u Personal modu).
-- Originalan problem (saldo/neto vrijednost ne reagiraju na chip) **ostaje neriješen** — to ćemo zatim riješiti drugim putem koji NE dira business mode (npr. `useCustomPaymentSources` da gleda i `WalletViewMode` kad nije u Business modu).
+## Redoslijed nakon ovoga
 
-### Sljedeći korak nakon revert-a
+1. Odobri ovaj plan → prelazim u build mode i pišem memorije.
+2. Ti otvoriš History i revertaš na poruku **prije** 2. svibnja 22:17.
+3. Memorije ostaju (žive izvan koda) — sljedeći AI odmah zna kontekst.
 
-Predložit ću novi, minimalan plan koji rješava saldo/izvore preko proširenja `useCustomPaymentSources` da poštuje `WalletViewMode` kad je `businessModeEnabled === false`. Bez diranja layouta, BottomNav-a, projekata.
+## Tehničke napomene
+
+- Memorije se pišu kao `.md` fajlovi u `mem://` namespace s YAML frontmatter (`type`, `name`, `description`).
+- `mem://index.md` se prepisuje cijeli — uključit ću sav postojeći sadržaj + 2 nove linije.
+- Bez izmjena koda u ovom koraku.
