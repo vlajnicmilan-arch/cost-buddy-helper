@@ -49,7 +49,7 @@
   - [ ] korak 2: final report (ProjectReportsDialog)
   - [ ] korak 3: end_date + arhiviranje
 - [ ] "Ponovo otvori" gumb radi za completed projekte
-- [x] P&L izračun: funding vs actual usklađen s transakcijama
+- [ ] P&L izračun: funding vs actual usklađen s transakcijama
 - [ ] Milestone budget alerts šalju push notifikaciju
 
 ---

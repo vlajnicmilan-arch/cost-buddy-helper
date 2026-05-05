@@ -18,7 +18,7 @@ const expensesCacheKey = (userId: string | undefined) =>
 export const useExpenseFetch = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
-  const { businessProfileId: viewBusinessProfileId, isBusinessView } = useWalletViewMode();
+  const { mode: viewMode, businessProfileId: viewBusinessProfileId, isPersonalView, isBusinessView } = useWalletViewMode();
 
   const initialExpensesKey = expensesCacheKey(user?.id);
   const initialExpensesCached = user ? instantCache.read<Expense[]>(initialExpensesKey) : null;
@@ -296,14 +296,15 @@ export const useExpenseFetch = () => {
     return null;
   }, [sourceBusinessMap]);
 
-  // Apply view-mode filter (Osobno / per-company). 'Sve' mode removed.
+  // Apply view-mode filter (Sve / Osobno / per-company)
   const applyViewMode = useCallback((list: Expense[]) => {
+    if (viewMode === 'all') return list;
+    if (isPersonalView) return list.filter(e => expenseBusinessProfileId(e) === null);
     if (isBusinessView && viewBusinessProfileId) {
       return list.filter(e => expenseBusinessProfileId(e) === viewBusinessProfileId);
     }
-    // Default + isPersonalView: only sources/transactions not tied to a company
-    return list.filter(e => expenseBusinessProfileId(e) === null);
-  }, [isBusinessView, viewBusinessProfileId, expenseBusinessProfileId]);
+    return list;
+  }, [viewMode, isPersonalView, isBusinessView, viewBusinessProfileId, expenseBusinessProfileId]);
 
   // Filtered view for dashboard (respects payment source access levels + hidden toggle)
   const dashboardExpenses = useMemo(() => {

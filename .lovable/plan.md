@@ -1,69 +1,29 @@
-## Cilj
+## Problem
 
-Ukloniti "Sve" (mixed personal + sve tvrtke) kao opciju iz cijele aplikacije i sinkronizirati headerski `BusinessProfileSwitcher` s `WalletViewModeContext` da bi `/dashboard`, `/wallet`, `/reports` i Globalna pretraga uvijek prikazivali brojke u skladu s onim što piše u headeru (Osobno ili konkretna tvrtka).
+`WelcomeChecklist` (banner "Počnite s V&M Balance / Unesi prvu transakciju...") u `src/components/home/PersonalModeView.tsx` se nakratko pojavi kod svakog otvaranja Dashboarda — i kod korisnika s plaćenom verzijom i kod korisnika koji već imaju transakcije.
 
-## Promjene
+**Uzrok (root cause, ne simptom):**
+Banner se renderira odmah na mountu, prije nego što se učitaju podaci. Inicijalno je `expenses=[]`, `customPaymentSources=[]`, `budgetsCount=0` → checklist misli da je novi korisnik i prikaže se. Tek kad stigne odgovor iz baze, vrijednosti se popune i checklist se sakrije (a kod već "all done" se sakrije tek nakon 3s timeoutom). Otud bljesak.
 
-**1. `src/contexts/WalletViewModeContext.tsx`**
-- `WalletViewMode` tip: ukloniti `'all'`, ostaje samo `'personal' | \`business:${string}\``.
-- Default state: `'personal'` (umjesto `'all'`).
-- Pri čitanju iz `localStorage`: ako je vrijednost `'all'` ili neispravna → automatski migrirati na `'personal'` i prepisati u storage (kompatibilnost za postojeće korisnike).
-- `isValidMode` više ne prihvaća `'all'`.
+Trenutno jedina logika za skrivanje je `localStorage` "dismissed" flag — ne postoji ni provjera učitavanja ni provjera pretplate.
 
-**2. `src/components/wallet/WalletViewModeChips.tsx`**
-- Ukloniti "Sve" chip i `hideAll` prop u potpunosti.
-- Ostaju: "Osobno" + jedan chip po tvrtki.
-- Render guard: ako korisnik nema tvrtku (samo "Osobno"), komponenta ne prikazuje ništa (već postoji `items.length <= 1` guard).
+## Rješenje
 
-**3. `src/components/BusinessProfileSwitcher.tsx`**
-- Pri kliku "Osobno" → uz postojeće `setBusinessModeEnabled(false)` i `setActiveBusinessProfileId(null)` dodati `setMode('personal')` iz `useWalletViewMode`.
-- Pri kliku na tvrtku → uz postojeće `setBusinessModeEnabled(true)` i `setActiveBusinessProfileId(p.id)` dodati `setMode(\`business:${p.id}\`)`.
-- Time se headerski prekidač i wallet view mode kreću kao jedan.
+Sve gating se radi u `WelcomeChecklist` komponenti (čisti popravak na izvoru, bez patch-flag-ova u parentu):
 
-**4. `src/contexts/AppStateContext.tsx`** (sinkronizacija u oba smjera)
-- U `setActiveBusinessProfileId` setteru (ili kroz `useEffect` koji prati `activeBusinessProfileId` + `businessModeEnabled`) odraziti promjenu na `wallet_view_mode` u `localStorage` i emitirati `wallet-view-mode-changed` event — za slučajeve kad se profil mijenja iz nekog drugog mjesta (npr. Settings).
-- Alternativno (jednostavnije): dodati mali sync hook `useBusinessViewSync` mountan u `App.tsx` ispod oba providera koji sluša promjene `activeBusinessProfileId` + `businessModeEnabled` i poziva `setMode()`.
-- Odluka: idemo s **sync hookom** — manje invazivno, ne dira AppState API.
+1. **Dodati nove propse:** `loading: boolean` i učiniti komponentu svjesnom pretplate preko `useSubscription()` i `useStorage()`.
+2. **Ne renderiraj dok se podaci/pretplata učitavaju.** Dok je `loading === true` ili `subscription.loading === true` → return `null`. Time eliminiramo bljesak.
+3. **Ne renderiraj za plaćene korisnike.** Ako je `subscribed === true` ili `tier !== 'free'` ili `source === 'admin'` ili `trialActive === true` → return `null`. Pretplatnici (uključujući trial) više nikad ne vide checklist.
+4. **Ne renderiraj za korisnike koji već imaju ikakvu aktivnost.** Ako je bilo koji od `hasPaymentSources`, `hasTransactions`, `hasBudgets` već true u prvom stabilnom renderu (nakon što loading prođe), automatski tretiraj checklist kao "dismissed" (i upiši u localStorage) — tako da postojeći korisnici nikad više ne vide banner, čak ni kratko.
+5. **Lokalni mod:** ostavi postojeće ponašanje (lokalni korisnici nemaju pretplatu pa checklist i dalje ima smisla za potpuno nove instalacije, ali `loading` gate će svejedno spriječiti flicker).
 
-**5. Novi file: `src/hooks/useBusinessViewSync.ts`**
-- Mali hook koji čita `activeBusinessProfileId` + `businessModeEnabled` iz `useAppState` i `setMode` iz `useWalletViewMode`.
-- `useEffect`: ako je `businessModeEnabled && activeBusinessProfileId` → `setMode(\`business:${id}\`)`, inače → `setMode('personal')`.
-- Mountan unutar `WalletViewModeProvider` u `App.tsx` kao prazna komponenta `<BusinessViewSync />`.
+U `PersonalModeView.tsx` proslijediti `expensesLoading` (već postoji) kao `loading` prop.
 
-**6. i18n cleanup**
-- `src/i18n/locales/{hr,en,de}.json` → ukloniti `wallet.viewMode.all` ključ (ostaju `personal` i `business`).
-- Ažurirati `wallet.ownerHint` opis iz "Sve / Osobno / Tvrtka" → "Osobno / Tvrtka" u sva tri jezika.
+## Datoteke
 
-**7. Memorija**
-- Dodati novi memo `mem://features/wallet-view-mode-unified` koji opisuje da postoji samo Osobno + tvrtka, da je `BusinessProfileSwitcher` i `WalletViewModeChips` uvijek u sinkronizaciji preko `useBusinessViewSync` hooka, i da je `'all'` mod uklonjen.
+- `src/components/WelcomeChecklist.tsx` — dodati gating logiku, useSubscription, useStorage, novi `loading` prop, auto-dismiss za postojeće korisnike.
+- `src/components/home/PersonalModeView.tsx` — proslijediti `loading={props.expensesLoading}` na `WelcomeChecklist`.
 
-## Što se NE mijenja
+## Zašto ovaj pristup (a ne quick-fix)
 
-- `useExpenseFetch.ts` — već radi `applyViewMode` koji za `'personal'` i `'business:<uuid>'` radi točno; samo grana `viewMode === 'all'` više nikad neće biti pogođena (ostaje kao defensive fallback ili ćemo je ukloniti — uklanjamo: `if (viewMode === 'all') return list;` se briše).
-- DB schema — nema migracije.
-- Reports, Wallet, Dashboard stranice — automatski prikazuju filtrirane brojke jer već koriste `useExpenseFetch`.
-- BusinessModeView / PersonalModeView render switch u `Index.tsx` — ostaje vezan na `activeBusinessProfileId` (sync hook osigurava da je view mode usklađen).
-
-## Tehnički detalji
-
-```text
-Klik u BusinessProfileSwitcher
-        │
-        ├─► setBusinessModeEnabled()
-        ├─► setActiveBusinessProfileId()
-        └─► setMode()                  ← NOVO (direktno u onClick handlerima)
-
-useBusinessViewSync (App.tsx)
-   prati AppState i osigurava sync i kad se profil mijenja izvan switchera
-```
-
-Migracija postojećih korisnika: prvi ulazak u app nakon deploya → `WalletViewModeContext` čita `'all'` iz localStorage, prepoznaje kao nevažeće, automatski sprema `'personal'`. Bez prekida, bez prompta.
-
-## Kontrolni popis nakon implementacije
-
-- [ ] Klik "Tactura" u headeru → `/dashboard` Bilanca/Prihodi/Rashodi prikazuju samo Tactura brojke.
-- [ ] Klik "Osobno" u headeru → `/dashboard` prikazuje samo osobne brojke.
-- [ ] `WalletViewModeChips` u Walletu nema više "Sve" chip.
-- [ ] Postojeći korisnik s `localStorage.wallet_view_mode = 'all'` automatski završi na "Osobno" bez greške.
-- [ ] `useExpenseFetch` više nema `if (viewMode === 'all') return list;` granu.
-- [ ] Sva tri jezika (hr/en/de) više nemaju "Sve" string u wallet.viewMode.
+Slijedimo pravilo iz project knowledge "Bug Fixing Strategy": uzrok je što komponenta donosi odluku o prikazu prije nego što ima sve potrebne informacije (auth/subscription/data ready). Rješenje pomiče odluku iza stabilnog stanja umjesto da dodajemo timeout/guard zakrpe. Subscription context već ima ispravan `loading` koji se ne flipa na `false` dok stvarno ne dobijemo odgovor iz backend-a, pa je idealan signal.

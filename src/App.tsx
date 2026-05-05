@@ -9,7 +9,6 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
-import { BusinessViewSync } from "@/components/BusinessViewSync";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { LockScreen } from "@/components/LockScreen";
@@ -301,7 +300,6 @@ const App = () => (
       <StorageProvider>
         <AppStateProvider>
           <WalletViewModeProvider>
-            <BusinessViewSync />
             <AppLockProvider>
               <CurrencyProvider>
                 <SubscriptionProvider>

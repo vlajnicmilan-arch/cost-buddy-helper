@@ -3215,10 +3215,11 @@
       "businessBadge": "Geschäftlich",
       "owner": "Inhaber der Quelle",
       "ownerPersonal": "Privat",
-      "ownerHint": "Wählen Sie, ob diese Quelle persönlich oder genau einem Unternehmen gehört. Der Filter \"Privat / Unternehmen\" nutzt diese Verknüpfung.",
+      "ownerHint": "Wählen Sie, ob diese Quelle persönlich oder genau einem Unternehmen gehört. Der Filter \"Alle / Privat / Unternehmen\" nutzt diese Verknüpfung.",
       "addCompany": "+ Neue Firma"
     },
     "viewMode": {
+      "all": "Alle",
       "personal": "Privat",
       "business": "Geschäftlich"
     }
