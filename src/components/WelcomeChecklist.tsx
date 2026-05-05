@@ -58,16 +58,12 @@ export const WelcomeChecklist = ({
     }
   }, [loading, subLoading, user?.id, hasPaymentSources, hasTransactions, hasBudgets]);
 
-  // Hide while data/subscription state is still resolving (prevents flicker)
-  if (loading || subLoading) return null;
-
-  // Hide for any paid/admin/trial user
-  const isPaid = subscribed || tier !== 'free' || subSource === 'admin' || trialActive;
-  if (isPaid) return null;
-
   const allDone = hasPaymentSources && hasTransactions && hasBudgets;
 
-  // Auto-dismiss when all done
+  // Auto-dismiss when all done — MUST be declared before any early return so
+  // hook order stays stable across renders (Rules of Hooks). Otherwise React
+  // throws "Rendered more/fewer hooks than expected", which on Android WebView
+  // can take down the whole process.
   useEffect(() => {
     if (allDone && user?.id) {
       const timer = setTimeout(() => {
@@ -77,6 +73,13 @@ export const WelcomeChecklist = ({
       return () => clearTimeout(timer);
     }
   }, [allDone, user?.id]);
+
+  // Hide while data/subscription state is still resolving (prevents flicker)
+  if (loading || subLoading) return null;
+
+  // Hide for any paid/admin/trial user
+  const isPaid = subscribed || tier !== 'free' || subSource === 'admin' || trialActive;
+  if (isPaid) return null;
 
   if (dismissed) return null;
 
