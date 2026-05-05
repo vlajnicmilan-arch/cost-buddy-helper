@@ -2,11 +2,12 @@ import { createContext, useContext, useEffect, useMemo, useState, ReactNode, use
 
 /**
  * View mode values:
- *  - 'all'                  → show everything (personal + all businesses)
  *  - 'personal'             → only sources/transactions NOT tied to a company
  *  - `business:<uuid>`      → only sources/transactions tied to that company
+ *
+ * Legacy 'all' value is migrated to 'personal' on read.
  */
-export type WalletViewMode = 'all' | 'personal' | `business:${string}`;
+export type WalletViewMode = 'personal' | `business:${string}`;
 
 const STORAGE_KEY = 'wallet_view_mode';
 
@@ -21,7 +22,7 @@ interface WalletViewModeContextValue {
 
 const isValidMode = (v: string | null): v is WalletViewMode => {
   if (!v) return false;
-  return v === 'all' || v === 'personal' || v.startsWith('business:');
+  return v === 'personal' || v.startsWith('business:');
 };
 
 const WalletViewModeContext = createContext<WalletViewModeContextValue | undefined>(undefined);
@@ -31,8 +32,13 @@ export const WalletViewModeProvider = ({ children }: { children: ReactNode }) =>
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (isValidMode(stored)) return stored;
+      // Legacy 'all' → personal
+      if (stored === 'all') {
+        localStorage.setItem(STORAGE_KEY, 'personal');
+        return 'personal';
+      }
     } catch {}
-    return 'all';
+    return 'personal';
   });
 
   const setMode = useCallback((m: WalletViewMode) => {

@@ -1,23 +1,20 @@
 import { useTranslation } from 'react-i18next';
-import { Briefcase, User, Layers } from 'lucide-react';
+import { Briefcase, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWalletViewMode, WalletViewMode } from '@/contexts/WalletViewModeContext';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 
 interface WalletViewModeChipsProps {
   className?: string;
-  /** Hide the "All" chip on contexts where it does not apply */
-  hideAll?: boolean;
 }
 
-export const WalletViewModeChips = ({ className, hideAll }: WalletViewModeChipsProps) => {
+export const WalletViewModeChips = ({ className }: WalletViewModeChipsProps) => {
   const { t } = useTranslation();
   const { mode, setMode } = useWalletViewMode();
   const { profiles } = useBusinessProfiles();
 
-  type Item = { key: WalletViewMode; label: string; icon: typeof Layers };
+  type Item = { key: WalletViewMode; label: string; icon: typeof User };
   const items: Item[] = [
-    ...(!hideAll ? [{ key: 'all' as WalletViewMode, label: t('wallet.viewMode.all', 'Sve'), icon: Layers }] : []),
     { key: 'personal' as WalletViewMode, label: t('wallet.viewMode.personal', 'Osobno'), icon: User },
     ...profiles.map<Item>(p => ({
       key: `business:${p.id}` as WalletViewMode,
