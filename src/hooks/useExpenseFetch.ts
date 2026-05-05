@@ -18,7 +18,7 @@ const expensesCacheKey = (userId: string | undefined) =>
 export const useExpenseFetch = () => {
   const { user } = useAuth();
   const { storageMode } = useStorage();
-  const { mode: viewMode, businessProfileId: viewBusinessProfileId, isPersonalView, isBusinessView } = useWalletViewMode();
+  const { businessProfileId: viewBusinessProfileId, isPersonalView, isBusinessView } = useWalletViewMode();
 
   const initialExpensesKey = expensesCacheKey(user?.id);
   const initialExpensesCached = user ? instantCache.read<Expense[]>(initialExpensesKey) : null;
