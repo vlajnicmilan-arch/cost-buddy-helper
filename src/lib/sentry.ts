@@ -8,6 +8,14 @@
  * - `beforeSend` filters out known-benign noise (AbortError, Capacitor
  *   plugin-not-implemented, ResizeObserver loops, offline network errors).
  *
+ * GDPR / pravna osnova:
+ *   Sentry je tretiran kao "essential error monitoring" (ne analytics).
+ *   Pravna osnova je legitimni interes (čl. 6(1)(f) GDPR) — održavanje
+ *   stabilnosti i sigurnosti servisa. Konfiguracija je minimalistička:
+ *   `sendDefaultPii: false` (no IP, no user agent, no cookies), no replay,
+ *   no tracing, query stringovi se strip-aju u beforeSend. Ovo je u skladu
+ *   s Recital 49 GDPR-a i objavljeno je u Privacy Policy.
+ *
  * The logger MUST never break the app — every public function is wrapped
  * in try/catch and silently swallows failures.
  */
@@ -82,18 +90,10 @@ export const initSentry = (): void => {
       return;
     }
 
-    // GDPR / ePrivacy: Sentry is "analytics" category — requires explicit opt-in.
-    // Read consent directly from localStorage to avoid async import in this sync init.
-    try {
-      const raw = localStorage.getItem('cookie_consent_v2');
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (!parsed || parsed.analytics !== true) {
-        console.log('[Sentry] Skipped init — no analytics consent');
-        return;
-      }
-    } catch {
-      return;
-    }
+    // NOTE: Sentry je "essential error monitoring", ne analytics. Inicijalizira se
+    // uvijek (osim u development env-u) na temelju legitimnog interesa (GDPR čl. 6(1)(f)).
+    // Konfiguracija ispod garantira nulto prikupljanje PII-a.
+
 
     Sentry.init({
       dsn: DSN,
