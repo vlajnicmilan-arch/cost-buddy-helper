@@ -2274,8 +2274,10 @@ export type Database = {
           error_count: number
           id: string
           notified: boolean
+          notified_email: boolean
           sample_message: string | null
           sample_route: string | null
+          source: string
           triggered_at: string
         }
         Insert: {
@@ -2286,8 +2288,10 @@ export type Database = {
           error_count?: number
           id?: string
           notified?: boolean
+          notified_email?: boolean
           sample_message?: string | null
           sample_route?: string | null
+          source?: string
           triggered_at?: string
         }
         Update: {
@@ -2298,8 +2302,10 @@ export type Database = {
           error_count?: number
           id?: string
           notified?: boolean
+          notified_email?: boolean
           sample_message?: string | null
           sample_route?: string | null
+          source?: string
           triggered_at?: string
         }
         Relationships: []
