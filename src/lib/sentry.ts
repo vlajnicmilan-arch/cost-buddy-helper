@@ -8,6 +8,14 @@
  * - `beforeSend` filters out known-benign noise (AbortError, Capacitor
  *   plugin-not-implemented, ResizeObserver loops, offline network errors).
  *
+ * GDPR / pravna osnova:
+ *   Sentry je tretiran kao "essential error monitoring" (ne analytics).
+ *   Pravna osnova je legitimni interes (čl. 6(1)(f) GDPR) — održavanje
+ *   stabilnosti i sigurnosti servisa. Konfiguracija je minimalistička:
+ *   `sendDefaultPii: false` (no IP, no user agent, no cookies), no replay,
+ *   no tracing, query stringovi se strip-aju u beforeSend. Ovo je u skladu
+ *   s Recital 49 GDPR-a i objavljeno je u Privacy Policy.
+ *
  * The logger MUST never break the app — every public function is wrapped
  * in try/catch and silently swallows failures.
  */
