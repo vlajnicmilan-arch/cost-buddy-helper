@@ -3,6 +3,8 @@ import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { captureSentryException } from '@/lib/sentry';
+import { notifyCrash } from '@/lib/notifyCrash';
+import { APP_VERSION } from '@/lib/version';
 
 interface Props {
   children: ReactNode;
@@ -45,6 +47,19 @@ export class ErrorBoundary extends Component<Props, State> {
       componentStack: errorInfo.componentStack?.slice(0, 2000),
       source: 'ErrorBoundary',
     });
+    // Instant email alert to admins (bypasses 5-min cron).
+    try {
+      notifyCrash({
+        source: 'error_boundary',
+        message: error.message || error.name || 'Unknown React error',
+        stack: error.stack?.slice(0, 4000),
+        componentStack: errorInfo.componentStack?.slice(0, 2000),
+        route: typeof window !== 'undefined' ? window.location.pathname : undefined,
+        appVersion: APP_VERSION,
+      });
+    } catch {
+      /* never break recovery */
+    }
   }
 
   handleReload = () => {
