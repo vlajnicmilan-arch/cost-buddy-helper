@@ -1,36 +1,85 @@
-## Problem
+# Plan: Pouzdano hvatanje crash-eva + email notifikacije
 
-Kada se na dashboardu klikne chip tvrtke, `WalletViewModeContext.setMode('business:<id>')` postavlja `businessModeEnabled = true` + `activeBusinessProfileId = id`. `Index.tsx` zatim na temelju `isBusinessMode` renderira potpuno odvojeni `BusinessModeView` (sa svojim bottom navom, dashboard/transakcije/projekti tabovima). To je "novi ekran" koji ne želiš.
+## Cilj
+Kad se aplikacija sruši (kod jednog ili više korisnika), admin **odmah dobije email** sa stack traceom, a Sentry **uvijek hvata** technical greške bez čekanja na cookie consent.
 
-Želiš: jedan glavni dashboard (`PersonalModeView`), chipovi samo prebacuju **kontekst filtriranja** (Osobno vs. tvrtka X) — kartice, saldo, transakcije i izvori se filtriraju kroz već postojeću logiku u `useExpenseFetch` / `useCustomPaymentSources` koja gleda `activeBusinessProfileId`.
+---
 
-## Promjene
+## 1. Email crash alert template + slanje (NOVO)
 
-### 1. `src/contexts/WalletViewModeContext.tsx`
-Decoupling od `businessModeEnabled`:
-- `mode` se derivira **samo** iz `activeBusinessProfileId` (ako je `null` → `'personal'`, inače `business:<id>`).
-- `setMode('personal')` postavlja samo `setActiveBusinessProfileId(null)` — **ne dira** `businessModeEnabled`.
-- `setMode('business:<id>')` postavlja samo `setActiveBusinessProfileId(id)` — **ne dira** `businessModeEnabled`.
+**Novi template:** `supabase/functions/_shared/transactional-email-templates/crash-alert.tsx`
+- Teal branding (HSL 172 66% 40%), white body
+- Polja: vrijeme, user_id (ili "anoniman"), route, message, stack preview (max 1500 chars), app_version, platform, signature, link na Pulse admin
+- Subject: `🔴 V&M Balance crash: <message first line>`
+- Registrirati u `_shared/transactional-email-templates/registry.ts` kao `crash-alert`
 
-Time chip postaje čisti kontekstualni filter, u skladu s memory pravilom *"business_profile = samo kontekstualni filter"*.
+**Slanje koristi postojeći `send-transactional-email`** (jedna funkcija za sve, prema pravilu). Pošiljaoc dohvaća admin email-ove iz `auth.users` (preko `user_roles` join-a) — service role.
 
-### 2. `src/pages/Index.tsx`
-- Ukloniti granu `if (isBusinessMode) return <BusinessModeView .../>;`. Uvijek se renderira `PersonalModeView`.
-- Ukloniti `businessTab` state, `useBackButton` za business tab, `onBackToPersonal` callback i učitavanje `businessProfile` (nije više potrebno za routing; ako trebamo prikazati naziv tvrtke u headeru, čitamo iz `useBusinessProfiles` po `activeBusinessProfileId`).
-- Ukloniti import `BusinessModeView`.
-- `isBusinessMode` koji se prosljeđuje `PersonalModeView` postaje `!!activeBusinessProfileId` (samo informativno za UI poput naslova "Posloval kontekst: X").
+---
 
-### 3. Filtriranje podataka — bez izmjena
-- `useExpenseFetch` već filtrira `expenses`/`dashboardExpenses` po `WalletViewMode` preko `expenseBusinessProfileId`.
-- `useCustomPaymentSources` već filtrira po `activeBusinessProfileId`.
-- Saldo, novčanici, prihodi/rashodi, transakcije — sve koristi te hook-ove → automatski reagira na chip.
+## 2. Proširenje `monitor-app-health` (cron + email kanal)
 
-### 4. Što s ostalim mjestima koja koriste `businessModeEnabled`?
-Ostavljamo netaknuto. `businessModeEnabled` ostaje globalna postavka iz Settings (uključuje business modul: tab Projekti, BusinessModeGuard, business sekcije u postavkama, itd.). Chipovi je više ne dodiruju — što je i ispravno semantički.
+Datoteka: `supabase/functions/monitor-app-health/index.ts`
 
-## QA scenariji (viewport 384x709)
-1. Otvori dashboard → vidi se PersonalModeView s chipovima Osobno + tvrtke.
-2. Klik na "Osobno" → ostaje na istom ekranu, prikazani samo osobni izvori/transakcije/saldo.
-3. Klik na chip tvrtke → **ostaje na istom ekranu** (ne otvara se BusinessModeView), kartice/saldo/transakcije pokazuju samo podatke te tvrtke.
-4. Klik natrag na "Osobno" → sve se vraća na osobni kontekst, bez treperenja.
-5. Settings → "Poslovni modul" toggle i dalje funkcionira neovisno (utječe samo na vidljivost projekata/poslovnih sekcija, ne na chipove).
+**Promjene:**
+- Dodati `react_error_boundary` u `.in("event", [...])` listu skeniranih eventa
+- **Snižena pravila za `react_error_boundary`:** svaki **potvrđeni React crash = alert odmah** (1 event dovoljan), s dedup-om 60 min po signature (umjesto 30)
+- Postojeći threshold (≥10 errora ili ≥3 usera) ostaje za `window_error`/`unhandled_rejection`
+- Za svaki triggered alert: paralelno push **i** email
+- Iterirati admin user-e, dohvatiti im email iz `auth.users`, za svakog pozvati `send-transactional-email` s `templateName: 'crash-alert'`, `idempotencyKey: \`crash-${alertId}-${adminUserId}\``
+- Update `monitor_alerts_log.notified` postaje `notified_push` + nova kolona `notified_email`
+
+**Migracija:** dodati kolonu `notified_email BOOLEAN DEFAULT false` u `monitor_alerts_log`.
+
+---
+
+## 3. Sentry "essential mode" — odvojen od analytics consenta
+
+Datoteka: `src/lib/sentry.ts`
+
+**Promjene:**
+- Maknuti consent gate na liniji 87–96
+- Sentry se **uvijek** inicijalizira (osim u `development` environmentu)
+- Konfiguracija ostaje minimal-by-design (već je tako): `sendDefaultPii: false`, no replay, no tracing, `beforeSend` strip query stringova
+- Dodati komentar pri vrhu da objasni pravnu osnovu (legitimni interes, GDPR Art. 6(1)(f), Recital 49)
+
+**Privacy Policy update** (`src/pages/PrivacyPolicy.tsx`):
+- Novi paragraf u sekciji o obradi podataka:
+  > "Tehničko praćenje grešaka (Sentry, EU region): Bilježimo poruke o iznimkama, stack trace, rutu i verziju aplikacije bez osobnih podataka, IP adrese ili user agent-a. Pravna osnova: legitimni interes (čl. 6(1)(f) GDPR) — održavanje stabilnosti i sigurnosti servisa."
+- HR/EN/DE preko postojeće i18n strukture
+
+**Cookie banner** (provjeriti `consentManager.ts`):
+- Dodati napomenu da error monitoring nije dio "analytics" toggle-a već radi po legitimnom interesu
+- Ažurirati memory `mem://architecture/consent-gated-analytics` da odražava novo stanje (Sentry više nije consent-gated)
+
+---
+
+## 4. ErrorBoundary — direktan email bypass
+
+Datoteka: `src/components/ErrorBoundary.tsx`
+
+Već piše `react_error_boundary` u `app_diagnostics_logs`. Dodaje se **direktan poziv** na novu pomoćnu edge funkciju `notify-crash` koja:
+- prima `{ message, stack, componentStack, route, userId }`
+- traži admin email-ove
+- enqueue-a email s template-om `crash-alert` (s 60min dedup po `signature` u memory cache / `monitor_alerts_log` provjeri)
+- ovo je dodatno na cron — daje **instant** alert (sekunde, ne ~5 min)
+
+Razlog odvojene funkcije: ErrorBoundary se događa u browseru, a `monitor-app-health` je cron — odvajamo brzi kanal od batch kanala.
+
+---
+
+## 5. Tehnički detalji
+- Email infrastruktura već postoji (`process-email-queue`, `send-transactional-email`, `enqueue_email`) — koristimo postojeće
+- Nema duplikacije slanja: `notify-crash` koristi isti idempotencyKey format kao cron (`crash-<signature-hash>-<adminId>-<hour>`) → unutar istog sata isti signature ide samo jednom po adminu
+- Email queue ima retry + DLQ + 60min TTL — pouzdano
+- **Sve UI tekstove kroz i18n** (privacy policy, banner update)
+- Memory update: `mem://architecture/consent-gated-analytics` → maknuti Sentry s liste consent-gated, dodati "Crash monitoring je essential, ne consent-gated"
+- Novi memory: `mem://features/crash-email-alerts` — opisuje sustav (ErrorBoundary → notify-crash → email; cron monitor-app-health → email; Sentry uvijek aktivan)
+
+---
+
+## Što NE radimo
+- Ne diramo postojeću `send-transactional-email` (jedan entry point ostaje)
+- Ne brišemo push notifikacije — ostaju kao paralelni kanal
+- Ne dodajemo file attachmente (nepotrebno, sve stane u email body)
+- Ne mijenjamo Sentry konfiguraciju (već je minimal i GDPR-friendly)
