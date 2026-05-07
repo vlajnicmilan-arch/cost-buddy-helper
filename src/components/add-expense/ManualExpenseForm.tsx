@@ -13,6 +13,7 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { CustomIncomeCategory } from '@/types/customIncomeCategory';
 import { ReceiptCaptureButtons } from './ReceiptCaptureButtons';
+import { QuickAddCategoryInline } from './QuickAddCategoryInline';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { ExpenseItemsList } from './ExpenseItemsList';
 import { InstallmentToggle } from '@/components/installments';

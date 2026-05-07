@@ -1038,7 +1038,29 @@ export const AddExpenseDialog = ({
               aiSuggesting={aiSuggesting}
               customCategories={customCategories}
               customIncomeCategories={customIncomeCategories}
-              onAddIncomeCategoryClick={() => setIncomeCategoryDialogOpen(true)}
+              quickAddCategoryMode={quickAddCategoryMode}
+              onRequestQuickAddCategory={(mode) => setQuickAddCategoryMode(mode)}
+              onCancelQuickAddCategory={() => setQuickAddCategoryMode(null)}
+              onCreateQuickCategory={async (mode, data) => {
+                if (mode === 'income') {
+                  const newCat = await addCustomIncomeCategory(data);
+                  if (newCat) {
+                    setCategory(newCat.id as IncomeCategory);
+                    setQuickAddCategoryMode(null);
+                    refetchIncomeCategories();
+                    return newCat.id;
+                  }
+                  return null;
+                }
+                const newCat = await addCustomCategory(data);
+                if (newCat) {
+                  setCategory(newCat.id as Category);
+                  setQuickAddCategoryMode(null);
+                  refetchCustomCategories();
+                  return newCat.id;
+                }
+                return null;
+              }}
               note={note}
               onNoteChange={setNote}
               receiptImage={receiptImage}
