@@ -163,6 +163,10 @@ export const useExpenses = (options?: UseExpensesOptions) => {
   }, [expenses, scoreDuplicate]);
 
 
+  // Strict manual duplicate check — ALL must match: exact amount, same type,
+  // same calendar day, same merchant or near-identical description.
+  // Reduces false positives (e.g. same coffee shop on consecutive days).
+  // CSV import (`findDuplicates`) keeps the looser 2-of-3 scoring.
   const checkDuplicate = useCallback((transaction: {
     amount: number;
     description: string;
@@ -171,27 +175,36 @@ export const useExpenses = (options?: UseExpensesOptions) => {
     category?: string;
     merchant_name?: string;
   }): Expense | null => {
-    const txData = { amount: transaction.amount, type: transaction.type, date: transaction.date, description: transaction.description, merchant_name: transaction.merchant_name };
-
-    let bestScore = 0;
-    let bestMatch: Expense | null = null;
+    const txDesc = (transaction.description || '').toLowerCase().trim();
+    const txDay = new Date(transaction.date);
+    txDay.setHours(0, 0, 0, 0);
+    const txDayTime = txDay.getTime();
 
     for (const existing of expenses) {
-      const { score } = scoreDuplicate(txData, existing);
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = existing;
-      }
-    }
+      // Exact amount + same type
+      if (existing.type !== transaction.type) continue;
+      if (Number(existing.amount) !== Number(transaction.amount)) continue;
 
-    // Amount match is mandatory — without it, no duplicate warning
-    if (bestScore >= 2 && bestMatch) {
-      const amountDiff = Math.abs(Number(bestMatch.amount) - transaction.amount) / Math.max(Math.abs(transaction.amount), 0.01);
-      const sameType = bestMatch.type === transaction.type;
-      if (!sameType || amountDiff > 0.01) return null;
+      // Same calendar day
+      const exDay = new Date(existing.date);
+      exDay.setHours(0, 0, 0, 0);
+      if (exDay.getTime() !== txDayTime) continue;
+
+      // Same merchant OR near-identical description
+      let match = false;
+      if (existing.merchant_name && transaction.merchant_name &&
+          areMerchantsSimilar(existing.merchant_name, transaction.merchant_name)) {
+        match = true;
+      } else {
+        const exDesc = (existing.description || '').toLowerCase().trim();
+        if (exDesc && txDesc && (exDesc === txDesc || exDesc.includes(txDesc) || txDesc.includes(exDesc))) {
+          match = true;
+        }
+      }
+      if (match) return existing;
     }
-    return bestScore >= 2 ? bestMatch : null;
-  }, [expenses, scoreDuplicate]);
+    return null;
+  }, [expenses, areMerchantsSimilar]);
 
   const totals = useMemo(() => {
     const now = new Date();
