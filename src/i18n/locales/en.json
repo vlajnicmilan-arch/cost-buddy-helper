@@ -1032,7 +1032,17 @@
     "clickToAdd": "Click \"New\" to add one.",
     "deleteCategory": "Delete category?",
     "deleteCategoryConfirm": "Are you sure you want to delete the category",
-    "clickForDetailsAndChange": "Click for details and category change"
+    "clickForDetailsAndChange": "Click for details and category change",
+    "quickAdd": {
+      "button": "+ New category",
+      "titleExpense": "New expense category",
+      "titleIncome": "New income category",
+      "namePlaceholder": "Category name",
+      "icon": "Icon",
+      "color": "Color",
+      "save": "Save and select",
+      "duplicateWarning": "A similar category already exists: \"{{name}}\". Add anyway?"
+    }
   },
   "incomeCategories": {
     "salary": "Salary",
