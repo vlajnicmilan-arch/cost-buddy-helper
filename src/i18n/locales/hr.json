@@ -1035,7 +1035,17 @@
     "clickToAdd": "Kliknite \"Nova\" za dodavanje.",
     "deleteCategory": "Obrisati kategoriju?",
     "deleteCategoryConfirm": "Jeste li sigurni da želite obrisati kategoriju",
-    "clickForDetailsAndChange": "Klikni za detalje i promjenu kategorije"
+    "clickForDetailsAndChange": "Klikni za detalje i promjenu kategorije",
+    "quickAdd": {
+      "button": "+ Nova kategorija",
+      "titleExpense": "Nova kategorija troška",
+      "titleIncome": "Nova kategorija prihoda",
+      "namePlaceholder": "Naziv kategorije",
+      "icon": "Ikona",
+      "color": "Boja",
+      "save": "Spremi i odaberi",
+      "duplicateWarning": "Slična kategorija već postoji: \"{{name}}\". Svejedno dodaj?"
+    }
   },
   "incomeCategories": {
     "salary": "Plaća",

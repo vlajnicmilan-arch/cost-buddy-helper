@@ -1021,7 +1021,17 @@
     "clickToAdd": "Klicken Sie auf \"Neu\" zum Hinzufügen.",
     "deleteCategory": "Kategorie löschen?",
     "deleteCategoryConfirm": "Sind Sie sicher, dass Sie die Kategorie löschen möchten",
-    "clickForDetailsAndChange": "Klicken für Details und Kategorieänderung"
+    "clickForDetailsAndChange": "Klicken für Details und Kategorieänderung",
+    "quickAdd": {
+      "button": "+ Neue Kategorie",
+      "titleExpense": "Neue Ausgabenkategorie",
+      "titleIncome": "Neue Einnahmekategorie",
+      "namePlaceholder": "Kategoriename",
+      "icon": "Symbol",
+      "color": "Farbe",
+      "save": "Speichern und auswählen",
+      "duplicateWarning": "Eine ähnliche Kategorie existiert bereits: \"{{name}}\". Trotzdem hinzufügen?"
+    }
   },
   "incomeCategories": {
     "salary": "Gehalt",

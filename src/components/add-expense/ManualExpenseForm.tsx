@@ -13,6 +13,7 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { CustomIncomeCategory } from '@/types/customIncomeCategory';
 import { ReceiptCaptureButtons } from './ReceiptCaptureButtons';
+import { QuickAddCategoryInline } from './QuickAddCategoryInline';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { ExpenseItemsList } from './ExpenseItemsList';
 import { InstallmentToggle } from '@/components/installments';
@@ -81,7 +82,14 @@ interface ManualExpenseFormProps {
   aiSuggesting: boolean;
   customCategories: CustomCategory[];
   customIncomeCategories: CustomIncomeCategory[];
-  onAddIncomeCategoryClick: () => void;
+  /** Inline quick-add panel state. */
+  quickAddCategoryMode: 'expense' | 'income' | null;
+  onRequestQuickAddCategory: (mode: 'expense' | 'income') => void;
+  onCancelQuickAddCategory: () => void;
+  onCreateQuickCategory: (
+    mode: 'expense' | 'income',
+    data: { name: string; icon: string; color: string }
+  ) => Promise<string | null>;
   // Note
   note: string;
   onNoteChange: (value: string) => void;
@@ -599,7 +607,14 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
           </Label>
           <Select 
             value={props.category} 
-            onValueChange={(v) => props.onCategoryChange(v as Category)}
+            onValueChange={(v) => {
+              if (v === '__add_new__') {
+                // Defer so Select closes cleanly before inline panel opens
+                setTimeout(() => props.onRequestQuickAddCategory('expense'), 0);
+                return;
+              }
+              props.onCategoryChange(v as Category);
+            }}
           >
             <SelectTrigger className="h-12 rounded-xl bg-background">
               <SelectValue placeholder={t('common.category')} />
@@ -636,8 +651,30 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                   </span>
                 </SelectItem>
               ))}
+              <div className="border-t border-border mt-1 pt-1">
+                <SelectItem value="__add_new__" className="text-primary">
+                  <span className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    <span>{t('categories.quickAdd.button', '+ Nova kategorija')}</span>
+                  </span>
+                </SelectItem>
+              </div>
             </SelectContent>
           </Select>
+          {props.quickAddCategoryMode === 'expense' && (
+            <QuickAddCategoryInline
+              mode="expense"
+              existingNames={[
+                ...props.customCategories.map((c) => c.name.trim().toLowerCase()),
+                ...CATEGORIES.map((c) => t(`categories.${c.id}`).toLowerCase()),
+              ]}
+              onCreate={async (data) => {
+                const id = await props.onCreateQuickCategory('expense', data);
+                return id;
+              }}
+              onCancel={props.onCancelQuickAddCategory}
+            />
+          )}
         </div>
       )}
 
@@ -649,7 +686,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             value={props.category} 
             onValueChange={(v) => {
               if (v === '__add_new__') {
-                props.onAddIncomeCategoryClick();
+                setTimeout(() => props.onRequestQuickAddCategory('income'), 0);
                 return;
               }
               props.onCategoryChange(v as IncomeCategory);
@@ -694,12 +731,26 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                 <SelectItem value="__add_new__" className="text-primary">
                   <span className="flex items-center gap-2">
                     <Plus className="w-4 h-4" />
-                    <span>{t('incomeCategories.addNew')}</span>
+                    <span>{t('categories.quickAdd.button', '+ Nova kategorija')}</span>
                   </span>
                 </SelectItem>
               </div>
             </SelectContent>
           </Select>
+          {props.quickAddCategoryMode === 'income' && (
+            <QuickAddCategoryInline
+              mode="income"
+              existingNames={[
+                ...props.customIncomeCategories.map((c) => c.name.trim().toLowerCase()),
+                ...INCOME_CATEGORIES.map((c) => t(`incomeCategories.${c.id}`).toLowerCase()),
+              ]}
+              onCreate={async (data) => {
+                const id = await props.onCreateQuickCategory('income', data);
+                return id;
+              }}
+              onCancel={props.onCancelQuickAddCategory}
+            />
+          )}
         </div>
       )}
 

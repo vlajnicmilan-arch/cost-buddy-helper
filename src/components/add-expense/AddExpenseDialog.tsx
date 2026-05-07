@@ -161,7 +161,7 @@ export const AddExpenseDialog = ({
   const { formatAmount, currency: primaryCurrency, multiCurrencyEnabled } = useCurrency();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources({ includePersonal: true });
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
-  const { customCategories, refetch: refetchCustomCategories } = useCustomCategories();
+  const { customCategories, addCustomCategory, refetch: refetchCustomCategories } = useCustomCategories();
   const { projects } = useProjects();
   const { budgets } = useBudgets();
   const { createPlan: createInstallmentPlan } = useInstallments();
@@ -174,6 +174,7 @@ export const AddExpenseDialog = ({
   const [loanDetected, setLoanDetected] = useState<DetectedLoan | null>(null);
   const [loanDialogOpen, setLoanDialogOpen] = useState(false);
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
+  const [quickAddCategoryMode, setQuickAddCategoryMode] = useState<'expense' | 'income' | null>(null);
 
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
@@ -1038,7 +1039,29 @@ export const AddExpenseDialog = ({
               aiSuggesting={aiSuggesting}
               customCategories={customCategories}
               customIncomeCategories={customIncomeCategories}
-              onAddIncomeCategoryClick={() => setIncomeCategoryDialogOpen(true)}
+              quickAddCategoryMode={quickAddCategoryMode}
+              onRequestQuickAddCategory={(mode) => setQuickAddCategoryMode(mode)}
+              onCancelQuickAddCategory={() => setQuickAddCategoryMode(null)}
+              onCreateQuickCategory={async (mode, data) => {
+                if (mode === 'income') {
+                  const newCat = await addCustomIncomeCategory(data);
+                  if (newCat) {
+                    setCategory(newCat.id as IncomeCategory);
+                    setQuickAddCategoryMode(null);
+                    refetchIncomeCategories();
+                    return newCat.id;
+                  }
+                  return null;
+                }
+                const newCat = await addCustomCategory(data);
+                if (newCat) {
+                  setCategory(newCat.id as Category);
+                  setQuickAddCategoryMode(null);
+                  refetchCustomCategories();
+                  return newCat.id;
+                }
+                return null;
+              }}
               note={note}
               onNoteChange={setNote}
               receiptImage={receiptImage}
