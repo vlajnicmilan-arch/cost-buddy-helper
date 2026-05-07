@@ -81,7 +81,14 @@ interface ManualExpenseFormProps {
   aiSuggesting: boolean;
   customCategories: CustomCategory[];
   customIncomeCategories: CustomIncomeCategory[];
-  onAddIncomeCategoryClick: () => void;
+  /** Inline quick-add panel state. */
+  quickAddCategoryMode: 'expense' | 'income' | null;
+  onRequestQuickAddCategory: (mode: 'expense' | 'income') => void;
+  onCancelQuickAddCategory: () => void;
+  onCreateQuickCategory: (
+    mode: 'expense' | 'income',
+    data: { name: string; icon: string; color: string }
+  ) => Promise<string | null>;
   // Note
   note: string;
   onNoteChange: (value: string) => void;
