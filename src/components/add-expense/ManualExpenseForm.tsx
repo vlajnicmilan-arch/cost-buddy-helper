@@ -620,6 +620,14 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
               <SelectValue placeholder={t('common.category')} />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50 max-h-[300px]">
+              <div className="border-b border-border mb-1 pb-1">
+                <SelectItem value="__add_new__" className="text-primary">
+                  <span className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    <span>{t('categories.quickAdd.button', '+ Nova kategorija')}</span>
+                  </span>
+                </SelectItem>
+              </div>
               {props.customCategories.length > 0 && (
                 <>
                   <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -651,14 +659,6 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                   </span>
                 </SelectItem>
               ))}
-              <div className="border-t border-border mt-1 pt-1">
-                <SelectItem value="__add_new__" className="text-primary">
-                  <span className="flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    <span>{t('categories.quickAdd.button', '+ Nova kategorija')}</span>
-                  </span>
-                </SelectItem>
-              </div>
             </SelectContent>
           </Select>
           {props.quickAddCategoryMode === 'expense' && (
@@ -696,6 +696,14 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
               <SelectValue placeholder={t('common.category')} />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50 max-h-[300px]">
+              <div className="border-b border-border mb-1 pb-1">
+                <SelectItem value="__add_new__" className="text-primary">
+                  <span className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    <span>{t('categories.quickAdd.button', '+ Nova kategorija')}</span>
+                  </span>
+                </SelectItem>
+              </div>
               {props.customIncomeCategories.length > 0 && (
                 <>
                   <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -727,14 +735,6 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                   </span>
                 </SelectItem>
               ))}
-              <div className="border-t border-border mt-1 pt-1">
-                <SelectItem value="__add_new__" className="text-primary">
-                  <span className="flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    <span>{t('categories.quickAdd.button', '+ Nova kategorija')}</span>
-                  </span>
-                </SelectItem>
-              </div>
             </SelectContent>
           </Select>
           {props.quickAddCategoryMode === 'income' && (
