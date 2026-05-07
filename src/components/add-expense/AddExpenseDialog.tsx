@@ -161,7 +161,7 @@ export const AddExpenseDialog = ({
   const { formatAmount, currency: primaryCurrency, multiCurrencyEnabled } = useCurrency();
   const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources({ includePersonal: true });
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
-  const { customCategories, refetch: refetchCustomCategories } = useCustomCategories();
+  const { customCategories, addCustomCategory, refetch: refetchCustomCategories } = useCustomCategories();
   const { projects } = useProjects();
   const { budgets } = useBudgets();
   const { createPlan: createInstallmentPlan } = useInstallments();
@@ -174,6 +174,7 @@ export const AddExpenseDialog = ({
   const [loanDetected, setLoanDetected] = useState<DetectedLoan | null>(null);
   const [loanDialogOpen, setLoanDialogOpen] = useState(false);
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
+  const [quickAddCategoryMode, setQuickAddCategoryMode] = useState<'expense' | 'income' | null>(null);
 
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
