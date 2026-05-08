@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CustomCategory, DEFAULT_CATEGORY_ICONS, DEFAULT_CATEGORY_COLORS } from '@/types/customCategory';
+import { CustomCategory, DEFAULT_CATEGORY_ICONS, DEFAULT_CATEGORY_COLORS, DEFAULT_CATEGORY_ICON_GROUPS } from '@/types/customCategory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from 'react-i18next';
 
@@ -91,19 +91,28 @@ export const CustomCategoryDialog = ({
           {/* Icon Selection */}
           <div className="space-y-2">
             <Label>{t('common.chooseIcon')}</Label>
-            <ScrollArea className="h-32 border rounded-lg p-2">
-              <div className="grid grid-cols-8 gap-1">
-                {DEFAULT_CATEGORY_ICONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setIcon(emoji)}
-                    className={`p-2 text-xl rounded-md hover:bg-muted transition-colors ${
-                      icon === emoji ? 'bg-primary/20 ring-2 ring-primary' : ''
-                    }`}
-                  >
-                    {emoji}
-                  </button>
+            <ScrollArea className="h-48 border rounded-lg p-2">
+              <div className="space-y-2">
+                {DEFAULT_CATEGORY_ICON_GROUPS.map((group) => (
+                  <div key={group.key} className="space-y-1">
+                    <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80 px-0.5">
+                      {t(`categoryIcons.groups.${group.key}`, group.fallback)}
+                    </div>
+                    <div className="grid grid-cols-8 gap-1">
+                      {group.icons.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setIcon(emoji)}
+                          className={`p-2 text-xl rounded-md hover:bg-muted transition-colors ${
+                            icon === emoji ? 'bg-primary/20 ring-2 ring-primary' : ''
+                          }`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
