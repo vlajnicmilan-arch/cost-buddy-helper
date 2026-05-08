@@ -25,7 +25,7 @@ interface ScanningOverlayProps {
 export const ScanningOverlay = ({ visible, imageCount = 1 }: ScanningOverlayProps) => {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
-  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIP_KEYS.length));
 
   useEffect(() => {
     if (!visible) {
