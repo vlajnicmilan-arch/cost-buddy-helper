@@ -7,7 +7,7 @@ const SCANNING_STEPS = [
   { icon: ScanLine, labelKey: 'scanning.step1', fallback: 'Čitam tekst sa slike...' },
   { icon: FileText, labelKey: 'scanning.step2', fallback: 'Prepoznajem stavke i iznose...' },
   { icon: Brain, labelKey: 'scanning.step3', fallback: 'Kategoriziram transakciju...' },
-  { icon: CheckCircle2, labelKey: 'scanning.step4', fallback: 'Završavam analizu...' },
+  { icon: CheckCircle2, labelKey: 'scanning.step4', fallback: 'scanning.step4Fallback' },
 ];
 
 const TIP_KEYS = [
