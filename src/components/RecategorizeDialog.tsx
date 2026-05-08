@@ -186,12 +186,12 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
           <div className="flex-1 p-6 pt-2 space-y-4">
             <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
               <p className="text-sm text-foreground">
-                Ova funkcija prolazi kroz sve transakcije koje imaju skenirane artikle i predlaže preciznije kategorije na temelju AI analize.
+                {t('dialogs.recategorize.explanation')}
               </p>
               <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Analizira nazive artikala umjesto generičnog opisa</li>
-                <li>Predlaže promjene koje možeš prihvatiti ili odbiti</li>
-                <li>Neće mijenjati transakcije bez artikala</li>
+                <li>{t('dialogs.recategorize.bullet1')}</li>
+                <li>{t('dialogs.recategorize.bullet2')}</li>
+                <li>{t('dialogs.recategorize.bullet3')}</li>
               </ul>
             </div>
             <Button onClick={startScanning} className="w-full gap-2" size="lg">
