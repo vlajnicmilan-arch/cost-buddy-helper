@@ -388,7 +388,11 @@
       "analyzeFailed": "Analyse fehlgeschlagen",
       "notReadable": "Nicht lesbar",
       "cameraError": "Kamerafehler",
-      "galleryError": "Galeriefehler"
+      "galleryError": "Galeriefehler",
+      "tab": "Dokumente",
+      "upload": "Dokument hochladen",
+      "local": "Lokal",
+      "cloud": "Cloud"
     },
     "budgetOverview": "Budgetübersicht",
     "addExpense": "Ausgabe hinzufügen",
