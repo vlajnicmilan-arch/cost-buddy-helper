@@ -1128,7 +1128,8 @@
     "saveImageHint": "Image stays only on this device",
     "itemsFound": "Items",
     "merchant": "Merchant",
-    "dateNotFound": "Not found"
+    "dateNotFound": "Not found",
+    "analyzingPages": "Analyzing {{count}} pages..."
   },
   "summary": {
     "balance": "Balance",

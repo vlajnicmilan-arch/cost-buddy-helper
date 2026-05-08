@@ -1128,7 +1128,8 @@
     "saveImageHint": "Slika ostaje samo na ovom uređaju",
     "itemsFound": "Artikli",
     "merchant": "Trgovina",
-    "dateNotFound": "Nije pronađen"
+    "dateNotFound": "Nije pronađen",
+    "analyzingPages": "Analiziram {{count}} stranica..."
   },
   "summary": {
     "balance": "Stanje",
