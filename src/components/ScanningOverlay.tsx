@@ -10,12 +10,12 @@ const SCANNING_STEPS = [
   { icon: CheckCircle2, labelKey: 'scanning.step4', fallback: 'Završavam analizu...' },
 ];
 
-const TIPS = [
-  'Savjet: Držite račun ravno za bolji rezultat',
-  'Savjet: Dobro osvjetljenje poboljšava preciznost',
-  'Savjet: Izbjegavajte sjene preko računa',
-  'Savjet: Cijeli račun treba biti u kadru',
-];
+const TIP_KEYS = [
+  'scanning.tip1',
+  'scanning.tip2',
+  'scanning.tip3',
+  'scanning.tip4',
+] as const;
 
 interface ScanningOverlayProps {
   visible: boolean;
