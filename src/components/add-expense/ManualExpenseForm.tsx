@@ -695,7 +695,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             <SelectTrigger className="h-12 rounded-xl bg-background">
               <SelectValue placeholder={t('common.category')} />
             </SelectTrigger>
-            <SelectContent className="bg-popover z-50 max-h-[300px]">
+            <SelectContent className="bg-popover z-50 max-h-[300px]" scrollToTopOnOpen>
               <div className="border-b border-border mb-1 pb-1">
                 <SelectItem value="__add_new__" className="text-primary">
                   <span className="flex items-center gap-2">
