@@ -140,7 +140,7 @@ export const ScanningOverlay = ({ visible, imageCount = 1 }: ScanningOverlayProp
               transition={{ duration: 0.3 }}
               className="text-xs text-muted-foreground/70 italic text-center"
             >
-              💡 {TIPS[tipIndex]}
+              💡 {t(TIP_KEYS[tipIndex])}
             </motion.p>
           </AnimatePresence>
         </motion.div>
