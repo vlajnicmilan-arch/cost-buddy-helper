@@ -3247,5 +3247,32 @@
       "personal": "Osobno",
       "business": "Poslovno"
     }
+  },
+  "categoryIcons": {
+    "groups": {
+      "food": "Hrana i piće",
+      "diningOut": "Restorani i izlasci",
+      "home": "Dom",
+      "utilities": "Režije i računi",
+      "transport": "Transport",
+      "travel": "Putovanja",
+      "health": "Zdravlje i wellness",
+      "beauty": "Ljepota i njega",
+      "clothing": "Odjeća i moda",
+      "sport": "Sport i rekreacija",
+      "hobbies": "Hobiji i kreativnost",
+      "entertainment": "Zabava",
+      "education": "Edukacija",
+      "workOffice": "Posao i ured",
+      "finance": "Financije",
+      "savings": "Štednja i ciljevi",
+      "gifts": "Pokloni i prilike",
+      "family": "Djeca i obitelj",
+      "pets": "Kućni ljubimci",
+      "gardenNature": "Vrt i priroda",
+      "tech": "Tehnologija",
+      "tools": "Alat i popravci",
+      "community": "Donacije i zajednica"
+    }
   }
 }
