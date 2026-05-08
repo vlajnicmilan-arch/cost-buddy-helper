@@ -8,6 +8,7 @@ import { AlertTriangle, X } from 'lucide-react';
 import {
   DEFAULT_CATEGORY_ICONS,
   DEFAULT_CATEGORY_COLORS,
+  DEFAULT_CATEGORY_ICON_GROUPS,
 } from '@/types/customCategory';
 import {
   DEFAULT_INCOME_CATEGORY_ICONS,
@@ -111,25 +112,56 @@ export const QuickAddCategoryInline = ({
 
       <div className="space-y-1.5">
         <Label className="text-[11px] text-muted-foreground">{t('categories.quickAdd.icon', 'Ikona')}</Label>
-        <div className="grid grid-cols-6 gap-1.5">
-          {QUICK_ICONS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => setIcon(emoji)}
-              className={cn(
-                'h-9 rounded-lg flex items-center justify-center text-lg transition-all',
-                icon === emoji
-                  ? 'bg-primary/15 ring-2 ring-primary'
-                  : 'bg-background hover:bg-muted'
-              )}
-              aria-label={emoji}
-              aria-pressed={icon === emoji}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
+        {mode === 'expense' ? (
+          <div className="max-h-64 overflow-y-auto pr-1 space-y-2">
+            {DEFAULT_CATEGORY_ICON_GROUPS.map((group) => (
+              <div key={group.key} className="space-y-1">
+                <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80 px-0.5">
+                  {t(`categoryIcons.groups.${group.key}`, group.fallback)}
+                </div>
+                <div className="grid grid-cols-6 gap-1.5">
+                  {group.icons.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setIcon(emoji)}
+                      className={cn(
+                        'h-9 rounded-lg flex items-center justify-center text-lg transition-all',
+                        icon === emoji
+                          ? 'bg-primary/15 ring-2 ring-primary'
+                          : 'bg-background hover:bg-muted'
+                      )}
+                      aria-label={emoji}
+                      aria-pressed={icon === emoji}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-6 gap-1.5">
+            {QUICK_ICONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => setIcon(emoji)}
+                className={cn(
+                  'h-9 rounded-lg flex items-center justify-center text-lg transition-all',
+                  icon === emoji
+                    ? 'bg-primary/15 ring-2 ring-primary'
+                    : 'bg-background hover:bg-muted'
+                )}
+                aria-label={emoji}
+                aria-pressed={icon === emoji}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="space-y-1.5">

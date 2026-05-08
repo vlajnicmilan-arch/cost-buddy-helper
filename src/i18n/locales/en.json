@@ -3244,5 +3244,32 @@
       "personal": "Personal",
       "business": "Business"
     }
+  },
+  "categoryIcons": {
+    "groups": {
+      "food": "Food & drinks",
+      "diningOut": "Dining out",
+      "home": "Home",
+      "utilities": "Utilities & bills",
+      "transport": "Transport",
+      "travel": "Travel",
+      "health": "Health & wellness",
+      "beauty": "Beauty & care",
+      "clothing": "Clothing & fashion",
+      "sport": "Sports & recreation",
+      "hobbies": "Hobbies & creativity",
+      "entertainment": "Entertainment",
+      "education": "Education",
+      "workOffice": "Work & office",
+      "finance": "Finance",
+      "savings": "Savings & goals",
+      "gifts": "Gifts & occasions",
+      "family": "Kids & family",
+      "pets": "Pets",
+      "gardenNature": "Garden & nature",
+      "tech": "Technology",
+      "tools": "Tools & repairs",
+      "community": "Donations & community"
+    }
   }
 }

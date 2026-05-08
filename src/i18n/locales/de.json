@@ -3233,5 +3233,32 @@
       "personal": "Privat",
       "business": "Geschäftlich"
     }
+  },
+  "categoryIcons": {
+    "groups": {
+      "food": "Essen & Trinken",
+      "diningOut": "Restaurants & Ausgehen",
+      "home": "Zuhause",
+      "utilities": "Nebenkosten & Rechnungen",
+      "transport": "Transport",
+      "travel": "Reisen",
+      "health": "Gesundheit & Wellness",
+      "beauty": "Schönheit & Pflege",
+      "clothing": "Kleidung & Mode",
+      "sport": "Sport & Freizeit",
+      "hobbies": "Hobbys & Kreativität",
+      "entertainment": "Unterhaltung",
+      "education": "Bildung",
+      "workOffice": "Arbeit & Büro",
+      "finance": "Finanzen",
+      "savings": "Sparen & Ziele",
+      "gifts": "Geschenke & Anlässe",
+      "family": "Kinder & Familie",
+      "pets": "Haustiere",
+      "gardenNature": "Garten & Natur",
+      "tech": "Technologie",
+      "tools": "Werkzeug & Reparatur",
+      "community": "Spenden & Gemeinschaft"
+    }
   }
 }
