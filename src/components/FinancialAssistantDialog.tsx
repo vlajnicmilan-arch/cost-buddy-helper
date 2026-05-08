@@ -534,7 +534,7 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
                 >
                   <FileText className="w-4 h-4" />
                   <div className="text-left">
-                    <div className="font-medium text-sm">Generiraj mjesečni izvještaj</div>
+                    <div className="font-medium text-sm">{t('dialogs.financialAssistant.generateMonthlyReport')}</div>
                     <div className="text-xs opacity-80">Pregled stanja + savjeti</div>
                   </div>
                 </Button>
