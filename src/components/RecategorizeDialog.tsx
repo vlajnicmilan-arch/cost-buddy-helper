@@ -186,12 +186,12 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
           <div className="flex-1 p-6 pt-2 space-y-4">
             <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
               <p className="text-sm text-foreground">
-                Ova funkcija prolazi kroz sve transakcije koje imaju skenirane artikle i predlaže preciznije kategorije na temelju AI analize.
+                {t('dialogs.recategorize.explanation')}
               </p>
               <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Analizira nazive artikala umjesto generičnog opisa</li>
-                <li>Predlaže promjene koje možeš prihvatiti ili odbiti</li>
-                <li>Neće mijenjati transakcije bez artikala</li>
+                <li>{t('dialogs.recategorize.bullet1')}</li>
+                <li>{t('dialogs.recategorize.bullet2')}</li>
+                <li>{t('dialogs.recategorize.bullet3')}</li>
               </ul>
             </div>
             <Button onClick={startScanning} className="w-full gap-2" size="lg">
@@ -222,17 +222,17 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
               {suggestions.length === 0 ? (
                 <div className="py-12 text-center space-y-2">
                   <Check className="w-12 h-12 mx-auto text-green-500" />
-                  <p className="text-foreground font-medium">Sve kategorije su točne!</p>
-                  <p className="text-sm text-muted-foreground">AI nije pronašao transakcije kojima treba promijeniti kategoriju.</p>
+                  <p className="text-foreground font-medium">{t('dialogs.recategorize.allCorrectTitle')}</p>
+                  <p className="text-sm text-muted-foreground">{t('dialogs.recategorize.allCorrectDesc')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      Pronađeno <span className="font-medium text-foreground">{suggestions.length}</span> prijedloga
+                      {t('dialogs.recategorize.foundSuggestions')} <span className="font-medium text-foreground">{suggestions.length}</span> {t('dialogs.recategorize.suggestionsLabel')}
                     </p>
                     <Button variant="ghost" size="sm" onClick={toggleAll} className="text-xs">
-                      {suggestions.every(s => s.accepted) ? 'Odznači sve' : 'Označi sve'}
+                      {suggestions.every(s => s.accepted) ? t('dialogs.recategorize.deselectAll') : t('dialogs.recategorize.selectAll')}
                     </Button>
                   </div>
                   <ScrollArea className="h-[40vh]">

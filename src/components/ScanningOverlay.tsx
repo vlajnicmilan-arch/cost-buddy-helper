@@ -7,15 +7,15 @@ const SCANNING_STEPS = [
   { icon: ScanLine, labelKey: 'scanning.step1', fallback: 'Čitam tekst sa slike...' },
   { icon: FileText, labelKey: 'scanning.step2', fallback: 'Prepoznajem stavke i iznose...' },
   { icon: Brain, labelKey: 'scanning.step3', fallback: 'Kategoriziram transakciju...' },
-  { icon: CheckCircle2, labelKey: 'scanning.step4', fallback: 'Završavam analizu...' },
+  { icon: CheckCircle2, labelKey: 'scanning.step4', fallback: 'scanning.step4Fallback' },
 ];
 
-const TIPS = [
-  'Savjet: Držite račun ravno za bolji rezultat',
-  'Savjet: Dobro osvjetljenje poboljšava preciznost',
-  'Savjet: Izbjegavajte sjene preko računa',
-  'Savjet: Cijeli račun treba biti u kadru',
-];
+const TIP_KEYS = [
+  'scanning.tip1',
+  'scanning.tip2',
+  'scanning.tip3',
+  'scanning.tip4',
+] as const;
 
 interface ScanningOverlayProps {
   visible: boolean;
@@ -25,7 +25,7 @@ interface ScanningOverlayProps {
 export const ScanningOverlay = ({ visible, imageCount = 1 }: ScanningOverlayProps) => {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
-  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIP_KEYS.length));
 
   useEffect(() => {
     if (!visible) {
@@ -52,7 +52,7 @@ export const ScanningOverlay = ({ visible, imageCount = 1 }: ScanningOverlayProp
   useEffect(() => {
     if (!visible) return;
     const interval = setInterval(() => {
-      setTipIndex(prev => (prev + 1) % TIPS.length);
+      setTipIndex(prev => (prev + 1) % TIP_KEYS.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [visible]);
@@ -86,10 +86,10 @@ export const ScanningOverlay = ({ visible, imageCount = 1 }: ScanningOverlayProp
           {/* Title */}
           <p className="text-lg font-semibold text-foreground mb-1">
             {imageCount > 1
-              ? `Analiziram ${imageCount} stranica...`
-              : 'Analiziram račun...'}
+              ? t('scanner.analyzingPages', { count: imageCount, defaultValue: `Analiziram ${imageCount} stranica...` })
+              : t('scanning.analyzingReceipt')}
           </p>
-          <p className="text-xs text-muted-foreground mb-6">Ovo može potrajati do 30 sekundi</p>
+          <p className="text-xs text-muted-foreground mb-6">{t('scanning.canTakeUpTo30s')}</p>
 
           {/* Progress steps */}
           <div className="w-full max-w-xs space-y-3 mb-6">
@@ -140,7 +140,7 @@ export const ScanningOverlay = ({ visible, imageCount = 1 }: ScanningOverlayProp
               transition={{ duration: 0.3 }}
               className="text-xs text-muted-foreground/70 italic text-center"
             >
-              💡 {TIPS[tipIndex]}
+              💡 {t(TIP_KEYS[tipIndex])}
             </motion.p>
           </AnimatePresence>
         </motion.div>

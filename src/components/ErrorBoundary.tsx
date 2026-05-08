@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import i18n from 'i18next';
 import { Button } from '@/components/ui/button';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { captureSentryException } from '@/lib/sentry';
@@ -83,15 +84,15 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-foreground">Ups, nešto je pošlo po krivu</h1>
+              <h1 className="text-2xl font-bold text-foreground">{i18n.t('dialogs.errorBoundary.title')}</h1>
               <p className="text-muted-foreground text-sm">
-                Došlo je do neočekivane greške. Pokušajte osvježiti stranicu ili se vratite na početnu.
+                {i18n.t('dialogs.errorBoundary.description')}
               </p>
             </div>
 
             {this.state.error && (
               <details className="text-left bg-muted rounded-lg p-3 text-xs text-muted-foreground">
-                <summary className="cursor-pointer font-medium mb-1">Tehnički detalji</summary>
+                <summary className="cursor-pointer font-medium mb-1">{i18n.t('dialogs.errorBoundary.technicalDetails')}</summary>
                 <pre className="whitespace-pre-wrap break-all mt-2">
                   {this.state.error.message}
                 </pre>
@@ -101,11 +102,11 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col gap-3">
               <Button onClick={this.handleReload} className="gap-2">
                 <RefreshCw className="w-4 h-4" />
-                Osvježi stranicu
+                {i18n.t('dialogs.errorBoundary.refresh')}
               </Button>
               <Button variant="outline" onClick={this.handleGoHome} className="gap-2">
                 <Home className="w-4 h-4" />
-                Idi na početnu
+                {i18n.t('dialogs.errorBoundary.goHome')}
               </Button>
             </div>
           </div>

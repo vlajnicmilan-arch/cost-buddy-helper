@@ -383,7 +383,20 @@
       "modeCloud": "Oblak",
       "modeHint": "Lokalno = samo na ovom uređaju · Oblak = dijeljeno sa svim članovima",
       "cameraError": "Greška pri korištenju kamere",
-      "galleryError": "Greška pri odabiru slike"
+      "galleryError": "Greška pri odabiru slike",
+      "tabDocuments": "Dokumenti",
+      "tabPhotos": "Fotografije",
+      "uploading": "Učitavam...",
+      "noPhotos": "Nema fotografija",
+      "noPhotosHint": "Slikaj napredak ili dodaj fotografije iz galerije",
+      "captureProgress": "Slikaj napredak",
+      "fromGallery": "Iz galerije",
+      "photosHint": "Fotografije se spremaju u oblak ako je projekt podijeljen",
+      "kindReceipt": "Račun",
+      "aiAnalysis": "AI analiza",
+      "analyzed": "Analizirano",
+      "analyzeFailed": "Analiza neuspješna",
+      "notReadable": "Nečitljivo"
     },
     "budgetOverview": "Pregled budžeta",
     "addExpense": "Dodaj trošak",
@@ -762,7 +775,10 @@
     "bulkDeleted": "Obrisano {{count}} transakcija",
     "expenseNature": "Vrsta troška",
     "assignToBudget": "Pridruži budžetu",
-    "noBudget": "Bez budžeta"
+    "noBudget": "Bez budžeta",
+    "toAccountLabel": "📥 Na račun (kamo)",
+    "selectDestinationAccount": "Odaberi odredišni račun",
+    "noDestination": "Bez odredišta"
   },
   "dashboard": {
     "balance": "Stanje",
@@ -1112,7 +1128,8 @@
     "saveImageHint": "Slika ostaje samo na ovom uređaju",
     "itemsFound": "Artikli",
     "merchant": "Trgovina",
-    "dateNotFound": "Nije pronađen"
+    "dateNotFound": "Nije pronađen",
+    "analyzingPages": "Analiziram {{count}} stranica..."
   },
   "summary": {
     "balance": "Stanje",
@@ -1237,7 +1254,9 @@
     "customCategories": "Prilagođene kategorije",
     "selectTransactionsAndCategory": "Odaberite transakcije i novu kategoriju",
     "updatedTransactions": "Ažurirano {{count}} transakcija na \"{{name}}\"",
-    "updateError": "Greška pri ažuriranju transakcija"
+    "updateError": "Greška pri ažuriranju transakcija",
+    "bulkUpdatePaymentSourceTitle": "Grupno ažuriranje izvora plaćanja",
+    "bulkUpdateCategoryTitle": "Grupno ažuriranje kategorija"
   },
   "filters": {
     "filters": "Filteri",
@@ -2076,7 +2095,11 @@
     "overdue": "Dospjelo",
     "deleteTitle": "Obriši ponavljajuću transakciju?",
     "deleteDesc": "Ovo neće utjecati na već generirane transakcije.",
-    "transferDisplay": "↔️ Prijenos"
+    "transferDisplay": "↔️ Prijenos",
+    "exact": "Točan",
+    "possible": "Moguć",
+    "monthlyShort": "mjesečno",
+    "weeklyShort": "tjedno"
   },
   "help": {
     "title": "Upute za korištenje",
@@ -3274,5 +3297,68 @@
       "tools": "Alat i popravci",
       "community": "Donacije i zajednica"
     }
+  },
+  "dialogs": {
+    "recategorize": {
+      "explanation": "Ova funkcija prolazi kroz sve transakcije koje imaju skenirane artikle i predlaže preciznije kategorije na temelju AI analize.",
+      "bullet1": "Analizira nazive artikala umjesto generičnog opisa",
+      "bullet2": "Predlaže promjene koje možeš prihvatiti ili odbiti",
+      "bullet3": "Neće mijenjati transakcije bez artikala",
+      "allCorrectTitle": "Sve kategorije su točne!",
+      "allCorrectDesc": "AI nije pronašao transakcije kojima treba promijeniti kategoriju.",
+      "foundSuggestions": "Pronađeno",
+      "suggestionsLabel": "prijedloga",
+      "deselectAll": "Odznači sve",
+      "selectAll": "Označi sve"
+    },
+    "financialAssistant": {
+      "loadingConversation": "Učitavam razgovor...",
+      "generateMonthlyReport": "Generiraj mjesečni izvještaj",
+      "thinking": "Asistent razmišlja..."
+    },
+    "bank": {
+      "checkOwner": "Provjeri vlasnika računa",
+      "importingBusinessConfirm": "Trenutno uvoziš u <1>poslovni profil</1>. Je li to ispravno?",
+      "possibleDuplicate_one": "{{count}} mogući duplikat (±3 dana)",
+      "possibleDuplicate_other": "{{count}} mogućih duplikata (±3 dana)",
+      "duplicatesMarkedHint": "Duplikati će biti označeni pri uvozu. Moći ćeš odabrati koje želiš uvesti.",
+      "safeDuplicatesSkipped": "{{count}} sigurnih duplikata (automatski preskočeno)",
+      "possibleDuplicatesWarning": "⚠️ Mogući duplikati (±3 dana, isti iznos):",
+      "compareAndSelect": "Usporedi i odaberi koje želiš uvesti:",
+      "existing": "Postojeća"
+    },
+    "paymentSource": {
+      "pdfProcessing": "AI obrađuje PDF i prepoznaje transakcije. To može potrajati do 30 sekundi.",
+      "allAssignedToSource": "ℹ️ Sve transakcije će biti dodijeljene izvoru: <1>{{name}}</1>",
+      "nextLabel": "Sljedeća"
+    },
+    "detectedPartners": {
+      "partnerUpdated_one": "{{count}} partner ažuriran",
+      "partnerUpdated_other": "{{count}} partnera ažurirano",
+      "noPartnersFound": "Nije pronađen nijedan partner u transakcijama.",
+      "existingCount_one": "{{count}} postojeći",
+      "existingCount_other": "{{count}} postojećih",
+      "existing": "Postojeći",
+      "lookingUp": "Pretražujem registar...",
+      "fetchFromRegistry": "Dohvati iz sudskog registra",
+      "postalCode": "Poštanski broj",
+      "skip": "Preskoči"
+    },
+    "errorBoundary": {
+      "title": "Ups, nešto je pošlo po krivu",
+      "description": "Došlo je do neočekivane greške. Pokušajte osvježiti stranicu ili se vratite na početnu.",
+      "technicalDetails": "Tehnički detalji",
+      "refresh": "Osvježi stranicu",
+      "goHome": "Idi na početnu"
+    }
+  },
+  "scanning": {
+    "step4Fallback": "Završavam analizu...",
+    "tip1": "Savjet: Držite račun ravno za bolji rezultat",
+    "tip2": "Savjet: Dobro osvjetljenje poboljšava preciznost",
+    "tip3": "Savjet: Izbjegavajte sjene preko računa",
+    "tip4": "Savjet: Cijeli račun treba biti u kadru",
+    "analyzingReceipt": "Analiziram račun...",
+    "canTakeUpTo30s": "Ovo može potrajati do 30 sekundi"
   }
 }

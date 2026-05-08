@@ -22,6 +22,7 @@ import aiAvatarImage from '@/assets/ai-avatar.webp';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useTranslation } from 'react-i18next';
 
 interface BudgetInfo {
   name: string;
@@ -68,6 +69,7 @@ export const FinancialAssistantDialog = ({
   hideTrigger = false,
   businessProfileName: propBusinessProfileName,
 }: FinancialAssistantDialogProps) => {
+  const { t } = useTranslation();
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canAccessAI = hasAccess('ai_assistant');
   const { activeBusinessProfileId, businessModeEnabled, emitAvatarEvent } = useAppState();
@@ -468,7 +470,7 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
           ) : isLoadingHistory ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-sm text-muted-foreground">Učitavam razgovor...</span>
+              <span className="ml-2 text-sm text-muted-foreground">{t('dialogs.financialAssistant.loadingConversation')}</span>
             </div>
           ) : messages.length === 0 ? (
             <div className="space-y-4">
@@ -532,7 +534,7 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
                 >
                   <FileText className="w-4 h-4" />
                   <div className="text-left">
-                    <div className="font-medium text-sm">Generiraj mjesečni izvještaj</div>
+                    <div className="font-medium text-sm">{t('dialogs.financialAssistant.generateMonthlyReport')}</div>
                     <div className="text-xs opacity-80">Pregled stanja + savjeti</div>
                   </div>
                 </Button>
@@ -574,7 +576,7 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
               {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Asistent razmišlja...</span>
+                  <span className="text-sm">{t('dialogs.financialAssistant.thinking')}</span>
                 </div>
               )}
             </div>
