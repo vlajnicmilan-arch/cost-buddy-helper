@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import i18n from 'i18next';
 import { Button } from '@/components/ui/button';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { captureSentryException } from '@/lib/sentry';
