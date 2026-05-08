@@ -470,7 +470,7 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
           ) : isLoadingHistory ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-sm text-muted-foreground">Učitavam razgovor...</span>
+              <span className="ml-2 text-sm text-muted-foreground">{t('dialogs.financialAssistant.loadingConversation')}</span>
             </div>
           ) : messages.length === 0 ? (
             <div className="space-y-4">
