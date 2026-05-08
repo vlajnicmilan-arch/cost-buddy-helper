@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isChunkLoadError } from '@/lib/chunkLoadError';
 
 export type PulseRange = '5min' | '1h' | '24h' | '7d';
 export type PulseSeverity = 'critical' | 'error' | 'warning' | 'info';
@@ -161,6 +162,8 @@ export const usePulseMetrics = (range: PulseRange = '24h') => {
       const issueBuckets = new Map<string, Bucket>();
       for (const ev of (issuesRes.data ?? []) as any[]) {
         const message = String(ev.details?.message ?? ev.event);
+        // Skip stale lazy-chunk errors — auto-recovered, not real issues.
+        if (isChunkLoadError(message)) continue;
         const route = ev.route ?? '?';
         const sigKey = `${ev.event}::${message.slice(0, 200)}`;
         const occurrenceCount = Number(ev.details?.count ?? 1); // dedup count from logger

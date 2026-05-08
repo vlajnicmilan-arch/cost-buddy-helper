@@ -1,94 +1,47 @@
 
+## Što sam našao u Pulse-u
+
+Najnoviji "crash" (08.05. 04:28, app v1.2.0, /auth):
+```
+TypeError: Failed to fetch dynamically imported module: .../src/pages/Auth.tsx
+```
+
+**Ovo nije bug u kodu.** Klasičan **stale lazy-chunk** problem:
+1. Korisnikov preview/PWA imao u memoriji staru verziju `index.html` koja referencira `Auth.tsx?hash=ABC`
+2. U međuvremenu deploy → novi hash `DEF`, stari URL više ne postoji
+3. `React.lazy(() => import('./pages/Auth'))` baca `TypeError: Failed to fetch dynamically imported module`
+4. ErrorBoundary uhvati → severity=`critical` → **email alert** (lažna uzbuna)
+
+Dokazi: stack je čist Vite/Browser bez naše logike, route je lazy-loadan, console pokazuje `[vite] server connection lost` neposredno prije, isti tip greške već viđen 04.05. (App.tsx).
+
 ## Cilj
 
-Picker ikona u `QuickAddCategoryInline` (i drugdje gdje se koristi `DEFAULT_CATEGORY_ICONS`) proširiti na ~150 ikona s vidljivim naslovima grupa, balansirano po sekcijama i bez semantičkih duplikata.
+Stale-chunk error treba **tiho samo-popraviti** (jednokratni reload) umjesto: prikaza crash UI-a, slanja maila, i logiranja kao critical.
 
-## Što se mijenja
+## Implementacija
 
-### 1. `src/types/customCategory.ts`
-Refaktorirati `DEFAULT_CATEGORY_ICONS` iz `string[]` u **grupiranu strukturu**:
+### 1. Novi helper `src/lib/chunkLoadError.ts`
+- `isChunkLoadError(err)` — prepoznaje sve varijante poruke (Chrome/Safari/Firefox + `ChunkLoadError`)
+- `tryRecoverFromChunkError(err)` — uz `sessionStorage` loop-guard (30 s) okida `window.location.reload()`; vraća `true` ako je recovery pokrenut
 
-```ts
-export interface CategoryIconGroup {
-  key: string;        // i18n ključ, npr. "categoryIcons.groups.food"
-  icons: string[];
-}
+### 2. `src/components/ErrorBoundary.tsx`
+- U `componentDidCatch`: na početku `if (tryRecoverFromChunkError(error)) return;` — preskače log, Sentry i `notifyCrash`
 
-export const DEFAULT_CATEGORY_ICON_GROUPS: CategoryIconGroup[] = [...];
+### 3. `src/lib/diagnosticLogger.ts`
+- U `window.error` i `unhandledrejection` listenerima: prvo `tryRecoverFromChunkError(...)` → `return` ako true (uklanja `window_error` i `unhandled_rejection` šum iz Pulse-a)
 
-// Backward compat - flat lista za stari kod
-export const DEFAULT_CATEGORY_ICONS = DEFAULT_CATEGORY_ICON_GROUPS.flatMap(g => g.icons);
-```
+### 4. `src/lib/sentry.ts`
+- Dodati / proširiti `beforeSend` da vraća `null` kad je exception chunk-load error (čisti i Sentry dashboard)
 
-### 2. Sekcije i ikone (~150 ukupno)
-
-| Grupa (i18n) | Ikone |
-|---|---|
-| **Hrana i piće** (8) | 🛒 ☕ 🍕 🍣 🥗 🍷 🍰 🍺 |
-| **Restorani i izlasci** (6) | 🍽️ 🥡 🍻 🍹 🥂 🧋 |
-| **Dom** (10) | 🏠 🛋️ 🛏️ 🪑 🛁 🚿 💡 🔌 🧹 🧯 |
-| **Režije i računi** (8) | 💧 🔥 ⚡ 📡 📞 🗑️ 🧾 🏦 |
-| **Transport** (10) | 🚗 ⛽ 🚌 🚆 🚲 🛵 🏍️ ✈️ 🛳️ 🅿️ |
-| **Putovanja** (8) | 🧳 🏕️ 🏖️ 🏔️ 🏝️ 🗺️ 🧭 🎒 |
-| **Zdravlje i wellness** (10) | 💊 🏥 🩺 💉 🦷 👓 🧘 🏋️ 💆 🧴 |
-| **Ljepota i njega** (6) | 💇 💅 💄 🪒 🧼 🪞 |
-| **Odjeća i moda** (8) | 👕 👗 👟 👜 ⌚ 💍 🧥 👠 |
-| **Sport i rekreacija** (10) | ⚽ 🏀 🎾 🏊 🚴 🏃 ⛳ 🥋 🎿 🏂 |
-| **Hobiji i kreativnost** (10) | 🎨 🎸 🎻 🎤 🎲 ♟️ 🧩 🧶 🪡 📷 |
-| **Zabava** (10) | 🎮 🎬 🎵 🎭 📺 🎟️ 🎢 🎪 🃏 🎰 |
-| **Edukacija** (8) | 📚 🎓 📝 🏫 🔬 🧪 🌐 ✏️ |
-| **Posao i ured** (10) | 💼 🖥️ 📱 🖨️ 📅 📂 📎 ✂️ 🗂️ 📋 |
-| **Financije** (8) | 💰 📊 📈 💳 💸 🏧 🧾 📉 |
-| **Štednja i ciljevi** (6) | 🎯 ⭐ 🏆 💎 🐷 🪙 |
-| **Pokloni i prilike** (8) | 🎁 🎂 💐 🎊 🍾 🎀 💌 🪅 |
-| **Djeca i obitelj** (8) | 👶 🧸 🍼 🎠 🎒 🏫 🚸 🪀 |
-| **Kućni ljubimci** (6) | 🐕 🐈 🐠 🐦 🦴 🐾 |
-| **Vrt i priroda** (8) | 🌱 🪴 🌳 🌻 🌵 🍂 🐝 🦋 |
-| **Tehnologija** (8) | 💻 ⌨️ 🖱️ 🎧 🔋 🛜 💾 🛰️ |
-| **Alat i popravci** (8) | 🔧 🔨 ⚙️ 🧰 📦 🪛 🪚 🧱 |
-| **Donacije i zajednica** (6) | 🤝 🕊️ 🛐 ⛪ 🎗️ ❤️ |
-
-**Ukupno: ~152 ikone**, hrana/restorani svedeno s 14 → 14 (ali raspodijeljeno u 2 jasne grupe), dodane potpuno nove kategorije: Sport, Hobiji, Vrt, Tech, Donacije, Ljepota, Štednja, Režije.
-
-### 3. `QuickAddCategoryInline` (icon picker dio)
-Promijeniti renderiranje:
-- Prije: `<div className="grid grid-cols-6">{DEFAULT_CATEGORY_ICONS.map(...)}</div>`
-- Poslije: `DEFAULT_CATEGORY_ICON_GROUPS.map(group => (<><h4>{t(group.key)}</h4><div className="grid grid-cols-6">{group.icons.map(...)}</div></>))`
-
-Naslov: `text-xs font-medium text-muted-foreground mt-3 mb-1.5`. Picker je već scrollable container.
-
-### 4. i18n (`hr.json`, `en.json`, `de.json`)
-Dodati `categoryIcons.groups.*` ključeve za 23 sekcije.
-
-Primjer (hr):
-```json
-"categoryIcons": {
-  "groups": {
-    "food": "Hrana i piće",
-    "diningOut": "Restorani i izlasci",
-    "home": "Dom",
-    "utilities": "Režije i računi",
-    "transport": "Transport",
-    ...
-  }
-}
-```
+### 5. Pulse filter (bonus, preporučeno)
+- U `src/hooks/usePulseMetrics.ts` filtrirati postojeće zapise gdje `details.message` matcha `isChunkLoadError`, da se i historijski lažni "criticali" više ne prikazuju u Top Issues
 
 ## Što se NE mijenja
-
-- `DEFAULT_CATEGORY_COLORS` — ostaje
-- Logika spremanja kategorije (`useCustomCategories`) — ne dira se
-- Postojeće korisničke kategorije s emoji ikonama koje više nisu u defaultu (npr. 🍔, 🥩) ostaju netaknute u DB
-- Ostala mjesta koja importaju `DEFAULT_CATEGORY_ICONS` rade dalje (backward compat flat array)
-- `useCustomIncomeCategories` picker — ako koristi istu listu, automatski dobiva novu strukturu
+- `notify-crash` edge funkcija (ostaje za prave crasheve)
+- Pulse UI, layout, i18n stringovi
+- Lazy import logika u `App.tsx`
+- Bez DB migracija, bez novih dependencija
 
 ## Tehničke napomene
-
-- Bez DB migracije
-- Bez novih dependencija
-- Picker već ima fiksnu visinu i `overflow-y-auto`, dodatne sekcije samo produže scroll
-- 6 ikona po retku × max 10 ikona = max ~2 retka po grupi → vizualno čisto na 384px
-
-## Otvoreno pitanje
-
-Ima li slučajeva gdje se `DEFAULT_CATEGORY_ICONS` koristi i izvan picker-a (npr. random fallback ikona)? Tijekom implementacije provjerit ću `rg "DEFAULT_CATEGORY_ICONS"` i prilagoditi ako treba.
+- 30 s `sessionStorage` guard sprječava reload-loop ako reload ne riješi problem (npr. server stvarno down) — tada ErrorBoundary preuzima normalno
+- Hard `location.reload()` dohvaća svjež `index.html` s novim chunk URL-ovima; ovo je standardni Vite pattern za stale chunk
