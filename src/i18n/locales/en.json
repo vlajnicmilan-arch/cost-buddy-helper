@@ -305,7 +305,8 @@
       "recordingStarted": "Recording started — speak now...",
       "recordingStopped": "Recording stopped",
       "iosNotSupported": "Voice input doesn't work on iPhone Safari. Use the keyboard.",
-      "startFailed": "Could not start recording. Please try again."
+      "startFailed": "Could not start recording. Please try again.",
+      "applied_few": "{{count}} work entries saved"
     },
     "deleteConfirmDescription": "This action cannot be undone.",
     "noProjectsBusiness": "Create a new project or import from personal finances.",
@@ -342,7 +343,9 @@
       "aiWarning": {
         "yellow": "Margin low · {{pct}}% — cut costs",
         "red": "Margin critical · {{pct}}% — act now"
-      }
+      },
+      "daysLeft_few": "{{count}} d left",
+      "overdueDays_few": "{{count}} d overdue"
     },
     "statusLine": {
       "paused": "Paused",
@@ -380,7 +383,20 @@
       "modeCloud": "Cloud",
       "modeHint": "Local = this device only · Cloud = shared with all members",
       "cameraError": "Camera error",
-      "galleryError": "Gallery error"
+      "galleryError": "Gallery error",
+      "tabDocuments": "Documents",
+      "tabPhotos": "Photos",
+      "uploading": "Uploading...",
+      "noPhotos": "No photos",
+      "noPhotosHint": "Take a progress photo or add from gallery",
+      "captureProgress": "Capture progress",
+      "fromGallery": "From gallery",
+      "photosHint": "Photos are stored in cloud if the project is shared",
+      "kindReceipt": "Receipt",
+      "aiAnalysis": "AI analysis",
+      "analyzed": "Analyzed",
+      "analyzeFailed": "Analysis failed",
+      "notReadable": "Not readable"
     },
     "budgetOverview": "Budget Overview",
     "addExpense": "Add Expense",
@@ -759,7 +775,10 @@
     "transactionsCountFiltered": "{{filtered}} / {{total}}",
     "bulkCategoryChanged": "Category changed for {{count}} transactions",
     "bulkSourceChanged": "Payment source changed for {{count}} transactions",
-    "bulkDeleted": "Deleted {{count}} transactions"
+    "bulkDeleted": "Deleted {{count}} transactions",
+    "toAccountLabel": "📥 To account (destination)",
+    "selectDestinationAccount": "Select destination account",
+    "noDestination": "No destination"
   },
   "dashboard": {
     "balance": "Balance",
@@ -1234,7 +1253,9 @@
     "customCategories": "Custom categories",
     "selectTransactionsAndCategory": "Select transactions and a new category",
     "updatedTransactions": "Updated {{count}} transactions to \"{{name}}\"",
-    "updateError": "Error updating transactions"
+    "updateError": "Error updating transactions",
+    "bulkUpdatePaymentSourceTitle": "Bulk update payment source",
+    "bulkUpdateCategoryTitle": "Bulk update categories"
   },
   "filters": {
     "filters": "Filters",
@@ -2203,7 +2224,11 @@
     "overdue": "Overdue",
     "deleteTitle": "Delete recurring transaction?",
     "deleteDesc": "This won't affect already generated transactions.",
-    "transferDisplay": "↔️ Transfer"
+    "transferDisplay": "↔️ Transfer",
+    "exact": "Exact",
+    "possible": "Possible",
+    "monthlyShort": "monthly",
+    "weeklyShort": "weekly"
   },
   "paymentSourceMembers": {
     "title": "Account members \"{{name}}\"",
@@ -3271,5 +3296,68 @@
       "tools": "Tools & repairs",
       "community": "Donations & community"
     }
+  },
+  "dialogs": {
+    "recategorize": {
+      "explanation": "This feature scans all transactions with scanned items and suggests more precise categories based on AI analysis.",
+      "bullet1": "Analyzes item names instead of generic descriptions",
+      "bullet2": "Suggests changes you can accept or reject",
+      "bullet3": "Will not modify transactions without items",
+      "allCorrectTitle": "All categories are correct!",
+      "allCorrectDesc": "AI did not find any transactions that need recategorization.",
+      "foundSuggestions": "Found",
+      "suggestionsLabel": "suggestions",
+      "deselectAll": "Deselect all",
+      "selectAll": "Select all"
+    },
+    "financialAssistant": {
+      "loadingConversation": "Loading conversation...",
+      "generateMonthlyReport": "Generate monthly report",
+      "thinking": "Assistant is thinking..."
+    },
+    "bank": {
+      "checkOwner": "Check account owner",
+      "importingBusinessConfirm": "You are currently importing into a <1>business profile</1>. Is that correct?",
+      "possibleDuplicate_one": "{{count}} possible duplicate (±3 days)",
+      "possibleDuplicate_other": "{{count}} possible duplicates (±3 days)",
+      "duplicatesMarkedHint": "Duplicates will be flagged on import. You can choose which ones to import.",
+      "safeDuplicatesSkipped": "{{count}} safe duplicates (auto-skipped)",
+      "possibleDuplicatesWarning": "⚠️ Possible duplicates (±3 days, same amount):",
+      "compareAndSelect": "Compare and choose which to import:",
+      "existing": "Existing"
+    },
+    "paymentSource": {
+      "pdfProcessing": "AI is processing the PDF and detecting transactions. This may take up to 30 seconds.",
+      "allAssignedToSource": "ℹ️ All transactions will be assigned to source: <1>{{name}}</1>",
+      "nextLabel": "Next"
+    },
+    "detectedPartners": {
+      "partnerUpdated_one": "{{count}} partner updated",
+      "partnerUpdated_other": "{{count}} partners updated",
+      "noPartnersFound": "No partners found in transactions.",
+      "existingCount_one": "{{count}} existing",
+      "existingCount_other": "{{count}} existing",
+      "existing": "Existing",
+      "lookingUp": "Searching registry...",
+      "fetchFromRegistry": "Fetch from court registry",
+      "postalCode": "Postal code",
+      "skip": "Skip"
+    },
+    "errorBoundary": {
+      "title": "Oops, something went wrong",
+      "description": "An unexpected error occurred. Try refreshing the page or return to the home screen.",
+      "technicalDetails": "Technical details",
+      "refresh": "Refresh page",
+      "goHome": "Go to home"
+    }
+  },
+  "scanning": {
+    "step4Fallback": "Finalizing analysis...",
+    "tip1": "Tip: Hold the receipt flat for better results",
+    "tip2": "Tip: Good lighting improves accuracy",
+    "tip3": "Tip: Avoid shadows over the receipt",
+    "tip4": "Tip: The entire receipt should be in frame",
+    "analyzingReceipt": "Analyzing receipt...",
+    "canTakeUpTo30s": "This can take up to 30 seconds"
   }
 }

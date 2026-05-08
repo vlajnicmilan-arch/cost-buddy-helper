@@ -301,7 +301,8 @@
       "recordingStarted": "Aufnahme gestartet — sprechen Sie jetzt...",
       "recordingStopped": "Aufnahme gestoppt",
       "iosNotSupported": "Spracheingabe funktioniert nicht auf iPhone Safari. Verwenden Sie die Tastatur.",
-      "startFailed": "Aufnahme konnte nicht gestartet werden. Bitte erneut versuchen."
+      "startFailed": "Aufnahme konnte nicht gestartet werden. Bitte erneut versuchen.",
+      "applied_few": "{{count}} Arbeitseinträge gespeichert"
     },
     "deleteConfirmDescription": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "noProjectsBusiness": "Erstellen Sie ein neues Projekt oder importieren Sie aus den persönlichen Finanzen.",
@@ -338,7 +339,9 @@
       "aiWarning": {
         "yellow": "Marge niedrig · {{pct}}% — Kosten senken",
         "red": "Marge kritisch · {{pct}}% — sofort handeln"
-      }
+      },
+      "daysLeft_few": "{{count}} T verbleibend",
+      "overdueDays_few": "{{count}} T überfällig"
     },
     "statusLine": {
       "paused": "Pausiert",
@@ -362,7 +365,7 @@
     },
     "documents": {
       "tabDocuments": "Dokumente",
-      "tabPhotos": "Fototagebuch",
+      "tabPhotos": "Fotos",
       "takePhoto": "Aufnehmen",
       "gallery": "Galerie",
       "file": "Datei",
@@ -373,17 +376,17 @@
       "uploading": "Wird hochgeladen...",
       "noDocuments": "Keine Dokumente",
       "noDocumentsHint": "Fügen Sie Belege, Verträge, Bilder oder andere Dateien hinzu.",
-      "noPhotos": "Keine Fortschrittsfotos",
-      "noPhotosHint": "Erfassen Sie den Arbeitsstand, um ein chronologisches Tagebuch zu führen.",
+      "noPhotos": "Keine Fotos",
+      "noPhotosHint": "Fotografiere den Fortschritt oder füge aus der Galerie hinzu",
       "captureProgress": "Fortschritt aufnehmen",
       "fromGallery": "Aus Galerie",
-      "photosHint": "Fotos werden lokal mit GPS-Standort und Aufnahmedatum gespeichert.",
+      "photosHint": "Fotos werden in der Cloud gespeichert, wenn das Projekt geteilt ist",
       "kindReceipt": "Beleg",
       "aiAnalysis": "KI-Analyse",
       "analyze": "KI-Analyse",
-      "analyzed": "Analyse gespeichert",
+      "analyzed": "Analysiert",
       "analyzeFailed": "Analyse fehlgeschlagen",
-      "notReadable": "Dokument nicht lesbar",
+      "notReadable": "Nicht lesbar",
       "cameraError": "Kamerafehler",
       "galleryError": "Galeriefehler"
     },
@@ -432,7 +435,10 @@
     "workers": "Arbeiter",
     "collaborators": "Mitwirkende",
     "tooltips": {
-      "projectTeam": "Alle Personen im Projekt: App-Mitglieder, Arbeiter und externe Mitwirkende"
+      "projectTeam": "Alle Personen im Projekt: App-Mitglieder, Arbeiter und externe Mitwirkende",
+      "team": "Teammitglieder",
+      "workers": "Arbeiter",
+      "collaborators": "Mitwirkende"
     },
     "invitationsDisabledClosed": "Projekt ist abgeschlossen oder archiviert — Einladungen sind nicht möglich.",
     "complete": {
@@ -462,6 +468,23 @@
       "recommended": "Empfohlen",
       "finishCta": "Projekt abschließen",
       "success": "Projekt abgeschlossen"
+    },
+    "onboarding": {
+      "title": "Projekte",
+      "subtitle": "Verwalte Renovierungen, Kundenarbeit oder persönliche Vorhaben"
+    },
+    "quickStart": {
+      "renovation": "Renovierung",
+      "renovationDesc": "Hausumbau oder Renovierung",
+      "client": "Kundenprojekt",
+      "clientDesc": "Auftragsarbeit für Kunden",
+      "personal": "Persönlich",
+      "personalDesc": "Eigene Projekte oder Hobbys"
+    },
+    "tabs": {
+      "work": "Arbeit",
+      "people": "Personen",
+      "money": "Finanzen"
     }
   },
   "estimates": {
@@ -748,7 +771,10 @@
     "transactionsCountFiltered": "{{filtered}} / {{total}}",
     "bulkCategoryChanged": "Kategorie für {{count}} Transaktionen geändert",
     "bulkSourceChanged": "Zahlungsquelle für {{count}} Transaktionen geändert",
-    "bulkDeleted": "{{count}} Transaktionen gelöscht"
+    "bulkDeleted": "{{count}} Transaktionen gelöscht",
+    "toAccountLabel": "📥 Auf Konto (Ziel)",
+    "selectDestinationAccount": "Zielkonto auswählen",
+    "noDestination": "Kein Ziel"
   },
   "dashboard": {
     "balance": "Kontostand",
@@ -1223,7 +1249,9 @@
     "customCategories": "Benutzerdefinierte Kategorien",
     "selectTransactionsAndCategory": "Transaktionen und eine neue Kategorie auswählen",
     "updatedTransactions": "{{count}} Transaktionen auf \"{{name}}\" aktualisiert",
-    "updateError": "Fehler beim Aktualisieren der Transaktionen"
+    "updateError": "Fehler beim Aktualisieren der Transaktionen",
+    "bulkUpdatePaymentSourceTitle": "Massen-Aktualisierung der Zahlungsquelle",
+    "bulkUpdateCategoryTitle": "Massen-Aktualisierung der Kategorien"
   },
   "filters": {
     "filters": "Filter",
@@ -2062,7 +2090,11 @@
     "overdue": "Überfällig",
     "deleteTitle": "Wiederkehrende Transaktion löschen?",
     "deleteDesc": "Dies hat keinen Einfluss auf bereits generierte Transaktionen.",
-    "transferDisplay": "↔️ Überweisung"
+    "transferDisplay": "↔️ Überweisung",
+    "exact": "Genau",
+    "possible": "Möglich",
+    "monthlyShort": "monatlich",
+    "weeklyShort": "wöchentlich"
   },
   "help": {
     "title": "Benutzerhandbuch",
@@ -3260,5 +3292,68 @@
       "tools": "Werkzeug & Reparatur",
       "community": "Spenden & Gemeinschaft"
     }
+  },
+  "dialogs": {
+    "recategorize": {
+      "explanation": "Diese Funktion durchsucht alle Transaktionen mit gescannten Artikeln und schlägt anhand der KI-Analyse präzisere Kategorien vor.",
+      "bullet1": "Analysiert Artikelnamen statt generischer Beschreibungen",
+      "bullet2": "Schlägt Änderungen vor, die du annehmen oder ablehnen kannst",
+      "bullet3": "Ändert keine Transaktionen ohne Artikel",
+      "allCorrectTitle": "Alle Kategorien sind korrekt!",
+      "allCorrectDesc": "Die KI hat keine Transaktionen gefunden, die neu kategorisiert werden müssen.",
+      "foundSuggestions": "Gefunden",
+      "suggestionsLabel": "Vorschläge",
+      "deselectAll": "Alle abwählen",
+      "selectAll": "Alle auswählen"
+    },
+    "financialAssistant": {
+      "loadingConversation": "Konversation wird geladen...",
+      "generateMonthlyReport": "Monatsbericht erstellen",
+      "thinking": "Assistent denkt nach..."
+    },
+    "bank": {
+      "checkOwner": "Kontoinhaber prüfen",
+      "importingBusinessConfirm": "Du importierst derzeit in ein <1>Geschäftsprofil</1>. Ist das korrekt?",
+      "possibleDuplicate_one": "{{count}} möglicher Duplikat (±3 Tage)",
+      "possibleDuplicate_other": "{{count}} mögliche Duplikate (±3 Tage)",
+      "duplicatesMarkedHint": "Duplikate werden beim Import markiert. Du kannst wählen, welche du importieren möchtest.",
+      "safeDuplicatesSkipped": "{{count}} sichere Duplikate (automatisch übersprungen)",
+      "possibleDuplicatesWarning": "⚠️ Mögliche Duplikate (±3 Tage, gleicher Betrag):",
+      "compareAndSelect": "Vergleichen und auswählen, welche importiert werden sollen:",
+      "existing": "Vorhanden"
+    },
+    "paymentSource": {
+      "pdfProcessing": "Die KI verarbeitet das PDF und erkennt Transaktionen. Dies kann bis zu 30 Sekunden dauern.",
+      "allAssignedToSource": "ℹ️ Alle Transaktionen werden der Quelle zugewiesen: <1>{{name}}</1>",
+      "nextLabel": "Nächste"
+    },
+    "detectedPartners": {
+      "partnerUpdated_one": "{{count}} Partner aktualisiert",
+      "partnerUpdated_other": "{{count}} Partner aktualisiert",
+      "noPartnersFound": "Keine Partner in Transaktionen gefunden.",
+      "existingCount_one": "{{count}} vorhanden",
+      "existingCount_other": "{{count}} vorhanden",
+      "existing": "Vorhanden",
+      "lookingUp": "Register wird durchsucht...",
+      "fetchFromRegistry": "Aus dem Handelsregister abrufen",
+      "postalCode": "Postleitzahl",
+      "skip": "Überspringen"
+    },
+    "errorBoundary": {
+      "title": "Hoppla, etwas ist schiefgelaufen",
+      "description": "Ein unerwarteter Fehler ist aufgetreten. Versuche, die Seite zu aktualisieren oder zur Startseite zurückzukehren.",
+      "technicalDetails": "Technische Details",
+      "refresh": "Seite aktualisieren",
+      "goHome": "Zur Startseite"
+    }
+  },
+  "scanning": {
+    "step4Fallback": "Analyse wird abgeschlossen...",
+    "tip1": "Tipp: Halten Sie den Beleg flach für bessere Ergebnisse",
+    "tip2": "Tipp: Gute Beleuchtung verbessert die Genauigkeit",
+    "tip3": "Tipp: Vermeiden Sie Schatten auf dem Beleg",
+    "tip4": "Tipp: Der gesamte Beleg sollte im Bildausschnitt sein",
+    "analyzingReceipt": "Beleg wird analysiert...",
+    "canTakeUpTo30s": "Dies kann bis zu 30 Sekunden dauern"
   }
 }
