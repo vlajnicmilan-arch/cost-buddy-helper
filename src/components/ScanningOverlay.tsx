@@ -86,10 +86,10 @@ export const ScanningOverlay = ({ visible, imageCount = 1 }: ScanningOverlayProp
           {/* Title */}
           <p className="text-lg font-semibold text-foreground mb-1">
             {imageCount > 1
-              ? `Analiziram ${imageCount} stranica...`
-              : 'Analiziram račun...'}
+              ? t('scanner.analyzingPages', { count: imageCount, defaultValue: `Analiziram ${imageCount} stranica...` })
+              : t('scanning.analyzingReceipt')}
           </p>
-          <p className="text-xs text-muted-foreground mb-6">Ovo može potrajati do 30 sekundi</p>
+          <p className="text-xs text-muted-foreground mb-6">{t('scanning.canTakeUpTo30s')}</p>
 
           {/* Progress steps */}
           <div className="w-full max-w-xs space-y-3 mb-6">
