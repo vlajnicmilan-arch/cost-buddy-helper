@@ -5,6 +5,9 @@ import { Check, Wallet, Receipt, Target, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 
 const DISMISS_KEY_PREFIX = 'welcome_checklist_dismissed:';
 
@@ -27,6 +30,9 @@ export const WelcomeChecklist = ({
 }: WelcomeChecklistProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { isProTier } = useFeatureAccess();
+  const { loading: subLoading } = useSubscription();
+  const { profiles: businessProfiles, loading: bpLoading } = useBusinessProfiles();
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -48,6 +54,12 @@ export const WelcomeChecklist = ({
     }
   }, [allDone, user?.id]);
 
+  // Hide while subscription/business data still loading (avoids flash on dashboard).
+  if (subLoading || bpLoading) return null;
+  // Paid users (Pro/Business, including trial) don't need onboarding checklist.
+  if (isProTier) return null;
+  // Anyone with a business profile is past the "start from zero" phase.
+  if (businessProfiles.length > 0) return null;
   if (dismissed) return null;
 
   const steps = [

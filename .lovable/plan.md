@@ -1,47 +1,41 @@
+## Problem
 
-## Što sam našao u Pulse-u
+`WelcomeChecklist` (banner "Počnite s V&M Balance" → Dodaj izvor / Unesi prvu transakciju / Postavi budžet) prikazuje se na dashboardu (`PersonalModeView.tsx:208`) **svim korisnicima** dok god nisu odbacili banner ili ispunili sva 3 koraka. Logika ne uzima u obzir:
 
-Najnoviji "crash" (08.05. 04:28, app v1.2.0, /auth):
-```
-TypeError: Failed to fetch dynamically imported module: .../src/pages/Auth.tsx
-```
+- pretplatu (Pro/Business korisnik ga ipak vidi)
+- postojanje business profila
+- vrijeme dok se podaci učitavaju (zato bljesne na sekundu-dvije pa nestane)
 
-**Ovo nije bug u kodu.** Klasičan **stale lazy-chunk** problem:
-1. Korisnikov preview/PWA imao u memoriji staru verziju `index.html` koja referencira `Auth.tsx?hash=ABC`
-2. U međuvremenu deploy → novi hash `DEF`, stari URL više ne postoji
-3. `React.lazy(() => import('./pages/Auth'))` baca `TypeError: Failed to fetch dynamically imported module`
-4. ErrorBoundary uhvati → severity=`critical` → **email alert** (lažna uzbuna)
+## Rješenje
 
-Dokazi: stack je čist Vite/Browser bez naše logike, route je lazy-loadan, console pokazuje `[vite] server connection lost` neposredno prije, isti tip greške već viđen 04.05. (App.tsx).
+U `WelcomeChecklist` dodati uvjete kada se uopće NE renderira:
 
-## Cilj
+1. **Plaćeni korisnici** — ako `useFeatureAccess().isProTier === true` (Pro ili Business, uključujući trial) → `return null`. Checklist je onboarding alat samo za nove free korisnike.
+2. **Business korisnici** — ako korisnik ima barem jedan business profil (kroz `useBusinessProfiles` / `business_mode_enabled`) → `return null`. Tko ima firmu, sigurno više nije u "počni od nule" fazi.
+3. **Sprečavanje bljeska** — dok je `useSubscription().loading === true` → `return null` (umjesto da se banner načas pojavi pa nestane kad podaci stignu).
 
-Stale-chunk error treba **tiho samo-popraviti** (jednokratni reload) umjesto: prikaza crash UI-a, slanja maila, i logiranja kao critical.
+Sve ostalo (postojeća dismiss logika, auto-dismiss kad su 3/3, dizajn) ostaje netaknuto — banner i dalje radi za novog free korisnika bez business profila.
 
-## Implementacija
+## Tehničke izmjene
 
-### 1. Novi helper `src/lib/chunkLoadError.ts`
-- `isChunkLoadError(err)` — prepoznaje sve varijante poruke (Chrome/Safari/Firefox + `ChunkLoadError`)
-- `tryRecoverFromChunkError(err)` — uz `sessionStorage` loop-guard (30 s) okida `window.location.reload()`; vraća `true` ako je recovery pokrenut
+**Samo `src/components/WelcomeChecklist.tsx`:**
 
-### 2. `src/components/ErrorBoundary.tsx`
-- U `componentDidCatch`: na početku `if (tryRecoverFromChunkError(error)) return;` — preskače log, Sentry i `notifyCrash`
+- Import `useFeatureAccess` iz `@/hooks/useFeatureAccess`
+- Import `useSubscription` iz `@/contexts/SubscriptionContext` (za `loading`)
+- Import `useBusinessProfiles` iz postojećeg hooka (provjerit ću točan naziv tijekom implementacije — vjerojatno `useBusinessProfiles` ili `useActiveBusinessProfile`)
+- Na vrhu komponente, prije render logike:
+  ```ts
+  if (subLoading) return null;
+  if (isProTier) return null;
+  if (hasAnyBusinessProfile) return null;
+  ```
 
-### 3. `src/lib/diagnosticLogger.ts`
-- U `window.error` i `unhandledrejection` listenerima: prvo `tryRecoverFromChunkError(...)` → `return` ako true (uklanja `window_error` i `unhandled_rejection` šum iz Pulse-a)
+**Što se NE mijenja:**
+- `PersonalModeView.tsx` (samo prosljeđuje propse — guard ide u sam banner radi clean separacije)
+- `useSubscription`, `useFeatureAccess`, business profile hookovi
+- i18n stringovi, dizajn, dismiss/localStorage logika
+- Bez DB migracija
 
-### 4. `src/lib/sentry.ts`
-- Dodati / proširiti `beforeSend` da vraća `null` kad je exception chunk-load error (čisti i Sentry dashboard)
+## Otvoreno pitanje (riješit ću tijekom implementacije, ne treba odluka)
 
-### 5. Pulse filter (bonus, preporučeno)
-- U `src/hooks/usePulseMetrics.ts` filtrirati postojeće zapise gdje `details.message` matcha `isChunkLoadError`, da se i historijski lažni "criticali" više ne prikazuju u Top Issues
-
-## Što se NE mijenja
-- `notify-crash` edge funkcija (ostaje za prave crasheve)
-- Pulse UI, layout, i18n stringovi
-- Lazy import logika u `App.tsx`
-- Bez DB migracija, bez novih dependencija
-
-## Tehničke napomene
-- 30 s `sessionStorage` guard sprječava reload-loop ako reload ne riješi problem (npr. server stvarno down) — tada ErrorBoundary preuzima normalno
-- Hard `location.reload()` dohvaća svjež `index.html` s novim chunk URL-ovima; ovo je standardni Vite pattern za stale chunk
+Točan naziv hooka za business profile detection — najvjerojatnije `useBusinessProfiles().profiles.length > 0` ili `useBusinessMode()`. Provjerit ću u kodu prije implementacije.
