@@ -22,6 +22,7 @@ import aiAvatarImage from '@/assets/ai-avatar.webp';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useTranslation } from 'react-i18next';
 
 interface BudgetInfo {
   name: string;
