@@ -576,7 +576,7 @@ Koristi moje stvarne podatke i budi što konkretniji!`;
               {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Asistent razmišlja...</span>
+                  <span className="text-sm">{t('dialogs.financialAssistant.thinking')}</span>
                 </div>
               )}
             </div>
