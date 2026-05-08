@@ -52,7 +52,7 @@ export const ScanningOverlay = ({ visible, imageCount = 1 }: ScanningOverlayProp
   useEffect(() => {
     if (!visible) return;
     const interval = setInterval(() => {
-      setTipIndex(prev => (prev + 1) % TIPS.length);
+      setTipIndex(prev => (prev + 1) % TIP_KEYS.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [visible]);
