@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CustomCategory, DEFAULT_CATEGORY_ICONS, DEFAULT_CATEGORY_COLORS, DEFAULT_CATEGORY_ICON_GROUPS } from '@/types/customCategory';
+import { CustomCategory, DEFAULT_CATEGORY_COLORS, DEFAULT_CATEGORY_ICON_GROUPS } from '@/types/customCategory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from 'react-i18next';
 
