@@ -15,6 +15,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { APP_VERSION } from '@/lib/version';
 import { captureSentryException, setSentryUser } from '@/lib/sentry';
+import { tryRecoverFromChunkError } from '@/lib/chunkLoadError';
 
 export type DiagnosticSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -303,6 +304,7 @@ if (typeof window !== 'undefined') {
 
   // Capture global errors automatically.
   window.addEventListener('error', (e) => {
+    if (tryRecoverFromChunkError(e.error ?? e.message)) return;
     logDiagnostic({
       event: 'window_error',
       severity: 'error',
@@ -321,6 +323,7 @@ if (typeof window !== 'undefined') {
 
   window.addEventListener('unhandledrejection', (e) => {
     const reason: any = e.reason;
+    if (tryRecoverFromChunkError(reason)) return;
     if (reason?.name === 'AbortError') return;
     const msg = typeof reason?.message === 'string' ? reason.message : String(reason ?? '');
     if (msg.includes('signal is aborted') || msg.includes('aborted without reason')) return;

@@ -5,6 +5,7 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { captureSentryException } from '@/lib/sentry';
 import { notifyCrash } from '@/lib/notifyCrash';
 import { APP_VERSION } from '@/lib/version';
+import { tryRecoverFromChunkError } from '@/lib/chunkLoadError';
 
 interface Props {
   children: ReactNode;
@@ -26,6 +27,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Stale lazy-chunk after deploy → silently hard-reload. Skip log/Sentry/email.
+    if (tryRecoverFromChunkError(error)) return;
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     // Critical: log full React crash to diagnostics so admin sees it in Pulse.
     try {

@@ -21,6 +21,7 @@
  */
 import * as Sentry from '@sentry/react';
 import { APP_VERSION } from '@/lib/version';
+import { isChunkLoadError } from '@/lib/chunkLoadError';
 
 const DSN = 'https://e71c65a2c4b6da7f654257df9b5fa8f0@o4511302417973248.ingest.de.sentry.io/4511302422167632';
 
@@ -123,6 +124,8 @@ export const initSentry = (): void => {
             event.message ||
             event.exception?.values?.[0]?.value;
 
+          // Stale lazy-chunk after deploy — not an app bug, recovery handles it.
+          if (isChunkLoadError(err) || isChunkLoadError(msg)) return null;
           if (isNoise(msg)) return null;
 
           // Strip query strings from URLs in case they contain tokens.
