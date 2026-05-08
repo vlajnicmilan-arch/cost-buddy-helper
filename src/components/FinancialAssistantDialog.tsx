@@ -69,6 +69,7 @@ export const FinancialAssistantDialog = ({
   hideTrigger = false,
   businessProfileName: propBusinessProfileName,
 }: FinancialAssistantDialogProps) => {
+  const { t } = useTranslation();
   const { hasAccess, getRequiredTier } = useFeatureAccess();
   const canAccessAI = hasAccess('ai_assistant');
   const { activeBusinessProfileId, businessModeEnabled, emitAvatarEvent } = useAppState();
