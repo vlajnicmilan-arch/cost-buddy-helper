@@ -10,6 +10,9 @@ import { TransactionListSection } from '@/components/home/TransactionListSection
 import { SharedDialogs } from '@/components/home/SharedDialogs';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
+import { ScanTriggerButton } from '@/components/add-expense/ScanTriggerButton';
+import { useReceiptScan } from '@/contexts/ReceiptScanContext';
+import { useEffect } from 'react';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
 import { BusinessBottomNav, BusinessTab } from '@/components/business/BusinessBottomNav';
 import { BusinessTransactions } from '@/components/business/BusinessTransactions';
@@ -290,12 +293,8 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               />
             }
             scanAction={
-              <AddExpenseDialog
-                onAdd={props.onAddExpense}
-                checkDuplicate={props.checkDuplicate}
+              <ScanTriggerButton
                 businessProfileId={props.businessProfile?.id ?? null}
-                autoScan
-                triggerVariant="scan"
                 triggerLabel={t('common.scan', 'Skeniraj')}
                 triggerClassName="h-9 gap-1 px-3 text-sm border-primary/30 text-primary"
               />
