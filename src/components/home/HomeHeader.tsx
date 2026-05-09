@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Smartphone, Cloud, LayoutDashboard, FileSpreadsheet, LogOut } from 'lucide-react';
@@ -12,6 +11,7 @@ import { TutorialButton } from '@/components/tutorial';
 import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
+import { ScanTriggerButton } from '@/components/add-expense/ScanTriggerButton';
 
 import { CSVImportDialog } from '@/components/CSVImportDialog';
 import { GlobalSearch } from '@/components/GlobalSearch';
@@ -57,14 +57,8 @@ export const HomeHeader = ({
   const { signOut } = useAuth();
   const [importOpen, setImportOpen] = useState(false);
 
-  // Diagnostic: detect if HomeHeader unmounts during the camera roundtrip
-  // (would also tear down the auto-scan AddExpenseDialog instance).
-  useEffect(() => {
-    try { logDiagnostic('home_header_mounted', {}); } catch {}
-    return () => {
-      try { logDiagnostic('home_header_unmounted', {}); } catch {}
-    };
-  }, []);
+  // Note: scan trigger now opens a globally-mounted AddExpenseDialog (see
+  // GlobalReceiptScanHost) so the camera roundtrip on Android cannot unmount it.
 
   const handleSignOut = async () => {
     if (isLocalMode) {
@@ -193,11 +187,7 @@ export const HomeHeader = ({
         {!simpleModeEnabled && (
           <ReportsDialog expenses={reportsExpenses} triggerClassName="w-full h-11 justify-center" />
         )}
-        <AddExpenseDialog
-          onAdd={onAddExpense}
-          checkDuplicate={onCheckDuplicate}
-          autoScan
-          triggerVariant="scan"
+        <ScanTriggerButton
           triggerLabel={t('common.scan', 'Skeniraj')}
           triggerClassName="w-full h-11 justify-center"
         />

@@ -1,77 +1,142 @@
 # Cilj
 
-Nemamo dokaz **što** točno zatvara/skriva preview u business modu. Logovi pokazuju da je `showScannedPreview=true` postavljen, ali korisnik vizualno ne vidi preview. Treba 4 tihe diagnostičke točke koje će pri sljedećem skeniranju jednoznačno pokazati uzrok — bez ijednog "fixa" ili guarda.
+Riješiti pravi uzrok: `AddExpenseDialog` (i njegov `scannedData`) umre kad Android tijekom kamere uništi Activity → preview se nikad ne renderira, a kvačica se pojavi jer je `StatusFeedback` već globalan.
 
-# Što mijenjam
+Logovi (18:34) potvrđuju: `home_header_unmounted` i `add_expense_dialog_unmounted` se dogode **između** `receipt_scan_start` i `receipt_scan_success`. `setShowScannedPreview(true)` se izvrši na već unmountanoj komponenti i nestane.
 
-## 1. `src/components/add-expense/AddExpenseDialog.tsx` — Dialog onOpenChange log
+Rješenje: scan flow koji koristi **istu** `AddExpenseDialog` komponentu se ne dira u manualnoj grani. Auto-scan se seli iznad rute u globalni sloj koji **ne može umrijeti**.
 
-U postojeći `onOpenChange` (≈ linija 916), prije `if (!isOpen && (...)) return;`, dodati:
-```ts
-logDiagnostic('add_expense_dialog_open_change', {
-  next_open: isOpen,
-  scanning, scan_in_progress: scanInProgressRef.current,
-  show_scanned_preview: showScannedPreview,
-  scanned_preview_active: scannedPreviewActiveRef.current,
-  is_saving: isSaving, camera_active: cameraActiveRef.current,
-  blocked_by_guard: !isOpen && (scanning || scanInProgressRef.current || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current),
-});
+# Arhitektura
+
+```text
+App.tsx
+ └─ <ReceiptScanProvider>          ← novi context, mountan jednom
+     ├─ <RouteAwareGlobalOverlays>
+     │   └─ <ReceiptScanOverlay/>  ← novi globalni overlay s preview-om
+     └─ <AppRoutes>
+         └─ HomeHeader / BusinessModeView
+             └─ <ScanTriggerButton/>  ← thin gumb, poziva context.startScan()
 ```
-Pokazat će je li Radix poslao close event nakon povratka iz kamere.
 
-## 2. `src/components/add-expense/AddExpenseDialog.tsx` — unmount cijelog dialoga
+**Manualni "Add Expense" flow** (klik na "Dodaj") ostaje **netaknut** — `AddExpenseDialog` bez `autoScan` propa radi kao i prije.
 
-Dodati top-level:
-```ts
-useEffect(() => () => {
-  logDiagnostic({
-    event: 'add_expense_dialog_unmounted',
-    severity: 'warning',
-    details: { had_preview: scannedPreviewActiveRef.current, route: window.location.pathname },
-  });
-}, []);
+# Koraci
+
+## 1. Novi `src/contexts/ReceiptScanContext.tsx`
+
+State u stabilnom sloju iznad rute:
+- `scanning: boolean`
+- `scannedData: ScannedReceipt | null`
+- `pendingImageBase64: string | null` (za "spremi sliku računa")
+- `businessProfileId: string | null` (predan iz `startScan`)
+
+Akcije:
+- `startScan({ businessProfileId, source?: 'camera' | 'gallery' })` — interno koristi postojeći `useNativeCamera` + `useReceiptScanner` (bez izmjena u tim hookovima).
+- `cancelScan()` — odbaci preview i sliku.
+- `acceptScan(overrides)` — proxy prema registriranom `onAddExpense` handleru.
+- `registerAddHandler(fn)` — `Index`/`Wallet`/`Dashboard` se registriraju s ovog handlerom u `useEffect` (cleanup pri unmount).
+
+Provider drži `useNativeCamera`, `useReceiptScanner`, `useCustomPaymentSources`, `useCustomCategories` interno — sve to je sad bezbroj puta instancirano, ovdje postaje jedna instanca koja ne umire.
+
+## 2. Novi `src/components/add-expense/ReceiptScanOverlay.tsx`
+
+Mountan u `RouteAwareGlobalOverlays` u `App.tsx`. Sadržaj:
+- `<ScanningOverlay/>` (već postoji) kad `scanning && !scannedData`.
+- `<Dialog>` s `<ScannedDataPreview/>` (već postoji) kad `scannedData !== null`.
+- Pozove `acceptScan` / `cancelScan` na korisničku akciju.
+
+`ScannedDataPreview` već prima sav potreban props — samo se sad puni iz konteksta.
+
+## 3. `AddExpenseDialog.tsx` — ukloni `autoScan` granu
+
+Konkretno briše se:
+- `autoScanTriggeredRef` + `useEffect` na linijama 317–343.
+- `handleNativeCapture`, `processImageBase64`, `handleImageCapture`, `applyScannedResult`, `scanReceipt` poziv u `processImageBase64`, `cameraInputRef`, `galleryInputRef`, sav capture-guard kod (172 redaka).
+- `scannedData`, `showScannedPreview`, `scannedPreviewActiveRef`, `scanInProgressRef`, `cameraActiveRef`.
+- `<ScannedDataPreview/>` render unutar dialoga.
+- `autoScan` prop iz interface-a.
+
+Manualni put (form polja, kategorija, spremanje) ostaje 100% isti. Dialog postaje ~700 redaka umjesto ~1187.
+
+## 4. Novi `src/components/add-expense/ScanTriggerButton.tsx`
+
+Mali gumb (~40 redaka) koji zamijeni `<AddExpenseDialog autoScan triggerVariant="scan" .../>` na 2 mjesta:
+
+```tsx
+const { startScan } = useReceiptScan();
+return (
+  <Button onClick={() => startScan({ businessProfileId })} className={...}>
+    <ScanLine/> {triggerLabel}
+  </Button>
+);
 ```
-Ako se ovo pojavi između `receipt_scan_start` i `receipt_scan_preview_shown` — roditelj re-mounta cijelu komponentu.
 
-## 3. `src/components/add-expense/ScannedDataPreview.tsx` — mount/unmount preview-a
+Promjene:
+- `HomeHeader.tsx:199` — zamjena.
+- `BusinessModeView.tsx:297` — zamjena.
 
-Dodati u komponentu:
+Ostali `<AddExpenseDialog/>` use-sites (manualni Dodaj) ostaju isti.
+
+## 5. Registracija `onAdd` handlera
+
+`Index.tsx` i `BusinessModeView.tsx` već imaju `onAddExpense` callback. Dodati `useEffect` koji ga registrira u kontekst:
+
 ```ts
-useEffect(() => {
-  logDiagnostic('scanned_preview_mounted', {
-    has_amount: !!scannedData?.amount,
-    sources_count: customPaymentSources?.length ?? 0,
-    business: !!activeBusinessProfileId,
-  });
-  return () => logDiagnostic('scanned_preview_unmounted', {});
-}, []);
+const { registerAddHandler } = useReceiptScan();
+useEffect(() => registerAddHandler(handleAddExpense), [handleAddExpense, registerAddHandler]);
 ```
-Definitivan signal je li ScannedDataPreview uopće stigao do DOM-a i koliko je živ.
 
-## 4. `src/components/home/HomeHeader.tsx` — wrapper remount log
+Kad se ruta promijeni, novi handler se registrira. Context drži samo zadnji.
 
-Iznad `<AddExpenseDialog autoScan ...>`, u host komponenti dodati:
-```ts
-useEffect(() => { logDiagnostic('home_header_mounted', {}); return () => logDiagnostic('home_header_unmounted', {}); }, []);
+## 6. Cleanup dijagnostike
+
+Maknuti privremene logove iz prošlog loopa:
+- `home_header_mounted/unmounted` u `HomeHeader.tsx`.
+- `add_expense_dialog_unmounted` i `add_expense_dialog_open_change` u `AddExpenseDialog.tsx`.
+- `scanned_preview_mounted/unmounted` u `ScannedDataPreview.tsx`.
+
+Dodati nove iz konteksta:
+- `receipt_scan_overlay_mounted` (jednom, info).
+- `receipt_scan_overlay_preview_visible` (info, kad preview uđe u DOM).
+- `receipt_scan_handler_registered/unregistered` (info, route trace).
+
+# Što se ne dira
+
+- `useReceiptScanner.ts` — interna logika, HTTP, edge funkcija.
+- `useNativeCamera.ts`.
+- `parse-receipt` edge funkcija.
+- `ScannedDataPreview.tsx` — ostaje ista komponenta, samo se mounta s drugog mjesta.
+- `ScanningOverlay.tsx`.
+- DB, RLS, migracije, i18n keys.
+- Stilovi, dizajn, layouti.
+- Manualni "Dodaj" flow.
+
+# Verifikacija
+
+Nakon implementacije korisnik skenira račun u business modu u APK buildu. Očekivano u logovima:
+
 ```
-Ako HomeHeader unmounta tijekom kamere → zna se da Dialog umire s roditeljem.
+receipt_scan_start
+home_header_unmounted          ← može se i dalje dogoditi, NIJE bitno
+receipt_scan_success
+receipt_scan_overlay_preview_visible   ← preview živi u stabilnom sloju
+[korisnik vizualno vidi preview, klika "Spremi"]
+receipt_scan_accept_attempt
+expense_create_success
+```
 
-# Što NE mijenjam
-
-- Bez novih guarda, timeouta, uvjetnih grana ili pretpostavljenih "fixova".
-- Bez izmjena `useReceiptScanner.ts`, edge funkcije, RLS-a, DB-a, i18n-a, UI stila.
-- Bez izmjena postojećih `logDiagnostic` poziva.
-
-# Verifikacija (korisnikov korak)
-
-Korisnik nakon implementacije ponovo skenira račun u business modu. Iz logova ćemo dobiti **jedan od tri jasna obrasca**:
-
-- **A — Radix zatvara Dialog**: `receipt_scan_preview_shown` → `add_expense_dialog_open_change` s `next_open:false` (i `blocked_by_guard:false` ili `true`). Fix: pojačati guard ili izvor zatvaranja.
-- **B — Roditelj re-mounta**: `home_header_unmounted` ili `add_expense_dialog_unmounted` između `receipt_scan_start` i `receipt_scan_preview_shown`. Fix: stabilizirati scan flow van komponente koja umire (već poznat anti-pattern iz Project Knowledge §8).
-- **C — Preview ipak živ**: `scanned_preview_mounted` se pojavi i ostane. Fix: vizualno (z-index/visina kontejnera/StatusFeedback overlay).
-
-Tek nakon obrasca radimo arhitektonski fix u sljedećem loopu.
+Ako se `receipt_scan_overlay_preview_visible` pojavi i preview je vidljiv → fix radi i u osobnom i u business modu.
 
 # Procjena
 
-~25 redaka u 3 datoteke. Bez DB migracija, bez i18n, bez UI promjena.
+- 1 novi context (~150 redaka)
+- 1 novi overlay (~80 redaka)
+- 1 novi trigger gumb (~40 redaka)
+- `App.tsx`: provider + overlay (~5 redaka)
+- `AddExpenseDialog.tsx`: brisanje ~170 redaka, bez novog koda
+- `HomeHeader.tsx` / `BusinessModeView.tsx`: zamjena 2 use-sites
+- `Index.tsx` / `BusinessModeView.tsx`: 1 useEffect za registraciju handlera
+
+Bez DB migracija. Bez i18n promjena. Bez novih edge funkcija. Bez dizajn promjena.
+
+JEDAN scan tok ostaje, samo živi iznad rute umjesto unutar krhke komponente.

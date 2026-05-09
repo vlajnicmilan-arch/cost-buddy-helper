@@ -28,6 +28,8 @@ import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/lib/version';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
+import { useReceiptScan } from '@/contexts/ReceiptScanContext';
+import { useEffect } from 'react';
 
 interface PersonalModeViewProps {
   displayName: string | null;
@@ -131,6 +133,17 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { usageProfile } = useAppState();
   const projectsHidden = usageProfile === 'finance_only';
   const { hiddenIds } = useHiddenPaymentSources();
+  const { registerHandlers } = useReceiptScan();
+
+  // Register this page's add/dup handlers so the global scan dialog
+  // dispatches saves to the right place when the user is on Home.
+  useEffect(() => {
+    return registerHandlers({
+      onAdd: props.onAddExpense as any,
+      checkDuplicate: props.checkDuplicate,
+    });
+  }, [registerHandlers, props.onAddExpense, props.checkDuplicate]);
+
 
   const accountBalance = props.customPaymentSources.reduce((sum, s) => {
     if (hiddenIds.has(s.id)) return sum;

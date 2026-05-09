@@ -8,6 +8,8 @@ import { BackButtonProvider } from "@/contexts/BackButtonContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
+import { ReceiptScanProvider } from "@/contexts/ReceiptScanContext";
+import { GlobalReceiptScanHost } from "@/components/add-expense/GlobalReceiptScanHost";
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
@@ -304,21 +306,24 @@ const App = () => (
               <CurrencyProvider>
                 <SubscriptionProvider>
                   <TutorialProvider>
-                    <NativeInit />
-                    <Toaster />
-                    <Sonner />
-                    <BrowserRouter>
-                      <BackButtonProvider>
-                        <ScrollToTop />
-                        <DeepLinkInit />
-                        <PushAutoRegister />
-                        <DiagnosticRouteTracker />
-                        <BusinessModeGuard />
-                        <RouteAwareGlobalOverlays />
-                        <CrispChat />
-                        <AppRoutes />
-                      </BackButtonProvider>
-                    </BrowserRouter>
+                    <ReceiptScanProvider>
+                      <NativeInit />
+                      <Toaster />
+                      <Sonner />
+                      <BrowserRouter>
+                        <BackButtonProvider>
+                          <ScrollToTop />
+                          <DeepLinkInit />
+                          <PushAutoRegister />
+                          <DiagnosticRouteTracker />
+                          <BusinessModeGuard />
+                          <RouteAwareGlobalOverlays />
+                          <GlobalReceiptScanHost />
+                          <CrispChat />
+                          <AppRoutes />
+                        </BackButtonProvider>
+                      </BrowserRouter>
+                    </ReceiptScanProvider>
                   </TutorialProvider>
                 </SubscriptionProvider>
               </CurrencyProvider>
