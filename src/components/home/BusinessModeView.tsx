@@ -291,9 +291,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
             expenses={props.expenses}
             onAddClick={() => {}}
             addAction={
-              <AddExpenseDialog
-                onAdd={props.onAddExpense}
-                checkDuplicate={props.checkDuplicate}
+              <ManualAddTriggerButton
                 businessProfileId={props.businessProfile?.id ?? null}
                 triggerIcon={<Plus className="w-3.5 h-3.5" />}
                 triggerLabel={t('business.transactions.new', 'Novo')}
