@@ -985,11 +985,7 @@ export const AddExpenseDialog = ({
           });
         } catch {}
         refetchPaymentSources().then(() => {
-          if (customPaymentSources.length > 0) {
-            setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
-          } else {
-            setPaymentSource('cash');
-          }
+          setPaymentSource(pickDefaultPaymentSource(customPaymentSources));
         });
         refetchCustomCategories();
       } else {
