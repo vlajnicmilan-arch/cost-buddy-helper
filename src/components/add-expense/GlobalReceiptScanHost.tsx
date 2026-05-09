@@ -9,7 +9,7 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
  * own onAdd/checkDuplicate via ReceiptScanContext; this host just dispatches.
  */
 export const GlobalReceiptScanHost = () => {
-  const { isOpen, businessProfileId, hasHandlers, closeScan, _runAdd, _runCheckDuplicate } = useReceiptScan();
+  const { isOpen, businessProfileId, closeScan, _runAdd, _runCheckDuplicate } = useReceiptScan();
 
   useEffect(() => {
     try { logDiagnostic('global_scan_host_mounted', {}); } catch { }
@@ -18,16 +18,13 @@ export const GlobalReceiptScanHost = () => {
     };
   }, []);
 
-  // Don't render the dialog at all unless the scan is actively requested.
-  // This keeps the manual "Add expense" button behaviour (per-page dialog)
-  // unaffected and avoids any side-effects when the app is idle.
+  // IMPORTANT: do NOT gate rendering on `hasHandlers`. Page components
+  // (PersonalModeView/BusinessModeView) re-register their handlers on every
+  // remount, which briefly flips hasHandlers to false. If we unmount the
+  // dialog during that blip, autoScan re-fires on the next mount and the
+  // camera reopens after the user already took a photo. _runAdd already
+  // logs an error if the page handler is missing at save time.
   if (!isOpen) return null;
-
-  // If somehow opened without a registered page handler, bail out gracefully.
-  if (!hasHandlers) {
-    try { logDiagnostic({ event: 'global_scan_open_without_handlers', severity: 'error', details: {} }); } catch { }
-    return null;
-  }
 
   return (
     <AddExpenseDialog
