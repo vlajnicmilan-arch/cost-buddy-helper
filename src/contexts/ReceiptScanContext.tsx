@@ -114,14 +114,16 @@ export const ReceiptScanProvider = ({ children }: { children: ReactNode }) => {
 
   const value = useMemo<ReceiptScanContextValue>(() => ({
     isOpen,
+    autoScan,
     businessProfileId,
     hasHandlers,
     openScan,
+    openManualAdd,
     closeScan,
     registerHandlers,
     _runAdd,
     _runCheckDuplicate,
-  }), [isOpen, businessProfileId, hasHandlers, openScan, closeScan, registerHandlers, _runAdd, _runCheckDuplicate]);
+  }), [isOpen, autoScan, businessProfileId, hasHandlers, openScan, openManualAdd, closeScan, registerHandlers, _runAdd, _runCheckDuplicate]);
 
   return (
     <ReceiptScanContext.Provider value={value}>
@@ -136,9 +138,11 @@ export const useReceiptScan = (): ReceiptScanContextValue => {
     // Safe fallback so non-provider trees don't crash.
     return {
       isOpen: false,
+      autoScan: false,
       businessProfileId: null,
       hasHandlers: false,
       openScan: noop,
+      openManualAdd: noop,
       closeScan: noop,
       registerHandlers: () => noop,
       _runAdd: async () => {},
