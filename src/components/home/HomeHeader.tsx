@@ -57,6 +57,15 @@ export const HomeHeader = ({
   const { signOut } = useAuth();
   const [importOpen, setImportOpen] = useState(false);
 
+  // Diagnostic: detect if HomeHeader unmounts during the camera roundtrip
+  // (would also tear down the auto-scan AddExpenseDialog instance).
+  useEffect(() => {
+    try { logDiagnostic('home_header_mounted', {}); } catch {}
+    return () => {
+      try { logDiagnostic('home_header_unmounted', {}); } catch {}
+    };
+  }, []);
+
   const handleSignOut = async () => {
     if (isLocalMode) {
       navigate('/setup');
