@@ -1607,6 +1607,7 @@
       "warning": "Warnung",
       "overBudget": "Überschritten"
     },
+    "periodLabel": "Zeitraum",
     "period": {
       "one_time": "Einmalig",
       "weekly": "Wöchentlich",
