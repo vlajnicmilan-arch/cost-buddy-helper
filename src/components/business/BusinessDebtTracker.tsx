@@ -34,6 +34,7 @@ export const BusinessDebtTracker = () => {
   const [scanning, setScanning] = useState(false);
   const [detectedLoans, setDetectedLoans] = useState<DetectedLoan[]>([]);
   const [loanDialogOpen, setLoanDialogOpen] = useState(false);
+  const [resolveDebt, setResolveDebt] = useState<BusinessDebt | null>(null);
 
   const [formType, setFormType] = useState<'receivable' | 'payable'>('receivable');
   const [formContact, setFormContact] = useState('');
