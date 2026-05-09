@@ -28,6 +28,8 @@ import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/lib/version';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
+import { useReceiptScan } from '@/contexts/ReceiptScanContext';
+import { useEffect } from 'react';
 
 interface PersonalModeViewProps {
   displayName: string | null;
