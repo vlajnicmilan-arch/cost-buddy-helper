@@ -424,9 +424,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
       )}
 
       <Dialog open={debtsOpen} onOpenChange={setDebtsOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto p-4">
           <DialogHeader>
-            <DialogTitle>{t('business.more.openInvoices', 'Otvoreni računi')}</DialogTitle>
+            <DialogTitle className="text-base">{t('business.more.openInvoices', 'Otvoreni računi')}</DialogTitle>
           </DialogHeader>
           <BusinessDebtTracker />
         </DialogContent>
