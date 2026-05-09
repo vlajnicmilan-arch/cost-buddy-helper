@@ -340,7 +340,7 @@ export const BusinessDebtTracker = () => {
         debt={resolveDebt}
         open={!!resolveDebt}
         onOpenChange={(o) => { if (!o) setResolveDebt(null); }}
-        onResolved={() => { /* useBusinessDebts realtime/refetch handles list */ }}
+        onResolved={() => { refetch(); }}
         onDelete={async (id) => { await deleteDebt(id); }}
       />
     </div>
