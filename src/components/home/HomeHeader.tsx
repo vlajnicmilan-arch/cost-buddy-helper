@@ -191,9 +191,7 @@ export const HomeHeader = ({
           triggerLabel={t('common.scan', 'Skeniraj')}
           triggerClassName="w-full h-11 justify-center"
         />
-        <AddExpenseDialog
-          onAdd={onAddExpense}
-          checkDuplicate={onCheckDuplicate}
+        <ManualAddTriggerButton
           triggerClassName="w-full h-11 justify-center"
         />
       </div>
