@@ -227,7 +227,7 @@ export const BudgetDialog = ({
           {/* Period & Amount */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>{t('budget.period', 'Period')}</Label>
+              <Label>{t('budget.periodLabel', 'Period')}</Label>
               <Select value={periodType} onValueChange={(v) => setPeriodType(v as BudgetPeriod)}>
                 <SelectTrigger>
                   <SelectValue />
