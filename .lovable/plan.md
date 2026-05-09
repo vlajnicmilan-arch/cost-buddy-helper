@@ -1,43 +1,77 @@
 # Cilj
 
-U business modu, nakon snimanja računa, prikaz pregleda puca jer fetch `custom_payment_sources` baci grešku tijekom WebView suspend/resume oko native kamere. Toast "Greška pri dohvaćanju prilagođenih izvora plaćanja" se prikaže, a `ScannedDataPreview` se nikad ne otvori. Korisnik je to potvrdio.
+Nemamo dokaz **što** točno zatvara/skriva preview u business modu. Logovi pokazuju da je `showScannedPreview=true` postavljen, ali korisnik vizualno ne vidi preview. Treba 4 tihe diagnostičke točke koje će pri sljedećem skeniranju jednoznačno pokazati uzrok — bez ijednog "fixa" ili guarda.
 
-## Što mijenjam
+# Što mijenjam
 
-### 1. `src/hooks/useCustomPaymentSources.ts` — graceful degrade
-- U `catch` bloku unutar `fetchCustomPaymentSources` proširiti detekciju "tranzijentnih" grešaka (network, fetch failed, timed out, AbortError, PostgREST 5xx) uz postojeći auth/401 handler.
-- Za tranzijentne greške: **NE** pozivati `showError` (nema toasta), samo `console.warn` + `logDiagnostic('payment_sources_fetch_transient_error', {...})`. Zadržati prethodni `customPaymentSources` state (ne brisati ga).
-- Tihi background retry kroz `setTimeout(fetch, 800)` jednom — bez UI feedbacka.
-- Toast/`showError` samo kod stvarnih, perzistentnih grešaka (npr. PostgREST 4xx ≠ 401, ili nakon retry-a još uvijek pukne).
+## 1. `src/components/add-expense/AddExpenseDialog.tsx` — Dialog onOpenChange log
 
-### 2. `src/hooks/useReceiptScanner.ts` — dodatna diagnostika
-- Dodati `logDiagnostic('receipt_scan_preview_pre_render', { sources_count, has_business_profile, is_business })` neposredno prije `setParsedData(result)` na success path (poziv treba čitati count iz `customPaymentSources` argumenta — već je dostupan).
-- To nam daje tvrdi dokaz da scan flow završi i da je preview state postavljen, čak i ako UI render padne kasnije.
+U postojeći `onOpenChange` (≈ linija 916), prije `if (!isOpen && (...)) return;`, dodati:
+```ts
+logDiagnostic('add_expense_dialog_open_change', {
+  next_open: isOpen,
+  scanning, scan_in_progress: scanInProgressRef.current,
+  show_scanned_preview: showScannedPreview,
+  scanned_preview_active: scannedPreviewActiveRef.current,
+  is_saving: isSaving, camera_active: cameraActiveRef.current,
+  blocked_by_guard: !isOpen && (scanning || scanInProgressRef.current || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current),
+});
+```
+Pokazat će je li Radix poslao close event nakon povratka iz kamere.
 
-### 3. `src/components/add-expense/AddExpenseDialog.tsx` — preview guard (minimalan)
-- Pri otvaranju `ScannedDataPreview`, ako je `customPaymentSources.length === 0` u business modu, **ne blokirati** preview — samo logirati `logDiagnostic('preview_opened_with_empty_sources', { is_business: !!activeBusinessProfileId })` i pustiti korisnika da nastavi (može odabrati gotovinu/banku ili kasnije promijeniti).
-- Bez UI promjena, bez novih dijaloga.
+## 2. `src/components/add-expense/AddExpenseDialog.tsx` — unmount cijelog dialoga
 
-## Što NE mijenjam
+Dodati top-level:
+```ts
+useEffect(() => () => {
+  logDiagnostic({
+    event: 'add_expense_dialog_unmounted',
+    severity: 'warning',
+    details: { had_preview: scannedPreviewActiveRef.current, route: window.location.pathname },
+  });
+}, []);
+```
+Ako se ovo pojavi između `receipt_scan_start` i `receipt_scan_preview_shown` — roditelj re-mounta cijelu komponentu.
 
-- `parse-receipt` edge function (radi ispravno).
-- `ScannedDataPreview.tsx` validaciju i UX.
-- Dashboard fetch izvora plaćanja (drugi code-path).
-- Personal mode flow (već radi).
-- i18n ključeve (nema novih UI stringova).
+## 3. `src/components/add-expense/ScannedDataPreview.tsx` — mount/unmount preview-a
 
-## Verifikacija nakon implementacije
+Dodati u komponentu:
+```ts
+useEffect(() => {
+  logDiagnostic('scanned_preview_mounted', {
+    has_amount: !!scannedData?.amount,
+    sources_count: customPaymentSources?.length ?? 0,
+    business: !!activeBusinessProfileId,
+  });
+  return () => logDiagnostic('scanned_preview_unmounted', {});
+}, []);
+```
+Definitivan signal je li ScannedDataPreview uopće stigao do DOM-a i koliko je živ.
 
-1. Korisnik ponovo skenira račun u business modu na Android APK-u.
-2. U `app_diagnostics_logs` očekujem: `receipt_scan_success` → `receipt_scan_preview_pre_render` (s `is_business: true`) → `receipt_scan_preview_shown` → `receipt_scan_accept_attempt`.
-3. U logovima **ne smije** biti toasta `errors.fetch.sources` tijekom scan flow-a.
-4. Ako se i dalje preview ne otvori, novi `payment_sources_fetch_transient_error` log će dati točan razlog (status, message), pa idemo targeted fix.
+## 4. `src/components/home/HomeHeader.tsx` — wrapper remount log
 
-## Rizici
+Iznad `<AddExpenseDialog autoScan ...>`, u host komponenti dodati:
+```ts
+useEffect(() => { logDiagnostic('home_header_mounted', {}); return () => logDiagnostic('home_header_unmounted', {}); }, []);
+```
+Ako HomeHeader unmounta tijekom kamere → zna se da Dialog umire s roditeljem.
 
-- Tihi retry može maskirati pravu grešku — zato ostavljamo `logDiagnostic` da je možemo vidjeti.
-- Drugi pozivatelji `useCustomPaymentSources` (npr. Wallet, AddExpenseDialog) više neće dobiti toast za tranzijentne greške; to je željeno ponašanje (ionako su bili buni i remetili UX).
+# Što NE mijenjam
 
-## Procjena
+- Bez novih guarda, timeouta, uvjetnih grana ili pretpostavljenih "fixova".
+- Bez izmjena `useReceiptScanner.ts`, edge funkcije, RLS-a, DB-a, i18n-a, UI stila.
+- Bez izmjena postojećih `logDiagnostic` poziva.
 
-~25 redaka koda u 3 datoteke, bez DB migracija, bez i18n promjena.
+# Verifikacija (korisnikov korak)
+
+Korisnik nakon implementacije ponovo skenira račun u business modu. Iz logova ćemo dobiti **jedan od tri jasna obrasca**:
+
+- **A — Radix zatvara Dialog**: `receipt_scan_preview_shown` → `add_expense_dialog_open_change` s `next_open:false` (i `blocked_by_guard:false` ili `true`). Fix: pojačati guard ili izvor zatvaranja.
+- **B — Roditelj re-mounta**: `home_header_unmounted` ili `add_expense_dialog_unmounted` između `receipt_scan_start` i `receipt_scan_preview_shown`. Fix: stabilizirati scan flow van komponente koja umire (već poznat anti-pattern iz Project Knowledge §8).
+- **C — Preview ipak živ**: `scanned_preview_mounted` se pojavi i ostane. Fix: vizualno (z-index/visina kontejnera/StatusFeedback overlay).
+
+Tek nakon obrasca radimo arhitektonski fix u sljedećem loopu.
+
+# Procjena
+
+~25 redaka u 3 datoteke. Bez DB migracija, bez i18n, bez UI promjena.

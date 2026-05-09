@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Smartphone, Cloud, LayoutDashboard, FileSpreadsheet, LogOut } from 'lucide-react';
@@ -55,6 +56,15 @@ export const HomeHeader = ({
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [importOpen, setImportOpen] = useState(false);
+
+  // Diagnostic: detect if HomeHeader unmounts during the camera roundtrip
+  // (would also tear down the auto-scan AddExpenseDialog instance).
+  useEffect(() => {
+    try { logDiagnostic('home_header_mounted', {}); } catch {}
+    return () => {
+      try { logDiagnostic('home_header_unmounted', {}); } catch {}
+    };
+  }, []);
 
   const handleSignOut = async () => {
     if (isLocalMode) {

@@ -183,6 +183,25 @@ export const AddExpenseDialog = ({
   const scannedPreviewActiveRef = useRef(false);
   const nativeFlowReleaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Diagnostic: log when this dialog component unmounts. If this fires
+  // between receipt_scan_start and receipt_scan_preview_shown, the parent
+  // re-mounted the wrapper during the camera roundtrip.
+  useEffect(() => {
+    return () => {
+      try {
+        logDiagnostic({
+          event: 'add_expense_dialog_unmounted',
+          severity: 'warning',
+          details: {
+            had_preview: scannedPreviewActiveRef.current,
+            route: typeof window !== 'undefined' ? window.location.pathname : null,
+          },
+        });
+      } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const clearNativeFlowReleaseTimer = useCallback(() => {
     if (nativeFlowReleaseTimeoutRef.current) {
       clearTimeout(nativeFlowReleaseTimeoutRef.current);
@@ -915,7 +934,25 @@ export const AddExpenseDialog = ({
     <>
     <Dialog open={open} onOpenChange={(isOpen) => {
       console.warn('🚪 AddExpenseDialog onOpenChange', { isOpen, scanning, scanInProgress: scanInProgressRef.current, showScannedPreview, isSaving, cameraActive: cameraActiveRef.current });
-      if (!isOpen && (scanning || scanInProgressRef.current || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current)) return;
+      const blockedByGuard = !isOpen && (scanning || scanInProgressRef.current || showScannedPreview || scannedPreviewActiveRef.current || isSaving || cameraActiveRef.current);
+      try {
+        logDiagnostic({
+          event: 'add_expense_dialog_open_change',
+          severity: blockedByGuard ? 'warning' : 'info',
+          details: {
+            next_open: isOpen,
+            current_open: open,
+            scanning,
+            scan_in_progress: scanInProgressRef.current,
+            show_scanned_preview: showScannedPreview,
+            scanned_preview_active: scannedPreviewActiveRef.current,
+            is_saving: isSaving,
+            camera_active: cameraActiveRef.current,
+            blocked_by_guard: blockedByGuard,
+          },
+        });
+      } catch {}
+      if (blockedByGuard) return;
       setOpen(isOpen);
       if (isOpen) {
         try {

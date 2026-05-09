@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,7 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface ScannedData {
   amount: number;
@@ -81,6 +83,23 @@ export const ScannedDataPreview = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { activeBusinessProfileId } = useAppState();
+
+  // Diagnostic: confirm that ScannedDataPreview actually mounts in the DOM
+  // and how long it stays alive. Critical signal for the business-mode
+  // "preview never appears" issue.
+  useEffect(() => {
+    try {
+      logDiagnostic('scanned_preview_mounted', {
+        has_amount: !!scannedData?.amount,
+        sources_count: customPaymentSources?.length ?? 0,
+        business: !!activeBusinessProfileId,
+      });
+    } catch {}
+    return () => {
+      try { logDiagnostic('scanned_preview_unmounted', {}); } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const categoryInfo = (() => {
     const custom = customCategories.find(c => c.id === scannedData.category || c.name === scannedData.category);
