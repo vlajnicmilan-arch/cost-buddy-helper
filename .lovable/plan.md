@@ -1,73 +1,43 @@
-## Cilj
+# Cilj
 
-Pokriti sve nedostatke prijevoda u aplikaciji u 3 faze. Korisnik vidi probleme u dijaloškim ekranima — ti su u Fazi 1 (najveći utjecaj, mali rizik).
+U business modu, nakon snimanja računa, prikaz pregleda puca jer fetch `custom_payment_sources` baci grešku tijekom WebView suspend/resume oko native kamere. Toast "Greška pri dohvaćanju prilagođenih izvora plaćanja" se prikaže, a `ScannedDataPreview` se nikad ne otvori. Korisnik je to potvrdio.
 
-## Opseg (utvrđeno auditom)
+## Što mijenjam
 
-- 13–21 strukturno nedostajućih ključeva (uglavnom `projects.documents.*`, `projects.tabs.*`, `projects.tooltips.*`)
-- ~55 ključeva s identičnom HR/EN/DE vrijednosti koje treba prevesti (isključujući brand imena: Revolut, Aircash, Cloud, Profit, Status…)
-- 137 hardcodiranih HR stringova u JSX tekstu
-- 43 hardcodirana atributa (placeholder/aria-label/title)
-- 69 hardcodiranih toast/showError poruka
+### 1. `src/hooks/useCustomPaymentSources.ts` — graceful degrade
+- U `catch` bloku unutar `fetchCustomPaymentSources` proširiti detekciju "tranzijentnih" grešaka (network, fetch failed, timed out, AbortError, PostgREST 5xx) uz postojeći auth/401 handler.
+- Za tranzijentne greške: **NE** pozivati `showError` (nema toasta), samo `console.warn` + `logDiagnostic('payment_sources_fetch_transient_error', {...})`. Zadržati prethodni `customPaymentSources` state (ne brisati ga).
+- Tihi background retry kroz `setTimeout(fetch, 800)` jednom — bez UI feedbacka.
+- Toast/`showError` samo kod stvarnih, perzistentnih grešaka (npr. PostgREST 4xx ≠ 401, ili nakon retry-a još uvijek pukne).
 
-## Što se NE dira
+### 2. `src/hooks/useReceiptScanner.ts` — dodatna diagnostika
+- Dodati `logDiagnostic('receipt_scan_preview_pre_render', { sources_count, has_business_profile, is_business })` neposredno prije `setParsedData(result)` na success path (poziv treba čitati count iz `customPaymentSources` argumenta — već je dostupan).
+- To nam daje tvrdi dokaz da scan flow završi i da je preview state postavljen, čak i ako UI render padne kasnije.
 
-- `src/pages/PrivacyPolicy.tsx`, `Impressum.tsx`, `Unsubscribe.tsx`, `TermsOfService.tsx` — pravni HR dokumenti
-- Brand imena i identifikatori (Revolut, Aircash, Cloud, IBAN, OIB)
-- Komentari u kodu (uvijek engleski, po projektnoj konvenciji)
+### 3. `src/components/add-expense/AddExpenseDialog.tsx` — preview guard (minimalan)
+- Pri otvaranju `ScannedDataPreview`, ako je `customPaymentSources.length === 0` u business modu, **ne blokirati** preview — samo logirati `logDiagnostic('preview_opened_with_empty_sources', { is_business: !!activeBusinessProfileId })` i pustiti korisnika da nastavi (može odabrati gotovinu/banku ili kasnije promijeniti).
+- Bez UI promjena, bez novih dijaloga.
 
----
+## Što NE mijenjam
 
-## Faza 1 — Dijaloški ekrani i česti UI (najveći vidljivi efekt)
+- `parse-receipt` edge function (radi ispravno).
+- `ScannedDataPreview.tsx` validaciju i UX.
+- Dashboard fetch izvora plaćanja (drugi code-path).
+- Personal mode flow (već radi).
+- i18n ključeve (nema novih UI stringova).
 
-**Komponente:**
-- `RecategorizeDialog.tsx` (5 stringova)
-- `FinancialAssistantDialog.tsx` (3)
-- `BankConnection.tsx` (3)
-- `PaymentSourceTransactionsDialog.tsx` (3)
-- `recurring/RecurringMatchDialog.tsx` (2)
-- `BulkEditDropdown.tsx` (2)
-- `DetectedPartnersDialog.tsx` (1)
-- `ScanningOverlay.tsx` (1)
-- `ErrorBoundary.tsx` (2)
-- `add-expense/ManualExpenseForm.tsx` (2)
-- `recurring/*` i `reports/*` (4)
-- Strukturno nedostajući `projects.documents.*` i `projects.tabs.*` ključevi (sva 3 jezika)
+## Verifikacija nakon implementacije
 
-**Pristup:**
-1. Dodati nove ključeve u sva 3 lokala (HR/EN/DE) pod logičnim namespace-om (npr. `dialogs.financialAssistant.*`, `dialogs.recategorize.*`)
-2. Zamijeniti hardcoded strings s `t('…')` pozivima
-3. Atribute (placeholder/aria) prevesti istom logikom
-4. Verifikacija: pokrenuti audit skriptu ponovo, build + smoke check
+1. Korisnik ponovo skenira račun u business modu na Android APK-u.
+2. U `app_diagnostics_logs` očekujem: `receipt_scan_success` → `receipt_scan_preview_pre_render` (s `is_business: true`) → `receipt_scan_preview_shown` → `receipt_scan_accept_attempt`.
+3. U logovima **ne smije** biti toasta `errors.fetch.sources` tijekom scan flow-a.
+4. Ako se i dalje preview ne otvori, novi `payment_sources_fetch_transient_error` log će dati točan razlog (status, message), pa idemo targeted fix.
 
-## Faza 2 — Toast/showError poruke (69 mjesta)
+## Rizici
 
-- Mnoge već koriste `friendlyError` / `tr()` helper (vidi memory: Error Localization)
-- Preostale prebaciti u `errors.*` namespace prema postojećoj strukturi
-- Posebno hookovi (`useExpenseCRUD`, `useBudgets`, `useProjects`…) i edge function pozivi
-- Ovo je rizičnije jer dira poslovnu logiku — radi se file-by-file s commit-after-each
+- Tihi retry može maskirati pravu grešku — zato ostavljamo `logDiagnostic` da je možemo vidjeti.
+- Drugi pozivatelji `useCustomPaymentSources` (npr. Wallet, AddExpenseDialog) više neće dobiti toast za tranzijentne greške; to je željeno ponašanje (ionako su bili buni i remetili UX).
 
-## Faza 3 — Admin paneli i rubni ekrani
+## Procjena
 
-- `admin/UsersTab.tsx`, `PushLogsTab.tsx`, `FeedbackInboxTab.tsx`, `BillingTab.tsx`, `APKManagerTab.tsx` (16 stringova)
-- `JoinFamily.tsx`, `JoinProject.tsx`, `PublicProject.tsx` (10)
-- `Auth.tsx` (2)
-- Ostali rijetko viđeni dijalozi
-
-Admin paneli su vidljivi samo adminu — niži prioritet.
-
----
-
-## Tehnički detalji
-
-- Lokacije: `src/i18n/locales/{hr,en,de}.json`
-- Dodavati ključeve sva tri jezika ISTOVREMENO da audit ostane čist
-- Koristiti `useTranslation` hook (već postoji u svim relevantnim komponentama)
-- Za pluralizaciju (`_few`, `_other`) slijediti postojeći obrazac u `projects.health.*`
-- Prije svake faze: `node /tmp/i18n_audit.mjs` (ostavit ću skriptu) → snimiti baseline; nakon faze → potvrditi smanjenje
-
-## Što tražim od tebe prije implementacije
-
-1. **Krećemo s Fazom 1?** (najveći vidljivi efekt, 1 commit, ~30 stringova × 3 jezika)
-2. Ili želiš **sve 3 faze odmah** u jednom velikom commitu? (rizičnije, ali iscrpno)
-3. Posebno za toast/error poruke: koristim već postojeći `errors.*` namespace ili dodajem nove podgrupacije gdje treba?
+~25 redaka koda u 3 datoteke, bez DB migracija, bez i18n promjena.
