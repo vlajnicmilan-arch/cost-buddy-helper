@@ -191,8 +191,8 @@ export const BusinessDebtTracker = () => {
           <p className="text-xs font-medium text-muted-foreground px-1">{t('business.debts.active', 'Aktivna')} ({activeDebts.length})</p>
           {activeDebts.map(debt => (
             <Card key={debt.id} className="border-none shadow-sm">
-              <CardContent className="p-3">
-                <div className="flex items-start justify-between">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       {debt.type === 'receivable' ? (
@@ -209,17 +209,26 @@ export const BusinessDebtTracker = () => {
                       <p className="text-[10px] text-muted-foreground ml-4">{t('business.debts.dueDate', 'Rok')}: {format(new Date(debt.due_date), 'dd.MM.yyyy')}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span className={`text-sm font-bold ${debt.type === 'receivable' ? 'text-income' : 'text-expense'}`}>
-                      {formatAmount(debt.amount - debt.paid_amount)}
-                    </span>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => markAsPaid(debt.id)}>
-                      <Check className="w-3.5 h-3.5 text-income" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => deleteDebt(debt.id)}>
-                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                    </Button>
-                  </div>
+                  <span className={`text-sm font-bold flex-shrink-0 ${debt.type === 'receivable' ? 'text-income' : 'text-expense'}`}>
+                    {formatAmount(debt.amount - debt.paid_amount)}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1 h-8 gap-1 text-xs" onClick={() => markAsPaid(debt.id)}>
+                    <Check className="w-3.5 h-3.5 text-income" />
+                    {t('business.debts.markPaid', 'Plaćeno')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-8 gap-1 text-xs text-destructive hover:text-destructive"
+                    onClick={() => {
+                      if (confirm(t('business.debts.confirmDelete', 'Obrisati ovaj zapis?'))) deleteDebt(debt.id);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {t('common.delete', 'Obriši')}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -231,13 +240,20 @@ export const BusinessDebtTracker = () => {
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground px-1">{t('business.debts.paid', 'Plaćeno')} ({paidDebts.length})</p>
           {paidDebts.map(debt => (
-            <div key={debt.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 opacity-60">
-              <div className="flex-1 min-w-0">
+            <div key={debt.id} className="flex items-center gap-2 p-3 rounded-xl bg-muted/30">
+              <div className="flex-1 min-w-0 opacity-60">
                 <span className="text-sm line-through truncate">{debt.contact_name}</span>
               </div>
-              <span className="text-xs text-muted-foreground">{formatAmount(debt.amount)}</span>
-              <Button size="icon" variant="ghost" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => deleteDebt(debt.id)}>
-                <Trash2 className="w-3 h-3 text-destructive/50" />
+              <span className="text-xs text-muted-foreground opacity-60">{formatAmount(debt.amount)}</span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 min-h-[44px] min-w-[44px] touch-manipulation"
+                onClick={() => {
+                  if (confirm(t('business.debts.confirmDelete', 'Obrisati ovaj zapis?'))) deleteDebt(debt.id);
+                }}
+              >
+                <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
             </div>
           ))}
