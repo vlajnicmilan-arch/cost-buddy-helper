@@ -157,3 +157,15 @@ export const deleteOwnerLoanForExpense = async (expenseId: string): Promise<void
     console.error('[ownerLoanLogic] Failed to delete owner loan:', e);
   }
 };
+
+/**
+ * Mark an owner loan as forgiven (status='cancelled') without deleting it
+ * or touching the source expense. Semantics: owner donates to company.
+ * Source transaction stays visible in both personal and business views.
+ */
+export const forgiveOwnerLoan = async (debtId: string): Promise<void> => {
+  await supabase
+    .from('business_debts' as any)
+    .update({ status: 'cancelled' } as any)
+    .eq('id', debtId);
+};
