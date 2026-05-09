@@ -69,6 +69,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) => {
+  const { t } = useTranslation();
   const [items, setItems] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<FeedbackType>('all');

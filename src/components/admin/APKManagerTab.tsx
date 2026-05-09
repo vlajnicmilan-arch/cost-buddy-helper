@@ -19,6 +19,7 @@ const BUCKET = 'public-assets';
 const MAX_SIZE_MB = 100;
 
 export const APKManagerTab = () => {
+  const { t } = useTranslation();
   const [metadata, setMetadata] = useState<ApkMetadata | null>(null);
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [uploading, setUploading] = useState(false);

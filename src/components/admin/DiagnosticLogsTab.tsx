@@ -62,6 +62,7 @@ const platformLabel = (info: any): string => {
 };
 
 export const DiagnosticLogsTab = () => {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<DiagnosticLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('');

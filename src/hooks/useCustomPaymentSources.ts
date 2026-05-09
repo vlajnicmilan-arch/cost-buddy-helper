@@ -27,6 +27,7 @@ interface UseCustomPaymentSourcesOptions {
 }
 
 export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions = {}) => {
+  const { t } = useTranslation();
   const { includePersonal = false } = options;
   const { user } = useAuth();
   const { storageMode } = useStorage();

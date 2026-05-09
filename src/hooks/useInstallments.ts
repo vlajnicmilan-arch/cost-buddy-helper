@@ -20,6 +20,7 @@ interface CreateInstallmentPlanInput {
 }
 
 export const useInstallments = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { storageMode } = useStorage();
   const [plans, setPlans] = useState<InstallmentPlanWithProgress[]>([]);

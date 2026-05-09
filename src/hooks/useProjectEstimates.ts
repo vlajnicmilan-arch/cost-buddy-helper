@@ -37,6 +37,7 @@ export interface ProjectEstimate {
 }
 
 export const useProjectEstimates = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
   const [estimates, setEstimates] = useState<ProjectEstimate[]>([]);

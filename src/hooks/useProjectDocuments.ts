@@ -18,6 +18,7 @@ export interface UploadOptions {
 }
 
 export const useProjectDocuments = (projectId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [documents, setDocuments] = useState<ProjectDocumentRow[]>([]);
   const [loading, setLoading] = useState(true);

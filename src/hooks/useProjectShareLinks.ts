@@ -21,6 +21,7 @@ export interface ProjectShareLink {
 }
 
 export const useProjectShareLinks = (projectId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [links, setLinks] = useState<ProjectShareLink[]>([]);
   const [loading, setLoading] = useState(false);

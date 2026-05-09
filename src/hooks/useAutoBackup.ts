@@ -12,6 +12,7 @@ import {
 import { showSuccess } from '@/hooks/useStatusFeedback';
 
 export const useAutoBackup = () => {
+  const { t } = useTranslation();
   const { expenses } = useExpenses();
   const { storageMode } = useStorage();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);

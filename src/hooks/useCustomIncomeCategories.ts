@@ -8,6 +8,7 @@ import { showSuccess } from '@/hooks/useStatusFeedback';
 const STORAGE_KEY = 'customIncomeCategories';
 
 export const useCustomIncomeCategories = () => {
+  const { t } = useTranslation();
   const [customIncomeCategories, setCustomIncomeCategories] = useState<CustomIncomeCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();

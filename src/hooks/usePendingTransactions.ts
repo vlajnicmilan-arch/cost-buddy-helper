@@ -7,6 +7,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 
 export const usePendingTransactions = (incomeSourceId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [pendingTransactions, setPendingTransactions] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
