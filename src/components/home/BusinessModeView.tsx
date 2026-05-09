@@ -190,9 +190,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
                   />
                 </>
               )}
-              <AddExpenseDialog
-                onAdd={props.onAddExpense}
-                checkDuplicate={props.checkDuplicate}
+              <ManualAddTriggerButton
                 businessProfileId={props.businessProfile?.id ?? null}
               />
             </div>
