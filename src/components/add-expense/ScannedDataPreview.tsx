@@ -84,6 +84,23 @@ export const ScannedDataPreview = ({
   const { formatAmount } = useCurrency();
   const { activeBusinessProfileId } = useAppState();
 
+  // Diagnostic: confirm that ScannedDataPreview actually mounts in the DOM
+  // and how long it stays alive. Critical signal for the business-mode
+  // "preview never appears" issue.
+  useEffect(() => {
+    try {
+      logDiagnostic('scanned_preview_mounted', {
+        has_amount: !!scannedData?.amount,
+        sources_count: customPaymentSources?.length ?? 0,
+        business: !!activeBusinessProfileId,
+      });
+    } catch {}
+    return () => {
+      try { logDiagnostic('scanned_preview_unmounted', {}); } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const categoryInfo = (() => {
     const custom = customCategories.find(c => c.id === scannedData.category || c.name === scannedData.category);
     if (custom) return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color };
