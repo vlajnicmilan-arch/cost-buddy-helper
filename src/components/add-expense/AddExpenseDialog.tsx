@@ -594,6 +594,21 @@ export const AddExpenseDialog = ({
       }
       const isTransfer = scannedData.transaction_type === 'transfer';
       const isIncome = scannedData.transaction_type === 'income';
+
+      // Business mode validation: require an actual payment source when business sources exist.
+      // Personal sources are allowed (auto-create owner loan); plain 'cash' is not.
+      if (effectiveBusinessProfileId && !isTransfer && !isIncome) {
+        const hasBusinessSource = customPaymentSources.some(
+          s => s.business_profile_id === effectiveBusinessProfileId
+        );
+        const isCustom = typeof finalPaymentSource === 'string' && finalPaymentSource.startsWith('custom:');
+        if (hasBusinessSource && !isCustom) {
+          showError(t('business.payment.requirePaymentSource', 'Odaberi poslovni izvor plaćanja prije spremanja.'));
+          setIsSaving(false);
+          return;
+        }
+      }
+
       let transferDestinationId: string | undefined;
       if (isTransfer) {
         const destName = (scannedData.transfer_destination_name || scannedData.recipient_name || '').toLowerCase();
