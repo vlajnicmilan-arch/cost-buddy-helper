@@ -3447,7 +3447,21 @@
     "deadline": "Frist",
     "budget": "Budget",
     "spent": "Ausgegeben",
-    "received": "Erhalten"
+    "received": "Erhalten",
+    "linkExpired": "Dieser Link ist abgelaufen",
+    "linkRevoked": "Dieser Link wurde widerrufen",
+    "linkInvalid": "Link ist ungültig oder wurde gelöscht",
+    "progress": "Projektfortschritt",
+    "phasesCount": "{{completed}}/{{total}} Phasen",
+    "financials": "Finanzen",
+    "phases": "Phasen",
+    "statusCompleted": "Abgeschlossen",
+    "statusInProgress": "Läuft",
+    "statusOverdue": "Überfällig",
+    "statusWaiting": "Wartet",
+    "deadlineLabel": "Frist",
+    "photoLog": "Foto-Fortschrittsprotokoll",
+    "readonlyFooter": "Schreibgeschützte Ansicht. Powered by V&M Balance."
   },
   "admin": {
     "noFilterResults": "Keine Ergebnisse für die angegebenen Filter",

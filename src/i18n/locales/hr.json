@@ -3447,7 +3447,21 @@
     "deadline": "Rok",
     "budget": "Budžet",
     "spent": "Potrošeno",
-    "received": "Primljeno"
+    "received": "Primljeno",
+    "linkExpired": "Ovaj link je istekao",
+    "linkRevoked": "Ovaj link je opozvan",
+    "linkInvalid": "Link nije valjan ili je obrisan",
+    "progress": "Napredak projekta",
+    "phasesCount": "{{completed}}/{{total}} faza",
+    "financials": "Financije",
+    "phases": "Faze",
+    "statusCompleted": "Završeno",
+    "statusInProgress": "U tijeku",
+    "statusOverdue": "Kasni",
+    "statusWaiting": "Čeka",
+    "deadlineLabel": "Rok",
+    "photoLog": "Foto dnevnik napretka",
+    "readonlyFooter": "Pregled samo za čitanje. Powered by V&M Balance."
   },
   "admin": {
     "noFilterResults": "Nema rezultata za zadane filtere",

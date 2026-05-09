@@ -3447,7 +3447,21 @@
     "deadline": "Deadline",
     "budget": "Budget",
     "spent": "Spent",
-    "received": "Received"
+    "received": "Received",
+    "linkExpired": "This link has expired",
+    "linkRevoked": "This link has been revoked",
+    "linkInvalid": "Link is invalid or has been deleted",
+    "progress": "Project progress",
+    "phasesCount": "{{completed}}/{{total}} phases",
+    "financials": "Financials",
+    "phases": "Phases",
+    "statusCompleted": "Completed",
+    "statusInProgress": "In progress",
+    "statusOverdue": "Overdue",
+    "statusWaiting": "Waiting",
+    "deadlineLabel": "Deadline",
+    "photoLog": "Photo progress log",
+    "readonlyFooter": "Read-only view. Powered by V&M Balance."
   },
   "admin": {
     "noFilterResults": "No results for the given filters",
