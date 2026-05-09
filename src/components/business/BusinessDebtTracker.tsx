@@ -27,7 +27,7 @@ export const BusinessDebtTracker = () => {
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
-  const { debts, loading, addDebt, updateDebt, deleteDebt, totalReceivable, totalPayable } = useBusinessDebts();
+  const { debts, loading, addDebt, updateDebt, deleteDebt, totalReceivable, totalPayable, refetch } = useBusinessDebts();
   const { detectLoans } = useLoanDetection();
   const [addOpen, setAddOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
