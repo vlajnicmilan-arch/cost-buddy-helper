@@ -244,7 +244,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             <SelectTrigger className="h-12 rounded-xl bg-background">
               <SelectValue placeholder={t('placeholders.selectDestinationAccount')}>
                 {(() => {
-                  if (!props.transferDestination) return 'Odaberi odredišni račun';
+                  if (!props.transferDestination) return t('placeholders.selectDestinationAccount');
                   const customSource = props.customPaymentSources.find(s => s.id === props.transferDestination);
                   if (customSource) {
                     return (
@@ -268,13 +268,13 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                       </span>
                     );
                   }
-                  return 'Odaberi odredišni račun';
+                  return t('placeholders.selectDestinationAccount');
                 })()}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-popover z-50 max-h-[300px]">
               <SelectItem value="none">
-                <span className="text-muted-foreground">Bez odredišta</span>
+                <span className="text-muted-foreground">{t('placeholders.noDestination')}</span>
               </SelectItem>
               {props.customPaymentSources.length > 0 && (
                 <>

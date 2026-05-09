@@ -200,7 +200,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
       setPartnerDetails(prev => ({ ...prev, [partnerName]: newDetails }));
 
-      const source = data.source === 'sudreg' ? 'sudski registar' : 'AI';
+      const source = data.source === 'sudreg' ? t('dialogs.detectedPartners.sourceRegistry') : t('dialogs.detectedPartners.sourceAi');
       showSuccess(t('toasts.dataLoadedFor', { name: data.company_name || partnerName, source }));
     } catch (error: any) {
       console.error('Error looking up company:', error);
@@ -384,7 +384,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
                           ) : (
                             <Search className="w-3.5 h-3.5" />
                           )}
-                          {lookingUp === partner.name ? 'Pretražujem registar...' : 'Dohvati iz sudskog registra'}
+                          {lookingUp === partner.name ? t('dialogs.detectedPartners.lookingUp') : t('dialogs.detectedPartners.fetchFromRegistry')}
                         </Button>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
@@ -399,7 +399,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
                           <div>
                             <Label className="text-xs text-muted-foreground">Kontakt osoba</Label>
                             <Input
-                              placeholder="Ime i prezime"
+                              placeholder={t('placeholders.fullName')}
                               value={details.contact_person || ''}
                               onChange={(e) => updatePartnerDetail(partner.name, 'contact_person', e.target.value)}
                               className="h-8 text-xs rounded-lg"
@@ -409,7 +409,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
                         <div>
                           <Label className="text-xs text-muted-foreground">Adresa</Label>
                           <Input
-                            placeholder="Ulica i broj"
+                            placeholder={t('placeholders.streetAndNumber')}
                             value={details.address || ''}
                             onChange={(e) => updatePartnerDetail(partner.name, 'address', e.target.value)}
                             className="h-8 text-xs rounded-lg"
@@ -419,7 +419,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
                           <div>
                             <Label className="text-xs text-muted-foreground">Grad</Label>
                             <Input
-                              placeholder="Zagreb"
+                              placeholder={t('placeholders.cityExample')}
                               value={details.city || ''}
                               onChange={(e) => updatePartnerDetail(partner.name, 'city', e.target.value)}
                               className="h-8 text-xs rounded-lg"
@@ -470,7 +470,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
             onClick={() => onOpenChange(false)}
             className="rounded-xl"
           >
-            Preskoči
+            {t('dialogs.detectedPartners.skip')}
           </Button>
           <Button
             onClick={handleSave}
@@ -482,7 +482,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
             ) : (
               <Users className="w-4 h-4" />
             )}
-            Spremi {selectedPartners.size > 0 ? `(${selectedPartners.size})` : ''}
+            {t('dialogs.detectedPartners.save')} {selectedPartners.size > 0 ? `(${selectedPartners.size})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
