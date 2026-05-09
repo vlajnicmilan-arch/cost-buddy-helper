@@ -24,9 +24,11 @@ interface ScanContextHandlers {
 
 interface ReceiptScanContextValue {
   isOpen: boolean;
+  autoScan: boolean;
   businessProfileId: string | null;
   hasHandlers: boolean;
   openScan: (opts?: { businessProfileId?: string | null }) => void;
+  openManualAdd: (opts?: { businessProfileId?: string | null }) => void;
   closeScan: () => void;
   /** Register the active page's add/dup handlers. Returns an unregister fn. */
   registerHandlers: (handlers: ScanContextHandlers) => () => void;
@@ -42,12 +44,14 @@ const ReceiptScanContext = createContext<ReceiptScanContextValue | null>(null);
 
 export const ReceiptScanProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [autoScan, setAutoScan] = useState(false);
   const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
   const handlersRef = useRef<ScanContextHandlers | null>(null);
   const [hasHandlers, setHasHandlers] = useState(false);
 
   const openScan = useCallback((opts?: { businessProfileId?: string | null }) => {
     setBusinessProfileId(opts?.businessProfileId ?? null);
+    setAutoScan(true);
     setIsOpen(true);
     try {
       logDiagnostic('global_scan_open', {
@@ -57,8 +61,21 @@ export const ReceiptScanProvider = ({ children }: { children: ReactNode }) => {
     } catch {}
   }, []);
 
+  const openManualAdd = useCallback((opts?: { businessProfileId?: string | null }) => {
+    setBusinessProfileId(opts?.businessProfileId ?? null);
+    setAutoScan(false);
+    setIsOpen(true);
+    try {
+      logDiagnostic('global_manual_add_open', {
+        business_profile_id: opts?.businessProfileId ?? null,
+        has_handlers: !!handlersRef.current,
+      });
+    } catch {}
+  }, []);
+
   const closeScan = useCallback(() => {
     setIsOpen(false);
+    setAutoScan(false);
   }, []);
 
   const registerHandlers = useCallback((handlers: ScanContextHandlers) => {
@@ -97,14 +114,16 @@ export const ReceiptScanProvider = ({ children }: { children: ReactNode }) => {
 
   const value = useMemo<ReceiptScanContextValue>(() => ({
     isOpen,
+    autoScan,
     businessProfileId,
     hasHandlers,
     openScan,
+    openManualAdd,
     closeScan,
     registerHandlers,
     _runAdd,
     _runCheckDuplicate,
-  }), [isOpen, businessProfileId, hasHandlers, openScan, closeScan, registerHandlers, _runAdd, _runCheckDuplicate]);
+  }), [isOpen, autoScan, businessProfileId, hasHandlers, openScan, openManualAdd, closeScan, registerHandlers, _runAdd, _runCheckDuplicate]);
 
   return (
     <ReceiptScanContext.Provider value={value}>
@@ -119,9 +138,11 @@ export const useReceiptScan = (): ReceiptScanContextValue => {
     // Safe fallback so non-provider trees don't crash.
     return {
       isOpen: false,
+      autoScan: false,
       businessProfileId: null,
       hasHandlers: false,
       openScan: noop,
+      openManualAdd: noop,
       closeScan: noop,
       registerHandlers: () => noop,
       _runAdd: async () => {},

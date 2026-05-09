@@ -9,8 +9,8 @@ import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { TransactionListSection } from '@/components/home/TransactionListSection';
 import { SharedDialogs } from '@/components/home/SharedDialogs';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
-import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { ScanTriggerButton } from '@/components/add-expense/ScanTriggerButton';
+import { ManualAddTriggerButton } from '@/components/add-expense/ManualAddTriggerButton';
 import { useReceiptScan } from '@/contexts/ReceiptScanContext';
 import { useEffect } from 'react';
 import { CSVImportDialog } from '@/components/CSVImportDialog';
@@ -190,9 +190,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
                   />
                 </>
               )}
-              <AddExpenseDialog
-                onAdd={props.onAddExpense}
-                checkDuplicate={props.checkDuplicate}
+              <ManualAddTriggerButton
                 businessProfileId={props.businessProfile?.id ?? null}
               />
             </div>
@@ -293,9 +291,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
             expenses={props.expenses}
             onAddClick={() => {}}
             addAction={
-              <AddExpenseDialog
-                onAdd={props.onAddExpense}
-                checkDuplicate={props.checkDuplicate}
+              <ManualAddTriggerButton
                 businessProfileId={props.businessProfile?.id ?? null}
                 triggerIcon={<Plus className="w-3.5 h-3.5" />}
                 triggerLabel={t('business.transactions.new', 'Novo')}
