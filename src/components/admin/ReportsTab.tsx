@@ -1,4 +1,5 @@
 import { Loader2, RefreshCw, Bug, User, Monitor, MessageSquareReply, Send } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ export const ReportsTab = ({
   onUpdateStatus,
   onSendReply,
 }: ReportsTabProps) => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3 mt-4">
       <div className="flex justify-between items-center">
@@ -42,7 +44,7 @@ export const ReportsTab = ({
       {reports.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Bug className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>Nema prijavljenih problema</p>
+          <p>{t('admin.noReports')}</p>
         </div>
       ) : (
         <div className="space-y-3">

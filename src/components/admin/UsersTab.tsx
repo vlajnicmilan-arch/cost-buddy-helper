@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck, ShieldCheck, ShieldOff, Search, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -38,6 +39,7 @@ export const UsersTab = ({
   onLoadMore,
   onManageUser,
 }: UsersTabProps) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
 
@@ -86,7 +88,7 @@ export const UsersTab = ({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Pretraži po imenu ili emailu..."
+          placeholder={t('placeholders.searchUsers')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9 pr-9 h-9 text-sm"
@@ -96,7 +98,7 @@ export const UsersTab = ({
             type="button"
             onClick={() => setSearch('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground"
-            aria-label="Očisti pretragu"
+            aria-label={t('common.clearSearch')}
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -129,7 +131,7 @@ export const UsersTab = ({
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Search className="w-10 h-10 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">Nema rezultata za zadane filtere</p>
+          <p className="text-sm">{t('admin.noFilterResults')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -190,12 +192,12 @@ export const UsersTab = ({
                 <div className="pt-2 border-t space-y-3">
                   <div className="text-xs space-y-1 text-muted-foreground">
                     <p><strong>ID:</strong> <span className="font-mono text-[10px]">{u.id}</span></p>
-                    <p><strong>Valuta:</strong> {u.currency || 'EUR'}</p>
-                    <p><strong>Email potvrđen:</strong> {u.confirmed_at ? format(new Date(u.confirmed_at), 'dd.MM.yyyy. HH:mm', { locale: hr }) : 'Ne'}</p>
+                    <p><strong>{t('admin.currency')}:</strong> {u.currency || 'EUR'}</p>
+                    <p><strong>{t('admin.emailConfirmed')}:</strong> {u.confirmed_at ? format(new Date(u.confirmed_at), 'dd.MM.yyyy. HH:mm', { locale: hr }) : t('common.no')}</p>
                     {u.last_login_at && (
-                      <p><strong>Zadnje korištenje:</strong> {format(new Date(u.last_login_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}</p>
+                      <p><strong>{t('admin.lastUsage')}:</strong> {format(new Date(u.last_login_at), 'dd.MM.yyyy. HH:mm', { locale: hr })}</p>
                     )}
-                    <p><strong>Verzija aplikacije:</strong> {u.app_version || 'Nepoznato (starija verzija)'}</p>
+                    <p><strong>{t('admin.appVersion')}:</strong> {u.app_version || t('admin.appVersionUnknown')}</p>
                   </div>
 
                   {u.last_device_info && (() => {
@@ -207,12 +209,12 @@ export const UsersTab = ({
                         </p>
                         <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 space-y-1.5">
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                            <p><strong>Uređaj:</strong> {details.device}</p>
-                            <p><strong>OS:</strong> {details.os}</p>
-                            <p><strong>Browser:</strong> {details.browser}</p>
-                            <p><strong>Jezik:</strong> {u.last_device_info.language || '—'}</p>
-                            <p><strong>Ekran:</strong> {u.last_device_info.screenWidth}×{u.last_device_info.screenHeight}</p>
-                            <p><strong>Viewport:</strong> {u.last_device_info.viewportWidth}×{u.last_device_info.viewportHeight}</p>
+                            <p><strong>{t('admin.device')}:</strong> {details.device}</p>
+                            <p><strong>{t('admin.os')}:</strong> {details.os}</p>
+                            <p><strong>{t('admin.browser')}:</strong> {details.browser}</p>
+                            <p><strong>{t('admin.language')}:</strong> {u.last_device_info.language || '—'}</p>
+                            <p><strong>{t('admin.screen')}:</strong> {u.last_device_info.screenWidth}×{u.last_device_info.screenHeight}</p>
+                            <p><strong>{t('admin.viewport')}:</strong> {u.last_device_info.viewportWidth}×{u.last_device_info.viewportHeight}</p>
                           </div>
                         </div>
                       </div>

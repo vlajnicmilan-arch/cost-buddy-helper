@@ -28,11 +28,11 @@ export const NotifyTab = ({
       <div className="bg-card border rounded-xl p-4 space-y-4">
         <div className="flex items-center gap-2">
           <Bell className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold text-sm">Pošalji obavijest svim korisnicima</h3>
+          <h3 className="font-semibold text-sm">{t('admin.sendNotificationAll')}</h3>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Naslov</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t('admin.titleLabel')}</label>
             <Input
               placeholder={t('placeholders.notificationTitle')}
               value={notifTitle}
@@ -40,9 +40,9 @@ export const NotifyTab = ({
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Poruka</label>
+            <label className="text-xs text-muted-foreground mb-1 block">{t('admin.messageLabel')}</label>
             <Textarea
-              placeholder="Unesite tekst obavijesti..."
+              placeholder={t('placeholders.notificationText')}
               value={notifMessage}
               onChange={(e) => setNotifMessage(e.target.value)}
               rows={4}

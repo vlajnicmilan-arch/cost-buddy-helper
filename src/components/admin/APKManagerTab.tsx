@@ -199,7 +199,7 @@ export const APKManagerTab = () => {
             <div className="text-xs text-muted-foreground space-y-1.5">
               <p className="font-medium text-foreground">Kada trebaš uploadati novi APK?</p>
               <p>
-                Sve <strong>UI promjene</strong> (gumbi, boje, tekst, nove stranice) idu automatski preko Live Synca — <strong>ne treba</strong> novi APK.
+                <span dangerouslySetInnerHTML={{ __html: t('admin.apkLiveSyncNote') }} />
               </p>
               <p>
                 Novi APK trebaš uploadati samo ako si dodao <strong>novi nativni plugin</strong> (Camera, Push, itd.) ili promijenio <strong>ikonu/splash screen</strong>.
