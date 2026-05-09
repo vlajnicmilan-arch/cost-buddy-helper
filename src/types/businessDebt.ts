@@ -12,6 +12,7 @@ export interface BusinessDebt {
   paid_amount: number;
   due_date?: string | null;
   status: DebtStatus;
+  source_expense_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }
