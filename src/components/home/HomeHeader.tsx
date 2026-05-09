@@ -10,8 +10,8 @@ import { SettingsDialog } from '@/components/SettingsDialog';
 import { TutorialButton } from '@/components/tutorial';
 import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
-import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { ScanTriggerButton } from '@/components/add-expense/ScanTriggerButton';
+import { ManualAddTriggerButton } from '@/components/add-expense/ManualAddTriggerButton';
 
 import { CSVImportDialog } from '@/components/CSVImportDialog';
 import { GlobalSearch } from '@/components/GlobalSearch';
