@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
@@ -63,7 +64,7 @@ export const useProjectShareLinks = (projectId: string | null) => {
         .single();
       if (error) throw error;
       setLinks(prev => [data, ...prev]);
-      showSuccess('Link kreiran');
+      showSuccess(t('toasts.linkCreated'));
       return data;
     } catch (e) { console.error(e); showError(tr('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); return null; }
   };
@@ -81,7 +82,7 @@ export const useProjectShareLinks = (projectId: string | null) => {
 
   const revoke = async (id: string) => {
     await update(id, { revoked_at: new Date().toISOString() });
-    showSuccess('Link opozvan');
+    showSuccess(t('toasts.linkRevoked'));
   };
 
   const remove = async (id: string) => {
@@ -92,7 +93,7 @@ export const useProjectShareLinks = (projectId: string | null) => {
         .eq('id', id);
       if (error) throw error;
       setLinks(prev => prev.filter(l => l.id !== id));
-      showSuccess('Obrisano');
+      showSuccess(t('toasts.deleted'));
     } catch (e) { console.error(e); showError(tr('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.')); }
   };
 

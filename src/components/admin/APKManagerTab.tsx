@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Package, Loader2, Info, Calendar, HardDrive } from 'lucide-react';
@@ -91,7 +92,7 @@ export const APKManagerTab = () => {
 
       if (error) throw error;
 
-      showSuccess('APK uspješno uploadan');
+      showSuccess(t('toasts.apkUploaded'));
       await loadMetadata();
     } catch (err: any) {
       console.error('APK upload failed:', err);

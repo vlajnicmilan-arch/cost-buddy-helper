@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -157,7 +158,7 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
         .eq('id', id);
       if (error) throw error;
       setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-      showSuccess('Status ažuriran');
+      showSuccess(t('toasts.statusUpdated'));
     } catch (err: any) {
       showError(friendlyError(err));
     }
@@ -169,7 +170,7 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
       const { error } = await supabase.from('feedback_submissions').delete().eq('id', id);
       if (error) throw error;
       setItems((prev) => prev.filter((r) => r.id !== id));
-      showSuccess('Obrisano');
+      showSuccess(t('toasts.deleted'));
     } catch (err: any) {
       showError(friendlyError(err));
     }

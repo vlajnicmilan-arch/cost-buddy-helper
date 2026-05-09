@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -327,7 +328,7 @@ export const useInstallments = () => {
       localStorage.setItem('installments', JSON.stringify([...existingInstallments, ...installments]));
       
       await fetchPlans();
-      showSuccess('Plan plaćanja na rate kreiran');
+      showSuccess(t('toasts.installmentPlanCreated'));
       return newPlan;
     }
 
@@ -377,7 +378,7 @@ export const useInstallments = () => {
       if (installmentsError) throw installmentsError;
 
       await fetchPlans();
-      showSuccess('Plan plaćanja na rate kreiran');
+      showSuccess(t('toasts.installmentPlanCreated'));
       return {
         ...planData,
         type: planData.type as 'expense' | 'income',
@@ -403,7 +404,7 @@ export const useInstallments = () => {
         );
         localStorage.setItem('installments', JSON.stringify(updated));
         await fetchPlans();
-        showSuccess('Rata označena kao plaćena');
+        showSuccess(t('toasts.installmentMarkedPaid'));
       }
       return;
     }
@@ -420,7 +421,7 @@ export const useInstallments = () => {
       if (error) throw error;
 
       await fetchPlans();
-      showSuccess('Rata označena kao plaćena');
+      showSuccess(t('toasts.installmentMarkedPaid'));
     } catch (error) {
       console.error('Error marking installment as paid:', error);
       showError(tr('errors.update.installment', 'Greška pri ažuriranju rate'));
@@ -439,7 +440,7 @@ export const useInstallments = () => {
         );
         localStorage.setItem('installments', JSON.stringify(updated));
         await fetchPlans();
-        showSuccess('Rata označena kao neplaćena');
+        showSuccess(t('toasts.installmentMarkedUnpaid'));
       }
       return;
     }
@@ -456,7 +457,7 @@ export const useInstallments = () => {
       if (error) throw error;
 
       await fetchPlans();
-      showSuccess('Rata označena kao neplaćena');
+      showSuccess(t('toasts.installmentMarkedUnpaid'));
     } catch (error) {
       console.error('Error marking installment as unpaid:', error);
       showError(tr('errors.update.installment', 'Greška pri ažuriranju rate'));
@@ -479,7 +480,7 @@ export const useInstallments = () => {
       }
       
       await fetchPlans();
-      showSuccess('Plan plaćanja obrisan');
+      showSuccess(t('toasts.installmentPlanDeleted'));
       return;
     }
 
@@ -495,7 +496,7 @@ export const useInstallments = () => {
       if (error) throw error;
 
       await fetchPlans();
-      showSuccess('Plan plaćanja obrisan');
+      showSuccess(t('toasts.installmentPlanDeleted'));
     } catch (error) {
       console.error('Error deleting installment plan:', error);
       showError(tr('errors.delete.installmentPlan', 'Greška pri brisanju plana'));

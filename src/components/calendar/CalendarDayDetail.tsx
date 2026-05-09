@@ -53,7 +53,7 @@ export const CalendarDayDetail = ({ open, onOpenChange, date, events, onToggleCo
     if (event.source !== 'reminder') return;
     try {
       await onDelete(event.id);
-      showSuccess('Obrisano');
+      showSuccess(t('toasts.deleted'));
     } catch {
       showError(t('errors.generic', 'Nešto je pošlo po krivu. Pokušajte ponovno.'));
     }

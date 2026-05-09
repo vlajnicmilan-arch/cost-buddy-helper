@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Expense } from '@/types/expense';
@@ -56,7 +57,7 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       if (error) throw error;
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
-      showSuccess('Transakcija odobrena');
+      showSuccess(t('toasts.transactionApproved'));
     } catch (error) {
       console.error('Error approving transaction:', error);
       showError(tr('errors.transactions.approveFailed', 'Greška pri odobravanju transakcije'));
@@ -73,7 +74,7 @@ export const usePendingTransactions = (incomeSourceId: string | null) => {
       if (error) throw error;
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
-      showSuccess('Transakcija odbijena');
+      showSuccess(t('toasts.transactionRejected'));
     } catch (error) {
       console.error('Error rejecting transaction:', error);
       showError(tr('errors.transactions.rejectFailed', 'Greška pri odbijanju transakcije'));

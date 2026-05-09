@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -88,7 +89,7 @@ export const useProjectEstimates = () => {
         .select()
         .single();
       if (error) throw error;
-      showSuccess('Ponuda kreirana');
+      showSuccess(t('toasts.estimateCreated'));
       await fetchEstimates();
       return data as ProjectEstimate;
     } catch (err: any) {
@@ -105,7 +106,7 @@ export const useProjectEstimates = () => {
         .update(patch)
         .eq('id', id);
       if (error) throw error;
-      showSuccess('Ponuda ažurirana');
+      showSuccess(t('toasts.estimateUpdated'));
       await fetchEstimates();
     } catch (err: any) {
       showError(friendlyError(err, "errors.generic"));
@@ -119,7 +120,7 @@ export const useProjectEstimates = () => {
         .delete()
         .eq('id', id);
       if (error) throw error;
-      showSuccess('Ponuda obrisana');
+      showSuccess(t('toasts.estimateDeleted'));
       await fetchEstimates();
     } catch (err: any) {
       showError(friendlyError(err, "errors.generic"));
@@ -149,7 +150,7 @@ export const useProjectEstimates = () => {
         .update({ accepted_project_id: project.id, status: 'accepted' })
         .eq('id', estimate.id);
 
-      showSuccess('Projekt kreiran iz ponude');
+      showSuccess(t('toasts.projectCreatedFromEstimate'));
       await fetchEstimates();
       return project.id;
     } catch (err: any) {

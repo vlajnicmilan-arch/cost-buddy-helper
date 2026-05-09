@@ -216,7 +216,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
 
       const pdfFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`;
       await exportPDFDoc(doc, pdfFileName, mode);
-      showSuccess('PDF izvjesce generirano!');
+      showSuccess(t('toasts.pdfReportGenerated'));
     } catch {
       showError(t('errors.reports.pdfFailed', 'Greška pri generiranju PDF-a'));
     }
@@ -240,7 +240,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       const csvContent = header + rows.join('\n');
       const csvFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.csv`;
       await exportTextFile(csvContent, csvFileName, 'text/csv', true, mode);
-      showSuccess('CSV datoteka generirana!');
+      showSuccess(t('toasts.csvGenerated'));
     } catch {
       showError(t('errors.reports.csvFailed', 'Greška pri generiranju CSV-a'));
     }
@@ -273,7 +273,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
       };
       const jsonFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.json`;
       await exportTextFile(JSON.stringify(data, null, 2), jsonFileName, 'application/json', false, mode);
-      showSuccess('JSON datoteka generirana!');
+      showSuccess(t('toasts.jsonGenerated'));
     } catch {
       showError(t('errors.reports.jsonFailed', 'Greška pri generiranju JSON-a'));
     }

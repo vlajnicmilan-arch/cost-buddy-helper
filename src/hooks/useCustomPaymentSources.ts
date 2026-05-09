@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -239,7 +240,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       const updated = [...customPaymentSources, newSource];
       setCustomPaymentSources(updated);
       localStorage.setItem('customPaymentSources', JSON.stringify(updated));
-      showSuccess('Izvor plaćanja dodan');
+      showSuccess(t('toasts.paymentSourceAdded'));
       return newSource;
     }
 
@@ -266,7 +267,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       if (error) throw error;
       const newSource = { ...(data as object), cards: [] } as CustomPaymentSource;
       setCustomPaymentSources(prev => [...prev, newSource]);
-      showSuccess('Izvor plaćanja dodan');
+      showSuccess(t('toasts.paymentSourceAdded'));
       return newSource;
     } catch (error) {
       console.error('Error adding custom payment source:', error);
@@ -282,7 +283,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       );
       setCustomPaymentSources(updated);
       localStorage.setItem('customPaymentSources', JSON.stringify(updated));
-      showSuccess('Izvor plaćanja ažuriran');
+      showSuccess(t('toasts.paymentSourceUpdated'));
       return;
     }
 
@@ -297,7 +298,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       setCustomPaymentSources(prev =>
         prev.map(src => (src.id === id ? { ...src, ...updates } : src))
       );
-      showSuccess('Izvor plaćanja ažuriran');
+      showSuccess(t('toasts.paymentSourceUpdated'));
     } catch (error) {
       console.error('Error updating custom payment source:', error);
       showError(tr('errors.update.source', 'Greška pri ažuriranju izvora plaćanja'));
@@ -309,7 +310,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       const updated = customPaymentSources.filter(src => src.id !== id);
       setCustomPaymentSources(updated);
       localStorage.setItem('customPaymentSources', JSON.stringify(updated));
-      showSuccess('Izvor plaćanja obrisan');
+      showSuccess(t('toasts.paymentSourceDeleted'));
       return;
     }
 
@@ -321,7 +322,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
 
       if (error) throw error;
       setCustomPaymentSources(prev => prev.filter(src => src.id !== id));
-      showSuccess('Izvor plaćanja obrisan');
+      showSuccess(t('toasts.paymentSourceDeleted'));
     } catch (error) {
       console.error('Error deleting custom payment source:', error);
       showError(tr('errors.delete.source', 'Greška pri brisanju izvora plaćanja'));

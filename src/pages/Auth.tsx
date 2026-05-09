@@ -194,7 +194,7 @@ const Auth = () => {
       if (error) {
         showError(t('toasts.emailSendError'));
       } else {
-        showSuccess('Verifikacijski email je poslan!');
+        showSuccess(t('toasts.verificationEmailSent'));
       }
     } finally {
       setResendLoading(false);
@@ -235,7 +235,7 @@ const Auth = () => {
       }
       setResetEmailSent(true);
       setRegisteredEmail(trimmedEmail);
-      showSuccess('Email za resetiranje lozinke je poslan!');
+      showSuccess(t('toasts.passwordResetEmailSent'));
     } finally {
       setResetLoading(false);
     }

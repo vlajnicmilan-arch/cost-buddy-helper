@@ -93,7 +93,7 @@ export const useRecurringTransactions = () => {
       showError(t('errors.create.recurring', 'Greška pri dodavanju ponavljajuće transakcije'));
       throw error;
     }
-    showSuccess('Ponavljajuća transakcija dodana');
+    showSuccess(t('toasts.recurringAdded'));
     await fetchRecurring();
   };
 
@@ -107,7 +107,7 @@ export const useRecurringTransactions = () => {
         .eq('id', id);
 
       if (error) throw error;
-      showSuccess('Ažurirano');
+      showSuccess(t('toasts.updated'));
       await fetchRecurring();
     } catch (error) {
       console.error('Error updating recurring transaction:', error);
@@ -125,7 +125,7 @@ export const useRecurringTransactions = () => {
         .eq('id', id);
 
       if (error) throw error;
-      showSuccess('Ponavljajuća transakcija obrisana');
+      showSuccess(t('toasts.recurringDeleted'));
       setRecurringTransactions(prev => prev.filter(r => r.id !== id));
     } catch (error) {
       console.error('Error deleting recurring transaction:', error);

@@ -59,7 +59,7 @@ export const useFamilyGroups = () => {
       
       setGroups(prev => [created, ...prev]);
       emitAvatarEvent('happy', 'Obitelj raste! 👨‍👩‍👧');
-      showSuccess('Grupa kreirana!');
+      showSuccess(t('toasts.groupCreated'));
       return created;
     } catch (error) {
       console.error('Error creating family group:', error);
@@ -78,7 +78,7 @@ export const useFamilyGroups = () => {
       if (error) throw error;
 
       setGroups(prev => prev.map(g => g.id === id ? { ...g, ...data } : g));
-      showSuccess('Grupa ažurirana');
+      showSuccess(t('toasts.groupUpdated'));
     } catch (error) {
       console.error('Error updating family group:', error);
       showError(t('toasts.error'));
@@ -95,7 +95,7 @@ export const useFamilyGroups = () => {
       if (error) throw error;
 
       setGroups(prev => prev.filter(g => g.id !== id));
-      showSuccess('Grupa obrisana');
+      showSuccess(t('toasts.groupDeleted'));
     } catch (error) {
       console.error('Error deleting family group:', error);
       showError(t('toasts.error'));
@@ -197,7 +197,7 @@ export const useFamilyMembers = (groupId: string | null) => {
       setMembers(prev => prev.map(m =>
         m.id === memberId ? { ...m, role: newRole } : m
       ));
-      showSuccess('Uloga ažurirana');
+      showSuccess(t('toasts.roleUpdated'));
     } catch (error) {
       console.error('Error updating member role:', error);
       showError(t('toasts.error'));
@@ -214,7 +214,7 @@ export const useFamilyMembers = (groupId: string | null) => {
       if (error) throw error;
 
       setMembers(prev => prev.filter(m => m.id !== memberId));
-      showSuccess('Član uklonjen');
+      showSuccess(t('toasts.memberRemoved'));
     } catch (error) {
       console.error('Error removing member:', error);
       showError(t('toasts.error'));
@@ -263,7 +263,7 @@ export const useFamilyMembers = (groupId: string | null) => {
       if (error) throw error;
 
       setInvitations(prev => prev.filter(i => i.id !== invitationId));
-      showSuccess('Pozivnica otkazana');
+      showSuccess(t('toasts.invitationCancelled'));
     } catch (error) {
       console.error('Error cancelling invitation:', error);
       showError(t('toasts.error'));
@@ -468,7 +468,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
         });
 
       if (error) throw error;
-      showSuccess('Račun dodan u grupu');
+      showSuccess(t('toasts.accountAddedToGroup'));
       await logActivity('added_source', 'Dodao/la račun u grupu', { payment_source_id: paymentSourceId });
       fetchResources();
     } catch (error: any) {
@@ -490,7 +490,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
 
       if (error) throw error;
       setSharedSources(prev => prev.filter(s => s.id !== id));
-      showSuccess('Račun uklonjen iz grupe');
+      showSuccess(t('toasts.accountRemovedFromGroup'));
       await logActivity('removed_source', 'Uklonio/la račun iz grupe');
     } catch (error) {
       console.error('Error removing shared source:', error);
@@ -511,7 +511,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
         });
 
       if (error) throw error;
-      showSuccess('Budžet dodan u grupu');
+      showSuccess(t('toasts.budgetAddedToGroup'));
       await logActivity('added_budget', 'Dodao/la budžet u grupu', { budget_id: budgetId });
       fetchResources();
     } catch (error: any) {
@@ -533,7 +533,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
 
       if (error) throw error;
       setSharedBudgets(prev => prev.filter(b => b.id !== id));
-      showSuccess('Budžet uklonjen iz grupe');
+      showSuccess(t('toasts.budgetRemovedFromGroup'));
       await logActivity('removed_budget', 'Uklonio/la budžet iz grupe');
     } catch (error) {
       console.error('Error removing shared budget:', error);
@@ -554,7 +554,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
         });
 
       if (error) throw error;
-      showSuccess('Projekt dodan u grupu');
+      showSuccess(t('toasts.projectAddedToGroup'));
       await logActivity('added_project', 'Dodao/la projekt u grupu', { project_id: projectId });
       fetchResources();
     } catch (error: any) {
@@ -576,7 +576,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
 
       if (error) throw error;
       setSharedProjects(prev => prev.filter(p => p.id !== id));
-      showSuccess('Projekt uklonjen iz grupe');
+      showSuccess(t('toasts.projectRemovedFromGroup'));
       await logActivity('removed_project', 'Uklonio/la projekt iz grupe');
     } catch (error) {
       console.error('Error removing shared project:', error);
@@ -597,7 +597,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
         });
 
       if (error) throw error;
-      showSuccess('Cilj štednje dodan u grupu');
+      showSuccess(t('toasts.savingsGoalAddedToGroup'));
       await logActivity('added_savings', 'Dodao/la cilj štednje u grupu', { savings_goal_id: savingsGoalId });
       fetchResources();
     } catch (error: any) {
@@ -619,7 +619,7 @@ export const useFamilySharedResources = (groupId: string | null) => {
 
       if (error) throw error;
       setSharedSavings(prev => prev.filter(s => s.id !== id));
-      showSuccess('Cilj štednje uklonjen iz grupe');
+      showSuccess(t('toasts.savingsGoalRemovedFromGroup'));
       await logActivity('removed_savings', 'Uklonio/la cilj štednje iz grupe');
     } catch (error) {
       console.error('Error removing shared savings:', error);
