@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,7 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface ScannedData {
   amount: number;
