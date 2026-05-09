@@ -93,7 +93,7 @@ const JoinFamily = () => {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-sm">
-          <h1 className="text-xl font-bold">Pridruži se obiteljskoj grupi</h1>
+          <h1 className="text-xl font-bold">{t('join.familyTitle')}</h1>
           <p className="text-muted-foreground">Morate se prijaviti za pridruživanje grupi.</p>
           <Button onClick={() => navigate('/auth', { state: { returnTo: `/join-family/${token}` } })}>
             Prijavi se
@@ -108,7 +108,7 @@ const JoinFamily = () => {
       <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-sm">
           <XCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h1 className="text-xl font-bold">Greška</h1>
+          <h1 className="text-xl font-bold">{t('join.error')}</h1>
           <p className="text-muted-foreground">{errorMessage}</p>
           <Button onClick={() => navigate('/family')}>Idi na Obitelj</Button>
         </div>
