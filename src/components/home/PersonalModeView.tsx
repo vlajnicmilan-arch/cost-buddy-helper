@@ -423,6 +423,15 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         </div>
       )}
 
+      <Dialog open={debtsOpen} onOpenChange={setDebtsOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('business.more.openInvoices', 'Otvoreni računi')}</DialogTitle>
+          </DialogHeader>
+          <BusinessDebtTracker />
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );
