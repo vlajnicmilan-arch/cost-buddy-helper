@@ -980,7 +980,9 @@
     "clear": "Löschen",
     "privacyPolicy": "Datenschutzerklärung",
     "termsOfService": "Nutzungsbedingungen",
-    "signOut": "Abmelden"
+    "signOut": "Abmelden",
+    "unknown": "Unbekannt",
+    "clearSearch": "Suche löschen"
   },
   "auth": {
     "login": "Anmelden",
@@ -1015,7 +1017,17 @@
       "description": "Wenn sich die App nicht automatisch öffnet, tippen Sie auf den Button unten.",
       "openApp": "V&M Balance öffnen",
       "help": "Nach der Rückkehr wird die Anmeldung in der App abgeschlossen."
-    }
+    },
+    "sentTo": "Wir haben einen Bestätigungslink gesendet an:",
+    "resetSentTo": "Wir haben einen Link zum Zurücksetzen des Passworts gesendet an:",
+    "clickResetLink": "Klicken Sie auf den Link in der E-Mail, um Ihr Passwort zurückzusetzen",
+    "resetLinkValid": "Der Link ist 1 Stunde gültig",
+    "loginSubtitle": "Bei Ihrem Konto anmelden",
+    "registerSubtitle": "Neues Konto erstellen",
+    "nameOptional": "Name (optional)",
+    "nameHint": "Wenn Sie keinen Namen eingeben, wird der Name aus Ihrer E-Mail verwendet",
+    "resetEmailHint": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen des Passworts.",
+    "emailLabel": "E-Mail"
   },
   "categories": {
     "food": "Essen",
@@ -2222,7 +2234,9 @@
   "join": {
     "invalidLink": "Ungültiger Link",
     "errorJoiningProject": "Fehler beim Beitritt zum Projekt",
-    "errorJoiningBudget": "Fehler beim Beitritt zum Budget"
+    "errorJoiningBudget": "Fehler beim Beitritt zum Budget",
+    "familyTitle": "Familiengruppe beitreten",
+    "error": "Fehler"
   },
   "categoryGroups": {
     "foodAndGroceries": "Essen & Lebensmittel",
@@ -2610,7 +2624,14 @@
     "noDestination": "Kein Ziel",
     "fullName": "Vor- und Nachname",
     "streetAndNumber": "Straße und Hausnummer",
-    "cityExample": "Zagreb"
+    "cityExample": "Zagreb",
+    "yourEmail": "sie@email.com",
+    "notificationText": "Benachrichtigungstext eingeben...",
+    "searchUsers": "Nach Namen oder E-Mail suchen...",
+    "searchFeedback": "Nachrichten, E-Mail, Route durchsuchen...",
+    "searchUser": "Benutzer suchen...",
+    "filterLogs": "Nach Ereignis, Route, Benutzer filtern...",
+    "functionSource": "Funktionsquelle"
   },
   "checklist": {
     "title": "Erste Schritte mit V&M Balance",
@@ -3418,5 +3439,59 @@
     "tip4": "Tipp: Der gesamte Beleg sollte im Bildausschnitt sein",
     "analyzingReceipt": "Beleg wird analysiert...",
     "canTakeUpTo30s": "Dies kann bis zu 30 Sekunden dauern"
+  },
+  "publicProject": {
+    "noAccess": "Zugriff verweigert",
+    "ownerNotChosen": "Der Projekteigentümer hat noch nicht gewählt, was öffentlich angezeigt werden soll.",
+    "start": "Start",
+    "deadline": "Frist",
+    "budget": "Budget",
+    "spent": "Ausgegeben",
+    "received": "Erhalten",
+    "linkExpired": "Dieser Link ist abgelaufen",
+    "linkRevoked": "Dieser Link wurde widerrufen",
+    "linkInvalid": "Link ist ungültig oder wurde gelöscht",
+    "progress": "Projektfortschritt",
+    "phasesCount": "{{completed}}/{{total}} Phasen",
+    "financials": "Finanzen",
+    "phases": "Phasen",
+    "statusCompleted": "Abgeschlossen",
+    "statusInProgress": "Läuft",
+    "statusOverdue": "Überfällig",
+    "statusWaiting": "Wartet",
+    "deadlineLabel": "Frist",
+    "photoLog": "Foto-Fortschrittsprotokoll",
+    "readonlyFooter": "Schreibgeschützte Ansicht. Powered by V&M Balance."
+  },
+  "admin": {
+    "noFilterResults": "Keine Ergebnisse für die angegebenen Filter",
+    "attempts": "Versuche",
+    "errors": "Fehler",
+    "noTokens": "Keine Tokens",
+    "requestId": "Request ID",
+    "userId": "User ID",
+    "lifecyclePhases": "Lebenszyklus-Phasen",
+    "noData": "Keine Daten",
+    "noReports": "Keine gemeldeten Probleme",
+    "noFeedback": "Keine Rückmeldungen",
+    "sendNotificationAll": "Benachrichtigung an alle Benutzer senden",
+    "titleLabel": "Titel",
+    "messageLabel": "Nachricht",
+    "globalBilling": "Globale Abrechnung",
+    "userTiers": "Benutzer-Stufen",
+    "migrationTitle": "Migration bestehender Abonnenten",
+    "migrationDesc": "mit automatischer Proration. <strong>Immer zuerst Dry Run ausführen!</strong>",
+    "apkLiveSyncNote": "Alle <strong>UI-Änderungen</strong> (Buttons, Farben, Text, neue Seiten) werden automatisch über Live Sync ausgeliefert — <strong>kein</strong> neuer APK nötig.",
+    "currency": "Währung",
+    "emailConfirmed": "E-Mail bestätigt",
+    "lastUsage": "Letzte Nutzung",
+    "appVersion": "App-Version",
+    "appVersionUnknown": "Unbekannt (ältere Version)",
+    "device": "Gerät",
+    "os": "OS",
+    "browser": "Browser",
+    "language": "Sprache",
+    "screen": "Bildschirm",
+    "viewport": "Viewport"
   }
 }

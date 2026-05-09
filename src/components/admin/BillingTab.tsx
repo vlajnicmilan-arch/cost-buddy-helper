@@ -1,4 +1,5 @@
 import { CreditCard, Crown, Briefcase, Star, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SubscriptionMigrationPanel } from '@/components/admin/SubscriptionMigrationPanel';
@@ -23,6 +24,7 @@ export const BillingTab = ({
   subLoading,
   onSetUserTier,
 }: BillingTabProps) => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4 mt-4">
       <div className="bg-card border rounded-xl p-4 space-y-3">
@@ -30,7 +32,7 @@ export const BillingTab = ({
           <div className="flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-primary" />
             <div>
-              <h3 className="font-semibold text-sm">Globalna naplata</h3>
+              <h3 className="font-semibold text-sm">{t('admin.globalBilling')}</h3>
               <p className="text-xs text-muted-foreground">Uključi/isključi sustav pretplata za sve korisnike</p>
             </div>
           </div>
@@ -48,7 +50,7 @@ export const BillingTab = ({
       <div className="bg-card border rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-2 mb-2">
           <Crown className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold text-sm">Razine korisnika</h3>
+          <h3 className="font-semibold text-sm">{t('admin.userTiers')}</h3>
         </div>
 
         {users.length === 0 ? (

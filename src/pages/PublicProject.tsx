@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface PublicProjectData {
   project: {
@@ -28,6 +29,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const PUB_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const PublicProject = () => {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const [data, setData] = useState<PublicProjectData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,13 +63,13 @@ const PublicProject = () => {
   }
 
   if (error || !data) {
-    const msg = error === 'expired' ? 'Ovaj link je istekao'
-      : error === 'revoked' ? 'Ovaj link je opozvan'
-      : 'Link nije valjan ili je obrisan';
+    const msg = error === 'expired' ? t('publicProject.linkExpired')
+      : error === 'revoked' ? t('publicProject.linkRevoked')
+      : t('publicProject.linkInvalid');
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center bg-background p-6 text-center">
         <Lock className="w-12 h-12 text-muted-foreground mb-3" />
-        <h1 className="text-lg font-semibold mb-1">Pristup nije moguć</h1>
+        <h1 className="text-lg font-semibold mb-1">{t('publicProject.noAccess')}</h1>
         <p className="text-sm text-muted-foreground">{msg}</p>
       </div>
     );
@@ -102,7 +104,7 @@ const PublicProject = () => {
         <div className="grid grid-cols-2 gap-3">
           {project.start_date && (
             <div className="p-3 rounded-lg border bg-card">
-              <p className="text-xs text-muted-foreground">Početak</p>
+              <p className="text-xs text-muted-foreground">{t('publicProject.start')}</p>
               <p className="text-sm font-medium flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
                 {format(new Date(project.start_date), 'd. MMM yyyy', { locale: hr })}
@@ -111,7 +113,7 @@ const PublicProject = () => {
           )}
           {project.end_date && (
             <div className="p-3 rounded-lg border bg-card">
-              <p className="text-xs text-muted-foreground">Rok</p>
+              <p className="text-xs text-muted-foreground">{t('publicProject.deadline')}</p>
               <p className="text-sm font-medium flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
                 {format(new Date(project.end_date), 'd. MMM yyyy', { locale: hr })}
@@ -126,9 +128,9 @@ const PublicProject = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
-                Napredak projekta
+                {t('publicProject.progress')}
               </span>
-              <span className="text-sm font-semibold">{completed}/{total} faza</span>
+              <span className="text-sm font-semibold">{t('publicProject.phasesCount', { completed, total })}</span>
             </div>
             <Progress value={overallProgress} className="h-2" />
           </div>
@@ -139,19 +141,19 @@ const PublicProject = () => {
           <div className="p-4 rounded-lg border bg-card space-y-3">
             <h2 className="text-sm font-semibold flex items-center gap-2">
               <Wallet className="w-4 h-4 text-primary" />
-              Financije
+              {t('publicProject.financials')}
             </h2>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
-                <p className="text-xs text-muted-foreground">Budžet</p>
+                <p className="text-xs text-muted-foreground">{t('publicProject.budget')}</p>
                 <p className="text-base font-bold">{financials.totalBudget.toFixed(0)} €</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Potrošeno</p>
+                <p className="text-xs text-muted-foreground">{t('publicProject.spent')}</p>
                 <p className="text-base font-bold text-expense">{financials.totalSpent.toFixed(0)} €</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Primljeno</p>
+                <p className="text-xs text-muted-foreground">{t('publicProject.received')}</p>
                 <p className="text-base font-bold text-income">{financials.totalIncome.toFixed(0)} €</p>
               </div>
             </div>
@@ -163,7 +165,7 @@ const PublicProject = () => {
           <div className="space-y-2">
             <h2 className="text-sm font-semibold flex items-center gap-2">
               <Target className="w-4 h-4 text-primary" />
-              Faze
+              {t('publicProject.phases')}
             </h2>
             {milestones.map((m: any) => (
               <div key={m.id} className="p-3 rounded-lg border bg-card flex items-start gap-3">
@@ -175,13 +177,13 @@ const PublicProject = () => {
                       variant={m.status === 'completed' ? 'default' : m.status === 'overdue' ? 'destructive' : 'outline'}
                       className="text-[10px] h-4 px-1"
                     >
-                      {m.status === 'completed' ? 'Završeno' : m.status === 'in_progress' ? 'U tijeku' : m.status === 'overdue' ? 'Kasni' : 'Čeka'}
+                      {m.status === 'completed' ? t('publicProject.statusCompleted') : m.status === 'in_progress' ? t('publicProject.statusInProgress') : m.status === 'overdue' ? t('publicProject.statusOverdue') : t('publicProject.statusWaiting')}
                     </Badge>
                   </div>
                   {m.description && <p className="text-xs text-muted-foreground mb-1">{m.description}</p>}
                   {m.due_date && (
                     <p className="text-[11px] text-muted-foreground">
-                      Rok: {format(new Date(m.due_date), 'd. MMM', { locale: hr })}
+                      {t('publicProject.deadlineLabel')}: {format(new Date(m.due_date), 'd. MMM', { locale: hr })}
                     </p>
                   )}
                 </div>
@@ -195,7 +197,7 @@ const PublicProject = () => {
           <div className="space-y-2">
             <h2 className="text-sm font-semibold flex items-center gap-2">
               <Camera className="w-4 h-4 text-primary" />
-              Foto dnevnik napretka
+              {t('publicProject.photoLog')}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {photos.map((p: any) => (
@@ -220,12 +222,12 @@ const PublicProject = () => {
         {!permissions.show_milestones && !permissions.show_financials && !permissions.show_photos && (
           <div className="text-center text-muted-foreground py-12">
             <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>Vlasnik projekta još nije odabrao što želi prikazati javno.</p>
+            <p>{t('publicProject.ownerNotChosen')}</p>
           </div>
         )}
 
         <p className="text-center text-[10px] text-muted-foreground pt-6 pb-4">
-          Pregled samo za čitanje. Powered by V&M Balance.
+          {t('publicProject.readonlyFooter')}
         </p>
       </div>
     </div>

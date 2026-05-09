@@ -183,7 +183,7 @@ export const DiagnosticLogsTab = () => {
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row gap-2">
         <Input
-          placeholder="Filtriraj po eventu, ruti, korisniku..."
+          placeholder={t('placeholders.filterLogs')}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="flex-1"

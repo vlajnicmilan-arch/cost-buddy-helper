@@ -1,4 +1,5 @@
 import { Loader2, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import type { AdminStats } from './types';
 
@@ -17,6 +18,7 @@ const StatCard = ({ label, value, sub }: { label: string; value: number | string
 );
 
 export const StatsTab = ({ stats, loading, onRefresh }: StatsTabProps) => {
+  const { t } = useTranslation();
   if (loading && !stats) {
     return (
       <div className="text-center py-12">
@@ -26,7 +28,7 @@ export const StatsTab = ({ stats, loading, onRefresh }: StatsTabProps) => {
   }
 
   if (!stats) {
-    return <p className="text-center text-muted-foreground py-8">Nema podataka</p>;
+    return <p className="text-center text-muted-foreground py-8">{t('admin.noData')}</p>;
   }
 
   return (

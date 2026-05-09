@@ -283,9 +283,9 @@ const Auth = () => {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Provjerite svoj email</h2>
+              <h2 className="text-xl font-semibold">{t('auth.checkEmail')}</h2>
               <p className="text-muted-foreground text-sm">
-                Poslali smo verifikacijski link na:
+                {t('auth.sentTo')}
               </p>
               <p className="font-medium text-primary">{registeredEmail}</p>
             </div>
@@ -293,15 +293,15 @@ const Auth = () => {
             <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground space-y-2">
               <p className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Kliknite na link u emailu za potvrdu računa</span>
+                <span>{t('auth.clickLink')}</span>
               </p>
               <p className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Provjerite spam/junk folder ako ne vidite email</span>
+                <span>{t('auth.checkSpam')}</span>
               </p>
               <p className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Link vrijedi 24 sata</span>
+                <span>{t('auth.linkValid')}</span>
               </p>
             </div>
 
@@ -368,9 +368,9 @@ const Auth = () => {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Provjerite svoj email</h2>
+              <h2 className="text-xl font-semibold">{t('auth.checkEmail')}</h2>
               <p className="text-muted-foreground text-sm">
-                Poslali smo link za resetiranje lozinke na:
+                {t('auth.resetSentTo')}
               </p>
               <p className="font-medium text-primary">{registeredEmail}</p>
             </div>
@@ -378,15 +378,15 @@ const Auth = () => {
             <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground space-y-2">
               <p className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Kliknite na link u emailu za resetiranje lozinke</span>
+                <span>{t('auth.clickResetLink')}</span>
               </p>
               <p className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Provjerite spam/junk folder ako ne vidite email</span>
+                <span>{t('auth.checkSpam')}</span>
               </p>
               <p className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Link vrijedi 1 sat</span>
+                <span>{t('auth.resetLinkValid')}</span>
               </p>
             </div>
 
@@ -421,17 +421,17 @@ const Auth = () => {
 
           <form onSubmit={handleForgotPassword} className="glass-card rounded-2xl p-6 space-y-6">
             <div className="text-center text-sm text-muted-foreground">
-              <p>Unesite svoju email adresu i poslat ćemo vam link za resetiranje lozinke.</p>
+              <p>{t('auth.resetEmailHint')}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="resetEmail">Email</Label>
+              <Label htmlFor="resetEmail">{t('auth.emailLabel')}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="resetEmail"
                   type="email"
-                  placeholder="vas@email.com"
+                  placeholder={t('placeholders.yourEmail')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`pl-10 h-12 rounded-xl ${errors.email ? 'border-destructive' : ''}`}
@@ -477,7 +477,7 @@ const Auth = () => {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Natrag</span>
+            <span className="text-sm">{t('common.back')}</span>
           </button>
         )}
         
@@ -488,7 +488,7 @@ const Auth = () => {
           </div>
           <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
-            {isLogin ? 'Prijavite se na svoj račun' : 'Kreirajte novi račun'}
+            {isLogin ? t('auth.loginSubtitle') : t('auth.registerSubtitle')}
           </p>
         </div>
 
@@ -497,7 +497,7 @@ const Auth = () => {
           {/* Name field - only for registration */}
           {!isLogin && (
             <div className="space-y-2">
-              <Label htmlFor="displayName">Ime (opcionalno)</Label>
+              <Label htmlFor="displayName">{t('auth.nameOptional')}</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
@@ -511,19 +511,19 @@ const Auth = () => {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Ako ne unesete ime, koristit će se ime iz email adrese
+                {t('auth.nameHint')}
               </p>
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('auth.emailLabel')}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
-                placeholder="vas@email.com"
+                placeholder={t('placeholders.yourEmail')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={`pl-10 h-12 rounded-xl ${errors.email ? 'border-destructive' : ''}`}

@@ -980,7 +980,9 @@
     "clear": "Očisti",
     "privacyPolicy": "Pravila privatnosti",
     "termsOfService": "Uvjeti korištenja",
-    "signOut": "Odjava"
+    "signOut": "Odjava",
+    "unknown": "Nepoznato",
+    "clearSearch": "Očisti pretragu"
   },
   "auth": {
     "login": "Prijava",
@@ -1015,7 +1017,17 @@
       "description": "Ako se aplikacija ne otvori automatski, dodirnite gumb ispod.",
       "openApp": "Otvori V&M Balance",
       "help": "Nakon povratka prijava će se dovršiti u aplikaciji."
-    }
+    },
+    "sentTo": "Poslali smo verifikacijski link na:",
+    "resetSentTo": "Poslali smo link za resetiranje lozinke na:",
+    "clickResetLink": "Kliknite na link u emailu za resetiranje lozinke",
+    "resetLinkValid": "Link vrijedi 1 sat",
+    "loginSubtitle": "Prijavite se na svoj račun",
+    "registerSubtitle": "Kreirajte novi račun",
+    "nameOptional": "Ime (opcionalno)",
+    "nameHint": "Ako ne unesete ime, koristit će se ime iz email adrese",
+    "resetEmailHint": "Unesite svoju email adresu i poslat ćemo vam link za resetiranje lozinke.",
+    "emailLabel": "Email"
   },
   "categories": {
     "food": "Hrana",
@@ -2222,7 +2234,9 @@
   "join": {
     "invalidLink": "Nevažeći link",
     "errorJoiningProject": "Greška pri pridruživanju projektu",
-    "errorJoiningBudget": "Greška pri pridruživanju budžetu"
+    "errorJoiningBudget": "Greška pri pridruživanju budžetu",
+    "familyTitle": "Pridruži se obiteljskoj grupi",
+    "error": "Greška"
   },
   "categoryGroups": {
     "foodAndGroceries": "Hrana i namirnice",
@@ -2610,7 +2624,14 @@
     "noDestination": "Bez odredišta",
     "fullName": "Ime i prezime",
     "streetAndNumber": "Ulica i broj",
-    "cityExample": "Zagreb"
+    "cityExample": "Zagreb",
+    "yourEmail": "vas@email.com",
+    "notificationText": "Unesite tekst obavijesti...",
+    "searchUsers": "Pretraži po imenu ili emailu...",
+    "searchFeedback": "Pretraži poruke, email, rutu...",
+    "searchUser": "Pretraži korisnika...",
+    "filterLogs": "Filtriraj po eventu, ruti, korisniku...",
+    "functionSource": "Izvor funkcija"
   },
   "checklist": {
     "title": "Počnite s V&M Balance",
@@ -3418,5 +3439,59 @@
     "tip4": "Savjet: Cijeli račun treba biti u kadru",
     "analyzingReceipt": "Analiziram račun...",
     "canTakeUpTo30s": "Ovo može potrajati do 30 sekundi"
+  },
+  "publicProject": {
+    "noAccess": "Pristup nije moguć",
+    "ownerNotChosen": "Vlasnik projekta još nije odabrao što želi prikazati javno.",
+    "start": "Početak",
+    "deadline": "Rok",
+    "budget": "Budžet",
+    "spent": "Potrošeno",
+    "received": "Primljeno",
+    "linkExpired": "Ovaj link je istekao",
+    "linkRevoked": "Ovaj link je opozvan",
+    "linkInvalid": "Link nije valjan ili je obrisan",
+    "progress": "Napredak projekta",
+    "phasesCount": "{{completed}}/{{total}} faza",
+    "financials": "Financije",
+    "phases": "Faze",
+    "statusCompleted": "Završeno",
+    "statusInProgress": "U tijeku",
+    "statusOverdue": "Kasni",
+    "statusWaiting": "Čeka",
+    "deadlineLabel": "Rok",
+    "photoLog": "Foto dnevnik napretka",
+    "readonlyFooter": "Pregled samo za čitanje. Powered by V&M Balance."
+  },
+  "admin": {
+    "noFilterResults": "Nema rezultata za zadane filtere",
+    "attempts": "Pokušaja",
+    "errors": "Greške",
+    "noTokens": "Bez tokena",
+    "requestId": "Request ID",
+    "userId": "User ID",
+    "lifecyclePhases": "Faze životnog ciklusa",
+    "noData": "Nema podataka",
+    "noReports": "Nema prijavljenih problema",
+    "noFeedback": "Nema povratnih informacija",
+    "sendNotificationAll": "Pošalji obavijest svim korisnicima",
+    "titleLabel": "Naslov",
+    "messageLabel": "Poruka",
+    "globalBilling": "Globalna naplata",
+    "userTiers": "Razine korisnika",
+    "migrationTitle": "Migracija postojećih pretplatnika",
+    "migrationDesc": "s automatskom proracijom. <strong>Uvijek prvo pokreni Dry Run!</strong>",
+    "apkLiveSyncNote": "Sve <strong>UI promjene</strong> (gumbi, boje, tekst, nove stranice) idu automatski preko Live Synca — <strong>ne treba</strong> novi APK.",
+    "currency": "Valuta",
+    "emailConfirmed": "Email potvrđen",
+    "lastUsage": "Zadnje korištenje",
+    "appVersion": "Verzija aplikacije",
+    "appVersionUnknown": "Nepoznato (starija verzija)",
+    "device": "Uređaj",
+    "os": "OS",
+    "browser": "Browser",
+    "language": "Jezik",
+    "screen": "Ekran",
+    "viewport": "Viewport"
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -126,6 +127,7 @@ const STAGE_META: Record<string, { icon: any; label: string }> = {
 };
 
 export const PushLogsTab = () => {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<PushLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -244,7 +246,7 @@ export const PushLogsTab = () => {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2">
         <div className="bg-card border rounded-lg p-2 text-center">
-          <p className="text-[10px] text-muted-foreground">Pokušaja</p>
+          <p className="text-[10px] text-muted-foreground">{t('admin.attempts')}</p>
           <p className="text-lg font-bold">{stats.total}</p>
         </div>
         <div className="bg-card border rounded-lg p-2 text-center">
@@ -252,11 +254,11 @@ export const PushLogsTab = () => {
           <p className="text-lg font-bold text-emerald-600">{stats.success}</p>
         </div>
         <div className="bg-card border rounded-lg p-2 text-center">
-          <p className="text-[10px] text-muted-foreground">Greške</p>
+          <p className="text-[10px] text-muted-foreground">{t('admin.errors')}</p>
           <p className="text-lg font-bold text-rose-600">{stats.failed}</p>
         </div>
         <div className="bg-card border rounded-lg p-2 text-center">
-          <p className="text-[10px] text-muted-foreground">Bez tokena</p>
+          <p className="text-[10px] text-muted-foreground">{t('admin.noTokens')}</p>
           <p className="text-lg font-bold text-amber-600">{stats.noTokens}</p>
         </div>
       </div>
@@ -280,7 +282,7 @@ export const PushLogsTab = () => {
           </SelectContent>
         </Select>
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Izvor funkcija" /></SelectTrigger>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder={t('placeholders.functionSource')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-xs">Sve funkcije</SelectItem>
             {sources.map((s) => (
@@ -289,7 +291,7 @@ export const PushLogsTab = () => {
           </SelectContent>
         </Select>
         <Input
-          placeholder="Pretraži korisnika..."
+          placeholder={t('placeholders.searchUser')}
           value={searchUser}
           onChange={(e) => setSearchUser(e.target.value)}
           className="h-9 text-xs"
@@ -372,18 +374,18 @@ export const PushLogsTab = () => {
                   <div className="border-t bg-muted/30 p-3 space-y-3">
                     <div className="grid grid-cols-2 gap-2 text-[11px]">
                       <div>
-                        <span className="uppercase font-semibold text-muted-foreground">Request ID</span>
+                        <span className="uppercase font-semibold text-muted-foreground">{t('admin.requestId')}</span>
                         <code className="block break-all">{g.request_id}</code>
                       </div>
                       <div>
-                        <span className="uppercase font-semibold text-muted-foreground">User ID</span>
+                        <span className="uppercase font-semibold text-muted-foreground">{t('admin.userId')}</span>
                         <code className="block break-all">{g.user_id || '—'}</code>
                       </div>
                     </div>
 
                     {/* Lifecycle stages */}
                     <div className="space-y-2">
-                      <p className="text-[10px] uppercase font-semibold text-muted-foreground">Faze životnog ciklusa</p>
+                      <p className="text-[10px] uppercase font-semibold text-muted-foreground">{t('admin.lifecyclePhases')}</p>
                       {g.stages.map((s) => {
                         const meta = STAGE_META[s.lifecycle_stage || ''] || { icon: HelpCircle, label: s.lifecycle_stage || '—' };
                         const StageIcon = meta.icon;

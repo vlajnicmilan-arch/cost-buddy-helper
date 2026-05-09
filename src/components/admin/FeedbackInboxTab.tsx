@@ -194,7 +194,7 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Pretraži poruke, email, rutu..."
+            placeholder={t('placeholders.searchFeedback')}
             className="pl-9"
           />
         </div>
@@ -242,7 +242,7 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>Nema povratnih informacija</p>
+          <p>{t('admin.noFeedback')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -348,7 +348,7 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
                         variant="outline"
                         size="icon"
                         onClick={() => deleteItem(r.id)}
-                        aria-label="Obriši"
+                        aria-label={t('common.delete')}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -22,6 +23,7 @@ type MigrationResponse = {
 };
 
 export const SubscriptionMigrationPanel = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<'dry' | 'live' | null>(null);
   const [result, setResult] = useState<MigrationResponse | null>(null);
 
@@ -61,11 +63,11 @@ export const SubscriptionMigrationPanel = () => {
     <div className="bg-card border rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-2">
         <ArrowUpCircle className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm">Migracija postojećih pretplatnika</h3>
+        <h3 className="font-semibold text-sm">{t('admin.migrationTitle')}</h3>
       </div>
       <p className="text-xs text-muted-foreground">
         Migrira sve aktivne Stripe pretplate sa starih cijena (€4.99 / €9.99) na nove (€7.99 / €14.99)
-        s automatskom proracijom. <strong>Uvijek prvo pokreni Dry Run!</strong>
+        <span dangerouslySetInnerHTML={{ __html: t('admin.migrationDesc') }} />
       </p>
 
       <div className="flex gap-2">
