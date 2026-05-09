@@ -335,6 +335,14 @@ export const BusinessDebtTracker = () => {
         detectedLoans={detectedLoans}
         onConfirm={handleConfirmLoans}
       />
+
+      <LoanResolveDialog
+        debt={resolveDebt}
+        open={!!resolveDebt}
+        onOpenChange={(o) => { if (!o) setResolveDebt(null); }}
+        onResolved={() => { /* useBusinessDebts realtime/refetch handles list */ }}
+        onDelete={async (id) => { await deleteDebt(id); }}
+      />
     </div>
   );
 };
