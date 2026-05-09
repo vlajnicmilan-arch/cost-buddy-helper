@@ -24,9 +24,11 @@ interface ScanContextHandlers {
 
 interface ReceiptScanContextValue {
   isOpen: boolean;
+  autoScan: boolean;
   businessProfileId: string | null;
   hasHandlers: boolean;
   openScan: (opts?: { businessProfileId?: string | null }) => void;
+  openManualAdd: (opts?: { businessProfileId?: string | null }) => void;
   closeScan: () => void;
   /** Register the active page's add/dup handlers. Returns an unregister fn. */
   registerHandlers: (handlers: ScanContextHandlers) => () => void;
