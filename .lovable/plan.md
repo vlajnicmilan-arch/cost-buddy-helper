@@ -1,35 +1,92 @@
-Plan je da ovo riješimo na razini stvarnog toka skeniranja, bez novog paralelnog business skenera.
+## Cilj
 
-1. Popraviti kontekst gumba “Skeniraj” i “Dodaj” na home dashboardu
-- Trenutno gumbovi iz headera otvaraju globalni skener s `businessProfileId: null`, iako je korisnik prebačen na chip tvrtke.
-- Promjena: `HomeHeader` će dobiti trenutni aktivni `businessProfileId` i proslijediti ga u `ScanTriggerButton` i `ManualAddTriggerButton`.
-- Rezultat: klik na “Skeniraj” u chipu tvrtke odmah otvara kameru, ali skener zna da sprema u poslovnom kontekstu.
+Cross-mode trošak (poslovni trošak plaćen iz osobnog izvora) treba biti vidljiv i u **Osobnim** i u **Tvrtkinim** transakcijama, bez duplog brojanja salda. Brisanje pripadne pozajmice dobiva 3 jasne opcije s odgovarajućim posljedicama na knjiženje transakcije.
 
-2. Uskladiti automatski sken s ručnim “Dodaj → Fotografiraj” tokom
-- Iz dijagnostike se vidi da auto-sken često kreće s `payment_sources_count: 0`, dok ručni tok dođe do 8 izvora i zato bolje prepozna izvor plaćanja.
-- Promjena: auto-sken neće krenuti dok nisu učitani izvori plaćanja za aktivnu tvrtku + osobni izvori. Ne uvodim timeout; koristim isti izvor podataka koji već radi u ručnom toku.
-- Rezultat: “Skeniraj” i “Dodaj → Fotografiraj” koriste iste podatke za prepoznavanje kartice/računa.
+## Princip (jedan red u bazi, dva ortogonalna filtera)
 
-3. Ispraviti format spremljenog izvora plaćanja
-- U bazi postoji miješanje `custom:UUID` i čistog `UUID`, a filteri i lookup logika očekuju konzistentno ponašanje.
-- Promjena: kad se odabere ili prepozna prilagođeni izvor, spremat će se dosljedno kao `custom:UUID`, a postojeći prikaz/filtri će i dalje čitati oba formata gdje je potrebno.
-- Rezultat: osobni izvor se pouzdano prepozna kao osobni, a poslovni kao poslovni.
+```text
+Osobni view  = source.business_profile_id IS NULL
+               (drainao je osobni saldo → tu pripada za balance/cashflow)
 
-4. Učiniti pozajmicu vlasnika pouzdanom i vidljivom
-- Ako se poslovni trošak plati osobnim prilagođenim izvorom, nakon spremanja mora nastati zapis u `business_debts` kao “Pozajmica vlasnika”.
-- Promjena: nakon spremanja čekamo owner-loan kreiranje prije zatvaranja/refetcha, tako da zapis ne ostane “fire-and-forget” nevidljiv.
-- Ako se zapis pozajmice ne može kreirati, korisnik će dobiti grešku umjesto dojma da je sve spremljeno.
-- Rezultat: u osobnom prikazu transakcija ostaje vidljiva kao osobni trošak, a u tvrtki postoji zapis pozajmice vlasnika.
+Tvrtka view  = expense.business_profile_id = <aktivna tvrtka>
+               (knjigovodstveno tvrtkin trošak → tu pripada za P&L)
 
-5. Dodati jasnu oznaku u pregledu prije spremanja
-- U previewu skeniranog računa, kad je odabran osobni izvor u poslovnom kontekstu, prikazat će se i18n oznaka “Bit će evidentirano kao pozajmica vlasnika”.
-- Time korisnik vizualno vidi prije spremanja što će se dogoditi.
+Cross-mode   = zadovoljava OBA → vidi se na obje strane, jedan red u DB
+```
 
-6. Provjera duplikata ostaje aktivna u poslovnom toku
-- Provjerit ću da se `checkDuplicate` poziva s finalnim tipom, iznosom, datumom, kategorijom i trgovcem nakon što se ispravno postavi business kontekst.
-- Ako je potrebno, dodatno ću proširiti logiku da duplikat prepozna i kad postoje varijacije `custom:UUID`/`UUID` u izvoru plaćanja.
+Saldo i dalje radi kao danas — vezan je za izvor plaćanja, pa se tvrtkin saldo ne dira.
 
-Tehnički detalji:
-- Datoteke: `HomeHeader.tsx`, `PersonalModeView.tsx`, `AddExpenseDialog.tsx`, `ScannedDataPreview.tsx`, `useExpenseCRUD.ts`, po potrebi `useExpenseFetch.ts`/`TransactionItem.tsx` za kompatibilnost formata izvora.
-- Bez nove tablice i bez promjene dogovorenog modela: jedna transakcija ostaje u `expenses`; poslovni zapis je `business_debts` kao pozajmica vlasnika.
-- Bez dupliciranja scanner logike: koristimo postojeći globalni `AddExpenseDialog` i isti `useReceiptScanner` tok.
+## 1. Filter logika (`src/hooks/useExpenseFetch.ts`)
+
+Promjena `applyViewMode`:
+- **Personal view:** `source.business_profile_id === null` (kao danas, ali eksplicitno preko helpera).
+- **Business view:** `expense.business_profile_id === viewBusinessProfileId` (umjesto `source.business_profile_id`).
+
+Dodati helper `isCrossModeExpense(e)` koji vraća `true` kad source je personal a expense ima business_profile_id — koristi se za badgeve i opcionalno isključivanje iz osobnih izvještaja.
+
+## 2. Vizualni badgevi
+
+Postojeća `TransactionItem`/`TransactionList` komponenta dobiva mali badge:
+- U **Osobnim:** "↗ Pozajmica tvrtki [Naziv]" (teal outline)
+- U **Tvrtkinim:** "← Plaćeno iz osobnog" (amber outline)
+
+Klik na badge otvara dijalog s detaljima pozajmice (postojeći `BusinessDebtTracker` filtriran na taj `source_expense_id`).
+
+i18n ključevi: `transactions.crossMode.loanToCompany`, `transactions.crossMode.paidFromPersonal`.
+
+## 3. Brisanje pozajmice → 3 opcije (`BusinessDebtTracker.tsx`)
+
+Trenutni "Obriši" gumb zamijenjen s **"Riješi"** koji otvara mali dijalog. Ponašanje ovisno o tome ima li pozajmica `source_expense_id`:
+
+**Ako ima `source_expense_id`:**
+1. **Otpiši pozajmicu** — `status='cancelled'`, transakcija ostaje na obje strane. Semantika: vlasnik je donirao tvrtki.
+2. **Promijeni izvor plaćanja transakcije** — otvara mali select s tvrtkinim izvorima; nakon spremanja `syncOwnerLoanForExpense` automatski makne pozajmicu (jer više nije cross-mode), trošak nestaje iz Osobnih.
+3. **Obriši zapis pozajmice (zadrži transakciju)** — samo briše `business_debts` red. Za rijetke slučajeve (npr. pogrešno auto-prepoznato).
+
+**Ako nema `source_expense_id`** (ručno dodano ili zombie zapis):
+- Samo opcija 3 ("Obriši zapis").
+
+Svaka opcija ima kratki opis posljedice ispod naslova.
+
+## 4. Izvještaji — sprečavanje dvostrukog brojanja
+
+- **Tvrtkin P&L / `BusinessReports`:** uključuje cross-mode (poželjno — to JE tvrtkin trošak). Bez izmjena.
+- **Osobni mjesečni izvještaj / `Reports`:** dodati toggle "Uključi pozajmice tvrtki" (default: **isključeno**). Bez togglea, cross-mode se isključuje iz osobne potrošnje da se izbjegne dojam da je vlasnik osobno potrošio taj novac (formalno jest, ali je odmah pretvoreno u potraživanje).
+- **Cashflow forecast:** ostaje vezan na izvor plaćanja, bez izmjena.
+- **Budgeti:** vezani na `budget_id` direktno, bez izmjena.
+
+## 5. Dashboard saldo
+
+Bez izmjena. Saldo se i dalje računa po izvorima plaćanja:
+- Osobni izvor: smanjen za iznos cross-mode troška (točno).
+- Tvrtkin izvor: nedirnuti (točno — novac nije izašao iz tvrtke).
+- `business_debts` se ne uključuje u saldo, samo u "Otvoreni računi".
+
+## 6. Memorija
+
+Ažurirati postojeću memoriju **Debt Tracking** — dodati napomenu o cross-mode dual-view modelu i 3-opcijskom brisanju.
+
+## Tehnički detalji
+
+- Filter promjena u `useExpenseFetch.ts:289-306` (mali, ortogonalan refactor).
+- Novi helper `isCrossModeExpense(expense)` u istom hooku, exposed kroz return value.
+- `ownerLoanLogic.ts` već ima `syncOwnerLoanForExpense` — koristi se u opciji 2.
+- Novi helper `forgiveOwnerLoan(id)` u `ownerLoanLogic.ts` — wrapper oko `update({status:'cancelled'})`.
+- Novi `LoanResolveDialog.tsx` u `src/components/business/` (3-opcijski dijalog).
+- Bez DB migracije.
+
+## Što NE radimo (svjesno izostavljeno)
+
+- Mirror-zapisi (dvije expense rows) — odbačeno zbog sync rizika.
+- Promjena `business_debts` strukture — postojeći `source_expense_id` je dovoljan.
+- Promjena dashboard salda — već radi ispravno.
+- Diranje budgeta i cashflow forecasta — već su izolirani po vlastitim FK-ima.
+
+## Redoslijed implementacije
+
+1. Filter refactor + `isCrossModeExpense` helper.
+2. Badgevi u `TransactionItem` + i18n ključevi (HR/EN/DE).
+3. `LoanResolveDialog` + `forgiveOwnerLoan` helper.
+4. Toggle u osobnom izvještaju.
+5. QA: provjera da cross-mode trošak ne narušava postojeće tokove (transferi, recurring, projekti, budgeti).
+6. Update memorije.

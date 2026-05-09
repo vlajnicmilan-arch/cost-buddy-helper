@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2, ScanSearch, Loader2 } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2, ScanSearch, Loader2, Wrench } from 'lucide-react';
+import { LoanResolveDialog } from './LoanResolveDialog';
+import { BusinessDebt } from '@/types/businessDebt';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,13 +27,14 @@ export const BusinessDebtTracker = () => {
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const { user } = useAuth();
-  const { debts, loading, addDebt, updateDebt, deleteDebt, totalReceivable, totalPayable } = useBusinessDebts();
+  const { debts, loading, addDebt, updateDebt, deleteDebt, totalReceivable, totalPayable, refetch } = useBusinessDebts();
   const { detectLoans } = useLoanDetection();
   const [addOpen, setAddOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [detectedLoans, setDetectedLoans] = useState<DetectedLoan[]>([]);
   const [loanDialogOpen, setLoanDialogOpen] = useState(false);
+  const [resolveDebt, setResolveDebt] = useState<BusinessDebt | null>(null);
 
   const [formType, setFormType] = useState<'receivable' | 'payable'>('receivable');
   const [formContact, setFormContact] = useState('');
@@ -221,13 +224,11 @@ export const BusinessDebtTracker = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-8 gap-1 text-xs text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm(t('business.debts.confirmDelete', 'Obrisati ovaj zapis?'))) deleteDebt(debt.id);
-                    }}
+                    className="flex-1 h-8 gap-1 text-xs"
+                    onClick={() => setResolveDebt(debt as BusinessDebt)}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    {t('common.delete', 'Obriši')}
+                    <Wrench className="w-3.5 h-3.5" />
+                    {t('business.debts.resolve', 'Riješi')}
                   </Button>
                 </div>
               </CardContent>
@@ -333,6 +334,14 @@ export const BusinessDebtTracker = () => {
         onOpenChange={setLoanDialogOpen}
         detectedLoans={detectedLoans}
         onConfirm={handleConfirmLoans}
+      />
+
+      <LoanResolveDialog
+        debt={resolveDebt}
+        open={!!resolveDebt}
+        onOpenChange={(o) => { if (!o) setResolveDebt(null); }}
+        onResolved={() => { refetch(); }}
+        onDelete={async (id) => { await deleteDebt(id); }}
       />
     </div>
   );
