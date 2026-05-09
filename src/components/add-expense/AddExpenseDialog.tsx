@@ -596,15 +596,13 @@ export const AddExpenseDialog = ({
       const isTransfer = scannedData.transaction_type === 'transfer';
       const isIncome = scannedData.transaction_type === 'income';
 
-      // Business mode validation: require an actual payment source when business sources exist.
-      // Personal sources are allowed (auto-create owner loan); plain 'cash' is not.
+      // Business mode validation: require an explicit custom payment source.
+      // Generic 'cash'/'bank' would silently lose the personal-vs-business
+      // distinction and bypass the owner-loan auto-creation in useExpenseCRUD.
       if (effectiveBusinessProfileId && !isTransfer && !isIncome) {
-        const hasBusinessSource = customPaymentSources.some(
-          s => s.business_profile_id === effectiveBusinessProfileId
-        );
         const isCustom = typeof finalPaymentSource === 'string' && finalPaymentSource.startsWith('custom:');
-        if (hasBusinessSource && !isCustom) {
-          showError(t('business.payment.requirePaymentSource', 'Odaberi poslovni izvor plaćanja prije spremanja.'));
+        if (!isCustom) {
+          showError(t('business.payment.requirePaymentSource', 'Odaberi konkretan izvor plaćanja prije spremanja (poslovni ili osobni).'));
           setIsSaving(false);
           return;
         }
@@ -651,7 +649,7 @@ export const AddExpenseDialog = ({
           amount: scannedData.amount,
           description: scannedData.description,
           date: new Date(scannedData.date || expenseDate),
-          type: 'expense',
+          type: finalType,
           category: scannedData.category,
           merchant_name: scannedData.merchant || undefined
         });
