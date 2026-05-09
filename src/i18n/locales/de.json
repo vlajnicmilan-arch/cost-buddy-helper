@@ -2099,7 +2099,9 @@
     "exact": "Genau",
     "possible": "Möglich",
     "monthlyShort": "monatlich",
-    "weeklyShort": "wöchentlich"
+    "weeklyShort": "wöchentlich",
+    "obligation": "Verpflichtung",
+    "transaction": "Transaktion"
   },
   "help": {
     "title": "Benutzerhandbuch",
@@ -2555,7 +2557,11 @@
     "invoiceNotes": "Anmerkungen auf der Rechnung...",
     "searchCategories": "Kategorien suchen...",
     "notificationTitle": "z.B. Neues App-Update",
-    "yourName": "Ihr Name"
+    "yourName": "Ihr Name",
+    "noDestination": "Kein Ziel",
+    "fullName": "Vor- und Nachname",
+    "streetAndNumber": "Straße und Hausnummer",
+    "cityExample": "Zagreb"
   },
   "checklist": {
     "title": "Erste Schritte mit V&M Balance",
@@ -3342,7 +3348,10 @@
       "lookingUp": "Register wird durchsucht...",
       "fetchFromRegistry": "Aus dem Handelsregister abrufen",
       "postalCode": "Postleitzahl",
-      "skip": "Überspringen"
+      "skip": "Überspringen",
+      "sourceRegistry": "Handelsregister",
+      "sourceAi": "KI",
+      "save": "Speichern"
     },
     "errorBoundary": {
       "title": "Hoppla, etwas ist schiefgelaufen",

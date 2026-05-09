@@ -2099,7 +2099,9 @@
     "exact": "Točan",
     "possible": "Moguć",
     "monthlyShort": "mjesečno",
-    "weeklyShort": "tjedno"
+    "weeklyShort": "tjedno",
+    "obligation": "Obveza",
+    "transaction": "Transakcija"
   },
   "help": {
     "title": "Upute za korištenje",
@@ -2555,7 +2557,11 @@
     "invoiceNotes": "Napomene na računu...",
     "searchCategories": "Pretraži kategorije...",
     "notificationTitle": "npr. Novo ažuriranje aplikacije",
-    "yourName": "Vaše ime"
+    "yourName": "Vaše ime",
+    "noDestination": "Bez odredišta",
+    "fullName": "Ime i prezime",
+    "streetAndNumber": "Ulica i broj",
+    "cityExample": "Zagreb"
   },
   "checklist": {
     "title": "Počnite s V&M Balance",
@@ -3342,7 +3348,10 @@
       "lookingUp": "Pretražujem registar...",
       "fetchFromRegistry": "Dohvati iz sudskog registra",
       "postalCode": "Poštanski broj",
-      "skip": "Preskoči"
+      "skip": "Preskoči",
+      "sourceRegistry": "sudski registar",
+      "sourceAi": "AI",
+      "save": "Spremi"
     },
     "errorBoundary": {
       "title": "Ups, nešto je pošlo po krivu",

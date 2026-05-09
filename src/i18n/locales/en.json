@@ -2229,7 +2229,9 @@
     "exact": "Exact",
     "possible": "Possible",
     "monthlyShort": "monthly",
-    "weeklyShort": "weekly"
+    "weeklyShort": "weekly",
+    "obligation": "Obligation",
+    "transaction": "Transaction"
   },
   "paymentSourceMembers": {
     "title": "Account members \"{{name}}\"",
@@ -2555,7 +2557,11 @@
     "invoiceNotes": "Notes on invoice...",
     "searchCategories": "Search categories...",
     "notificationTitle": "e.g. New app update",
-    "yourName": "Your name"
+    "yourName": "Your name",
+    "noDestination": "No destination",
+    "fullName": "Full name",
+    "streetAndNumber": "Street and number",
+    "cityExample": "Zagreb"
   },
   "checklist": {
     "title": "Get started with V&M Balance",
@@ -3342,7 +3348,10 @@
       "lookingUp": "Searching registry...",
       "fetchFromRegistry": "Fetch from court registry",
       "postalCode": "Postal code",
-      "skip": "Skip"
+      "skip": "Skip",
+      "sourceRegistry": "court registry",
+      "sourceAi": "AI",
+      "save": "Save"
     },
     "errorBoundary": {
       "title": "Oops, something went wrong",
