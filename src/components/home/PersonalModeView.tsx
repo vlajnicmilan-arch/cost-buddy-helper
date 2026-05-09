@@ -278,6 +278,30 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           onRecurringClick={props.onRecurringPanelOpen}
         />
 
+        {/* Owner-loan / business debts strip — only in business chip view */}
+        {isBusinessChip && (totalReceivable > 0 || totalPayable > 0) && (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <button
+              type="button"
+              onClick={() => setDebtsOpen(true)}
+              className="p-3 rounded-2xl border border-border/50 text-left hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, transparent 100%)' }}
+            >
+              <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.receivables', 'Potraživanja')}</p>
+              <p className="text-sm font-bold text-income">{formatAmount(totalReceivable)}</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDebtsOpen(true)}
+              className="p-3 rounded-2xl border border-border/50 text-left hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)' }}
+            >
+              <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.payables', 'Dugovanja')}</p>
+              <p className="text-sm font-bold text-destructive">{formatAmount(totalPayable)}</p>
+            </button>
+          </div>
+        )}
+
         {/* Cashflow Forecast */}
         <Collapsible className="group mb-3">
           <div className="glass-card rounded-2xl animate-fade-in p-4">
