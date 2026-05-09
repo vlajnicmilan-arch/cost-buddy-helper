@@ -224,13 +224,11 @@ export const BusinessDebtTracker = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-8 gap-1 text-xs text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm(t('business.debts.confirmDelete', 'Obrisati ovaj zapis?'))) deleteDebt(debt.id);
-                    }}
+                    className="flex-1 h-8 gap-1 text-xs"
+                    onClick={() => setResolveDebt(debt as BusinessDebt)}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    {t('common.delete', 'Obriši')}
+                    <Wrench className="w-3.5 h-3.5" />
+                    {t('business.debts.resolve', 'Riješi')}
                   </Button>
                 </div>
               </CardContent>
