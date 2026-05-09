@@ -190,7 +190,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       exDay.setHours(0, 0, 0, 0);
       if (exDay.getTime() !== txDayTime) continue;
 
-      // Same merchant OR near-identical description
+      // Same merchant OR near-identical description OR (when merchant is missing
+      // on either side) same category — covers the case of two scans of the
+      // same receipt where AI returns slightly different text.
       let match = false;
       if (existing.merchant_name && transaction.merchant_name &&
           areMerchantsSimilar(existing.merchant_name, transaction.merchant_name)) {
@@ -198,6 +200,13 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       } else {
         const exDesc = (existing.description || '').toLowerCase().trim();
         if (exDesc && txDesc && (exDesc === txDesc || exDesc.includes(txDesc) || txDesc.includes(exDesc))) {
+          match = true;
+        } else if (
+          (!existing.merchant_name || !transaction.merchant_name) &&
+          transaction.category && existing.category === transaction.category
+        ) {
+          // Fallback: amount + day + type + category already match; missing
+          // merchant on either side strongly indicates a duplicate scan.
           match = true;
         }
       }

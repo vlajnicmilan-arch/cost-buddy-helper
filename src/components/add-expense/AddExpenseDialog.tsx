@@ -159,7 +159,7 @@ export const AddExpenseDialog = ({
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
   const { takePhoto: nativeTakePhoto, pickFromGallery: nativePickFromGallery, isNative } = useNativeCamera();
   const { formatAmount, currency: primaryCurrency, multiCurrencyEnabled } = useCurrency();
-  const { customPaymentSources, refetch: refetchPaymentSources } = useCustomPaymentSources({ includePersonal: true });
+  const { customPaymentSources, loading: customPaymentSourcesLoading, refetch: refetchPaymentSources } = useCustomPaymentSources({ includePersonal: true });
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { customCategories, addCustomCategory, refetch: refetchCustomCategories } = useCustomCategories();
   const { projects } = useProjects();
@@ -342,13 +342,14 @@ export const AddExpenseDialog = ({
       autoScanTriggeredRef.current = false;
       return;
     }
-    if (autoScan && !autoScanTriggeredRef.current && !scanning && !showScannedPreview) {
+    if (autoScan && !autoScanTriggeredRef.current && !scanning && !showScannedPreview && !customPaymentSourcesLoading) {
       autoScanTriggeredRef.current = true;
       try {
         logDiagnostic('receipt_auto_scan_triggered', {
           is_native: isNative,
           is_business: !!effectiveBusinessProfileId,
           business_profile_id: effectiveBusinessProfileId,
+          payment_sources_count: customPaymentSources?.length ?? 0,
         });
       } catch {}
       // Small delay so the dialog is fully mounted before launching the camera
@@ -361,7 +362,7 @@ export const AddExpenseDialog = ({
       }, 150);
       return () => clearTimeout(t);
     }
-  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId, openFileInputCapture]);
+  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId, openFileInputCapture, customPaymentSourcesLoading, customPaymentSources?.length]);
 
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
     // Defensive blur: ensure keyboard is dismissed before scan/AI analysis kicks in
@@ -595,15 +596,13 @@ export const AddExpenseDialog = ({
       const isTransfer = scannedData.transaction_type === 'transfer';
       const isIncome = scannedData.transaction_type === 'income';
 
-      // Business mode validation: require an actual payment source when business sources exist.
-      // Personal sources are allowed (auto-create owner loan); plain 'cash' is not.
+      // Business mode validation: require an explicit custom payment source.
+      // Generic 'cash'/'bank' would silently lose the personal-vs-business
+      // distinction and bypass the owner-loan auto-creation in useExpenseCRUD.
       if (effectiveBusinessProfileId && !isTransfer && !isIncome) {
-        const hasBusinessSource = customPaymentSources.some(
-          s => s.business_profile_id === effectiveBusinessProfileId
-        );
         const isCustom = typeof finalPaymentSource === 'string' && finalPaymentSource.startsWith('custom:');
-        if (hasBusinessSource && !isCustom) {
-          showError(t('business.payment.requirePaymentSource', 'Odaberi poslovni izvor plaćanja prije spremanja.'));
+        if (!isCustom) {
+          showError(t('business.payment.requirePaymentSource', 'Odaberi konkretan izvor plaćanja prije spremanja (poslovni ili osobni).'));
           setIsSaving(false);
           return;
         }
@@ -650,7 +649,7 @@ export const AddExpenseDialog = ({
           amount: scannedData.amount,
           description: scannedData.description,
           date: new Date(scannedData.date || expenseDate),
-          type: 'expense',
+          type: finalType,
           category: scannedData.category,
           merchant_name: scannedData.merchant || undefined
         });
