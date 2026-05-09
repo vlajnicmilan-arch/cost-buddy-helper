@@ -29,7 +29,11 @@ import { APP_VERSION } from '@/lib/version';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { useReceiptScan } from '@/contexts/ReceiptScanContext';
-import { useEffect } from 'react';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { useEffect, useState } from 'react';
 
 interface PersonalModeViewProps {
   displayName: string | null;
@@ -130,10 +134,14 @@ interface PersonalModeViewProps {
 export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { usageProfile } = useAppState();
+  const { usageProfile, activeBusinessProfileId } = useAppState();
   const projectsHidden = usageProfile === 'finance_only';
   const { hiddenIds } = useHiddenPaymentSources();
   const { registerHandlers } = useReceiptScan();
+  const { totalReceivable, totalPayable } = useBusinessDebts();
+  const { formatAmount } = useCurrency();
+  const [debtsOpen, setDebtsOpen] = useState(false);
+  const isBusinessChip = !!activeBusinessProfileId;
 
   // Register this page's add/dup handlers so the global scan dialog
   // dispatches saves to the right place when the user is on Home.
