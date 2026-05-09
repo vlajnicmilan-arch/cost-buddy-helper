@@ -1607,6 +1607,7 @@
       "warning": "Upozorenje",
       "overBudget": "Prekoračen"
     },
+    "periodLabel": "Razdoblje",
     "period": {
       "one_time": "Jednokratni",
       "weekly": "Tjedni",
