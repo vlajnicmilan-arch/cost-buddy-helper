@@ -29,7 +29,11 @@ import { APP_VERSION } from '@/lib/version';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { useReceiptScan } from '@/contexts/ReceiptScanContext';
-import { useEffect } from 'react';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { useEffect, useState } from 'react';
 
 interface PersonalModeViewProps {
   displayName: string | null;
@@ -130,10 +134,14 @@ interface PersonalModeViewProps {
 export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { usageProfile } = useAppState();
+  const { usageProfile, activeBusinessProfileId } = useAppState();
   const projectsHidden = usageProfile === 'finance_only';
   const { hiddenIds } = useHiddenPaymentSources();
   const { registerHandlers } = useReceiptScan();
+  const { totalReceivable, totalPayable } = useBusinessDebts();
+  const { formatAmount } = useCurrency();
+  const [debtsOpen, setDebtsOpen] = useState(false);
+  const isBusinessChip = !!activeBusinessProfileId;
 
   // Register this page's add/dup handlers so the global scan dialog
   // dispatches saves to the right place when the user is on Home.
@@ -270,6 +278,30 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           onRecurringClick={props.onRecurringPanelOpen}
         />
 
+        {/* Owner-loan / business debts strip — only in business chip view */}
+        {isBusinessChip && (totalReceivable > 0 || totalPayable > 0) && (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <button
+              type="button"
+              onClick={() => setDebtsOpen(true)}
+              className="p-3 rounded-2xl border border-border/50 text-left hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, transparent 100%)' }}
+            >
+              <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.receivables', 'Potraživanja')}</p>
+              <p className="text-sm font-bold text-income">{formatAmount(totalReceivable)}</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDebtsOpen(true)}
+              className="p-3 rounded-2xl border border-border/50 text-left hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)' }}
+            >
+              <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.payables', 'Dugovanja')}</p>
+              <p className="text-sm font-bold text-destructive">{formatAmount(totalPayable)}</p>
+            </button>
+          </div>
+        )}
+
         {/* Cashflow Forecast */}
         <Collapsible className="group mb-3">
           <div className="glass-card rounded-2xl animate-fade-in p-4">
@@ -390,6 +422,15 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           />
         </div>
       )}
+
+      <Dialog open={debtsOpen} onOpenChange={setDebtsOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('business.more.openInvoices', 'Otvoreni računi')}</DialogTitle>
+          </DialogHeader>
+          <BusinessDebtTracker />
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>

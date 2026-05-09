@@ -402,6 +402,22 @@ export const ScannedDataPreview = ({
             </SelectContent>
           </Select>
 
+          {/* Business-mode hint: personal source selected → owner loan will be created */}
+          {(() => {
+            if (!activeBusinessProfileId) return null;
+            const selectedId = scannedData.custom_payment_source_id;
+            if (!selectedId) return null;
+            const selected = customPaymentSources.find(s => s.id === selectedId);
+            if (!selected) return null;
+            if (selected.business_profile_id === activeBusinessProfileId) return null;
+            return (
+              <div className="text-xs rounded-lg px-3 py-2 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                <span aria-hidden>🪙</span>
+                <span>{t('business.payment.willCreateOwnerLoan', 'Bit će zabilježeno kao pozajmica vlasnika prema tvrtki.')}</span>
+              </div>
+            );
+          })()}
+
           {/* Card selector for custom source */}
           {scannedData.custom_payment_source_id && (() => {
             const selectedSource = customPaymentSources.find(s => s.id === scannedData.custom_payment_source_id);

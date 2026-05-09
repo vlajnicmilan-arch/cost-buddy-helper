@@ -12,6 +12,7 @@ import { BulkEditDropdown } from '@/components/BulkEditDropdown';
 import { ReportsDialog } from '@/components/reports/ReportsDialog';
 import { ScanTriggerButton } from '@/components/add-expense/ScanTriggerButton';
 import { ManualAddTriggerButton } from '@/components/add-expense/ManualAddTriggerButton';
+import { useAppState } from '@/contexts/AppStateContext';
 
 import { CSVImportDialog } from '@/components/CSVImportDialog';
 import { GlobalSearch } from '@/components/GlobalSearch';
@@ -55,6 +56,7 @@ export const HomeHeader = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { activeBusinessProfileId } = useAppState();
   const [importOpen, setImportOpen] = useState(false);
 
   // Note: scan trigger now opens a globally-mounted AddExpenseDialog (see
@@ -188,10 +190,12 @@ export const HomeHeader = ({
           <ReportsDialog expenses={reportsExpenses} triggerClassName="w-full h-11 justify-center" />
         )}
         <ScanTriggerButton
+          businessProfileId={activeBusinessProfileId}
           triggerLabel={t('common.scan', 'Skeniraj')}
           triggerClassName="w-full h-11 justify-center"
         />
         <ManualAddTriggerButton
+          businessProfileId={activeBusinessProfileId}
           triggerClassName="w-full h-11 justify-center"
         />
       </div>
