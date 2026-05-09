@@ -330,7 +330,8 @@ export const AddExpenseDialog = ({
 
   useEffect(() => {
     if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
-      setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
+      const next = pickDefaultPaymentSource(customPaymentSources);
+      if (next !== 'cash') setPaymentSource(next);
     }
   }, [open, customPaymentSources]);
 
