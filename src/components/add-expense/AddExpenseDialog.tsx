@@ -482,7 +482,15 @@ export const AddExpenseDialog = ({
         has_date: !!result.date,
         is_business: !!effectiveBusinessProfileId,
         business_profile_id: effectiveBusinessProfileId,
+        custom_payment_sources_count: customPaymentSources?.length ?? 0,
       });
+      if (effectiveBusinessProfileId && (customPaymentSources?.length ?? 0) === 0) {
+        logDiagnostic({
+          event: 'preview_opened_with_empty_sources',
+          severity: 'warning',
+          details: { is_business: true, business_profile_id: effectiveBusinessProfileId },
+        });
+      }
     } catch {}
   };
 
