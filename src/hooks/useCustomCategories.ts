@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -7,6 +8,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 
 export const useCustomCategories = () => {
+  const { t } = useTranslation();
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -62,7 +64,7 @@ export const useCustomCategories = () => {
       const updated = [newCategory, ...customCategories];
       setCustomCategories(updated);
       localStorage.setItem('customCategories', JSON.stringify(updated));
-      showSuccess('Kategorija dodana');
+      showSuccess(t('toasts.categoryAdded'));
       return newCategory;
     }
 
@@ -84,7 +86,7 @@ export const useCustomCategories = () => {
       if (error) throw error;
       const newCat = data as CustomCategory;
       setCustomCategories(prev => [newCat, ...prev]);
-      showSuccess('Kategorija dodana');
+      showSuccess(t('toasts.categoryAdded'));
       return newCat;
     } catch (error) {
       console.error('Error adding custom category:', error);
@@ -100,7 +102,7 @@ export const useCustomCategories = () => {
       );
       setCustomCategories(updated);
       localStorage.setItem('customCategories', JSON.stringify(updated));
-      showSuccess('Kategorija ažurirana');
+      showSuccess(t('toasts.categoryUpdated'));
       return;
     }
 
@@ -114,7 +116,7 @@ export const useCustomCategories = () => {
       setCustomCategories(prev =>
         prev.map(cat => (cat.id === id ? { ...cat, ...updates } : cat))
       );
-      showSuccess('Kategorija ažurirana');
+      showSuccess(t('toasts.categoryUpdated'));
     } catch (error) {
       console.error('Error updating custom category:', error);
       showError(tr('errors.update.category', 'Greška pri ažuriranju kategorije'));
@@ -126,7 +128,7 @@ export const useCustomCategories = () => {
       const updated = customCategories.filter(cat => cat.id !== id);
       setCustomCategories(updated);
       localStorage.setItem('customCategories', JSON.stringify(updated));
-      showSuccess('Kategorija obrisana');
+      showSuccess(t('toasts.categoryDeleted'));
       return;
     }
 
@@ -138,7 +140,7 @@ export const useCustomCategories = () => {
 
       if (error) throw error;
       setCustomCategories(prev => prev.filter(cat => cat.id !== id));
-      showSuccess('Kategorija obrisana');
+      showSuccess(t('toasts.categoryDeleted'));
     } catch (error) {
       console.error('Error deleting custom category:', error);
       showError(tr('errors.delete.category', 'Greška pri brisanju kategorije'));

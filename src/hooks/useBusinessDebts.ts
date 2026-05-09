@@ -44,7 +44,7 @@ export const useBusinessDebts = () => {
       .from('business_debts' as any)
       .insert({ ...debt, user_id: user.id } as any);
     if (error) { showError(t('toasts.premiseAddError')); return; }
-    showSuccess('Dugovanje dodano');
+    showSuccess(t('toasts.debtAdded'));
     fetchDebts();
   };
 
@@ -54,7 +54,7 @@ export const useBusinessDebts = () => {
       .update(updates as any)
       .eq('id', id);
     if (error) { showError(t('toasts.recategorizeError')); return; }
-    showSuccess('Ažurirano');
+    showSuccess(t('toasts.updated'));
     fetchDebts();
   };
 
@@ -64,7 +64,7 @@ export const useBusinessDebts = () => {
       .delete()
       .eq('id', id);
     if (error) { showError(t('toasts.cashRegisterDeleteError')); return; }
-    showSuccess('Obrisano');
+    showSuccess(t('toasts.deleted'));
     fetchDebts();
   };
 

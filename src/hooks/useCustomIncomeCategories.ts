@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { CustomIncomeCategory } from '@/types/customIncomeCategory';
@@ -7,6 +8,7 @@ import { showSuccess } from '@/hooks/useStatusFeedback';
 const STORAGE_KEY = 'customIncomeCategories';
 
 export const useCustomIncomeCategories = () => {
+  const { t } = useTranslation();
   const [customIncomeCategories, setCustomIncomeCategories] = useState<CustomIncomeCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -41,7 +43,7 @@ export const useCustomIncomeCategories = () => {
     const updated = [newCategory, ...customIncomeCategories];
     setCustomIncomeCategories(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    showSuccess('Kategorija prihoda dodana');
+    showSuccess(t('toasts.incomeCategoryAdded'));
     return newCategory;
   };
 
@@ -54,14 +56,14 @@ export const useCustomIncomeCategories = () => {
     );
     setCustomIncomeCategories(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    showSuccess('Kategorija prihoda ažurirana');
+    showSuccess(t('toasts.incomeCategoryUpdated'));
   };
 
   const deleteCustomIncomeCategory = async (id: string) => {
     const updated = customIncomeCategories.filter(cat => cat.id !== id);
     setCustomIncomeCategories(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    showSuccess('Kategorija prihoda obrisana');
+    showSuccess(t('toasts.incomeCategoryDeleted'));
   };
 
   return {

@@ -584,7 +584,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
   const handleExportCSV = async (mode: 'save' | 'share' = 'save') => {
     try {
       await generateCSVReport(getReportData(), mode);
-      if (mode === 'share') showSuccess('CSV datoteka generirana!');
+      if (mode === 'share') showSuccess(t('toasts.csvGenerated'));
     } catch (error) {
       console.error('Error generating CSV:', error);
       showError(t('toasts.csvGenerateError'));
@@ -594,7 +594,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
   const handleExportJSON = async (mode: 'save' | 'share' = 'save') => {
     try {
       await generateJSONExport(getReportData(), mode);
-      if (mode === 'share') showSuccess('JSON datoteka generirana!');
+      if (mode === 'share') showSuccess(t('toasts.jsonGenerated'));
     } catch (error) {
       console.error('Error generating JSON:', error);
       showError(t('toasts.jsonGenerateError'));

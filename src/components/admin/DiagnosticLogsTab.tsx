@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +62,7 @@ const platformLabel = (info: any): string => {
 };
 
 export const DiagnosticLogsTab = () => {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<DiagnosticLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('');
@@ -172,7 +174,7 @@ export const DiagnosticLogsTab = () => {
     if (error) {
       showError(tr('errors.delete.generic', 'Greška pri brisanju'));
     } else {
-      showSuccess('Stari logovi obrisani');
+      showSuccess(t('toasts.oldLogsDeleted'));
       await loadLogs();
     }
   };

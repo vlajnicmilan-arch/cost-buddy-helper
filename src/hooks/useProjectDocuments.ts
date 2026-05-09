@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { saveDocument, deleteDocument, ProjectDocumentRow, StorageMode } from '@/lib/documentStorage';
@@ -17,6 +18,7 @@ export interface UploadOptions {
 }
 
 export const useProjectDocuments = (projectId: string | null) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [documents, setDocuments] = useState<ProjectDocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ export const useProjectDocuments = (projectId: string | null) => {
         .delete()
         .eq('id', doc.id);
       if (error) throw error;
-      showSuccess('Obrisano');
+      showSuccess(t('toasts.deleted'));
       await fetchDocuments();
     } catch (err: any) {
       console.error('removeDocument failed', err);

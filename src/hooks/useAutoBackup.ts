@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useExpenses } from './useExpenses';
 import { useStorage } from '@/contexts/StorageContext';
 import { 
@@ -11,6 +12,7 @@ import {
 import { showSuccess } from '@/hooks/useStatusFeedback';
 
 export const useAutoBackup = () => {
+  const { t } = useTranslation();
   const { expenses } = useExpenses();
   const { storageMode } = useStorage();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -33,7 +35,7 @@ export const useAutoBackup = () => {
       });
 
       if (!silent) {
-        showSuccess('Automatski backup spremljen');
+        showSuccess(t('toasts.autoBackupSaved'));
       }
     } catch (error) {
       console.error('Auto backup failed:', error);

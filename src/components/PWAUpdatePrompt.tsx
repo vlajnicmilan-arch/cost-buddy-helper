@@ -91,7 +91,7 @@ const PWAUpdatePromptInner = () => {
   }, [isChecking]);
 
   const performAutoUpdate = useCallback(() => {
-    toast.info('Ažuriranje aplikacije...', { duration: 2000 });
+    toast.info(t('toasts.appUpdating'), { duration: 2000 });
     setTimeout(() => {
       updateServiceWorker(true);
     }, 500);

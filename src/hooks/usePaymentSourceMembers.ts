@@ -149,7 +149,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       if (error) throw error;
 
       setMembers(prev => prev.filter(m => m.id !== memberId));
-      showSuccess('Član uklonjen');
+      showSuccess(t('toasts.memberRemoved'));
     } catch (error) {
       console.error('Error removing member:', error);
       showError(t('toasts.error'));
@@ -166,7 +166,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       if (error) throw error;
 
       setInvitations(prev => prev.filter(i => i.id !== invitationId));
-      showSuccess('Pozivnica otkazana');
+      showSuccess(t('toasts.invitationCancelled'));
     } catch (error) {
       console.error('Error cancelling invitation:', error);
       showError(t('toasts.error'));
@@ -183,7 +183,7 @@ export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
       if (error) throw error;
 
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
-      showSuccess('Uloga ažurirana');
+      showSuccess(t('toasts.roleUpdated'));
     } catch (error) {
       console.error('Error updating member role:', error);
       showError(t('errors.save.role', 'Greška pri ažuriranju uloge'));
