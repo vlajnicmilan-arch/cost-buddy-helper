@@ -155,17 +155,23 @@ export const useExpenseCRUD = ({
           })));
         }
 
-        // Owner-loan auto-creation: business expense paid from a personal source
+        // Owner-loan auto-creation: business expense paid from a personal source.
+        // Awaited so the debt entry exists before the UI refetches & closes the dialog —
+        // otherwise the company view appears empty even though the expense was saved.
         const expenseBpId = (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null;
         if (expenseBpId && data && !isPendingMemberTransaction) {
-          createOwnerLoanIfCrossMode({
-            expenseId: data.id,
-            userId: user.id,
-            businessProfileId: expenseBpId,
-            paymentSource: normalizedExpense.payment_source,
-            amount: normalizedExpense.amount,
-            description: normalizedExpense.description,
-          }).catch(e => console.error('Owner-loan creation failed:', e));
+          try {
+            await createOwnerLoanIfCrossMode({
+              expenseId: data.id,
+              userId: user.id,
+              businessProfileId: expenseBpId,
+              paymentSource: normalizedExpense.payment_source,
+              amount: normalizedExpense.amount,
+              description: normalizedExpense.description,
+            });
+          } catch (e) {
+            console.error('Owner-loan creation failed:', e);
+          }
         }
 
         // Notifications (fire-and-forget, don't block) — uses notifyHelper for reliable delivery + diagnostic trail
