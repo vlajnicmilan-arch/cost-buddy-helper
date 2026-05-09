@@ -820,6 +820,19 @@ export const AddExpenseDialog = ({
     e.preventDefault();
     if (!amount) return;
 
+    // Business mode: require selecting an actual payment source when business sources exist.
+    // Personal sources are allowed (they create an owner-loan automatically), but bare 'cash' is not.
+    if (effectiveBusinessProfileId && type !== 'income' && type !== 'transfer') {
+      const hasBusinessSource = customPaymentSources.some(
+        s => s.business_profile_id === effectiveBusinessProfileId
+      );
+      const isCustom = typeof paymentSource === 'string' && paymentSource.startsWith('custom:');
+      if (hasBusinessSource && !isCustom) {
+        showError(t('business.payment.requirePaymentSource', 'Odaberi poslovni izvor plaćanja prije spremanja.'));
+        return;
+      }
+    }
+
     if (!hasAccess('unlimited_transactions')) {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
