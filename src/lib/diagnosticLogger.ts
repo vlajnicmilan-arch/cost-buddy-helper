@@ -216,7 +216,11 @@ export const logDiagnostic = (input: DiagnosticEventInput | string, details?: Re
     dedupMap.set(sig, { row, firstSeen: now });
     buffer.push(row);
 
-    if (buffer.length >= 5) {
+    // Critical/error events get flushed immediately — if the WebView crashes
+    // within the 2s buffer window the row would otherwise be lost.
+    if (severity === 'critical' || severity === 'error') {
+      void flush();
+    } else if (buffer.length >= 5) {
       void flush();
     } else {
       scheduleFlush();
