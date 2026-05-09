@@ -1840,7 +1840,10 @@
   "business": {
     "payment": {
       "businessAccountsGroup": "Geschäftskonten",
-      "personalAccountsGroup": "Persönliche Konten (Darlehen)"
+      "personalAccountsGroup": "Persönliche Konten (Darlehen)",
+      "requirePaymentSource": "Wähle eine geschäftliche Zahlungsquelle vor dem Speichern.",
+      "willCreateOwnerLoan": "Wird als Darlehen des Inhabers an das Unternehmen erfasst.",
+      "noBusinessSourcesHint": "Keine geschäftlichen Zahlungsquellen. Füge eine in den Einstellungen hinzu."
     },
     "debt": {
       "ownerLoanContact": "Inhaber (Darlehen)",

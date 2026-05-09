@@ -169,6 +169,26 @@ export const AddExpenseDialog = ({
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const { activeBusinessProfileId } = useAppState();
   const effectiveBusinessProfileId = businessProfileId ?? activeBusinessProfileId;
+
+  // Pick a sensible default payment source.
+  // In business mode: prefer a source that belongs to the active business profile.
+  // Never auto-pick a personal source in business mode (that would silently create an owner loan).
+  const pickDefaultPaymentSource = (sources: typeof customPaymentSources): PaymentSource => {
+    if (effectiveBusinessProfileId) {
+      const biz = sources.find(s => s.business_profile_id === effectiveBusinessProfileId);
+      return biz ? (`custom:${biz.id}` as PaymentSource) : ('cash' as PaymentSource);
+    }
+    return sources.length > 0 ? (`custom:${sources[0].id}` as PaymentSource) : ('cash' as PaymentSource);
+  };
+
+  // Check whether a payment source belongs to the active business profile.
+  const isOwnedByActiveBusiness = (src: PaymentSource): boolean => {
+    if (!effectiveBusinessProfileId) return true;
+    if (typeof src !== 'string') return false;
+    const id = src.startsWith('custom:') ? src.replace('custom:', '') : src;
+    const found = customPaymentSources.find(s => s.id === id);
+    return !!(found && found.business_profile_id === effectiveBusinessProfileId);
+  };
   const { detectSingleLoan } = useLoanDetection();
   const { addDebt } = useBusinessDebts();
   const [loanDetected, setLoanDetected] = useState<DetectedLoan | null>(null);
@@ -310,7 +330,8 @@ export const AddExpenseDialog = ({
 
   useEffect(() => {
     if (open && customPaymentSources.length > 0 && paymentSource === 'cash') {
-      setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
+      const next = pickDefaultPaymentSource(customPaymentSources);
+      if (next !== 'cash') setPaymentSource(next);
     }
   }, [open, customPaymentSources]);
 
@@ -573,6 +594,21 @@ export const AddExpenseDialog = ({
       }
       const isTransfer = scannedData.transaction_type === 'transfer';
       const isIncome = scannedData.transaction_type === 'income';
+
+      // Business mode validation: require an actual payment source when business sources exist.
+      // Personal sources are allowed (auto-create owner loan); plain 'cash' is not.
+      if (effectiveBusinessProfileId && !isTransfer && !isIncome) {
+        const hasBusinessSource = customPaymentSources.some(
+          s => s.business_profile_id === effectiveBusinessProfileId
+        );
+        const isCustom = typeof finalPaymentSource === 'string' && finalPaymentSource.startsWith('custom:');
+        if (hasBusinessSource && !isCustom) {
+          showError(t('business.payment.requirePaymentSource', 'Odaberi poslovni izvor plaćanja prije spremanja.'));
+          setIsSaving(false);
+          return;
+        }
+      }
+
       let transferDestinationId: string | undefined;
       if (isTransfer) {
         const destName = (scannedData.transfer_destination_name || scannedData.recipient_name || '').toLowerCase();
@@ -704,7 +740,7 @@ export const AddExpenseDialog = ({
     setAiSuggesting(false);
     cancelAICategorize();
     setMerchantName('');
-    setPaymentSource(customPaymentSources.length > 0 ? `custom:${customPaymentSources[0].id}` as PaymentSource : 'cash');
+    setPaymentSource(pickDefaultPaymentSource(customPaymentSources));
     setSelectedCardId(null);
     setExpenseDate(new Date().toISOString().split('T')[0]);
     setItems([]);
@@ -798,6 +834,19 @@ export const AddExpenseDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount) return;
+
+    // Business mode: require selecting an actual payment source when business sources exist.
+    // Personal sources are allowed (they create an owner-loan automatically), but bare 'cash' is not.
+    if (effectiveBusinessProfileId && type !== 'income' && type !== 'transfer') {
+      const hasBusinessSource = customPaymentSources.some(
+        s => s.business_profile_id === effectiveBusinessProfileId
+      );
+      const isCustom = typeof paymentSource === 'string' && paymentSource.startsWith('custom:');
+      if (hasBusinessSource && !isCustom) {
+        showError(t('business.payment.requirePaymentSource', 'Odaberi poslovni izvor plaćanja prije spremanja.'));
+        return;
+      }
+    }
 
     if (!hasAccess('unlimited_transactions')) {
       const now = new Date();
@@ -964,11 +1013,7 @@ export const AddExpenseDialog = ({
           });
         } catch {}
         refetchPaymentSources().then(() => {
-          if (customPaymentSources.length > 0) {
-            setPaymentSource(`custom:${customPaymentSources[0].id}` as PaymentSource);
-          } else {
-            setPaymentSource('cash');
-          }
+          setPaymentSource(pickDefaultPaymentSource(customPaymentSources));
         });
         refetchCustomCategories();
       } else {

@@ -1972,7 +1972,10 @@
   "business": {
     "payment": {
       "businessAccountsGroup": "Business accounts",
-      "personalAccountsGroup": "Personal accounts (loan)"
+      "personalAccountsGroup": "Personal accounts (loan)",
+      "requirePaymentSource": "Select a business payment source before saving.",
+      "willCreateOwnerLoan": "This will be recorded as an owner loan to the company.",
+      "noBusinessSourcesHint": "No business payment sources. Add one in Settings."
     },
     "debt": {
       "ownerLoanContact": "Owner (loan)",

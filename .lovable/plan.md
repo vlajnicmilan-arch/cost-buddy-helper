@@ -1,72 +1,61 @@
 
-## Cilj
+# Plan: Skeniranje računa u poslovnom modu — opcija 2
 
-Manual gumb "Dodaj" mora otvoriti **isti** AddExpenseDialog koji je već globalno mountan iznad rute (kao i Skeniraj). Tako gumb "Fotografiraj" unutar dialoga preživi Android camera Activity recreation — koja trenutno unmounta page-level dialog.
+Cilj: kad je korisnik u tvrtki i skenira račun, izvor plaćanja se ispravno bira (poslovni prvo), a ako se plati osobnom karticom — automatski nastaje pozajmica vlasnika prema tvrtki, jasno označena. Bez mijenjanja arhitekture transakcija (jedna transakcija ostaje na osobnoj strani, dug se vodi zasebno u BusinessDebtTracker).
 
-## Što ne dirati
+## Što se mijenja
 
-- `useReceiptScanner`, `useNativeCamera`, `parse-receipt` edge funkcija
-- `AddExpenseDialog` interna logika (form, scan flow, autoScan, capture guard)
-- `ScannedDataPreview`, manual save flow
-- DB, RLS, i18n, edge functions
+### 1. Pametan default izvora plaćanja u poslovnom modu
+Datoteka: `src/components/AddExpenseDialog.tsx`
 
-## Promjene
+- Trenutno: u poslovnom modu auto-odabire `customPaymentSources[0]` (može biti osobni izvor).
+- Novo: prvo traži izvor čiji `business_profile_id === effectiveBusinessProfileId`. Ako postoji → to je default. Ako ne → ostavi `paymentSource = 'cash'` (ne bira osobni automatski).
+- Vrijedi i za manualni unos i za scan flow (nakon što scanner predloži izvor po zadnje 4 znamenke kartice — to već radi).
 
-### 1. `ReceiptScanContext.tsx`
-- Dodati `autoScan: boolean` u state (default `false`).
-- `openScan({ businessProfileId })` → `autoScan = true` (postojeće).
-- Novi action: `openManualAdd({ businessProfileId })` → `autoScan = false`, `isOpen = true`.
-- Izložiti `autoScan` kroz value.
+### 2. Validacija prije spremanja
+Datoteka: `src/components/AddExpenseDialog.tsx`
 
-### 2. `GlobalReceiptScanHost.tsx`
-- Pročitati `autoScan` iz konteksta.
-- Proslijediti `autoScan={autoScan}` u `AddExpenseDialog` (umjesto hardkodiranog `true`).
+- U poslovnom modu, ako korisnik ostavi `cash` a postoje poslovni izvori → blokiraj save i pokaži poruku (i18n).
+- Ako nema niti jednog poslovnog izvora → dozvoli `cash` ili osobni (legitimno → nastaje pozajmica vlasnika).
 
-### 3. Novi `ManualAddTriggerButton.tsx` (uz `ScanTriggerButton.tsx`)
-- Tanak gumb (~40 LOC), prima iste props kao postojeći `AddExpenseDialog` trigger (`triggerLabel`, `triggerIcon`, `triggerClassName`, `businessProfileId`).
-- Klik → `openManualAdd({ businessProfileId })`.
-- Vizualno identičan trenutnom Add gumbu (Plus ikona, isti style).
+### 3. Jasna vizualna oznaka "Pozajmica vlasnika"
+Datoteka: `src/components/expense/PaymentSourceSelector.tsx`
 
-### 4. Zamjene inline `<AddExpenseDialog … />` triggera
-Svi mjesti gdje se trenutno renderira `<AddExpenseDialog onAdd=… checkDuplicate=… businessProfileId=…/>` kao trigger:
-- `src/components/home/HomeHeader.tsx:194` → `<ManualAddTriggerButton />`
-- `src/components/home/BusinessModeView.tsx:193` → `<ManualAddTriggerButton businessProfileId=… />`
-- `src/components/home/BusinessModeView.tsx:296` → `<ManualAddTriggerButton businessProfileId=… triggerIcon={Plus} triggerLabel="Novo" />`
+- Kad je odabran osobni izvor u poslovnom kontekstu, ispod selektora prikazati statičan info-redak (i18n): "Bit će zabilježeno kao pozajmica vlasnika prema tvrtki."
+- Bez nove logike — samo vizualni signal korisniku.
 
-`onAdd` i `checkDuplicate` se više ne prosljeđuju trigger gumbu — oni već stižu kroz već postojeću `registerHandlers()` registraciju u `PersonalModeView`/`BusinessModeView` (radi za scan, radit će i za manual jer je dialog isti).
+### 4. Badge "Pozajmica vlasnika" u BusinessDebtTracker listi
+Datoteka: `src/components/business/BusinessDebtTracker.tsx` (provjeriti točan put)
 
-### 5. Manual flow u `BusinessTransactions` (drugi tab-ovi)
-Provjeriti dodatne lokacije gdje se renderira `AddExpenseDialog` izvan home header-a:
-- `BusinessTransactions` `addAction` slot — već pokriven u koraku 4 (BusinessModeView linija 296).
-- Bilo koji drugi page-level `<AddExpenseDialog>` ostaje netaknut **osim** ako služi kao trigger button. Edit dialozi (otvaraju se preko `externalOpen` za uređivanje postojećih transakcija) NE mijenjamo.
+- Osigurati da se zapisi koje generira `createOwnerLoanIfCrossMode` jasno prikazuju kao "Pozajmica vlasnika" s datumom, iznosom, opisom i izvorom (osobnom karticom).
 
-### 6. Cleanup
-- Maknuti neiskorištene importe `AddExpenseDialog` iz `HomeHeader.tsx` i `BusinessModeView.tsx`.
-- Diagnostic eventi: dodati `global_manual_add_open` u `openManualAdd`.
+### 5. i18n ključevi
+Datoteke: `src/i18n/locales/hr.ts`, `en.ts`, `de.ts`
+
+Novi ključevi pod `business.payment.*`:
+- `requirePaymentSource` — "Odaberi poslovni izvor plaćanja prije spremanja."
+- `willCreateOwnerLoan` — "Bit će zabilježeno kao pozajmica vlasnika prema tvrtki."
+- `noBusinessSourcesHint` — "Nema poslovnih izvora plaćanja. Dodaj jedan u Postavkama."
+
+## Što se NE mijenja
+
+- `useExpenseCRUD` — već ispravno postavlja `business_profile_id` i poziva owner-loan logiku.
+- `ownerLoanLogic.ts` — `createOwnerLoanIfCrossMode` već radi (kreira `business_debts` zapis).
+- Filter dashboarda i nedavnih transakcija — ostaje kako je (transakcija pripada osobnom prikazu jer je plaćena osobnim izvorom; tvrtka je vidi kroz BusinessDebtTracker).
+- DB schema, RLS, edge functions, migracije — ništa.
 
 ## Tehnički detalji
 
 ```text
-[Trenutno]
-"Dodaj" gumb → page-local AddExpenseDialog → "Fotografiraj"
-                                           → camera (Activity recreation)
-                                           → page remount → dialog unmounted ✗
-
-[Cilj]
-"Dodaj" gumb → openManualAdd() → globalni AddExpenseDialog (iznad rute)
-                                → "Fotografiraj"
-                                → camera (Activity recreation)
-                                → globalni host preživi ✓
-                                → preview se renda ✓
+Scan → Gemini AI prepoznaje merchant + iznos + zadnje 4 znamenke
+     → CardLookup mapira znamenke na custom_payment_sources
+     → AddExpenseDialog otvara se s pre-fill izvorom
+     → Korisnik vizualno provjeri
+     → Save:
+        - poslovni izvor → expense (business_profile_id stamped) → vidljivo u tvrtki
+        - osobni izvor → expense (osobno) + business_debts insert → tvrtka vidi kao pozajmicu
+        - cash u biznisu bez poslovnih izvora → dozvoljeno (rijedak slučaj)
+        - cash u biznisu sa poslovnim izvorima → blokirano s i18n porukom
 ```
 
-`autoScan` flag samo kontrolira da li `useEffect` u `AddExpenseDialog` automatski okida kameru pri otvaranju. Manual mod = `autoScan: false` znači da dialog otvara klasičnu formu, a kamera se okine tek na klik "Fotografiraj" (unutarnji `handleNativeCapture`).
-
-## Rizici
-
-- Edit-dialog flow koji koristi `externalOpen` (npr. EditTransactionDialog) ostaje na `AddExpenseDialog` izravno — ne miješamo se. Trigger refactor je samo za "novo dodavanje".
-- Globalni host sada može sadržavati i scan i manual otvaranje istovremeno → state se mora resetirati pri svakom `openX()` (već se događa jer `closeScan` postavlja `isOpen=false` između).
-
-## Opseg
-
-~80 LOC izmjena u 4 datoteke + 1 nova (ManualAddTriggerButton). Bez DB, bez i18n, bez edge changes.
+Procjena: ~25 linija u AddExpenseDialog.tsx, ~6 linija u PaymentSourceSelector.tsx, ~3 linije u BusinessDebtTracker (badge), 9 i18n ključeva (3 × 3 jezika). Bez DB migracije.
