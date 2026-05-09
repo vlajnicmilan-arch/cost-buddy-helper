@@ -305,6 +305,13 @@ export const useReceiptScanner = () => {
         }))
       };
 
+      try {
+        logDiagnostic('receipt_scan_preview_pre_render', {
+          sources_count: customPaymentSources?.length ?? 0,
+          matched_custom_source_id: result.custom_payment_source_id,
+          payment_source: result.payment_source,
+        });
+      } catch {}
       setParsedData(result);
       
       // Show different message if custom source was matched
