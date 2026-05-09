@@ -980,7 +980,9 @@
     "clear": "Clear",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "unknown": "Unknown",
+    "clearSearch": "Clear search"
   },
   "auth": {
     "login": "Login",
@@ -1015,7 +1017,17 @@
       "description": "If the app does not open automatically, tap the button below.",
       "openApp": "Open V&M Balance",
       "help": "After returning, sign-in will finish inside the app."
-    }
+    },
+    "sentTo": "We sent a verification link to:",
+    "resetSentTo": "We sent a password reset link to:",
+    "clickResetLink": "Click the link in the email to reset your password",
+    "resetLinkValid": "Link is valid for 1 hour",
+    "loginSubtitle": "Sign in to your account",
+    "registerSubtitle": "Create a new account",
+    "nameOptional": "Name (optional)",
+    "nameHint": "If you don't enter a name, the name from your email will be used",
+    "resetEmailHint": "Enter your email and we'll send you a password reset link.",
+    "emailLabel": "Email"
   },
   "categories": {
     "food": "Food",
@@ -1844,7 +1856,9 @@
   "join": {
     "invalidLink": "Invalid link",
     "errorJoiningProject": "Error joining project",
-    "errorJoiningBudget": "Error joining budget"
+    "errorJoiningBudget": "Error joining budget",
+    "familyTitle": "Join the family group",
+    "error": "Error"
   },
   "categoryGroups": {
     "foodAndGroceries": "Food & groceries",
@@ -2610,7 +2624,14 @@
     "noDestination": "No destination",
     "fullName": "Full name",
     "streetAndNumber": "Street and number",
-    "cityExample": "Zagreb"
+    "cityExample": "Zagreb",
+    "yourEmail": "you@email.com",
+    "notificationText": "Enter notification text...",
+    "searchUsers": "Search by name or email...",
+    "searchFeedback": "Search messages, email, route...",
+    "searchUser": "Search user...",
+    "filterLogs": "Filter by event, route, user...",
+    "functionSource": "Function source"
   },
   "checklist": {
     "title": "Get started with V&M Balance",
@@ -3418,5 +3439,45 @@
     "tip4": "Tip: The entire receipt should be in frame",
     "analyzingReceipt": "Analyzing receipt...",
     "canTakeUpTo30s": "This can take up to 30 seconds"
+  },
+  "publicProject": {
+    "noAccess": "Access denied",
+    "ownerNotChosen": "The project owner has not yet chosen what to display publicly.",
+    "start": "Start",
+    "deadline": "Deadline",
+    "budget": "Budget",
+    "spent": "Spent",
+    "received": "Received"
+  },
+  "admin": {
+    "noFilterResults": "No results for the given filters",
+    "attempts": "Attempts",
+    "errors": "Errors",
+    "noTokens": "No tokens",
+    "requestId": "Request ID",
+    "userId": "User ID",
+    "lifecyclePhases": "Lifecycle phases",
+    "noData": "No data",
+    "noReports": "No reported issues",
+    "noFeedback": "No feedback",
+    "sendNotificationAll": "Send notification to all users",
+    "titleLabel": "Title",
+    "messageLabel": "Message",
+    "globalBilling": "Global billing",
+    "userTiers": "User tiers",
+    "migrationTitle": "Existing subscribers migration",
+    "migrationDesc": "with automatic proration. <strong>Always run Dry Run first!</strong>",
+    "apkLiveSyncNote": "All <strong>UI changes</strong> (buttons, colors, text, new pages) ship automatically via Live Sync — <strong>no</strong> new APK needed.",
+    "currency": "Currency",
+    "emailConfirmed": "Email confirmed",
+    "lastUsage": "Last usage",
+    "appVersion": "App version",
+    "appVersionUnknown": "Unknown (older version)",
+    "device": "Device",
+    "os": "OS",
+    "browser": "Browser",
+    "language": "Language",
+    "screen": "Screen",
+    "viewport": "Viewport"
   }
 }
