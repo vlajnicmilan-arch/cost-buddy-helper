@@ -183,6 +183,25 @@ export const AddExpenseDialog = ({
   const scannedPreviewActiveRef = useRef(false);
   const nativeFlowReleaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Diagnostic: log when this dialog component unmounts. If this fires
+  // between receipt_scan_start and receipt_scan_preview_shown, the parent
+  // re-mounted the wrapper during the camera roundtrip.
+  useEffect(() => {
+    return () => {
+      try {
+        logDiagnostic({
+          event: 'add_expense_dialog_unmounted',
+          severity: 'warning',
+          details: {
+            had_preview: scannedPreviewActiveRef.current,
+            route: typeof window !== 'undefined' ? window.location.pathname : null,
+          },
+        });
+      } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const clearNativeFlowReleaseTimer = useCallback(() => {
     if (nativeFlowReleaseTimeoutRef.current) {
       clearTimeout(nativeFlowReleaseTimeoutRef.current);
