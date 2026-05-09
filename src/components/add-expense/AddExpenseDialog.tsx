@@ -725,7 +725,7 @@ export const AddExpenseDialog = ({
     setAiSuggesting(false);
     cancelAICategorize();
     setMerchantName('');
-    setPaymentSource(customPaymentSources.length > 0 ? `custom:${customPaymentSources[0].id}` as PaymentSource : 'cash');
+    setPaymentSource(pickDefaultPaymentSource(customPaymentSources));
     setSelectedCardId(null);
     setExpenseDate(new Date().toISOString().split('T')[0]);
     setItems([]);
