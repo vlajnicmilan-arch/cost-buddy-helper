@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2, ScanSearch, Loader2 } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, Check, Trash2, ScanSearch, Loader2, Wrench } from 'lucide-react';
+import { LoanResolveDialog } from './LoanResolveDialog';
+import { BusinessDebt } from '@/types/businessDebt';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
