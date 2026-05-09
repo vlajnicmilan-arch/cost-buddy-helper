@@ -169,6 +169,26 @@ export const AddExpenseDialog = ({
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const { activeBusinessProfileId } = useAppState();
   const effectiveBusinessProfileId = businessProfileId ?? activeBusinessProfileId;
+
+  // Pick a sensible default payment source.
+  // In business mode: prefer a source that belongs to the active business profile.
+  // Never auto-pick a personal source in business mode (that would silently create an owner loan).
+  const pickDefaultPaymentSource = (sources: typeof customPaymentSources): PaymentSource => {
+    if (effectiveBusinessProfileId) {
+      const biz = sources.find(s => s.business_profile_id === effectiveBusinessProfileId);
+      return biz ? (`custom:${biz.id}` as PaymentSource) : ('cash' as PaymentSource);
+    }
+    return sources.length > 0 ? (`custom:${sources[0].id}` as PaymentSource) : ('cash' as PaymentSource);
+  };
+
+  // Check whether a payment source belongs to the active business profile.
+  const isOwnedByActiveBusiness = (src: PaymentSource): boolean => {
+    if (!effectiveBusinessProfileId) return true;
+    if (typeof src !== 'string') return false;
+    const id = src.startsWith('custom:') ? src.replace('custom:', '') : src;
+    const found = customPaymentSources.find(s => s.id === id);
+    return !!(found && found.business_profile_id === effectiveBusinessProfileId);
+  };
   const { detectSingleLoan } = useLoanDetection();
   const { addDebt } = useBusinessDebts();
   const [loanDetected, setLoanDetected] = useState<DetectedLoan | null>(null);
