@@ -176,17 +176,38 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       }
     } catch (error) {
       const errMsg = String((error as any)?.message || error);
-      if (/jwt|token.*expir|unauthorized/i.test(errMsg) || (error as any)?.status === 401) {
+      const status = (error as any)?.status;
+      const isAuthError = /jwt|token.*expir|unauthorized/i.test(errMsg) || status === 401;
+      const isTransient =
+        /network|fetch failed|failed to fetch|timeout|timed out|aborted|aborterror|load failed|networkerror/i.test(errMsg) ||
+        (typeof status === 'number' && status >= 500 && status <= 599);
+
+      if (isAuthError) {
         console.log('[PaymentSources] Auth error, refreshing session and retrying...');
         try {
           await supabase.auth.refreshSession();
-          // Retry by re-calling self on next tick
           setTimeout(() => fetchCustomPaymentSources(), 500);
           return;
         } catch (retryErr) {
           console.error('Session refresh failed:', retryErr);
         }
       }
+
+      if (isTransient || isAuthError) {
+        // Graceful degrade: don't toast, don't clear state. Silent background retry once.
+        console.warn('[PaymentSources] Transient fetch error, retrying silently:', errMsg);
+        try {
+          const { logDiagnostic } = await import('@/lib/diagnosticLogger');
+          logDiagnostic({
+            event: 'payment_sources_fetch_transient_error',
+            severity: 'warning',
+            details: { message: errMsg, status: status ?? null, is_auth: isAuthError },
+          });
+        } catch {}
+        setTimeout(() => fetchCustomPaymentSources(), 800);
+        return;
+      }
+
       console.error('Error fetching custom payment sources:', error);
       showError(tr('errors.fetch.sources', 'Greška pri dohvaćanju prilagođenih izvora plaćanja'));
     } finally {
