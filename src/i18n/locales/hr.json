@@ -1840,7 +1840,10 @@
   "business": {
     "payment": {
       "businessAccountsGroup": "Poslovni računi",
-      "personalAccountsGroup": "Osobni računi (pozajmica)"
+      "personalAccountsGroup": "Osobni računi (pozajmica)",
+      "requirePaymentSource": "Odaberi poslovni izvor plaćanja prije spremanja.",
+      "willCreateOwnerLoan": "Bit će zabilježeno kao pozajmica vlasnika prema tvrtki.",
+      "noBusinessSourcesHint": "Nema poslovnih izvora plaćanja. Dodaj jedan u Postavkama."
     },
     "debt": {
       "ownerLoanContact": "Vlasnik (pozajmica)",
