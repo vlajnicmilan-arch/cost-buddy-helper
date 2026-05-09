@@ -118,6 +118,16 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
   const { t } = useTranslation();
   const [businessImportOpen, setBusinessImportOpen] = useState(false);
   const { hiddenIds } = useHiddenPaymentSources();
+  const { registerHandlers } = useReceiptScan();
+
+  // Register this page's add/dup handlers so the global scan dialog
+  // dispatches saves to the right place (with business_profile_id set).
+  useEffect(() => {
+    return registerHandlers({
+      onAdd: props.onAddExpense as any,
+      checkDuplicate: props.checkDuplicate,
+    });
+  }, [registerHandlers, props.onAddExpense, props.checkDuplicate]);
 
 
   const {
