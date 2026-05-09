@@ -97,9 +97,9 @@ export const RecurringMatchDialog = ({ open, onOpenChange, matches, onConfirm }:
                       <span className="text-sm font-medium truncate">{match.recurring.description}</span>
                       <Badge variant="outline" className="text-[9px] px-1.5 py-0 flex-shrink-0">
                         {match.confidence === 'high' ? (
-                          <><CheckCircle2 className="w-2.5 h-2.5 mr-0.5 text-green-500" />Točan</>
+                          <><CheckCircle2 className="w-2.5 h-2.5 mr-0.5 text-green-500" />{t('recurring.exact')}</>
                         ) : (
-                          <><Search className="w-2.5 h-2.5 mr-0.5 text-amber-500" />Moguć</>
+                          <><Search className="w-2.5 h-2.5 mr-0.5 text-amber-500" />{t('recurring.possible')}</>
                         )}
                       </Badge>
                       {match.source === 'ai' && (
@@ -108,13 +108,13 @@ export const RecurringMatchDialog = ({ open, onOpenChange, matches, onConfirm }:
                     </div>
                     <div className="text-xs text-muted-foreground space-y-0.5">
                       <div>
-                        <span className="opacity-60">Obveza:</span>{' '}
+                        <span className="opacity-60">{t('recurring.obligation')}:</span>{' '}
                         <span className="font-medium">{formatAmount(match.recurring.amount)}</span>
                         <span className="mx-1">·</span>
-                        <span>{match.recurring.frequency === 'monthly' ? 'mjesečno' : match.recurring.frequency === 'weekly' ? 'tjedno' : match.recurring.frequency}</span>
+                        <span>{match.recurring.frequency === 'monthly' ? t('recurring.monthlyShort') : match.recurring.frequency === 'weekly' ? t('recurring.weeklyShort') : match.recurring.frequency}</span>
                       </div>
                       <div>
-                        <span className="opacity-60">Transakcija:</span>{' '}
+                        <span className="opacity-60">{t('recurring.transaction')}:</span>{' '}
                         <span className="font-medium">{match.transaction.description}</span>
                         <span className="mx-1">·</span>
                         <span>{formatAmount(match.transaction.amount)}</span>

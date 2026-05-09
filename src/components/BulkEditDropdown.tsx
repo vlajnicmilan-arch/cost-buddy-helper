@@ -228,13 +228,13 @@ const BulkPaymentSourceDialogControlled = ({ expenses, onUpdateExpenses, open, o
             </div>
             <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={selectAll}>
               {selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-              {selectedIds.size > 0 ? `${selectedIds.size} odabrano` : 'Odaberi sve'}
+              {selectedIds.size > 0 ? t('bulk.selectedCount', { count: selectedIds.size }) : t('bulk.selectAll')}
             </Button>
           </div>
 
           <div className="space-y-1 min-h-[150px] max-h-[35vh] overflow-y-auto border rounded-lg p-2 bg-muted/20">
             {filteredExpenses.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">Nema transakcija za prikaz</div>
+              <div className="py-8 text-center text-muted-foreground">{t('bulk.noTransactionsToShow')}</div>
             ) : (
               filteredExpenses.map((expense) => {
                 const sourceInfo = getPaymentSourceInfo(expense.payment_source || 'other');
@@ -429,13 +429,13 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
             </div>
             <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={selectAll}>
               {selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-              {selectedIds.size > 0 ? `${selectedIds.size} odabrano` : 'Odaberi sve'}
+              {selectedIds.size > 0 ? t('bulk.selectedCount', { count: selectedIds.size }) : t('bulk.selectAll')}
             </Button>
           </div>
 
           <div className="space-y-1 min-h-[150px] max-h-[35vh] overflow-y-auto border rounded-lg p-2 bg-muted/20">
             {filteredExpenses.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">Nema transakcija za prikaz</div>
+              <div className="py-8 text-center text-muted-foreground">{t('bulk.noTransactionsToShow')}</div>
             ) : (
               filteredExpenses.map((expense) => {
                 const categoryInfo = getCategoryInfoExtended(expense.category);
@@ -465,7 +465,7 @@ const BulkCategoryDialogControlled = ({ expenses, onUpdateExpenses, open, onOpen
           <div className="flex-1">
             <Select value={newCategory} onValueChange={(v) => setNewCategory(v as Category)}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Odaberi novu kategoriju..." />
+                <SelectValue placeholder={t('bulk.selectNewCategory')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] z-[100]">
                 {CATEGORY_GROUPS.map((group) => (
