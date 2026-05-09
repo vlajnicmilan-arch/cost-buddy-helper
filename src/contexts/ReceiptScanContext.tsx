@@ -44,12 +44,14 @@ const ReceiptScanContext = createContext<ReceiptScanContextValue | null>(null);
 
 export const ReceiptScanProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [autoScan, setAutoScan] = useState(false);
   const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
   const handlersRef = useRef<ScanContextHandlers | null>(null);
   const [hasHandlers, setHasHandlers] = useState(false);
 
   const openScan = useCallback((opts?: { businessProfileId?: string | null }) => {
     setBusinessProfileId(opts?.businessProfileId ?? null);
+    setAutoScan(true);
     setIsOpen(true);
     try {
       logDiagnostic('global_scan_open', {
@@ -59,8 +61,21 @@ export const ReceiptScanProvider = ({ children }: { children: ReactNode }) => {
     } catch {}
   }, []);
 
+  const openManualAdd = useCallback((opts?: { businessProfileId?: string | null }) => {
+    setBusinessProfileId(opts?.businessProfileId ?? null);
+    setAutoScan(false);
+    setIsOpen(true);
+    try {
+      logDiagnostic('global_manual_add_open', {
+        business_profile_id: opts?.businessProfileId ?? null,
+        has_handlers: !!handlersRef.current,
+      });
+    } catch {}
+  }, []);
+
   const closeScan = useCallback(() => {
     setIsOpen(false);
+    setAutoScan(false);
   }, []);
 
   const registerHandlers = useCallback((handlers: ScanContextHandlers) => {
