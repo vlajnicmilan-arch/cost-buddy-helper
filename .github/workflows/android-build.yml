@@ -71,29 +71,46 @@ jobs:
           path: dist-apk/*.apk
           retention-days: 30
 
-      - name: Upload APK via Lovable Cloud edge function
+      - name: Upload APK via signed URL (Lovable Cloud)
         env:
           APK_UPLOAD_TOKEN: ${{ secrets.APK_UPLOAD_TOKEN }}
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
-          UPLOAD_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/upload-apk-release"
+          FN_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/upload-apk-release"
 
-          echo "Uploading to edge function (version ${VERSION})"
-          HTTP_CODE=$(curl -sS -o /tmp/upload_resp.json -w "%{http_code}" \
-            -X POST "$UPLOAD_URL" \
+          echo "Step 1/2: requesting signed upload URL for v${VERSION}"
+          HTTP_CODE=$(curl -sS -o /tmp/sign_resp.json -w "%{http_code}" \
+            -X POST "$FN_URL" \
             -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
-            -H "x-apk-version: ${VERSION}" \
+            -H "x-apk-version: ${VERSION}")
+
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/sign_resp.json || true
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Failed to get signed URL"
+            exit 1
+          fi
+
+          SIGNED_URL=$(node -p "JSON.parse(require('fs').readFileSync('/tmp/sign_resp.json','utf8')).signedUrl")
+          if [ -z "$SIGNED_URL" ] || [ "$SIGNED_URL" = "undefined" ]; then
+            echo "❌ signedUrl missing in response"
+            exit 1
+          fi
+
+          echo "Step 2/2: PUT APK directly to Storage"
+          UP_CODE=$(curl -sS -o /tmp/put_resp.txt -w "%{http_code}" \
+            -X PUT "$SIGNED_URL" \
             -H "Content-Type: application/vnd.android.package-archive" \
             --data-binary "@${APK_PATH}")
 
-          echo "HTTP $HTTP_CODE"
-          cat /tmp/upload_resp.json || true
-          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
-            echo "❌ Upload failed"
+          echo "HTTP $UP_CODE"
+          cat /tmp/put_resp.txt || true
+          if [ "$UP_CODE" != "200" ] && [ "$UP_CODE" != "201" ]; then
+            echo "❌ APK PUT failed"
             exit 1
           fi
-          echo "✅ APK uploaded via edge function"
+          echo "✅ APK uploaded via signed URL"
 
       - name: Update version.json with SHA-256 + apkUrl
         env:
