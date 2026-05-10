@@ -1666,6 +1666,8 @@
     "title": "Benachrichtigungen",
     "markAllRead": "Alle markieren",
     "empty": "Keine Benachrichtigungen",
+    "delete": "Löschen",
+    "markRead": "Als gelesen markieren",
     "accept": "Akzeptieren",
     "decline": "Ablehnen",
     "invitationAccepted": "Einladung angenommen",
