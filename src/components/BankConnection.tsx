@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2 } from 'lucide-react';
+import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { CSVImportDialog } from './CSVImportDialog';
@@ -14,11 +14,20 @@ import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
 import { Badge } from '@/components/ui/badge';
 import { DetectedPartnersDialog } from './DetectedPartnersDialog';
+import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
+import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: import('@/types/expense').Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: import('@/types/expense').Expense }[]; unique: ParsedTransaction[] };
   existingExpenses?: import('@/types/expense').Expense[];
+  /**
+   * UUID poslovnog izvora plaćanja na koji se vežu SVE uvezene transakcije.
+   * Kad postoji, prepisuje sve `payment_source` vrijednosti na `custom:<id>`.
+   * Koristi se u poslovnom kontekstu — bankovni izvod uvijek dolazi s jednog tvrtkinog računa.
+   */
+  defaultBusinessPaymentSourceId?: string;
 }
 
 const SUPPORTED_SOURCES = [
@@ -29,7 +38,7 @@ const SUPPORTED_SOURCES = [
   { id: 'zaba', name: 'Zagrebačka banka', logo: '🏦' },
 ];
 
-export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }: BankConnectionProps) => {
+export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, defaultBusinessPaymentSourceId }: BankConnectionProps) => {
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const [infoOpen, setInfoOpen] = useState(false);
@@ -40,11 +49,15 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [partnersDialogOpen, setPartnersDialogOpen] = useState(false);
   const [detectedMerchants, setDetectedMerchants] = useState<string[]>([]);
+  const [detectedLoans, setDetectedLoans] = useState<DetectedLoan[]>([]);
+  const [loanDialogOpen, setLoanDialogOpen] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const { parsing, parsedData, parsePDF, parsePhoto, parseHTML, clearParsedData } = usePDFParser();
+  const { detectLoans } = useLoanDetection();
+  const { addDebt } = useBusinessDebts();
 
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
