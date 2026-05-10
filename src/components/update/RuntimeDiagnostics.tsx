@@ -9,6 +9,7 @@ export const RuntimeDiagnostics = () => {
   const [remoteCheck, setRemoteCheck] = useState<VersionCheckResult | null>(null);
   const [checking, setChecking] = useState(false);
   const [swStatus, setSwStatus] = useState<string>('unknown');
+  const [nativeVersion, setNativeVersion] = useState<string | null>(null);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -18,7 +19,16 @@ export const RuntimeDiagnostics = () => {
     } else {
       setSwStatus('unsupported');
     }
+
+    // Read actual installed APK/IPA versionName via Capacitor App plugin
+    if (isNativeApp) {
+      import('@capacitor/app')
+        .then(({ App }) => App.getInfo())
+        .then((info) => setNativeVersion(info.version))
+        .catch(() => setNativeVersion('N/A'));
+    }
   }, []);
+
 
   const handleCheckRemote = async () => {
     setChecking(true);
