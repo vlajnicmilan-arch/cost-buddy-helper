@@ -2585,6 +2585,33 @@ export type Database = {
           },
         ]
       }
+      project_activity_push_throttle: {
+        Row: {
+          activity_bucket: string
+          last_sent_at: string
+          pending_count: number
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_bucket: string
+          last_sent_at?: string
+          pending_count?: number
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_bucket?: string
+          last_sent_at?: string
+          pending_count?: number
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       project_budget_revisions: {
         Row: {
           created_at: string

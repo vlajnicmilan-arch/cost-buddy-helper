@@ -1,66 +1,97 @@
 ## Cilj
 
-Omogućiti da se **radnik** (`project_workers`, ima cijenu sata) poveže s **članom projekta** (`project_members`, ima račun u aplikaciji) tako da se sati koje član sam upiše automatski obračunaju × cijena u P&L.
+Kad bilo koji član projekta (npr. Petar) napravi akciju na projektu — upiše dnevnik, doda/promijeni transakciju, mijenja milestone ili ostavi bilješku — svi ostali članovi (vlasnik + ostali) dobiju push obavijest **u app + na uređaj**, grupirano da nema spama (max 1 push / 5 min po istom paru korisnik+projekt+tip).
 
-## Što se mijenja
+## Što već postoji (reuse, ne dupliciram)
 
-### 1. ProjectWorkersTab — kartica radnika
+| Funkcija | Što radi danas | Status |
+|---|---|---|
+| `notify-project-transaction` | Push svim članovima + ownerovi za nove/izmijenjene transakcije, kategorija `transactions` | **Već radi** |
+| `notify-note-added` | Push za bilješke na transakcijama | **Već radi** |
+| `useNotificationPreferences` | Per-user toggle po kategorijama (`projects`, `transactions`, …) | **Već radi** |
+| `_shared/sendPushNotification.ts` | Best-effort dispatch + delivery logging | **Već radi** |
+| `is_push_category_enabled()` RPC | Server-side check preferenci | **Već radi** |
 
-Na svakoj kartici radnika dodaje se:
-- **Badge stanja**:
-  - Zeleni: "Povezan: {ime člana}"
-  - Sivi: "Bez računa (samo evidencija)"
-- **Akcija "Poveži s članom"** (kad nije povezan) → otvara mali dialog s listom članova projekta koji još nisu povezani s nekim workerom
-- **Akcija "Ukloni vezu"** (kad jest povezan)
+## Što nedostaje i što gradim
 
-Spremanje: `UPDATE project_workers SET user_id = ? WHERE id = ?`
+### 1. Nova edge funkcija `notify-project-activity`
+Generička funkcija za **work_log** i **milestone** događaje (transakcije i note već imaju svoje).
 
-### 2. AddWorkerDialog (kreiranje novog radnika)
+Input:
+```ts
+{
+  project_id: string,
+  activity_type: 'work_log_added' | 'work_log_updated' | 'work_log_deleted'
+                | 'milestone_added' | 'milestone_status_changed' | 'milestone_deleted',
+  ref_id: string,         // id work_loga ili milestonea
+  meta?: { date?, hours?, milestone_name?, status? }
+}
+```
 
-Na vrh forme dodaje se opcionalno polje:
-- **"Već je član projekta?"** → dropdown članova projekta koji još nisu workeri
-- Kad se odabere član → ime/prezime se auto-popune iz njegovog profila, `user_id` postavi
-- Kad se ostavi prazno → standardni unos kao i sad (npr. vanjski podizvođač)
+Logika (mirror `notify-project-transaction`):
+- Validiraj JWT, dohvati `userId` (akter)
+- Učitaj projekt + ime aktera iz `profiles`
+- Skupi `usersToNotify` = svi `project_members.user_id` + `projects.user_id`, **bez aktera**
+- Provjeri throttle (vidi #2)
+- Insert u `notifications` (in-app zvono) + `sendPushNotificationToMany` s `category: 'projects'`
+- Naslov/tekst lokaliziran prema `activity_type` (HR/EN/DE rješava klijent kroz `data.i18n_key`; tijelo se gradi server-side na hr kao i postojeći `notify-project-transaction`)
 
-### 3. Backfill postojećih sati (jednokratno, samo za Petra)
+### 2. Throttle / grupiranje (5 min po useru)
+Nova mala tablica:
+```sql
+project_activity_push_throttle (
+  user_id uuid, project_id uuid, activity_bucket text,
+  last_sent_at timestamptz, pending_count int,
+  PRIMARY KEY (user_id, project_id, activity_bucket)
+)
+```
+`activity_bucket` = `work_log | milestone | transaction | note`.
 
-Nakon povezivanja Petrov worker ↔ Petrov user, postojeći zapisi u `project_work_logs` (3 zapisa) trebaju "okinuti" trigger `sync_work_log_to_entry` da kreira `project_work_entries`.
+Pravilo u edge funkciji prije slanja:
+- Ako `last_sent_at > now() - interval '5 minutes'` → **ne šalji push**, samo `pending_count += 1` i upiši in-app `notification` (zvono ostaje točno).
+- Inače → pošalji push, postavi `last_sent_at = now()`, `pending_count = 0`.
+- Tijelo poruke uključuje `pending_count` ako > 0 (npr. „Petar i još 3 promjene u projektu X").
 
-Dvije opcije — odabire se **B** jer je generička:
+Throttle koristi i postojeći `notify-project-transaction` i `notify-note-added` (mali patch — samo dodavanje throttle helpera, bez mijenjanja behavioura inače).
 
-- **A** Ručno: jednokratni `UPDATE project_work_logs SET updated_at = now() WHERE worker povezan i nema entry`
-- **B** Generički, bolje: kad korisnik klikne "Poveži s članom" → backend automatski potraži sve postojeće work_logs tog usera na tom projektu bez entry-ja i napravi `UPDATE updated_at` → trigger sve obradi.
+Helper se izdvaja u `supabase/functions/_shared/projectActivityThrottle.ts`.
 
-### 4. i18n ključevi
+### 3. Pozivi iz klijenta
+- `src/hooks/useProjectWorkLogs.ts` — nakon uspješnog `create / update / remove` pozvati `supabase.functions.invoke('notify-project-activity', { body: { project_id, activity_type: 'work_log_*', ref_id, meta } })`. Best-effort, errori se logiraju ali ne blokiraju UI (isti pattern kao `useExpenseCRUD`).
+- `src/hooks/useProjectMilestones.ts` — isti pattern za add / status change / delete.
+- Transakcije i bilješke već zovu svoje funkcije — **ne diram**.
 
-Pod `projects.workers.link.*`:
-- `linkToMember`, `linkedTo`, `noAccount`, `unlink`, `selectMember`, `noMembersAvailable`, `alreadyMemberQuestion`
+### 4. UI prefe rence
+`useNotificationPreferences` već ima `projects_enabled`. Dodatno u **Postavke → Notifikacije** ne treba ništa novo — kategorija „Projekti" pokriva work_log + milestone. Transakcije i bilješke već imaju vlastite toggle (`transactions`, ostaje pod `projects` za bilješke u projekt-kontekstu).
 
-## Datoteke
+## i18n
+Nove ključne stringe (HR/EN/DE) za naslove i tijelo notifikacija:
+- `notifications.projectActivity.workLogAdded` — „{name} je upisao/la dnevnik ({date}, {hours}h)"
+- `notifications.projectActivity.workLogUpdated` / `Deleted`
+- `notifications.projectActivity.milestoneAdded` / `StatusChanged` / `Deleted`
+- `notifications.projectActivity.grouped` — „{name} i još {n} promjena u projektu „{project}"
 
-- `src/components/projects/ProjectWorkersTab.tsx` — badge + akcije
-- `src/components/projects/AddWorkerDialog.tsx` (ili gdje se dodaju radnici) — opcionalno polje "već je član"
-- novi `src/components/projects/LinkWorkerToMemberDialog.tsx` — mali izbornik
-- `src/hooks/useProjectWorkers.ts` — `linkWorkerToMember(workerId, userId)` + auto-backfill mutacija
-- `src/i18n/locales/{hr,en,de}.ts` — novi ključevi
+## Što NE diram
+- `notify-project-transaction` (osim opcionalnog throttle helper poziva)
+- `notify-note-added` (isto)
+- `sync_work_log_to_entry` trigger
+- RLS na `project_work_logs` / `project_milestones`
+- Postojeći Petar link-worker flow
 
-## Što se NE dira
+## Datoteke (sažeto)
+**Nove:**
+- `supabase/functions/notify-project-activity/index.ts`
+- `supabase/functions/_shared/projectActivityThrottle.ts`
+- migracija: tablica `project_activity_push_throttle` + RLS (samo service role)
 
-- `WorkLogDialog` (ostaje kao i sad — nikakav novi izbornik)
-- Trigger `sync_work_log_to_entry` (već radi ispravno čim worker.user_id postoji)
-- `useProjectProfitLoss` (sam će pokupiti entries)
-- Personal mode
+**Izmjene (mali dodatci poziva):**
+- `src/hooks/useProjectWorkLogs.ts`
+- `src/hooks/useProjectMilestones.ts`
+- `src/i18n/locales/hr.json`, `en.json`, `de.json`
 
 ## Rizici
-
-Praktički nikakvi:
-- Veza se može ukloniti
-- Backfill je deterministički (samo logovi tog jednog usera bez postojećeg entry-a)
-- Bez schema migracije (kolona `user_id` već postoji u `project_workers`)
+- Praktički nikakvi: push je „best-effort", ako padne edge funkcija UI flow nastavlja normalno (postojeći pattern).
+- Throttle tablica je per (user, project, bucket) — bez race uvjeta, koristim `INSERT … ON CONFLICT DO UPDATE`.
 
 ## Krajnji rezultat
-
-1. Klikneš "Poveži s članom" na Petrovoj kartici → odabereš Petra
-2. Petrova 3 stara dana automatski uđu u P&L kao 7 h × 6 € = 42 €
-3. Svi budući dani koje Petar upiše obračunavaju se automatski
-4. Kad sljedeći put dodaješ radnika koji je već član → biraš ga iz dropdowna i sve je odmah povezano
+Kad Petar upiše dnevnik → ti dobiješ push „Petar je upisao dnevnik (10.5., 7h) u projektu X". Ako u sljedećih 5 min upiše još 3 dnevnika → bez novog pusha, ali zvono u appu pokazuje sve. Nakon 5 min sljedeća promjena dolazi kao „Petar i još 3 promjene u projektu X". Isto vrijedi za milestone, transakcije i bilješke.
