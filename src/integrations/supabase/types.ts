@@ -4256,6 +4256,10 @@ export type Database = {
         Args: { _category: string; _user_id: string }
         Returns: boolean
       }
+      link_worker_to_member: {
+        Args: { _user_id: string; _worker_id: string }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

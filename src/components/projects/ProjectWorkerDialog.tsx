@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectWorker } from '@/types/projectWorker';
 import { useTranslation } from 'react-i18next';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
+import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
-import { Link2, Copy, CheckCircle2, Loader2, UserPlus, Mail } from 'lucide-react';
+import { Link2, Copy, CheckCircle2, Loader2, UserPlus, Mail, X, Users } from 'lucide-react';
 
 interface ProjectWorkerDialogProps {
   open: boolean;
@@ -51,9 +53,25 @@ export const ProjectWorkerDialog = ({
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null);
 
-  const { generateInviteLink, sendInviteEmail } = useProjectMembers(projectId || null);
+  // Link-to-existing-member state
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [linking, setLinking] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+
+  const { generateInviteLink, sendInviteEmail, members } = useProjectMembers(projectId || null);
+  const { workers: allWorkers, linkWorkerToMember } = useProjectWorkers(projectId || null);
 
   const isEditing = !!worker;
+
+  // Members not yet linked to any worker on this project (excluding current worker's link)
+  const availableMembers = useMemo(() => {
+    const linkedUserIds = new Set(
+      allWorkers
+        .filter((w) => w.user_id && w.id !== worker?.id)
+        .map((w) => w.user_id as string)
+    );
+    return members.filter((m) => m.user_id && !linkedUserIds.has(m.user_id));
+  }, [members, allWorkers, worker?.id]);
 
   useEffect(() => {
     if (worker) {
@@ -77,7 +95,32 @@ export const ProjectWorkerDialog = ({
     setLinkedUserName(null);
     setInviteEmail('');
     setEmailSentTo(null);
+    setSelectedMemberId('');
   }, [worker, open]);
+
+  const handleLinkToMember = async () => {
+    if (!worker?.id || !selectedMemberId) return;
+    setLinking(true);
+    try {
+      const res = await linkWorkerToMember(worker.id, selectedMemberId);
+      if (res.success) {
+        setSelectedMemberId('');
+        onOpenChange(false);
+      }
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleUnlink = async () => {
+    if (!worker?.id) return;
+    setUnlinking(true);
+    try {
+      await linkWorkerToMember(worker.id, null);
+    } finally {
+      setUnlinking(false);
+    }
+  };
 
   // Resolve linked user display name
   useEffect(() => {
@@ -271,15 +314,64 @@ export const ProjectWorkerDialog = ({
               </Label>
 
               {worker?.user_id ? (
-                <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                  <div className="text-sm">
-                    <span className="font-medium">{t('projects.workerLinked', 'Povezan')}: </span>
-                    <span className="text-muted-foreground">{linkedUserName || '...'}</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
+                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                    <div className="text-sm flex-1 min-w-0">
+                      <span className="font-medium">{t('projects.workerLinked', 'Povezan')}: </span>
+                      <span className="text-muted-foreground">{linkedUserName || '...'}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={handleUnlink}
+                      disabled={unlinking}
+                    >
+                      {unlinking ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
+                      {t('projects.workerUnlink', 'Ukloni vezu')}
+                    </Button>
                   </div>
                 </div>
               ) : (
                 <>
+                  {/* Link to existing project member */}
+                  {availableMembers.length > 0 && (
+                    <div className="space-y-2 p-3 rounded-md bg-primary/5 border border-primary/20">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Users className="w-4 h-4 text-primary" />
+                        {t('projects.linkToExistingMember', 'Već je član projekta?')}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t('projects.linkToExistingMemberHint', 'Poveži ovaj zapis radnika s postojećim članom projekta. Svi njegovi prošli i budući unosi sati će se obračunati.')}
+                      </p>
+                      <div className="flex gap-2">
+                        <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder={t('projects.selectMember', 'Odaberi člana...')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableMembers.map((m) => (
+                              <SelectItem key={m.user_id} value={m.user_id as string}>
+                                {m.display_name || m.user_id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={handleLinkToMember}
+                          disabled={!selectedMemberId || linking}
+                        >
+                          {linking ? <Loader2 className="w-4 h-4 animate-spin" /> : t('projects.linkBtn', 'Poveži')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   <p className="text-xs text-muted-foreground">
                     {t('projects.inviteWorkerHint', 'Generiraj link i pošalji ga radniku. Kad ga otvori i prijavi se, automatski se povezuje s ovim zapisom i može unositi svoj dnevnik rada — bez plaćene verzije.')}
                   </p>

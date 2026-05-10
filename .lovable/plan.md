@@ -1,43 +1,66 @@
 ## Cilj
 
-Kada otvoriš poslovni izvor plaćanja (npr. **Tactura**), prikazuje se isto kao i bilo koji osobni izvor: **saldo gore + lista transakcija s iznosima i tekućim saldom (running balance)**, uključujući sve transakcije uvezene iz HTML/PDF izvoda banke.
+Omogućiti da se **radnik** (`project_workers`, ima cijenu sata) poveže s **članom projekta** (`project_members`, ima račun u aplikaciji) tako da se sati koje član sam upiše automatski obračunaju × cijena u P&L.
 
-## Što trenutno ne radi
+## Što se mijenja
 
-Provjerom koda vidim dvije konkretne rupe (HTML uvoz već ispravno tagira transakcije s `payment_source = custom:<TacturaID>` — to dio radi):
+### 1. ProjectWorkersTab — kartica radnika
 
-1. **Business novčanik (`src/components/business/BusinessWallet.tsx`)** — `<CustomPaymentSourcesPanel>` je renderiran **bez `onSourceClick` handlera**. Klik na karticu Tactura ne radi ništa, pa se detail dijalog nikad ne otvori.
+Na svakoj kartici radnika dodaje se:
+- **Badge stanja**:
+  - Zeleni: "Povezan: {ime člana}"
+  - Sivi: "Bez računa (samo evidencija)"
+- **Akcija "Poveži s članom"** (kad nije povezan) → otvara mali dialog s listom članova projekta koji još nisu povezani s nekim workerom
+- **Akcija "Ukloni vezu"** (kad jest povezan)
 
-2. **`/wallet` ruta** — kad klikneš poslovni izvor, `PaymentSourceTransactionsDialog` dobiva `expenses={allExpenses}`. `allExpenses` je već filtrirano po **view-modeu** (`useExpenseFetch` → `contextFilteredExpenses`). U **personal viewu** se poslovne transakcije izbacuju, pa lista bude prazna iako transakcije **postoje u bazi** s ispravnim `payment_source`.
+Spremanje: `UPDATE project_workers SET user_id = ? WHERE id = ?`
 
-Postojeći `PaymentSourceTransactionsDialog` već ispravno računa saldo + per-row running balance + filtrira po `custom:<id>` i karticama (linije 88-156, 124+) — ne treba ga dirati.
+### 2. AddWorkerDialog (kreiranje novog radnika)
 
-## Plan promjena (mali i targetirani)
+Na vrh forme dodaje se opcionalno polje:
+- **"Već je član projekta?"** → dropdown članova projekta koji još nisu workeri
+- Kad se odabere član → ime/prezime se auto-popune iz njegovog profila, `user_id` postavi
+- Kad se ostavi prazno → standardni unos kao i sad (npr. vanjski podizvođač)
 
-### 1) `useExpenseFetch.ts` / `useExpenses.ts` — izložiti raw expenses
-Vratiti dodatno `rawExpenses` (sve dohvaćene transakcije korisnika prije view-mode filtera). Ne dirati `expenses` ni `dashboardExpenses`. Konzumenti koji prikazuju **po izvoru** (a ne po viewu) koriste `rawExpenses`.
+### 3. Backfill postojećih sati (jednokratno, samo za Petra)
 
-### 2) `src/pages/Wallet.tsx`
-- Iz `useExpenses()` izvući `rawExpenses` i prosljediti ga kao `expenses` u `PaymentSourceTransactionsDialog` umjesto `allExpenses`.
-- `BankConnection` u dnu strane ostaje "generic" import (bez forsiranja business izvora) — to je već istraženo i tamo se poštuje.
+Nakon povezivanja Petrov worker ↔ Petrov user, postojeći zapisi u `project_work_logs` (3 zapisa) trebaju "okinuti" trigger `sync_work_log_to_entry` da kreira `project_work_entries`.
 
-### 3) `src/components/business/BusinessWallet.tsx`
-- Dodati lokalni state `selectedSource` + `dialogOpen`.
-- Proslijediti `onSourceClick` u `CustomPaymentSourcesPanel`.
-- Renderirati `PaymentSourceTransactionsDialog` s `rawExpenses` + `updateExpense`/`deleteExpense` iz `useExpenses()` + `importFromCSV`/`findDuplicates` (da ostane mogućnost importa direktno iz detalja izvora — kao na osobnim izvorima).
+Dvije opcije — odabire se **B** jer je generička:
 
-### 4) Verifikacija (bez novog koda)
-- Klik na Tactura iz Business Wallet → dijalog se otvara, saldo gore, transakcije iz uvoza vidljive, running balance točan.
-- Klik na isti izvor iz `/wallet` (personal pogled) → identičan rezultat.
-- Klik na osobni izvor → ponašanje nepromijenjeno.
+- **A** Ručno: jednokratni `UPDATE project_work_logs SET updated_at = now() WHERE worker povezan i nema entry`
+- **B** Generički, bolje: kad korisnik klikne "Poveži s članom" → backend automatski potraži sve postojeće work_logs tog usera na tom projektu bez entry-ja i napravi `UPDATE updated_at` → trigger sve obradi.
 
-## Što NE diramo
-- Logiku tagiranja kod uvoza (već radi: `BankConnection` + `BusinessTransactions` → `defaultBusinessPaymentSourceId`).
-- `PaymentSourceTransactionsDialog` interno (filter + saldo već su točni).
-- `dashboardExpenses` filter (i dalje poštuje view-mode i hidden sources — bitno za dashboard balance).
-- Edge funkciju `parse-pdf-statement`.
+### 4. i18n ključevi
 
-## Tehničke bilješke
-- `rawExpenses` = `expenses` state iz `useExpenseFetch` prije `applyViewMode` — već postoji interno, samo ga treba "izvući".
-- View-mode filter postoji s razlogom (kontekstualna izolacija) — ostavljamo ga; za "po izvoru" prikaz koristimo raw set jer izvor sam definira kontekst.
+Pod `projects.workers.link.*`:
+- `linkToMember`, `linkedTo`, `noAccount`, `unlink`, `selectMember`, `noMembersAvailable`, `alreadyMemberQuestion`
 
+## Datoteke
+
+- `src/components/projects/ProjectWorkersTab.tsx` — badge + akcije
+- `src/components/projects/AddWorkerDialog.tsx` (ili gdje se dodaju radnici) — opcionalno polje "već je član"
+- novi `src/components/projects/LinkWorkerToMemberDialog.tsx` — mali izbornik
+- `src/hooks/useProjectWorkers.ts` — `linkWorkerToMember(workerId, userId)` + auto-backfill mutacija
+- `src/i18n/locales/{hr,en,de}.ts` — novi ključevi
+
+## Što se NE dira
+
+- `WorkLogDialog` (ostaje kao i sad — nikakav novi izbornik)
+- Trigger `sync_work_log_to_entry` (već radi ispravno čim worker.user_id postoji)
+- `useProjectProfitLoss` (sam će pokupiti entries)
+- Personal mode
+
+## Rizici
+
+Praktički nikakvi:
+- Veza se može ukloniti
+- Backfill je deterministički (samo logovi tog jednog usera bez postojećeg entry-a)
+- Bez schema migracije (kolona `user_id` već postoji u `project_workers`)
+
+## Krajnji rezultat
+
+1. Klikneš "Poveži s članom" na Petrovoj kartici → odabereš Petra
+2. Petrova 3 stara dana automatski uđu u P&L kao 7 h × 6 € = 42 €
+3. Svi budući dani koje Petar upiše obračunavaju se automatski
+4. Kad sljedeći put dodaješ radnika koji je već član → biraš ga iz dropdowna i sve je odmah povezano
