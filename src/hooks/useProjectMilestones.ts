@@ -104,6 +104,12 @@ export const useProjectMilestones = (projectId: string | null) => {
 
       setMilestones(prev => [...prev, newMilestone].sort((a, b) => a.sort_order - b.sort_order));
       showSuccess(t('projects.milestoneCreated'));
+      void notifyProjectActivity({
+        project_id: projectId,
+        activity_type: 'milestone_added',
+        ref_id: newMilestone.id,
+        meta: { milestone_name: newMilestone.name },
+      });
       return newMilestone;
     } catch (error) {
       console.error('Error adding milestone:', error);
@@ -118,6 +124,7 @@ export const useProjectMilestones = (projectId: string | null) => {
     previousBudget?: number
   ): Promise<void> => {
     try {
+      const previous = milestones.find((m) => m.id === milestone.id);
       const { error } = await supabase
         .from('project_milestones')
         .update({
@@ -212,6 +219,14 @@ export const useProjectMilestones = (projectId: string | null) => {
         m.id === milestone.id ? { ...milestone, budget: Number(milestone.budget) } : m
       ));
       showSuccess(t('projects.milestoneUpdated'));
+      if (projectId && previous && previous.status !== milestone.status) {
+        void notifyProjectActivity({
+          project_id: projectId,
+          activity_type: 'milestone_status_changed',
+          ref_id: milestone.id,
+          meta: { milestone_name: milestone.name, status: milestone.status },
+        });
+      }
     } catch (error) {
       console.error('Error updating milestone:', error);
       showError(t('common.error'));
@@ -220,6 +235,7 @@ export const useProjectMilestones = (projectId: string | null) => {
 
   const deleteMilestone = async (id: string): Promise<void> => {
     try {
+      const removed = milestones.find((m) => m.id === id);
       const { error } = await supabase
         .from('project_milestones')
         .delete()
@@ -229,6 +245,14 @@ export const useProjectMilestones = (projectId: string | null) => {
 
       setMilestones(prev => prev.filter(m => m.id !== id));
       showSuccess(t('projects.milestoneDeleted'));
+      if (projectId) {
+        void notifyProjectActivity({
+          project_id: projectId,
+          activity_type: 'milestone_deleted',
+          ref_id: id,
+          meta: { milestone_name: removed?.name },
+        });
+      }
     } catch (error) {
       console.error('Error deleting milestone:', error);
       showError(t('common.error'));
