@@ -9,6 +9,7 @@ export const RuntimeDiagnostics = () => {
   const [remoteCheck, setRemoteCheck] = useState<VersionCheckResult | null>(null);
   const [checking, setChecking] = useState(false);
   const [swStatus, setSwStatus] = useState<string>('unknown');
+  const [nativeVersion, setNativeVersion] = useState<string | null>(null);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -18,7 +19,16 @@ export const RuntimeDiagnostics = () => {
     } else {
       setSwStatus('unsupported');
     }
+
+    // Read actual installed APK/IPA versionName via Capacitor App plugin
+    if (isNativeApp) {
+      import('@capacitor/app')
+        .then(({ App }) => App.getInfo())
+        .then((info) => setNativeVersion(info.version))
+        .catch(() => setNativeVersion('N/A'));
+    }
   }, []);
+
 
   const handleCheckRemote = async () => {
     setChecking(true);
@@ -52,7 +62,13 @@ export const RuntimeDiagnostics = () => {
         <div className="px-3 pb-3 space-y-2 text-xs font-mono">
           <Row label="Runtime" value={isNativeApp ? '🟢 Native' : '🌐 Web/PWA'} />
           <Row label="Platforma" value={platform} />
-          <Row label="APP_VERSION" value={APP_VERSION} />
+          {isNativeApp && (
+            <Row
+              label="Native APK verzija"
+              value={nativeVersion ?? '...'}
+            />
+          )}
+          <Row label="Web bundle verzija" value={APP_VERSION} />
           <Row label="Origin" value={origin} />
           <Row label="Href" value={href} truncate />
           <Row label="Service Worker" value={swStatus} />
