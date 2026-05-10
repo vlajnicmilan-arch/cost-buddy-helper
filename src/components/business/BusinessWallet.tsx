@@ -1,12 +1,20 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useExpenses } from '@/hooks/useExpenses';
+import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
+import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { Wallet, Info } from 'lucide-react';
 
 export const BusinessWallet = () => {
   const { t } = useTranslation();
   const { customPaymentSources, loading } = useCustomPaymentSources();
+  const { rawExpenses, updateExpense, deleteExpense, importFromCSV, findDuplicates, refetch } = useExpenses();
   const hasNoSources = !loading && customPaymentSources.length === 0;
+
+  const [selectedSource, setSelectedSource] = useState<CustomPaymentSource | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -29,7 +37,26 @@ export const BusinessWallet = () => {
         </div>
       )}
 
-      <CustomPaymentSourcesPanel hideHeader={false} />
+      <CustomPaymentSourcesPanel
+        hideHeader={false}
+        onRefetchExpenses={refetch}
+        onSourceClick={(source) => {
+          setSelectedSource(source);
+          setDialogOpen(true);
+          refetch();
+        }}
+      />
+
+      <PaymentSourceTransactionsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        paymentSource={selectedSource}
+        expenses={rawExpenses}
+        onUpdate={updateExpense}
+        onDelete={deleteExpense}
+        onImportCSV={importFromCSV}
+        findDuplicates={findDuplicates}
+      />
     </div>
   );
 };
