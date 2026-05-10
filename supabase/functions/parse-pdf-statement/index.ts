@@ -44,7 +44,8 @@ serve(async (req) => {
     function extractLargestTableRows(html: string): { header: string[]; rows: string[][] } | null {
       const tableMatches = Array.from(html.matchAll(/<table[\s\S]*?<\/table>/gi)).map(m => m[0]);
       if (tableMatches.length === 0) return null;
-      let best: { header: string[]; rows: string[][] } | null = null;
+      const dateRe = /(\b\d{1,2}[.\-/]\d{1,2}[.\-/]\d{2,4}\b|\b\d{4}-\d{2}-\d{2}\b)/;
+      const candidates: { header: string[]; rows: string[][]; dateRows: number }[] = [];
       for (const tbl of tableMatches) {
         const trMatches = Array.from(tbl.matchAll(/<tr[\s\S]*?<\/tr>/gi)).map(m => m[0]);
         if (trMatches.length < 2) continue;
@@ -53,12 +54,19 @@ serve(async (req) => {
           return cells;
         }).filter(r => r.length > 0);
         if (parsed.length < 2) continue;
-        // Heuristic: header is row with mostly non-numeric short cells
         const header = parsed[0];
         const rows = parsed.slice(1);
-        if (!best || rows.length > best.rows.length) best = { header, rows };
+        // Count rows that contain a date in any cell (real transaction tables)
+        const dateRows = rows.filter(r => r.some(c => dateRe.test(c))).length;
+        candidates.push({ header, rows, dateRows });
       }
-      return best;
+      if (candidates.length === 0) return null;
+      // Prefer tables with most date-bearing rows; fall back to largest
+      candidates.sort((a, b) => (b.dateRows - a.dateRows) || (b.rows.length - a.rows.length));
+      const best = candidates[0];
+      // If even the best has no date rows, return null so we fall back to raw HTML
+      if (best.dateRows === 0) return null;
+      return { header: best.header, rows: best.rows };
     }
 
     const token = authHeader.replace('Bearer ', '');
