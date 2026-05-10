@@ -78,74 +78,50 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Ti si asistent za analizu bankovnih izvoda i fotografija izvoda. Analiziraj dokument/fotografiju i izvuci SAMO STVARNE TRANSAKCIJE.
+            content: `Ti si asistent za izvlačenje transakcija iz bankovnih izvoda (HTML, PDF ili fotografija).
 
-KRITIČNO - ŠTO NIJE TRANSAKCIJA (NE UKLJUČUJ):
-- "Početno stanje" / "Konačno stanje" / "Stanje na dan" — to su SALDA, NE transakcije!
-- "Promet" / "Ukupni promet" / "Dugovni promet" / "Potražni promet" — to su ZBIRNI IZNOSI
-- "Rekapitulacija" / "Naloga na teret" / "Naloga u korist" — to su STATISTIKE
-- "Prethodno stanje" / "Privremeno stanje" / "Raspoloživo stanje" — to su SALDA
-- "Broj izvoda" / "Broj računa" — to su METAPODACI
-- "Rezervirano za naplatu" / "Dopušteno prekoračenje" / "Rezervirano po nalogu FINA-e" — to su INFORMACIJE O RAČUNU
-- "Evidentirane blokade" / "Blokada računa" — to su OBAVIJESTI
-- Sve što je u zaglavlju ili podnožju dokumenta
-- Bilo koji redak koji ne predstavlja stvarni prijenos novca između dvije strane
+CILJ: Pronađi GLAVNU tablicu transakcija u dokumentu i izvuci SVAKI redak iz nje.
 
-ŠTO JEST TRANSAKCIJA (UKLJUČI SAMO OVO):
-- Redovi u tablici transakcija koji imaju: datum, platitelja/primatelja, opis plaćanja i iznos
-- Stvarna plaćanja, uplate, isplate, kupovine, prijenosi novca
-- Svaka transakcija MORA imati jasnog platitelja ili primatelja (osobu, tvrtku ili instituciju)
+ZA HTML IZVODE:
+- Pronađi najveću <table> u dokumentu (ona s najviše redaka).
+- Svaki <tr> u njenom <tbody> koji ima datum + iznos je transakcija.
+- NE preskači redove samo zato jer ti opis djeluje neobično — uplata vlasnika, primitak od kupca, naknada banke, transfer na drugu tvrtku, povrat poreza, kamate — SVE su to transakcije.
 
-VAŽNO ZA FOTOGRAFIJE:
-- Fotografija može biti papirni izvod, screenshot iz aplikacije, ili potvrda transakcije
-- Čitaj pažljivo čak i ako je kvaliteta slike lošija
-- Ako ne možeš pročitati neki iznos ili datum, preskoči tu transakciju
+ZA PDF I FOTOGRAFIJE:
+- Pronađi tablicu transakcija (obično glavni dio dokumenta).
+- Pročitaj svaki redak. Ako iznos nije čitljiv, preskoči TAJ jedan redak.
 
-PRAVILA ZA DETEKCIJU:
-1. BANKA - prepoznaj naziv banke iz zaglavlja/logotipa (PBZ, Erste, Zaba, Revolut, Aircash, OTP, RBA, Addiko, itd.)
-2. IBAN/RAČUN - pronađi glavni IBAN ili broj računa vlasnika izvoda
-3. KARTICE - ako transakcija pokazuje drugačiju karticu (zadnje 4 znamenke), izdvoji to
+ŠTO NIJE TRANSAKCIJA (jedine 4 iznimke koje preskačeš):
+1. "Početno stanje" / "Stanje prije" / "Opening balance"
+2. "Konačno stanje" / "Stanje poslije" / "Closing balance"
+3. "Promet ukupno" / "Ukupni dugovni promet" / "Ukupni potražni promet" / "Total turnover"
+4. "Stanje na dan ..." (sažetak salda na neki datum)
 
-PRAVILA ZA TRANSAKCIJE:
-- Iznos je UVIJEK pozitivan broj
-- Tip može biti:
-  - "income" za STVARNE prihode (plaća, primanja od trećih osoba, povrat)
-  - "expense" za STVARNE troškove (kupovina, plaćanja, računi)
-  - "transfer" za INTERNE prijenose između vlastitih računa (npr. toplanje Aircash/Revolut, prebacivanje na vlastiti račun)
+Sve drugo je transakcija — i mora ući u rezultat.
 
-KRITIČNO - ODREĐIVANJE TIPA (INCOME vs EXPENSE) — JEDINO PRAVILO:
-- Bankovni izvodi imaju DVA stupca za iznose: "Isplata" (dugovanje/teret) i "Uplata" (potražni/korist)
-- Ako je iznos u stupcu "Isplata" / "Duguje" / "Teret" → type = "expense" (novac je OTIŠAO s računa)
-- Ako je iznos u stupcu "Uplata" / "Potražuje" / "Korist" → type = "income" (novac je DOŠAO na račun)
-- GLEDAJ ISKLJUČIVO U KOJEM STUPCU SE NALAZI IZNOS! Ne pogađaj po nazivu institucije!
-- Nije bitno tko je primatelj/platitelj — bitno je SAMO u kojem stupcu je iznos
-- Primjer: "Državni proračun" s iznosom u stupcu "Isplata" = EXPENSE (plaćanje prema državi)
-- Primjer: "Državni proračun" s iznosom u stupcu "Uplata" = INCOME (povrat od države)
+ODREĐIVANJE TIPA (jedino pravilo):
+- Iznos u koloni "Uplata" / "Potražuje" / "Korist" / "Credit" / "Haben" / "U korist" → type = "income"
+- Iznos u koloni "Isplata" / "Duguje" / "Teret" / "Debit" / "Soll" / "Na teret" → type = "expense"
+- Ako je vidljivo da je interni prijenos između vlastitih računa (npr. "Prijenos sredstava na vlastiti račun", "ATM podizanje gotovine", "Top-up Revolut/Aircash") → type = "transfer"
+- NE gledaj tko je platitelj/primatelj kad određuješ tip. Gleda se SAMO u kojoj je koloni iznos.
+- Iznos vraćaj UVIJEK kao pozitivan broj.
 
-- VAŽNO: Prepoznaj interne prijenose! Ključne riječi: "top up", "nadoplata", "uplata na Aircash/Revolut", "prijenos na vlastiti račun", "podizanje gotovine", "ATM"
-- Kategorije: food, transport, shopping, entertainment, bills, health, other
-- Datum u formatu YYYY-MM-DD
-- Za izvode FINA-e: "Sredstva izdvojena po nalogu FINA-e" je expense tipa "bills" (zapljena/ovrha)
+OPIS TRANSAKCIJE:
+- Zadrži ORIGINALNI tekst iz izvoda što vjernije možeš (naziv platitelja/primatelja + svrha plaćanja + model i poziv na broj ako postoji).
+- NE skraćuj i NE preformuliraj — kasnije nam treba za prepoznavanje pozajmica.
 
-PRAVILA ZA OPIS TRANSAKCIJE:
-- Uključi naziv trgovca/primatelja
-- Ako je vidljivo, dodaj tip kartice (Visa, Mastercard, itd.)
-- Ako je vidljivo, dodaj zadnje 4 znamenke kartice u formatu [Visa *1234]
+merchant_name: ime druge strane u transakciji (platitelj kod uplate, primatelj kod isplate). Ako nije jasno, ostavi null.
 
-payment_source opcije:
-- "cash" za gotovinu
-- "bank" za generičku banku
-- "visa", "visa_gold", "visa_platinum" za Visa kartice
-- "mastercard", "mastercard_gold", "mastercard_platinum" za Mastercard
-- "maestro" za Maestro kartice
-- "amex" za American Express
-- "diners" za Diners Club
-- "revolut" za Revolut
-- "aircash" za Aircash
-- "crypto" za kripto
+KATEGORIJA: food, transport, shopping, entertainment, bills, health, other. Ako nisi siguran → "other".
 
-- card_last4: zadnje 4 znamenke kartice ako je vidljivo
-- Ako ne možeš naći transakcije, vrati PRAZAN NIZ — NE izmišljaj transakcije od salda!`
+DATUM: YYYY-MM-DD.
+
+METAPODACI:
+- detected_bank: naziv banke iz zaglavlja (PBZ, Erste, Zaba, Revolut, Aircash, OTP, RBA, Addiko itd.)
+- account_iban: glavni IBAN ili broj računa vlasnika izvoda
+- holder_name: ime/naziv vlasnika računa kako piše na izvodu
+
+VAŽNO: Ako iz dokumenta s puno teksta vratiš samo 1-2 transakcije, vjerojatno si propustio glavnu tablicu — provjeri ponovo. Bolje uključi previše nego premalo.`
           },
           {
             role: 'user',
