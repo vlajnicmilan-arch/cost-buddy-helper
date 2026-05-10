@@ -32,12 +32,45 @@ interface Props {
 export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, addAction, scanAction, onEditExpense, onDeleteExpense, onImportCSV, findDuplicates, existingExpenses }: Props) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { activeBusinessProfileId } = useAppState();
+  const { customPaymentSources } = useCustomPaymentSources();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+
+  // Sources that belong to the active business profile (bankovni izvod uvijek dolazi s tvrtkinog računa)
+  const businessSources = useMemo(
+    () => customPaymentSources.filter(s => s.business_profile_id === activeBusinessProfileId),
+    [customPaymentSources, activeBusinessProfileId]
+  );
+
+  const lsKey = activeBusinessProfileId ? `bankImportSource:${activeBusinessProfileId}` : null;
+  const [selectedImportSourceId, setSelectedImportSourceId] = useState<string | undefined>(() => {
+    if (!lsKey) return undefined;
+    const stored = localStorage.getItem(lsKey);
+    return stored || undefined;
+  });
+
+  // Auto-select default when sources load / change
+  useEffect(() => {
+    if (businessSources.length === 0) {
+      setSelectedImportSourceId(undefined);
+      return;
+    }
+    if (!selectedImportSourceId || !businessSources.some(s => s.id === selectedImportSourceId)) {
+      const fallback = businessSources[0].id;
+      setSelectedImportSourceId(fallback);
+      if (lsKey) localStorage.setItem(lsKey, fallback);
+    }
+  }, [businessSources, selectedImportSourceId, lsKey]);
+
+  const handleSourceChange = (id: string) => {
+    setSelectedImportSourceId(id);
+    if (lsKey) localStorage.setItem(lsKey, id);
+  };
 
   const filtered = useMemo(() => {
     let result = expenses;
