@@ -54,13 +54,26 @@ function resolveRouteFromPushData(data: Record<string, string | undefined>): str
 export async function registerNativePush(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
 
+  // Granular boot-trace diagnostics. These prove exactly how far the native
+  // FCM init gets on a given device (some Android builds crash inside
+  // PushNotifications.register and we never see a JS error).
+  const diag = async (event: string, details: Record<string, unknown> = {}) => {
+    try {
+      const { logDiagnostic } = await import('@/lib/diagnosticLogger');
+      logDiagnostic(event, details);
+    } catch { /* best-effort */ }
+  };
+
   try {
+    await diag('push_register_start');
     const { PushNotifications } = await import('@capacitor/push-notifications');
 
     // Permission
     let perm = await PushNotifications.checkPermissions();
+    await diag('push_perm_checked', { receive: perm.receive });
     if (perm.receive !== 'granted') {
       perm = await PushNotifications.requestPermissions();
+      await diag('push_perm_requested', { receive: perm.receive });
       if (perm.receive !== 'granted') return false;
     }
 
@@ -70,6 +83,9 @@ export async function registerNativePush(): Promise<boolean> {
 
       PushNotifications.addListener('registration', async (token) => {
         console.log('[Push] FCM token:', token.value);
+        await diag('push_register_token_received', {
+          token_prefix: typeof token?.value === 'string' ? token.value.slice(0, 12) : null,
+        });
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         await supabase.from('push_tokens').upsert(
@@ -84,6 +100,9 @@ export async function registerNativePush(): Promise<boolean> {
 
       PushNotifications.addListener('registrationError', (err) => {
         console.error('[Push] Registration error:', err);
+        void diag('push_register_error', {
+          message: (err as any)?.error ?? String(err),
+        });
       });
 
       PushNotifications.addListener('pushNotificationReceived', (n) => {
