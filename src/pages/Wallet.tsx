@@ -22,7 +22,7 @@ const Wallet = () => {
   const { user, loading: authLoading } = useAuth();
   const { storageMode } = useStorage();
   const navigate = useNavigate();
-  const { importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, updateExpense, deleteExpense } = useExpenses();
+  const { importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, rawExpenses, updateExpense, deleteExpense } = useExpenses();
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
 
