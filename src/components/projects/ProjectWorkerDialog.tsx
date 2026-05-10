@@ -375,9 +375,6 @@ export const ProjectWorkerDialog = ({
                   <p className="text-xs text-muted-foreground">
                     {t('projects.inviteWorkerHint', 'Generiraj link i pošalji ga radniku. Kad ga otvori i prijavi se, automatski se povezuje s ovim zapisom i može unositi svoj dnevnik rada — bez plaćene verzije.')}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('projects.inviteWorkerHint', 'Generiraj link i pošalji ga radniku. Kad ga otvori i prijavi se, automatski se povezuje s ovim zapisom i može unositi svoj dnevnik rada — bez plaćene verzije.')}
-                  </p>
                   {!inviteLink ? (
                     <Button
                       type="button"
