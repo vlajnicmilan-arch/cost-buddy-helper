@@ -154,4 +154,9 @@ jobs:
           fi
           git add public/version.json
           git commit -m "chore(release): publish APK v${{ steps.ver.outputs.version }} [skip ci]"
-          git push
+          # Remote may have advanced (Lovable auto-commits) — rebase pa push, s retry-em
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "Push attempt $i failed, retrying..."
+            sleep 3
+          done
