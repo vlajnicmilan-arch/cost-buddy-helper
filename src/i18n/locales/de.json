@@ -789,7 +789,8 @@
     "bulkDeleted": "{{count}} Transaktionen gelöscht",
     "toAccountLabel": "📥 Auf Konto (Ziel)",
     "selectDestinationAccount": "Zielkonto auswählen",
-    "noDestination": "Kein Ziel"
+    "noDestination": "Kein Ziel",
+    "amountHint": "Für Dezimalstellen Punkt oder Komma verwenden (z. B. 150,50)"
   },
   "dashboard": {
     "balance": "Kontostand",

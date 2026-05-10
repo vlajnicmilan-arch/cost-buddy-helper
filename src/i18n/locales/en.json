@@ -789,7 +789,8 @@
     "bulkDeleted": "Deleted {{count}} transactions",
     "toAccountLabel": "📥 To account (destination)",
     "selectDestinationAccount": "Select destination account",
-    "noDestination": "No destination"
+    "noDestination": "No destination",
+    "amountHint": "For decimals use a dot or a comma (e.g. 150.50)"
   },
   "dashboard": {
     "balance": "Balance",
