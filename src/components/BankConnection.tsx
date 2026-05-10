@@ -150,10 +150,53 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
+  const overrideToBusinessSource = (txs: ParsedTransaction[]): ParsedTransaction[] => {
+    if (!defaultBusinessPaymentSourceId) return txs;
+    const ps = `custom:${defaultBusinessPaymentSourceId}` as ParsedTransaction['payment_source'];
+    return txs.map(tx => ({ ...tx, payment_source: ps }));
+  };
+
+  const runLoanDetection = async (txs: ParsedTransaction[]) => {
+    if (!activeBusinessProfileId || txs.length === 0) return;
+    const txsForScan = txs.map(tx => ({
+      description: tx.description,
+      amount: tx.amount,
+      type: tx.type,
+      date: tx.date instanceof Date ? tx.date : new Date(tx.date),
+    }));
+    try {
+      const detected = await detectLoans(txsForScan);
+      if (detected.length > 0) {
+        setDetectedLoans(detected);
+        setLoanDialogOpen(true);
+      }
+    } catch (e) {
+      console.error('Loan detection after import failed:', e);
+    }
+  };
+
+  const handleLoanConfirm = (loans: DetectedLoan[]) => {
+    if (!activeBusinessProfileId) return;
+    for (const loan of loans) {
+      addDebt({
+        business_profile_id: activeBusinessProfileId,
+        type: loan.type,
+        contact_name: loan.contactName,
+        description: loan.description,
+        amount: loan.amount,
+        paid_amount: 0,
+        due_date: null,
+        status: 'active',
+      });
+    }
+    showSuccess(t('import.loansAdded', { count: loans.length, defaultValue: `Dodano ${loans.length} pozajmica u evidenciju dugovanja` }));
+    setDetectedLoans([]);
+  };
+
   const handleImportPDFTransactions = async () => {
     if (!parsedData || !onImportCSV) return;
 
-    const transactions: ParsedTransaction[] = parsedData.transactions.map(tx => ({
+    const transactions: ParsedTransaction[] = overrideToBusinessSource(parsedData.transactions.map(tx => ({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
@@ -162,7 +205,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
       merchant_name: tx.merchant_name || undefined,
       source: 'pdf',
       payment_source: tx.payment_source || 'bank'
-    }));
+    })));
 
     // Check for duplicates if function is provided
     if (findDuplicates) {
@@ -189,6 +232,8 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
     }
     clearParsedData();
     showSuccess(t('import.importedFromPDF', { count: transactions.length }));
+    // Loan detection after successful import (business mode only)
+    void runLoanDetection(transactions);
   };
 
   const handleConfirmImportWithDuplicates = async () => {
@@ -197,7 +242,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
     // Always include unique, optionally include strict duplicates, include selected fuzzy duplicates
     const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, i) => selectedFuzzy.has(i));
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
-    const transactionsToImport = [...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude];
+    const transactionsToImport = overrideToBusinessSource([...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude]);
 
     if (transactionsToImport.length === 0) {
       toast.info(t('import.noNewTransactions'));
@@ -218,6 +263,8 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
     clearParsedData();
     setDuplicateInfo(null);
     showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
+    // Loan detection after successful import (business mode only)
+    void runLoanDetection(transactionsToImport);
   };
 
   return (
