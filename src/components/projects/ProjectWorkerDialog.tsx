@@ -95,7 +95,32 @@ export const ProjectWorkerDialog = ({
     setLinkedUserName(null);
     setInviteEmail('');
     setEmailSentTo(null);
+    setSelectedMemberId('');
   }, [worker, open]);
+
+  const handleLinkToMember = async () => {
+    if (!worker?.id || !selectedMemberId) return;
+    setLinking(true);
+    try {
+      const res = await linkWorkerToMember(worker.id, selectedMemberId);
+      if (res.success) {
+        setSelectedMemberId('');
+        onOpenChange(false);
+      }
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleUnlink = async () => {
+    if (!worker?.id) return;
+    setUnlinking(true);
+    try {
+      await linkWorkerToMember(worker.id, null);
+    } finally {
+      setUnlinking(false);
+    }
+  };
 
   // Resolve linked user display name
   useEffect(() => {
