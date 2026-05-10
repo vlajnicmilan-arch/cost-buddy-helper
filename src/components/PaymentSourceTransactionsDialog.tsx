@@ -102,14 +102,31 @@ export const PaymentSourceTransactionsDialog = ({
   // Filter expenses for this payment source
   const sourceExpenses = useMemo(() => {
     if (!paymentSource) return [];
-    
+
+    const sourceBpId = (paymentSource as any).business_profile_id as string | null | undefined;
+    // Generic payment_source values that mean "from a bank account" — used by older
+    // bank-statement imports that didn't tag the row to a specific custom source.
+    const isGenericBankPs = (ps?: string) =>
+      !ps || ps === 'bank' || ps === 'cash' || ps === 'card' || ps === 'other';
+
     return expenses.filter(e => {
       if (e.payment_source?.startsWith(`custom:${paymentSource.id}`)) return true;
       if (e.payment_source === paymentSource.id) return true;
       if (e.payment_source_card_id && paymentSource.cards) {
-        return paymentSource.cards.some(card => card.id === e.payment_source_card_id);
+        if (paymentSource.cards.some(card => card.id === e.payment_source_card_id)) return true;
       }
       if (e.type === 'transfer' && e.income_source_id === paymentSource.id) return true;
+      // Bank-statement imports tagged to the same company but with generic payment_source
+      // (e.g. 'bank') belong to this company's account. Only apply when the source itself
+      // is the company's account (has business_profile_id).
+      if (
+        sourceBpId &&
+        (e as any).business_profile_id === sourceBpId &&
+        isGenericBankPs(e.payment_source) &&
+        !e.project_id
+      ) {
+        return true;
+      }
       return false;
     }).sort((a, b) => {
       // Primary sort: transaction date descending
