@@ -314,15 +314,67 @@ export const ProjectWorkerDialog = ({
               </Label>
 
               {worker?.user_id ? (
-                <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                  <div className="text-sm">
-                    <span className="font-medium">{t('projects.workerLinked', 'Povezan')}: </span>
-                    <span className="text-muted-foreground">{linkedUserName || '...'}</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
+                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                    <div className="text-sm flex-1 min-w-0">
+                      <span className="font-medium">{t('projects.workerLinked', 'Povezan')}: </span>
+                      <span className="text-muted-foreground">{linkedUserName || '...'}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={handleUnlink}
+                      disabled={unlinking}
+                    >
+                      {unlinking ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
+                      {t('projects.workerUnlink', 'Ukloni vezu')}
+                    </Button>
                   </div>
                 </div>
               ) : (
                 <>
+                  {/* Link to existing project member */}
+                  {availableMembers.length > 0 && (
+                    <div className="space-y-2 p-3 rounded-md bg-primary/5 border border-primary/20">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Users className="w-4 h-4 text-primary" />
+                        {t('projects.linkToExistingMember', 'Već je član projekta?')}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t('projects.linkToExistingMemberHint', 'Poveži ovaj zapis radnika s postojećim članom projekta. Svi njegovi prošli i budući unosi sati će se obračunati.')}
+                      </p>
+                      <div className="flex gap-2">
+                        <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder={t('projects.selectMember', 'Odaberi člana...')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableMembers.map((m) => (
+                              <SelectItem key={m.user_id} value={m.user_id as string}>
+                                {m.display_name || m.user_id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={handleLinkToMember}
+                          disabled={!selectedMemberId || linking}
+                        >
+                          {linking ? <Loader2 className="w-4 h-4 animate-spin" /> : t('projects.linkBtn', 'Poveži')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    {t('projects.inviteWorkerHint', 'Generiraj link i pošalji ga radniku. Kad ga otvori i prijavi se, automatski se povezuje s ovim zapisom i može unositi svoj dnevnik rada — bez plaćene verzije.')}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {t('projects.inviteWorkerHint', 'Generiraj link i pošalji ga radniku. Kad ga otvori i prijavi se, automatski se povezuje s ovim zapisom i može unositi svoj dnevnik rada — bez plaćene verzije.')}
                   </p>
