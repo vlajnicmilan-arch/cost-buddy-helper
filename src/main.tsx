@@ -260,6 +260,8 @@ if (isFastLanding) {
       <Landing />
     </React.StrictMode>
   );
+  // Landing renders synchronously → boot reached React mount.
+  markBootCompleted();
 } else {
   Promise.all([
     import("./i18n"),
@@ -273,5 +275,9 @@ if (isFastLanding) {
         </ErrorBoundary>
       </React.StrictMode>
     );
+    // App tree is now rendering. Mark boot completed on the next frame so we
+    // know React actually executed the first commit (vs. only the dynamic
+    // imports succeeding).
+    requestAnimationFrame(() => markBootCompleted());
   });
 }
