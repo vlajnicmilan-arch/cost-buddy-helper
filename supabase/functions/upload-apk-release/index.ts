@@ -1,6 +1,5 @@
-// Edge function koji prima APK iz GitHub Actions i uploada ga u public-assets bucket.
-// Service-role ključ NIKAD ne napušta Lovable Cloud — GitHub Actions koristi samo
-// jednostavan UPLOAD_TOKEN za autorizaciju.
+// Edge function vraća signed upload URL za APK.
+// GitHub Actions zatim direktno PUT-a binarno u Storage (zaobilazi edge gateway 504).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -32,11 +31,6 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid or missing x-apk-version header" }, 400);
     }
 
-    const apkBytes = new Uint8Array(await req.arrayBuffer());
-    if (apkBytes.byteLength === 0) {
-      return json({ error: "Empty body" }, 400);
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -44,16 +38,16 @@ Deno.serve(async (req) => {
 
     const objectPath = `releases/vmbalance-${version}.apk`;
 
-    const { error: upErr } = await supabase.storage
-      .from("public-assets")
-      .upload(objectPath, apkBytes, {
-        contentType: "application/vnd.android.package-archive",
-        upsert: true,
-      });
+    // Best-effort cleanup pa createSignedUploadUrl (upsert nije podržan na ovoj API ruti)
+    await supabase.storage.from("public-assets").remove([objectPath]).catch(() => {});
 
-    if (upErr) {
-      console.error("upload failed", upErr);
-      return json({ error: upErr.message }, 500);
+    const { data, error } = await supabase.storage
+      .from("public-assets")
+      .createSignedUploadUrl(objectPath);
+
+    if (error || !data) {
+      console.error("createSignedUploadUrl failed", error);
+      return json({ error: error?.message ?? "Failed to create signed URL" }, 500);
     }
 
     const { data: pub } = supabase.storage
@@ -63,8 +57,9 @@ Deno.serve(async (req) => {
     return json({
       success: true,
       path: objectPath,
+      signedUrl: data.signedUrl,
+      token: data.token,
       publicUrl: pub.publicUrl,
-      size: apkBytes.byteLength,
     });
   } catch (e: any) {
     console.error("unhandled", e);
