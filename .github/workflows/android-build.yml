@@ -71,23 +71,20 @@ jobs:
           path: dist-apk/*.apk
           retention-days: 30
 
-      - name: Upload APK to Lovable Cloud Storage
+      - name: Upload APK via Lovable Cloud edge function
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APK_UPLOAD_TOKEN: ${{ secrets.APK_UPLOAD_TOKEN }}
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
-          OBJECT_PATH="releases/vmbalance-${VERSION}.apk"
-          UPLOAD_URL="${SUPABASE_URL}/storage/v1/object/public-assets/${OBJECT_PATH}"
+          UPLOAD_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/upload-apk-release"
 
-          echo "Uploading to: $UPLOAD_URL"
+          echo "Uploading to edge function (version ${VERSION})"
           HTTP_CODE=$(curl -sS -o /tmp/upload_resp.json -w "%{http_code}" \
             -X POST "$UPLOAD_URL" \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
+            -H "x-apk-version: ${VERSION}" \
             -H "Content-Type: application/vnd.android.package-archive" \
-            -H "x-upsert: true" \
             --data-binary "@${APK_PATH}")
 
           echo "HTTP $HTTP_CODE"
@@ -96,16 +93,15 @@ jobs:
             echo "❌ Upload failed"
             exit 1
           fi
-          echo "✅ APK uploaded to public-assets/${OBJECT_PATH}"
+          echo "✅ APK uploaded via edge function"
 
       - name: Update version.json with SHA-256 + apkUrl
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
           SHA256=$(sha256sum "$APK_PATH" | awk '{print $1}')
-          PUBLIC_URL="${SUPABASE_URL}/storage/v1/object/public/public-assets/releases/vmbalance-${VERSION}.apk"
+          PUBLIC_URL="https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/vmbalance-${VERSION}.apk"
 
           node -e "
             const fs = require('fs');
