@@ -735,6 +735,13 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
         onOpenChange={setPartnersDialogOpen}
         merchantNames={detectedMerchants}
       />
+      {/* Loan Detection Dialog (after import in business mode) */}
+      <LoanDetectionDialog
+        open={loanDialogOpen}
+        onOpenChange={setLoanDialogOpen}
+        detectedLoans={detectedLoans}
+        onConfirm={handleLoanConfirm}
+      />
     </motion.div>
   );
 };
