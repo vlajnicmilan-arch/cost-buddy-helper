@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { APP_VERSION } from '@/lib/version';
 import {
   fetchLatestVersion,
+  getInstalledAppVersion,
   isRemoteVersionNewer,
   isUpdateForced,
   isNativeApp,
@@ -28,17 +29,20 @@ import { logUpdateEvent } from '@/lib/updateTelemetry';
 
 // ----- Manual trigger (Settings → "Check for updates") -----
 export const checkForNativeUpdates = async (): Promise<void> => {
+  const installedVersion = await getInstalledAppVersion();
   console.info('[NativeUpdate] Manual check', {
     platform: getPlatformName(),
     isNative: isNativeApp,
     appVersion: APP_VERSION,
+    installedVersion,
   });
 
   const result = await fetchLatestVersion();
 
   logUpdateEvent('update_check_performed', {
     remoteVersion: result.version,
-    currentVersion: APP_VERSION,
+    currentVersion: installedVersion,
+    webVersion: APP_VERSION,
     origin: result.origin,
     error: result.error,
     manual: true,
@@ -49,8 +53,8 @@ export const checkForNativeUpdates = async (): Promise<void> => {
     return;
   }
 
-  const isNewer = isRemoteVersionNewer(APP_VERSION, result.version);
-  const forced = isUpdateForced(APP_VERSION, result.minSupportedVersion);
+  const isNewer = isRemoteVersionNewer(installedVersion, result.version);
+  const forced = isUpdateForced(installedVersion, result.minSupportedVersion);
 
   if (!isNewer && !forced) {
     showSuccess(tr('update.upToDate', 'Aplikacija je ažurna.'));

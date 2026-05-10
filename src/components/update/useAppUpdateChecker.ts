@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { APP_VERSION } from '@/lib/version';
 import {
   fetchLatestVersion,
+  getInstalledAppVersion,
   isRemoteVersionNewer,
   isUpdateForced,
   isNativeApp,
@@ -27,6 +28,7 @@ const LAST_BOOT_VERSION_KEY = 'vmb-last-boot-version';
 interface UpdateState {
   available: boolean;
   remoteVersion: string;
+  currentVersion: string;
   apkUrl: string | null;
   sha256: string | null;
   forced: boolean;
@@ -35,6 +37,7 @@ interface UpdateState {
 const EMPTY_STATE: UpdateState = {
   available: false,
   remoteVersion: '',
+  currentVersion: APP_VERSION,
   apkUrl: null,
   sha256: null,
   forced: false,
@@ -84,11 +87,13 @@ export const useAppUpdateChecker = () => {
     inFlightRef.current = true;
 
     try {
+      const installedVersion = await getInstalledAppVersion();
       const result = await fetchLatestVersion();
 
       logUpdateEvent('update_check_performed', {
         remoteVersion: result.version,
-        currentVersion: APP_VERSION,
+        currentVersion: installedVersion,
+        webVersion: APP_VERSION,
         origin: result.origin,
         error: result.error,
         sha256Present: !!result.sha256,
@@ -99,8 +104,8 @@ export const useAppUpdateChecker = () => {
         return;
       }
 
-      const isNewer = isRemoteVersionNewer(APP_VERSION, result.version);
-      const forced = isUpdateForced(APP_VERSION, result.minSupportedVersion);
+      const isNewer = isRemoteVersionNewer(installedVersion, result.version);
+      const forced = isUpdateForced(installedVersion, result.minSupportedVersion);
 
       if (!isNewer && !forced) {
         // Up to date — clear any previously dismissed flag so future updates show again
@@ -115,6 +120,7 @@ export const useAppUpdateChecker = () => {
       setState({
         available: true,
         remoteVersion: result.version,
+        currentVersion: installedVersion,
         apkUrl: result.apkUrl,
         sha256: result.sha256,
         forced,
@@ -157,7 +163,6 @@ export const useAppUpdateChecker = () => {
 
   return {
     ...state,
-    currentVersion: APP_VERSION,
     isNative: isNativeApp,
     dismiss,
     triggerCheck: performCheck,
