@@ -302,7 +302,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
       </p>
 
       <div className="flex flex-col gap-2">
-        {onImportCSV && <CSVImportDialog onImport={onImportCSV} existingExpenses={existingExpenses} findDuplicates={findDuplicates} />}
+        {onImportCSV && <CSVImportDialog onImport={onImportCSV} existingExpenses={existingExpenses} findDuplicates={findDuplicates} defaultPaymentSource={defaultBusinessPaymentSourceId ? `custom:${defaultBusinessPaymentSourceId}` : undefined} />}
         
         {/* Photo Import */}
         <input
