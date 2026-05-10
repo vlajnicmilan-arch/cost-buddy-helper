@@ -1447,7 +1447,10 @@
     },
     "appUpdate": {
       "webCheckFailed": "Webversion-Prüfung fehlgeschlagen. Kein Server hat geantwortet.",
-      "platformUnsupported": "Update-Prüfung ist auf dieser Plattform nicht verfügbar."
+      "platformUnsupported": "Update-Prüfung ist auf dieser Plattform nicht verfügbar.",
+      "downloadFailed": "Update-Download fehlgeschlagen. Prüfen Sie das Netzwerk und versuchen Sie es erneut.",
+      "checksumFailed": "Die Update-Datei ist beschädigt oder ungültig. Bitte erneut versuchen.",
+      "noApkUrl": "APK-URL ist nicht verfügbar."
     },
     "files": {
       "saveFailed": "Datei konnte nicht gespeichert werden",
