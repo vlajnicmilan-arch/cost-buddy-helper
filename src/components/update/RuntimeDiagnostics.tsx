@@ -62,7 +62,13 @@ export const RuntimeDiagnostics = () => {
         <div className="px-3 pb-3 space-y-2 text-xs font-mono">
           <Row label="Runtime" value={isNativeApp ? '🟢 Native' : '🌐 Web/PWA'} />
           <Row label="Platforma" value={platform} />
-          <Row label="APP_VERSION" value={APP_VERSION} />
+          {isNativeApp && (
+            <Row
+              label="Native APK verzija"
+              value={nativeVersion ?? '...'}
+            />
+          )}
+          <Row label="Web bundle verzija" value={APP_VERSION} />
           <Row label="Origin" value={origin} />
           <Row label="Href" value={href} truncate />
           <Row label="Service Worker" value={swStatus} />
