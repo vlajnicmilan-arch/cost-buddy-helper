@@ -79,13 +79,34 @@ export const getCandidateOrigins = (): string[] => {
   return candidates;
 };
 
+export interface VersionManifest {
+  version: string;
+  minSupportedVersion?: string | null;
+  sha256?: string | null;
+  apkUrl?: string | null;
+}
+
 export interface VersionCheckResult {
   version: string | null;
+  minSupportedVersion: string | null;
+  sha256: string | null;
+  apkUrl: string | null;
   origin: string | null;
   error: string | null;
 }
 
-export const fetchVersionFromOrigin = async (origin: string): Promise<string | null> => {
+const DEFAULT_APK_PATH = '/storage/v1/object/public/public-assets/vm-balance.apk';
+
+export const buildDefaultApkUrl = (cacheBust: string): string | null => {
+  const supabaseUrl = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
+    ?.VITE_SUPABASE_URL;
+  if (!supabaseUrl) return null;
+  return `${supabaseUrl}${DEFAULT_APK_PATH}?download=vm-balance.apk&v=${cacheBust}`;
+};
+
+export const fetchVersionManifestFromOrigin = async (
+  origin: string
+): Promise<VersionManifest | null> => {
   const url = new URL('/version.json', origin);
   url.searchParams.set('t', Date.now().toString());
   const requestUrl = url.toString();
@@ -104,7 +125,7 @@ export const fetchVersionFromOrigin = async (origin: string): Promise<string | n
       return null;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as Partial<VersionManifest>;
     const version = typeof data?.version === 'string' ? data.version : null;
 
     if (!version) {
@@ -112,12 +133,23 @@ export const fetchVersionFromOrigin = async (origin: string): Promise<string | n
       return null;
     }
 
-    console.info(`[UpdateCheck] Success from ${requestUrl} -> ${version}`);
-    return version;
+    return {
+      version,
+      minSupportedVersion:
+        typeof data.minSupportedVersion === 'string' ? data.minSupportedVersion : null,
+      sha256: typeof data.sha256 === 'string' && data.sha256.length > 0 ? data.sha256 : null,
+      apkUrl: typeof data.apkUrl === 'string' && data.apkUrl.length > 0 ? data.apkUrl : null,
+    };
   } catch (error) {
     console.warn(`[UpdateCheck] ${requestUrl} -> network error`, error);
     return null;
   }
+};
+
+// Backward-compat shim used by older callers
+export const fetchVersionFromOrigin = async (origin: string): Promise<string | null> => {
+  const manifest = await fetchVersionManifestFromOrigin(origin);
+  return manifest?.version ?? null;
 };
 
 export const fetchLatestVersion = async (): Promise<VersionCheckResult> => {
@@ -125,17 +157,49 @@ export const fetchLatestVersion = async (): Promise<VersionCheckResult> => {
   console.info('[UpdateCheck] Candidate origins:', candidateOrigins);
   console.info('[UpdateCheck] Platform:', getPlatformName(), '| Native:', isNativeApp);
   console.info('[UpdateCheck] APP_VERSION:', APP_VERSION);
-  console.info('[UpdateCheck] window.location.href:', window.location.href);
 
   for (const origin of candidateOrigins) {
-    const version = await fetchVersionFromOrigin(origin);
-    if (version) {
-      return { version, origin, error: null };
+    const manifest = await fetchVersionManifestFromOrigin(origin);
+    if (manifest) {
+      const apkUrl =
+        manifest.apkUrl ??
+        buildDefaultApkUrl(manifest.version);
+      console.info(
+        `[UpdateCheck] Success from ${origin} -> ${manifest.version} (sha256=${manifest.sha256 ? 'set' : 'none'}, minSupported=${manifest.minSupportedVersion ?? 'n/a'})`
+      );
+      return {
+        version: manifest.version,
+        minSupportedVersion: manifest.minSupportedVersion ?? null,
+        sha256: manifest.sha256 ?? null,
+        apkUrl,
+        origin,
+        error: null,
+      };
     }
   }
 
   console.error('[UpdateCheck] All candidate origins failed');
-  return { version: null, origin: null, error: 'all_origins_failed' };
+  return {
+    version: null,
+    minSupportedVersion: null,
+    sha256: null,
+    apkUrl: null,
+    origin: null,
+    error: 'all_origins_failed',
+  };
+};
+
+/**
+ * Returns true when the installed version is older than the manifest's
+ * `minSupportedVersion`. Empty/null/0.0.0 → never forced (kill-switch sleeping).
+ */
+export const isUpdateForced = (
+  currentVersion: string,
+  minSupportedVersion: string | null | undefined
+): boolean => {
+  if (!minSupportedVersion) return false;
+  if (minSupportedVersion === '0.0.0') return false;
+  return isRemoteVersionNewer(currentVersion, minSupportedVersion);
 };
 
 export const getAutoUpdatePreference = (): boolean => {
