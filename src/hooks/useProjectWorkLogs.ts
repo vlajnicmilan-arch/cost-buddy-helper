@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import type { ProjectWorkLog, ProjectWorkLogInput, WorkLogHoursSummary } from '@/types/projectWorkLog';
+import { notifyProjectActivity } from '@/lib/notifyProjectActivity';
 
 export const useProjectWorkLogs = (projectId: string | null) => {
   const { t } = useTranslation();
@@ -112,21 +113,31 @@ export const useProjectWorkLogs = (projectId: string | null) => {
   const create = async (input: ProjectWorkLogInput): Promise<boolean> => {
     if (!user || !projectId) return false;
     try {
-      const { error } = await (supabase as any).from('project_work_logs').insert({
-        project_id: projectId,
-        user_id: user.id,
-        log_date: input.log_date,
-        weather: input.weather || null,
-        summary: input.summary,
-        notes: input.notes || null,
-        milestone_id: input.milestone_id || null,
-        hours: input.hours ?? null,
-        day_type: input.day_type || 'work',
-        clock_in_time: input.clock_in_time || null,
-        clock_out_time: input.clock_out_time || null,
-      });
+      const { data: inserted, error } = await (supabase as any)
+        .from('project_work_logs')
+        .insert({
+          project_id: projectId,
+          user_id: user.id,
+          log_date: input.log_date,
+          weather: input.weather || null,
+          summary: input.summary,
+          notes: input.notes || null,
+          milestone_id: input.milestone_id || null,
+          hours: input.hours ?? null,
+          day_type: input.day_type || 'work',
+          clock_in_time: input.clock_in_time || null,
+          clock_out_time: input.clock_out_time || null,
+        })
+        .select('id')
+        .single();
       if (error) throw error;
       showSuccess(t('workLog.saved', 'Dnevnik spremljen'));
+      void notifyProjectActivity({
+        project_id: projectId,
+        activity_type: 'work_log_added',
+        ref_id: inserted?.id ?? null,
+        meta: { date: input.log_date, hours: input.hours ?? null },
+      });
       await fetchAll();
       return true;
     } catch (e: any) {
