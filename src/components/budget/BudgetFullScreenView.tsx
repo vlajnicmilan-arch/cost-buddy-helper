@@ -161,7 +161,7 @@ export const BudgetFullScreenView = ({
 
   const getProgressColor = (percentage: number, isOver: boolean, isWarning: boolean) => {
     if (isOver) return 'bg-destructive';
-    if (isWarning) return 'bg-warning';
+    if (isWarning) return 'bg-budget-warning';
     return 'bg-primary';
   };
 
