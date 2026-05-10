@@ -5,14 +5,20 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
-    name: Build debug APK
+    name: Build, upload & publish APK
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # potreban je puni token kako bismo mogli commitati version.json natrag
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -45,15 +51,82 @@ jobs:
         working-directory: android
         run: ./gradlew clean assembleDebug --no-daemon
 
-      - name: Rename APK with run number
+      - name: Read version from version.json
+        id: ver
+        run: |
+          VERSION=$(node -p "require('./public/version.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected app version: $VERSION"
+
+      - name: Rename APK with version
         run: |
           mkdir -p dist-apk
           cp android/app/build/outputs/apk/debug/app-debug.apk \
-             dist-apk/vmbalance-debug-${{ github.run_number }}.apk
+             dist-apk/vmbalance-${{ steps.ver.outputs.version }}.apk
 
-      - name: Upload APK artifact
+      - name: Upload APK artifact (GitHub fallback)
         uses: actions/upload-artifact@v4
         with:
           name: vmbalance-debug-apk
           path: dist-apk/*.apk
           retention-days: 30
+
+      - name: Upload APK to Lovable Cloud Storage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
+          OBJECT_PATH="releases/vmbalance-${VERSION}.apk"
+          UPLOAD_URL="${SUPABASE_URL}/storage/v1/object/public-assets/${OBJECT_PATH}"
+
+          echo "Uploading to: $UPLOAD_URL"
+          HTTP_CODE=$(curl -sS -o /tmp/upload_resp.json -w "%{http_code}" \
+            -X POST "$UPLOAD_URL" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/vnd.android.package-archive" \
+            -H "x-upsert: true" \
+            --data-binary "@${APK_PATH}")
+
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/upload_resp.json || true
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+            echo "❌ Upload failed"
+            exit 1
+          fi
+          echo "✅ APK uploaded to public-assets/${OBJECT_PATH}"
+
+      - name: Update version.json with SHA-256 + apkUrl
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
+          SHA256=$(sha256sum "$APK_PATH" | awk '{print $1}')
+          PUBLIC_URL="${SUPABASE_URL}/storage/v1/object/public/public-assets/releases/vmbalance-${VERSION}.apk"
+
+          node -e "
+            const fs = require('fs');
+            const path = 'public/version.json';
+            const m = JSON.parse(fs.readFileSync(path, 'utf8'));
+            m.version = '${VERSION}';
+            m.sha256 = '${SHA256}';
+            m.apkUrl = '${PUBLIC_URL}';
+            m.minSupportedVersion = m.minSupportedVersion || '0.0.0';
+            fs.writeFileSync(path, JSON.stringify(m, null, 2) + '\n');
+            console.log('Updated version.json:', m);
+          "
+
+      - name: Commit updated version.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet public/version.json; then
+            echo "No changes to version.json — skipping commit"
+            exit 0
+          fi
+          git add public/version.json
+          git commit -m "chore(release): publish APK v${{ steps.ver.outputs.version }} [skip ci]"
+          git push
