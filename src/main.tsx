@@ -180,6 +180,52 @@ try {
   });
 } catch {}
 
+// Boot watchdog — detects if previous boot died before reaching React mount.
+// On every cold start we set a flag in localStorage, and clear it once React
+// successfully renders. If on next boot the flag is still set, we know the
+// last session crashed silently (likely native crash inside a Capacitor
+// plugin or WebView OOM) and we log a `previous_boot_crashed` event so we can
+// see it in app_diagnostics_logs without needing logcat.
+const BOOT_FLAG = 'vmb-boot-in-progress';
+const BOOT_TS_FLAG = 'vmb-boot-in-progress-started-at';
+try {
+  const prevFlag = localStorage.getItem(BOOT_FLAG);
+  const prevTs = localStorage.getItem(BOOT_TS_FLAG);
+  if (prevFlag === '1') {
+    // We don't await this — diagnosticLogger is loaded async. Use idle so it
+    // doesn't compete with React boot.
+    idle(() => {
+      import('./lib/diagnosticLogger')
+        .then(({ logDiagnostic }) => logDiagnostic({
+          event: 'previous_boot_crashed',
+          severity: 'critical',
+          details: {
+            previous_started_at: prevTs,
+            isCapacitor: !!(window as any).Capacitor?.isNativePlatform?.(),
+            href: window.location.href,
+          },
+        }))
+        .catch(() => {});
+    });
+  }
+  localStorage.setItem(BOOT_FLAG, '1');
+  localStorage.setItem(BOOT_TS_FLAG, new Date().toISOString());
+} catch { /* localStorage unavailable */ }
+
+const markBootCompleted = () => {
+  try {
+    localStorage.removeItem(BOOT_FLAG);
+    localStorage.removeItem(BOOT_TS_FLAG);
+  } catch { /* ignore */ }
+  idle(() => {
+    import('./lib/diagnosticLogger')
+      .then(({ logDiagnostic }) => logDiagnostic('boot_completed', {
+        ms_since_navigation: Math.round(performance.now()),
+      }))
+      .catch(() => {});
+  });
+};
+
 // CRITICAL: Force-hide the Capacitor splash screen as soon as JS boots.
 // Without this, the native splash can linger as an invisible overlay on
 // some Android WebView versions, swallowing every touch event and making
