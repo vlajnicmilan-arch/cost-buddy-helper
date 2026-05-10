@@ -561,15 +561,36 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         </Label>
         <Input
           id="amount"
-          type="number"
-          step="0.01"
-          min="0"
+          type="text"
+          inputMode="decimal"
           placeholder="0.00"
           value={props.amount}
-          onChange={(e) => props.onAmountChange(e.target.value)}
-          className="h-12 text-lg font-mono rounded-xl"
+          onChange={(e) => {
+            // Auto-replace comma with dot, allow only digits and a single dot
+            let v = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
+            const firstDot = v.indexOf('.');
+            if (firstDot !== -1) {
+              v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
+            }
+            props.onAmountChange(v);
+          }}
+          className={cn(
+            "h-12 text-lg font-mono rounded-xl",
+            props.amount !== '' && parseFloat(props.amount) <= 0 && "border-destructive focus-visible:ring-destructive"
+          )}
           required
+          aria-invalid={props.amount !== '' && parseFloat(props.amount) <= 0}
+          aria-describedby="amount-hint amount-error"
         />
+        {props.amount !== '' && parseFloat(props.amount) <= 0 ? (
+          <p id="amount-error" className="text-xs text-destructive">
+            {t('validation.amountGreaterThanZero')}
+          </p>
+        ) : (
+          <p id="amount-hint" className="text-xs text-muted-foreground">
+            {t('transactions.amountHint')}
+          </p>
+        )}
       </div>
 
       {/* Description */}
