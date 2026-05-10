@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectWorker } from '@/types/projectWorker';
 import { useTranslation } from 'react-i18next';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
+import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
-import { Link2, Copy, CheckCircle2, Loader2, UserPlus, Mail } from 'lucide-react';
+import { Link2, Copy, CheckCircle2, Loader2, UserPlus, Mail, X, Users } from 'lucide-react';
 
 interface ProjectWorkerDialogProps {
   open: boolean;
