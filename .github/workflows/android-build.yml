@@ -97,12 +97,11 @@ jobs:
 
       - name: Update version.json with SHA-256 + apkUrl
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
           SHA256=$(sha256sum "$APK_PATH" | awk '{print $1}')
-          PUBLIC_URL="${SUPABASE_URL}/storage/v1/object/public/public-assets/releases/vmbalance-${VERSION}.apk"
+          PUBLIC_URL="https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/vmbalance-${VERSION}.apk"
 
           node -e "
             const fs = require('fs');
