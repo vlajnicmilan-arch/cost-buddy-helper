@@ -11,6 +11,7 @@ interface UseExpensesOptions {
 export const useExpenses = (options?: UseExpensesOptions) => {
   const {
     expenses,
+    rawExpenses,
     dashboardExpenses,
     hiddenPaymentSourceIds,
     loading,
