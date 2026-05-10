@@ -870,7 +870,8 @@
     "dateOutOfRange": "Date is outside the allowed range",
     "dateInFuture": "Date cannot be too far in the future",
     "dateTooFar": "Date is too far away",
-    "dateAdjusted": "Date was automatically corrected"
+    "dateAdjusted": "Date was automatically corrected",
+    "amountGreaterThanZero": "Amount must be greater than 0"
   },
   "trial": {
     "featureChip": {
@@ -1658,7 +1659,8 @@
     "autoRejectNote": "Transactions not approved within 24 hours will be automatically rejected.",
     "transactionApproved": "Transaction approved",
     "transactionRejected": "Transaction rejected",
-    "viewerNote": "Your transactions require approval from the budget owner"
+    "viewerNote": "Your transactions require approval from the budget owner",
+    "nearLimit": "Near the limit — {{percent}}% used"
   },
   "projectStatus": {
     "draft": "Draft",
