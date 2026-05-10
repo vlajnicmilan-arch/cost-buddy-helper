@@ -27,6 +27,40 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
+    // ---- Helpers: deterministic HTML table extraction ----
+    function decodeEntities(s: string): string {
+      return s
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(parseInt(n, 10)));
+    }
+    function stripTags(s: string): string {
+      return decodeEntities(s.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    }
+    function extractLargestTableRows(html: string): { header: string[]; rows: string[][] } | null {
+      const tableMatches = Array.from(html.matchAll(/<table[\s\S]*?<\/table>/gi)).map(m => m[0]);
+      if (tableMatches.length === 0) return null;
+      let best: { header: string[]; rows: string[][] } | null = null;
+      for (const tbl of tableMatches) {
+        const trMatches = Array.from(tbl.matchAll(/<tr[\s\S]*?<\/tr>/gi)).map(m => m[0]);
+        if (trMatches.length < 2) continue;
+        const parsed = trMatches.map(tr => {
+          const cells = Array.from(tr.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi)).map(m => stripTags(m[1]));
+          return cells;
+        }).filter(r => r.length > 0);
+        if (parsed.length < 2) continue;
+        // Heuristic: header is row with mostly non-numeric short cells
+        const header = parsed[0];
+        const rows = parsed.slice(1);
+        if (!best || rows.length > best.rows.length) best = { header, rows };
+      }
+      return best;
+    }
+
     const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     
@@ -66,7 +100,25 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Use Gemini 2.5 Flash for better PDF support
+    // Pre-extract HTML table rows deterministically (avoids AI summarization)
+    let htmlTablePayload: string | null = null;
+    let htmlRowCount = 0;
+    if (isHTML) {
+      const extracted = extractLargestTableRows(htmlContent);
+      if (extracted && extracted.rows.length > 0) {
+        htmlRowCount = extracted.rows.length;
+        const headerLine = extracted.header.join(' | ');
+        const lines = extracted.rows.map((r, i) => `${i + 1}. ${r.join(' | ')}`);
+        htmlTablePayload = `HEADER: ${headerLine}\nROWS (${htmlRowCount}):\n${lines.join('\n')}`;
+        console.log(`HTML pre-parse: largest table has ${htmlRowCount} rows, header: ${headerLine.substring(0, 200)}`);
+      } else {
+        console.warn('HTML pre-parse: no table with rows found, falling back to raw HTML');
+      }
+    }
+
+    // Use Pro model for HTML statements (better table comprehension), Flash for images/PDF
+    const modelId = isHTML ? 'google/gemini-2.5-pro' : 'google/gemini-2.5-flash';
+
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -74,77 +126,49 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: modelId,
         messages: [
           {
             role: 'system',
-            content: `Ti si asistent za izvlačenje transakcija iz bankovnih izvoda (HTML, PDF ili fotografija).
+            content: `Ti si asistent za izvlačenje transakcija iz bankovnih izvoda.
 
-CILJ: Pronađi GLAVNU tablicu transakcija u dokumentu i izvuci SVAKI redak iz nje.
+CILJ: Vrati SVAKI redak iz dostavljene tablice transakcija. Ako u ROWS ima 47 redaka, transactions array MORA imati 47 stavki (osim sažetaka navedenih dolje).
 
-ZA HTML IZVODE:
-- Pronađi najveću <table> u dokumentu (ona s najviše redaka).
-- Svaki <tr> u njenom <tbody> koji ima datum + iznos je transakcija.
-- NE preskači redove samo zato jer ti opis djeluje neobično — uplata vlasnika, primitak od kupca, naknada banke, transfer na drugu tvrtku, povrat poreza, kamate — SVE su to transakcije.
-
-ZA PDF I FOTOGRAFIJE:
-- Pronađi tablicu transakcija (obično glavni dio dokumenta).
-- Pročitaj svaki redak. Ako iznos nije čitljiv, preskoči TAJ jedan redak.
-
-ŠTO NIJE TRANSAKCIJA (jedine 4 iznimke koje preskačeš):
+ŠTO PRESKAČEŠ (samo ovo):
 1. "Početno stanje" / "Stanje prije" / "Opening balance"
 2. "Konačno stanje" / "Stanje poslije" / "Closing balance"
-3. "Promet ukupno" / "Ukupni dugovni promet" / "Ukupni potražni promet" / "Total turnover"
-4. "Stanje na dan ..." (sažetak salda na neki datum)
+3. "Promet ukupno" / "Ukupni dugovni/potražni promet" / "Total turnover"
+4. "Stanje na dan ..." (dnevni saldo)
 
-Sve drugo je transakcija — i mora ući u rezultat.
-
-ODREĐIVANJE TIPA (jedino pravilo):
+ODREĐIVANJE TIPA (gledaj kolonu, ne opis):
 - Iznos u koloni "Uplata" / "Potražuje" / "Korist" / "Credit" / "Haben" / "U korist" → type = "income"
 - Iznos u koloni "Isplata" / "Duguje" / "Teret" / "Debit" / "Soll" / "Na teret" → type = "expense"
-- Ako je vidljivo da je interni prijenos između vlastitih računa (npr. "Prijenos sredstava na vlastiti račun", "ATM podizanje gotovine", "Top-up Revolut/Aircash") → type = "transfer"
-- NE gledaj tko je platitelj/primatelj kad određuješ tip. Gleda se SAMO u kojoj je koloni iznos.
-- Iznos vraćaj UVIJEK kao pozitivan broj.
+- Vidljivi interni prijenos između vlastitih računa / ATM podizanje → type = "transfer"
+- Iznos UVIJEK pozitivan broj.
 
-OPIS TRANSAKCIJE:
-- Zadrži ORIGINALNI tekst iz izvoda što vjernije možeš (naziv platitelja/primatelja + svrha plaćanja + model i poziv na broj ako postoji).
-- NE skraćuj i NE preformuliraj — kasnije nam treba za prepoznavanje pozajmica.
+OPIS:
+- Zadrži ORIGINALNI tekst iz izvoda (platitelj/primatelj + svrha + model i poziv na broj). NE skraćuj — kasnije nam treba za prepoznavanje pozajmica.
 
-merchant_name: ime druge strane u transakciji (platitelj kod uplate, primatelj kod isplate). Ako nije jasno, ostavi null.
-
-KATEGORIJA: food, transport, shopping, entertainment, bills, health, other. Ako nisi siguran → "other".
-
+merchant_name: druga strana (platitelj kod uplate, primatelj kod isplate). Null ako nije jasno.
+KATEGORIJA: food, transport, shopping, entertainment, bills, health, other.
 DATUM: YYYY-MM-DD.
 
 METAPODACI:
-- detected_bank: naziv banke iz zaglavlja (PBZ, Erste, Zaba, Revolut, Aircash, OTP, RBA, Addiko itd.)
-- account_iban: glavni IBAN ili broj računa vlasnika izvoda
-- holder_name: ime/naziv vlasnika računa kako piše na izvodu
-
-VAŽNO: Ako iz dokumenta s puno teksta vratiš samo 1-2 transakcije, vjerojatno si propustio glavnu tablicu — provjeri ponovo. Bolje uključi previše nego premalo.`
+- detected_bank, account_iban, holder_name iz zaglavlja izvoda.`
           },
           {
             role: 'user',
             content: isHTML ? [
               {
                 type: 'text',
-                text: `Analiziraj ovaj HTML bankovni izvod. Izvuci:
-1. Naziv banke iz dokumenta
-2. Glavni IBAN ili broj računa
-3. Sve transakcije s detaljima o kartici ako postoje
-4. Ime vlasnika računa (holder_name) ako je vidljivo na izvodu
-
-HTML SADRŽAJ:
-${htmlContent}`
+                text: htmlTablePayload
+                  ? `Bankovni izvod — tablica je već izvučena iz HTML-a. Vrati transakciju za SVAKI redak.\n\n${htmlTablePayload}\n\nNapomena: detected_bank, account_iban i holder_name pokušaj prepoznati iz redaka/opisa ako nisu vidljivi u zaglavlju.`
+                  : `Analiziraj ovaj HTML bankovni izvod i izvuci sve transakcije iz glavne tablice.\n\nHTML:\n${htmlContent}`
               }
             ] : [
               {
                 type: 'text',
-                text: `Analiziraj ${isImage ? 'ovu fotografiju bankovnog izvoda' : 'ovaj bankovni izvod'}. Izvuci:
-1. Naziv banke iz dokumenta
-2. Glavni IBAN ili broj računa
-3. Sve transakcije s detaljima o kartici ako postoje
-4. Ime vlasnika računa (holder_name) ako je vidljivo na izvodu`
+                text: `Analiziraj ${isImage ? 'ovu fotografiju bankovnog izvoda' : 'ovaj bankovni izvod'}. Izvuci banku, IBAN, holder_name i SVE transakcije iz glavne tablice.`
               },
               {
                 type: 'image_url',
@@ -353,9 +377,11 @@ ${htmlContent}`
     console.log(`Extracted ${transactions.length} transactions from ${detectedBank || 'unknown bank'}, account: ${accountIban || 'unknown'}`);
     console.log(`Cards detected: ${cardGroups.size > 0 ? Array.from(cardGroups.entries()).map(([card, count]) => `*${card} (${count})`).join(', ') : 'none'}`);
 
-    // Diagnostic: warn when input is large but very few transactions came back
-    if (transactions.length < 3 && fileSizeKB > 5) {
-      console.warn(`WARN: suspiciously few transactions extracted (size=${fileSizeKB} KB, returned=${transactions.length}). Possible prompt/parsing miss.`);
+    // Diagnostic: warn when AI under-returned vs deterministic row count
+    if (htmlRowCount > 0 && transactions.length < Math.max(3, Math.floor(htmlRowCount * 0.5))) {
+      console.warn(`WARN: AI returned ${transactions.length} of ${htmlRowCount} parsed HTML rows (size=${fileSizeKB} KB)`);
+    } else if (transactions.length < 3 && fileSizeKB > 5) {
+      console.warn(`WARN: suspiciously few transactions extracted (size=${fileSizeKB} KB, returned=${transactions.length}).`);
     }
 
     return new Response(
