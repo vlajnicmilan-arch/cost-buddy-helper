@@ -27,6 +27,40 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
+    // ---- Helpers: deterministic HTML table extraction ----
+    function decodeEntities(s: string): string {
+      return s
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(parseInt(n, 10)));
+    }
+    function stripTags(s: string): string {
+      return decodeEntities(s.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    }
+    function extractLargestTableRows(html: string): { header: string[]; rows: string[][] } | null {
+      const tableMatches = Array.from(html.matchAll(/<table[\s\S]*?<\/table>/gi)).map(m => m[0]);
+      if (tableMatches.length === 0) return null;
+      let best: { header: string[]; rows: string[][] } | null = null;
+      for (const tbl of tableMatches) {
+        const trMatches = Array.from(tbl.matchAll(/<tr[\s\S]*?<\/tr>/gi)).map(m => m[0]);
+        if (trMatches.length < 2) continue;
+        const parsed = trMatches.map(tr => {
+          const cells = Array.from(tr.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi)).map(m => stripTags(m[1]));
+          return cells;
+        }).filter(r => r.length > 0);
+        if (parsed.length < 2) continue;
+        // Heuristic: header is row with mostly non-numeric short cells
+        const header = parsed[0];
+        const rows = parsed.slice(1);
+        if (!best || rows.length > best.rows.length) best = { header, rows };
+      }
+      return best;
+    }
+
     const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     
