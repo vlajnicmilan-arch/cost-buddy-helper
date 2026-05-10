@@ -41,6 +41,17 @@ const Index = () => {
   const isBusinessMode = !!activeBusinessProfileId;
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
 
+  // Boot-trace: confirms HomePage actually mounted. If app crashes between
+  // /home route_change and this event, we know the failure is inside Index
+  // (or one of its dependencies) — not in router/auth.
+  useEffect(() => {
+    import('@/lib/diagnosticLogger')
+      .then(({ logDiagnostic }) => logDiagnostic('home_visible', {
+        ms_since_navigation: Math.round(performance.now()),
+      }))
+      .catch(() => {});
+  }, []);
+
   // Load business profile data (used to show company name in PersonalModeView header)
   useEffect(() => {
     if (!activeBusinessProfileId || !user) { setBusinessProfile(null); return; }
