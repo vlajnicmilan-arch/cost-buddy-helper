@@ -368,6 +368,7 @@ export const useExpenseFetch = () => {
 
   return {
     expenses: contextFilteredExpenses, // isolated by business/personal context
+    rawExpenses: expenses,             // unfiltered: use for per-source views (source defines context)
     dashboardExpenses,                 // further filtered for display
     hiddenPaymentSourceIds,            // for UI badges & dashboard balance aggregation
     isCrossModeExpense,                // helper for cross-mode badges
