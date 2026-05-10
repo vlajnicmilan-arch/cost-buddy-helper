@@ -66,6 +66,10 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        "budget-warning": {
+          DEFAULT: "hsl(var(--budget-warning))",
+          foreground: "hsl(var(--budget-warning-foreground))",
+        },
         ai: {
           DEFAULT: "hsl(var(--ai))",
           foreground: "hsl(var(--ai-foreground))",

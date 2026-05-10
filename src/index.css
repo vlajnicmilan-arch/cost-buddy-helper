@@ -271,6 +271,9 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    --budget-warning: 25 95% 53%;
+    --budget-warning-foreground: 0 0% 100%;
+
     /* #1C324E - border/input */
     --border: 214 47% 21%;
     --input: 214 47% 21%;
