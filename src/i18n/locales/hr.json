@@ -1447,7 +1447,10 @@
     },
     "appUpdate": {
       "webCheckFailed": "Provjera web verzije nije uspjela. Nijedan server nije odgovorio.",
-      "platformUnsupported": "Provjera ažuriranja nije dostupna na ovoj platformi."
+      "platformUnsupported": "Provjera ažuriranja nije dostupna na ovoj platformi.",
+      "downloadFailed": "Skidanje ažuriranja nije uspjelo. Provjerite mrežu i pokušajte ponovno.",
+      "checksumFailed": "Datoteka ažuriranja je oštećena ili neispravna. Pokušajte ponovno.",
+      "noApkUrl": "URL APK datoteke nije dostupan."
     },
     "files": {
       "saveFailed": "Greška pri spremanju datoteke",
