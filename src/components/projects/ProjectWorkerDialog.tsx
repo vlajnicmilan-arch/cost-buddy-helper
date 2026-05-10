@@ -53,9 +53,25 @@ export const ProjectWorkerDialog = ({
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null);
 
-  const { generateInviteLink, sendInviteEmail } = useProjectMembers(projectId || null);
+  // Link-to-existing-member state
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [linking, setLinking] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+
+  const { generateInviteLink, sendInviteEmail, members } = useProjectMembers(projectId || null);
+  const { workers: allWorkers, linkWorkerToMember } = useProjectWorkers(projectId || null);
 
   const isEditing = !!worker;
+
+  // Members not yet linked to any worker on this project (excluding current worker's link)
+  const availableMembers = useMemo(() => {
+    const linkedUserIds = new Set(
+      allWorkers
+        .filter((w) => w.user_id && w.id !== worker?.id)
+        .map((w) => w.user_id as string)
+    );
+    return members.filter((m) => m.user_id && !linkedUserIds.has(m.user_id));
+  }, [members, allWorkers, worker?.id]);
 
   useEffect(() => {
     if (worker) {
