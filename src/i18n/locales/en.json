@@ -1447,7 +1447,10 @@
     },
     "appUpdate": {
       "webCheckFailed": "Web version check failed. No server responded.",
-      "platformUnsupported": "Update check is not available on this platform."
+      "platformUnsupported": "Update check is not available on this platform.",
+      "downloadFailed": "Update download failed. Check your network and try again.",
+      "checksumFailed": "The update file is corrupted or invalid. Please try again.",
+      "noApkUrl": "APK URL is not available."
     },
     "files": {
       "saveFailed": "Failed to save file",
