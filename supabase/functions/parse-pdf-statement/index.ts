@@ -377,9 +377,11 @@ METAPODACI:
     console.log(`Extracted ${transactions.length} transactions from ${detectedBank || 'unknown bank'}, account: ${accountIban || 'unknown'}`);
     console.log(`Cards detected: ${cardGroups.size > 0 ? Array.from(cardGroups.entries()).map(([card, count]) => `*${card} (${count})`).join(', ') : 'none'}`);
 
-    // Diagnostic: warn when input is large but very few transactions came back
-    if (transactions.length < 3 && fileSizeKB > 5) {
-      console.warn(`WARN: suspiciously few transactions extracted (size=${fileSizeKB} KB, returned=${transactions.length}). Possible prompt/parsing miss.`);
+    // Diagnostic: warn when AI under-returned vs deterministic row count
+    if (htmlRowCount > 0 && transactions.length < Math.max(3, Math.floor(htmlRowCount * 0.5))) {
+      console.warn(`WARN: AI returned ${transactions.length} of ${htmlRowCount} parsed HTML rows (size=${fileSizeKB} KB)`);
+    } else if (transactions.length < 3 && fileSizeKB > 5) {
+      console.warn(`WARN: suspiciously few transactions extracted (size=${fileSizeKB} KB, returned=${transactions.length}).`);
     }
 
     return new Response(
