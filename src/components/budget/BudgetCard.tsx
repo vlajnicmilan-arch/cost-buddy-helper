@@ -58,7 +58,7 @@ export const BudgetCard = ({
 
   const getProgressColor = () => {
     if (budget.isOverBudget) return 'bg-destructive';
-    if (budget.isWarning) return 'bg-warning';
+    if (budget.isWarning) return 'bg-budget-warning';
     return 'bg-primary';
   };
 
@@ -237,6 +237,12 @@ export const BudgetCard = ({
               {formatAmount(budget.remaining)} {t('budget.remaining', 'preostalo')}
             </span>
           </div>
+
+          {budget.isWarning && !budget.isOverBudget && (
+            <p className="text-xs text-budget-warning font-medium mt-1">
+              {t('budget.nearLimit', { percent: budget.percentage.toFixed(0) })}
+            </p>
+          )}
 
           {/* Show original categories */}
           {uniqueOriginalCategories.length > 0 && (

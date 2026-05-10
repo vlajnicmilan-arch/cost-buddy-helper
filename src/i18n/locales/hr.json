@@ -869,7 +869,8 @@
     "dateOutOfRange": "Datum nije unutar dopuštenog raspona",
     "dateInFuture": "Datum ne smije biti previše u budućnosti",
     "dateTooFar": "Datum je previše udaljen",
-    "dateAdjusted": "Datum je automatski ispravljen"
+    "dateAdjusted": "Datum je automatski ispravljen",
+    "amountGreaterThanZero": "Iznos mora biti veći od 0"
   },
   "trial": {
     "featureChip": {
@@ -1616,6 +1617,7 @@
     "remaining": "preostalo",
     "used": "iskorišteno",
     "left": "preostalo",
+    "nearLimit": "Blizu limita — iskorišteno {{percent}}%",
     "reset": "Resetiraj",
     "deleteConfirmTitle": "Obriši budžet?",
     "deleteConfirmDesc": "Ova radnja će trajno obrisati budžet \"{{name}}\" i sve njegove limite po kategorijama. Ovo se ne može poništiti.",

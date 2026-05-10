@@ -1,110 +1,117 @@
-## Faza 4 — Sigurnost, integritet i telemetrija update procesa
+## Pregled
 
-Nadogradnja na Fazu 1 (APK auto-update). Dodaje 4 zaštitna sloja + alate za debugiranje. Svi mehanizmi su backward-compatible — ako bilo koji novi check zakaže, postojeći flow nastavlja raditi.
-
----
-
-### 1. SHA-256 checksum (anti-tampering)
-
-**Što:** APK datoteka se nakon downloada provjerava kriptografski. Ako je oštećena tijekom skidanja ili netko ju je zamijenio (man-in-the-middle), instalacija se blokira.
-
-**Kako:**
-- `public/version.json` dobiva polje `sha256` (npr. `"a3f2c1d4..."`)
-- `apkInstaller.ts` (iz Faze 1) nakon downloada izračuna SHA-256 hash i usporedi
-- Ako se ne podudara → datoteka se briše, korisnik dobije lokaliziranu poruku, telemetrija zapiše `update_checksum_failed`
-- Ako `sha256` polje **ne postoji** u `version.json` (legacy) → check se preskače (nema regresije)
+Kombiniramo 5 zadataka u jedan plan:
+1. **APK signing fix** (iz prošlog dogovora — stabilan release keystore)
+2. `.env` u `.gitignore` + `.env.example`
+3. Validacija iznosa transakcije: `> 0`
+4. Auto-zamjena zareza s točkom + hint ispod polja
+5. Budget upozorenje na ≥80% (narančasta + poruka)
 
 ---
 
-### 2. `minSupportedVersion` kill-switch
+## 1. Stabilan APK potpis
 
-**Što:** Mehanizam za prisilni update postoji u kodu, ali je default **uspavan** (`0.0.0` = nikad forsirano). Aktivira se samo ako u budućnosti pukne nešto kritično (security, data corruption).
+**Problem:** CI koristi `assembleDebug` → svaki build ima drugačiji debug certifikat → upgrade s 1.0.2 na 1.0.4 puca ("paket u sukobu"). Nema načina da preskočimo deinstalaciju za 1.0.2 — Android to ne dopušta. Ali od **1.0.5 nadalje** svi updatei rade bez deinstalacije.
 
-**Kako:**
-- `version.json` dobiva polje `minSupportedVersion` (default `"0.0.0"`)
-- `useAppUpdateChecker` uspoređuje instaliranu verziju s `minSupportedVersion`
-- Ako je instalirana verzija starija → dialog dobiva `forced: true` prop
-- `UpdateAvailableDialog` u `forced` modu **sakriva "Kasnije" gumb** i blokira zatvaranje
-- Ako polje nedostaje → tretira se kao `0.0.0`
+**Što ti odradiš (ručno, ne mogu ja):**
+1. Lokalno generiraj keystore:
+   ```
+   keytool -genkey -v -keystore vmbalance-release.jks \
+     -keyalg RSA -keysize 2048 -validity 10000 -alias vmbalance
+   ```
+2. Sigurno spremi `.jks` + lozinke (password manager + offline backup — ako se izgubi, gotovi smo zauvijek)
+3. Dodaj 4 GitHub Secrets u repo:
+   - `ANDROID_KEYSTORE_BASE64` (base64 sadržaj `.jks`)
+   - `ANDROID_KEYSTORE_PASSWORD`
+   - `ANDROID_KEY_ALIAS`
+   - `ANDROID_KEY_PASSWORD`
 
----
-
-### 3. Update telemetrija (10 eventa)
-
-**Što:** Anonimne evidencije procesa updatea u postojećoj `app_diagnostics_logs` tablici. Bez ovoga ne znaš zašto Petru ne radi update.
-
-**Eventi:**
-1. `update_check_performed` — provjera završena (s rezultatom: novo / staro / error)
-2. `update_dialog_shown` — dialog prikazan korisniku
-3. `update_user_accepted` — kliknuo "Ažuriraj"
-4. `update_user_declined` — kliknuo "Kasnije"
-5. `update_download_started` — počeo download APK-a
-6. `update_download_completed` — APK uspješno skinut
-7. `update_download_failed` — download pao (s razlogom)
-8. `update_checksum_failed` — SHA-256 mismatch
-9. `update_install_intent_launched` — Android instalacijski ekran otvoren
-10. `update_install_completed` — pri sljedećem bootu se detektira nova verzija
-
-**Kako:** Helper `logUpdateEvent(event, metadata)` u `src/lib/updateTelemetry.ts`, sve omotano u `try/catch` da telemetrija nikad ne ruši update flow.
+**Što ja odradim:**
+- `android/app/build.gradle`: dodam `signingConfigs.release` (čita iz env), vežem na `buildTypes.release`
+- `.github/workflows/android-build.yml`: dekodiram keystore, eksportam env, prebacim `assembleDebug` → `assembleRelease`, putanja APK-a `app/build/outputs/apk/release/app-release.apk`
+- Bump na **1.0.5** (`versionCode 6`) u `build.gradle` i `public/version.json`
+- U `apkInstaller.ts`: jasna i18n poruka kada Android odbije install zbog signature mismatcha (jednokratna deinstalacija za 1.0.2 korisnike)
 
 ---
 
-### 4. KEYSTORE_BACKUP.md (operativna dokumentacija)
+## 2. `.env` u `.gitignore` + `.env.example`
 
-**Što:** Markdown dokument u root-u projekta koji sadrži:
-- Lokaciju keystore-a (`C:\Users\vlajn\.android\debug.keystore`)
-- Default vrijednosti (alias, password)
-- Backup checklistu (USB / password manager / cloud)
-- Procedura što napraviti ako se izgubi (migracija svih korisnika)
-- SHA-1 fingerprint za verifikaciju (komanda za izvući)
+Trenutni `.gitignore` **ne sadrži** `.env` eksplicitno (samo `*.local`). `.env` postoji u rootu.
 
-**Bez koda — čista dokumentacija za tebe.**
+**Akcija:**
+- Dodam u `.gitignore`:
+  ```
+  .env
+  .env.local
+  .env.*.local
+  ```
+- Kreiram `.env.example` s istim ključevima (bez vrijednosti):
+  ```
+  VITE_SUPABASE_URL=
+  VITE_SUPABASE_PUBLISHABLE_KEY=
+  VITE_SUPABASE_PROJECT_ID=
+  ```
 
----
-
-### 5. Auto-bump skripta
-
-**Što:** Jedna komanda umjesto ručnog ažuriranja 3 datoteke + ručnog računanja SHA-256.
-
-**Kako:** `scripts/bump-version.mjs`:
-```
-node scripts/bump-version.mjs 1.3.0
-```
-Skripta automatski:
-- Ažurira `public/version.json` (version + sha256 + zadržava `minSupportedVersion`)
-- Ažurira `src/lib/version.ts` (`APP_VERSION`)
-- Ažurira `android/app/build.gradle` (`versionCode` + `versionName`)
-- Računa SHA-256 ako APK postoji u `dist/` ili pita za putanju
+Napomena: `.env` je auto-managed od strane Lovable Clouda (publishable key je javan), ali commit-anje nije poželjno → ignore je dobra praksa.
 
 ---
 
-### Datoteke koje se kreiraju / mijenjaju
+## 3. Validacija iznosa `> 0`
 
-**Nove:**
-- `src/lib/updateTelemetry.ts` — helper za 10 eventa
-- `scripts/bump-version.mjs` — auto-bump skripta
-- `KEYSTORE_BACKUP.md` — dokumentacija
+**Trenutno stanje:** `ManualExpenseForm.tsx` koristi `<Input type="number" min="0" required>` — dozvoljava `0`. Nema zod sheme, validacija se događa ručno na submit.
 
-**Mijenja se (iz Faze 1):**
-- `public/version.json` — dodaje `sha256` i `minSupportedVersion`
-- `src/components/update/updateUtils.ts` — `VersionCheckResult` dobiva `sha256` i `minSupportedVersion`
-- `src/components/update/apkInstaller.ts` — SHA-256 verifikacija nakon downloada
-- `src/components/update/UpdateAvailableDialog.tsx` — `forced` prop
-- `src/components/update/useAppUpdateChecker.ts` — provjera `minSupportedVersion` + telemetrija
-- `src/i18n/locales/{hr,en,de}.json` — `errors.appUpdate.checksumFailed`, `errors.appUpdate.forcedUpdate`
-
----
-
-### Defenzivna načela
-
-- Sve nove provjere imaju fallback — ako SHA-256 izračun pukne, app nastavlja raditi (samo blokira tu instalaciju)
-- Telemetrija je **fire-and-forget** u `try/catch` — nikad ne ruši update
-- `minSupportedVersion` default `0.0.0` znači mehanizam je "uspavan" dok ga svjesno ne aktiviraš za hitnoću
-- Sve nove poruke ide preko i18n (`errors.appUpdate.*` namespace)
-- Backward compatible: ako `version.json` ima samo `version` (kao danas), sve i dalje radi
+**Akcija:**
+- Kreiram `src/lib/validation/transactionSchema.ts` s zod shemom:
+  ```ts
+  amount: z.number({ invalid_type_error: t('validation.amountRequired') })
+            .positive({ message: t('validation.amountGreaterThanZero') })
+  ```
+- Validacija u `ManualExpenseForm` na submit + inline error ispod polja iznosa
+- Vrijedi za **expense, income, transfer** (sve 3 koriste isti form)
+- i18n ključ: `validation.amountGreaterThanZero` → HR: *"Iznos mora biti veći od 0"*, EN/DE varijante
 
 ---
 
-### Procjena trajanja
+## 4. Auto zarez→točka + hint
 
-~2h ukupno. Faza 1 (~6h) + Faza 4 (~2h) = ~8h.
+**Akcija u `ManualExpenseForm.tsx`:**
+- Promijenim `<Input type="number">` u `type="text" inputMode="decimal"` (jer `type="number"` ne dopušta zarez nativno na svim browserima)
+- U `onAmountChange` parser: `value.replace(',', '.').replace(/[^0-9.]/g, '')` (samo jedna decimalna točka)
+- Hint ispod polja: `<p className="text-xs text-muted-foreground">{t('transactions.amountHint')}</p>`
+- i18n: `transactions.amountHint` → HR: *"Za decimale koristite točku ili zarez (npr. 150.50)"*
+
+Zadržavam postojeći `parseFloat(props.amount) || 0` na submit — već radi s točkom.
+
+---
+
+## 5. Budget 80% upozorenje
+
+**Trenutno (`BudgetCard.tsx`):**
+- `getProgressColor()`: overBudget=destructive, isWarning=warning (yellow), inače primary
+- `budget.isWarning` već postoji — treba provjeriti prag
+
+**Akcija:**
+- Provjerim gdje se izračunava `isWarning` (vjerojatno `useBudgets` hook). Postavim prag na **≥80% i <100%**.
+- Promijenim `bg-warning` (žuta) → narančasta. Dodam u `index.css` semantic token `--warning-strong` ili reuse postojeće `--warning` ako već je narančasta; ako nije, dodam `--budget-warning: 25 95% 53%` (orange-500 HSL).
+- Ispod kategorije (u `BudgetCard.tsx` nakon progress bara) prikažem poruku **samo kada je 80% ≤ % < 100%**:
+  ```tsx
+  {budget.isWarning && !budget.isOverBudget && (
+    <p className="text-xs text-warning-strong mt-1">
+      {t('budget.nearLimit', { percent: budget.percentage.toFixed(0) })}
+    </p>
+  )}
+  ```
+- i18n: `budget.nearLimit` → HR: *"Blizu limita — iskorišteno {{percent}}%"*
+- Vidljivo na **stranici Budžeti** (BudgetCard se koristi tamo)
+- 100%+ ostaje crveno (već radi)
+
+---
+
+## Redoslijed izvršavanja (kad odobriš plan)
+
+1. `.gitignore` + `.env.example` (najbrže)
+2. Validacija + zarez/točka + hint (frontend)
+3. Budget 80% upozorenje (frontend + i18n + možda token)
+4. APK signing (gradle + workflow + version bump na 1.0.5) — **tek kad potvrdiš da imaš keystore + 4 secrets postavljene u GitHubu**
+
+Ako nemaš još keystore, mogu napraviti 1–3 odmah, pa APK kasnije.

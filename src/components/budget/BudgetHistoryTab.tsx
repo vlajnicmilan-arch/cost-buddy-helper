@@ -265,7 +265,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
             className={cn(
               "h-full rounded-full",
               currentPeriod.percentage > 100 ? "bg-destructive" :
-              currentPeriod.percentage >= 80 ? "bg-warning" : "bg-primary"
+              currentPeriod.percentage >= 80 ? "bg-budget-warning" : "bg-primary"
             )}
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(currentPeriod.percentage, 100)}%` }}
@@ -338,7 +338,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                         className={cn(
                           "h-full rounded-full transition-all",
                           cat.percentage > 100 ? "bg-destructive" :
-                          cat.percentage >= 80 ? "bg-warning" : "bg-primary"
+                          cat.percentage >= 80 ? "bg-budget-warning" : "bg-primary"
                         )}
                         style={{ width: `${Math.min(cat.percentage, 100)}%` }}
                       />

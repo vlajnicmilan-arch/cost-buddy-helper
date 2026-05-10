@@ -789,7 +789,8 @@
     "bulkDeleted": "{{count}} Transaktionen gelöscht",
     "toAccountLabel": "📥 Auf Konto (Ziel)",
     "selectDestinationAccount": "Zielkonto auswählen",
-    "noDestination": "Kein Ziel"
+    "noDestination": "Kein Ziel",
+    "amountHint": "Für Dezimalstellen Punkt oder Komma verwenden (z. B. 150,50)"
   },
   "dashboard": {
     "balance": "Kontostand",
@@ -869,7 +870,8 @@
     "dateOutOfRange": "Datum liegt außerhalb des zulässigen Bereichs",
     "dateInFuture": "Datum darf nicht zu weit in der Zukunft liegen",
     "dateTooFar": "Datum liegt zu weit entfernt",
-    "dateAdjusted": "Datum wurde automatisch korrigiert"
+    "dateAdjusted": "Datum wurde automatisch korrigiert",
+    "amountGreaterThanZero": "Betrag muss größer als 0 sein"
   },
   "trial": {
     "featureChip": {
@@ -1657,7 +1659,8 @@
     "autoRejectNote": "Transaktionen, die nicht innerhalb von 24 Stunden genehmigt werden, werden automatisch abgelehnt.",
     "transactionApproved": "Transaktion genehmigt",
     "transactionRejected": "Transaktion abgelehnt",
-    "viewerNote": "Ihre Transaktionen erfordern die Genehmigung des Budget-Eigentümers"
+    "viewerNote": "Ihre Transaktionen erfordern die Genehmigung des Budget-Eigentümers",
+    "nearLimit": "Limit fast erreicht — {{percent}}% verbraucht"
   },
   "projectStatus": {
     "draft": "Entwurf",

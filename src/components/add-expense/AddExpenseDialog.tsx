@@ -834,6 +834,14 @@ export const AddExpenseDialog = ({
     e.preventDefault();
     if (!amount) return;
 
+    // Validate amount > 0 (works for expense, income and transfer)
+    const normalizedAmount = amount.replace(',', '.');
+    const previewAmount = parseFloat(normalizedAmount);
+    if (!Number.isFinite(previewAmount) || previewAmount <= 0) {
+      showError(t('validation.amountGreaterThanZero', 'Iznos mora biti veći od 0'));
+      return;
+    }
+
     // Business mode: require selecting an actual payment source when business sources exist.
     // Personal sources are allowed (they create an owner-loan automatically), but bare 'cash' is not.
     if (effectiveBusinessProfileId && type !== 'income' && type !== 'transfer') {
