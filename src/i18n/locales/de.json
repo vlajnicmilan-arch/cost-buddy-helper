@@ -1344,12 +1344,19 @@
   },
   "update": {
     "available": "Neue Version verfügbar!",
-    "updateNow": "Aktualisieren",
+    "forcedTitle": "Pflicht-Update",
+    "updateNow": "Jetzt aktualisieren",
     "later": "Später",
     "description": "Aktualisieren Sie die App für die neuesten Funktionen und Fehlerbehebungen.",
+    "forcedDescription": "Diese Version enthält kritische Korrekturen und muss vor der weiteren Nutzung installiert werden.",
     "checkForUpdates": "Nach Updates suchen",
     "upToDate": "App ist aktuell!",
-    "checkFailed": "Überprüfung fehlgeschlagen"
+    "checkFailed": "Überprüfung fehlgeschlagen",
+    "versionLine": "Neue Version: {{remote}} (aktuell: {{current}})",
+    "checksumProtected": "Geschützt durch SHA-256 Integritätsprüfung",
+    "downloading": "Herunterladen... {{pct}}%",
+    "downloadComplete": "Download abgeschlossen",
+    "installing": "Installation läuft..."
   },
   "errors": {
     "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
