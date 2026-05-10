@@ -350,11 +350,12 @@ export const NotificationsDropdown = () => {
                           </p>
                         </div>
                         {!isInvitation && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1">
                             {!notification.read && (
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                aria-label={t('notifications.markRead', 'Označi kao pročitano')}
                                 className="h-6 w-6 min-h-[44px] min-w-[44px] touch-manipulation"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -367,10 +368,12 @@ export const NotificationsDropdown = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={t('notifications.delete', 'Obriši')}
                               className="h-6 w-6 min-h-[44px] min-w-[44px] touch-manipulation text-destructive hover:text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteNotification(notification.id);
+                                setOpen(false);
                               }}
                             >
                               <Trash2 className="w-3 h-3" />
