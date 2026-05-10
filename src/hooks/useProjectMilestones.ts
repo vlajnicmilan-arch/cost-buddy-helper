@@ -5,6 +5,7 @@ import { ProjectMilestone, MilestoneStatus, Project } from '@/types/project';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { PendingRevisionInput } from '@/types/milestoneRevision';
+import { notifyProjectActivity } from '@/lib/notifyProjectActivity';
 
 export const useProjectMilestones = (projectId: string | null) => {
   const { user } = useAuth();

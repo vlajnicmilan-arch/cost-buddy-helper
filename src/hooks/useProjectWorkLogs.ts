@@ -166,6 +166,14 @@ export const useProjectWorkLogs = (projectId: string | null) => {
       const { error } = await (supabase as any).from('project_work_logs').update(patch).eq('id', id);
       if (error) throw error;
       showSuccess(t('workLog.updated', 'Dnevnik ažuriran'));
+      if (projectId) {
+        void notifyProjectActivity({
+          project_id: projectId,
+          activity_type: 'work_log_updated',
+          ref_id: id,
+          meta: { date: input.log_date, hours: input.hours ?? null },
+        });
+      }
       await fetchAll();
       return true;
     } catch (e) {
@@ -177,10 +185,19 @@ export const useProjectWorkLogs = (projectId: string | null) => {
 
   const remove = async (id: string): Promise<boolean> => {
     try {
+      const removed = logs.find((l) => l.id === id);
       const { error } = await (supabase as any).from('project_work_logs').delete().eq('id', id);
       if (error) throw error;
       showSuccess(t('workLog.deleted', 'Dnevnik obrisan'));
       setLogs((prev) => prev.filter((l) => l.id !== id));
+      if (projectId) {
+        void notifyProjectActivity({
+          project_id: projectId,
+          activity_type: 'work_log_deleted',
+          ref_id: id,
+          meta: { date: removed?.log_date },
+        });
+      }
       return true;
     } catch (e) {
       console.error(e);
