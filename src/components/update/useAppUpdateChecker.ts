@@ -28,6 +28,7 @@ const LAST_BOOT_VERSION_KEY = 'vmb-last-boot-version';
 interface UpdateState {
   available: boolean;
   remoteVersion: string;
+  currentVersion: string;
   apkUrl: string | null;
   sha256: string | null;
   forced: boolean;
@@ -36,6 +37,7 @@ interface UpdateState {
 const EMPTY_STATE: UpdateState = {
   available: false,
   remoteVersion: '',
+  currentVersion: APP_VERSION,
   apkUrl: null,
   sha256: null,
   forced: false,
@@ -118,6 +120,7 @@ export const useAppUpdateChecker = () => {
       setState({
         available: true,
         remoteVersion: result.version,
+        currentVersion: installedVersion,
         apkUrl: result.apkUrl,
         sha256: result.sha256,
         forced,
@@ -160,7 +163,6 @@ export const useAppUpdateChecker = () => {
 
   return {
     ...state,
-    currentVersion: state.available ? '' : APP_VERSION,
     isNative: isNativeApp,
     dismiss,
     triggerCheck: performCheck,
