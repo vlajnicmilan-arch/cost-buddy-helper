@@ -1,111 +1,93 @@
+/**
+ * NativeUpdateChecker
+ *
+ * Background app-update lifecycle. Replaces the old toast-only flow with a
+ * proper UpdateAvailableDialog that:
+ *  - Triggers an APK download + install on native (Android), or
+ *  - Triggers `window.location.reload()` on web/PWA.
+ *
+ * Backward-compatible exports kept:
+ *   - `NativeUpdateInitializer` (mounted in PWAUpdatePrompt)
+ *   - `checkForNativeUpdates`  (manual trigger, e.g. settings → "Check now")
+ */
 import { useEffect } from 'react';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import { useTranslation } from 'react-i18next';
 import { APP_VERSION } from '@/lib/version';
 import {
   fetchLatestVersion,
   isRemoteVersionNewer,
+  isUpdateForced,
   isNativeApp,
   getPlatformName,
 } from './updateUtils';
+import { useAppUpdateChecker } from './useAppUpdateChecker';
+import { UpdateAvailableDialog } from './UpdateAvailableDialog';
+import { logUpdateEvent } from '@/lib/updateTelemetry';
 
-let checkForUpdatesRef: (() => Promise<void>) | null = null;
+// ----- Manual trigger (Settings → "Check for updates") -----
+export const checkForNativeUpdates = async (): Promise<void> => {
+  console.info('[NativeUpdate] Manual check', {
+    platform: getPlatformName(),
+    isNative: isNativeApp,
+    appVersion: APP_VERSION,
+  });
 
-const createNativeUpdateChecker = () => {
-  return async () => {
-    console.info('[NativeUpdate] Starting check...', {
-      platform: getPlatformName(),
-      isNative: isNativeApp,
-      appVersion: APP_VERSION,
-      href: window.location.href,
-    });
+  const result = await fetchLatestVersion();
 
-    const result = await fetchLatestVersion();
+  logUpdateEvent('update_check_performed', {
+    remoteVersion: result.version,
+    currentVersion: APP_VERSION,
+    origin: result.origin,
+    error: result.error,
+    manual: true,
+  });
 
-    if (!result.version) {
-      showError(tr('errors.appUpdate.webCheckFailed', 'Provjera web verzije nije uspjela. Nijedan server nije odgovorio.'));
-      console.error('[NativeUpdate] All origins failed');
-      return;
-    }
-
-    console.info('[NativeUpdate] Remote version:', result.version, 'from', result.origin);
-    console.info('[NativeUpdate] Local APP_VERSION:', APP_VERSION);
-
-    if (isRemoteVersionNewer(APP_VERSION, result.version)) {
-      toast.info(
-        `Nova web verzija ${result.version} dostupna! (Trenutna: ${APP_VERSION})`,
-        {
-          action: { label: 'Osvježi', onClick: () => window.location.reload() },
-          duration: 10000,
-        }
-      );
-    } else {
-      showSuccess(`Web verzija je ažurna (${APP_VERSION}).`);
-    }
-  };
-};
-
-export const initializeNativeUpdateChecker = () => {
-  if (!isNativeApp) return null;
-  const checker = createNativeUpdateChecker();
-  checkForUpdatesRef = checker;
-  return checker;
-};
-
-// Initialize immediately at module load
-if (isNativeApp) {
-  initializeNativeUpdateChecker();
-}
-
-export const checkForNativeUpdates = async () => {
-  if (!checkForUpdatesRef && isNativeApp) {
-    initializeNativeUpdateChecker();
-  }
-  if (checkForUpdatesRef) {
-    await checkForUpdatesRef();
+  if (!result.version) {
+    showError(tr('errors.appUpdate.webCheckFailed', 'Provjera ažuriranja nije uspjela.'));
     return;
   }
-  showError(tr('errors.appUpdate.platformUnsupported', 'Provjera ažuriranja nije dostupna na ovoj platformi.'));
+
+  const isNewer = isRemoteVersionNewer(APP_VERSION, result.version);
+  const forced = isUpdateForced(APP_VERSION, result.minSupportedVersion);
+
+  if (!isNewer && !forced) {
+    showSuccess(tr('update.upToDate', 'Aplikacija je ažurna.'));
+    return;
+  }
+
+  // Notify the in-app checker by dispatching a custom event the
+  // initializer below picks up. Simpler than wiring a global store.
+  window.dispatchEvent(new CustomEvent('vmb-force-update-check'));
 };
 
+// ----- Background initializer (mounted globally) -----
 export const NativeUpdateInitializer = () => {
-  const { t } = useTranslation();
+  useTranslation(); // ensure i18n is hydrated before dialog mounts
+  const { available, remoteVersion, apkUrl, sha256, forced, isNative, currentVersion, dismiss, triggerCheck } =
+    useAppUpdateChecker();
 
   useEffect(() => {
-    const checker = initializeNativeUpdateChecker();
-    const silentCheck = async () => {
-      const result = await fetchLatestVersion();
-      if (result.version && isRemoteVersionNewer(APP_VERSION, result.version)) {
-        toast.info(
-          t('update.available'),
-          {
-            action: { label: t('update.updateNow'), onClick: () => window.location.reload() },
-            duration: 10000,
-          }
-        );
-      }
+    const handler = () => {
+      triggerCheck().catch((err) => console.error('[NativeUpdate] forced re-check failed:', err));
     };
-    const timeoutId = window.setTimeout(() => {
-      silentCheck().catch((error) => console.error('[NativeUpdate] Startup check failed:', error));
-    }, 2500);
+    window.addEventListener('vmb-force-update-check', handler);
+    return () => window.removeEventListener('vmb-force-update-check', handler);
+  }, [triggerCheck]);
 
-    const handleVisible = () => {
-      if (document.visibilityState === 'visible') {
-        silentCheck().catch((error) => console.error('[NativeUpdate] Visibility check failed:', error));
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisible);
+  if (!available) return null;
 
-    return () => {
-      window.clearTimeout(timeoutId);
-      document.removeEventListener('visibilitychange', handleVisible);
-      if (checkForUpdatesRef === checker) {
-        checkForUpdatesRef = null;
-      }
-    };
-  }, [t]);
-
-  return null;
+  return (
+    <UpdateAvailableDialog
+      open={available}
+      remoteVersion={remoteVersion}
+      currentVersion={currentVersion}
+      apkUrl={apkUrl}
+      sha256={sha256}
+      forced={forced}
+      isNative={isNative}
+      onDismiss={dismiss}
+    />
+  );
 };

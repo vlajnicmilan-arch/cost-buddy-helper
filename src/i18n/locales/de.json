@@ -1344,12 +1344,19 @@
   },
   "update": {
     "available": "Neue Version verfügbar!",
-    "updateNow": "Aktualisieren",
+    "forcedTitle": "Pflicht-Update",
+    "updateNow": "Jetzt aktualisieren",
     "later": "Später",
     "description": "Aktualisieren Sie die App für die neuesten Funktionen und Fehlerbehebungen.",
+    "forcedDescription": "Diese Version enthält kritische Korrekturen und muss vor der weiteren Nutzung installiert werden.",
     "checkForUpdates": "Nach Updates suchen",
     "upToDate": "App ist aktuell!",
-    "checkFailed": "Überprüfung fehlgeschlagen"
+    "checkFailed": "Überprüfung fehlgeschlagen",
+    "versionLine": "Neue Version: {{remote}} (aktuell: {{current}})",
+    "checksumProtected": "Geschützt durch SHA-256 Integritätsprüfung",
+    "downloading": "Herunterladen... {{pct}}%",
+    "downloadComplete": "Download abgeschlossen",
+    "installing": "Installation läuft..."
   },
   "errors": {
     "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
@@ -1440,7 +1447,10 @@
     },
     "appUpdate": {
       "webCheckFailed": "Webversion-Prüfung fehlgeschlagen. Kein Server hat geantwortet.",
-      "platformUnsupported": "Update-Prüfung ist auf dieser Plattform nicht verfügbar."
+      "platformUnsupported": "Update-Prüfung ist auf dieser Plattform nicht verfügbar.",
+      "downloadFailed": "Update-Download fehlgeschlagen. Prüfen Sie das Netzwerk und versuchen Sie es erneut.",
+      "checksumFailed": "Die Update-Datei ist beschädigt oder ungültig. Bitte erneut versuchen.",
+      "noApkUrl": "APK-URL ist nicht verfügbar."
     },
     "files": {
       "saveFailed": "Datei konnte nicht gespeichert werden",

@@ -1344,12 +1344,19 @@
   },
   "update": {
     "available": "Nova verzija dostupna!",
-    "updateNow": "Ažuriraj",
+    "forcedTitle": "Obavezno ažuriranje",
+    "updateNow": "Ažuriraj sada",
     "later": "Kasnije",
     "description": "Ažurirajte aplikaciju za najnovije značajke i popravke.",
+    "forcedDescription": "Ova verzija sadrži kritične popravke i mora se instalirati prije nastavka korištenja.",
     "checkForUpdates": "Provjeri ažuriranja",
     "upToDate": "Aplikacija je ažurna!",
-    "checkFailed": "Provjera nije uspjela"
+    "checkFailed": "Provjera nije uspjela",
+    "versionLine": "Nova verzija: {{remote}} (trenutna: {{current}})",
+    "checksumProtected": "Zaštićeno SHA-256 provjerom integriteta",
+    "downloading": "Skidanje... {{pct}}%",
+    "downloadComplete": "Skidanje završeno",
+    "installing": "Instaliranje..."
   },
   "errors": {
     "generic": "Nešto je pošlo po krivu. Pokušajte ponovno.",
@@ -1440,7 +1447,10 @@
     },
     "appUpdate": {
       "webCheckFailed": "Provjera web verzije nije uspjela. Nijedan server nije odgovorio.",
-      "platformUnsupported": "Provjera ažuriranja nije dostupna na ovoj platformi."
+      "platformUnsupported": "Provjera ažuriranja nije dostupna na ovoj platformi.",
+      "downloadFailed": "Skidanje ažuriranja nije uspjelo. Provjerite mrežu i pokušajte ponovno.",
+      "checksumFailed": "Datoteka ažuriranja je oštećena ili neispravna. Pokušajte ponovno.",
+      "noApkUrl": "URL APK datoteke nije dostupan."
     },
     "files": {
       "saveFailed": "Greška pri spremanju datoteke",

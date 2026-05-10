@@ -1344,12 +1344,19 @@
   },
   "update": {
     "available": "New version available!",
-    "updateNow": "Update",
+    "forcedTitle": "Mandatory update",
+    "updateNow": "Update now",
     "later": "Later",
     "description": "Update the app to get the latest features and fixes.",
+    "forcedDescription": "This release contains critical fixes and must be installed before continuing.",
     "checkForUpdates": "Check for updates",
     "upToDate": "App is up to date!",
-    "checkFailed": "Check failed"
+    "checkFailed": "Check failed",
+    "versionLine": "New version: {{remote}} (current: {{current}})",
+    "checksumProtected": "Protected by SHA-256 integrity check",
+    "downloading": "Downloading... {{pct}}%",
+    "downloadComplete": "Download complete",
+    "installing": "Installing..."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -1440,7 +1447,10 @@
     },
     "appUpdate": {
       "webCheckFailed": "Web version check failed. No server responded.",
-      "platformUnsupported": "Update check is not available on this platform."
+      "platformUnsupported": "Update check is not available on this platform.",
+      "downloadFailed": "Update download failed. Check your network and try again.",
+      "checksumFailed": "The update file is corrupted or invalid. Please try again.",
+      "noApkUrl": "APK URL is not available."
     },
     "files": {
       "saveFailed": "Failed to save file",
