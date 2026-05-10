@@ -179,7 +179,52 @@ export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, addAct
         )}
       </div>
 
-      <BankConnection onImportCSV={onImportCSV} findDuplicates={findDuplicates} existingExpenses={existingExpenses} />
+      {/* Business import: bankovni izvod uvijek dolazi s jednog tvrtkinog računa */}
+      {businessSources.length === 0 ? (
+        <div className="glass-card rounded-2xl p-4 flex items-start gap-3 border border-amber-500/30 bg-amber-500/5">
+          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium text-amber-700 dark:text-amber-400">
+              {t('import.noBusinessSourceWarning', 'Najprije dodaj poslovni izvor plaćanja (račun tvrtke) za koji uvoziš izvod.')}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('import.noBusinessSourceHint', 'Postavke → Izvori plaćanja → Dodaj novi (vezan na ovu tvrtku).')}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {businessSources.length > 1 && (
+            <div className="glass-card rounded-2xl p-3 flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-xs text-muted-foreground shrink-0">
+                {t('import.linkedToSource', 'Uvoz se vezuje na izvor:')}
+              </span>
+              <Select value={selectedImportSourceId} onValueChange={handleSourceChange}>
+                <SelectTrigger className="h-8 text-sm flex-1">
+                  <SelectValue placeholder={t('import.selectBusinessSource', 'Odaberi izvor')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessSources.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {businessSources.length === 1 && (
+            <p className="text-[11px] text-muted-foreground px-1">
+              {t('import.linkedToSource', 'Uvoz se vezuje na izvor:')} <strong>{businessSources[0].name}</strong>
+            </p>
+          )}
+          <BankConnection
+            onImportCSV={onImportCSV}
+            findDuplicates={findDuplicates}
+            existingExpenses={existingExpenses}
+            defaultBusinessPaymentSourceId={selectedImportSourceId}
+          />
+        </div>
+      )}
 
       {detailExpense && (
         <TransactionDetailDialog
