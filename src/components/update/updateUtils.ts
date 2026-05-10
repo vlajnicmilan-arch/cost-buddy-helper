@@ -38,6 +38,19 @@ export const getPlatformName = (): string => {
   }
 };
 
+export const getInstalledAppVersion = async (): Promise<string> => {
+  if (!getIsNativeApp()) return APP_VERSION;
+
+  try {
+    const { App } = await import('@capacitor/app');
+    const info = await App.getInfo();
+    return info.version || APP_VERSION;
+  } catch (error) {
+    console.warn('[UpdateCheck] Native app version unavailable, falling back to APP_VERSION', error);
+    return APP_VERSION;
+  }
+};
+
 export const parseVersion = (version: string) =>
   version
     .split('.')
