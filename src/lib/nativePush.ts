@@ -124,12 +124,19 @@ export async function registerNativePush(): Promise<boolean> {
           console.error('[Push] tap navigation error:', e);
         }
       });
+      await diag('push_listeners_attached');
     }
 
+    await diag('push_native_register_called');
     await PushNotifications.register();
+    await diag('push_native_register_returned');
     return true;
   } catch (e) {
     console.error('[Push] register error:', e);
+    await diag('push_register_exception', {
+      message: (e as Error)?.message ?? String(e),
+      stack: typeof (e as Error)?.stack === 'string' ? (e as Error).stack!.slice(0, 1500) : undefined,
+    });
     return false;
   }
 }
