@@ -39,6 +39,10 @@
     --warning: 43 96% 56%;
     --warning-foreground: 30 60% 20%;
 
+    /* Budget near-limit warning (orange, distinct from amber --warning) */
+    --budget-warning: 25 95% 53%;
+    --budget-warning-foreground: 0 0% 100%;
+
     /* AI / Smart-scan accent (violet) */
     --ai: 262 83% 58%;
     --ai-foreground: 0 0% 100%;
