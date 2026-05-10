@@ -1,92 +1,89 @@
 ## Cilj
 
-Cross-mode trošak (poslovni trošak plaćen iz osobnog izvora) treba biti vidljiv i u **Osobnim** i u **Tvrtkinim** transakcijama, bez duplog brojanja salda. Brisanje pripadne pozajmice dobiva 3 jasne opcije s odgovarajućim posljedicama na knjiženje transakcije.
+Uvoz bankovnog izvoda za tvrtku (Tactura) mora:
+1. Prepoznati **sve** transakcije iz HTML/PDF izvoda (datum, opis, iznos, smjer)
+2. Sve transakcije vezati na **jedan poslovni izvor plaćanja** (računa tvrtke)
+3. Prepoznati uplate vlasnika i među-tvrtkine transfere kao **pozajmice** (smjer iz opisa: "prema tvrtki" ili "od tvrtke")
 
-## Princip (jedan red u bazi, dva ortogonalna filtera)
+## Problem (potvrđeno iz logova)
 
-```text
-Osobni view  = source.business_profile_id IS NULL
-               (drainao je osobni saldo → tu pripada za balance/cashflow)
+Tvoj zadnji uvoz Erste HTML izvoda za Tactura j.d.o.o. (HR4224020061101288287, 13 KB):
+- Gemini vratio **samo 1 transakciju** (naknada 2.57 €) — ostale je pogrešno označio kao salda
+- Transakcija završila u Osobnim jer `payment_source='bank'` (legacy) → cross-mode prikaz
 
-Tvrtka view  = expense.business_profile_id = <aktivna tvrtka>
-               (knjigovodstveno tvrtkin trošak → tu pripada za P&L)
+## Rješenje — 4 ortogonalne preinake
 
-Cross-mode   = zadovoljava OBA → vidi se na obje strane, jedan red u DB
-```
+### A. AI prompt: kolonska logika + jasan opseg
+`supabase/functions/parse-pdf-statement/index.ts`
 
-Saldo i dalje radi kao danas — vezan je za izvor plaćanja, pa se tvrtkin saldo ne dira.
+Refaktor system prompta:
+- **Jedino pravilo za tip**: iznos u koloni "Uplata/Potražuje/Korist/Credit" → `income`; iznos u koloni "Isplata/Duguje/Teret/Debit" → `expense`. Bez nagađanja po nazivu primatelja.
+- **Što JEST transakcija**: svaki red glavne tablice s datumom + iznosom. Uplate vlasnika, povrati poreza, primici od kupaca, transferi između tvrtki — sve uključi.
+- **Što NIJE transakcija** (skraćeno na 4 stavke): "Početno stanje", "Konačno stanje", "Promet ukupno (dugovni/potražni)", "Stanje na dan".
+- **Posebna grana za HTML**: "Pronađi najveću `<table>` u dokumentu. Svaki `<tr>` u njenom `<tbody>` koji ima datum + iznos je transakcija. Ne preskači nijedan red."
+- **Opis transakcije**: zadrži original tekst iz izvoda (uključujući naziv platitelja/primatelja, model i poziv na broj). Bez kraćenja — kasnije nam treba za detekciju pozajmica.
+- **Validacija u edge funkciji**: ako AI vrati < 3 transakcije a input > 5 KB, logiraj `WARN: suspiciously few transactions extracted, size=X KB, returned=Y` za debugging.
+- **Uklanjamo iz prompta i izlaza**: `payment_source`, `card_type`, `card_last4` — više nisu relevantni jer cijeli izvod ide na korisnički-odabrani izvor.
 
-## 1. Filter logika (`src/hooks/useExpenseFetch.ts`)
+### B. Forsiranje jednog poslovnog izvora
+`src/components/BankConnection.tsx`
+- Novi prop `defaultBusinessPaymentSourceId?: string`.
+- Kad postoji, override-aj `payment_source = 'custom:<id>'` na **sve** transakcije prije `onImportCSV` poziva (linije 169 i 197).
 
-Promjena `applyViewMode`:
-- **Personal view:** `source.business_profile_id === null` (kao danas, ali eksplicitno preko helpera).
-- **Business view:** `expense.business_profile_id === viewBusinessProfileId` (umjesto `source.business_profile_id`).
+`src/hooks/usePDFParser.ts`
+- Ukloniti `detectPaymentSource` iz mappinga rezultata (klijent više ne nagađa — ili AI ne vraća, ili biznis kontekst override-a).
 
-Dodati helper `isCrossModeExpense(e)` koji vraća `true` kad source je personal a expense ima business_profile_id — koristi se za badgeve i opcionalno isključivanje iz osobnih izvještaja.
+### C. Wire-up u `BusinessTransactions.tsx`
+- Učitati `customPaymentSources` filtrirane po aktivnom `business_profile_id`.
+- **Ako tvrtka nema poslovni izvor**: gumb uvoza disabled + warning *"Najprije dodaj poslovni izvor plaćanja (računa tvrtke) za koji uvoziš izvod."* + link "Dodaj izvor".
+- **Ako ima točno jedan**: auto-prosljeđivanje `defaultBusinessPaymentSourceId`.
+- **Ako ih ima više**: `Select` iznad gumba *"Uvoz se vezuje na izvor:"* (default = prvi po imenu, pamti se zadnji odabir u `localStorage` po `business_profile_id`).
+- **IBAN match**: ako parser vrati `account_iban` koji se podudara s nekim postojećim biznis izvorom (po `iban` polju), pre-select taj izvor.
 
-## 2. Vizualni badgevi
+### D. Detekcija pozajmica iz uvoza (već postoji za CSV — proširiti na PDF/HTML)
 
-Postojeća `TransactionItem`/`TransactionList` komponenta dobiva mali badge:
-- U **Osobnim:** "↗ Pozajmica tvrtki [Naziv]" (teal outline)
-- U **Tvrtkinim:** "← Plaćeno iz osobnog" (amber outline)
+**Postojeća logika**: `useLoanDetection` se već poziva u `CSVImportDialog.tsx:243-255` nakon uspješnog CSV uvoza u biznis modu. Otvara `LoanDetectionDialog` gdje korisnik potvrdi koje su pozajmice i u kojem smjeru.
 
-Klik na badge otvara dijalog s detaljima pozajmice (postojeći `BusinessDebtTracker` filtriran na taj `source_expense_id`).
+**Što fali**: `BankConnection.tsx` (PDF/HTML grana, `handleImportPDFTransactions` linija 140 i `handleConfirmImportWithDuplicates` linija 181) **ne** poziva `detectLoans` nakon uvoza. Treba dodati identičan blok kao u CSV-u:
+- Nakon `await onImportCSV(transactions)` u biznis modu
+- Pozvati `detectLoans(transactionsForScan)` 
+- Ako vrati > 0, otvoriti `LoanDetectionDialog` s detektiranim pozajmicama
+- Korisnik bira koje su pozajmice + smjer (vlasnik → tvrtki ili tvrtka → vlasnik)
+- Spremaju se u `business_debts` (već postojeći flow preko `addDebt`)
 
-i18n ključevi: `transactions.crossMode.loanToCompany`, `transactions.crossMode.paidFromPersonal`.
+**Detekcija smjera**: `useLoanDetection` već koristi AI s `detect-loans` edge funkcijom koja čita opis i predlaže smjer. Ključne riječi koje već prepoznaje: "uplata osnivača", "pozajmica", "kreditiranje", "povrat pozajmice", ime vlasnika u opisu. Bez izmjena u edge funkciji.
 
-## 3. Brisanje pozajmice → 3 opcije (`BusinessDebtTracker.tsx`)
+## Što ostaje nepromijenjeno
 
-Trenutni "Obriši" gumb zamijenjen s **"Riješi"** koji otvara mali dijalog. Ponašanje ovisno o tome ima li pozajmica `source_expense_id`:
+- `useExpenseCRUD.importFromCSV` — već ispravno postavlja `business_profile_id`. ✓
+- `useExpenseFetch.applyViewMode` — kad payment_source bude `custom:<biz-id>`, transakcija će biti **samo** u Tvrtkinom prikazu i utjecati na saldo poslovnog izvora. ✓
+- `useLoanDetection` + `detect-loans` edge funkcija + `LoanDetectionDialog` + `business_debts` tablica — postojeći flow se samo proširuje na PDF/HTML.
+- Osobni Wallet uvoz — bez promjene (payment_source iz `usePDFParser` ostaje, ali kad ukinemo `detectPaymentSource`, default je `'bank'`).
 
-**Ako ima `source_expense_id`:**
-1. **Otpiši pozajmicu** — `status='cancelled'`, transakcija ostaje na obje strane. Semantika: vlasnik je donirao tvrtki.
-2. **Promijeni izvor plaćanja transakcije** — otvara mali select s tvrtkinim izvorima; nakon spremanja `syncOwnerLoanForExpense` automatski makne pozajmicu (jer više nije cross-mode), trošak nestaje iz Osobnih.
-3. **Obriši zapis pozajmice (zadrži transakciju)** — samo briše `business_debts` red. Za rijetke slučajeve (npr. pogrešno auto-prepoznato).
+## QA scenariji
 
-**Ako nema `source_expense_id`** (ručno dodano ili zombie zapis):
-- Samo opcija 3 ("Obriši zapis").
+1. **Erste izvod za Tactura, jedan poslovni izvor**:
+   - AI izvuče sve transakcije (10+ umjesto 1)
+   - Sve idu na "Erste poslovni račun" (Tactura)
+   - Pojavljuju se samo u Tvrtkinim transakcijama, saldo Erste izvora se mijenja
+   - Nakon uvoza otvori se LoanDetectionDialog za uplate vlasnika i među-tvrtkine transfere
+   - Korisnik potvrdi smjer pozajmice → upiše se u `business_debts`
+2. **Tvrtka bez poslovnog izvora**: gumb disabled + warning
+3. **Dvije tvrtkine kartice**: Select s 2 opcije, IBAN match auto-pre-select
 
-Svaka opcija ima kratki opis posljedice ispod naslova.
+## Što NE radimo
 
-## 4. Izvještaji — sprečavanje dvostrukog brojanja
-
-- **Tvrtkin P&L / `BusinessReports`:** uključuje cross-mode (poželjno — to JE tvrtkin trošak). Bez izmjena.
-- **Osobni mjesečni izvještaj / `Reports`:** dodati toggle "Uključi pozajmice tvrtki" (default: **isključeno**). Bez togglea, cross-mode se isključuje iz osobne potrošnje da se izbjegne dojam da je vlasnik osobno potrošio taj novac (formalno jest, ali je odmah pretvoreno u potraživanje).
-- **Cashflow forecast:** ostaje vezan na izvor plaćanja, bez izmjena.
-- **Budgeti:** vezani na `budget_id` direktno, bez izmjena.
-
-## 5. Dashboard saldo
-
-Bez izmjena. Saldo se i dalje računa po izvorima plaćanja:
-- Osobni izvor: smanjen za iznos cross-mode troška (točno).
-- Tvrtkin izvor: nedirnuti (točno — novac nije izašao iz tvrtke).
-- `business_debts` se ne uključuje u saldo, samo u "Otvoreni računi".
-
-## 6. Memorija
-
-Ažurirati postojeću memoriju **Debt Tracking** — dodati napomenu o cross-mode dual-view modelu i 3-opcijskom brisanju.
-
-## Tehnički detalji
-
-- Filter promjena u `useExpenseFetch.ts:289-306` (mali, ortogonalan refactor).
-- Novi helper `isCrossModeExpense(expense)` u istom hooku, exposed kroz return value.
-- `ownerLoanLogic.ts` već ima `syncOwnerLoanForExpense` — koristi se u opciji 2.
-- Novi helper `forgiveOwnerLoan(id)` u `ownerLoanLogic.ts` — wrapper oko `update({status:'cancelled'})`.
-- Novi `LoanResolveDialog.tsx` u `src/components/business/` (3-opcijski dijalog).
-- Bez DB migracije.
-
-## Što NE radimo (svjesno izostavljeno)
-
-- Mirror-zapisi (dvije expense rows) — odbačeno zbog sync rizika.
-- Promjena `business_debts` strukture — postojeći `source_expense_id` je dovoljan.
-- Promjena dashboard salda — već radi ispravno.
-- Diranje budgeta i cashflow forecasta — već su izolirani po vlastitim FK-ima.
+- Bez timeout/guard hackova
+- Bez izmjene `useExpenseCRUD.importFromCSV` jezgre
+- Bez promjene `business_debts` shema ili RLS-a
+- Bez novih AI funkcija (postojeći `detect-loans` je dovoljan)
 
 ## Redoslijed implementacije
 
-1. Filter refactor + `isCrossModeExpense` helper.
-2. Badgevi u `TransactionItem` + i18n ključevi (HR/EN/DE).
-3. `LoanResolveDialog` + `forgiveOwnerLoan` helper.
-4. Toggle u osobnom izvještaju.
-5. QA: provjera da cross-mode trošak ne narušava postojeće tokove (transferi, recurring, projekti, budgeti).
-6. Update memorije.
+1. Refaktor system prompta u `parse-pdf-statement` + redeploy
+2. Curl test edge funkcije s tvojim Erste HTML uzorkom — provjera broja transakcija
+3. `BankConnection` prima `defaultBusinessPaymentSourceId` + `useLoanDetection` poziv nakon uvoza
+4. `BusinessTransactions` proslijeđuje izvor (auto / Select / warning)
+5. Klijentska sanitizacija u `usePDFParser`
+6. i18n ključevi (HR/EN/DE): `import.selectBusinessSource`, `import.noBusinessSourceWarning`, `import.linkedToSource`
+7. End-to-end QA na tvom računu (uvoz Erste izvoda za Tactura)

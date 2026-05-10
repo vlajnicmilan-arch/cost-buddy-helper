@@ -1,8 +1,9 @@
-import { useState, useMemo, type ReactNode } from 'react';
-import { Plus, Search, ArrowUpRight, ArrowDownRight, ArrowLeftRight, FileText, ScanLine } from 'lucide-react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
+import { Plus, Search, ArrowUpRight, ArrowDownRight, ArrowLeftRight, FileText, ScanLine, Wallet, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Expense } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
@@ -12,6 +13,8 @@ import { TransactionItem } from '@/components/TransactionItem';
 import { BankConnection } from '@/components/BankConnection';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { useTranslation } from 'react-i18next';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface Props {
   expenses: Expense[];
@@ -29,12 +32,45 @@ interface Props {
 export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, addAction, scanAction, onEditExpense, onDeleteExpense, onImportCSV, findDuplicates, existingExpenses }: Props) => {
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { activeBusinessProfileId } = useAppState();
+  const { customPaymentSources } = useCustomPaymentSources();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+
+  // Sources that belong to the active business profile (bankovni izvod uvijek dolazi s tvrtkinog računa)
+  const businessSources = useMemo(
+    () => customPaymentSources.filter(s => s.business_profile_id === activeBusinessProfileId),
+    [customPaymentSources, activeBusinessProfileId]
+  );
+
+  const lsKey = activeBusinessProfileId ? `bankImportSource:${activeBusinessProfileId}` : null;
+  const [selectedImportSourceId, setSelectedImportSourceId] = useState<string | undefined>(() => {
+    if (!lsKey) return undefined;
+    const stored = localStorage.getItem(lsKey);
+    return stored || undefined;
+  });
+
+  // Auto-select default when sources load / change
+  useEffect(() => {
+    if (businessSources.length === 0) {
+      setSelectedImportSourceId(undefined);
+      return;
+    }
+    if (!selectedImportSourceId || !businessSources.some(s => s.id === selectedImportSourceId)) {
+      const fallback = businessSources[0].id;
+      setSelectedImportSourceId(fallback);
+      if (lsKey) localStorage.setItem(lsKey, fallback);
+    }
+  }, [businessSources, selectedImportSourceId, lsKey]);
+
+  const handleSourceChange = (id: string) => {
+    setSelectedImportSourceId(id);
+    if (lsKey) localStorage.setItem(lsKey, id);
+  };
 
   const filtered = useMemo(() => {
     let result = expenses;
@@ -143,7 +179,52 @@ export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, addAct
         )}
       </div>
 
-      <BankConnection onImportCSV={onImportCSV} findDuplicates={findDuplicates} existingExpenses={existingExpenses} />
+      {/* Business import: bankovni izvod uvijek dolazi s jednog tvrtkinog računa */}
+      {businessSources.length === 0 ? (
+        <div className="glass-card rounded-2xl p-4 flex items-start gap-3 border border-amber-500/30 bg-amber-500/5">
+          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium text-amber-700 dark:text-amber-400">
+              {t('import.noBusinessSourceWarning', 'Najprije dodaj poslovni izvor plaćanja (račun tvrtke) za koji uvoziš izvod.')}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('import.noBusinessSourceHint', 'Postavke → Izvori plaćanja → Dodaj novi (vezan na ovu tvrtku).')}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {businessSources.length > 1 && (
+            <div className="glass-card rounded-2xl p-3 flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-xs text-muted-foreground shrink-0">
+                {t('import.linkedToSource', 'Uvoz se vezuje na izvor:')}
+              </span>
+              <Select value={selectedImportSourceId} onValueChange={handleSourceChange}>
+                <SelectTrigger className="h-8 text-sm flex-1">
+                  <SelectValue placeholder={t('import.selectBusinessSource', 'Odaberi izvor')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessSources.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {businessSources.length === 1 && (
+            <p className="text-[11px] text-muted-foreground px-1">
+              {t('import.linkedToSource', 'Uvoz se vezuje na izvor:')} <strong>{businessSources[0].name}</strong>
+            </p>
+          )}
+          <BankConnection
+            onImportCSV={onImportCSV}
+            findDuplicates={findDuplicates}
+            existingExpenses={existingExpenses}
+            defaultBusinessPaymentSourceId={selectedImportSourceId}
+          />
+        </div>
+      )}
 
       {detailExpense && (
         <TransactionDetailDialog

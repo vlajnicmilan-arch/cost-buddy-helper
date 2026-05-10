@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2 } from 'lucide-react';
+import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { CSVImportDialog } from './CSVImportDialog';
@@ -14,11 +14,20 @@ import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
 import { Badge } from '@/components/ui/badge';
 import { DetectedPartnersDialog } from './DetectedPartnersDialog';
+import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
+import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
+import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: import('@/types/expense').Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: import('@/types/expense').Expense }[]; unique: ParsedTransaction[] };
   existingExpenses?: import('@/types/expense').Expense[];
+  /**
+   * UUID poslovnog izvora plaćanja na koji se vežu SVE uvezene transakcije.
+   * Kad postoji, prepisuje sve `payment_source` vrijednosti na `custom:<id>`.
+   * Koristi se u poslovnom kontekstu — bankovni izvod uvijek dolazi s jednog tvrtkinog računa.
+   */
+  defaultBusinessPaymentSourceId?: string;
 }
 
 const SUPPORTED_SOURCES = [
@@ -29,7 +38,7 @@ const SUPPORTED_SOURCES = [
   { id: 'zaba', name: 'Zagrebačka banka', logo: '🏦' },
 ];
 
-export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }: BankConnectionProps) => {
+export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, defaultBusinessPaymentSourceId }: BankConnectionProps) => {
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
   const [infoOpen, setInfoOpen] = useState(false);
@@ -40,11 +49,15 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [partnersDialogOpen, setPartnersDialogOpen] = useState(false);
   const [detectedMerchants, setDetectedMerchants] = useState<string[]>([]);
+  const [detectedLoans, setDetectedLoans] = useState<DetectedLoan[]>([]);
+  const [loanDialogOpen, setLoanDialogOpen] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const { parsing, parsedData, parsePDF, parsePhoto, parseHTML, clearParsedData } = usePDFParser();
+  const { detectLoans } = useLoanDetection();
+  const { addDebt } = useBusinessDebts();
 
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -137,10 +150,53 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
+  const overrideToBusinessSource = (txs: ParsedTransaction[]): ParsedTransaction[] => {
+    if (!defaultBusinessPaymentSourceId) return txs;
+    const ps = `custom:${defaultBusinessPaymentSourceId}` as ParsedTransaction['payment_source'];
+    return txs.map(tx => ({ ...tx, payment_source: ps }));
+  };
+
+  const runLoanDetection = async (txs: ParsedTransaction[]) => {
+    if (!activeBusinessProfileId || txs.length === 0) return;
+    const txsForScan = txs.map(tx => ({
+      description: tx.description,
+      amount: tx.amount,
+      type: tx.type,
+      date: tx.date instanceof Date ? tx.date : new Date(tx.date),
+    }));
+    try {
+      const detected = await detectLoans(txsForScan);
+      if (detected.length > 0) {
+        setDetectedLoans(detected);
+        setLoanDialogOpen(true);
+      }
+    } catch (e) {
+      console.error('Loan detection after import failed:', e);
+    }
+  };
+
+  const handleLoanConfirm = (loans: DetectedLoan[]) => {
+    if (!activeBusinessProfileId) return;
+    for (const loan of loans) {
+      addDebt({
+        business_profile_id: activeBusinessProfileId,
+        type: loan.type,
+        contact_name: loan.contactName,
+        description: loan.description,
+        amount: loan.amount,
+        paid_amount: 0,
+        due_date: null,
+        status: 'active',
+      });
+    }
+    showSuccess(t('import.loansAdded', { count: loans.length, defaultValue: `Dodano ${loans.length} pozajmica u evidenciju dugovanja` }));
+    setDetectedLoans([]);
+  };
+
   const handleImportPDFTransactions = async () => {
     if (!parsedData || !onImportCSV) return;
 
-    const transactions: ParsedTransaction[] = parsedData.transactions.map(tx => ({
+    const transactions: ParsedTransaction[] = overrideToBusinessSource(parsedData.transactions.map(tx => ({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
@@ -149,7 +205,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       merchant_name: tx.merchant_name || undefined,
       source: 'pdf',
       payment_source: tx.payment_source || 'bank'
-    }));
+    })));
 
     // Check for duplicates if function is provided
     if (findDuplicates) {
@@ -176,6 +232,8 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     }
     clearParsedData();
     showSuccess(t('import.importedFromPDF', { count: transactions.length }));
+    // Loan detection after successful import (business mode only)
+    void runLoanDetection(transactions);
   };
 
   const handleConfirmImportWithDuplicates = async () => {
@@ -184,7 +242,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     // Always include unique, optionally include strict duplicates, include selected fuzzy duplicates
     const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, i) => selectedFuzzy.has(i));
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
-    const transactionsToImport = [...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude];
+    const transactionsToImport = overrideToBusinessSource([...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude]);
 
     if (transactionsToImport.length === 0) {
       toast.info(t('import.noNewTransactions'));
@@ -205,6 +263,8 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
     clearParsedData();
     setDuplicateInfo(null);
     showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
+    // Loan detection after successful import (business mode only)
+    void runLoanDetection(transactionsToImport);
   };
 
   return (
@@ -242,7 +302,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
       </p>
 
       <div className="flex flex-col gap-2">
-        {onImportCSV && <CSVImportDialog onImport={onImportCSV} existingExpenses={existingExpenses} findDuplicates={findDuplicates} />}
+        {onImportCSV && <CSVImportDialog onImport={onImportCSV} existingExpenses={existingExpenses} findDuplicates={findDuplicates} defaultPaymentSource={defaultBusinessPaymentSourceId ? `custom:${defaultBusinessPaymentSourceId}` : undefined} />}
         
         {/* Photo Import */}
         <input
@@ -674,6 +734,13 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses }
         open={partnersDialogOpen}
         onOpenChange={setPartnersDialogOpen}
         merchantNames={detectedMerchants}
+      />
+      {/* Loan Detection Dialog (after import in business mode) */}
+      <LoanDetectionDialog
+        open={loanDialogOpen}
+        onOpenChange={setLoanDialogOpen}
+        detectedLoans={detectedLoans}
+        onConfirm={handleLoanConfirm}
       />
     </motion.div>
   );
