@@ -1344,12 +1344,19 @@
   },
   "update": {
     "available": "Nova verzija dostupna!",
-    "updateNow": "Ažuriraj",
+    "forcedTitle": "Obavezno ažuriranje",
+    "updateNow": "Ažuriraj sada",
     "later": "Kasnije",
     "description": "Ažurirajte aplikaciju za najnovije značajke i popravke.",
+    "forcedDescription": "Ova verzija sadrži kritične popravke i mora se instalirati prije nastavka korištenja.",
     "checkForUpdates": "Provjeri ažuriranja",
     "upToDate": "Aplikacija je ažurna!",
-    "checkFailed": "Provjera nije uspjela"
+    "checkFailed": "Provjera nije uspjela",
+    "versionLine": "Nova verzija: {{remote}} (trenutna: {{current}})",
+    "checksumProtected": "Zaštićeno SHA-256 provjerom integriteta",
+    "downloading": "Skidanje... {{pct}}%",
+    "downloadComplete": "Skidanje završeno",
+    "installing": "Instaliranje..."
   },
   "errors": {
     "generic": "Nešto je pošlo po krivu. Pokušajte ponovno.",
