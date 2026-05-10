@@ -67,7 +67,7 @@ const Wallet = () => {
         open={paymentSourceDialogOpen}
         onOpenChange={setPaymentSourceDialogOpen}
         paymentSource={selectedPaymentSource}
-        expenses={allExpenses}
+        expenses={rawExpenses}
         onUpdate={updateExpense}
         onDelete={deleteExpense}
         onImportCSV={importFromCSV}
