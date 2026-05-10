@@ -193,6 +193,42 @@ export const useProjectWorkers = (projectId: string | null) => {
     }
   };
 
+  const linkWorkerToMember = async (
+    workerId: string,
+    userId: string | null
+  ): Promise<{ success: boolean; backfilled?: number; error?: string }> => {
+    try {
+      const { data, error } = await supabase.rpc('link_worker_to_member', {
+        _worker_id: workerId,
+        _user_id: userId,
+      });
+      if (error) throw error;
+      const result = (data as any) || {};
+      await fetchWorkers();
+      if (userId === null) {
+        showSuccess(t('projects.workerUnlinked', 'Veza uklonjena'));
+      } else {
+        const n = Number(result.backfilled || 0);
+        showSuccess(
+          n > 0
+            ? t('projects.workerLinkedWithBackfill', 'Povezano — obračunato {{count}} unosa', { count: n })
+            : t('projects.workerLinkedNoBackfill', 'Povezano')
+        );
+      }
+      return { success: true, backfilled: Number(result.backfilled || 0) };
+    } catch (err: any) {
+      const msg = err?.message || '';
+      const errMap: Record<string, string> = {
+        not_authorized: t('projects.linkNotAuthorized', 'Nemate ovlast za povezivanje'),
+        user_already_linked_to_other_worker: t('projects.userAlreadyLinked', 'Ovaj član je već povezan s drugim radnikom'),
+        worker_not_found: t('projects.workerNotFound', 'Radnik nije pronađen'),
+      };
+      const known = Object.keys(errMap).find((k) => msg.includes(k));
+      showError(known ? errMap[known] : t('common.error'));
+      return { success: false, error: known || 'unknown' };
+    }
+  };
+
   // Total cost based on actual worked hours
   const totalCost = workers.reduce((sum, w) => sum + w.actualCostTotal, 0);
   const totalActualHours = workers.reduce((sum, w) => sum + w.actualHoursTotal, 0);
@@ -204,6 +240,7 @@ export const useProjectWorkers = (projectId: string | null) => {
     addWorker,
     updateWorker,
     deleteWorker,
+    linkWorkerToMember,
     refetch: fetchWorkers,
     totalCost,
     totalActualHours
