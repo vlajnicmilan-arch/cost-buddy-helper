@@ -1666,6 +1666,8 @@
     "title": "Notifications",
     "markAllRead": "Mark all",
     "empty": "No notifications",
+    "delete": "Delete",
+    "markRead": "Mark as read",
     "accept": "Accept",
     "decline": "Decline",
     "invitationAccepted": "Invitation accepted",
