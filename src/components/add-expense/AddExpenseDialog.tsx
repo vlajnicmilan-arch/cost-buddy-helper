@@ -65,6 +65,12 @@ interface AddExpenseDialogProps {
   hideTrigger?: boolean;
   /** Explicit business context for business-mode launchers. */
   businessProfileId?: string | null;
+  /**
+   * Optional base64 image already captured by the global scan flow.
+   * When provided, the dialog opens straight into scan-processing mode
+   * (no camera roundtrip needed inside the dialog).
+   */
+  initialCapturedImage?: string | null;
 }
 
 interface ScannedData {
