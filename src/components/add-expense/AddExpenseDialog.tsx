@@ -342,34 +342,35 @@ export const AddExpenseDialog = ({
     }
   }, [open, customPaymentSources]);
 
-  // Auto-launch scan when dialog opens with autoScan=true
-  const autoScanTriggeredRef = useRef(false);
+  // Process a pre-captured image (handed in by ScanCaptureRunner via context).
+  // The camera step has already happened — just push the image into the
+  // existing scan pipeline once payment sources are loaded.
+  const initialCaptureProcessedRef = useRef(false);
   useEffect(() => {
     if (!open) {
-      autoScanTriggeredRef.current = false;
+      initialCaptureProcessedRef.current = false;
       return;
     }
-    if (autoScan && !autoScanTriggeredRef.current && !scanning && !showScannedPreview && !customPaymentSourcesLoading) {
-      autoScanTriggeredRef.current = true;
+    if (
+      initialCapturedImage &&
+      !initialCaptureProcessedRef.current &&
+      !scanning &&
+      !showScannedPreview &&
+      !customPaymentSourcesLoading
+    ) {
+      initialCaptureProcessedRef.current = true;
       try {
-        logDiagnostic('receipt_auto_scan_triggered', {
+        logDiagnostic('receipt_initial_image_processing', {
           is_native: isNative,
           is_business: !!effectiveBusinessProfileId,
           business_profile_id: effectiveBusinessProfileId,
           payment_sources_count: customPaymentSources?.length ?? 0,
+          bytes: initialCapturedImage.length,
         });
       } catch {}
-      // Small delay so the dialog is fully mounted before launching the camera
-      const t = setTimeout(() => {
-        if (isNative) {
-          handleNativeCapture('camera', false);
-        } else {
-          openFileInputCapture(cameraInputRef);
-        }
-      }, 150);
-      return () => clearTimeout(t);
+      void processImageBase64(initialCapturedImage, false);
     }
-  }, [open, autoScan, isNative, scanning, showScannedPreview, effectiveBusinessProfileId, openFileInputCapture, customPaymentSourcesLoading, customPaymentSources?.length]);
+  }, [open, initialCapturedImage, scanning, showScannedPreview, customPaymentSourcesLoading, customPaymentSources?.length, effectiveBusinessProfileId, isNative]);
 
   const processImageBase64 = async (base64: string, multiMode: boolean) => {
     // Defensive blur: ensure keyboard is dismissed before scan/AI analysis kicks in
