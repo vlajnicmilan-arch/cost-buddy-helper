@@ -88,14 +88,16 @@ export async function registerNativePush(): Promise<boolean> {
         });
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        await supabase.from('push_tokens').upsert(
-          {
-            user_id: user.id,
+        const { error } = await supabase.functions.invoke('save-push-token', {
+          body: {
             token: token.value,
             platform: Capacitor.getPlatform(),
           },
-          { onConflict: 'user_id,token' }
-        );
+        });
+        await diag(error ? 'push_token_save_failed' : 'push_token_saved', {
+          token_prefix: token.value.slice(0, 12),
+          message: error?.message,
+        });
       });
 
       PushNotifications.addListener('registrationError', (err) => {
