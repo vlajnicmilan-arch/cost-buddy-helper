@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import type { PluginListenerHandle } from '@capacitor/core';
 
 type SpeechRecognitionLike = {
   lang: string;
@@ -20,18 +23,23 @@ const isIOS = (): boolean => {
   return /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
 };
 
+const isNative = (): boolean => {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+};
+
 const isAndroidApp = (): boolean => {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || '';
-  // Android WebView: typically contains "; wv)" or our Capacitor scheme
   return /Android/.test(ua) && (/; wv\)/.test(ua) || /Capacitor/i.test(ua) || (window as any).Capacitor != null);
 };
 
 /**
  * Best-effort check if mic permission is actually denied at the OS/browser layer.
- * Returns:
- *  - 'granted' | 'denied' | 'prompt' when known
- *  - 'unknown' when Permissions API doesn't expose microphone (e.g. Android WebView)
+ * Web only — native handles its own permission state through SpeechRecognition.
  */
 const queryMicPermission = async (): Promise<'granted' | 'denied' | 'prompt' | 'unknown'> => {
   try {
@@ -66,16 +74,14 @@ const MAX_SESSION_MS = 30_000;
 /** If silence (no speech result) lasts longer than this (ms), treat as user paused. */
 const SILENCE_HINT_MS = 2_000;
 
-/** Distinct error categories surfaced to the UI so we never lie to the user about mic permissions. */
 export type VoiceErrorKind =
   | null
-  | 'permission-denied'   // user/system actually blocked mic access
-  | 'service-unavailable' // engine failed to start (network, Google service, WebView)
-  | 'unsupported'         // no engine available in this build/runtime
-  | 'unknown';            // anything else
+  | 'permission-denied'
+  | 'service-unavailable'
+  | 'unsupported'
+  | 'unknown';
 
 interface UseVoiceDictationOptions {
-  /** Called whenever a transcript update arrives. Should typically append the transcript to existing field value. */
   onTranscript: (transcript: string, isFinal: boolean) => void;
 }
 
@@ -83,37 +89,26 @@ export interface UseVoiceDictationResult {
   recording: boolean;
   start: () => Promise<void>;
   stop: () => void;
-  /** True if voice input is supported on this platform/browser. */
   supported: boolean;
   showPermissionHelp: boolean;
   setShowPermissionHelp: (open: boolean) => void;
-  /** Detailed last error category (drives which dialog/text the UI shows). */
   errorKind: VoiceErrorKind;
   setErrorKind: (kind: VoiceErrorKind) => void;
-  /** Raw diagnostics for the latest failure so we stop guessing. */
   diagnosticCode: string | null;
   diagnosticMessage: string | null;
   permissionState: 'granted' | 'denied' | 'prompt' | 'unknown';
   isAndroidRuntime: boolean;
-  /** Elapsed seconds of current recording session. */
   elapsedSec: number;
-  /** True when recognizer paused listening but we are auto-restarting (user can keep speaking). */
   continuing: boolean;
 }
 
 /**
- * Voice dictation hook using the Web Speech API (`webkitSpeechRecognition`).
+ * Voice dictation hook with two engines:
+ * - Native (Capacitor): @capacitor-community/speech-recognition on Android & iOS
+ * - Web: webkitSpeechRecognition on Chrome/Edge/Android Chrome (iOS Safari unsupported)
  *
- * Works in browsers (Chrome/Edge/Android Chrome) and inside Android WebView
- * shells that proxy `getUserMedia` to the system mic. iOS Safari is not
- * supported by Apple. We do NOT use `@capacitor-community/speech-recognition`
- * here because the currently installed APK does not include that native plugin.
- *
- * Robustness features:
- * - Auto-restart on `onend` to keep the session alive across short pauses.
- * - Cross-cycle accumulator so text is never lost across restarts.
- * - Distinct error categories — never falsely claim the mic is blocked
- *   when the real failure is engine/service related.
+ * Both branches share the same accumulator/timing/error contract so the UI does
+ * not need to know which engine is active.
  */
 export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): UseVoiceDictationResult => {
   const { i18n } = useTranslation();
@@ -130,27 +125,29 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
   const manualStopRef = useRef(false);
   const onTranscriptRef = useRef(onTranscript);
 
-  // Cross-cycle accumulator: holds all final text recognized in this session.
+  // Native plugin: partialResults listener handle
+  const nativeListenerRef = useRef<PluginListenerHandle | null>(null);
+  const nativeActiveRef = useRef(false);
+
   const accumulatedFinalRef = useRef('');
-  // Last interim transcript from current recognizer cycle.
   const lastInterimRef = useRef('');
 
-  // Session timing
   const sessionStartRef = useRef<number>(0);
   const lastResultAtRef = useRef<number>(0);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maxSessionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Keep latest callback without re-creating start/stop
   useEffect(() => {
     onTranscriptRef.current = onTranscript;
   }, [onTranscript]);
 
+  // Capability check — native is always supported on Capacitor; web requires SR API.
   const supported =
-    !isIOS() &&
-    typeof window !== 'undefined' &&
-    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+    isNative() ||
+    (!isIOS() &&
+      typeof window !== 'undefined' &&
+      !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition));
 
   const clearTimers = useCallback(() => {
     if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null; }
@@ -158,7 +155,6 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     if (maxSessionTimerRef.current) { clearTimeout(maxSessionTimerRef.current); maxSessionTimerRef.current = null; }
   }, []);
 
-  /** Build merged transcript from accumulated final + current interim, and emit. */
   const emitMerged = useCallback((interim: string) => {
     const merged = [accumulatedFinalRef.current.trim(), interim.trim()]
       .filter(Boolean)
@@ -167,7 +163,6 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     onTranscriptRef.current(merged, false);
   }, []);
 
-  /** Promote any pending interim text into the final accumulator (used before restart). */
   const flushInterimToFinal = useCallback(() => {
     if (lastInterimRef.current.trim()) {
       accumulatedFinalRef.current = (accumulatedFinalRef.current + ' ' + lastInterimRef.current)
@@ -178,6 +173,17 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     }
   }, []);
 
+  const stopNative = useCallback(async () => {
+    nativeActiveRef.current = false;
+    try {
+      if (nativeListenerRef.current) {
+        await nativeListenerRef.current.remove();
+        nativeListenerRef.current = null;
+      }
+    } catch { /* noop */ }
+    try { await SpeechRecognition.stop(); } catch { /* noop */ }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -186,19 +192,25 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch { /* noop */ }
       }
+      if (nativeActiveRef.current) {
+        void stopNative();
+      }
     };
-  }, [clearTimers]);
+  }, [clearTimers, stopNative]);
 
   const stop = useCallback(() => {
     manualStopRef.current = true;
     clearTimers();
     flushInterimToFinal();
+    if (nativeActiveRef.current) {
+      void stopNative();
+    }
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch { /* noop */ }
     }
     setRecording(false);
     setContinuing(false);
-  }, [clearTimers, flushInterimToFinal]);
+  }, [clearTimers, flushInterimToFinal, stopNative]);
 
   const startUITimers = useCallback(() => {
     clearTimers();
@@ -216,8 +228,79 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     maxSessionTimerRef.current = setTimeout(() => { stop(); }, MAX_SESSION_MS);
   }, [clearTimers, stop]);
 
+  /** Native (Capacitor) start path. Returns true on success, false to fall through to web. */
+  const startNative = useCallback(async (lang: string): Promise<boolean> => {
+    try {
+      const avail = await SpeechRecognition.available();
+      if (!avail?.available) {
+        setDiagnosticCode('native-unavailable');
+        setErrorKind('unsupported');
+        setShowPermissionHelp(true);
+        return true;
+      }
+
+      // Permission gate
+      let perm = await SpeechRecognition.checkPermissions();
+      if (perm.speechRecognition !== 'granted') {
+        const req = await SpeechRecognition.requestPermissions();
+        perm = req;
+      }
+      const permGranted = perm.speechRecognition === 'granted';
+      setPermissionState(permGranted ? 'granted' : 'denied');
+
+      if (!permGranted) {
+        setDiagnosticCode('native-permission-denied');
+        setErrorKind('permission-denied');
+        setShowPermissionHelp(true);
+        return true;
+      }
+
+      // Subscribe to partial results before starting
+      const listener = await SpeechRecognition.addListener('partialResults', (data: any) => {
+        const matches: string[] = data?.matches || data?.value || [];
+        const text = (matches[0] || '').trim();
+        if (!text) return;
+        lastResultAtRef.current = Date.now();
+        setContinuing(false);
+        // Native plugin returns the full utterance each event. Treat it as
+        // the current interim segment so emitMerged combines with prior
+        // accumulated finals across restarts.
+        lastInterimRef.current = text;
+        emitMerged(text);
+      });
+      nativeListenerRef.current = listener;
+      nativeActiveRef.current = true;
+
+      await SpeechRecognition.start({
+        language: lang,
+        partialResults: true,
+        popup: false,
+        maxResults: 1,
+      });
+
+      setRecording(true);
+      return true;
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      // eslint-disable-next-line no-console
+      console.warn('[voice] native start failed', msg);
+      setDiagnosticCode('native-start-failed');
+      setDiagnosticMessage(msg);
+      // Clean up partially attached listener
+      try {
+        if (nativeListenerRef.current) {
+          await nativeListenerRef.current.remove();
+          nativeListenerRef.current = null;
+        }
+      } catch { /* noop */ }
+      nativeActiveRef.current = false;
+      setErrorKind('service-unavailable');
+      setShowPermissionHelp(true);
+      return true;
+    }
+  }, [emitMerged]);
+
   const start = useCallback(async () => {
-    // Diagnostics for next-step debugging — never logs PII.
     let permState: 'granted' | 'denied' | 'prompt' | 'unknown' = 'unknown';
     try {
       permState = await queryMicPermission();
@@ -227,6 +310,7 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       // eslint-disable-next-line no-console
       console.info('[voice] start()', {
         supported,
+        native: isNative(),
         androidApp: isAndroidApp(),
         permState,
         hasSR: typeof window !== 'undefined' && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition),
@@ -241,19 +325,37 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     }
 
     const lang = langForLocale(i18n.language || 'hr');
-    const r = getWebRecognition(lang);
-    if (!r) {
-      setDiagnosticCode('missing-recognition-constructor');
-      setErrorKind('unsupported');
-      setShowPermissionHelp(true);
-      return;
-    }
 
     accumulatedFinalRef.current = '';
     lastInterimRef.current = '';
     manualStopRef.current = false;
     setErrorKind(null);
     startUITimers();
+
+    // Native path takes priority on Capacitor
+    if (isNative()) {
+      const handled = await startNative(lang);
+      if (handled) {
+        // If startNative surfaced an error it already cleaned UI state via dialog;
+        // ensure timers don't keep ticking if recording never started.
+        if (!nativeActiveRef.current) {
+          clearTimers();
+          setRecording(false);
+        }
+        return;
+      }
+      // fallthrough to web is intentional — should never happen since startNative always handles.
+    }
+
+    // Web Speech API path
+    const r = getWebRecognition(lang);
+    if (!r) {
+      clearTimers();
+      setDiagnosticCode('missing-recognition-constructor');
+      setErrorKind('unsupported');
+      setShowPermissionHelp(true);
+      return;
+    }
 
     r.onstart = () => setRecording(true);
     r.onresult = (e: any) => {
@@ -282,7 +384,6 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
     r.onerror = async (e: any) => {
       const errType = e?.error || 'unknown';
       const errMessage = e?.message || null;
-      // Diagnostics — non-PII, helps identify the real failure path next time.
       try {
         // eslint-disable-next-line no-console
         console.warn('[voice] onerror', {
@@ -300,18 +401,12 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       setDiagnosticCode(errType);
       setDiagnosticMessage(errMessage);
 
-      // 'not-allowed' on Web Speech is ambiguous in Android WebView — it often
-      // fires when the engine simply can't start, NOT because the user blocked
-      // the mic. Verify against the Permissions API before claiming denial.
       if (errType === 'not-allowed') {
         const nextPermState = await queryMicPermission();
         setPermissionState(nextPermState);
-        // eslint-disable-next-line no-console
-        console.warn('[voice] permission check after not-allowed', { permState: nextPermState });
         if (nextPermState === 'denied') {
           setErrorKind('permission-denied');
         } else {
-          // granted / prompt / unknown → it's the engine, not the user.
           setErrorKind('service-unavailable');
         }
       } else if (
@@ -351,7 +446,7 @@ export const useVoiceDictation = ({ onTranscript }: UseVoiceDictationOptions): U
       setErrorKind('service-unavailable');
       setShowPermissionHelp(true);
     }
-  }, [supported, i18n.language, clearTimers, emitMerged, flushInterimToFinal, startUITimers]);
+  }, [supported, i18n.language, clearTimers, emitMerged, flushInterimToFinal, startUITimers, startNative]);
 
   return {
     recording,
