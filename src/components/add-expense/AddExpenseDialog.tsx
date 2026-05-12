@@ -105,6 +105,7 @@ export const AddExpenseDialog = ({
   onOpenChange,
   hideTrigger = false,
   businessProfileId,
+  initialCapturedImage = null,
 }: AddExpenseDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
