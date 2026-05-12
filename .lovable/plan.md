@@ -1,60 +1,78 @@
-# Popravak crash-a kod uključenih push notifikacija
+## Provjera trenutnog stanja
 
-## Uzrok (potvrđen)
+- `useVoiceDictation` hook koristi **samo Web Speech API** (`webkitSpeechRecognition`).
+- Komentar u kodu tvrdi da plugin nije instaliran — **netočno**: `@capacitor-community/speech-recognition@6.0.0` JE u `package.json`.
+- Problem: Capacitor core je `^8.0.1`, plugin je `6.0.0` → **major mismatch** (potvrđeno u memoriji `capacitor-version-alignment` da to izaziva tihi native crash).
+- Latest dostupna verzija plugina: **7.0.1** (peer `@capacitor/core: ">=7.0.0"`, prihvaća i v8). Službene v8 verzije još nema, ali peer dopušta v8.
+- Hook se koristi samo u `DailyStandupSheet.tsx` (jedna lokacija).
+- APK trenutno: **2.0.3** (versionCode 10).
 
-- `android/app/google-services.json` je prazan (0 bajtova)
-- `android/app/build.gradle` (linije 62-67) **uvjetno** aplicira `com.google.gms.google-services` plugin samo ako file ima sadržaj
-- Trenutno plugin **nije aktivan** → Firebase nije inicijaliziran u APK-u → `PushNotifications.register()` puca u native sloju čim FCM pokuša dohvatiti token
-- Zato se u telemetriji vidi `push_listeners_attached`, ali NIKAD `push_native_register_called` (cijeli proces se sruši prije)
+## Plan
 
-## Što treba napraviti
+### 1. Nadogradnja plugina
+- `@capacitor-community/speech-recognition`: **6.0.0 → 7.0.1**
+- Ažurirati memoriju `capacitor-version-alignment` da spomene speech-recognition i kompromis (peer >=7 dopušta v8 dok ne izađe službena v8).
 
-### 1. Upisati Firebase konfiguraciju
-Zapisati dostavljeni JSON u `android/app/google-services.json` (project: `vm-balance`, package: `app.lovable.costbuddy` — odgovara appID-u u `capacitor.config.ts`).
+### 2. Refactor `useVoiceDictation`
+Prepravi hook da koristi **3-slojni resolver**:
 
-### 2. Dodati `POST_NOTIFICATIONS` permission
-U `android/app/src/main/AndroidManifest.xml` (uz postojeći `INTERNET`):
-```xml
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+```text
+Runtime detection:
+├─ Capacitor.isNativePlatform() === true
+│    └─ @capacitor-community/speech-recognition (Android/iOS native)
+└─ Web (PWA, browser)
+     └─ Web Speech API (postojeća logika)
+     └─ iOS Safari → supported=false (bez promjene)
 ```
-Bez ovoga Android 13+ neće prikazati native dialog za dopuštenje.
 
-### 3. Bump verzije aplikacije
-- `android/app/build.gradle`: `versionCode` +1, `versionName` → `2.0.3`
-- `public/version.json`: `latestVersion: "2.0.3"`, `apkUrl` → `vmbalance-2.0.3.apk`
-- `minSupportedVersion` ostaje na trenutnoj vrijednosti (ne forsiramo 2.0.3 dok ne potvrdimo update flow)
+Native flow:
+1. `SpeechRecognition.available()` — provjeri dostupnost
+2. `SpeechRecognition.checkPermissions()` → `requestPermissions()` ako treba
+3. `SpeechRecognition.start({ language, partialResults: true, popup: false, maxResults: 1 })`
+4. Listener `partialResults` → emit interim transcripts (kontinuirano kao Web Speech)
+5. `stop()` → `SpeechRecognition.stop()` + remove listener
+6. Greške mapirane u postojeće `VoiceErrorKind` kategorije (`permission-denied`, `service-unavailable`, `unsupported`)
 
-### 4. Build i upload APK (radi korisnik)
-```
-npm install --legacy-peer-deps
-npx cap sync android
-cd android && ./gradlew assembleRelease
-```
-Upload `app-release.apk` u Storage kao `releases/vmbalance-2.0.3.apk`.
+Sačuvati postojeće API potpise (`start`, `stop`, `recording`, `supported`, `errorKind`, `elapsedSec`, `continuing`, dijagnostika). `VoiceInputButton` ostaje **bez izmjena**.
 
-### 5. Rollout postojećim korisnicima
-- Vinka i ostali zaglavljeni na 2.0.2: poslati direktan link na novi APK preko WhatsAppa, instalacija preko postojeće verzije (isti potpis, podaci ostaju)
-- Nakon što 5-10 korisnika uspješno pređe na 2.0.3 i u telemetriji vidimo `push_register_token_received`, postaviti `minSupportedVersion: "2.0.3"`
+### 3. Capacitor konfiguracija
+- `capacitor.config.ts` — dodati plugin config ako treba (po defaultu nije nužno)
+- Android `AndroidManifest.xml` — provjeri da `RECORD_AUDIO` postoji (vjerojatno već je zbog kamere/audio)
+- iOS — Info.plist key `NSSpeechRecognitionUsageDescription` + `NSMicrophoneUsageDescription` (za buduće iOS izdanje)
 
-## Što NE diramo
+### 4. Bump APK verzije
+- `android/app/build.gradle`: versionCode `10 → 11`, versionName `2.0.3 → 2.0.4`
+- `public/version.json`: `2.0.3 → 2.0.4`, `minSupportedVersion: 2.0.3`, `apkUrl` → `vmbalance-2.0.4.apk`
 
-- `src/lib/nativePush.ts` — već ima kompletan try/catch + diagnostic trail (`push_register_start` → `push_perm_checked` → `push_listeners_attached` → `push_native_register_called` → `push_native_register_returned` / `push_register_exception`)
-- Capacitor verzije — usklađene (core/android/push-notifications svi v8)
-- `apkInstaller.ts` — multi-strategy fallback je već implementiran u prošloj iteraciji
+### 5. i18n
+Postojeći ključevi (`voice.*`) već pokrivaju permission/service/unsupported dialoge — bez izmjena.
 
-## Verifikacija nakon builda
+### 6. Verifikacija (nakon implementacije)
+- TypeScript build prolazi
+- `Capacitor.isNativePlatform()` grananje testirano u browseru (mora pasti na Web Speech bez native poziva)
+- Korisnik mora: rebuild APK 2.0.4, upload preko APK Manager (Admin → APK tab), instalirati na uređaj, testirati u Dnevnik rada
 
-U `app_diagnostics_logs` mora se pojaviti:
-- `push_native_register_called` **i** `push_native_register_returned` (a ne samo prvo s tihim crash-om)
-- `push_register_token_received` s `token_prefix`
+## Tehnički detalji
 
-Ako se umjesto toga loga `push_register_exception`, imamo pravi error iz native sloja (a ne tihi crash) i znamo dalje gdje gledati.
+**Datoteke koje se mijenjaju:**
+- `package.json` (verzija plugina)
+- `src/hooks/useVoiceDictation.ts` (native + web grananje)
+- `android/app/build.gradle` (verzija)
+- `android/app/src/main/AndroidManifest.xml` (provjera RECORD_AUDIO)
+- `ios/App/App/Info.plist` (ako postoji folder — usage descriptions)
+- `public/version.json`
+- `mem://constraints/capacitor-version-alignment` (dodati napomenu)
 
-## Datoteke koje će se mijenjati
+**Datoteke koje OSTAJU iste:**
+- `src/components/VoiceInputButton.tsx` — koristi hook kroz nepromijenjeni interface
+- `src/components/projects/DailyStandupSheet.tsx`
+- i18n locale datoteke
 
-- `android/app/google-services.json` (popunjavanje)
-- `android/app/src/main/AndroidManifest.xml` (jedan novi `<uses-permission>`)
-- `android/app/build.gradle` (versionCode, versionName)
-- `public/version.json` (latestVersion, apkUrl)
+**Rizici:**
+- Plugin v7 nema službenu v8 oznaku — ako native bridge fallaje na Capacitor 8 runtime-u, vraćamo se na Web Speech automatski preko fallback grane (degradacija, ne crash).
+- iOS native test nije moguć dok korisnik ne pokrene Xcode build (Android je primarni target).
 
-Bez DB migracija, bez izmjena u src/.
+**Što NE radimo:**
+- Ne mijenjamo `VoiceInputButton` UI
+- Ne dodajemo gumb na nove ekrane (to ide kao zaseban task nakon što potvrdimo da nativno radi)
+- Ne diramo ElevenLabs (ta opcija ostaje za budući iOS Safari fallback ako bude trebao)

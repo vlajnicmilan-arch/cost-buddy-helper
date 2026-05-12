@@ -7,7 +7,7 @@
       "dependencies": {
         "@aparajita/capacitor-biometric-auth": "^10.0.0",
         "@capacitor-community/in-app-review": "^8.0.0",
-        "@capacitor-community/speech-recognition": "6.0.0",
+        "@capacitor-community/speech-recognition": "7.0.1",
         "@capacitor/android": "^8.0.1",
         "@capacitor/app": "^8.1.0",
         "@capacitor/browser": "^8.0.3",
@@ -126,7 +126,7 @@
 
     "@capacitor-community/in-app-review": ["@capacitor-community/in-app-review@8.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor-community/in-app-review/-/in-app-review-8.0.0.tgz", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-AYpEkIjdv27WGS3hnlc7xAQ1BhaBvD2svgQBfHF4P2Olw1N6a7MSCOQC6O4SuxmdBdJ2fM6uFeo1jyNjKLtIPw=="],
 
-    "@capacitor-community/speech-recognition": ["@capacitor-community/speech-recognition@6.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor-community/speech-recognition/-/speech-recognition-6.0.0.tgz", { "peerDependencies": { "@capacitor/core": "^6.0.0" } }, "sha512-+xnu8LGR5K+NYaLh9Ou0tsU/Q4X3jNgKsTy+9zHgj98WDdoCgPj57e1PIj+LceDG4DjYn7OklnNdmRIAhP7Xbg=="],
+    "@capacitor-community/speech-recognition": ["@capacitor-community/speech-recognition@7.0.1", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor-community/speech-recognition/-/speech-recognition-7.0.1.tgz", { "peerDependencies": { "@capacitor/core": ">=7.0.0" } }, "sha512-ykpBZziR575X0eURO5vXaD9gVrXXC/7Ra2qql/2KP6/jxWOqAFuw4eKjSPjwdAgGE6a/Z+v8FJm4SVh57MVwDA=="],
 
     "@capacitor/android": ["@capacitor/android@8.3.0", "", { "peerDependencies": { "@capacitor/core": "^8.3.0" } }, "sha512-EQy6ByUuKayQBJmMm/e0byJiHavqsQHrvW23BuT2GNVQvenAvipqwaePiJHzrv2PZr7A0T0+se4kgDCeROj0mQ=="],
 
