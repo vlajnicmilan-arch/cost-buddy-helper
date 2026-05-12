@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "571520957966",
+    "project_id": "vm-balance",
+    "storage_bucket": "vm-balance.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:571520957966:android:007279741767e71ed9865f",
+        "android_client_info": {
+          "package_name": "app.lovable.costbuddy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "571520957966-c0up91q6ie6mmvn412ht8cjlj75l3h3p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrwIAmnASfFNfzxLg3EDB8vP47v4StJx0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "571520957966-c0up91q6ie6mmvn412ht8cjlj75l3h3p.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
