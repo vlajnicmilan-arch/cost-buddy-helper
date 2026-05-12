@@ -86,7 +86,7 @@ export const ScanCaptureRunner = () => {
         <div className="flex flex-col items-center gap-3 text-foreground">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">
-            {t('scan.openingCamera', 'Otvaram kameru...')}
+            {t('common.openingCamera', 'Otvaram kameru...')}
           </p>
         </div>
       </div>
