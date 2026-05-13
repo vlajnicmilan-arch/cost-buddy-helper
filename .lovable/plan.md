@@ -1,59 +1,113 @@
-## Cilj
+# 3 dizajn-direkcije za kartice na dashboardu
 
-Klik na **Skeniraj** (osobni i tvrtka) odmah otvara nativnu kameru spremnu za slikanje. Forma transakcije / preview se prikazuje **tek nakon** što je fotka obrađena.
+Cilj: vizualno razlikovati **Novčanik / Projekt / Budžet** kartice **bez** mijenjanja oblika (zadržava se isti radius, shadow, grid). Diferencijacija ide kroz boju + ikonografiju + suptilne grafičke detalje.
 
-## Trenutno stanje (provjereno)
+Boje po tipu (predloženo, sve HSL u semantičkim tokenima):
+- **Novčanik** → teal `172 66% 40%` (već primary)
+- **Projekt** → amber `38 92% 50%`
+- **Budžet** → violet `262 60% 55%`
 
-- `ScanTriggerButton` poziva `useReceiptScan().openScan({ businessProfileId })`.
-- `GlobalReceiptScanHost` montira **cijeli** `AddExpenseDialog` s `autoScan=true`.
-- `AddExpenseDialog` u `useEffect` (s 150ms timeoutom + čekanjem `customPaymentSourcesLoading`) zove `handleNativeCapture('camera')`.
-- Posljedica: prazna forma se na ~150ms+ pojavi, pa se kamera otvara. U business modu kašnjenje je veće jer se čeka učitavanje payment sources/projekata, što izgleda kao "ne otvara kameru".
+---
 
-Oba moda već koriste **isti** `ScanTriggerButton` → flow je isti, razlika je samo u kašnjenju zbog poslovnih podataka.
+## Direkcija A — "Akcent-traka" (najminimalnija)
 
-## Promjena
+```text
+┌─┬──────────────────────────────┐
+│█│  [icon]  Naziv kartice    →  │
+│█│  Iznos / podnaslov           │
+│█│  ────────────────────────    │
+│█│  meta podaci                 │
+└─┴──────────────────────────────┘
+ ↑
+ 3px traka u boji tipa
+```
 
-Razdvojiti **akviziciju fotke** od **forme za unos**:
+- Lijeva 3px vertikalna traka u boji tipa (full-height kartice)
+- Sve ostalo identično trenutnom dizajnu
+- Ikona u krugu (već postoji) preuzima istu boju tipa
+- **Pro**: zero vizualne buke, top-tier čitljivost, savršeno za 384px
+- **Con**: najsuptilnije — možda premalo vidljivo na prvi pogled
 
-1. **`ReceiptScanContext`** dobiva novo stanje `phase: 'idle' | 'capturing' | 'editing'`.
-   - `openScan()` postavlja `phase='capturing'`, **ne** otvara dialog.
-   - Nakon što fotka stigne (ili korisnik odustane), prelazi u `editing` (otvara dialog s već uhvaćenom slikom) ili `idle` (cancel).
+---
 
-2. **Novi `ScanCaptureRunner`** komponenta (montirana u `GlobalReceiptScanHost` umjesto trenutnog dialoga kad je `phase==='capturing'`):
-   - Bez ikakvog UI-a (ili minimalni full-screen spinner overlay).
-   - Pri mountu odmah zove `useNativeCamera.takePhoto()` (native) ili klikne hidden `<input capture>` (web).
-   - Po uspjehu šalje `base64` u kontekst (`completeCapture(base64)`), po cancelu zove `closeScan()`.
-   - **Ne** ovisi o `customPaymentSources` – kamera kreće odmah.
+## Direkcija B — "Header chip + ikonska boja"
 
-3. **`AddExpenseDialog`** se montira tek kad `phase==='editing'`, s novim propom `initialReceiptImage`. Postojeća `autoScan` grana (i `setTimeout(150)` + guard za `customPaymentSourcesLoading`) se uklanja – više nije potrebna.
+```text
+┌──────────────────────────────────┐
+│ ● NOVČANIK                       │  ← mali chip s pointom u boji tipa
+│                                  │
+│  [ICON]  Naziv kartice        →  │  ← ikona u tonalnom krugu (boja/10)
+│          1.234,56 €              │
+│                                  │
+│  meta podaci                     │
+└──────────────────────────────────┘
+```
 
-4. **Procesiranje slike** (`processImageBase64` / `scanReceipt`) preseliti u kontekst ili u `ScanCaptureRunner` kako bi i AI poziv mogao krenuti odmah dok forma još nije montirana. Rezultat se predaje dialogu kao `initialScannedData`.
+- Mali tipski chip gore lijevo (uppercase 10px, letter-spacing): `NOVČANIK` / `PROJEKT` / `BUDŽET` s točkicom u boji
+- Ikona u krugu obojana u boju tipa s background `boja / 10%`
+- Iznos zadržava semantičku boju (zelena/crvena/teal)
+- **Pro**: jasna i čitljiva tipska oznaka, snažna hijerarhija
+- **Con**: jedan dodatni redak teksta po kartici (i18n: `cards.type.wallet`, `cards.type.project`, `cards.type.budget`)
 
-5. **Web fallback**: kontekst drži skriveni `<input type="file" accept="image/*" capture="environment">` koji `ScanCaptureRunner` aktivira programatski.
+---
 
-6. **Lifecycle-safe** (Android camera Activity recreation): `phase` i `base64` žive u `ReceiptScanContext` (iznad route trea), kao što sada živi `isOpen`. `GlobalReceiptScanHost` ostaje mount point.
+## Direkcija C — "Tonalni gradient + monogram pattern"
 
-## Što ostaje isto
+```text
+┌──────────────────────────────────┐
+│ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲           │  ← suptilni dijagonalni pattern 3% opacity
+│  [ICON]  Naziv kartice        →  │     u boji tipa, samo gornja trećina
+│          1.234,56 €              │
+│  ───────────────────────         │
+│  meta                            │
+└──────────────────────────────────┘
+```
 
-- Svi `ScanTriggerButton` pozivi i `openScan()` API – nema promjena u pozivnim mjestima (`HomeHeader`, `BusinessModeView`, `BusinessTransactions`, itd.).
-- Logika spremanja transakcije (`onAdd`, `checkDuplicate`, registracija handlera).
-- i18n ključevi.
-- `useNativeCamera`, `useReceiptScanner` – nepromijenjeni.
+- Pozadina kartice = vrlo blagi linearni gradient od `boja/4%` (top-left) → transparentno
+- Suptilan dijagonalni line-pattern (SVG, 3-5% opacity) samo u gornjoj trećini
+- Ikona u krugu u punoj boji tipa (kao danas)
+- **Pro**: najbogatiji, "premium" osjećaj, jasna diferencijacija na prvi pogled
+- **Con**: najviše vizualnog šuma — može opteretiti dashboard kad ima puno kartica; pažljiv u dark modu
 
-## Datoteke
+---
 
-- `src/contexts/ReceiptScanContext.tsx` – dodati `phase`, `capturedImage`, `completeCapture`, `cancelCapture`.
-- `src/components/add-expense/GlobalReceiptScanHost.tsx` – grananje na `phase`.
-- `src/components/add-expense/ScanCaptureRunner.tsx` – **nova** komponenta.
-- `src/components/add-expense/AddExpenseDialog.tsx` – ukloniti `autoScan` useEffect (linije ~338–365), dodati `initialReceiptImage` / `initialScannedData` prop, preskočiti capture korak.
+## Tehnički dio (zajednički za sve 3 direkcije)
 
-## Verifikacija
+**Tokeni** (`src/index.css`):
+```css
+--card-type-wallet: 172 66% 40%;
+--card-type-project: 38 92% 50%;
+--card-type-budget: 262 60% 55%;
+```
 
-- Web (osobni + tvrtka): klik **Skeniraj** → odmah file picker s kamerom, bez prikaza forme.
-- Native APK (osobni + tvrtka): klik **Skeniraj** → odmah Camera Activity, bez flasha forme. Po povratku iz kamere AddExpenseDialog se montira s već učitanom slikom + scan rezultatom.
-- Cancel u kameri zatvara flow bez praznog dialoga.
-- TypeScript build clean.
+**Tailwind** (`tailwind.config.ts`):
+```ts
+colors: {
+  cardType: {
+    wallet: 'hsl(var(--card-type-wallet))',
+    project: 'hsl(var(--card-type-project))',
+    budget: 'hsl(var(--card-type-budget))',
+  }
+}
+```
 
-## Bez promjene verzije
+**Reusable wrapper** (nova: `src/components/ui/typed-card.tsx`):
+```tsx
+type CardType = 'wallet' | 'project' | 'budget';
+<TypedCard type="wallet">…</TypedCard>
+```
+Sve postojeće kartice (PaymentSource, ProjectCard u `ActiveProjectsStrip`, BudgetCard u `BudgetSection`) wrapaju se u `<TypedCard type="…">` — **postojeća logika i sadržaj se ne dira**.
 
-UI/flow refactor – ne dira native plugine, nije potrebna nova APK verzija ako se ne mijenja Capacitor sloj. Postojeći `useNativeCamera` se reuza.
+**i18n** (samo direkcija B):
+- `cards.type.wallet` / `project` / `budget` u sva 3 jezika (HR/EN/DE)
+
+**Što se NE mijenja**:
+- Oblik, radius, shadow, grid-spacing
+- Postojeće ikone, iznosi, akcije
+- Dark mode logika (tokeni su HSL → automatski rade)
+
+---
+
+## Sljedeći korak
+
+Reci koju direkciju (A / B / C) implementiram, ili kombinaciju (npr. A+B = traka + chip). Mogu i napraviti A na trenutnoj instalaciji da vidiš uživo prije konačne odluke.
