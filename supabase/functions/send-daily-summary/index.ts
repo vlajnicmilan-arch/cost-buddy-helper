@@ -157,8 +157,7 @@ Deno.serve(async (req) => {
       daily_summary_weekend_enabled,
       daily_summary_last_sent_on,
       daily_summary_paused_until,
-      daily_summary_unopened_streak,
-      profiles:profiles!inner(timezone, preferred_language, currency)
+      daily_summary_unopened_streak
     `)
     .eq("daily_summary_enabled", true);
 
