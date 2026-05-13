@@ -1,66 +1,34 @@
-## Open Banking — mapiranje računa + auto-sync transakcija
+# Fix: "failed to send request" pri povezivanju računa s izvorom
 
-### 1. DB migracija
-- `bank_accounts.linked_payment_source_id` (uuid, FK na `custom_payment_sources`, ON DELETE SET NULL, indeks)
-- `expenses.bank_transaction_id` (text, nullable, indeks za dedup)
-- `expenses.bank_account_id` (uuid, FK na `bank_accounts`, nullable, indeks)
-- `bank_accounts.last_synced_at` (timestamptz, nullable)
-- `bank_accounts.last_sync_error` (text, nullable)
-- Unique constraint: `(user_id, bank_transaction_id)` na `expenses` — sprječava duplikate
-- RLS već postoji na `expenses` i `bank_accounts`, ne diramo
+## Dijagnoza
 
-### 2. Edge function `bank-link-account`
-Body: `{ bank_account_id, payment_source_id | null, create_new?: { name, currency } }`
-- Provjeri vlasništvo računa (auth)
-- Ako `create_new`: insert u `custom_payment_sources` s istim `business_profile_id` kao bank_account, vrati novi id
-- Update `bank_accounts.linked_payment_source_id`
-- Vrati updated row
+Edge funkcije `bank-link-account` i `bank-sync-transactions` postoje u repou (`supabase/functions/...`) ali **NISU deployane** na Cloud:
 
-### 3. Edge function `bank-sync-transactions`
-Body: `{ bank_account_id }` (ili bez za "sync sve")
-- Auth check
-- Dohvat Enable Banking session token iz `bank_connections.access_token`
-- Provjera valid_until — ako istekao, postavi `last_sync_error`, vrati 410
-- GET `/accounts/{account_uid}/transactions?date_from=<last_synced_at ?? -90d>` 
-- Za svaku transakciju:
-  - Skip ako već postoji `expenses` row s istim `bank_transaction_id` (unique constraint hvata race)
-  - Mapiraj: amount, currency, date, description (remittance info), type (income/expense iz credit_debit_indicator)
-  - `payment_source_id` = `custom:{linked_payment_source_id}` (ako mapiran), inače skip transakciju s warningom
-  - `business_profile_id` = iz bank_accounta
-  - `user_id` = auth.uid()
-  - `category_id` = null (auto-kategorizacija u zasebnom koraku, opcionalno)
-- Update `bank_accounts.last_synced_at` i očisti `last_sync_error`
-- Vrati `{ imported, skipped, errors }`
+- `POST /bank-link-account` → `404 NOT_FOUND` ("Requested function was not found")
+- `POST /bank-connect-start` (postojeća) → `401` (radi, samo nema auth)
 
-### 4. UI — `OpenBankingPanel`
-Po računu (ispod imena):
-- **Ako nije mapiran**: dropdown "Poveži s izvorom" (filtrirano po kontekstu) + "Kreiraj novi izvor" gumb
-- **Ako je mapiran**: badge s imenom izvora + "Sinkroniziraj" gumb + "Zadnja sinkronizacija: …"
-- Loading state tijekom syncа, StatusFeedback po završetku
-- Ako `last_sync_error`: crveni inline prikaz s "Reconnect" gumbom (briše konekciju, traži novo spajanje)
+Frontend (`OpenBankingPanel.tsx:177`) zove `supabaseInvoke('bank-link-account', ...)` što baca generičku grešku "failed to send request" jer endpoint vraća 404 prije nego se odgovor parsa kao JSON.
 
-### 5. Hook `useBankAccountActions`
-Wrapper oko `bank-link-account` i `bank-sync-transactions` s React Query mutations + invalidacija `useBankConnections`, `useExpenses`, `useCustomPaymentSources`.
+Najvjerojatniji uzrok: deployment iz prethodne iteracije se silently zarolao (npr. zbog `npm:@supabase/supabase-js@2/cors` subpath-a koji u nekim Deno verzijama ne resolva, iako radi u `bank-connect-start`). Treba redeploy.
 
-### 6. i18n ključevi (HR/EN/DE)
-`openBanking.linkSource`, `linkSourcePlaceholder`, `createNewSource`, `sync`, `syncing`, `lastSync`, `syncSuccess` (s count), `syncError`, `reconnect`, `sessionExpired`, `notMapped`, `mappedTo`
+## Plan
 
-### 7. Tehnički detalji (ne za korisnika)
-- Enable Banking API endpoint: `https://api.enablebanking.com/accounts/{uid}/transactions`
-- Croatian Enable Banking format: `transaction_amount.amount` (string), `transaction_amount.currency`, `booking_date`, `credit_debit_indicator: 'CRDT'|'DBIT'`, `entry_reference` ili `transaction_id` kao stable ID, `remittance_information[].content` za opis
-- Pagination preko `continuation_key`
-- Format `payment_source_id` u `expenses`: prefix `custom:` + UUID (postojeći standard, mem://architecture/balance-sync-and-security)
+1. **Redeploy obje funkcije** s istim sadržajem koji je već u repou:
+   - `supabase/functions/bank-link-account/index.ts`
+   - `supabase/functions/bank-sync-transactions/index.ts`
 
-### Što NIJE u ovom planu
-- Auto-sync cron (kasnije)
-- AI auto-kategorizacija (kasnije, postojeća kuka)
-- Multi-currency konverzija (banka već vraća amount u svojoj valuti, koristi postojeći ECB sustav po prikazu)
-- Brisanje obrisanih transakcija u banci (bank API ne podržava reliable delete signal)
+2. **Verifikacija**: nakon deploya curl `POST /bank-link-account` mora vratiti **401** (unauthorized bez tokena), ne 404.
 
-### Otvoreno pitanje
-Kad korisnik klikne "Sinkroniziraj" za novomapirani račun — koliko unatrag povući?
-- **A)** 90 dana (Enable Banking standardni max bez nove autorizacije)
-- **B)** Pitati korisnika u dialogu (7d / 30d / 90d)
-- **C)** Samo od trenutka mapiranja (najmanje šuma, ali propušta povijest)
+3. **Ako redeploy padne** — fallback na lokalnu CORS deklaraciju umjesto `npm:@supabase/supabase-js@2/cors` importa (replicirati pattern iz npr. `bank-list-aspsps`).
 
-Predlažem **A** — jednostavno, automatski, korisnik ne mora ništa odabirati.
+4. **Frontend dodatak (opcionalno)**: u `OpenBankingPanel.tsx` poboljšati error handling — umjesto "failed to send request" prikazati `error.message` ili HTTP status iz `supabaseInvoke` response-a, da se ovakve situacije lakše dijagnosticiraju ubuduće.
+
+## Bez izmjena
+
+- DB migracija je već primijenjena (kolone `linked_payment_source_id`, `bank_transaction_id` itd. postoje).
+- UI logika u `OpenBankingPanel.tsx` je ispravna.
+- Sva i18n je na mjestu.
+
+## Sljedeći korak nakon fixa
+
+Test: Spoji → Kreiraj novi izvor / Odaberi postojeći → Sinkroniziraj. Trebao bi proći bez greške.
