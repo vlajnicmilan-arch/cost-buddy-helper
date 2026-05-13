@@ -80,6 +80,8 @@ project_id = "fzalxjretvtvokiotvkf"
     verify_jwt = false
   [functions.upload-apk-release]
     verify_jwt = false
+  [functions.bank-connect-complete]
+    verify_jwt = false
 
 [studio]
   enabled = true

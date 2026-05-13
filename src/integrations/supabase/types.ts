@@ -170,39 +170,126 @@ export type Database = {
         }
         Relationships: []
       }
-      bank_connections: {
+      bank_accounts: {
         Row: {
-          account_id: string | null
-          bank_name: string
+          account_uid: string
+          balance: number | null
+          balance_updated_at: string | null
+          connection_id: string
           created_at: string
+          currency: string
+          iban: string | null
           id: string
-          last_synced_at: string | null
-          provider: string
-          status: string | null
+          linked_payment_source_id: string | null
+          name: string | null
+          product: string | null
+          raw_payload: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          account_id?: string | null
-          bank_name: string
+          account_uid: string
+          balance?: number | null
+          balance_updated_at?: string | null
+          connection_id: string
           created_at?: string
+          currency?: string
+          iban?: string | null
           id?: string
-          last_synced_at?: string | null
-          provider: string
-          status?: string | null
+          linked_payment_source_id?: string | null
+          name?: string | null
+          product?: string | null
+          raw_payload?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_uid?: string
+          balance?: number | null
+          balance_updated_at?: string | null
+          connection_id?: string
+          created_at?: string
+          currency?: string
+          iban?: string | null
+          id?: string
+          linked_payment_source_id?: string | null
+          name?: string | null
+          product?: string | null
+          raw_payload?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_accounts_linked_payment_source_id_fkey"
+            columns: ["linked_payment_source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_connections: {
+        Row: {
+          account_id: string | null
+          aspsp_country: string | null
+          aspsp_name: string | null
+          bank_name: string
+          business_profile_id: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          last_synced_at: string | null
+          provider: string
+          session_id: string | null
+          state_token: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          valid_until: string | null
+        }
+        Insert: {
           account_id?: string | null
-          bank_name?: string
+          aspsp_country?: string | null
+          aspsp_name?: string | null
+          bank_name: string
+          business_profile_id?: string | null
           created_at?: string
           id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          provider: string
+          session_id?: string | null
+          state_token?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          aspsp_country?: string | null
+          aspsp_name?: string | null
+          bank_name?: string
+          business_profile_id?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
           last_synced_at?: string | null
           provider?: string
+          session_id?: string | null
+          state_token?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string
+          valid_until?: string | null
         }
         Relationships: []
       }
