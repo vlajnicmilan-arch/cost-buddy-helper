@@ -68,6 +68,9 @@ function escapeCsvCell(value: unknown): string {
   } else {
     str = String(value);
   }
+  // CSV injection zaštita: ako vrijednost počinje s =, +, -, @ — prefixaj razmakom.
+  // Vidi src/lib/csvSecurity.ts za detaljno objašnjenje napada.
+  str = sanitizeCsvField(str);
   // Quote if contains delimiter, quote, or newline
   if (/[",\n\r;]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
