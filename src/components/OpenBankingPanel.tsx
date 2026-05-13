@@ -483,6 +483,65 @@ export const OpenBankingPanel = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!linkDialogAccount} onOpenChange={(o) => !o && setLinkDialogAccount(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('openBanking.linkSource')}</DialogTitle>
+            <DialogDescription>
+              {linkDialogAccount?.name ?? linkDialogAccount?.iban ?? linkDialogAccount?.account_uid}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">{t('openBanking.linkSourcePlaceholder')}</label>
+              <Select value={selectedSourceId} onValueChange={setSelectedSourceId}>
+                <SelectTrigger className="min-h-11">
+                  <SelectValue placeholder={t('openBanking.linkSourcePlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {customPaymentSources.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                  <SelectItem value="__new__">+ {t('openBanking.createNewSource')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedSourceId === '__new__' && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">{t('openBanking.newSourcePlaceholder')}</label>
+                <Input
+                  value={newSourceName}
+                  onChange={(e) => setNewSourceName(e.target.value)}
+                  placeholder={linkDialogAccount?.name ?? ''}
+                  className="min-h-11"
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setLinkDialogAccount(null)}
+              disabled={linking}
+              className="min-h-11"
+            >
+              {t('openBanking.cancel')}
+            </Button>
+            <Button
+              onClick={handleLink}
+              disabled={linking || !selectedSourceId}
+              className="min-h-11"
+            >
+              {linking ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+              {t('openBanking.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
