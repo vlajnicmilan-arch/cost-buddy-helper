@@ -83,6 +83,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_insights_cache: {
+        Row: {
+          created_at: string
+          expense_count_at_generation: number
+          generated_on: string
+          insights: Json
+          language: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expense_count_at_generation?: number
+          generated_on?: string
+          insights?: Json
+          language?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expense_count_at_generation?: number
+          generated_on?: string
+          insights?: Json
+          language?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_diagnostics_logs: {
         Row: {
           app_version: string | null
