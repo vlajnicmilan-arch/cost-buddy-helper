@@ -44,8 +44,27 @@ export const NotificationsSection = ({
   const navigate = useNavigate();
   const canUseBusiness = hasAccess('business_module');
   const isNative = Capacitor.isNativePlatform();
-  const { prefs, setCategory } = useNotificationPreferences();
+  const { prefs, setCategory, setWeekendEnabled } = useNotificationPreferences();
+  const { user } = useAuth();
   const [showCategories, setShowCategories] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const sendDailySummaryTest = async () => {
+    if (!user || sendingTest) return;
+    setSendingTest(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-daily-summary', {
+        body: { test: true, userId: user.id },
+      });
+      if (error) throw error;
+      showSuccess(t('settings.dailySummaryTestSent', 'Testna obavijest poslana'));
+    } catch (e) {
+      console.error('[daily-summary] test failed:', e);
+      showError(t('settings.dailySummaryTestFailed', 'Slanje nije uspjelo'));
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   const categoryItems: Array<{
     key: PushCategory;
