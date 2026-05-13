@@ -1,4 +1,5 @@
 import { Category, PaymentSource, TransactionType } from '@/types/expense';
+import { sanitizeCsvField } from './csvSecurity';
 
 export interface ParsedTransaction {
   date: Date;
