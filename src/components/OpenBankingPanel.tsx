@@ -1,16 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Building2, Plus, Loader2, ExternalLink, Trash2, AlertCircle, Info } from 'lucide-react';
+import { Building2, Plus, Loader2, ExternalLink, Trash2, AlertCircle, Info, Link2, RefreshCw, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseInvoke } from '@/lib/supabaseInvoke';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { useBankConnections } from '@/hooks/useBankConnections';
+import { useBankConnections, type BankAccount } from '@/hooks/useBankConnections';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
