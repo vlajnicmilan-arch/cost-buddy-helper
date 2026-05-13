@@ -181,6 +181,8 @@ export type Database = {
           currency: string
           iban: string | null
           id: string
+          last_sync_error: string | null
+          last_synced_at: string | null
           linked_payment_source_id: string | null
           name: string | null
           product: string | null
@@ -198,6 +200,8 @@ export type Database = {
           currency?: string
           iban?: string | null
           id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
           linked_payment_source_id?: string | null
           name?: string | null
           product?: string | null
@@ -215,6 +219,8 @@ export type Database = {
           currency?: string
           iban?: string | null
           id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
           linked_payment_source_id?: string | null
           name?: string | null
           product?: string | null
@@ -1125,6 +1131,8 @@ export type Database = {
         Row: {
           ai_extracted: boolean | null
           amount: number
+          bank_account_id: string | null
+          bank_transaction_id: string | null
           budget_id: string | null
           business_profile_id: string | null
           cash_register_id: string | null
@@ -1158,6 +1166,8 @@ export type Database = {
         Insert: {
           ai_extracted?: boolean | null
           amount: number
+          bank_account_id?: string | null
+          bank_transaction_id?: string | null
           budget_id?: string | null
           business_profile_id?: string | null
           cash_register_id?: string | null
@@ -1191,6 +1201,8 @@ export type Database = {
         Update: {
           ai_extracted?: boolean | null
           amount?: number
+          bank_account_id?: string | null
+          bank_transaction_id?: string | null
           budget_id?: string | null
           business_profile_id?: string | null
           cash_register_id?: string | null
@@ -1222,6 +1234,13 @@ export type Database = {
           work_type?: Database["public"]["Enums"]["expense_work_type"] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_budget_id_fkey"
             columns: ["budget_id"]

@@ -1,16 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Building2, Plus, Loader2, ExternalLink, Trash2, AlertCircle, Info } from 'lucide-react';
+import { Building2, Plus, Loader2, ExternalLink, Trash2, AlertCircle, Info, Link2, RefreshCw, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseInvoke } from '@/lib/supabaseInvoke';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { useBankConnections } from '@/hooks/useBankConnections';
+import { useBankConnections, type BankAccount } from '@/hooks/useBankConnections';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
@@ -32,6 +35,8 @@ export const OpenBankingPanel = () => {
   const { t } = useTranslation();
   const { connections, accounts, isLoading, refetch, disconnect, activeBusinessProfileId } = useBankConnections();
   const { profiles } = useBusinessProfiles();
+  const { customPaymentSources } = useCustomPaymentSources();
+  const queryClient = useQueryClient();
   const activeProfileName = activeBusinessProfileId
     ? profiles.find(p => p.id === activeBusinessProfileId)?.name ?? null
     : null;
@@ -43,6 +48,13 @@ export const OpenBankingPanel = () => {
   const [loadingAspsps, setLoadingAspsps] = useState(false);
   const [selectedAspsp, setSelectedAspsp] = useState<string>('');
   const [connecting, setConnecting] = useState(false);
+
+  // Per-account UI state
+  const [linkDialogAccount, setLinkDialogAccount] = useState<BankAccount | null>(null);
+  const [selectedSourceId, setSelectedSourceId] = useState<string>('');
+  const [newSourceName, setNewSourceName] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // Refresh on focus / postMessage from callback
   useEffect(() => {
@@ -139,6 +151,67 @@ export const OpenBankingPanel = () => {
       showError(e.message ?? String(e));
     }
   };
+
+  const openLinkDialog = (acc: BankAccount) => {
+    setLinkDialogAccount(acc);
+    setSelectedSourceId(acc.linked_payment_source_id ?? '');
+    setNewSourceName('');
+  };
+
+  const handleLink = async () => {
+    if (!linkDialogAccount) return;
+    setLinking(true);
+    try {
+      const body: any = { bank_account_id: linkDialogAccount.id };
+      if (selectedSourceId === '__new__') {
+        const name = newSourceName.trim();
+        if (!name) {
+          showError(t('openBanking.newSourcePlaceholder'));
+          setLinking(false);
+          return;
+        }
+        body.create_new = { name, currency: linkDialogAccount.currency };
+      } else {
+        body.payment_source_id = selectedSourceId || null;
+      }
+      const { error } = await supabaseInvoke('bank-link-account', { body });
+      if (error) throw new Error((error as any)?.message || 'link_failed');
+      showSuccess(t('openBanking.linkSuccess'));
+      setLinkDialogAccount(null);
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['custom-payment-sources'] });
+      refetch();
+    } catch (e: any) {
+      showError(e.message ?? String(e));
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleSync = async (acc: BankAccount) => {
+    setSyncingId(acc.id);
+    try {
+      const { data, error } = await supabaseInvoke<{ imported: number; skipped: number }>(
+        'bank-sync-transactions',
+        { body: { bank_account_id: acc.id } }
+      );
+      if (error) throw new Error((error as any)?.message || 'sync_failed');
+      const imported = data?.imported ?? 0;
+      const skipped = data?.skipped ?? 0;
+      if (skipped > 0) {
+        showSuccess(t('openBanking.syncSuccessSkipped', { imported, skipped }));
+      } else {
+        showSuccess(t('openBanking.syncSuccess', { count: imported }));
+      }
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      refetch();
+    } catch (e: any) {
+      showError(e.message ?? t('openBanking.syncError'));
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
 
   const statusBadge = (status: string) => {
     const variants: Record<string, string> = {
@@ -247,25 +320,92 @@ export const OpenBankingPanel = () => {
           {/* Accounts list */}
           {accounts.length > 0 && (
             <li className="pt-2 mt-2 border-t">
-              <ul className="space-y-1.5">
-                {accounts.map(acc => (
-                  <li
-                    key={acc.id}
-                    className="text-xs flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/40"
-                  >
-                    <span className="truncate">
-                      {acc.name ?? acc.iban ?? acc.account_uid}
-                      {acc.iban && acc.name && (
-                        <span className="text-muted-foreground ml-1">· {acc.iban}</span>
+              <ul className="space-y-2">
+                {accounts.map(acc => {
+                  const linkedSource = acc.linked_payment_source_id
+                    ? customPaymentSources.find(s => s.id === acc.linked_payment_source_id)
+                    : null;
+                  const isSyncing = syncingId === acc.id;
+                  return (
+                    <li
+                      key={acc.id}
+                      className="text-xs rounded-md bg-muted/40 p-2.5 space-y-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">
+                            {acc.name ?? acc.iban ?? acc.account_uid}
+                          </div>
+                          {acc.iban && acc.name && (
+                            <div className="text-muted-foreground text-[11px] truncate">{acc.iban}</div>
+                          )}
+                        </div>
+                        <span className="shrink-0 font-mono text-xs">
+                          {acc.balance != null
+                            ? `${acc.balance.toFixed(2)} ${acc.currency}`
+                            : '—'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        {linkedSource ? (
+                          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 gap-1">
+                            <Check className="w-3 h-3" />
+                            {t('openBanking.mappedTo')}: {linkedSource.name}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            {t('openBanking.notLinked')}
+                          </Badge>
+                        )}
+
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openLinkDialog(acc)}
+                            className="h-8 px-2 text-xs"
+                          >
+                            <Link2 className="w-3 h-3 mr-1" />
+                            {linkedSource ? t('openBanking.linked') : t('openBanking.linkSource')}
+                          </Button>
+                          {linkedSource && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleSync(acc)}
+                              disabled={isSyncing}
+                              className="h-8 px-2 text-xs"
+                            >
+                              {isSyncing ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                              )}
+                              {isSyncing ? t('openBanking.syncing') : t('openBanking.sync')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {(acc.last_synced_at || acc.last_sync_error) && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {acc.last_sync_error ? (
+                            <span className="text-destructive flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              {acc.last_sync_error === 'session_expired'
+                                ? t('openBanking.sessionExpired')
+                                : `${t('openBanking.syncError')}: ${acc.last_sync_error}`}
+                            </span>
+                          ) : (
+                            <span>
+                              {t('openBanking.lastSync')}: {new Date(acc.last_synced_at!).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
                       )}
-                    </span>
-                    <span className="shrink-0 font-mono">
-                      {acc.balance != null
-                        ? `${acc.balance.toFixed(2)} ${acc.currency}`
-                        : '—'}
-                    </span>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </li>
           )}
@@ -339,6 +479,65 @@ export const OpenBankingPanel = () => {
               ) : (
                 <><ExternalLink className="w-4 h-4 mr-1" />{t('openBanking.continue')}</>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!linkDialogAccount} onOpenChange={(o) => !o && setLinkDialogAccount(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('openBanking.linkSource')}</DialogTitle>
+            <DialogDescription>
+              {linkDialogAccount?.name ?? linkDialogAccount?.iban ?? linkDialogAccount?.account_uid}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">{t('openBanking.linkSourcePlaceholder')}</label>
+              <Select value={selectedSourceId} onValueChange={setSelectedSourceId}>
+                <SelectTrigger className="min-h-11">
+                  <SelectValue placeholder={t('openBanking.linkSourcePlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {customPaymentSources.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                  <SelectItem value="__new__">+ {t('openBanking.createNewSource')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedSourceId === '__new__' && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">{t('openBanking.newSourcePlaceholder')}</label>
+                <Input
+                  value={newSourceName}
+                  onChange={(e) => setNewSourceName(e.target.value)}
+                  placeholder={linkDialogAccount?.name ?? ''}
+                  className="min-h-11"
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setLinkDialogAccount(null)}
+              disabled={linking}
+              className="min-h-11"
+            >
+              {t('openBanking.cancel')}
+            </Button>
+            <Button
+              onClick={handleLink}
+              disabled={linking || !selectedSourceId}
+              className="min-h-11"
+            >
+              {linking ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+              {t('openBanking.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
