@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
 import { exportFile, type ExportMode } from './fileExport';
+import { sanitizeCsvField } from './csvSecurity';
 
 /**
  * Full data export: ZIP archive containing
