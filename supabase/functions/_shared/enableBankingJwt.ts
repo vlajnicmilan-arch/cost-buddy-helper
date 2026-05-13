@@ -11,15 +11,15 @@ let cachedKey: CryptoKey | null = null;
 
 async function getKey(): Promise<CryptoKey> {
   if (cachedKey) return cachedKey;
-  // Normalize line endings - secrets stored may strip newlines
-  let pem = PRIVATE_KEY_PEM.trim();
-  if (!pem.includes("\n")) {
-    // Re-insert newlines if stored as single line
-    pem = pem
-      .replace(/-----BEGIN PRIVATE KEY-----/, "-----BEGIN PRIVATE KEY-----\n")
-      .replace(/-----END PRIVATE KEY-----/, "\n-----END PRIVATE KEY-----")
-      .replace(/(.{64})/g, "$1\n");
+  const raw = PRIVATE_KEY_PEM.trim();
+  // Extract base64 body between BEGIN/END markers (or use whole input as fallback)
+  const match = raw.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+  const b64 = (match ? match[1] : raw).replace(/\s+/g, "");
+  if (!b64 || !/^[A-Za-z0-9+/=]+$/.test(b64)) {
+    throw new Error(`Invalid PKCS#8 base64 content (length=${b64.length})`);
   }
+  const chunks = b64.match(/.{1,64}/g)!.join("\n");
+  const pem = `-----BEGIN PRIVATE KEY-----\n${chunks}\n-----END PRIVATE KEY-----\n`;
   cachedKey = await importPKCS8(pem, "RS256");
   return cachedKey;
 }
