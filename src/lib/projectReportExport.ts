@@ -282,10 +282,15 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
 };
 
 export const generateProjectCSVReport = async (data: ProjectReportData, mode: ExportMode = 'save'): Promise<void> => {
+  // CSV injection zaštita: sva tekstualna polja prolaze kroz sanitizeCsvField
+  // (prefixira razmakom ako počinju s =, +, -, @). Vidi src/lib/csvSecurity.ts.
+  const s = (v: string | number | undefined | null) =>
+    typeof v === 'string' ? sanitizeCsvField(v).replace(/"/g, '""') : String(v ?? '');
+
   // Summary section
   const summaryRows = [
-    `"Projekt","${data.projectName}"`,
-    `"Status","${data.projectStatus}"`,
+    `"Projekt","${s(data.projectName)}"`,
+    `"Status","${s(data.projectStatus)}"`,
     `"Ukupni budžet","${data.totalBudget}"`,
     `"Potrošeno","${data.totalSpent}"`,
     `"Preostalo","${data.totalBudget - data.totalSpent}"`,
@@ -295,21 +300,21 @@ export const generateProjectCSVReport = async (data: ProjectReportData, mode: Ex
   ];
 
   data.milestones.forEach(m => {
-    summaryRows.push(`"${m.name}","${MILESTONE_STATUS_LABELS[m.status]}","${m.budget}","${m.spent || 0}"`);
+    summaryRows.push(`"${s(m.name)}","${s(MILESTONE_STATUS_LABELS[m.status])}","${m.budget}","${m.spent || 0}"`);
   });
 
   summaryRows.push('', '"--- ČLANOVI ---"', '"Ime","Uloga","Potrošnja"');
   
   data.members.forEach(m => {
     const role = m.role === 'manager' ? 'Manager' : m.role === 'member' ? 'Član' : 'Promatrač';
-    summaryRows.push(`"${m.display_name || 'Nepoznato'}","${role}","${m.spent || 0}"`);
+    summaryRows.push(`"${s(m.display_name || 'Nepoznato')}","${role}","${m.spent || 0}"`);
   });
 
   // Workers
   if (data.workers && data.workers.length > 0) {
     summaryRows.push('', '"--- RADNICI ---"', '"Ime","Sati","Satnica","Ukupno"');
     data.workers.forEach(w => {
-      summaryRows.push(`"${w.name}","${w.hours.toFixed(1)}","${w.rate}","${w.cost.toFixed(2)}"`);
+      summaryRows.push(`"${s(w.name)}","${w.hours.toFixed(1)}","${w.rate}","${w.cost.toFixed(2)}"`);
     });
   }
 
@@ -317,7 +322,7 @@ export const generateProjectCSVReport = async (data: ProjectReportData, mode: Ex
   if (data.collaborators && data.collaborators.length > 0) {
     summaryRows.push('', '"--- SURADNICI ---"', '"Ime","Usluga","Ugovoreno","Plaćeno"');
     data.collaborators.forEach(c => {
-      summaryRows.push(`"${c.name}","${c.service}","${c.totalPrice}","${c.paidAmount}"`);
+      summaryRows.push(`"${s(c.name)}","${s(c.service)}","${c.totalPrice}","${c.paidAmount}"`);
     });
   }
 
@@ -327,7 +332,7 @@ export const generateProjectCSVReport = async (data: ProjectReportData, mode: Ex
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .forEach(t => {
       const amount = t.type === 'expense' ? -t.amount : t.amount;
-      summaryRows.push(`"${formatDate(t.date)}","${t.description}","${t.milestone_name || '-'}","${t.type}","${amount}"`);
+      summaryRows.push(`"${formatDate(t.date)}","${s(t.description)}","${s(t.milestone_name || '-')}","${s(t.type)}","${amount}"`);
     });
 
   const csvContent = summaryRows.join('\n');
