@@ -170,20 +170,23 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
 
 export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'save'): Promise<void> => {
   const headers = ['Datum', 'Tip', 'Opis', 'Kategorija', 'Način plaćanja', 'Iznos'];
-  
+
+  // CSV injection zaštita: tekstualna polja prolaze kroz sanitizeCsvField
+  // (prefixira razmakom ako počinju s =, +, -, @). Vidi src/lib/csvSecurity.ts.
   const rows = data.expenses
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(expense => {
       const typeInfo = getTransactionTypeInfo(expense.type);
       const categoryInfo = getCategoryInfo(expense.category);
       const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
+      const safeDesc = sanitizeCsvField(expense.description).replace(/"/g, '""');
       
       return [
         formatDate(expense.date),
-        typeInfo.name,
-        `"${expense.description.replace(/"/g, '""')}"`,
-        categoryInfo.name,
-        paymentInfo.name,
+        sanitizeCsvField(typeInfo.name),
+        `"${safeDesc}"`,
+        sanitizeCsvField(categoryInfo.name),
+        sanitizeCsvField(paymentInfo.name),
         expense.type === 'expense' ? -expense.amount : expense.amount,
       ].join(',');
     });
