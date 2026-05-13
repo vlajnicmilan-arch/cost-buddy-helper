@@ -28,6 +28,9 @@ export interface BankAccount {
   currency: string;
   balance: number | null;
   balance_updated_at: string | null;
+  linked_payment_source_id: string | null;
+  last_synced_at: string | null;
+  last_sync_error: string | null;
 }
 
 /**
