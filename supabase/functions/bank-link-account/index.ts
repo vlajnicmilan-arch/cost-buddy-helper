@@ -77,11 +77,9 @@ Deno.serve(async (req) => {
         .insert({
           user_id: userId,
           name: body.create_new.name,
-          type: body.create_new.type ?? "bank_account",
           currency: body.create_new.currency ?? account.currency ?? "EUR",
           business_profile_id: account.business_profile_id,
           sort_order: nextOrder,
-          is_active: true,
         })
         .select("id")
         .single();
