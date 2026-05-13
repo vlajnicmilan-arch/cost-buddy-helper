@@ -2520,6 +2520,7 @@ export type Database = {
           display_name: string | null
           id: string
           multi_currency_enabled: boolean | null
+          onboarding_completed: boolean
           updated_at: string
           user_id: string
         }
@@ -2531,6 +2532,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           multi_currency_enabled?: boolean | null
+          onboarding_completed?: boolean
           updated_at?: string
           user_id: string
         }
@@ -2542,6 +2544,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           multi_currency_enabled?: boolean | null
+          onboarding_completed?: boolean
           updated_at?: string
           user_id?: string
         }

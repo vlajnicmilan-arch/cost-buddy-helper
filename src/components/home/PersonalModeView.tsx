@@ -13,7 +13,7 @@ import { SharedDialogs } from '@/components/home/SharedDialogs';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SavingsGoalsSection } from '@/components/savings';
-import { WelcomeChecklist } from '@/components/WelcomeChecklist';
+// WelcomeChecklist je uklonjen — onboarding je sada centraliziran u /onboarding wizardu.
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
 import { AIInsightBubble } from '@/components/AIInsightBubble';
@@ -224,19 +224,6 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             </Button>
           </div>
         )}
-
-        {/* Welcome Checklist */}
-        <WelcomeChecklist
-          hasPaymentSources={props.customPaymentSources.length > 0}
-          hasTransactions={props.expenses.length > 0}
-          hasBudgets={props.budgetsCount > 0}
-          onAddPaymentSource={() => navigate('/wallet')}
-          onAddTransaction={() => {
-            const addBtn = document.querySelector('[data-tutorial="add-buttons"] button:last-child') as HTMLButtonElement;
-            addBtn?.click();
-          }}
-          onAddBudget={() => navigate('/budgets')}
-        />
 
         {/* Payment Sources */}
         <PaymentSourcesSection
