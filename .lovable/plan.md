@@ -1,106 +1,90 @@
-
-# Konkurentska analiza V&M Balance — plan isporuke
-
 ## Cilj
-Detaljan PDF dokument (HR jezik) koji uspoređuje V&M Balance s konkurencijom i daje prioritizirane preporuke u 4 fokusa: quick wins, strategija, monetizacija, diferencijacija.
 
-## Konkurenti
-1. **Money Manager (Realbyte)** — klasik za osobne financije, offline-first
-2. **Expensify** — business expense reports, OCR, reimbursements
-3. **YNAB (You Need A Budget)** — zero-based budgeting, edukativna metodologija
-4. **Spendee** — moderan UI, shared wallets, bank sync
-5. **Pleo** — company cards + automatizirana potrošnja
-6. **Spendesk** — spend management za SME, approvals & accounting
-
-## Izvori podataka
-- **V&M Balance**: postojeća memorija projekta (mem://index + relevantni feature memo file-ovi), `package.json`, `src/lib/subscriptionTiers.ts`, `src/pages/Landing.tsx`, struktura ruta i hooks
-- **Konkurenti**: web research preko `websearch--web_search` (službene stranice, pricing, App Store/Play Store opisi, recentni reviewsi); za feature parity koristim samo verificirane izvore. Gdje je podatak nesiguran → eksplicitno označeno "ne znam / nije verificirano".
-
-## Sadržaj PDF dokumenta
-
-### 1. Executive summary (1 str.)
-Top 3 snage, top 3 slabosti, top 3 strateške preporuke.
-
-### 2. Profil V&M Balancea (2 str.)
-- Pozicioniranje (osobne + projektne + business financije, HR/EN/DE)
-- Tech stack i arhitektura (PWA + Capacitor, Supabase, Lovable AI Gateway)
-- Feature inventar grupiran (Core finance, Projekti, Business mode, AI, Suradnja, Native, Monetizacija)
-- Monetizacijski model (Free / Pro / Business + Lifetime)
-
-### 3. Konkurentska matrica (3-4 str.)
-Tablica feature parity po kategorijama:
-- Tracking & input (manual, OCR, voice, CSV, bank sync)
-- Budgeting (kategorije, projekti, milestone)
-- AI/automatizacija
-- Multi-user / collaboration
-- Business / approvals / accounting
-- Reporting & exports
-- Mobile/native
-- Pricing & tier strukture
-
-Za svaki red: ✓ / ✗ / partial + kratka napomena. Verificirano vs ne-verificirano jasno odvojeno.
-
-### 4. SWOT po području (3 str.)
-- Snage (npr. dual-mode personal+business, projektni P&L, Lovable AI, HR lokalizacija, native + PWA, AI insights/daily summary)
-- Slabosti (npr. nema bank sync/PSD2, OCR ograničen na receipts, nema pravog approval workflowa za firme, nema accounting integracija, nema team admin konzole tipa Pleo)
-- Prilike (HR/regional gap — niko ne pokriva HR business + osobno, projektni mod kao USP, AI fokus)
-- Prijetnje (Spendee/Money Manager imaju snažan brand u personal segmentu, Pleo/Spendesk dominiraju B2B spend mgmt, regulatorne barijere ako se ide u fiskalizaciju)
-
-### 5. UX/UI usporedba (1-2 str.)
-Onboarding, dashboard density, dodavanje transakcije (broj koraka), AI asistent, mobile patterns. Gdje treba — kratak opis screenova konkurenata na temelju javnih materijala.
-
-### 6. Preporuke — prioritizirano (3-4 str.)
-
-**A. Quick wins (1-2 tjedna)**
-Konkretne mikro-poboljšanja s estimacijom efekta. Primjeri kandidata:
-- Polish onboardinga (smanjiti drop-off prije prve transakcije)
-- "Splitanje računa" iz receipta po stavkama (već imaš `receipt_items`)
-- Push prompt timing optimizacija
-- Empty-state edukacija (YNAB-style mikro-tooltips)
-- Widget za Android (brzi unos)
-
-**B. Strateški smjer (3-6 mjeseci)**
-- PSD2/Open Banking integracija (Tink/GoCardless) — najveća kompetitivna rupa
-- Approval workflow za business mode (light verzija Pleo/Spendesk pristupa)
-- Accounting export (Minimax / Pantheon / iCent — HR market) ili univerzalni e-Računi/SAF-T
-- Web app polish za desktop power users (YNAB-style)
-- AI agent koji proaktivno predlaže akcije (ne samo insights)
-
-**C. Monetizacija i konverzija**
-- Analiza paywall trigger točaka (gdje user udari u limit)
-- Trial → paid conversion taktike (Spendee i YNAB benchmark)
-- Family plan / team seats pricing
-- Lifetime ofeer kao acquisition tool — kada da, kada ne
-- B2B pricing prijedlog (per-seat za business mode)
-
-**D. Diferencijacija**
-- "Personal + Project + Light Business" pozicioniranje — niko od 6 konkurenata ne pokriva sva tri
-- HR/EU first lokalizacija + GDPR by design kao trust signal
-- Projektni P&L za freelancere/obrtnike — vlastita kategorija
-- AI native (insights + daily summary + asistent već postoji) kao narativ, ne kao feature
-
-### 7. Roadmap prijedlog (1 str.)
-Kvartalni view: Q1 quick wins, Q2-Q3 strateški, Q4 diferencijacija/B2B push.
-
-### 8. Dodatak: metodologija i izvori
-Popis URL-ova, datum dohvata, ograničenja analize.
-
-## Tehnička isporuka
-- **Format**: PDF, A4, hrvatski jezik, profesionalni izgled
-- **Generator**: ReportLab (Python) — koristim `skill/pdf` za QA cikluse
-- **Stil**: u skladu s brand guidelines (teal HSL 172 66% 40%, Inter, čist mobile-first feel, ali optimiziran za print)
-- **Grafike**: feature matrix tablice, SWOT 2×2, roadmap timeline
-- **Lokacija**: `/mnt/documents/vm-balance-konkurentska-analiza.pdf`
-- **QA**: pdftoppm render → vizualna inspekcija svake stranice → fix → re-render
-
-## Što neću raditi
-- Neću mijenjati izvorni kod aplikacije
-- Neću izmišljati brojke (revenue, MAU, market share) ako nemam izvor — eksplicitno ću označiti "nemam podatak"
-- Neću se baviti SEO/marketingom website-a osim ako se izravno tiče monetizacije
-
-## Procjena vremena izrade
-~15-25 min od tvog approvala (ovisno o broju QA iteracija).
+Spojiti jednu test banku preko Enable Banking sandboxa i prikazati listu računa unutar V&M Balance aplikacije. Bez sinkronizacije transakcija u `expenses` (to ide u Fazu 2).
 
 ---
 
-**Ako ti ovaj plan paše, klikni Implement i krećem s istraživanjem konkurenata + generiranjem PDF-a. Ako želiš nešto skratiti/proširiti/promijeniti redoslijed sekcija — reci.**
+## Što gradimo
+
+### 1. Lovable Cloud secrets
+- `ENABLE_BANKING_APP_ID` = `d5f12f1e-7523-4e11-9977-63d4ba90c057`
+- `ENABLE_BANKING_PRIVATE_KEY` = sadržaj .pem datoteke (paste-aš ga u secret formu, ne ide u kod)
+
+### 2. Database (1 migracija)
+
+**Tablica `bank_connections`** — jedna konekcija = jedna banka koju je korisnik autorizirao:
+- `user_id`, `business_profile_id` (nullable, za business kontekst kasnije)
+- `provider` ('enable_banking'), `aspsp_name`, `aspsp_country`
+- `session_id` (Enable Banking session UUID), `valid_until` (PSD2 max 180 dana)
+- `status` ('pending' | 'active' | 'expired' | 'revoked')
+
+**Tablica `bank_accounts`** — računi unutar konekcije:
+- `connection_id` (FK), `account_uid` (Enable Banking ID), `iban`, `name`, `currency`, `balance`, `balance_updated_at`
+- `linked_payment_source_id` (nullable FK na `custom_payment_sources`, za buduće mapiranje)
+
+RLS: vlasnik (user_id) puni pristup; bez sharinga zasad.
+
+### 3. Edge functions (3 nove)
+
+**`bank-connect-start`** (POST, autentificiran)
+- Input: `{ aspsp_name, aspsp_country, language }`
+- Generira JWT (RS256) potpisan privatnim ključem → poziva Enable Banking `POST /auth`
+- Vraća `{ authorization_url, session_state }`
+- Klijent otvara `authorization_url` (browser/Capacitor Browser plugin)
+
+**`bank-connect-complete`** (GET, **public** — verify_jwt = false)
+- Ovo je redirect URL koji već imaš registriran
+- Prima `?code=...&state=...` od banke
+- Razmijeni `code` za `session_id` preko Enable Banking `POST /sessions`
+- Upiše `bank_connections` + `bank_accounts` (preko service role, jer user nije nužno logiran u edge kontekstu)
+- Vraća HTML stranicu s deep linkom natrag u app (`vmbalance://bank-connected` za native, `/wallet?bank_connected=1` za web)
+
+**`bank-list-aspsps`** (GET, autentificiran)
+- Cache lista banaka po zemlji (Enable Banking `GET /aspsps?country=HR`)
+- Sandbox vraća test banke; kasnije u produkciji vraća HR banke
+
+### 4. Frontend (minimalno)
+
+**Postojeća komponenta `BankConnection.tsx`** (već je u `/wallet`) — proširimo je s novom sekcijom **"Spoji banku (Open Banking)"** iznad postojećeg CSV importa:
+
+- Gumb **"Spoji banku"** → otvara dialog
+- Dialog korak 1: dropdown s listom banaka (iz `bank-list-aspsps`)
+- Dialog korak 2: na klik "Nastavi" → poziv `bank-connect-start` → otvori `authorization_url`
+- Nakon redirecta nazad → toast "Banka spojena", refresh
+- Lista spojenih banaka ispod gumba: naziv banke, broj računa, valid_until, "Prekini vezu" gumb
+
+Sve nove stringove dodajemo u `src/i18n/locales/{hr,en,de}.ts` pod namespace `bankConnection.*`.
+
+### 5. Što NE radimo u ovoj fazi
+- Sinkronizacija transakcija u `expenses`
+- Mapiranje `bank_accounts` ↔ `custom_payment_sources`
+- Auto-refresh balansa
+- Webhook za consent expiry
+- Production HR banke (čekamo Enable Banking sales odgovor)
+
+---
+
+## Tehnički detalji (za referencu)
+
+**JWT signing:** Enable Banking traži RS256 JWT s `iss=app_id`, `aud="api.enablebanking.com"`, `iat`, `exp`. Koristimo `jose` Deno modul (`npm:jose@5`) za potpisivanje.
+
+**Redirect URL u kodu:** `https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/bank-connect-complete` (već registriran u Enable Banking dashboardu).
+
+**Sandbox banke:** Enable Banking sandbox koristi mock banke (Nordea sandbox, Mock ASPSP iz Enable Banking dashboarda) — nema HR banaka, ali API model je identičan.
+
+**State parametar:** Generiramo random UUID, spremamo u `bank_connections.session_id` placeholder + `user_id` preko service role pri `connect-start`, validiramo u `connect-complete`.
+
+---
+
+## Redoslijed izvršavanja
+
+1. Korisnik dodaje 2 secreta (`ENABLE_BANKING_APP_ID`, `ENABLE_BANKING_PRIVATE_KEY`)
+2. Migracija (`bank_connections` + `bank_accounts` + RLS)
+3. Edge functions (`bank-list-aspsps`, `bank-connect-start`, `bank-connect-complete`)
+4. UI sekcija u `BankConnection.tsx` + i18n
+5. Test: spoji sandbox banku → provjeri da se računi pojave u listi
+
+---
+
+## Procjena
+~1 dan rada (4-6 sati implementacije + 1-2h testiranja sandbox flowa).
