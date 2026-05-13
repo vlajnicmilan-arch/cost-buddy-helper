@@ -263,6 +263,7 @@ Deno.serve(async (req) => {
       imported,
       skipped,
       errors,
+      ai_categorized: aiCategorized,
       total: allTx.length,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
