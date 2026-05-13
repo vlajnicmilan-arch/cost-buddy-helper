@@ -2,88 +2,142 @@
 
 ## Što je keystore i zašto je važan
 
-Android APK datoteke su **digitalno potpisane** keystore-om. Ako se potpis između dvije verzije razlikuje, **Android odbija instalirati update** i korisnik mora deinstalirati app (i izgubiti SVE podatke).
+Android APK datoteke su **digitalno potpisane** keystoreom. Ako se potpis između dvije verzije razlikuje, **Android odbija instalirati update** i korisnik mora deinstalirati app (i izgubiti SVE lokalne podatke: PIN, slike koje nisu uploadane, sve što nije u cloudu).
 
-**Bez ovog keystore-a, ne možeš ažurirati niti jednog postojećeg korisnika.**
+**Bez ovog keystorea ne možeš ažurirati niti jednog postojećeg korisnika.**
 
 ---
 
-## Lokacija
+## Trenutni release keystore
 
-```
-Windows: C:\Users\vlajn\.android\debug.keystore
-Linux:   ~/.android/debug.keystore
-macOS:   ~/.android/debug.keystore
-```
+| Parametar | Vrijednost |
+|-----------|------------|
+| File | `vmbalance-release.jks` |
+| Alias | `vmbalance` |
+| Algoritam | RSA 2048 |
+| Validity | 10000 dana |
+| Lokacija | **NIJE u repou** — držiš ga lokalno + backup |
 
-## Default vrijednosti (Android debug keystore)
+**Lozinke** (storepass i keypass) — drži ih u password manageru, NIKAD u repou.
 
-```
-Alias:     androiddebugkey
-Password:  android
-Key pass:  android
-```
+---
+
+## Gdje se keystore koristi
+
+APK se gradi GitHub Actions workflowom (`.github/workflows/android-build.yml`) koji čita 4 GitHub Secreta:
+
+| Secret | Sadržaj |
+|--------|---------|
+| `ANDROID_KEYSTORE_BASE64` | base64-encoded sadržaj `vmbalance-release.jks` |
+| `ANDROID_KEYSTORE_PASSWORD` | storepass |
+| `ANDROID_KEY_ALIAS` | `vmbalance` |
+| `ANDROID_KEY_PASSWORD` | keypass (obično isto kao storepass) |
+
+Postavljeni su u: **GitHub repo → Settings → Secrets and variables → Actions**.
+
+`android/app/build.gradle` (linije 19-37) automatski potpisuje release build kad su env varijable prisutne.
 
 ---
 
 ## ✅ Backup checklist (NAPRAVI ODMAH)
 
-Datoteku `debug.keystore` (3 KB) kopiraj na **minimalno 2 mjesta**:
+Backup `vmbalance-release.jks` (cca 2-3 KB) na **minimalno 2 mjesta**:
 
-- [ ] USB stick (fizički, drži ga odvojeno)
-- [ ] Password manager (1Password / Bitwarden — postoji opcija za file attachment)
-- [ ] Cloud storage privatan folder (Google Drive / OneDrive)
+- [ ] USB stick (fizički, drži ga odvojeno od računala)
+- [ ] Password manager s file attachmentom (1Password, Bitwarden Premium)
+- [ ] Privatan cloud folder (Google Drive / OneDrive / iCloud, kriptiran zip)
 - [ ] Vanjski disk
 
-Uz svaku kopiju zapiši i password (`android`).
+Uz svaki backup zapiši (u password manageru, ne u istom folderu kao file):
+- Storepass
+- Keypass
+- SHA-1 fingerprint (vidi dolje za verifikaciju)
 
 ---
 
-## Verifikacija backup-a (SHA-1 fingerprint)
-
-Provjeri da je backup ispravan tako da izvučeš SHA-1 fingerprint:
+## Generiranje novog keystorea (samo prvi put)
 
 ```bash
-keytool -list -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android
+keytool -genkeypair -v \
+  -keystore vmbalance-release.jks \
+  -alias vmbalance \
+  -keyalg RSA -keysize 2048 \
+  -validity 10000 \
+  -storepass <JAKA_LOZINKA> \
+  -keypass <JAKA_LOZINKA>
 ```
 
-Trebao bi vidjeti red oblika:
-```
-SHA1: AB:CD:EF:12:34:...
+Zatim base64-encode:
+
+```bash
+# macOS / Linux
+base64 -i vmbalance-release.jks -o vmbalance-release.jks.b64
+
+# Windows PowerShell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("vmbalance-release.jks")) `
+  | Out-File vmbalance-release.jks.b64
 ```
 
-Ovo zapiši uz backup — ako se ikad nađeš s više keystore-ova, možeš ih razlikovati.
+Sadržaj `.b64` filea zalijepi u GitHub Secret `ANDROID_KEYSTORE_BASE64`.
+
+---
+
+## Verifikacija (SHA-1 fingerprint)
+
+Iz keystorea:
+```bash
+keytool -list -v -keystore vmbalance-release.jks \
+  -alias vmbalance -storepass <LOZINKA>
+```
+
+Iz potpisanog APK-a:
+```bash
+keytool -printcert -jarfile vmbalance-X.Y.Z.apk
+```
+
+Oba moraju vratiti **identičan SHA-1 fingerprint**. Zapiši ga uz backup — ako se ikad nađeš s više keystoreova, znaš koji je pravi.
 
 ---
 
 ## 🚨 Ako izgubiš keystore
 
-Nažalost, **ne postoji oporavak**. Postupak migracije:
+Nažalost, **ne postoji oporavak** za direktnu APK distribuciju.
 
+Postupak migracije:
 1. Generiraj novi keystore (`keytool -genkey ...`)
-2. Build novog APK-a s novim keystore-om
-3. Pošalji svim korisnicima broadcast notifikaciju s uputama:
+2. Updateaj 4 GitHub Secreta novim vrijednostima
+3. Pokreni novi build
+4. Pošalji svim korisnicima broadcast notifikaciju s uputama:
    - Backup podataka iz aplikacije (Postavke → Izvoz)
    - Deinstaliraj staru verziju
    - Instaliraj novi APK
-   - Vrati podatke iz backup-a
-4. Korisnici koji nemaju cloud sync → **gube lokalne podatke** (PIN, lokalne račune, slike koje nisu uploadane)
-
----
-
-## Pre-release keystore (za Play Store)
-
-Ako u budućnosti pustiš app na Google Play Store, **MORAŠ** generirati pravi release keystore (`upload-key.jks`) — debug keystore se NE prihvaća za Play Store. Tada vrijedi ista procedura backup-a, ali još važnije: izgubiš li `upload-key.jks` koji je registriran na Play Console, ne možeš više pushati update-e na Play Store (rješenje: kontakt s Google supportom).
+   - Vrati podatke iz backupa
+5. Korisnici koji nemaju cloud sync → **gube lokalne podatke**
 
 ---
 
 ## Procedura kad mijenjaš računalo
 
-1. Kopiraj `debug.keystore` s starog računala u `~/.android/` na novom (kreiraj folder ako ne postoji)
-2. Verificiraj fingerprint (vidi gore) — mora biti identičan
-3. Ne brisati staru kopiju dok ne potvrdiš da novi build radi update preko postojećeg APK-a
+1. Kopiraj `vmbalance-release.jks` s starog računala na novo (kroz USB ili kriptirani transfer, ne kroz neenkriptirani cloud)
+2. Verificiraj SHA-1 fingerprint na novom računalu — mora biti identičan
+3. Ne brisati staru kopiju dok ne potvrdiš da workflow uspješno gradi novi APK koji se instalira preko postojećeg
 
 ---
 
-**Updated:** 10.05.2026  
+## Play Store kasnije (informativno)
+
+Kad budeš stavljao app na Google Play Store, koristit ćeš **Play App Signing**:
+
+- **Tvoj `vmbalance-release.jks` postaje upload key** — potpisuje APK/AAB koji šalješ Googleu
+- Google automatski preznači sa svojim master keyem prije distribucije korisnicima
+- **Ako izgubiš upload key** — Google Play Console ga može resetirati (kontakt support, pošalješ novi cert)
+- **Ako Google izgubi master key** — to nije tvoj problem, Google to garantira
+
+To znači da je **ovaj keystore koji koristiš sad kompatibilan s Play Store-om** — ne moraš ga mijenjati pri migraciji. Samo ćeš ga registrirati kao upload key u Play Console.
+
+⚠️ **Bitno:** Prije prvog uploada na Play Store, korisnici koji imaju direct-download verziju **ne mogu** automatski preći na Play Store verziju (Play App Signing koristi drugi master cert). Morat ćeš ih obavijestiti da deinstaliraju i ponovno instaliraju s Play Store-a.
+
+---
+
+**Updated:** 13.05.2026  
 **Owner:** Milan (vlajn)
