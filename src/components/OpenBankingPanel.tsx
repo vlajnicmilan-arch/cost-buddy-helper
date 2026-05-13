@@ -152,6 +152,67 @@ export const OpenBankingPanel = () => {
     }
   };
 
+  const openLinkDialog = (acc: BankAccount) => {
+    setLinkDialogAccount(acc);
+    setSelectedSourceId(acc.linked_payment_source_id ?? '');
+    setNewSourceName('');
+  };
+
+  const handleLink = async () => {
+    if (!linkDialogAccount) return;
+    setLinking(true);
+    try {
+      const body: any = { bank_account_id: linkDialogAccount.id };
+      if (selectedSourceId === '__new__') {
+        const name = newSourceName.trim();
+        if (!name) {
+          showError(t('openBanking.newSourcePlaceholder'));
+          setLinking(false);
+          return;
+        }
+        body.create_new = { name, currency: linkDialogAccount.currency };
+      } else {
+        body.payment_source_id = selectedSourceId || null;
+      }
+      const { error } = await supabaseInvoke('bank-link-account', { body });
+      if (error) throw new Error((error as any)?.message || 'link_failed');
+      showSuccess(t('openBanking.linkSuccess'));
+      setLinkDialogAccount(null);
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['custom-payment-sources'] });
+      refetch();
+    } catch (e: any) {
+      showError(e.message ?? String(e));
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleSync = async (acc: BankAccount) => {
+    setSyncingId(acc.id);
+    try {
+      const { data, error } = await supabaseInvoke<{ imported: number; skipped: number }>(
+        'bank-sync-transactions',
+        { body: { bank_account_id: acc.id } }
+      );
+      if (error) throw new Error((error as any)?.message || 'sync_failed');
+      const imported = data?.imported ?? 0;
+      const skipped = data?.skipped ?? 0;
+      if (skipped > 0) {
+        showSuccess(t('openBanking.syncSuccessSkipped', { imported, skipped }));
+      } else {
+        showSuccess(t('openBanking.syncSuccess', { count: imported }));
+      }
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      refetch();
+    } catch (e: any) {
+      showError(e.message ?? t('openBanking.syncError'));
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
+
   const statusBadge = (status: string) => {
     const variants: Record<string, string> = {
       active: 'bg-primary/10 text-primary border-primary/20',
