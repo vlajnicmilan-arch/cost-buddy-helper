@@ -4,6 +4,7 @@ import type { jsPDF as JsPDFType } from 'jspdf';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo } from '@/types/expense';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { addNotOfficialFooter } from '@/lib/pdfFooter';
+import { sanitizeCsvField } from '@/lib/csvSecurity';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -169,20 +170,23 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
 
 export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'save'): Promise<void> => {
   const headers = ['Datum', 'Tip', 'Opis', 'Kategorija', 'Način plaćanja', 'Iznos'];
-  
+
+  // CSV injection zaštita: tekstualna polja prolaze kroz sanitizeCsvField
+  // (prefixira razmakom ako počinju s =, +, -, @). Vidi src/lib/csvSecurity.ts.
   const rows = data.expenses
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(expense => {
       const typeInfo = getTransactionTypeInfo(expense.type);
       const categoryInfo = getCategoryInfo(expense.category);
       const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
+      const safeDesc = sanitizeCsvField(expense.description).replace(/"/g, '""');
       
       return [
         formatDate(expense.date),
-        typeInfo.name,
-        `"${expense.description.replace(/"/g, '""')}"`,
-        categoryInfo.name,
-        paymentInfo.name,
+        sanitizeCsvField(typeInfo.name),
+        `"${safeDesc}"`,
+        sanitizeCsvField(categoryInfo.name),
+        sanitizeCsvField(paymentInfo.name),
         expense.type === 'expense' ? -expense.amount : expense.amount,
       ].join(',');
     });
@@ -320,14 +324,16 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
 
 export const generateIncomeCSVReport = async (data: IncomeReportData, mode: ExportMode = 'save'): Promise<void> => {
   const headers = ['Datum', 'Opis', 'Kategorija', 'Iznos'];
-  
+
+  // CSV injection zaštita — vidi src/lib/csvSecurity.ts.
   const rows = data.incomeTransactions
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(income => {
+      const safeDesc = sanitizeCsvField(income.description).replace(/"/g, '""');
       return [
         formatDate(income.date),
-        `"${income.description.replace(/"/g, '""')}"`,
-        income.category || 'Ostalo',
+        `"${safeDesc}"`,
+        sanitizeCsvField(income.category || 'Ostalo'),
         income.amount,
       ].join(',');
     });

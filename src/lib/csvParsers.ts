@@ -1,4 +1,5 @@
 import { Category, PaymentSource, TransactionType } from '@/types/expense';
+import { sanitizeCsvField } from './csvSecurity';
 
 export interface ParsedTransaction {
   date: Date;
@@ -873,7 +874,19 @@ export function parseCSV(csvContent: string): CSVParseResult {
       t.amount > 0 && 
       t.description.trim() !== ''
     );
-    
+
+    // CSV injection zaštita: sanitiziraj sva tekstualna polja PRIJE spremanja
+    // u bazu. Ako polje (npr. opis ili ime trgovca) počinje s =, +, -, @,
+    // prefixira se razmakom kako bi spreadsheet aplikacije pri kasnijem
+    // exportu/otvaranju tretirale vrijednost kao tekst, a ne formulu.
+    // Vidi src/lib/csvSecurity.ts za detalje napada (OWASP CSV Injection).
+    transactions = transactions.map(t => ({
+      ...t,
+      description: sanitizeCsvField(t.description),
+      merchant_name: t.merchant_name ? sanitizeCsvField(t.merchant_name) : t.merchant_name,
+      source: sanitizeCsvField(t.source),
+    }));
+
     return {
       success: transactions.length > 0,
       transactions,
