@@ -35,6 +35,8 @@ export const OpenBankingPanel = () => {
   const { t } = useTranslation();
   const { connections, accounts, isLoading, refetch, disconnect, activeBusinessProfileId } = useBankConnections();
   const { profiles } = useBusinessProfiles();
+  const { customPaymentSources } = useCustomPaymentSources();
+  const queryClient = useQueryClient();
   const activeProfileName = activeBusinessProfileId
     ? profiles.find(p => p.id === activeBusinessProfileId)?.name ?? null
     : null;
@@ -46,6 +48,13 @@ export const OpenBankingPanel = () => {
   const [loadingAspsps, setLoadingAspsps] = useState(false);
   const [selectedAspsp, setSelectedAspsp] = useState<string>('');
   const [connecting, setConnecting] = useState(false);
+
+  // Per-account UI state
+  const [linkDialogAccount, setLinkDialogAccount] = useState<BankAccount | null>(null);
+  const [selectedSourceId, setSelectedSourceId] = useState<string>('');
+  const [newSourceName, setNewSourceName] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // Refresh on focus / postMessage from callback
   useEffect(() => {
