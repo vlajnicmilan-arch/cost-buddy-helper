@@ -843,9 +843,8 @@ export const AddExpenseDialog = ({
     if (!amount) return;
 
     // Validate amount > 0 (works for expense, income and transfer)
-    const normalizedAmount = amount.replace(',', '.');
-    const previewAmount = parseFloat(normalizedAmount);
-    if (!Number.isFinite(previewAmount) || previewAmount <= 0) {
+    const { valid: amountValid } = validateAmountInput(amount);
+    if (!amountValid) {
       showError(t('validation.amountGreaterThanZero', 'Iznos mora biti veći od 0'));
       return;
     }
