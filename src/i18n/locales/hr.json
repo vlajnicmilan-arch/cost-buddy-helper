@@ -3618,6 +3618,7 @@
     "connected": "Banka spojena",
     "connectError": "Greška pri spajanju banke",
     "sandboxNotice": "Trenutno koristimo sandbox okruženje za testiranje. HR banke dolaze nakon produkcijske aktivacije.",
+    "contextPersonal": "Osobno",
     "status": {
       "pending": "U tijeku",
       "active": "Aktivno",
