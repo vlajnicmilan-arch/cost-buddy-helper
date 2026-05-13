@@ -79,6 +79,22 @@ const Index = () => {
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
+
+  // Global "ai-assistant:ask" event — opens dialog with a pre-seeded prompt
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.prompt) {
+        setAssistantDialogOpen(true);
+        // re-dispatch shortly so the mounted dialog picks up the prompt
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("ai-assistant:seed", { detail }));
+        }, 250);
+      }
+    };
+    window.addEventListener("ai-assistant:ask", handler);
+    return () => window.removeEventListener("ai-assistant:ask", handler);
+  }, []);
   const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
   const [recurringMatches, setRecurringMatches] = useState<RecurringMatch[]>([]);
   const [recurringMatchDialogOpen, setRecurringMatchDialogOpen] = useState(false);

@@ -1,4 +1,7 @@
 {
+  "aiInsights": {
+    "title": "AI insights"
+  },
   "paywall": {
     "trialExpiredTitle": "Your 14-day trial has ended",
     "chooseToContinue": "Choose a plan to keep using V&M Balance",

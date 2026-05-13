@@ -1,4 +1,7 @@
 {
+  "aiInsights": {
+    "title": "AI uvidi"
+  },
   "paywall": {
     "trialExpiredTitle": "Vaš 14-dnevni probni period je istekao",
     "chooseToContinue": "Odaberite plan za nastavak korištenja V&M Balance",

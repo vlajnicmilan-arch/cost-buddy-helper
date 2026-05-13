@@ -305,6 +305,20 @@ ${incomeChange !== null ? `- Promjena prihoda u odnosu na prošli mjesec: ${Numb
     }
   }, [open, canAccessAI, loadHistory]);
 
+  // Pre-seeded prompt from "ai-assistant:seed" event (AI insight cards on dashboard)
+  useEffect(() => {
+    if (!open || !canAccessAI) return;
+    const handler = (e: Event) => {
+      const prompt = (e as CustomEvent).detail?.prompt as string | undefined;
+      if (prompt && !isLoading) {
+        emitAvatarEvent('thinking', 'Razmišljam... 🧠');
+        sendMessage(prompt);
+      }
+    };
+    window.addEventListener('ai-assistant:seed', handler);
+    return () => window.removeEventListener('ai-assistant:seed', handler);
+  }, [open, canAccessAI, isLoading, sendMessage, emitAvatarEvent]);
+
   // Refresh memories when opening memory view
   useEffect(() => {
     if (showMemories) {

@@ -1,90 +1,98 @@
-# Dnevni sažetak potrošnje + poboljšanja
 
-## DB migracija
+# AI uvidi (Insights) na Dashboard
 
-**`profiles`**
-- `timezone TEXT DEFAULT 'Europe/Zagreb'`
-- `preferred_language TEXT` (samo ako ne postoji — provjerit ću prije migracije)
+Dodaje se nova sekcija **"AI uvidi"** na homepage, ispod kartica s prihodima/troškovima u `PersonalModeView`. Hibridni pristup: brojeve računa TypeScript, AI samo formulira rečenicu na korisnikovom jeziku.
 
-**`notification_preferences`**
-- `daily_summary_enabled BOOLEAN DEFAULT true`
-- `daily_summary_weekend_enabled BOOLEAN DEFAULT true`
-- `daily_summary_last_sent_on DATE`
-- `daily_summary_paused_until DATE` — auto-pauza nakon 7 dana neotvaranja
-- `daily_summary_unopened_streak INT DEFAULT 0`
+## Razrez prema postojećim feature-ima
 
-**`is_push_category_enabled`** — dodati granu `'daily_summary'`.
+- **Daily summary push (21:00)** ostaje za "danas" i "ovaj mjesec".
+- **AI uvidi** rade s **>7 dana** podataka: tjedne anomalije po kategoriji + predviđanja kraja mjeseca. Ne preklapa se s pushom.
+- **Sakriva se** ako korisnik ima manje od 10 transakcija (nedovoljno signala).
 
----
+## Tipovi uvida (max 3, prioritizirano)
 
-## Edge funkcija `send-daily-summary`
+1. **Anomalija po kategoriji** (najveći prioritet) — usporedba zadnjih 7 dana vs prethodnih 7 dana po kategoriji. Trigger: ≥30% odstupanje i apsolutni iznos ≥10 €. Top 1-2 anomalije.
+2. **Predviđanje kraja mjeseca** — linearna projekcija `monthSpend / dayOfMonth × daysInMonth`. Ako postoji `budget_plan` za tekući mjesec → "Po trenutnom tempu završit ćeš -X € od budžeta" (pozitivno/negativno). Ako nema budgeta → "Procjena ukupne mjesečne potrošnje: Y €".
+3. **Fallback** ako nema dovoljno za #1 ili #2 — recurring obnove ovog mjeseca (iz postojećeg `useRecurringTransactions`).
 
-Cron: `0 * * * *` (svakih sat). Za svaku TZ izračunaj lokalno vrijeme; obradi samo gdje je sada `21:00`.
+Deterministički motor uvijek vraća do 3 strukturirana kandidata; AI Gateway pretvara u prirodne rečenice na korisnikovom jeziku (HR/EN/DE).
 
-**Filteri korisnika:**
-- `daily_summary_enabled = true`
-- vikend → `daily_summary_weekend_enabled = true`
-- `daily_summary_paused_until IS NULL OR < today`
-- `daily_summary_last_sent_on ≠ lokalni_danas`
-- ima aktivan push token
+## Arhitektura
 
-**Po korisniku:**
-1. `todaySpend` = SUM `expenses` (type=expense, nature ≠ transfer/correction, date=lokalni_danas, personal scope)
-2. Ako 0 → preskoči
-3. `monthSpend`, `monthBudget`, `remainingBudget`, `weeklyAvg` (prosjek dnevne potrošnje u zadnjih 7 dana, isključujući danas)
-4. Odredi varijantu (rotacija po `dayOfMonth % 3`):
-   - **A potrošnja**: `"Danas X € · ovaj mjesec ukupno Y €"`
-   - **B preostali budžet** (ako postoji): `"Danas X € · ostalo Z € do kraja mjeseca"`
-   - **C napredak** (ako postoji): `"Danas X € · iskorišteno N% mjesečnog budžeta"`
-5. **Streak override**: ako 3+ dana zaredom ispod `monthBudget/30` → `"3. dan zaredom unutar budžeta 👍"`
-6. **Adaptivni ton** (poboljšanje):
-   - `todaySpend < 0.7 × weeklyAvg` → prefix 👍 + "ispod tvog tjednog prosjeka"
-   - `todaySpend > 1.5 × weeklyAvg` → suptilno "iznad prosjeka"
-7. **Quiet guard**: preskoči ako `auth.users.last_sign_in_at` u zadnjih 30 min (već je u appu).
-8. Pošalji preko `send-push` (kategorija `daily_summary`, deeplink `/index`).
-9. Zabilježi `daily_summary_last_sent_on` i upiši push log s `kind='daily_summary'`.
+```text
+Dashboard (PersonalModeView)
+   └── <AIInsightsSection />
+          ├── useAIInsights() hook
+          │      ├── instantCache read (sessionStorage)
+          │      ├── DB read: ai_insights_cache (today's row)
+          │      └── if missing → invoke edge function 'generate-ai-insights'
+          │             ├── deterministic compute (expenses last 30d, budgets, recurring)
+          │             ├── Lovable AI (google/gemini-3-flash-preview) → natural sentences
+          │             └── upsert ai_insights_cache (user_id, generated_on, insights jsonb)
+          └── render 1-3 teal cards with 💡 (Lightbulb icon)
+                 └── onClick → opens FloatingAIAvatar chat with pre-seeded prompt
+```
 
-**Anti-spam (poboljšanje 6):**
-- Funkcija `process-daily-summary-engagement` se zove iz fronta (ili checkano u istoj funkciji): ako je prošli sažetak poslan a korisnik nije otvorio app u sljedećih 24h → `daily_summary_unopened_streak += 1`. Ako otvorio → reset na 0.
-- Kad streak ≥ 7 → set `daily_summary_paused_until = today + 30`, pošalji jednu in-app poruku next login: *"Pauzirali smo dnevni sažetak na 30 dana jer ga nisi otvarao."*
+## Database
 
-**Lokalizacija**: 3 jezika preko mape u edge funkciji, ključ `profiles.preferred_language` (fallback `hr`).
+Nova tablica `ai_insights_cache`:
+- `user_id` (FK auth users)
+- `generated_on` (date)
+- `insights` (jsonb array of `{ id, type, title, prompt, severity }`)
+- `expense_count_at_generation` (int) — za invalidaciju ako su dodane nove transakcije
+- PK `(user_id, generated_on)`
+- RLS: korisnik vidi i mijenja samo svoje retke
 
-**Cron**: postavlja se preko `supabase--insert` (ne migracija) jer sadrži anon key.
+## Edge Function `generate-ai-insights`
 
----
+- CORS + JWT validation u kodu
+- Učita zadnjih 30 dana `expenses` (filter: `user_id`, `type='expense'`, isključi correction nature i internal transfere — isto kao Dashboard balance logic)
+- Učita aktivni `budget_plan` za tekući mjesec (ako postoji)
+- Učita `recurring_transactions` koje padaju u tekućem mjesecu
+- Izračuna kandidate (anomalije, projekcija, recurring count)
+- Pošalje top 3 + korisnikov jezik (`profiles.preferred_language`) na Lovable AI Gateway s `tool_choice` za structured output (array of `{title, prompt}`)
+- Vrati JSON; klijent upsert-a u cache
 
 ## Frontend
 
-**`SettingsDialog` → sekcija "Obavijesti"** nova kartica:
-- Toggle **"Dnevni sažetak"** (`daily_summary_enabled`)
-- Toggle **"Šalji i vikendom"** (disabled kad je glavni off)
-- Helper: *"Svaki dan u 21:00 ako si imao transakcija."*
-- Gumb **"Pošalji testnu obavijest"** → invokes `send-daily-summary` s `{ test: true, userId }` (poboljšanje 5)
+- `src/components/dashboard/AIInsightsSection.tsx` — render kartica
+- `src/components/dashboard/AIInsightCard.tsx` — pojedina kartica (teal bg, Lightbulb ikona, klik otvara chat)
+- `src/hooks/useAIInsights.ts` — fetch + cache + invalidacija
+- Klik na karticu → seedа `useFinancialAssistant` chat s `prompt` poljem i otvara `FloatingAIAvatar` u expanded modu
 
-**`AppStateContext`**: na loginu ako `profiles.timezone` je null → setiraj `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+## i18n
 
-**i18n** ključevi: `notifications.dailySummary.*` (HR/EN/DE).
+Novi namespace `aiInsights.*` u hr/en/de:
+- `aiInsights.title` ("AI uvidi")
+- `aiInsights.notEnoughData` ("Dodaj još transakcija da AI nauči tvoje navike")
+- `aiInsights.refreshing`, `aiInsights.error`
+- Sami uvidi su generirani od AI-a → već su na korisnikovom jeziku, ne lokaliziraju se
 
----
+## Performance i troškovi
 
-## Datoteke
+- Generira se **najviše 1× dnevno po korisniku** (PK constraint).
+- Invalidira se ako `expense_count_at_generation` značajno odstupa od trenutnog (>20% ili >10 novih).
+- Model: `google/gemini-3-flash-preview` (jeftin, brz). Procjena: ~500 tokena ulaz, ~150 izlaz po pozivu = zanemarivo.
+- `instantCache` snapshot za instant paint dok se DB čita.
 
-- nova migracija (kolone + funkcija update)
-- `supabase/functions/send-daily-summary/index.ts`
-- cron preko `supabase--insert`
-- `src/components/settings/...` (notification toggles)
-- `src/contexts/AppStateContext.tsx` (TZ setter)
-- `src/i18n/locales/{hr,en,de}.json`
-- memory: nova `mem://features/daily-summary-push`
+## Out of scope (za kasnije)
 
----
+- "Pitaj AI o ovome" gumb u svakoj kategoriji (trenutno je cijela kartica klikabilna)
+- Ručni refresh gumb (svjesno izostavljen — tjera korisnika na patternu, ne na poll-on-demand)
+- Push notifikacija za uvide (potencijalno kasnije, ali sada bi bilo redundantno s daily summary)
+- Integracija s Business modeom (Phase 2)
 
-## Uključena poboljšanja
-✅ 1 Quiet hours guard (last_sign_in_at < 30min)
-✅ 2 Adaptivni ton (vs 7d prosjek)
-✅ 3 Streak detection (3+ dana unutar budžeta)
-✅ 5 "Pošalji testnu obavijest" gumb
-✅ 6 Anti-spam auto-pauza nakon 7 dana ignoriranja
+## Što se dira
 
-❌ 4 Tjedni recap nedjeljom — preskačem da ne miješam dva flowa; mogu dodati naknadno ako želiš.
+**Novi fileovi:**
+- `supabase/migrations/<timestamp>_ai_insights_cache.sql`
+- `supabase/functions/generate-ai-insights/index.ts`
+- `src/components/dashboard/AIInsightsSection.tsx`
+- `src/components/dashboard/AIInsightCard.tsx`
+- `src/hooks/useAIInsights.ts`
+
+**Izmjene:**
+- `src/components/home/PersonalModeView.tsx` — mount `<AIInsightsSection />` ispod kartica
+- `src/i18n/locales/{hr,en,de}.json` — `aiInsights.*` ključevi
+- `src/components/ai-avatar/FloatingAIAvatar.tsx` — accept `seedPrompt` prop (ili event-bus) za pre-seeded otvaranje
+- Memory: dodati `mem://features/ai-insights-dashboard`

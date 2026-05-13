@@ -17,6 +17,7 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
 import { AIInsightBubble } from '@/components/AIInsightBubble';
+import { AIInsightsSection } from '@/components/dashboard/AIInsightsSection';
 import { BottomNav } from '@/components/BottomNav';
 import { ActiveProjectsStrip } from '@/components/home/ActiveProjectsStrip';
 import { ProjectWithOwnership } from '@/types/project';
@@ -264,6 +265,11 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           onTransferClick={() => props.onTransferDialogChange(true)}
           onRecurringClick={props.onRecurringPanelOpen}
         />
+
+        {/* AI Insights — daily, deterministic + AI-formulated */}
+        {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
+          <AIInsightsSection enabled={props.allExpenses.length >= 10} />
+        )}
 
         {/* Owner-loan / business debts strip — only in business chip view */}
         {isBusinessChip && (totalReceivable > 0 || totalPayable > 0) && (
