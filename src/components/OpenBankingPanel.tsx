@@ -320,25 +320,92 @@ export const OpenBankingPanel = () => {
           {/* Accounts list */}
           {accounts.length > 0 && (
             <li className="pt-2 mt-2 border-t">
-              <ul className="space-y-1.5">
-                {accounts.map(acc => (
-                  <li
-                    key={acc.id}
-                    className="text-xs flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/40"
-                  >
-                    <span className="truncate">
-                      {acc.name ?? acc.iban ?? acc.account_uid}
-                      {acc.iban && acc.name && (
-                        <span className="text-muted-foreground ml-1">· {acc.iban}</span>
+              <ul className="space-y-2">
+                {accounts.map(acc => {
+                  const linkedSource = acc.linked_payment_source_id
+                    ? customPaymentSources.find(s => s.id === acc.linked_payment_source_id)
+                    : null;
+                  const isSyncing = syncingId === acc.id;
+                  return (
+                    <li
+                      key={acc.id}
+                      className="text-xs rounded-md bg-muted/40 p-2.5 space-y-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">
+                            {acc.name ?? acc.iban ?? acc.account_uid}
+                          </div>
+                          {acc.iban && acc.name && (
+                            <div className="text-muted-foreground text-[11px] truncate">{acc.iban}</div>
+                          )}
+                        </div>
+                        <span className="shrink-0 font-mono text-xs">
+                          {acc.balance != null
+                            ? `${acc.balance.toFixed(2)} ${acc.currency}`
+                            : '—'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        {linkedSource ? (
+                          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 gap-1">
+                            <Check className="w-3 h-3" />
+                            {t('openBanking.mappedTo')}: {linkedSource.name}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            {t('openBanking.notLinked')}
+                          </Badge>
+                        )}
+
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openLinkDialog(acc)}
+                            className="h-8 px-2 text-xs"
+                          >
+                            <Link2 className="w-3 h-3 mr-1" />
+                            {linkedSource ? t('openBanking.linked') : t('openBanking.linkSource')}
+                          </Button>
+                          {linkedSource && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleSync(acc)}
+                              disabled={isSyncing}
+                              className="h-8 px-2 text-xs"
+                            >
+                              {isSyncing ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                              )}
+                              {isSyncing ? t('openBanking.syncing') : t('openBanking.sync')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {(acc.last_synced_at || acc.last_sync_error) && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {acc.last_sync_error ? (
+                            <span className="text-destructive flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              {acc.last_sync_error === 'session_expired'
+                                ? t('openBanking.sessionExpired')
+                                : `${t('openBanking.syncError')}: ${acc.last_sync_error}`}
+                            </span>
+                          ) : (
+                            <span>
+                              {t('openBanking.lastSync')}: {new Date(acc.last_synced_at!).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
                       )}
-                    </span>
-                    <span className="shrink-0 font-mono">
-                      {acc.balance != null
-                        ? `${acc.balance.toFixed(2)} ${acc.currency}`
-                        : '—'}
-                    </span>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </li>
           )}
