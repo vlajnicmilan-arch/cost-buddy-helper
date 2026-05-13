@@ -175,6 +175,7 @@ export type Database = {
           account_uid: string
           balance: number | null
           balance_updated_at: string | null
+          business_profile_id: string | null
           connection_id: string
           created_at: string
           currency: string
@@ -191,6 +192,7 @@ export type Database = {
           account_uid: string
           balance?: number | null
           balance_updated_at?: string | null
+          business_profile_id?: string | null
           connection_id: string
           created_at?: string
           currency?: string
@@ -207,6 +209,7 @@ export type Database = {
           account_uid?: string
           balance?: number | null
           balance_updated_at?: string | null
+          business_profile_id?: string | null
           connection_id?: string
           created_at?: string
           currency?: string
@@ -220,6 +223,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bank_accounts_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bank_accounts_connection_id_fkey"
             columns: ["connection_id"]

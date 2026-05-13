@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useAppState } from '@/contexts/AppStateContext';
 
 export interface BankConnection {
   id: string;
   user_id: string;
+  business_profile_id: string | null;
   provider: string;
   aspsp_name: string | null;
   bank_name: string;
@@ -19,6 +21,7 @@ export interface BankConnection {
 export interface BankAccount {
   id: string;
   connection_id: string;
+  business_profile_id: string | null;
   account_uid: string;
   iban: string | null;
   name: string | null;
@@ -27,33 +30,47 @@ export interface BankAccount {
   balance_updated_at: string | null;
 }
 
+/**
+ * Per-context bank connections.
+ * - Personal mode (activeBusinessProfileId === null) → only connections with business_profile_id IS NULL
+ * - Business mode → only connections matching the active business_profile_id
+ */
 export const useBankConnections = () => {
   const { user } = useAuth();
+  const { activeBusinessProfileId } = useAppState();
   const qc = useQueryClient();
 
+  const ctxKey = activeBusinessProfileId ?? 'personal';
+
   const connectionsQuery = useQuery({
-    queryKey: ['bank-connections', user?.id],
+    queryKey: ['bank-connections', user?.id, ctxKey],
     enabled: !!user,
     staleTime: 30_000,
     queryFn: async (): Promise<BankConnection[]> => {
-      const { data, error } = await supabase
-        .from('bank_connections')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let q = supabase.from('bank_connections').select('*').order('created_at', { ascending: false });
+      if (activeBusinessProfileId) {
+        q = q.eq('business_profile_id', activeBusinessProfileId);
+      } else {
+        q = q.is('business_profile_id', null);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as BankConnection[];
     },
   });
 
   const accountsQuery = useQuery({
-    queryKey: ['bank-accounts', user?.id],
+    queryKey: ['bank-accounts', user?.id, ctxKey],
     enabled: !!user,
     staleTime: 30_000,
     queryFn: async (): Promise<BankAccount[]> => {
-      const { data, error } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let q = supabase.from('bank_accounts').select('*').order('created_at', { ascending: false });
+      if (activeBusinessProfileId) {
+        q = q.eq('business_profile_id', activeBusinessProfileId);
+      } else {
+        q = q.is('business_profile_id', null);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as BankAccount[];
     },
@@ -77,6 +94,7 @@ export const useBankConnections = () => {
     connections: connectionsQuery.data ?? [],
     accounts: accountsQuery.data ?? [],
     isLoading: connectionsQuery.isLoading || accountsQuery.isLoading,
+    activeBusinessProfileId,
     refetch: () => {
       connectionsQuery.refetch();
       accountsQuery.refetch();

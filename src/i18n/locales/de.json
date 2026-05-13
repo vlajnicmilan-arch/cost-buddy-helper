@@ -3619,6 +3619,7 @@
     "connected": "Bank verbunden",
     "connectError": "Verbindung zur Bank fehlgeschlagen",
     "sandboxNotice": "Derzeit Sandbox-Umgebung für Tests. HR-Banken nach Produktivschaltung verfügbar.",
+    "contextPersonal": "Privat",
     "status": {
       "pending": "Ausstehend",
       "active": "Aktiv",
