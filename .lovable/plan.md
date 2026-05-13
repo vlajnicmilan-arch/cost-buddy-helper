@@ -1,23 +1,27 @@
-# Sakrij tvrtku na dashboardu kad je poslovni način isključen
+# Fix: kad se uključi business feature, restoriraj i business mode
 
 ## Problem
-`WalletViewModeChips` (chipovi Osobno/Tvrtka) provjerava samo `profiles.length > 0`, ne i `businessModeEnabled`. Zato tvrtka ostaje vidljiva i kad je u Postavkama isključen poslovni način.
+`setBusinessFeatureEnabled(true)` u `AppStateContext` (line 228-237) ne resetira `businessModeEnabled` natrag na `true`. Posljedica: nakon off→on ciklusa, chip ostaje skriven jer `WalletViewModeChips` zahtijeva `businessModeEnabled=true`.
 
-## Promjene
+## Promjena
 
-**1. `src/components/wallet/WalletViewModeChips.tsx`**
-- Dodati `useAppState()` i čitati `businessModeEnabled`
-- `if (!businessModeEnabled || profiles.length === 0) return null;`
+`src/contexts/AppStateContext.tsx`, funkcija `setBusinessFeatureEnabled`:
 
-**2. `src/contexts/AppStateContext.tsx` (`setBusinessModeEnabled`, line 239)**
-- Kad se `enabled === false`, emitirati event ili pisati `wallet_view_mode = 'personal'` u localStorage da `WalletViewModeContext` resetira filter (inače dashboard ostane u "tvrtka X" view-u dok ne refresha)
-- Provjeriti postojeći `useBusinessViewSync` — možda već reagira na promjenu; ako da, samo se osloniti na njega
+```ts
+const setBusinessFeatureEnabled = useCallback((enabled: boolean) => {
+  setBusinessFeatureEnabledState(enabled);
+  localStorage.setItem('business_feature_enabled', enabled.toString());
+  if (!enabled) {
+    setBusinessModeEnabledState(false);
+    localStorage.setItem('business_mode_enabled', 'false');
+  } else {
+    // Restore business view when feature is re-enabled
+    setBusinessModeEnabledState(true);
+    localStorage.setItem('business_mode_enabled', 'true');
+  }
+}, []);
+```
 
-**3. Verifikacija**
-- Provjera da nigdje drugdje na dashboardu (HomeHeader, PersonalModeView) nema dodatnog business UI-a koji ovisi samo o profilima
-- Quick smoke test: toggle u Postavkama → dashboard, chipovi nestaju i view se vraća na 'personal'
-
-## Što se NE mijenja
-- Aktivan `business_profile_id` se i dalje čuva (tako da kad ponovno uključiš, vraća se na zadnju tvrtku)
-- Postojeća logika u AppStateContext za `setBusinessFeatureEnabled` (master switch) ostaje
-- Ostale stranice (Wallet, Projects, Reports) — nije u opsegu ovog zadatka
+## Verifikacija
+- Toggle off → chip nestaje, view = personal ✓ (već radi)
+- Toggle on → `businessModeEnabled` se vraća na `true`, chipovi se vrate, posljednja aktivna tvrtka se vrati (jer `activeBusinessProfileId` nikad nije obrisan)
