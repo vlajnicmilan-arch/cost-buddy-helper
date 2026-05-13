@@ -33,6 +33,7 @@ import { useLocation } from '@/hooks/useLocation';
 import { useBackButton } from '@/hooks/useBackButton';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { validateAmountInput } from '@/lib/amountValidation';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
