@@ -1,4 +1,7 @@
 {
+  "aiInsights": {
+    "title": "KI-Einblicke"
+  },
   "paywall": {
     "trialExpiredTitle": "Ihre 14-tägige Testphase ist abgelaufen",
     "chooseToContinue": "Wählen Sie einen Plan, um V&M Balance weiter zu nutzen",
