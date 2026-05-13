@@ -148,7 +148,53 @@ Deno.serve(async (req) => {
     let imported = 0;
     let skipped = 0;
     let errors = 0;
+    let aiCategorized = 0;
     const paymentSourceRef = `custom:${account.linked_payment_source_id}`;
+
+    // Load user's custom categories once for AI categorization
+    const { data: customCats } = await admin
+      .from("custom_categories")
+      .select("name")
+      .eq("user_id", userId);
+    const customCategoryNames: string[] = (customCats || []).map((c: any) => c.name).filter(Boolean);
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    const defaultCategories = [
+      "food", "transport", "shopping", "entertainment", "bills", "health",
+      "groceries", "utilities", "rent", "education", "travel", "clothing",
+      "beauty", "sports", "pets", "gifts", "subscriptions", "savings",
+      "investments", "charity", "kids", "home", "car", "insurance", "taxes", "other",
+    ];
+    const allCategories = [...defaultCategories, ...customCategoryNames];
+
+    async function categorizeViaAI(description: string): Promise<string | null> {
+      if (!LOVABLE_API_KEY || !description) return null;
+      const prompt = `You are a transaction categorizer. Given a bank transaction description, return the single most appropriate category.\n\nAvailable categories: ${allCategories.join(", ")}\n\nRules:\n- Supermarkets (Konzum, Lidl, Kaufland, Spar, Plodine, Interspar, Tommy, Studenac, Billa, dm) → groceries\n- Restaurants, cafes, bakeries, fast food, bars → food\n- Gas stations, parking, tolls, public transit → transport\n- Pharmacy, doctor, hospital → health\n- Electricity, water, gas, internet, phone → utilities\n- Netflix, Spotify, YouTube, HBO → subscriptions\n- Rent, mortgage → rent\n- ATM withdrawal, cash → other\n- Bank fees → bills\n- If unsure → other\n\nReturn ONLY the category name, nothing else.`;
+      try {
+        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              { role: "system", content: prompt },
+              { role: "user", content: `Description: ${description}` },
+            ],
+            max_tokens: 20,
+          }),
+        });
+        if (!resp.ok) {
+          if (resp.status === 429 || resp.status === 402) return null;
+          return null;
+        }
+        const data = await resp.json();
+        const raw = data.choices?.[0]?.message?.content?.trim().toLowerCase() || null;
+        return raw && allCategories.includes(raw) ? raw : null;
+      } catch {
+        return null;
+      }
+    }
 
     for (const tx of allTx) {
       const stableId = pickStableId(tx);
@@ -163,12 +209,23 @@ Deno.serve(async (req) => {
       if (!txDate) { skipped += 1; continue; }
 
       const isIncome = tx.credit_debit_indicator === "CRDT";
+      const description = pickDescription(tx);
+
+      // AI categorization for expenses only (income → other)
+      let category = "other";
+      if (!isIncome) {
+        const aiCat = await categorizeViaAI(description);
+        if (aiCat) {
+          category = aiCat;
+          aiCategorized += 1;
+        }
+      }
 
       const row = {
         user_id: userId,
         amount: absAmount,
-        description: pickDescription(tx),
-        category: "other",
+        description,
+        category,
         type: isIncome ? "income" : "expense",
         date: new Date(txDate).toISOString(),
         payment_source: paymentSourceRef,
@@ -176,7 +233,7 @@ Deno.serve(async (req) => {
         business_profile_id: account.business_profile_id,
         bank_transaction_id: stableId,
         bank_account_id: account.id,
-        ai_extracted: false,
+        ai_extracted: category !== "other",
       };
 
       const { error: insErr } = await admin.from("expenses").insert(row);
