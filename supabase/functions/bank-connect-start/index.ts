@@ -33,7 +33,13 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { aspsp_name, aspsp_country, language = "en", psu_type = "personal" } = body;
+    const {
+      aspsp_name,
+      aspsp_country,
+      language = "en",
+      psu_type = "personal",
+      business_profile_id = null,
+    } = body;
 
     if (!aspsp_name || !aspsp_country) {
       return new Response(
@@ -55,6 +61,7 @@ Deno.serve(async (req) => {
         aspsp_country,
         state_token: stateToken,
         status: "pending",
+        business_profile_id: business_profile_id || null,
       });
 
     if (insertErr) {

@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     // Find pending connection by state
     const { data: conn, error: connErr } = await admin
       .from("bank_connections")
-      .select("id, user_id, aspsp_name, aspsp_country")
+      .select("id, user_id, aspsp_name, aspsp_country, business_profile_id")
       .eq("state_token", state)
       .eq("status", "pending")
       .maybeSingle();
@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
       const rows = accounts.map((a: any) => ({
         connection_id: conn.id,
         user_id: conn.user_id,
+        business_profile_id: conn.business_profile_id ?? null,
         account_uid: a.uid ?? a.account_id ?? crypto.randomUUID(),
         iban: a.account_id?.iban ?? a.iban ?? null,
         name: a.name ?? a.product ?? null,
