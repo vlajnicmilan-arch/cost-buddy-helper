@@ -233,6 +233,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     if (!enabled) {
       setBusinessModeEnabledState(false);
       localStorage.setItem('business_mode_enabled', 'false');
+    } else {
+      // Restore business view when feature is re-enabled
+      setBusinessModeEnabledState(true);
+      localStorage.setItem('business_mode_enabled', 'true');
     }
   }, []);
 
