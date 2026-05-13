@@ -21,14 +21,32 @@ interface EBTransaction {
   status?: string;
 }
 
-function pickDescription(tx: EBTransaction): string {
+function extractRemittance(tx: EBTransaction): string {
   const ri = tx.remittance_information;
   if (Array.isArray(ri) && ri.length > 0) {
-    const first = ri[0];
-    if (typeof first === "string") return first;
-    if (typeof first === "object" && first?.content) return first.content;
+    const parts = ri
+      .map((r) => (typeof r === "string" ? r : r?.content || ""))
+      .filter(Boolean);
+    if (parts.length > 0) return parts.join(" ");
   }
-  return tx.creditor?.name || tx.debtor?.name || "Bank transaction";
+  return "";
+}
+
+function pickDescription(tx: EBTransaction): string {
+  const isIncome = tx.credit_debit_indicator === "CRDT";
+  const counterparty = isIncome ? tx.debtor?.name : tx.creditor?.name;
+  const remittance = extractRemittance(tx);
+
+  // Prefer counterparty (merchant/payer) name; remittance often is just a numeric reference.
+  if (counterparty && counterparty.trim()) {
+    // Append remittance only if it's not just digits
+    if (remittance && !/^[\d\s\-\/]+$/.test(remittance)) {
+      return `${counterparty} - ${remittance}`.slice(0, 200);
+    }
+    return counterparty;
+  }
+  if (remittance) return remittance.slice(0, 200);
+  return "Bank transaction";
 }
 
 function pickStableId(tx: EBTransaction): string | null {
@@ -170,6 +188,8 @@ Deno.serve(async (req) => {
 
     async function categorizeViaAI(description: string): Promise<string | null> {
       if (!LOVABLE_API_KEY || !description) return null;
+      // Skip AI for purely numeric/code descriptions (no merchant context)
+      if (/^[\d\s\-\/]+$/.test(description.trim())) return null;
       const prompt = `You are a transaction categorizer. Given a bank transaction description, return the single most appropriate category.\n\nAvailable categories: ${allCategories.join(", ")}\n\nRules:\n- Supermarkets (Konzum, Lidl, Kaufland, Spar, Plodine, Interspar, Tommy, Studenac, Billa, dm) → groceries\n- Restaurants, cafes, bakeries, fast food, bars → food\n- Gas stations, parking, tolls, public transit → transport\n- Pharmacy, doctor, hospital → health\n- Electricity, water, gas, internet, phone → utilities\n- Netflix, Spotify, YouTube, HBO → subscriptions\n- Rent, mortgage → rent\n- ATM withdrawal, cash → other\n- Bank fees → bills\n- If unsure → other\n\nReturn ONLY the category name, nothing else.`;
       try {
         const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
