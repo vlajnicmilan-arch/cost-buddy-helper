@@ -29,7 +29,7 @@ const COUNTRIES_SANDBOX = [
 
 export const OpenBankingPanel = () => {
   const { t } = useTranslation();
-  const { connections, accounts, isLoading, refetch, disconnect } = useBankConnections();
+  const { connections, accounts, isLoading, refetch, disconnect, activeBusinessProfileId } = useBankConnections();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [country, setCountry] = useState('FI');
@@ -104,7 +104,8 @@ export const OpenBankingPanel = () => {
           aspsp_name: selectedAspsp,
           aspsp_country: country,
           language: 'en',
-          psu_type: 'personal',
+          psu_type: activeBusinessProfileId ? 'business' : 'personal',
+          business_profile_id: activeBusinessProfileId,
         },
       });
       if (error || !data?.authorization_url) {
