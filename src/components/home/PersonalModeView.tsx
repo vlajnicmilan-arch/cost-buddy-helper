@@ -266,6 +266,11 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           onRecurringClick={props.onRecurringPanelOpen}
         />
 
+        {/* AI Insights — daily, deterministic + AI-formulated */}
+        {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
+          <AIInsightsSection enabled={props.allExpenses.length >= 10} />
+        )}
+
         {/* Owner-loan / business debts strip — only in business chip view */}
         {isBusinessChip && (totalReceivable > 0 || totalPayable > 0) && (
           <div className="grid grid-cols-2 gap-3 mb-4">
