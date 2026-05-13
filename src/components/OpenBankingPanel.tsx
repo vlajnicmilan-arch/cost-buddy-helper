@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { supabaseInvoke } from '@/lib/supabaseInvoke';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useBankConnections } from '@/hooks/useBankConnections';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
@@ -30,6 +31,11 @@ const COUNTRIES_SANDBOX = [
 export const OpenBankingPanel = () => {
   const { t } = useTranslation();
   const { connections, accounts, isLoading, refetch, disconnect, activeBusinessProfileId } = useBankConnections();
+  const { profiles } = useBusinessProfiles();
+  const activeProfileName = activeBusinessProfileId
+    ? profiles.find(p => p.id === activeBusinessProfileId)?.name ?? null
+    : null;
+  const contextLabel = activeProfileName ?? t('openBanking.contextPersonal', 'Osobno');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [country, setCountry] = useState('FI');
@@ -163,6 +169,11 @@ export const OpenBankingPanel = () => {
           <div className="min-w-0">
             <h3 className="font-semibold text-base">{t('openBanking.title')}</h3>
             <p className="text-sm text-muted-foreground mt-0.5">{t('openBanking.subtitle')}</p>
+            <div className="mt-1.5">
+              <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                {contextLabel}
+              </Badge>
+            </div>
           </div>
         </div>
         <Button
