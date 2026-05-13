@@ -60,6 +60,7 @@ const Wallet = () => {
         }} />
         <InstallmentsPanel />
         <CustomCategoriesPanel />
+        <OpenBankingPanel />
         <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} existingExpenses={allExpenses} />
         <BackupRestore onDataImported={refetch} />
       </motion.div>
