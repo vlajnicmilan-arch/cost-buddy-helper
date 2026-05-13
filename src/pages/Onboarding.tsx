@@ -1,249 +1,270 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from 'react-i18next';
-import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
-import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
-import { OnboardingPaymentSourceCard } from '@/components/onboarding/OnboardingPaymentSourceCard';
-import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
-import { OnboardingUsageProfileStep } from '@/components/onboarding/OnboardingUsageProfileStep';
-import { CustomPaymentSource, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
-import { ChevronRight, ChevronLeft, User, Wallet, CreditCard, Briefcase, Gift, Sparkles, Check, Plus, ScanLine } from 'lucide-react';
+import { Sparkles, ChevronRight, ChevronLeft, TrendingDown, TrendingUp, PartyPopper } from 'lucide-react';
 import logo from '@/assets/logo.webp';
-import { showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
-import type { UsageProfile } from '@/contexts/AppStateContext';
+import {
+  DEFAULT_INCOME_CATEGORY_ICONS,
+  DEFAULT_INCOME_CATEGORY_COLORS,
+  CustomIncomeCategory,
+} from '@/types/customIncomeCategory';
 
+// Predefinirane kategorije rashoda – ključ se koristi i kao `category` u budget_categories
+const EXPENSE_PRESETS = [
+  { key: 'rent',          icon: '🏠', color: 'hsl(0 75% 55%)' },
+  { key: 'food',          icon: '🛒', color: 'hsl(25 85% 55%)' },
+  { key: 'car',           icon: '🚗', color: 'hsl(210 75% 55%)' },
+  { key: 'utilities',     icon: '💡', color: 'hsl(45 90% 55%)' },
+  { key: 'subscriptions', icon: '📺', color: 'hsl(265 65% 60%)' },
+  { key: 'other',         icon: '📦', color: 'hsl(220 10% 55%)' },
+] as const;
 
-interface PaymentSourceSetup {
-  name: string;
-  icon: string;
-  color: string;
-  balance: number;
-  cards: { card_name: string; last_four_digits: string; card_type?: string }[];
+// Predefinirane kategorije prihoda
+const INCOME_PRESETS = [
+  { key: 'salary',     icon: '💼', color: 'hsl(160 65% 45%)' },
+  { key: 'freelance',  icon: '💻', color: 'hsl(180 60% 45%)' },
+  { key: 'rentIncome', icon: '🏘️', color: 'hsl(140 60% 45%)' },
+  { key: 'dividends',  icon: '📈', color: 'hsl(200 60% 50%)' },
+  { key: 'other',      icon: '✨', color: 'hsl(120 50% 50%)' },
+] as const;
+
+interface CategoryAmount {
+  selected: boolean;
+  amount: string;
 }
 
-const getPresetSources = (t: (key: string) => string) => [
-  { id: 'bank', name: t('onboarding.presets.bank'), icon: '🏦', color: '#3b82f6', description: t('onboarding.presets.bankDesc') },
-  { id: 'cash', name: t('onboarding.presets.cash'), icon: '💵', color: '#22c55e', description: t('onboarding.presets.cashDesc') },
-  { id: 'savings', name: t('onboarding.presets.savings'), icon: '🏧', color: '#8b5cf6', description: t('onboarding.presets.savingsDesc') },
-  { id: 'paypal', name: t('onboarding.presets.paypal'), icon: '🅿️', color: '#003087', description: t('onboarding.presets.paypalDesc') },
-  { id: 'revolut', name: t('onboarding.presets.revolut'), icon: '💳', color: '#0666eb', description: t('onboarding.presets.revolutDesc') },
-];
-
-const getIncomeSources = (t: (key: string) => string) => [
-  { id: 'salary', name: t('onboarding.presets.salary'), icon: '💼', color: '#22c55e' },
-  { id: 'freelance', name: t('onboarding.presets.freelance'), icon: '💻', color: '#6366f1' },
-  { id: 'reward', name: t('onboarding.presets.reward'), icon: '🎁', color: '#f59e0b' },
-  { id: 'investment', name: t('onboarding.presets.investment'), icon: '📈', color: '#10b981' },
-];
+const initState = (presets: ReadonlyArray<{ key: string }>): Record<string, CategoryAmount> =>
+  Object.fromEntries(presets.map(p => [p.key, { selected: false, amount: '' }]));
 
 const Onboarding = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { storageMode } = useStorage();
   const { user } = useAuth();
-  const PRESET_SOURCES = getPresetSources(t);
-  const INCOME_SOURCES = getIncomeSources(t);
-  const { addCustomPaymentSource, addCard } = useCustomPaymentSources();
   const { setOnboardingCompleted, setDisplayName: setContextDisplayName, setUsageProfile } = useAppState();
 
   const [step, setStep] = useState(1);
-  const [usageProfileChoice, setUsageProfileChoice] = useState<UsageProfile>(null);
-  const [planChoice, setPlanChoice] = useState<'free' | 'pro' | 'business'>('free');
-  const [displayName, setDisplayName] = useState(() => {
-    // Pre-fill from context if user entered name during signup
-    return localStorage.getItem('user_display_name') || '';
-  });
-  const [selectedSources, setSelectedSources] = useState<string[]>([]);
-  const [customSources, setCustomSources] = useState<PaymentSourceSetup[]>([]);
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const [currentScanTarget, setCurrentScanTarget] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const isLocalMode = storageMode === 'local' && !user;
+  const initialName = useMemo(
+    () => (localStorage.getItem('user_display_name') || '').trim(),
+    [],
+  );
+  const [displayName, setDisplayName] = useState(initialName);
 
-  // Auto-skip step 1 if name is already known from signup
+  const [expenses, setExpenses] = useState<Record<string, CategoryAmount>>(() => initState(EXPENSE_PRESETS));
+  const [incomes, setIncomes] = useState<Record<string, CategoryAmount>>(() => initState(INCOME_PRESETS));
+
+  // Pre-fill display name iz profila ako nije već u localStorage
   useEffect(() => {
-    if (displayName.trim() && step === 1) {
-      setStep(2);
+    let cancelled = false;
+    if (!initialName && user) {
+      supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!cancelled && data?.display_name) {
+            setDisplayName(data.display_name);
+          }
+        });
     }
-  }, []); // Only on mount
+    return () => { cancelled = true; };
+  }, [user, initialName]);
 
-  // Onboarding gate is now handled centrally by App.tsx.
-  // If onboardingCompleted is true, App.tsx will redirect to /home before rendering this page.
+  const totalSteps = 4;
+  const progress = (step / totalSteps) * 100;
 
-  const handleNext = () => {
-    if (step === 1 && !displayName.trim()) {
-      showError(t('onboarding.nameRequired', 'Molimo unesite svoje ime'));
-      return;
+  const handleBack = () => setStep(s => Math.max(1, s - 1));
+  const handleNext = () => setStep(s => Math.min(totalSteps, s + 1));
+
+  // "Završi kasnije" – vodi na home BEZ označavanja onboardinga kao završenog,
+  // tako da se wizard može ponovno otvoriti pri sljedećem ulasku.
+  const handleSkip = () => {
+    setOnboardingCompleted(true); // privremeno – sprječava redirect loop u App.tsx
+    localStorage.setItem('onboarding_completed', 'true');
+    if (displayName.trim()) {
+      localStorage.setItem('user_display_name', displayName.trim());
+      setContextDisplayName(displayName.trim());
     }
-    if (step === 2 && !usageProfileChoice) {
-      showError(t('onboarding.usageProfile.required', 'Molimo odaberi što želiš pratiti'));
-      return;
-    }
-    setStep(step + 1);
+    setUsageProfile('finance_only');
+    localStorage.setItem('usage_profile', 'finance_only');
+    navigate('/home', { replace: true });
   };
 
-  const handleBack = () => {
-    setStep(step - 1);
-  };
+  const toggleExpense = (key: string) =>
+    setExpenses(prev => ({ ...prev, [key]: { ...prev[key], selected: !prev[key].selected } }));
 
-  const handleOpenPaywall = () => {
-    // Open paywall in a new tab so onboarding state is preserved.
-    window.open('/paywall', '_blank');
-  };
+  const setExpenseAmount = (key: string, amount: string) =>
+    setExpenses(prev => ({ ...prev, [key]: { ...prev[key], amount } }));
 
-  const toggleSource = (sourceId: string) => {
-    setSelectedSources(prev => 
-      prev.includes(sourceId) 
-        ? prev.filter(id => id !== sourceId)
-        : [...prev, sourceId]
-    );
-  };
+  const toggleIncome = (key: string) =>
+    setIncomes(prev => ({ ...prev, [key]: { ...prev[key], selected: !prev[key].selected } }));
 
-  const addCustomSource = () => {
-    setCustomSources([...customSources, {
-      name: '',
-      icon: '💳',
-      color: DEFAULT_PAYMENT_COLORS[Math.floor(Math.random() * DEFAULT_PAYMENT_COLORS.length)],
-      balance: 0,
-      cards: []
-    }]);
-  };
+  const setIncomeAmount = (key: string, amount: string) =>
+    setIncomes(prev => ({ ...prev, [key]: { ...prev[key], amount } }));
 
-  const updateCustomSource = (index: number, updates: Partial<PaymentSourceSetup>) => {
-    const newSources = [...customSources];
-    newSources[index] = { ...newSources[index], ...updates };
-    setCustomSources(newSources);
-  };
+  const selectedExpenseEntries = EXPENSE_PRESETS
+    .map(p => ({ ...p, ...expenses[p.key] }))
+    .filter(e => e.selected);
 
-  const removeCustomSource = (index: number) => {
-    setCustomSources(customSources.filter((_, i) => i !== index));
-  };
+  const selectedIncomeEntries = INCOME_PRESETS
+    .map(p => ({ ...p, ...incomes[p.key] }))
+    .filter(e => e.selected);
 
-  const openCardScanner = (sourceIndex: number) => {
-    setCurrentScanTarget(sourceIndex);
-    setScannerOpen(true);
-  };
+  const totalExpense = selectedExpenseEntries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const totalIncome  = selectedIncomeEntries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
-  const handleCardScanned = (cardType: string) => {
-    if (currentScanTarget !== null) {
-      const source = customSources[currentScanTarget];
-      const newCards = [...source.cards, { card_name: cardType, last_four_digits: '', card_type: cardType }];
-      updateCustomSource(currentScanTarget, { cards: newCards });
-    }
-    setScannerOpen(false);
-    setCurrentScanTarget(null);
-  };
+  const chartData = selectedExpenseEntries
+    .filter(e => parseFloat(e.amount) > 0)
+    .map(e => ({
+      name: t(`onboardingV2.expenseCategories.${e.key}`),
+      value: parseFloat(e.amount),
+      color: e.color,
+    }));
 
   const handleComplete = async () => {
+    if (!user) {
+      showError(t('errors.generic', 'Došlo je do greške'));
+      return;
+    }
     setSaving(true);
     try {
-      // Save display name
-      if (isLocalMode) {
-        localStorage.setItem('user_display_name', displayName.trim());
-      } else if (user) {
-        await supabase
-          .from('profiles')
-          .upsert({
+      const trimmedName = displayName.trim();
+
+      // 1) Update profile – ime + onboarding_completed flag
+      await supabase
+        .from('profiles')
+        .upsert(
+          {
             user_id: user.id,
-            display_name: displayName.trim(),
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'user_id' });
-      }
+            display_name: trimmedName || null,
+            onboarding_completed: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' },
+        );
 
-      // Create preset payment sources
-      for (const sourceId of selectedSources) {
-        const preset = PRESET_SOURCES.find(s => s.id === sourceId);
-        if (preset) {
-          await addCustomPaymentSource({
-            name: preset.name,
-            icon: preset.icon,
-            color: preset.color,
-            balance: 0,
-            description: preset.description
-          });
+      // 2) Kreiraj jedan budget_plan + budget_categories za svaku odabranu stavku rashoda
+      if (selectedExpenseEntries.length > 0) {
+        const { data: budget, error: budgetErr } = await supabase
+          .from('budget_plans')
+          .insert({
+            user_id: user.id,
+            name: t('onboardingV2.defaultBudgetName', 'Mjesečni budžet'),
+            period_type: 'monthly',
+            is_active: true,
+            is_recurring: true,
+            total_amount: totalExpense,
+            icon: '💰',
+            color: 'hsl(172 66% 40%)',
+          })
+          .select('id')
+          .single();
+
+        if (budgetErr) throw budgetErr;
+        if (budget?.id) {
+          const rows = selectedExpenseEntries.map(e => ({
+            budget_id: budget.id,
+            category: e.key,
+            limit_amount: parseFloat(e.amount) || 0,
+            icon: e.icon,
+            color: e.color,
+          }));
+          const { error: catErr } = await supabase.from('budget_categories').insert(rows);
+          if (catErr) throw catErr;
         }
       }
 
-      // Create custom payment sources with cards
-      for (const source of customSources) {
-        if (source.name.trim()) {
-          const newSource = await addCustomPaymentSource({
-            name: source.name.trim(),
-            icon: source.icon,
-            color: source.color,
-            balance: source.balance,
-            description: undefined
-          });
-
-          // Add cards to the source
-          if (newSource && source.cards.length > 0) {
-            for (const card of source.cards) {
-              if (card.last_four_digits) {
-                await addCard(newSource.id, {
-                  card_name: card.card_name,
-                  last_four_digits: card.last_four_digits,
-                  card_type: card.card_type
-                });
-              }
-            }
-          }
-        }
+      // 3) Custom income kategorije (još uvijek su localStorage-only u ovom projektu)
+      if (selectedIncomeEntries.length > 0) {
+        const STORAGE_KEY = 'customIncomeCategories';
+        const existingRaw = localStorage.getItem(STORAGE_KEY);
+        const existing: CustomIncomeCategory[] = existingRaw ? JSON.parse(existingRaw) : [];
+        const now = new Date().toISOString();
+        const newCats: CustomIncomeCategory[] = selectedIncomeEntries.map((e, idx) => ({
+          id: `custom_income_${crypto.randomUUID()}`,
+          user_id: user.id,
+          name: t(`onboardingV2.incomeCategories.${e.key}`),
+          icon: e.icon || DEFAULT_INCOME_CATEGORY_ICONS[idx % DEFAULT_INCOME_CATEGORY_ICONS.length],
+          color: e.color || DEFAULT_INCOME_CATEGORY_COLORS[idx % DEFAULT_INCOME_CATEGORY_COLORS.length],
+          created_at: now,
+          updated_at: now,
+        }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...newCats, ...existing]));
       }
 
+      // 4) Lokalno stanje
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('show_welcome_animation', 'true');
-      localStorage.setItem('pwa-auto-update', 'true');
-      // Persist usage profile (default to finance_only if user somehow skipped step 2)
-      const profileToSave = usageProfileChoice ?? 'finance_only';
-      localStorage.setItem('usage_profile', profileToSave);
-      setUsageProfile(profileToSave);
-      if (displayName.trim()) setContextDisplayName(displayName.trim());
+      localStorage.setItem('usage_profile', 'finance_only');
+      if (trimmedName) {
+        localStorage.setItem('user_display_name', trimmedName);
+        setContextDisplayName(trimmedName);
+      }
+      setUsageProfile('finance_only');
       setOnboardingCompleted(true);
-      // Funnel: log onboarding completion (best-effort)
+
+      // Funnel telemetry (best-effort)
       import('@/lib/funnelTracking')
         .then(({ logFunnelEvent }) => logFunnelEvent('onboarding_complete', {
-          selected_sources: selectedSources.length,
-          custom_sources: customSources.length,
-          usage_profile: profileToSave,
-          plan_choice: planChoice,
+          expense_categories: selectedExpenseEntries.length,
+          income_categories: selectedIncomeEntries.length,
         }))
         .catch(() => {});
+
+      showSuccess(t('onboardingV2.doneToast', 'Aplikacija je spremna!'));
       navigate('/home', { replace: true });
-    } catch (error) {
-      console.error('Onboarding error:', error);
+    } catch (err) {
+      console.error('Onboarding completion error:', err);
       showError(t('errors.generic', 'Došlo je do greške'));
     } finally {
       setSaving(false);
     }
   };
 
-  const totalSteps = 4;
-  const progress = (step / totalSteps) * 100;
+  // Validacija po koraku
+  const canAdvance = () => {
+    if (step === 1) return displayName.trim().length > 0;
+    return true; // koraci 2 i 3 su opcionalni
+  };
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       {/* Header */}
-      <header className="p-4 flex items-center justify-between">
+      <header className="p-4 flex items-center justify-between safe-area-top">
         <div className="flex items-center gap-3">
           <img src={logo} alt="V&M Balance" className="w-10 h-10 object-contain" />
           <span className="font-semibold text-lg">V&M Balance</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{step}/{totalSteps}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{step}/{totalSteps}</span>
+          {step < totalSteps && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSkip}
+              className="text-xs h-8"
+              disabled={saving}
+            >
+              {t('onboardingV2.finishLater', 'Završi kasnije')}
+            </Button>
+          )}
         </div>
       </header>
 
-      {/* Progress bar */}
+      {/* Progress */}
       <div className="h-1 bg-muted">
-        <motion.div 
+        <motion.div
           className="h-full bg-primary"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
@@ -252,162 +273,242 @@ const Onboarding = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-start p-4 overflow-y-auto">
         <AnimatePresence mode="wait">
+          {/* === STEP 1: GREETING === */}
           {step === 1 && (
             <motion.div
               key="step1"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="w-full max-w-md space-y-8"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              className="w-full max-w-md mt-4 space-y-6"
             >
-              <div className="text-center space-y-2">
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <User className="w-8 h-8 text-primary" />
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-primary" />
                 </div>
-                <h1 className="text-2xl font-bold">{t('onboarding.welcomeTitle', 'Dobrodošli!')}</h1>
-                <p className="text-muted-foreground">
-                  {t('onboarding.welcomeDescription', 'Kako vas možemo zvati?')}
+                <h1 className="text-2xl font-bold">
+                  {displayName.trim()
+                    ? t('onboardingV2.step1.greetingNamed', { name: displayName.trim(), defaultValue: 'Pozdrav, {{name}}!' })
+                    : t('onboardingV2.step1.greeting', 'Pozdrav!')}
+                </h1>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {t(
+                    'onboardingV2.step1.intro',
+                    'V&M Balance pomaže ti da u 15 sekundi postaviš osnovni budžet — odabereš najvažnije mjesečne troškove i prihode i odmah dobiješ jasan pregled.',
+                  )}
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">{t('onboarding.yourName', 'Vaše ime')}</Label>
-                  <Input
-                    id="name"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder={t('onboarding.namePlaceholder', 'npr. Marko')}
-                    className="text-lg h-12"
-                    autoFocus
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  {t('onboarding.nameUsage', 'Ovo ime će se koristiti za personalizirane poruke u aplikaciji.')}
-                </p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="onb-name">
+                  {t('onboardingV2.step1.nameLabel', 'Tvoje ime')}
+                </label>
+                <Input
+                  id="onb-name"
+                  value={displayName}
+                  onChange={e => setDisplayName(e.target.value)}
+                  placeholder={t('onboardingV2.step1.namePlaceholder', 'npr. Marko')}
+                  className="h-12 text-base"
+                  autoFocus
+                />
               </div>
             </motion.div>
           )}
 
+          {/* === STEP 2: EXPENSES === */}
           {step === 2 && (
             <motion.div
-              key="step2-profile"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="w-full max-w-2xl"
-            >
-              <OnboardingUsageProfileStep
-                selected={usageProfileChoice}
-                onSelect={setUsageProfileChoice}
-                selectedPlan={planChoice}
-                onSelectPlan={setPlanChoice}
-                onOpenPaywall={handleOpenPaywall}
-              />
-            </motion.div>
-          )}
-
-          {step === 3 && (
-            <motion.div
               key="step2"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="w-full max-w-lg space-y-6"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              className="w-full max-w-md mt-4 space-y-5"
             >
               <div className="text-center space-y-2">
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Wallet className="w-8 h-8 text-primary" />
+                <div className="w-14 h-14 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+                  <TrendingDown className="w-7 h-7 text-destructive" />
                 </div>
-                <h1 className="text-2xl font-bold">{t('onboarding.sourcesTitle', 'Postavite izvore plaćanja')}</h1>
-                <p className="text-muted-foreground">
-                  {t('onboarding.sourcesDescription', 'Odaberite uobičajene izvore ili dodajte vlastite')}
+                <h2 className="text-xl font-bold">
+                  {t('onboardingV2.step2.title', 'Koji su tvoji glavni mjesečni troškovi?')}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {t('onboardingV2.step2.hint', 'Odaberi i upiši okvirne iznose. Možeš preskočiti.')}
                 </p>
               </div>
 
-              {/* Preset sources */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {PRESET_SOURCES.map((source) => (
-                  <button
-                    key={source.id}
-                    onClick={() => toggleSource(source.id)}
-                    className={`p-3 rounded-xl border-2 transition-all text-left ${
-                      selectedSources.includes(source.id)
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
-                        style={{ backgroundColor: source.color }}
-                      >
-                        {source.icon}
-                      </span>
-                      {selectedSources.includes(source.id) && (
-                        <Check className="w-4 h-4 text-primary ml-auto" />
-                      )}
+              <div className="space-y-2">
+                {EXPENSE_PRESETS.map(p => {
+                  const state = expenses[p.key];
+                  return (
+                    <div
+                      key={p.key}
+                      className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-colors ${
+                        state.selected ? 'border-primary bg-primary/5' : 'border-border'
+                      }`}
+                    >
+                      <Checkbox
+                        id={`exp-${p.key}`}
+                        checked={state.selected}
+                        onCheckedChange={() => toggleExpense(p.key)}
+                      />
+                      <span className="text-2xl shrink-0" aria-hidden>{p.icon}</span>
+                      <label htmlFor={`exp-${p.key}`} className="flex-1 text-sm font-medium cursor-pointer">
+                        {t(`onboardingV2.expenseCategories.${p.key}`)}
+                      </label>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="any"
+                        placeholder="€"
+                        value={state.amount}
+                        onChange={e => setExpenseAmount(p.key, e.target.value)}
+                        onFocus={() => { if (!state.selected) toggleExpense(p.key); }}
+                        className="w-24 h-10 text-right shrink-0"
+                      />
                     </div>
-                    <p className="font-medium text-sm">{source.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{source.description}</p>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
 
-              <div className="flex items-center justify-center">
-                <Button variant="outline" onClick={addCustomSource} className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  {t('onboarding.addCustomSource', 'Dodaj vlastiti izvor')}
-                </Button>
-              </div>
+              {totalExpense > 0 && (
+                <p className="text-center text-sm text-muted-foreground">
+                  {t('onboardingV2.step2.totalLabel', 'Ukupno mjesečno')}:{' '}
+                  <span className="font-semibold text-foreground">{totalExpense.toFixed(2)} €</span>
+                </p>
+              )}
             </motion.div>
           )}
 
+          {/* === STEP 3: INCOME === */}
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              className="w-full max-w-md mt-4 space-y-5"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="w-7 h-7 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold">
+                  {t('onboardingV2.step3.title', 'Koji su tvoji glavni prihodi?')}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {t('onboardingV2.step3.hint', 'Odaberi i upiši okvirne iznose. Možeš preskočiti.')}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {INCOME_PRESETS.map(p => {
+                  const state = incomes[p.key];
+                  return (
+                    <div
+                      key={p.key}
+                      className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-colors ${
+                        state.selected ? 'border-primary bg-primary/5' : 'border-border'
+                      }`}
+                    >
+                      <Checkbox
+                        id={`inc-${p.key}`}
+                        checked={state.selected}
+                        onCheckedChange={() => toggleIncome(p.key)}
+                      />
+                      <span className="text-2xl shrink-0" aria-hidden>{p.icon}</span>
+                      <label htmlFor={`inc-${p.key}`} className="flex-1 text-sm font-medium cursor-pointer">
+                        {t(`onboardingV2.incomeCategories.${p.key}`)}
+                      </label>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="any"
+                        placeholder="€"
+                        value={state.amount}
+                        onChange={e => setIncomeAmount(p.key, e.target.value)}
+                        onFocus={() => { if (!state.selected) toggleIncome(p.key); }}
+                        className="w-24 h-10 text-right shrink-0"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {totalIncome > 0 && (
+                <p className="text-center text-sm text-muted-foreground">
+                  {t('onboardingV2.step3.totalLabel', 'Ukupno mjesečno')}:{' '}
+                  <span className="font-semibold text-foreground">{totalIncome.toFixed(2)} €</span>
+                </p>
+              )}
+            </motion.div>
+          )}
+
+          {/* === STEP 4: SUMMARY + CHART === */}
           {step === 4 && (
             <motion.div
               key="step4"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="w-full max-w-lg space-y-6"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              className="w-full max-w-md mt-4 space-y-5"
             >
               <div className="text-center space-y-2">
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <CreditCard className="w-8 h-8 text-primary" />
+                <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <PartyPopper className="w-8 h-8 text-primary" />
                 </div>
-                <h1 className="text-2xl font-bold">{t('onboarding.cardsTitle', 'Dodajte kartice')}</h1>
-                <p className="text-muted-foreground">
-                  {t('onboarding.cardsDescription', 'Skenirajte karticu za automatsko prepoznavanje ili unesite ručno')}
+                <h2 className="text-2xl font-bold">
+                  {t('onboardingV2.step4.title', 'Tvoja aplikacija je spremna')}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {t('onboardingV2.step4.subtitle', 'Evo prvog pregleda tvog budžeta.')}
                 </p>
               </div>
 
-              {customSources.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">
-                    {t('onboarding.noCustomSources', 'Nemate prilagođenih izvora s karticama.')}
-                  </p>
-                  <Button variant="outline" onClick={addCustomSource} className="gap-2">
-                    <Plus className="w-4 h-4" />
-                    {t('onboarding.addSourceWithCard', 'Dodaj izvor s karticom')}
-                  </Button>
+              {chartData.length > 0 ? (
+                <div className="rounded-2xl border border-border p-4 bg-card">
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={85}
+                          paddingAngle={2}
+                        >
+                          {chartData.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(v: number) => `${v.toFixed(2)} €`}
+                          contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-center">
+                    <div className="rounded-lg bg-muted/50 p-2">
+                      <div className="text-xs text-muted-foreground">{t('onboardingV2.step4.income', 'Prihodi')}</div>
+                      <div className="text-base font-semibold text-primary">{totalIncome.toFixed(2)} €</div>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 p-2">
+                      <div className="text-xs text-muted-foreground">{t('onboardingV2.step4.expense', 'Rashodi')}</div>
+                      <div className="text-base font-semibold text-destructive">{totalExpense.toFixed(2)} €</div>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-4 max-h-[50vh] overflow-y-auto">
-                  {customSources.map((source, index) => (
-                    <OnboardingPaymentSourceCard
-                      key={index}
-                      source={source}
-                      onUpdate={(updates) => updateCustomSource(index, updates)}
-                      onRemove={() => removeCustomSource(index)}
-                      onScanCard={() => openCardScanner(index)}
-                    />
-                  ))}
-                  <Button variant="ghost" onClick={addCustomSource} className="w-full gap-2">
-                    <Plus className="w-4 h-4" />
-                    {t('onboarding.addAnotherSource', 'Dodaj još jedan izvor')}
-                  </Button>
+                <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                  {t('onboardingV2.step4.empty', 'Nisi unio iznose — možeš ih dodati kasnije u Budžetu.')}
                 </div>
               )}
             </motion.div>
@@ -415,24 +516,26 @@ const Onboarding = () => {
         </AnimatePresence>
       </div>
 
-      {/* Footer navigation */}
-      <footer className="p-4 border-t bg-background/80 backdrop-blur-sm">
+      {/* Footer */}
+      <footer className="p-4 border-t bg-background/80 backdrop-blur-sm safe-area-bottom">
         <div className="max-w-md mx-auto flex gap-3">
           {step > 1 && (
-            <Button variant="outline" onClick={handleBack} className="gap-2">
+            <Button variant="outline" onClick={handleBack} className="gap-2" disabled={saving}>
               <ChevronLeft className="w-4 h-4" />
               {t('common.back', 'Natrag')}
             </Button>
           )}
-          <Button 
-            onClick={step === totalSteps ? handleComplete : handleNext} 
+          <Button
+            onClick={step === totalSteps ? handleComplete : handleNext}
             className="flex-1 gap-2"
-            disabled={saving}
+            disabled={saving || !canAdvance()}
           >
             {step === totalSteps ? (
               <>
                 <Sparkles className="w-4 h-4" />
-                {saving ? t('common.saving', 'Spremanje...') : t('onboarding.startUsing', 'Započni koristiti')}
+                {saving
+                  ? t('onboardingV2.saving', 'Spremam...')
+                  : t('onboardingV2.finish', 'Pokreni aplikaciju')}
               </>
             ) : (
               <>
@@ -442,61 +545,7 @@ const Onboarding = () => {
             )}
           </Button>
         </div>
-        {step < totalSteps && (
-          <div className="max-w-md mx-auto mt-2">
-            <button 
-              onClick={async () => {
-                setSaving(true);
-                try {
-                  // Save a default name if none provided
-                  const nameToSave = displayName.trim() || 'Korisnik';
-                  if (isLocalMode) {
-                    localStorage.setItem('user_display_name', nameToSave);
-                  } else if (user) {
-                    await supabase
-                      .from('profiles')
-                      .upsert({
-                        user_id: user.id,
-                        display_name: nameToSave,
-                        updated_at: new Date().toISOString()
-                      }, { onConflict: 'user_id' });
-                  }
-                  localStorage.setItem('onboarding_completed', 'true');
-                  localStorage.setItem('show_welcome_animation', 'true');
-                  localStorage.setItem('pwa-auto-update', 'true');
-                  // Persist usage profile (default to finance_only on skip)
-                  const profileToSave = usageProfileChoice ?? 'finance_only';
-                  localStorage.setItem('usage_profile', profileToSave);
-                  setUsageProfile(profileToSave);
-                  setOnboardingCompleted(true);
-                  navigate('/home', { replace: true });
-                } catch (error) {
-                  console.error('Skip error:', error);
-                  // Still complete onboarding even if save fails
-                  localStorage.setItem('onboarding_completed', 'true');
-                  localStorage.setItem('show_welcome_animation', 'true');
-                  localStorage.setItem('pwa-auto-update', 'true');
-                  setOnboardingCompleted(true);
-                  navigate('/home', { replace: true });
-                } finally {
-                  setSaving(false);
-                }
-              }}
-              disabled={saving}
-              className="text-xs text-muted-foreground hover:text-foreground w-full text-center disabled:opacity-50"
-            >
-              {saving ? t('common.loading', 'Učitavanje...') : t('onboarding.skipForNow', 'Preskoči za sada')}
-            </button>
-          </div>
-        )}
       </footer>
-
-      {/* Card Scanner Dialog */}
-      <CardScannerDialog
-        open={scannerOpen}
-        onOpenChange={setScannerOpen}
-        onCardDetected={handleCardScanned}
-      />
     </div>
   );
 };
