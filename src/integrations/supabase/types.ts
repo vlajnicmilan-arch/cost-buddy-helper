@@ -3554,6 +3554,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          last_used_at: string | null
           platform: string
           token: string
           user_id: string
@@ -3561,6 +3562,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_used_at?: string | null
           platform?: string
           token: string
           user_id: string
@@ -3568,6 +3570,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_used_at?: string | null
           platform?: string
           token?: string
           user_id?: string
@@ -4208,6 +4211,7 @@ export type Database = {
       cleanup_old_login_logs: { Args: never; Returns: undefined }
       cleanup_old_monitor_alerts: { Args: never; Returns: undefined }
       cleanup_old_push_logs: { Args: never; Returns: undefined }
+      cleanup_stale_push_tokens: { Args: never; Returns: undefined }
       consume_invitation_token: {
         Args: { _invitation_type: string; _token: string }
         Returns: {
