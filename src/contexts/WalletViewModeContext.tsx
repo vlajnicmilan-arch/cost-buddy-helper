@@ -27,10 +27,12 @@ export const WalletViewModeProvider = ({ children }: { children: ReactNode }) =>
   const {
     activeBusinessProfileId,
     setActiveBusinessProfileId,
+    businessModeEnabled,
   } = useAppState();
 
-  // Chip = pure contextual filter. Decoupled from `businessModeEnabled` global setting.
-  const mode: WalletViewMode = activeBusinessProfileId
+  // When business mode is disabled in Settings, force personal view regardless of
+  // stored activeBusinessProfileId (which we keep so it returns when re-enabled).
+  const mode: WalletViewMode = (businessModeEnabled && activeBusinessProfileId)
     ? (`business:${activeBusinessProfileId}` as WalletViewMode)
     : 'personal';
 
