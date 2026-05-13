@@ -1,90 +1,90 @@
-# Cilj
-Osigurati da APK na vmbalance.com bude potpisan pravim release keystoreom (ne debug-om), te imati siguran backup keystore-a kompatibilan s budućom Play Store migracijom.
+# Dnevni sažetak potrošnje + poboljšanja
 
-# Trenutno stanje (verificirano u kodu)
-- `android/app/build.gradle` — `signingConfigs.release` već postoji i čita 4 env varijable
-- `.github/workflows/android-build.yml` — već dekodira `ANDROID_KEYSTORE_BASE64` i potpisuje `assembleRelease`
-- `KEYSTORE_BACKUP.md` — **zastario**, opisuje debug keystore (lozinka `android`)
-- **Nepoznato:** jesu li 4 GitHub Secrets stvarno postavljeni u repou
+## DB migracija
 
-# Plan u 4 koraka
+**`profiles`**
+- `timezone TEXT DEFAULT 'Europe/Zagreb'`
+- `preferred_language TEXT` (samo ako ne postoji — provjerit ću prije migracije)
 
-## Korak 1 — Provjeri postoje li GitHub Secrets (ti, 1 min)
-Idi na GitHub repo → Settings → Secrets and variables → Actions.
+**`notification_preferences`**
+- `daily_summary_enabled BOOLEAN DEFAULT true`
+- `daily_summary_weekend_enabled BOOLEAN DEFAULT true`
+- `daily_summary_last_sent_on DATE`
+- `daily_summary_paused_until DATE` — auto-pauza nakon 7 dana neotvaranja
+- `daily_summary_unopened_streak INT DEFAULT 0`
 
-Traži ova 4 imena:
-- `ANDROID_KEYSTORE_BASE64`
-- `ANDROID_KEYSTORE_PASSWORD`
-- `ANDROID_KEY_ALIAS`
-- `ANDROID_KEY_PASSWORD`
+**`is_push_category_enabled`** — dodati granu `'daily_summary'`.
 
-**Ako sva 4 postoje** → preskoči Korak 2, idi na Korak 3.
-**Ako ne postoje (ili nedostaje neki)** → Korak 2.
+---
 
-## Korak 2 — Generiraj release keystore (ti, lokalno, 5 min)
-Na svom računalu:
+## Edge funkcija `send-daily-summary`
 
-```bash
-keytool -genkeypair -v \
-  -keystore vmbalance-release.jks \
-  -alias vmbalance \
-  -keyalg RSA -keysize 2048 \
-  -validity 10000 \
-  -storepass <JAKA_LOZINKA> \
-  -keypass <JAKA_LOZINKA>
-```
+Cron: `0 * * * *` (svakih sat). Za svaku TZ izračunaj lokalno vrijeme; obradi samo gdje je sada `21:00`.
 
-Zatim base64-encode:
-```bash
-# macOS / Linux
-base64 -i vmbalance-release.jks -o vmbalance-release.jks.b64
+**Filteri korisnika:**
+- `daily_summary_enabled = true`
+- vikend → `daily_summary_weekend_enabled = true`
+- `daily_summary_paused_until IS NULL OR < today`
+- `daily_summary_last_sent_on ≠ lokalni_danas`
+- ima aktivan push token
 
-# Windows PowerShell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("vmbalance-release.jks")) > vmbalance-release.jks.b64
-```
+**Po korisniku:**
+1. `todaySpend` = SUM `expenses` (type=expense, nature ≠ transfer/correction, date=lokalni_danas, personal scope)
+2. Ako 0 → preskoči
+3. `monthSpend`, `monthBudget`, `remainingBudget`, `weeklyAvg` (prosjek dnevne potrošnje u zadnjih 7 dana, isključujući danas)
+4. Odredi varijantu (rotacija po `dayOfMonth % 3`):
+   - **A potrošnja**: `"Danas X € · ovaj mjesec ukupno Y €"`
+   - **B preostali budžet** (ako postoji): `"Danas X € · ostalo Z € do kraja mjeseca"`
+   - **C napredak** (ako postoji): `"Danas X € · iskorišteno N% mjesečnog budžeta"`
+5. **Streak override**: ako 3+ dana zaredom ispod `monthBudget/30` → `"3. dan zaredom unutar budžeta 👍"`
+6. **Adaptivni ton** (poboljšanje):
+   - `todaySpend < 0.7 × weeklyAvg` → prefix 👍 + "ispod tvog tjednog prosjeka"
+   - `todaySpend > 1.5 × weeklyAvg` → suptilno "iznad prosjeka"
+7. **Quiet guard**: preskoči ako `auth.users.last_sign_in_at` u zadnjih 30 min (već je u appu).
+8. Pošalji preko `send-push` (kategorija `daily_summary`, deeplink `/index`).
+9. Zabilježi `daily_summary_last_sent_on` i upiši push log s `kind='daily_summary'`.
 
-U GitHub repou → Settings → Secrets → New repository secret, dodaj:
-- `ANDROID_KEYSTORE_BASE64` = sadržaj `.b64` filea
-- `ANDROID_KEYSTORE_PASSWORD` = lozinka iz keytool
-- `ANDROID_KEY_ALIAS` = `vmbalance`
-- `ANDROID_KEY_PASSWORD` = lozinka iz keytool (ista)
+**Anti-spam (poboljšanje 6):**
+- Funkcija `process-daily-summary-engagement` se zove iz fronta (ili checkano u istoj funkciji): ako je prošli sažetak poslan a korisnik nije otvorio app u sljedećih 24h → `daily_summary_unopened_streak += 1`. Ako otvorio → reset na 0.
+- Kad streak ≥ 7 → set `daily_summary_paused_until = today + 30`, pošalji jednu in-app poruku next login: *"Pauzirali smo dnevni sažetak na 30 dana jer ga nisi otvarao."*
 
-**Backup `vmbalance-release.jks` na minimalno 2 mjesta** (USB, password manager file attachment, cloud privatan folder). Bez tog filea ne možeš nikad više pushati update postojećim korisnicima.
+**Lokalizacija**: 3 jezika preko mape u edge funkciji, ključ `profiles.preferred_language` (fallback `hr`).
 
-## Korak 3 — Verifikacija (ti, 2 min)
-Triggeraj workflow ručno: GitHub repo → Actions → "Android Release APK" → Run workflow.
+**Cron**: postavlja se preko `supabase--insert` (ne migracija) jer sadrži anon key.
 
-Kad završi:
-1. Skini APK iz Artifacts (`vmbalance-release-apk`)
-2. Provjeri potpis lokalno:
-   ```bash
-   keytool -printcert -jarfile vmbalance-X.Y.Z.apk
-   ```
-3. SHA1 fingerprint mora odgovarati onome iz tvog keystorea (`keytool -list -v -keystore vmbalance-release.jks`).
+---
 
-Ako fingerprint odgovara — APK je release-signed. Ako ne odgovara ili se ne razlikuje od debug — secrets su krivo postavljeni.
+## Frontend
 
-## Korak 4 — Ažurirati `KEYSTORE_BACKUP.md` (ja, 1 prompt)
-Prepišem cijeli file da odražava stvarnost:
-- Briše debug keystore reference (lozinka `android`)
-- Dokumentira release keystore (`vmbalance-release.jks`, alias `vmbalance`)
-- Backup procedura za .jks file + base64
-- Gdje su secrets pohranjeni (GitHub repo Settings)
-- Verifikacijski `keytool` recept
-- Play Store migracijska napomena
+**`SettingsDialog` → sekcija "Obavijesti"** nova kartica:
+- Toggle **"Dnevni sažetak"** (`daily_summary_enabled`)
+- Toggle **"Šalji i vikendom"** (disabled kad je glavni off)
+- Helper: *"Svaki dan u 21:00 ako si imao transakcija."*
+- Gumb **"Pošalji testnu obavijest"** → invokes `send-daily-summary` s `{ test: true, userId }` (poboljšanje 5)
 
-# Play Store kasnije (informativno)
-Kad budeš spreman za Play Store, koristit ćeš **Play App Signing**:
-- Tvoj postojeći `vmbalance-release.jks` postaje **upload key** (potpisuje APK koji šalješ Googleu)
-- Google automatski preznači sa svojim master keyem prije distribucije
-- Ako izgubiš upload key, Google ga može resetirati (za razliku od starog modela gdje je gubitak keya značio kraj)
+**`AppStateContext`**: na loginu ako `profiles.timezone` je null → setiraj `Intl.DateTimeFormat().resolvedOptions().timeZone`.
 
-To znači da **ovaj keystore koji sad generiramo je kompatibilan s budućim Play Store-om** — ne moraš ga mijenjati.
+**i18n** ključevi: `notifications.dailySummary.*` (HR/EN/DE).
 
-# Što ja radim u build modu
-- **Korak 4 isključivo** (prepisivanje `KEYSTORE_BACKUP.md`)
+---
 
-# Što ti radiš
-- **Koraci 1, 2, 3** (sve što uključuje keystore generiranje, GitHub Secrets, lokalnu verifikaciju)
+## Datoteke
 
-Razlog: keystore i lozinke ne smiju proći kroz Lovable ili AI sandbox. Generiranje, base64, secrets — sve to ide direktno s tvog računala u GitHub.
+- nova migracija (kolone + funkcija update)
+- `supabase/functions/send-daily-summary/index.ts`
+- cron preko `supabase--insert`
+- `src/components/settings/...` (notification toggles)
+- `src/contexts/AppStateContext.tsx` (TZ setter)
+- `src/i18n/locales/{hr,en,de}.json`
+- memory: nova `mem://features/daily-summary-push`
+
+---
+
+## Uključena poboljšanja
+✅ 1 Quiet hours guard (last_sign_in_at < 30min)
+✅ 2 Adaptivni ton (vs 7d prosjek)
+✅ 3 Streak detection (3+ dana unutar budžeta)
+✅ 5 "Pošalji testnu obavijest" gumb
+✅ 6 Anti-spam auto-pauza nakon 7 dana ignoriranja
+
+❌ 4 Tjedni recap nedjeljom — preskačem da ne miješam dva flowa; mogu dodati naknadno ako želiš.
