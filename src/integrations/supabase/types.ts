@@ -2316,6 +2316,11 @@ export type Database = {
           budgets_enabled: boolean
           chat_enabled: boolean
           created_at: string
+          daily_summary_enabled: boolean
+          daily_summary_last_sent_on: string | null
+          daily_summary_paused_until: string | null
+          daily_summary_unopened_streak: number
+          daily_summary_weekend_enabled: boolean
           id: string
           pending_enabled: boolean
           projects_enabled: boolean
@@ -2330,6 +2335,11 @@ export type Database = {
           budgets_enabled?: boolean
           chat_enabled?: boolean
           created_at?: string
+          daily_summary_enabled?: boolean
+          daily_summary_last_sent_on?: string | null
+          daily_summary_paused_until?: string | null
+          daily_summary_unopened_streak?: number
+          daily_summary_weekend_enabled?: boolean
           id?: string
           pending_enabled?: boolean
           projects_enabled?: boolean
@@ -2344,6 +2354,11 @@ export type Database = {
           budgets_enabled?: boolean
           chat_enabled?: boolean
           created_at?: string
+          daily_summary_enabled?: boolean
+          daily_summary_last_sent_on?: string | null
+          daily_summary_paused_until?: string | null
+          daily_summary_unopened_streak?: number
+          daily_summary_weekend_enabled?: boolean
           id?: string
           pending_enabled?: boolean
           projects_enabled?: boolean
@@ -2521,6 +2536,8 @@ export type Database = {
           id: string
           multi_currency_enabled: boolean | null
           onboarding_completed: boolean
+          preferred_language: string | null
+          timezone: string | null
           updated_at: string
           user_id: string
         }
@@ -2533,6 +2550,8 @@ export type Database = {
           id?: string
           multi_currency_enabled?: boolean | null
           onboarding_completed?: boolean
+          preferred_language?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2545,6 +2564,8 @@ export type Database = {
           id?: string
           multi_currency_enabled?: boolean | null
           onboarding_completed?: boolean
+          preferred_language?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string
         }
