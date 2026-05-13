@@ -137,46 +137,39 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // If localStorage already says onboarding is done, trust it and finish
-      if (localStorage.getItem('onboarding_completed') === 'true') {
-        setOnboardingCompletedState(true);
-        setAppStateReady(true);
-        return;
-      }
-
-      // Otherwise, check backend profile to determine onboarding status
+      // Backend (profiles.onboarding_completed) je izvor istine.
+      // localStorage služi samo kao cache za sinkroni initial render.
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('display_name')
+          .select('display_name, onboarding_completed')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
-        // Also check if user has any payment sources (indicates completed onboarding)
-        const { count } = await supabase
-          .from('custom_payment_sources')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', session.user.id);
+        const dbCompleted = !!profile?.onboarding_completed;
 
-        const hasProfile = !!profile?.display_name?.trim();
-        const hasSources = (count ?? 0) > 0;
-
-        if (hasProfile && hasSources) {
-          // Existing user — mark onboarding as completed
+        if (dbCompleted) {
           localStorage.setItem('onboarding_completed', 'true');
-          localStorage.setItem('user_display_name', profile!.display_name!);
           setOnboardingCompletedState(true);
-          setDisplayNameState(profile!.display_name!);
-        } else if (hasProfile && !hasSources) {
-          // Has profile but no sources — still mark as completed (they may have skipped)
-          localStorage.setItem('onboarding_completed', 'true');
-          localStorage.setItem('user_display_name', profile!.display_name!);
-          setOnboardingCompletedState(true);
-          setDisplayNameState(profile!.display_name!);
+          if (profile?.display_name?.trim()) {
+            localStorage.setItem('user_display_name', profile.display_name);
+            setDisplayNameState(profile.display_name);
+          }
+        } else {
+          // DB kaže da nije gotov — očisti stari localStorage flag s prethodnog uređaja/sesije
+          // i pokaži onboarding wizard. Ako je localStorage tvrdio "gotov" a baza ne, baza pobjeđuje.
+          if (localStorage.getItem('onboarding_completed') === 'true') {
+            localStorage.removeItem('onboarding_completed');
+          }
+          setOnboardingCompletedState(false);
         }
-        // else: truly new user, onboardingCompleted stays false
       } catch (e) {
-        console.error('Failed to resolve onboarding state:', e);
+        console.error('Failed to resolve onboarding state from DB:', e);
+        // Fallback na localStorage cache ako je mreža pala — bolje pustiti korisnika u app
+        // nego ga zaglaviti u wizardu zbog mrežnog hiccupa.
+        if (localStorage.getItem('onboarding_completed') === 'true') {
+          setOnboardingCompletedState(true);
+        }
       }
 
       setAppStateReady(true);
