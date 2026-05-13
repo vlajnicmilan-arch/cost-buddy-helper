@@ -3619,6 +3619,7 @@
     "connected": "Bank connected",
     "connectError": "Failed to connect bank",
     "sandboxNotice": "Currently using sandbox environment for testing. HR banks arrive after production activation.",
+    "contextPersonal": "Personal",
     "status": {
       "pending": "Pending",
       "active": "Active",
