@@ -3596,5 +3596,34 @@
       "dividends": "Dividende / kamate",
       "other": "Ostalo"
     }
+  },
+  "openBanking": {
+    "title": "Spoji banku (Open Banking)",
+    "subtitle": "Povezivanje preko PSD2 standarda. Sigurno i bez davanja lozinki.",
+    "connectButton": "Spoji banku",
+    "selectBank": "Odaberi banku",
+    "selectCountry": "Država",
+    "loadingBanks": "Učitavanje banaka...",
+    "noBanks": "Nema dostupnih banaka za odabranu državu.",
+    "continue": "Nastavi",
+    "cancel": "Odustani",
+    "connecting": "Povezivanje...",
+    "openingBank": "Otvaramo stranicu banke za autorizaciju.",
+    "connectedBanks": "Spojene banke",
+    "noConnections": "Još nema spojenih banaka.",
+    "accounts": "računa",
+    "validUntil": "Vrijedi do",
+    "disconnect": "Prekini vezu",
+    "disconnectConfirm": "Sigurno želiš prekinuti vezu s ovom bankom?",
+    "connected": "Banka spojena",
+    "connectError": "Greška pri spajanju banke",
+    "sandboxNotice": "Trenutno koristimo sandbox okruženje za testiranje. HR banke dolaze nakon produkcijske aktivacije.",
+    "status": {
+      "pending": "U tijeku",
+      "active": "Aktivno",
+      "expired": "Isteklo",
+      "revoked": "Prekinuto",
+      "failed": "Neuspješno"
+    }
   }
 }

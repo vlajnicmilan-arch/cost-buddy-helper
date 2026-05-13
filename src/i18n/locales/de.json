@@ -3597,5 +3597,34 @@
       "dividends": "Dividenden / Zinsen",
       "other": "Sonstiges"
     }
+  },
+  "openBanking": {
+    "title": "Bank verbinden (Open Banking)",
+    "subtitle": "Sichere PSD2-Verbindung. Keine Passwörter nötig.",
+    "connectButton": "Bank verbinden",
+    "selectBank": "Bank wählen",
+    "selectCountry": "Land",
+    "loadingBanks": "Banken werden geladen...",
+    "noBanks": "Keine Banken für das ausgewählte Land verfügbar.",
+    "continue": "Weiter",
+    "cancel": "Abbrechen",
+    "connecting": "Verbinden...",
+    "openingBank": "Autorisierungsseite der Bank wird geöffnet.",
+    "connectedBanks": "Verbundene Banken",
+    "noConnections": "Noch keine verbundenen Banken.",
+    "accounts": "Konten",
+    "validUntil": "Gültig bis",
+    "disconnect": "Trennen",
+    "disconnectConfirm": "Möchten Sie die Verbindung zu dieser Bank wirklich trennen?",
+    "connected": "Bank verbunden",
+    "connectError": "Verbindung zur Bank fehlgeschlagen",
+    "sandboxNotice": "Derzeit Sandbox-Umgebung für Tests. HR-Banken nach Produktivschaltung verfügbar.",
+    "status": {
+      "pending": "Ausstehend",
+      "active": "Aktiv",
+      "expired": "Abgelaufen",
+      "revoked": "Widerrufen",
+      "failed": "Fehlgeschlagen"
+    }
   }
 }

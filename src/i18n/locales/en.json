@@ -3597,5 +3597,34 @@
       "dividends": "Dividends / interest",
       "other": "Other"
     }
+  },
+  "openBanking": {
+    "title": "Connect bank (Open Banking)",
+    "subtitle": "Secure PSD2 connection. No passwords required.",
+    "connectButton": "Connect bank",
+    "selectBank": "Select bank",
+    "selectCountry": "Country",
+    "loadingBanks": "Loading banks...",
+    "noBanks": "No banks available for selected country.",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "connecting": "Connecting...",
+    "openingBank": "Opening bank authorization page.",
+    "connectedBanks": "Connected banks",
+    "noConnections": "No connected banks yet.",
+    "accounts": "accounts",
+    "validUntil": "Valid until",
+    "disconnect": "Disconnect",
+    "disconnectConfirm": "Are you sure you want to disconnect this bank?",
+    "connected": "Bank connected",
+    "connectError": "Failed to connect bank",
+    "sandboxNotice": "Currently using sandbox environment for testing. HR banks arrive after production activation.",
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "expired": "Expired",
+      "revoked": "Revoked",
+      "failed": "Failed"
+    }
   }
 }
