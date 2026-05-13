@@ -10,7 +10,8 @@ export type PushCategory =
   | 'budgets'
   | 'reminders'
   | 'trial'
-  | 'broadcast';
+  | 'broadcast'
+  | 'daily_summary';
 
 export interface NotificationPreferences {
   chat_enabled: boolean;
@@ -21,6 +22,8 @@ export interface NotificationPreferences {
   reminders_enabled: boolean;
   trial_enabled: boolean;
   broadcast_enabled: boolean;
+  daily_summary_enabled: boolean;
+  daily_summary_weekend_enabled: boolean;
 }
 
 const DEFAULT_PREFS: NotificationPreferences = {
@@ -32,6 +35,8 @@ const DEFAULT_PREFS: NotificationPreferences = {
   reminders_enabled: true,
   trial_enabled: true,
   broadcast_enabled: true,
+  daily_summary_enabled: true,
+  daily_summary_weekend_enabled: true,
 };
 
 const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
@@ -43,6 +48,7 @@ const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
   reminders: 'reminders_enabled',
   trial: 'trial_enabled',
   broadcast: 'broadcast_enabled',
+  daily_summary: 'daily_summary_enabled',
 };
 
 export const useNotificationPreferences = () => {
@@ -73,6 +79,8 @@ export const useNotificationPreferences = () => {
           reminders_enabled: data.reminders_enabled,
           trial_enabled: data.trial_enabled,
           broadcast_enabled: data.broadcast_enabled,
+          daily_summary_enabled: data.daily_summary_enabled ?? true,
+          daily_summary_weekend_enabled: data.daily_summary_weekend_enabled ?? true,
         });
       } else {
         setPrefs(DEFAULT_PREFS);
@@ -86,10 +94,20 @@ export const useNotificationPreferences = () => {
 
   useEffect(() => { fetchPrefs(); }, [fetchPrefs]);
 
+  // Reset "unopened streak" za dnevni sažetak svaki put kad korisnik otvori app.
+  // Sprječava auto-pauzu od strane edge funkcije za korisnike koji aktivno koriste app.
+  useEffect(() => {
+    if (!user) return;
+    (supabase as any)
+      .from('notification_preferences')
+      .update({ daily_summary_unopened_streak: 0 })
+      .eq('user_id', user.id)
+      .then(() => { /* best-effort */ }, () => { /* ignore */ });
+  }, [user]);
+
   const setCategory = useCallback(async (category: PushCategory, enabled: boolean) => {
     if (!user) return;
     const col = COL_BY_CATEGORY[category];
-    // Optimistic update
     setPrefs((p) => ({ ...p, [col]: enabled }));
     try {
       await (supabase as any)
@@ -100,10 +118,25 @@ export const useNotificationPreferences = () => {
         );
     } catch (e) {
       console.error('[notif-prefs] update failed:', e);
-      // Rollback on error
       setPrefs((p) => ({ ...p, [col]: !enabled }));
     }
   }, [user, prefs]);
 
-  return { prefs, loading, setCategory, refetch: fetchPrefs };
+  const setWeekendEnabled = useCallback(async (enabled: boolean) => {
+    if (!user) return;
+    setPrefs((p) => ({ ...p, daily_summary_weekend_enabled: enabled }));
+    try {
+      await (supabase as any)
+        .from('notification_preferences')
+        .upsert(
+          { user_id: user.id, ...prefs, daily_summary_weekend_enabled: enabled },
+          { onConflict: 'user_id' }
+        );
+    } catch (e) {
+      console.error('[notif-prefs] weekend update failed:', e);
+      setPrefs((p) => ({ ...p, daily_summary_weekend_enabled: !enabled }));
+    }
+  }, [user, prefs]);
+
+  return { prefs, loading, setCategory, setWeekendEnabled, refetch: fetchPrefs };
 };
