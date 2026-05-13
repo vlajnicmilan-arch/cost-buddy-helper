@@ -3,6 +3,7 @@ import type { jsPDF as JsPDFType } from 'jspdf';
 import { ProjectMilestone, MILESTONE_STATUS_LABELS } from '@/types/project';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { addNotOfficialFooter } from '@/lib/pdfFooter';
+import { sanitizeCsvField } from '@/lib/csvSecurity';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
