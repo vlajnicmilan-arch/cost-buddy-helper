@@ -45,8 +45,10 @@ export async function generateWorkRecordsCSV(config: WorkExportConfig): Promise<
   const msMap = new Map(milestones.map(m => [m.id, m.name]));
   const wMap = new Map(workers.map(w => [w.id, `${w.first_name} ${w.last_name}`.trim()]));
 
+  // CSV injection zaštita: tekstualna polja prolaze kroz sanitizeCsvField
+  // (prefixira razmakom ako počinju s =, +, -, @). Vidi src/lib/csvSecurity.ts.
   const lines: string[] = [];
-  lines.push(`Projekt;${projectName}`);
+  lines.push(`Projekt;${sanitizeCsvField(projectName)}`);
   lines.push('');
   lines.push('Radnik;Datum;Planirano (h);Stvarno (h);Faze;Napomena');
 
@@ -55,12 +57,12 @@ export async function generateWorkRecordsCSV(config: WorkExportConfig): Promise<
     const phases = (e.milestone_ids || []).map(id => msMap.get(id) || '').filter(Boolean).join(', ');
     const note = (e.note || '').replace(/[\r\n;]+/g, ' ').trim();
     lines.push([
-      wMap.get(e.worker_id) || e.worker_id,
+      sanitizeCsvField(wMap.get(e.worker_id) || e.worker_id),
       e.work_date,
       e.scheduled_hours.toString(),
       e.actual_hours.toString(),
-      phases,
-      note,
+      sanitizeCsvField(phases),
+      sanitizeCsvField(note),
     ].join(';'));
   }
 
@@ -68,7 +70,7 @@ export async function generateWorkRecordsCSV(config: WorkExportConfig): Promise<
   lines.push('Sažetak po radniku;Sati;Trošak');
   for (const w of workers) {
     lines.push([
-      `${w.first_name} ${w.last_name}`.trim(),
+      sanitizeCsvField(`${w.first_name} ${w.last_name}`.trim()),
       w.actualHoursTotal.toFixed(2),
       currency ? fmtCurrency(w.actualCostTotal, currency) : w.actualCostTotal.toFixed(2),
     ].join(';'));
