@@ -327,6 +327,12 @@ Deno.serve(async (req) => {
 
         if (resp.ok) {
           sent++;
+          // Mark token as recently used so the weekly cleanup job
+          // (cleanup_stale_push_tokens) does not delete active tokens.
+          await supabase
+            .from("push_tokens")
+            .update({ last_used_at: new Date().toISOString() })
+            .eq("token", token);
         } else {
           const errBody = await resp.json().catch(() => ({}));
           const errCode =
