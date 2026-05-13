@@ -3540,5 +3540,51 @@
     "language": "Jezik",
     "screen": "Ekran",
     "viewport": "Viewport"
+  },
+  "onboardingV2": {
+    "finishLater": "Završi kasnije",
+    "saving": "Spremam...",
+    "finish": "Pokreni aplikaciju",
+    "doneToast": "Aplikacija je spremna!",
+    "defaultBudgetName": "Mjesečni budžet",
+    "step1": {
+      "greeting": "Pozdrav!",
+      "greetingNamed": "Pozdrav, {{name}}!",
+      "intro": "V&M Balance pomaže ti da u 15 sekundi postaviš osnovni budžet — odabereš najvažnije mjesečne troškove i prihode i odmah dobiješ jasan pregled.",
+      "nameLabel": "Tvoje ime",
+      "namePlaceholder": "npr. Marko"
+    },
+    "step2": {
+      "title": "Koji su tvoji glavni mjesečni troškovi?",
+      "hint": "Odaberi i upiši okvirne iznose. Možeš preskočiti.",
+      "totalLabel": "Ukupno mjesečno"
+    },
+    "step3": {
+      "title": "Koji su tvoji glavni prihodi?",
+      "hint": "Odaberi i upiši okvirne iznose. Možeš preskočiti.",
+      "totalLabel": "Ukupno mjesečno"
+    },
+    "step4": {
+      "title": "Tvoja aplikacija je spremna",
+      "subtitle": "Evo prvog pregleda tvog budžeta.",
+      "income": "Prihodi",
+      "expense": "Rashodi",
+      "empty": "Nisi unio iznose — možeš ih dodati kasnije u Budžetu."
+    },
+    "expenseCategories": {
+      "rent": "Najam / stanovanje",
+      "food": "Hrana",
+      "car": "Auto / prijevoz",
+      "utilities": "Režije",
+      "subscriptions": "Pretplate",
+      "other": "Ostalo"
+    },
+    "incomeCategories": {
+      "salary": "Plaća",
+      "freelance": "Freelance / honorari",
+      "rentIncome": "Najam imovine",
+      "dividends": "Dividende / kamate",
+      "other": "Ostalo"
+    }
   }
 }

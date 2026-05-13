@@ -3541,5 +3541,51 @@
     "language": "Language",
     "screen": "Screen",
     "viewport": "Viewport"
+  },
+  "onboardingV2": {
+    "finishLater": "Finish later",
+    "saving": "Saving...",
+    "finish": "Launch app",
+    "doneToast": "App is ready!",
+    "defaultBudgetName": "Monthly budget",
+    "step1": {
+      "greeting": "Hello!",
+      "greetingNamed": "Hello, {{name}}!",
+      "intro": "V&M Balance helps you set up a basic budget in 15 seconds — pick your main monthly expenses and incomes and get an instant overview.",
+      "nameLabel": "Your name",
+      "namePlaceholder": "e.g. Mark"
+    },
+    "step2": {
+      "title": "What are your main monthly expenses?",
+      "hint": "Pick categories and enter rough amounts. You can skip.",
+      "totalLabel": "Monthly total"
+    },
+    "step3": {
+      "title": "What are your main incomes?",
+      "hint": "Pick categories and enter rough amounts. You can skip.",
+      "totalLabel": "Monthly total"
+    },
+    "step4": {
+      "title": "Your app is ready",
+      "subtitle": "Here is the first overview of your budget.",
+      "income": "Income",
+      "expense": "Expenses",
+      "empty": "No amounts entered — you can add them later in Budgets."
+    },
+    "expenseCategories": {
+      "rent": "Rent / housing",
+      "food": "Food",
+      "car": "Car / transport",
+      "utilities": "Utilities",
+      "subscriptions": "Subscriptions",
+      "other": "Other"
+    },
+    "incomeCategories": {
+      "salary": "Salary",
+      "freelance": "Freelance",
+      "rentIncome": "Rental income",
+      "dividends": "Dividends / interest",
+      "other": "Other"
+    }
   }
 }

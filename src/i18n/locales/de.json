@@ -3541,5 +3541,51 @@
     "language": "Sprache",
     "screen": "Bildschirm",
     "viewport": "Viewport"
+  },
+  "onboardingV2": {
+    "finishLater": "Später beenden",
+    "saving": "Speichere...",
+    "finish": "App starten",
+    "doneToast": "App ist bereit!",
+    "defaultBudgetName": "Monatsbudget",
+    "step1": {
+      "greeting": "Hallo!",
+      "greetingNamed": "Hallo, {{name}}!",
+      "intro": "V&M Balance hilft dir, in 15 Sekunden ein Basisbudget einzurichten — wähle deine wichtigsten monatlichen Ausgaben und Einnahmen und erhalte sofort einen klaren Überblick.",
+      "nameLabel": "Dein Name",
+      "namePlaceholder": "z. B. Markus"
+    },
+    "step2": {
+      "title": "Was sind deine wichtigsten monatlichen Ausgaben?",
+      "hint": "Kategorien auswählen und ungefähre Beträge eintragen. Überspringbar.",
+      "totalLabel": "Monatlich gesamt"
+    },
+    "step3": {
+      "title": "Was sind deine wichtigsten Einnahmen?",
+      "hint": "Kategorien auswählen und ungefähre Beträge eintragen. Überspringbar.",
+      "totalLabel": "Monatlich gesamt"
+    },
+    "step4": {
+      "title": "Deine App ist bereit",
+      "subtitle": "Hier ist die erste Übersicht deines Budgets.",
+      "income": "Einnahmen",
+      "expense": "Ausgaben",
+      "empty": "Keine Beträge eingegeben — du kannst sie später unter Budgets hinzufügen."
+    },
+    "expenseCategories": {
+      "rent": "Miete / Wohnen",
+      "food": "Lebensmittel",
+      "car": "Auto / Verkehr",
+      "utilities": "Nebenkosten",
+      "subscriptions": "Abonnements",
+      "other": "Sonstiges"
+    },
+    "incomeCategories": {
+      "salary": "Gehalt",
+      "freelance": "Freelance",
+      "rentIncome": "Mieteinnahmen",
+      "dividends": "Dividenden / Zinsen",
+      "other": "Sonstiges"
+    }
   }
 }
