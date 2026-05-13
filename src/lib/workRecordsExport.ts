@@ -1,5 +1,6 @@
 import { loadJsPdf } from './loadJsPdf';
 import { exportFile } from './fileExport';
+import { sanitizeCsvField } from './csvSecurity';
 
 export interface WorkExportConfig {
   workers: Array<{
