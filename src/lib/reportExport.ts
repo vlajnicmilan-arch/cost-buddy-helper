@@ -324,14 +324,16 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
 
 export const generateIncomeCSVReport = async (data: IncomeReportData, mode: ExportMode = 'save'): Promise<void> => {
   const headers = ['Datum', 'Opis', 'Kategorija', 'Iznos'];
-  
+
+  // CSV injection zaštita — vidi src/lib/csvSecurity.ts.
   const rows = data.incomeTransactions
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(income => {
+      const safeDesc = sanitizeCsvField(income.description).replace(/"/g, '""');
       return [
         formatDate(income.date),
-        `"${income.description.replace(/"/g, '""')}"`,
-        income.category || 'Ostalo',
+        `"${safeDesc}"`,
+        sanitizeCsvField(income.category || 'Ostalo'),
         income.amount,
       ].join(',');
     });
