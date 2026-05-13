@@ -142,7 +142,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('display_name, onboarding_completed')
+          .select('display_name, onboarding_completed, timezone, preferred_language')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
@@ -162,6 +162,22 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
             localStorage.removeItem('onboarding_completed');
           }
           setOnboardingCompletedState(false);
+        }
+
+        // Tihi sync timezone i jezika iz preglednika ako u bazi nedostaju.
+        // Potrebno za dnevni sažetak push (šalje se u 21:00 lokalno).
+        try {
+          const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const browserLang = (navigator.language || 'hr').toLowerCase().slice(0, 2);
+          const supportedLang = ['hr', 'en', 'de'].includes(browserLang) ? browserLang : 'hr';
+          const updates: Record<string, string> = {};
+          if (browserTz && !(profile as any)?.timezone) updates.timezone = browserTz;
+          if (!(profile as any)?.preferred_language) updates.preferred_language = supportedLang;
+          if (Object.keys(updates).length > 0) {
+            await supabase.from('profiles').update(updates).eq('user_id', session.user.id);
+          }
+        } catch {
+          /* best-effort, ignore */
         }
       } catch (e) {
         console.error('Failed to resolve onboarding state from DB:', e);

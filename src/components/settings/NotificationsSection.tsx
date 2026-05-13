@@ -2,7 +2,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock, Info, ChevronDown, MessageSquare, ArrowLeftRight, Clock, FolderKanban, PiggyBank, CalendarClock, BadgePercent, Megaphone } from 'lucide-react';
+import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock, Info, ChevronDown, MessageSquare, ArrowLeftRight, Clock, FolderKanban, PiggyBank, CalendarClock, BadgePercent, Megaphone, Sunrise, Send } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
@@ -42,8 +44,27 @@ export const NotificationsSection = ({
   const navigate = useNavigate();
   const canUseBusiness = hasAccess('business_module');
   const isNative = Capacitor.isNativePlatform();
-  const { prefs, setCategory } = useNotificationPreferences();
+  const { prefs, setCategory, setWeekendEnabled } = useNotificationPreferences();
+  const { user } = useAuth();
   const [showCategories, setShowCategories] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const sendDailySummaryTest = async () => {
+    if (!user || sendingTest) return;
+    setSendingTest(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-daily-summary', {
+        body: { test: true, userId: user.id },
+      });
+      if (error) throw error;
+      showSuccess(t('settings.dailySummaryTestSent', 'Testna obavijest poslana'));
+    } catch (e) {
+      console.error('[daily-summary] test failed:', e);
+      showError(t('settings.dailySummaryTestFailed', 'Slanje nije uspjelo'));
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   const categoryItems: Array<{
     key: PushCategory;
@@ -151,6 +172,57 @@ export const NotificationsSection = ({
               })}
             </CollapsibleContent>
           </Collapsible>
+        )}
+      </div>
+
+      {/* Dnevni sažetak */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Sunrise className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="daily-summary" className="text-sm font-medium cursor-pointer">
+                {t('settings.dailySummary', 'Dnevni sažetak')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('settings.dailySummaryDesc', 'Svaki dan u 21:00 ako si imao transakcija.')}
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="daily-summary"
+            checked={prefs.daily_summary_enabled}
+            onCheckedChange={(v) => setCategory('daily_summary', v)}
+          />
+        </div>
+
+        {prefs.daily_summary_enabled && (
+          <>
+            <div className="flex items-center justify-between p-2.5 ml-12 mr-1 bg-muted/20 rounded-lg">
+              <Label htmlFor="daily-summary-weekend" className="text-xs font-medium cursor-pointer">
+                {t('settings.dailySummaryWeekend', 'Šalji i vikendom')}
+              </Label>
+              <Switch
+                id="daily-summary-weekend"
+                checked={prefs.daily_summary_weekend_enabled}
+                onCheckedChange={setWeekendEnabled}
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-xs h-8 px-3"
+              onClick={sendDailySummaryTest}
+              disabled={sendingTest || !user}
+            >
+              <Send className="w-3.5 h-3.5 mr-2" />
+              {sendingTest
+                ? t('settings.dailySummaryTestSending', 'Šaljem…')
+                : t('settings.dailySummaryTestButton', 'Pošalji testnu obavijest')}
+            </Button>
+          </>
         )}
       </div>
 
