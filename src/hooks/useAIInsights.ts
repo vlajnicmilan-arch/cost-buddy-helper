@@ -1,0 +1,60 @@
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { instantCache } from "@/lib/instantCache";
+
+export interface AIInsight {
+  id: string;
+  type: string;
+  title: string;
+  prompt: string;
+  severity: "info" | "positive" | "warning";
+}
+
+interface State {
+  insights: AIInsight[];
+  loading: boolean;
+  reason?: "not_enough_data" | "no_signals" | null;
+  error?: string | null;
+}
+
+const CACHE_KEY = "ai-insights:v1";
+
+export const useAIInsights = (enabled: boolean) => {
+  const [state, setState] = useState<State>(() => {
+    const cached = instantCache.read<State>(CACHE_KEY);
+    return cached || { insights: [], loading: enabled };
+  });
+  const fetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (!enabled || fetchedRef.current) return;
+    fetchedRef.current = true;
+
+    let cancelled = false;
+    (async () => {
+      setState(s => ({ ...s, loading: true, error: null }));
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-ai-insights", {
+          body: {},
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        const next: State = {
+          insights: data?.insights || [],
+          loading: false,
+          reason: data?.reason || null,
+          error: null,
+        };
+        setState(next);
+        instantCache.write(CACHE_KEY, next);
+      } catch (e: any) {
+        if (cancelled) return;
+        setState(s => ({ ...s, loading: false, error: e?.message || "failed" }));
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [enabled]);
+
+  return state;
+};
