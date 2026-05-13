@@ -17,6 +17,7 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
 import { AIInsightBubble } from '@/components/AIInsightBubble';
+import { AIInsightsSection } from '@/components/dashboard/AIInsightsSection';
 import { BottomNav } from '@/components/BottomNav';
 import { ActiveProjectsStrip } from '@/components/home/ActiveProjectsStrip';
 import { ProjectWithOwnership } from '@/types/project';
