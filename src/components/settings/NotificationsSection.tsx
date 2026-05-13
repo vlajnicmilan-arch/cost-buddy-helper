@@ -175,6 +175,57 @@ export const NotificationsSection = ({
         )}
       </div>
 
+      {/* Dnevni sažetak */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Sunrise className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="daily-summary" className="text-sm font-medium cursor-pointer">
+                {t('settings.dailySummary', 'Dnevni sažetak')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('settings.dailySummaryDesc', 'Svaki dan u 21:00 ako si imao transakcija.')}
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="daily-summary"
+            checked={prefs.daily_summary_enabled}
+            onCheckedChange={(v) => setCategory('daily_summary', v)}
+          />
+        </div>
+
+        {prefs.daily_summary_enabled && (
+          <>
+            <div className="flex items-center justify-between p-2.5 ml-12 mr-1 bg-muted/20 rounded-lg">
+              <Label htmlFor="daily-summary-weekend" className="text-xs font-medium cursor-pointer">
+                {t('settings.dailySummaryWeekend', 'Šalji i vikendom')}
+              </Label>
+              <Switch
+                id="daily-summary-weekend"
+                checked={prefs.daily_summary_weekend_enabled}
+                onCheckedChange={setWeekendEnabled}
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-xs h-8 px-3"
+              onClick={sendDailySummaryTest}
+              disabled={sendingTest || !user}
+            >
+              <Send className="w-3.5 h-3.5 mr-2" />
+              {sendingTest
+                ? t('settings.dailySummaryTestSending', 'Šaljem…')
+                : t('settings.dailySummaryTestButton', 'Pošalji testnu obavijest')}
+            </Button>
+          </>
+        )}
+      </div>
+
       {!isLocalMode && (
         <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
           <div className="flex items-center gap-3">
