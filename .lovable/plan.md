@@ -1,90 +1,51 @@
-## Cilj
+## Problem
 
-Spojiti jednu test banku preko Enable Banking sandboxa i prikazati listu računa unutar V&M Balance aplikacije. Bez sinkronizacije transakcija u `expenses` (to ide u Fazu 2).
+Iz logova `bank-list-aspsps`:
+```
+TypeError: "pkcs8" must be PKCS#8 formatted string
+  at importPKCS8 ... at getKey (enableBankingJwt.ts:16)
+```
 
----
+Ključ je PKCS#8 (`-----BEGIN PRIVATE KEY-----`), ali kad je spremljen u Lovable Cloud secrets, newlineovi su izgubljeni. Trenutni `getKey()` pokušava ih rekonstruirati, ali ima bug:
 
-## Što gradimo
+```ts
+pem = pem
+  .replace(/-----BEGIN PRIVATE KEY-----/, "-----BEGIN PRIVATE KEY-----\n")
+  .replace(/-----END PRIVATE KEY-----/, "\n-----END PRIVATE KEY-----")
+  .replace(/(.{64})/g, "$1\n");   // ← BUG
+```
 
-### 1. Lovable Cloud secrets
-- `ENABLE_BANKING_APP_ID` = `d5f12f1e-7523-4e11-9977-63d4ba90c057`
-- `ENABLE_BANKING_PRIVATE_KEY` = sadržaj .pem datoteke (paste-aš ga u secret formu, ne ide u kod)
+Posljednji `replace` ide preko CIJELOG stringa od pozicije 0, uključujući BEGIN header (32 znaka). Razbije base64 sadržaj na krivim offsetima i `importPKCS8` više ne prepoznaje strukturu.
 
-### 2. Database (1 migracija)
+## Rješenje
 
-**Tablica `bank_connections`** — jedna konekcija = jedna banka koju je korisnik autorizirao:
-- `user_id`, `business_profile_id` (nullable, za business kontekst kasnije)
-- `provider` ('enable_banking'), `aspsp_name`, `aspsp_country`
-- `session_id` (Enable Banking session UUID), `valid_until` (PSD2 max 180 dana)
-- `status` ('pending' | 'active' | 'expired' | 'revoked')
+Robusna normalizacija ključa u `supabase/functions/_shared/enableBankingJwt.ts`:
 
-**Tablica `bank_accounts`** — računi unutar konekcije:
-- `connection_id` (FK), `account_uid` (Enable Banking ID), `iban`, `name`, `currency`, `balance`, `balance_updated_at`
-- `linked_payment_source_id` (nullable FK na `custom_payment_sources`, za buduće mapiranje)
+1. Izvući base64 sadržaj iz ulaza (regex između `BEGIN PRIVATE KEY` i `END PRIVATE KEY`, uz fallback ako nema headera).
+2. Ukloniti SVE whitespace iz base64 dijela.
+3. Rekonstruirati PEM s pravilno chunk-anim base64 (64 znaka po liniji), ispravnim BEGIN/END markerima i trailing newline.
+4. Dodati jasnu error poruku ako base64 nije validan (sa duljinom, ne sa sadržajem).
 
-RLS: vlasnik (user_id) puni pristup; bez sharinga zasad.
+Pseudokod:
+```
+const raw = PRIVATE_KEY_PEM.trim();
+const m = raw.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+const b64 = (m ? m[1] : raw).replace(/\s+/g, "");
+const chunks = b64.match(/.{1,64}/g)!.join("\n");
+const pem = `-----BEGIN PRIVATE KEY-----\n${chunks}\n-----END PRIVATE KEY-----\n`;
+cachedKey = await importPKCS8(pem, "RS256");
+```
 
-### 3. Edge functions (3 nove)
+## Što se NE dira
 
-**`bank-connect-start`** (POST, autentificiran)
-- Input: `{ aspsp_name, aspsp_country, language }`
-- Generira JWT (RS256) potpisan privatnim ključem → poziva Enable Banking `POST /auth`
-- Vraća `{ authorization_url, session_state }`
-- Klijent otvara `authorization_url` (browser/Capacitor Browser plugin)
+- Secrets ostaju isti — ne treba ponovno upload.
+- Nijedna druga edge funkcija, frontend, ni DB.
+- Logika JWT signing-a, audience, issuer — sve ostaje.
 
-**`bank-connect-complete`** (GET, **public** — verify_jwt = false)
-- Ovo je redirect URL koji već imaš registriran
-- Prima `?code=...&state=...` od banke
-- Razmijeni `code` za `session_id` preko Enable Banking `POST /sessions`
-- Upiše `bank_connections` + `bank_accounts` (preko service role, jer user nije nužno logiran u edge kontekstu)
-- Vraća HTML stranicu s deep linkom natrag u app (`vmbalance://bank-connected` za native, `/wallet?bank_connected=1` za web)
+## Testiranje
 
-**`bank-list-aspsps`** (GET, autentificiran)
-- Cache lista banaka po zemlji (Enable Banking `GET /aspsps?country=HR`)
-- Sandbox vraća test banke; kasnije u produkciji vraća HR banke
+Nakon deploya pozvati `bank-list-aspsps` (FI sandbox) preko `OpenBankingPanel` i provjeriti edge logove — očekujem listu banaka umjesto `pkcs8 must be PKCS#8 formatted string`.
 
-### 4. Frontend (minimalno)
+## Promijenjeni fajlovi
 
-**Postojeća komponenta `BankConnection.tsx`** (već je u `/wallet`) — proširimo je s novom sekcijom **"Spoji banku (Open Banking)"** iznad postojećeg CSV importa:
-
-- Gumb **"Spoji banku"** → otvara dialog
-- Dialog korak 1: dropdown s listom banaka (iz `bank-list-aspsps`)
-- Dialog korak 2: na klik "Nastavi" → poziv `bank-connect-start` → otvori `authorization_url`
-- Nakon redirecta nazad → toast "Banka spojena", refresh
-- Lista spojenih banaka ispod gumba: naziv banke, broj računa, valid_until, "Prekini vezu" gumb
-
-Sve nove stringove dodajemo u `src/i18n/locales/{hr,en,de}.ts` pod namespace `bankConnection.*`.
-
-### 5. Što NE radimo u ovoj fazi
-- Sinkronizacija transakcija u `expenses`
-- Mapiranje `bank_accounts` ↔ `custom_payment_sources`
-- Auto-refresh balansa
-- Webhook za consent expiry
-- Production HR banke (čekamo Enable Banking sales odgovor)
-
----
-
-## Tehnički detalji (za referencu)
-
-**JWT signing:** Enable Banking traži RS256 JWT s `iss=app_id`, `aud="api.enablebanking.com"`, `iat`, `exp`. Koristimo `jose` Deno modul (`npm:jose@5`) za potpisivanje.
-
-**Redirect URL u kodu:** `https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/bank-connect-complete` (već registriran u Enable Banking dashboardu).
-
-**Sandbox banke:** Enable Banking sandbox koristi mock banke (Nordea sandbox, Mock ASPSP iz Enable Banking dashboarda) — nema HR banaka, ali API model je identičan.
-
-**State parametar:** Generiramo random UUID, spremamo u `bank_connections.session_id` placeholder + `user_id` preko service role pri `connect-start`, validiramo u `connect-complete`.
-
----
-
-## Redoslijed izvršavanja
-
-1. Korisnik dodaje 2 secreta (`ENABLE_BANKING_APP_ID`, `ENABLE_BANKING_PRIVATE_KEY`)
-2. Migracija (`bank_connections` + `bank_accounts` + RLS)
-3. Edge functions (`bank-list-aspsps`, `bank-connect-start`, `bank-connect-complete`)
-4. UI sekcija u `BankConnection.tsx` + i18n
-5. Test: spoji sandbox banku → provjeri da se računi pojave u listi
-
----
-
-## Procjena
-~1 dan rada (4-6 sati implementacije + 1-2h testiranja sandbox flowa).
+- `supabase/functions/_shared/enableBankingJwt.ts` (samo `getKey()` funkcija)
