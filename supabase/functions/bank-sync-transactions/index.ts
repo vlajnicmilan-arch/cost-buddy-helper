@@ -188,6 +188,8 @@ Deno.serve(async (req) => {
 
     async function categorizeViaAI(description: string): Promise<string | null> {
       if (!LOVABLE_API_KEY || !description) return null;
+      // Skip AI for purely numeric/code descriptions (no merchant context)
+      if (/^[\d\s\-\/]+$/.test(description.trim())) return null;
       const prompt = `You are a transaction categorizer. Given a bank transaction description, return the single most appropriate category.\n\nAvailable categories: ${allCategories.join(", ")}\n\nRules:\n- Supermarkets (Konzum, Lidl, Kaufland, Spar, Plodine, Interspar, Tommy, Studenac, Billa, dm) → groceries\n- Restaurants, cafes, bakeries, fast food, bars → food\n- Gas stations, parking, tolls, public transit → transport\n- Pharmacy, doctor, hospital → health\n- Electricity, water, gas, internet, phone → utilities\n- Netflix, Spotify, YouTube, HBO → subscriptions\n- Rent, mortgage → rent\n- ATM withdrawal, cash → other\n- Bank fees → bills\n- If unsure → other\n\nReturn ONLY the category name, nothing else.`;
       try {
         const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
