@@ -244,6 +244,8 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
             onBulkCategoryChange={handleBulkCategoryChange}
             onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
             onBulkDelete={handleBulkDelete}
+            onBulkBudgetChange={handleBulkBudgetChange}
+            onBulkProjectChange={handleBulkProjectChange}
           />
         </div>
 
