@@ -340,6 +340,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             onClearSelection={props.onClearSelection}
             onBulkCategoryChange={props.onBulkCategoryChange}
             onBulkPaymentSourceChange={props.onBulkPaymentSourceChange}
+            onBulkBudgetChange={props.onBulkBudgetChange}
+            onBulkProjectChange={props.onBulkProjectChange}
             onBulkDelete={props.onBulkDelete}
             onTransactionClick={props.onTransactionClick}
             onDeleteExpense={props.onDeleteExpense}
