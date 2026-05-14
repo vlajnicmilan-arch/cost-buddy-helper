@@ -78,7 +78,7 @@ export const PaymentSourceOptions = ({
               : t('transactions.myMethods', 'Moji izvori')}
           </div>
           {filteredBusiness.map((source) => (
-            <SelectItem key={source.id} value={source.id}>
+            <SelectItem key={source.id} value={`${customValuePrefix}${source.id}`}>
               <div className="flex items-center gap-2">
                 <span
                   className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
