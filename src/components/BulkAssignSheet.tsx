@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { clickableProps } from '@/lib/a11y';
+
 
 export interface BulkAssignOption {
   id: string;
@@ -101,7 +101,6 @@ export const BulkAssignSheet = ({
                 onClick={() => handleSelect(opt.id)}
                 disabled={submitting}
                 className="w-full flex items-center gap-3 min-h-11 px-3 py-2 rounded-lg hover:bg-muted text-left focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                {...clickableProps()}
               >
                 {opt.icon && <span className="shrink-0 flex items-center justify-center w-7 h-7">{opt.icon}</span>}
                 <span className="flex-1 min-w-0">
