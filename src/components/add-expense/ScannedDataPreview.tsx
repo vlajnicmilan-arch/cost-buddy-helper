@@ -12,6 +12,7 @@ import { CustomCategory } from '@/types/customCategory';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { PaymentSourceOptions } from './PaymentSourceOptions';
 
 interface ScannedData {
   amount: number;
