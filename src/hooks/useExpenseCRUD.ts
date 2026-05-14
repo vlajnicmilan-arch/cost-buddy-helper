@@ -72,6 +72,7 @@ export const useExpenseCRUD = ({
         }
         showSuccess(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
       } else {
+        if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
         // Diagnostic trail BEFORE insert — captures whether project_id was passed in
@@ -255,6 +256,7 @@ export const useExpenseCRUD = ({
         }
         showSuccess(t('feedback.updated'));
       } else {
+        if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
         if (!oldExpense) {
@@ -350,6 +352,7 @@ export const useExpenseCRUD = ({
         });
         showSuccess(t('feedback.bulkUpdated', { count: expensesToUpdate.length }));
       } else {
+        if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
         await Promise.all(expensesToUpdate.map(async (expense) => {
@@ -456,6 +459,7 @@ export const useExpenseCRUD = ({
         setExpenses(updatedExpenses);
         showSuccess(`Uvezeno ${transactions.length} transakcija`);
       } else {
+        if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('errors.mustBeLoggedIn', 'Moraš biti prijavljen')); return; }
 
         const rows = transactions.map(tx => ({
