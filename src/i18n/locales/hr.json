@@ -1297,7 +1297,14 @@
     "updatedTransactions": "Ažurirano {{count}} transakcija na \"{{name}}\"",
     "updateError": "Greška pri ažuriranju transakcija",
     "bulkUpdatePaymentSourceTitle": "Grupno ažuriranje izvora plaćanja",
-    "bulkUpdateCategoryTitle": "Grupno ažuriranje kategorija"
+    "bulkUpdateCategoryTitle": "Grupno ažuriranje kategorija",
+    "budget_label": "Budžet",
+    "project_label": "Projekt",
+    "removeBudget": "Ukloni dodjelu budžeta",
+    "removeProject": "Ukloni dodjelu projekta",
+    "searchPlaceholder": "Pretraži...",
+    "noOptions": "Nema opcija",
+    "none": "Bez dodjele"
   },
   "filters": {
     "filters": "Filteri",
