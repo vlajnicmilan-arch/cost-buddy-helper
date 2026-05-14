@@ -28,6 +28,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
   const [filterSource, setFilterSource] = useState<PaymentSource | 'all'>('all');
   const [saving, setSaving] = useState(false);
   const { formatAmount } = useCurrency();
+  const { customPaymentSources } = useCustomPaymentSources();
 
   // Filter expenses (exclude transfers, only show expenses and income)
   const filteredExpenses = useMemo(() => {
