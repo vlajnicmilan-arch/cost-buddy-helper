@@ -185,7 +185,15 @@ export const HomeHeader = ({
       {/* Search bar - full width */}
       {onSelectExpense && (
         <div className="w-full">
-          <GlobalSearch expenses={allExpenses} onSelectExpense={onSelectExpense} alwaysExpanded />
+          <GlobalSearch
+            expenses={allExpenses}
+            onSelectExpense={onSelectExpense}
+            alwaysExpanded
+            paymentSources={searchPaymentSources}
+            projects={searchProjects}
+            budgets={searchBudgets}
+            customCategories={searchCustomCategories}
+          />
         </div>
       )}
 
