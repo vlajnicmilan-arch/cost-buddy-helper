@@ -7,13 +7,15 @@ import { SaveToDownloads } from './nativeSaveToDownloads';
  * Central file export helper that works on both web and native (Capacitor) platforms.
  *
  * Modes:
- *  - 'choose' (default on native) → action sheet with Save/Share/Cancel
  *  - 'save'  → web: <a download>; native: write directly to public Downloads (MediaStore)
  *  - 'share' → web: navigator.share when available, fallback to download;
  *              native: Filesystem.writeFile to Cache + Share.share dialog
+ *
+ * UI choice between Save/Share is exposed via <ExportButton> dropdown — this
+ * helper just executes the chosen mode.
  */
 
-export type ExportMode = 'save' | 'share' | 'choose';
+export type ExportMode = 'save' | 'share';
 
 async function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -41,9 +43,9 @@ function getMimeType(fileName: string): string {
   }
 }
 
-function tx(key: string, fallback: string, opts?: Record<string, any>): string {
+function tx(key: string, fallback: string): string {
   try {
-    const v = i18n.t(key, { defaultValue: fallback, ...(opts || {}) });
+    const v = i18n.t(key, { defaultValue: fallback });
     return typeof v === 'string' ? v : fallback;
   } catch {
     return fallback;
@@ -53,7 +55,7 @@ function tx(key: string, fallback: string, opts?: Record<string, any>): string {
 export async function exportFile(
   blob: Blob,
   fileName: string,
-  mode: ExportMode = 'choose'
+  mode: ExportMode = 'save'
 ): Promise<boolean> {
   if (Capacitor.isNativePlatform()) {
     return exportFileNative(blob, fileName, mode);
@@ -74,7 +76,6 @@ async function exportFileWeb(blob: Blob, fileName: string, mode: ExportMode): Pr
       if (e?.name === 'AbortError') return true;
     }
   }
-  // 'choose' and 'save' on web → plain download
   return webDownload(blob, fileName);
 }
 
@@ -95,36 +96,12 @@ function webDownload(blob: Blob, fileName: string): boolean {
 
 async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode): Promise<boolean> {
   try {
-    let resolvedMode: ExportMode = mode;
-
-    if (mode === 'choose') {
-      const { ActionSheet, ActionSheetButtonStyle } = await import('@capacitor/action-sheet');
-      try {
-        const { index } = await ActionSheet.showActions({
-          title: tx('fileExport.chooseTitle', 'Što želiš s datotekom?'),
-          options: [
-            { title: tx('fileExport.saveAction', 'Spremi na uređaj') },
-            { title: tx('fileExport.shareAction', 'Podijeli…') },
-            { title: tx('fileExport.cancel', 'Odustani'), style: ActionSheetButtonStyle.Cancel },
-          ],
-        });
-        if (index === 0) resolvedMode = 'save';
-        else if (index === 1) resolvedMode = 'share';
-        else return true; // cancel
-      } catch {
-        return true;
-      }
-    }
-
     const base64Data = await blobToBase64(blob);
+    const mime = blob.type || getMimeType(fileName);
 
-    if (resolvedMode === 'save') {
+    if (mode === 'save') {
       try {
-        await SaveToDownloads.saveBlob({
-          base64: base64Data,
-          fileName,
-          mime: blob.type || getMimeType(fileName),
-        });
+        await SaveToDownloads.saveBlob({ base64: base64Data, fileName, mime });
         showSuccess(tx('fileExport.savedToDownloads', 'Spremljeno u Downloads'));
         return true;
       } catch (saveErr: any) {
@@ -174,7 +151,7 @@ async function shareFromCache(base64Data: string, fileName: string, dialogTitle:
 export async function exportPDFDoc(
   doc: any,
   fileName: string,
-  mode: ExportMode = 'choose'
+  mode: ExportMode = 'save'
 ): Promise<boolean> {
   const blob = doc.output('blob') as Blob;
   return exportFile(blob, fileName, mode);
@@ -188,7 +165,7 @@ export async function exportTextFile(
   fileName: string,
   mimeType?: string,
   addBOM: boolean = false,
-  mode: ExportMode = 'choose'
+  mode: ExportMode = 'save'
 ): Promise<boolean> {
   const type = mimeType || getMimeType(fileName);
   const finalContent = addBOM ? '\ufeff' + content : content;
