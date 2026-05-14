@@ -181,6 +181,8 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         };
       });
 
+      if (isStale()) return;
+
       const finalSources = sourcesWithCards as CustomPaymentSource[];
       setCustomPaymentSources(finalSources);
       if (!isLocalMode && user) {
@@ -191,12 +193,21 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         hydratedKeyRef.current = paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal);
       }
     } catch (error) {
+      // A stale fetch (deps changed mid-flight) is not an error — silently skip.
+      if (isStale()) return;
+
       const errMsg = String((error as any)?.message || error);
       const status = (error as any)?.status;
+      const isAbort = /abort/i.test(errMsg) || (error as any)?.name === 'AbortError';
       const isAuthError = /jwt|token.*expir|unauthorized/i.test(errMsg) || status === 401;
       const isTransient =
-        /network|fetch failed|failed to fetch|timeout|timed out|aborted|aborterror|load failed|networkerror/i.test(errMsg) ||
+        /network|fetch failed|failed to fetch|timeout|timed out|load failed|networkerror/i.test(errMsg) ||
         (typeof status === 'number' && status >= 500 && status <= 599);
+
+      // AbortError without auth/transient signal = cancelled request, ignore.
+      if (isAbort && !isAuthError && !isTransient) {
+        return;
+      }
 
       if (isAuthError) {
         console.log('[PaymentSources] Auth error, refreshing session and retrying...');
@@ -227,9 +238,9 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       console.error('Error fetching custom payment sources:', error);
       showError(tr('errors.fetch.sources', 'Greška pri dohvaćanju prilagođenih izvora plaćanja'));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
-  }, [user, isLocalMode, activeBusinessProfileId, includePersonal]);
+  }, [user, isLocalMode, activeBusinessProfileId, includePersonal, authReady]);
 
   // Hydrate from cache instantly when context changes
   useEffect(() => {
