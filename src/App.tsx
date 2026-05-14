@@ -13,6 +13,7 @@ import { GlobalReceiptScanHost } from "@/components/add-expense/GlobalReceiptSca
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { LockScreen } from "@/components/LockScreen";
 import { TutorialOverlay } from "@/components/tutorial";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
@@ -299,38 +300,40 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <StorageProvider>
-        <AppStateProvider>
-          <WalletViewModeProvider>
-            <AppLockProvider>
-              <CurrencyProvider>
-                <SubscriptionProvider>
-                  <TutorialProvider>
-                    <ReceiptScanProvider>
-                      <NativeInit />
-                      <Toaster />
-                      <Sonner />
-                      <BrowserRouter>
-                        <BackButtonProvider>
-                          <ScrollToTop />
-                          <DeepLinkInit />
-                          <PushAutoRegister />
-                          <DiagnosticRouteTracker />
-                          <BusinessModeGuard />
-                          <RouteAwareGlobalOverlays />
-                          <GlobalReceiptScanHost />
-                          <CrispChat />
-                          <AppRoutes />
-                        </BackButtonProvider>
-                      </BrowserRouter>
-                    </ReceiptScanProvider>
-                  </TutorialProvider>
-                </SubscriptionProvider>
-              </CurrencyProvider>
-            </AppLockProvider>
-          </WalletViewModeProvider>
-        </AppStateProvider>
-      </StorageProvider>
+      <AuthProvider>
+        <StorageProvider>
+          <AppStateProvider>
+            <WalletViewModeProvider>
+              <AppLockProvider>
+                <CurrencyProvider>
+                  <SubscriptionProvider>
+                    <TutorialProvider>
+                      <ReceiptScanProvider>
+                        <NativeInit />
+                        <Toaster />
+                        <Sonner />
+                        <BrowserRouter>
+                          <BackButtonProvider>
+                            <ScrollToTop />
+                            <DeepLinkInit />
+                            <PushAutoRegister />
+                            <DiagnosticRouteTracker />
+                            <BusinessModeGuard />
+                            <RouteAwareGlobalOverlays />
+                            <GlobalReceiptScanHost />
+                            <CrispChat />
+                            <AppRoutes />
+                          </BackButtonProvider>
+                        </BrowserRouter>
+                      </ReceiptScanProvider>
+                    </TutorialProvider>
+                  </SubscriptionProvider>
+                </CurrencyProvider>
+              </AppLockProvider>
+            </WalletViewModeProvider>
+          </AppStateProvider>
+        </StorageProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
