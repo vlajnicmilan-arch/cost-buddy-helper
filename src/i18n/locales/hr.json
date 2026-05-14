@@ -113,6 +113,7 @@
     "download": "Preuzmi",
     "share": "Podijeli",
     "savedToDocuments": "Spremljeno u Dokumenti",
+    "savedToDownloads": "Spremljeno u Downloads",
     "saveError": "Greška pri spremanju datoteke",
     "shareError": "Dijeljenje nije uspjelo",
     "saveDialogTitle": "Spremi datoteku",
