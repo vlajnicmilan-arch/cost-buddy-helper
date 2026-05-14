@@ -35,6 +35,10 @@ interface HomeHeaderProps {
   existingExpenses?: Expense[];
   onRefetch: () => void;
   onSelectExpense?: (expense: Expense) => void;
+  searchPaymentSources?: { id: string; name: string; cards?: { id: string; last_four_digits?: string | null }[] }[];
+  searchProjects?: { id: string; name: string }[];
+  searchBudgets?: { id: string; name: string }[];
+  searchCustomCategories?: { id: string; name: string }[];
 }
 
 export const HomeHeader = ({
