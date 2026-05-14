@@ -247,21 +247,10 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
                 <SelectValue placeholder={t('bulk.selectNewPaymentSource', 'Odaberi novi izvor plaćanja...')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] z-[100]">
-                {PAYMENT_SOURCE_GROUPS.map((group) => (
-                  <div key={group.label}>
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      {group.label}
-                    </div>
-                    {group.sources.map((src) => (
-                      <SelectItem key={src.id} value={src.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{src.icon}</span>
-                          <span>{src.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </div>
-                ))}
+                <PaymentSourceOptions
+                  customPaymentSources={customPaymentSources}
+                  currentValue={newPaymentSource || null}
+                />
               </SelectContent>
             </Select>
           </div>
