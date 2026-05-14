@@ -109,11 +109,13 @@ export const useAppUpdateChecker = () => {
 
       if (!isNewer && !forced) {
         // Up to date — clear any previously dismissed flag so future updates show again
+        setState(EMPTY_STATE);
         return;
       }
 
       // Respect "later" dismissal but not for forced updates
       if (!forced && getDismissedVersion() === result.version) {
+        setState(EMPTY_STATE);
         return;
       }
 
