@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCE_GROUPS, PAYMENT_SOURCES, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
+import { Expense, Category, PaymentSource, CATEGORIES, PAYMENT_SOURCES, TransactionType, getPaymentSourceInfo, IncomeCategory, INCOME_CATEGORIES } from '@/types/expense';
+import { PaymentSourceOptions } from '@/components/add-expense/PaymentSourceOptions';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
@@ -234,28 +235,11 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
                   <SelectItem value="none">
                     <span className="text-muted-foreground">{t('transactions.noDestination', 'Bez odredišta')}</span>
                   </SelectItem>
-                  {/* Custom payment sources (excluding current source) */}
-                  {customPaymentSources
-                    .filter(s => s.id !== normalizedPaymentSource)
-                    .map((src) => (
-                      <SelectItem key={src.id} value={src.id}>
-                        <span className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: src.color }}>{src.icon}</span>
-                          <span>{src.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  {/* Standard sources */}
-                  {PAYMENT_SOURCES
-                    .filter(s => s.id !== paymentSource)
-                    .map((src) => (
-                      <SelectItem key={src.id} value={src.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{src.icon}</span>
-                          <span>{src.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
+                  <PaymentSourceOptions
+                    customPaymentSources={customPaymentSources}
+                    currentValue={transferDestination}
+                    excludeId={normalizedPaymentSource ?? paymentSource}
+                  />
                 </SelectContent>
               </Select>
 
@@ -432,44 +416,10 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
                 <SelectValue placeholder={t('transactions.paymentSource')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px]">
-                {PAYMENT_SOURCE_GROUPS.map((group) => (
-                  <div key={group.label}>
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      {t(`paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}`) !== `paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}` 
-                        ? t(`paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}`) 
-                        : group.label}
-                    </div>
-                    {group.sources.map((src) => (
-                      <SelectItem key={src.id} value={src.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{src.icon}</span>
-                          <span>{t(`paymentSources.${src.id}`) !== `paymentSources.${src.id}` ? t(`paymentSources.${src.id}`) : src.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </div>
-                ))}
-                {/* Custom Payment Sources */}
-                {customPaymentSources.length > 0 && (
-                  <div>
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      {t('transactions.customSources')}
-                    </div>
-                    {customPaymentSources.map((src) => (
-                      <SelectItem key={`custom-${src.id}`} value={src.id}>
-                        <span className="flex items-center gap-2">
-                          <span 
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
-                            style={{ backgroundColor: src.color }}
-                          >
-                            {src.icon}
-                          </span>
-                          <span>{src.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </div>
-                )}
+                <PaymentSourceOptions
+                  customPaymentSources={customPaymentSources}
+                  currentValue={paymentSource}
+                />
               </SelectContent>
             </Select>
           </div>

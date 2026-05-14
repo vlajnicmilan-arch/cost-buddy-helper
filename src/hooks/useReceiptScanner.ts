@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { LocalFileCache } from './useLocalFileCache';
 import { LocalStorage } from './useLocalStorage';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { matchCustomByMethod } from '@/lib/paymentSourceMatching';
 
 interface ParsedReceipt {
   amount: number;
@@ -264,14 +265,22 @@ export const useReceiptScanner = () => {
       } catch {}
       const data = await response.json();
       
-      // Map payment_method from AI to PaymentSource
+      // Map payment_method from AI to PaymentSource.
+      // If user has a custom source whose name matches the standard method
+      // (e.g. custom "Gotovina" while AI returned cash), prefer the custom one.
       let paymentSource: PaymentSource | null = null;
-      if (data.custom_payment_source_id) {
-        paymentSource = `custom:${data.custom_payment_source_id}` as PaymentSource;
-      } else if (data.payment_method === 'card') {
-        paymentSource = 'bank';
-      } else if (data.payment_method === 'cash') {
-        paymentSource = 'cash';
+      let matchedCustomId: string | null = data.custom_payment_source_id || null;
+      if (matchedCustomId) {
+        paymentSource = `custom:${matchedCustomId}` as PaymentSource;
+      } else if (data.payment_method === 'card' || data.payment_method === 'cash') {
+        const method = data.payment_method as 'card' | 'cash';
+        const customMatch = matchCustomByMethod(method, customPaymentSources || []);
+        if (customMatch) {
+          matchedCustomId = customMatch.id;
+          paymentSource = `custom:${customMatch.id}` as PaymentSource;
+        } else {
+          paymentSource = method === 'card' ? 'bank' : 'cash';
+        }
       }
 
       const merchantName = (typeof data.merchant === 'string' && data.merchant.trim().length > 0)
@@ -287,7 +296,7 @@ export const useReceiptScanner = () => {
         category: data.category as Category,
         date: data.date || null,
         payment_source: paymentSource,
-        custom_payment_source_id: data.custom_payment_source_id || null,
+        custom_payment_source_id: matchedCustomId,
         payment_source_card_id: data.payment_source_card_id || null,
         is_installment: data.is_installment || false,
         installment_count: data.installment_count || null,
@@ -315,8 +324,8 @@ export const useReceiptScanner = () => {
       setParsedData(result);
       
       // Show different message if custom source was matched
-      if (data.custom_payment_source_id) {
-        const matchedSource = customPaymentSources?.find(s => s.id === data.custom_payment_source_id);
+      if (matchedCustomId) {
+        const matchedSource = customPaymentSources?.find(s => s.id === matchedCustomId);
         showSuccess(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
       } else {
         const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';

@@ -6,12 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Check, RotateCcw, FolderKanban, PiggyBank, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Category, getCategoryInfo, CATEGORIES, PaymentSource, PAYMENT_SOURCE_GROUPS } from '@/types/expense';
+import { Category, getCategoryInfo, CATEGORIES, PaymentSource } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { PaymentSourceOptions } from './PaymentSourceOptions';
 
 interface ScannedData {
   amount: number;
@@ -364,41 +365,15 @@ export const ScannedDataPreview = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {customPaymentSources.length > 0 && (
-                <>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                    {t('paymentSources.myAccounts')}
-                  </div>
-                  {customPaymentSources.map((source) => (
-                    <SelectItem key={source.id} value={`custom:${source.id}`}>
-                      <div className="flex items-center gap-2">
-                        <span 
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                          style={{ backgroundColor: source.color + '20', color: source.color }}
-                        >
-                          {source.icon}
-                        </span>
-                        <span>{source.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </>
-              )}
-              {PAYMENT_SOURCE_GROUPS.map((group) => (
-                <div key={group.label}>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                    {group.label}
-                  </div>
-                  {group.sources.map((source) => (
-                    <SelectItem key={source.id} value={source.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{source.icon}</span>
-                        <span>{source.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </div>
-              ))}
+              <PaymentSourceOptions
+                customPaymentSources={customPaymentSources}
+                customValuePrefix="custom:"
+                currentValue={
+                  scannedData.custom_payment_source_id
+                    ? `custom:${scannedData.custom_payment_source_id}`
+                    : (scannedData.payment_source || 'cash')
+                }
+              />
             </SelectContent>
           </Select>
 

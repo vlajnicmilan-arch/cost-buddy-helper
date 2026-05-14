@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Expense, PaymentSource, PAYMENT_SOURCE_GROUPS, getPaymentSourceInfo } from '@/types/expense';
+import { Expense, PaymentSource, getPaymentSourceInfo } from '@/types/expense';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { PaymentSourceOptions } from '@/components/add-expense/PaymentSourceOptions';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -26,6 +28,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
   const [filterSource, setFilterSource] = useState<PaymentSource | 'all'>('all');
   const [saving, setSaving] = useState(false);
   const { formatAmount } = useCurrency();
+  const { customPaymentSources } = useCustomPaymentSources();
 
   // Filter expenses (exclude transfers, only show expenses and income)
   const filteredExpenses = useMemo(() => {
@@ -244,21 +247,10 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
                 <SelectValue placeholder={t('bulk.selectNewPaymentSource', 'Odaberi novi izvor plaćanja...')} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] z-[100]">
-                {PAYMENT_SOURCE_GROUPS.map((group) => (
-                  <div key={group.label}>
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide bg-muted/50">
-                      {group.label}
-                    </div>
-                    {group.sources.map((src) => (
-                      <SelectItem key={src.id} value={src.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{src.icon}</span>
-                          <span>{src.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </div>
-                ))}
+                <PaymentSourceOptions
+                  customPaymentSources={customPaymentSources}
+                  currentValue={newPaymentSource || null}
+                />
               </SelectContent>
             </Select>
           </div>
