@@ -1,69 +1,30 @@
-## Što treba napraviti
+## Cilj
+Kad korisnik zatvori i ponovo otvori aplikaciju, business mode (i odabrana tvrtka) ostaju aktivni — kao i svaka druga postavka.
 
-### 1. Prilagođeni izvori uvijek na vrhu, standardni sakriveni iza "Prikaži više"
+## Promjena
+Jedan file: `src/contexts/AppStateContext.tsx`, linije 73–88.
 
-Trenutno glavni `PaymentSourceSelector` već prikazuje custom izvore na vrhu, ali odmah ispod ide cijela lista standardnih (Banka, Kartica, Gotovina, PayPal, Revolut, Wise…). U više drugih dijaloga ista situacija (cijela lista standardnih je inline).
+Ukloniti `sessionStorage` "cold start sentinel" koji prisilno gasi business mode na svakom svježem pokretanju. `businessModeEnabled` se čita direktno iz `localStorage` (kao `activeBusinessProfileId`, `family_mode_enabled`, `usage_profile` itd.).
 
-**Rješenje:** napraviti jedan zajednički helper za render `<SelectContent>` izvora plaćanja:
-
-`src/components/add-expense/PaymentSourceOptions.tsx` (nova komponenta):
-- Renderira **gore**:
-  - Poslovni custom izvori (ako business mode)
-  - Osobni custom izvori
-  - Pozajmica grupa (kad je primjenjivo)
-- Renderira **dolje** jedan `SelectItem`-style toggle red `▼ Prikaži standardne izvore` (i18n).
-- Klik na toggle (lokalni state unutar komponente, bez zatvaranja Selecta) prebacuje u prikaz svih `PAYMENT_SOURCE_GROUPS`.
-- Kad korisnik nema niti jedan custom izvor → toggle je već otvoren po defaultu (da ne ostane prazna lista).
-- Ako je trenutno odabrana vrijednost standardni izvor → otvoren po defaultu (inače user ne bi vidio što je izabrano).
-
-**Zamijeniti inline render u:**
-- `src/components/add-expense/PaymentSourceSelector.tsx` (glavni — Add/Edit form)
-- `src/components/add-expense/ManualExpenseForm.tsx` (Transfer destination select)
-- `src/components/add-expense/ScannedDataPreview.tsx` (nakon skeniranja računa)
-- `src/components/EditTransactionDialog.tsx`
-- `src/components/recurring/RecurringTransactionDialog.tsx`
-- `src/components/CSVImportDialog.tsx`
-- `src/components/BulkActionsToolbar.tsx` (bulk change payment source)
-
-Filteri u izvještajima/listama (`TransactionListDialog`, `TransferListDialog`, `ReportsDialog`, `OpenBankingPanel` mapper) koriste payment source samo za filtriranje — primijeniti isti helper samo gdje korisnik bira izvor *za upis transakcije*. Filter selektore ne mijenjamo da ne razbijemo postojeći flow (potvrditi pri implementaciji).
-
-### 2. Auto-match "Gotovina" → prilagođeni izvor istog imena
-
-Kad AI/OCR vraća `payment_method: "cash"` (ili `"card"`), a u `customPaymentSources` postoji istoimeni custom izvor (case/diacritic-insensitive: `gotovina` ↔ `Gotovina`, `cash`, `kartica`, `card`, `banka`, `bank`), preferirati custom umjesto standardnog mapiranja.
-
-**Lokacije za fix:**
-- `src/hooks/useReceiptScanner.ts` linije 267–275 — proširiti mapiranje:
-  ```
-  if data.custom_payment_source_id → koristi
-  else if data.payment_method === 'cash':
-      najprije pokušaj findCustomByName(['gotovina','cash'])
-      → ako postoji: paymentSource = `custom:${id}`, set custom_payment_source_id
-      → inače: 'cash'
-  isto za 'card' → ['kartica','card','bank card','debit','credit'] / 'bank' fallback
-  ```
-- Provjeriti `src/hooks/useAICategorization.ts` (ako i ono postavlja payment_source nakon spremanja transakcije manualno) i primijeniti isti helper.
-
-**Helper:** novi `src/lib/paymentSourceMatching.ts` s funkcijom:
 ```ts
-matchCustomByMethod(method: 'cash'|'card'|'bank', sources: CustomPaymentSource[]): CustomPaymentSource | null
+const [businessModeEnabled, setBusinessModeEnabledState] = useState<boolean>(
+  () => localStorage.getItem('business_mode_enabled') === 'true'
+);
 ```
-Normalizacija: `name.trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')`. Mapiranje sinonima:
-- cash → gotovina, cash, keš, kes
-- card → kartica, card, debitna, kreditna, visa, mastercard
-- bank → banka, bank, žiroračun, žiro, transakcijski
 
-Korisnik nakon toga može ručno promijeniti u Selectu (već radi).
+Ažurirati komentar iznad da odražava novo ponašanje.
 
-### 3. i18n ključevi (HR/EN/DE)
-- `paymentSources.showStandard` — "Prikaži standardne izvore" / "Show standard sources" / "Standardquellen anzeigen"
-- `paymentSources.hideStandard` — "Sakrij standardne izvore" / …
+## Što se NE mijenja
+- `setBusinessModeEnabled` setter — već piše u localStorage.
+- `BusinessProfileSwitcher`, `WalletViewModeChips`, `useBusinessViewSync` — ostaju isti.
+- `business_feature_enabled` (master switch u Postavkama) — nepromijenjen.
+- DB, RLS, edge funkcije — ništa.
+- Native (Capacitor) — nema promjene, **bez version bumpa**, jer je to čista web/JS izmjena koja radi i kroz Live Sync.
 
-### 4. Što NE diramo
-- DB schema (nema potrebe).
-- Edge function `scan-receipt` — već zna vraćati `custom_payment_source_id` kad dobije listu, fallback radimo client-side.
-- Logiku custom:UUID parsiranja, balanceUpdater, transferMatching — netaknuto.
-- Native push / version bump (ne tiče se ovog requesta).
+## Memorija
+Ažurirati `mem://features/wallet-view-mode-unified` — maknuti implicitnu pretpostavku o session resetu (ako je ima); zabilježiti da business mode persista kroz cold start.
 
-### Rezultat za korisnika
-- Svaki dialog za odabir izvora plaćanja: gore samo njegovi custom izvori, standardni iza jednog klika.
-- Skeniranje računa s `payment_method=cash` i postojećim custom izvorom "Gotovina" → automatski izabere taj custom (može mijenjati ručno).
+## Verifikacija
+1. Uključi tvrtku u Postavkama → reload preview → ostaje na tvrtki.
+2. Prebaci chip na Osobno → reload → ostaje Osobno.
+3. Master switch OFF u Postavkama → reload → ostaje OFF (i chip skriven).
