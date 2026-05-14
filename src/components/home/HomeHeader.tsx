@@ -56,6 +56,10 @@ export const HomeHeader = ({
   existingExpenses,
   onRefetch,
   onSelectExpense,
+  searchPaymentSources,
+  searchProjects,
+  searchBudgets,
+  searchCustomCategories,
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
