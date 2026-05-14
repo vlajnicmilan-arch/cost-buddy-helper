@@ -29,6 +29,8 @@ interface TransactionListSectionProps {
   onClearSelection: () => void;
   onBulkCategoryChange: (category: Category) => Promise<void>;
   onBulkPaymentSourceChange: (paymentSource: string) => Promise<void>;
+  onBulkBudgetChange?: (budgetId: string | null) => Promise<void>;
+  onBulkProjectChange?: (projectId: string | null) => Promise<void>;
   onBulkDelete: () => Promise<void>;
   // Transaction click
   onTransactionClick: (expense: Expense) => void;

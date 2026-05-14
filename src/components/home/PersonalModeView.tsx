@@ -94,6 +94,8 @@ interface PersonalModeViewProps {
   onClearSelection: () => void;
   onBulkCategoryChange: (category: Category) => Promise<void>;
   onBulkPaymentSourceChange: (paymentSource: string) => Promise<void>;
+  onBulkBudgetChange?: (budgetId: string | null) => Promise<void>;
+  onBulkProjectChange?: (projectId: string | null) => Promise<void>;
   onBulkDelete: () => Promise<void>;
   contextLookup: any;
   allCards: any[];
