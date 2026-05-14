@@ -20,6 +20,8 @@ interface PaymentSourceOptionsProps {
   showLoanGroup?: boolean;
   /** Hide the standard-sources section entirely (e.g. when calling code wants only custom). */
   hideStandard?: boolean;
+  /** Prefix added to custom source ids when used as SelectItem values. Some callers use 'custom:' prefix. */
+  customValuePrefix?: string;
 }
 
 /**
