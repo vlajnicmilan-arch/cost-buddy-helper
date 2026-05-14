@@ -367,6 +367,7 @@ export const ScannedDataPreview = ({
             <SelectContent>
               <PaymentSourceOptions
                 customPaymentSources={customPaymentSources}
+                customValuePrefix="custom:"
                 currentValue={
                   scannedData.custom_payment_source_id
                     ? `custom:${scannedData.custom_payment_source_id}`
