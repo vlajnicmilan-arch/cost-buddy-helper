@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock, User, Briefcase } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock, User, Briefcase, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -51,6 +51,8 @@ const getNotificationIcon = (type: string) => {
       return <Bell className="w-4 h-4 text-primary" />;
     case 'reminder':
       return <Clock className="w-4 h-4 text-orange-500" />;
+    case 'app_update':
+      return <Download className="w-4 h-4 text-primary" />;
     default:
       return <Bell className="w-4 h-4 text-muted-foreground" />;
   }
@@ -142,6 +144,8 @@ export const NotificationsDropdown = () => {
         return { path: '/', state: { openExpenseId: data.expense_id } };
       case 'family_message':
         return { path: '/family', state: { openGroupId: data.group_id, openChat: true } };
+      case 'app_update':
+        return { path: '/install', state: { version: data.version, apkUrl: data.apkUrl } };
       case 'invitation_accepted': {
         const targetType = data.type as string;
         if (targetType === 'family') {
