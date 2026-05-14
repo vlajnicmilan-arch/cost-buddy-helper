@@ -2705,7 +2705,8 @@
     "global": "Pretraži",
     "placeholder": "Pretraži transakcije...",
     "noResults": "Nema rezultata",
-    "results": "{{count}} rezultata"
+    "results": "{{count}} rezultata",
+    "showMore": "Prikaži više ({{count}})"
   },
   "feedback": {
     "incomeAdded": "Prihod dodan",

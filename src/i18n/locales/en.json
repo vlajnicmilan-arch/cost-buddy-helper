@@ -2706,7 +2706,8 @@
     "global": "Search",
     "placeholder": "Search transactions...",
     "noResults": "No results",
-    "results": "{{count}} results"
+    "results": "{{count}} results",
+    "showMore": "Show more ({{count}})"
   },
   "feedback": {
     "incomeAdded": "Income added",

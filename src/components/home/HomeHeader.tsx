@@ -35,6 +35,10 @@ interface HomeHeaderProps {
   existingExpenses?: Expense[];
   onRefetch: () => void;
   onSelectExpense?: (expense: Expense) => void;
+  searchPaymentSources?: { id: string; name: string; cards?: { id: string; last_four_digits?: string | null }[] }[];
+  searchProjects?: { id: string; name: string }[];
+  searchBudgets?: { id: string; name: string }[];
+  searchCustomCategories?: { id: string; name: string }[];
 }
 
 export const HomeHeader = ({
@@ -52,6 +56,10 @@ export const HomeHeader = ({
   existingExpenses,
   onRefetch,
   onSelectExpense,
+  searchPaymentSources,
+  searchProjects,
+  searchBudgets,
+  searchCustomCategories,
 }: HomeHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -177,7 +185,15 @@ export const HomeHeader = ({
       {/* Search bar - full width */}
       {onSelectExpense && (
         <div className="w-full">
-          <GlobalSearch expenses={allExpenses} onSelectExpense={onSelectExpense} alwaysExpanded />
+          <GlobalSearch
+            expenses={allExpenses}
+            onSelectExpense={onSelectExpense}
+            alwaysExpanded
+            paymentSources={searchPaymentSources}
+            projects={searchProjects}
+            budgets={searchBudgets}
+            customCategories={searchCustomCategories}
+          />
         </div>
       )}
 

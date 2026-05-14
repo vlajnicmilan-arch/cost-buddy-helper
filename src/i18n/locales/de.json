@@ -2706,7 +2706,8 @@
     "global": "Suchen",
     "placeholder": "Transaktionen suchen...",
     "noResults": "Keine Ergebnisse",
-    "results": "{{count}} Ergebnisse"
+    "results": "{{count}} Ergebnisse",
+    "showMore": "Mehr anzeigen ({{count}})"
   },
   "feedback": {
     "incomeAdded": "Einnahme hinzugefügt",
