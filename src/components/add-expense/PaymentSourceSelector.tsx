@@ -26,16 +26,7 @@ export const PaymentSourceSelector = ({
   customPaymentSources,
 }: PaymentSourceSelectorProps) => {
   const { t } = useTranslation();
-  const { currency: primaryCurrency } = useCurrency();
   const { activeBusinessProfileId } = useAppState();
-
-  // In business mode, split custom sources into business-owned vs personal (cross-mode/loan)
-  const businessSources = activeBusinessProfileId
-    ? customPaymentSources.filter(s => s.business_profile_id === activeBusinessProfileId)
-    : customPaymentSources;
-  const personalLoanSources = activeBusinessProfileId
-    ? customPaymentSources.filter(s => !s.business_profile_id)
-    : [];
 
   return (
     <div className="space-y-3">
@@ -81,77 +72,12 @@ export const PaymentSourceSelector = ({
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="bg-popover z-50 max-h-[300px]">
-          {businessSources.length > 0 && (
-            <>
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                {activeBusinessProfileId
-                  ? t('business.payment.businessAccountsGroup', 'Poslovni računi')
-                  : t('transactions.myMethods')}
-              </div>
-              {businessSources.map((source) => (
-                <SelectItem key={source.id} value={source.id}>
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                      style={{ backgroundColor: source.color + '20', color: source.color }}
-                    >
-                      {source.icon}
-                    </span>
-                    <span>{source.name}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {(CURRENCIES.find(c => c.code === source.currency)?.symbol || primaryCurrency.symbol)}{source.balance.toFixed(2)}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </>
-          )}
-
-          {personalLoanSources.length > 0 && (
-            <>
-              <div className="px-2 py-1.5 mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
-                <span>🪙</span>
-                <span>{t('business.payment.personalAccountsGroup', 'Osobni računi (pozajmica)')}</span>
-              </div>
-              {personalLoanSources.map((source) => (
-                <SelectItem key={source.id} value={source.id}>
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                      style={{ backgroundColor: source.color + '20', color: source.color }}
-                    >
-                      {source.icon}
-                    </span>
-                    <span>{source.name}</span>
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400">
-                      {t('transactions.ownerLoanBadge', 'Pozajmica')}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {(CURRENCIES.find(c => c.code === source.currency)?.symbol || primaryCurrency.symbol)}{source.balance.toFixed(2)}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </>
-          )}
-          
-          {PAYMENT_SOURCE_GROUPS.map((group) => (
-            <div key={group.label}>
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                {t(`paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}`) !== `paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}` 
-                  ? t(`paymentSources.${group.label.toLowerCase().replace(/\s+/g, '')}`) 
-                  : group.label}
-              </div>
-              {group.sources.map((source) => (
-                <SelectItem key={source.id} value={source.id}>
-                  <span className="flex items-center gap-2">
-                    <span>{source.icon}</span>
-                    <span>{t(`paymentSources.${source.id}`) !== `paymentSources.${source.id}` ? t(`paymentSources.${source.id}`) : source.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </div>
-          ))}
+          <PaymentSourceOptions
+            customPaymentSources={customPaymentSources}
+            currentValue={paymentSource}
+            showBalance
+            showLoanGroup
+          />
         </SelectContent>
       </Select>
 
