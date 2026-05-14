@@ -200,6 +200,10 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           existingExpenses={props.allExpenses}
           onRefetch={props.refetch}
           onSelectExpense={props.onTransactionClick}
+          searchPaymentSources={props.contextLookup?.customPaymentSources}
+          searchProjects={props.contextLookup?.projects}
+          searchBudgets={props.contextLookup?.budgets}
+          searchCustomCategories={props.contextLookup?.customCategories}
         />
 
         {/* Wallet view mode chips: Sve / Osobno / Poslovno */}
