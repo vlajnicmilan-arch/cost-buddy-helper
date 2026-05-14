@@ -177,6 +177,29 @@ jobs:
           fi
           echo "✅ Manifest published to Storage"
 
+      - name: Notify users about app update
+        env:
+          APK_UPLOAD_TOKEN: ${{ secrets.APK_UPLOAD_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          SHA256: ${{ steps.manifest.outputs.sha256 }}
+          APK_URL: ${{ steps.manifest.outputs.apk_url }}
+        run: |
+          MIN_SUPPORTED=$(node -p "require('./public/version.json').minSupportedVersion || '0.0.0'")
+          FN_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/notify-app-update"
+          PAYLOAD=$(node -e "console.log(JSON.stringify({version:'${VERSION}',minSupportedVersion:'${MIN_SUPPORTED}',sha256:'${SHA256}',apkUrl:'${APK_URL}'}))")
+          HTTP_CODE=$(curl -sS -o /tmp/notify_resp.json -w "%{http_code}" \
+            -X POST "$FN_URL" \
+            -H "Content-Type: application/json" \
+            -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
+            --data "$PAYLOAD")
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/notify_resp.json || true
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Update notification failed"
+            exit 1
+          fi
+          echo "✅ Update notification dispatched"
+
 
       - name: Commit updated version.json
         run: |
