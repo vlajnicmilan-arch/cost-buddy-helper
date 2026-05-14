@@ -235,28 +235,11 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
                   <SelectItem value="none">
                     <span className="text-muted-foreground">{t('transactions.noDestination', 'Bez odredišta')}</span>
                   </SelectItem>
-                  {/* Custom payment sources (excluding current source) */}
-                  {customPaymentSources
-                    .filter(s => s.id !== normalizedPaymentSource)
-                    .map((src) => (
-                      <SelectItem key={src.id} value={src.id}>
-                        <span className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: src.color }}>{src.icon}</span>
-                          <span>{src.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  {/* Standard sources */}
-                  {PAYMENT_SOURCES
-                    .filter(s => s.id !== paymentSource)
-                    .map((src) => (
-                      <SelectItem key={src.id} value={src.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{src.icon}</span>
-                          <span>{src.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
+                  <PaymentSourceOptions
+                    customPaymentSources={customPaymentSources}
+                    currentValue={transferDestination}
+                    excludeId={normalizedPaymentSource ?? paymentSource}
+                  />
                 </SelectContent>
               </Select>
 
