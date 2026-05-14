@@ -1,13 +1,12 @@
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { PaymentSource, PAYMENT_SOURCES, PAYMENT_SOURCE_GROUPS } from '@/types/expense';
+import { PaymentSource, PAYMENT_SOURCES } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CardLookup } from '@/components/CardLookup';
 import { useTranslation } from 'react-i18next';
-import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
+import { PaymentSourceOptions } from './PaymentSourceOptions';
 
 interface PaymentSourceSelectorProps {
   type: string;
