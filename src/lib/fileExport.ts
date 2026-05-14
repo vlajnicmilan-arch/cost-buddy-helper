@@ -1,24 +1,25 @@
 import { Capacitor } from '@capacitor/core';
-import { showError } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import i18n from '@/i18n';
+import { SaveToDownloads } from './nativeSaveToDownloads';
 
 /**
  * Central file export helper that works on both web and native (Capacitor) platforms.
  *
  * Modes:
- *  - 'save'  → web: <a download>; native: Filesystem.writeFile to public Documents (no share dialog)
+ *  - 'choose' (default on native) → action sheet with Save/Share/Cancel
+ *  - 'save'  → web: <a download>; native: write directly to public Downloads (MediaStore)
  *  - 'share' → web: navigator.share when available, fallback to download;
  *              native: Filesystem.writeFile to Cache + Share.share dialog
  */
 
-export type ExportMode = 'save' | 'share';
+export type ExportMode = 'save' | 'share' | 'choose';
 
 async function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
-      // Remove the data:...;base64, prefix
       const base64 = result.split(',')[1];
       resolve(base64);
     };
@@ -40,23 +41,19 @@ function getMimeType(fileName: string): string {
   }
 }
 
-function tx(key: string, fallback: string): string {
+function tx(key: string, fallback: string, opts?: Record<string, any>): string {
   try {
-    const v = i18n.t(key, { defaultValue: fallback });
+    const v = i18n.t(key, { defaultValue: fallback, ...(opts || {}) });
     return typeof v === 'string' ? v : fallback;
   } catch {
     return fallback;
   }
 }
 
-/**
- * Export/download a file. Detects platform and uses the appropriate method.
- * Returns true if the export was initiated successfully.
- */
 export async function exportFile(
   blob: Blob,
   fileName: string,
-  mode: ExportMode = 'save'
+  mode: ExportMode = 'choose'
 ): Promise<boolean> {
   if (Capacitor.isNativePlatform()) {
     return exportFileNative(blob, fileName, mode);
@@ -66,7 +63,6 @@ export async function exportFile(
 
 async function exportFileWeb(blob: Blob, fileName: string, mode: ExportMode): Promise<boolean> {
   if (mode === 'share') {
-    // Try Web Share API with files
     try {
       const file = new File([blob], fileName, { type: blob.type || getMimeType(fileName) });
       const navAny = navigator as any;
@@ -76,10 +72,9 @@ async function exportFileWeb(blob: Blob, fileName: string, mode: ExportMode): Pr
       }
     } catch (e: any) {
       if (e?.name === 'AbortError') return true;
-      // fallthrough to download
     }
-    // Fallback: download
   }
+  // 'choose' and 'save' on web → plain download
   return webDownload(blob, fileName);
 }
 
@@ -100,14 +95,45 @@ function webDownload(blob: Blob, fileName: string): boolean {
 
 async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode): Promise<boolean> {
   try {
+    let resolvedMode: ExportMode = mode;
+
+    if (mode === 'choose') {
+      const { ActionSheet, ActionSheetButtonStyle } = await import('@capacitor/action-sheet');
+      try {
+        const { index } = await ActionSheet.showActions({
+          title: tx('fileExport.chooseTitle', 'Što želiš s datotekom?'),
+          options: [
+            { title: tx('fileExport.saveAction', 'Spremi na uređaj') },
+            { title: tx('fileExport.shareAction', 'Podijeli…') },
+            { title: tx('fileExport.cancel', 'Odustani'), style: ActionSheetButtonStyle.Cancel },
+          ],
+        });
+        if (index === 0) resolvedMode = 'save';
+        else if (index === 1) resolvedMode = 'share';
+        else return true; // cancel
+      } catch {
+        return true;
+      }
+    }
+
     const base64Data = await blobToBase64(blob);
-    // Always go through native share/save dialog — Capacitor's Directory.Documents
-    // writes to app-private external storage on Android 11+, which the user cannot
-    // see in Files/Downloads. Share dialog lets the user pick a real destination
-    // (Drive, Downloads, email, ...) and is the only reliable way to surface the file.
-    const dialogTitleKey = mode === 'share' ? 'fileExport.shareDialogTitle' : 'fileExport.saveDialogTitle';
-    const dialogTitleFallback = mode === 'share' ? 'Podijeli datoteku' : 'Spremi datoteku';
-    return shareFromCache(base64Data, fileName, tx(dialogTitleKey, dialogTitleFallback));
+
+    if (resolvedMode === 'save') {
+      try {
+        await SaveToDownloads.saveBlob({
+          base64: base64Data,
+          fileName,
+          mime: blob.type || getMimeType(fileName),
+        });
+        showSuccess(tx('fileExport.savedToDownloads', 'Spremljeno u Downloads'));
+        return true;
+      } catch (saveErr: any) {
+        console.error('SaveToDownloads failed, falling back to share:', saveErr);
+        return shareFromCache(base64Data, fileName, tx('fileExport.shareDialogTitle', 'Podijeli datoteku'));
+      }
+    }
+
+    return shareFromCache(base64Data, fileName, tx('fileExport.shareDialogTitle', 'Podijeli datoteku'));
   } catch (e: any) {
     console.error('Native file export error:', e);
     showError(tx('errors.files.saveFailed', 'Greška pri spremanju datoteke'));
@@ -148,7 +174,7 @@ async function shareFromCache(base64Data: string, fileName: string, dialogTitle:
 export async function exportPDFDoc(
   doc: any,
   fileName: string,
-  mode: ExportMode = 'save'
+  mode: ExportMode = 'choose'
 ): Promise<boolean> {
   const blob = doc.output('blob') as Blob;
   return exportFile(blob, fileName, mode);
@@ -162,7 +188,7 @@ export async function exportTextFile(
   fileName: string,
   mimeType?: string,
   addBOM: boolean = false,
-  mode: ExportMode = 'save'
+  mode: ExportMode = 'choose'
 ): Promise<boolean> {
   const type = mimeType || getMimeType(fileName);
   const finalContent = addBOM ? '\ufeff' + content : content;
