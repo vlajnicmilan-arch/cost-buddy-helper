@@ -29,7 +29,7 @@ interface UseCustomPaymentSourcesOptions {
 export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions = {}) => {
   const { t } = useTranslation();
   const { includePersonal = false } = options;
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
@@ -38,6 +38,10 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>(initialCached || []);
   const [loading, setLoading] = useState(!initialCached || initialCached.length === 0);
   const hydratedKeyRef = useRef<string | null>(initialCached && initialCached.length > 0 ? initialKey : null);
+  // Tracks the latest in-flight fetch so we can ignore stale results (deps
+  // changed mid-fetch) without logging them as errors. Using a request id
+  // instead of AbortController because supabase-js does not expose abort.
+  const fetchSeqRef = useRef(0);
 
   const isLocalMode = storageMode === 'local' && !user;
 
@@ -55,10 +59,22 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       return;
     }
 
+    // Wait for the auth session to finish restoring before any cloud query.
+    // Without this gate, the hook would race the session restore, fire a
+    // fetch with no JWT, and the request would be aborted by the next render
+    // — producing AbortError + retry loops.
+    if (!authReady) {
+      return;
+    }
+
     if (!user) {
       setLoading(false);
       return;
     }
+
+    const mySeq = ++fetchSeqRef.current;
+    const isStale = () => mySeq !== fetchSeqRef.current;
+
 
     try {
       // Fetch own payment sources filtered by business context
@@ -165,6 +181,8 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         };
       });
 
+      if (isStale()) return;
+
       const finalSources = sourcesWithCards as CustomPaymentSource[];
       setCustomPaymentSources(finalSources);
       if (!isLocalMode && user) {
@@ -175,12 +193,21 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         hydratedKeyRef.current = paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal);
       }
     } catch (error) {
+      // A stale fetch (deps changed mid-flight) is not an error — silently skip.
+      if (isStale()) return;
+
       const errMsg = String((error as any)?.message || error);
       const status = (error as any)?.status;
+      const isAbort = /abort/i.test(errMsg) || (error as any)?.name === 'AbortError';
       const isAuthError = /jwt|token.*expir|unauthorized/i.test(errMsg) || status === 401;
       const isTransient =
-        /network|fetch failed|failed to fetch|timeout|timed out|aborted|aborterror|load failed|networkerror/i.test(errMsg) ||
+        /network|fetch failed|failed to fetch|timeout|timed out|load failed|networkerror/i.test(errMsg) ||
         (typeof status === 'number' && status >= 500 && status <= 599);
+
+      // AbortError without auth/transient signal = cancelled request, ignore.
+      if (isAbort && !isAuthError && !isTransient) {
+        return;
+      }
 
       if (isAuthError) {
         console.log('[PaymentSources] Auth error, refreshing session and retrying...');
@@ -211,9 +238,9 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       console.error('Error fetching custom payment sources:', error);
       showError(tr('errors.fetch.sources', 'Greška pri dohvaćanju prilagođenih izvora plaćanja'));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
-  }, [user, isLocalMode, activeBusinessProfileId, includePersonal]);
+  }, [user, isLocalMode, activeBusinessProfileId, includePersonal, authReady]);
 
   // Hydrate from cache instantly when context changes
   useEffect(() => {
