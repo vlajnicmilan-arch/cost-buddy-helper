@@ -15,6 +15,7 @@ import { CustomIncomeCategory } from '@/types/customIncomeCategory';
 import { ReceiptCaptureButtons } from './ReceiptCaptureButtons';
 import { QuickAddCategoryInline } from './QuickAddCategoryInline';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
+import { PaymentSourceOptions } from './PaymentSourceOptions';
 import { ExpenseItemsList } from './ExpenseItemsList';
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
