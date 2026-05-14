@@ -8,6 +8,12 @@ export const FALLBACK_ORIGINS = [
   'https://cost-buddy-helper.lovable.app',
 ] as const;
 
+// Stabilan manifest u Storage-u — ažurira ga CI odmah nakon APK uploada,
+// neovisno o tome je li frontend već published. Koristimo ga kao PRIMARNI
+// izvor da update notifikacija ne ovisi o ručnom Publish kliku.
+const STORAGE_MANIFEST_URL =
+  'https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/version.json';
+
 export const getIsNativeApp = () => {
   if (typeof window === 'undefined') return false;
 
