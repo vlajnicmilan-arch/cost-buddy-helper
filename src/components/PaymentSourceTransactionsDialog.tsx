@@ -811,6 +811,8 @@ export const PaymentSourceTransactionsDialog = ({
                   onBulkCategoryChange={handleBulkCategoryChange}
                   onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
                   onBulkDelete={handleBulkDelete}
+                  onBulkBudgetChange={handleBulkBudgetChange}
+                  onBulkProjectChange={handleBulkProjectChange}
                 />
 
                 {/* Transaction List */}
