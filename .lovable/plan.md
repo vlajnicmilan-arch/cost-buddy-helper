@@ -1,80 +1,46 @@
-## Što sam našao u logovima
+## Cilj
 
-Iz `app_diagnostics_logs` (zadnjih 30 min, tvoja sesija):
+Pretraga u top baru dashboarda (`GlobalSearch`) trenutno gleda samo: `description`, `category` (raw key), `merchant_name`, `note`, `amount`. To je preusko — ne nalazi npr. transakcije po imenu izvora plaćanja, projektu, budžetu, lokaliziranom imenu kategorije, ili formatiranom datumu.
 
-1. **`payment_sources_fetch_transient_error`** — ponavlja se ~svakih 1-2 min. Detail: `is_auth: false`, `message: "AbortError: signal is aborted without reason"`. To je upravo "Greška pri dohvaćanju prilagođenih izvora plaćanja".
-2. **`previous_boot_crashed`** — 2× kritično. App je padala između sesija.
-3. **`add_expense_dialog_unmounted`** — log nakon svakog spremanja (normalno).
-4. Auth/postgres logovi nemaju 4xx/5xx → backend je OK, problem je **na klijentu**.
+Proširujemo pretragu **bez mijenjanja konteksta** (i dalje samo trenutni `allExpenses` iz aktivnog Personal/Business view-a).
 
-## Root cause
+## Što će se mijenjati
 
-### Bug #1 — `useAuth()` nije singleton (uzrok obje greške)
+### 1. `src/components/GlobalSearch.tsx`
+- Dodati nove **opcionalne propse** s lookup mapama (id → label):
+  - `paymentSources?: { id, name, cards?: [{id, last_four_digits}] }[]`
+  - `projects?: { id, name }[]`
+  - `budgets?: { id, name }[]`
+  - `customCategories?: { id, name }[]`
+- Izgraditi indekse `Map<id, name>` u `useMemo`.
+- Proširiti filter funkciju da matcha i:
+  - **ime izvora plaćanja** preko `payment_source` u formatu `custom:UUID` → lookup name
+  - **zadnje 4 znamenke kartice** preko `payment_source_card_id` (već postoji [Card Lookup] memorija)
+  - **ime projekta** preko `project_id`
+  - **ime budžeta** preko `budget_id`
+  - **lokalizirano ime kategorije** (custom kategorije + standardni `t('categories.<key>')` rezolucija)
+  - **datum** u dva oblika: `dd.MM.yyyy` i `yyyy-MM-dd`
+  - **tip transakcije** preko prevedene oznake (`prihod`, `trošak`, `troskovi`, `prijenos`, EN/DE varijante)
+  - **iznos** s normalizacijom decimalnog separatora (`,` ↔ `.`)
+- Ukloniti tvrdi limit `slice(0, 12)`. Zamijeniti s pagination patternom **50 + "Prikaži više"** (postoji konvencija — vidi memoriju [List Pagination]).
+- Sortiranje ostaje po datumu desc.
 
-`src/hooks/useAuth.ts` je obični hook, **ne** Context. U projektu ga zove **91 različitih datoteka**. Svaki poziv:
-- kreira **vlastiti** `useState(user)`,
-- kreira **vlastitu** `supabase.auth.onAuthStateChange` pretplatu,
-- pokreće **vlastiti** `getSession()`.
+### 2. `src/components/home/HomeHeader.tsx`
+- Primiti nove propse (`paymentSources`, `projects`, `budgets`, `customCategories`) i proslijediti u `<GlobalSearch>`.
 
-Posljedica: različite komponente vide `user` na različite trenutke. Tijekom brzog unosa računa (15 zaredom):
-- `useExpenseCRUD` instanca u AddExpenseDialog-u može na kratko imati `user = null` dok njena lokalna `getSession()` još nije završila → `if (!user) showError('Moraš biti prijavljen'); return;` → izbacuje na dashboard.
-- `useCustomPaymentSources` se mounta prije nego se njegova lokalna auth sesija restoreala → fetch krene s `is_auth:false`, request se aborta kad se hook re-renderuje (deps `user` se promijenila), AbortError se loguje kao "transient" i triger silent retry loop u `setTimeout(800ms)`.
+### 3. `src/pages/Index.tsx`
+- `contextLookup` već postoji (linija ~164). Proslijediti njegova polja u `HomeHeader`.
 
-Stack-overflow knowledge u promptu opisuje točno taj race-condition pattern (`useAuthReady`/gating queries na `isReady`).
+### 4. i18n (HR/EN/DE)
+- Dodati `search.showMore` ključ.
+- Postojeći `search.placeholder`, `search.noResults`, `search.results` ostaju.
 
-### Bug #2 — `useCustomPaymentSources` ne razlikuje "abort" od prave greške
+## Što se NEĆE dirati
+- Opseg podataka (i dalje `allExpenses` iz aktivnog konteksta — Personal vs aktivni Business profil; skriveni izvori i dalje vidljivi u pretrazi jer `allExpenses` nije filtriran kao `dashboardExpenses`).
+- Ostale liste, filteri, BusinessMode, RLS, edge funkcije.
+- Min. duljina query-a (ostaje 2 znaka).
 
-U `src/hooks/useCustomPaymentSources.ts` (linije 177-209) catch tretira `AbortError` (request je samo otkazan jer su se deps promijenile) kao "transient error", loguje ga i poziva `setTimeout(fetch, 800)` — što stvara petlju retry-a + diagnostic spam.
-
-Također `loading` početni state (linija 39) ovisi o cache-u, pa komponente koje gate na `loading` vide `false` prerano.
-
-### Bug #3 — `useAuth` postavlja `loading=false` prerano
-
-U `useAuth.ts` linija 20: `setLoading(false)` se zove unutar `onAuthStateChange` **prije** nego `getSession()` završi. Komponente koje koriste samo `loading` (a ne `authReady`) misle da je auth resolvana iako session još nije restorean.
-
-## Plan popravka (architecture, ne patch)
-
-### Korak 1 — `AuthProvider` (singleton auth state)
-
-Pretvori `src/hooks/useAuth.ts` u Context provider:
-- Novi `src/contexts/AuthContext.tsx` s **jednom** `onAuthStateChange` pretplatom i **jednim** `getSession()` pozivom.
-- Eksponiraj `{ user, session, loading, authReady, signUp, signIn, signOut, ... }` (ista signatura).
-- `authReady = true` tek nakon što `getSession()` resolva (ne nakon prvog `onAuthStateChange` eventa).
-- Mountaj `<AuthProvider>` u `src/main.tsx` (najviši level, prije `StorageProvider`).
-
-`src/hooks/useAuth.ts` zadrži kao tanki re-export `useContext(AuthContext)` — ne treba dirati 91 datoteku.
-
-### Korak 2 — gate fetcheva na `authReady`
-
-U `useCustomPaymentSources.ts`:
-- Dodaj `const { authReady } = useAuth();`
-- U `fetchCustomPaymentSources`: `if (!authReady) return;` (ne setLoading(false), ostavi loading dok auth ne resolva).
-- Dodaj `authReady` u `useCallback` deps.
-
-Isto mora dobiti **`useExpenseCRUD`** (i ostali write-pathovi koji bacaju "Moraš biti prijavljen"): provjera u `addExpense`/save:
-```ts
-if (!authReady) {
-  // ne radi nista, ne baci toast — dialog ce ostati otvoren, korisnik moze klik ponoviti
-  return;
-}
-if (!user) { showError(...); return; }
-```
-
-### Korak 3 — pravilan AbortController u `useCustomPaymentSources`
-
-- Drži `AbortController` u `useRef`, `abort()` na cleanup useEffect-a i prije svakog novog fetcha.
-- Proslijedi `signal` u sve `supabase.from(...)` pozive (`.abortSignal(controller.signal)`).
-- U catch: ako je `error.name === 'AbortError'` ili `signal.aborted` → tiho `return`, **bez** logiranja u diagnostics i **bez** `setTimeout` retrya. To eliminira diagnostic spam i retry petlju.
-
-### Korak 4 — verifikacija
-
-- Rebuild → otvori preview, prijavi se, brzo unesi 5 računa zaredom.
-- Provjeri `app_diagnostics_logs` da `payment_sources_fetch_transient_error` više ne dolazi.
-- Provjeri da spremanje računa više ne baca "Moraš biti prijavljen" niti redirecta na dashboard.
-
-## Što NE diram
-
-- Ne mijenjam 91 datoteku koja zove `useAuth()` (re-export iz contexta = drop-in).
-- Ne diram backend, RLS, edge funkcije.
-- Ne diram `useExpenseCRUD` insert logiku, samo dodajem authReady gate na samom početku save funkcija.
-- Bug "previous_boot_crashed" istražim posebno (vjerojatno povezano — kad je app oboren, sljedeći boot to loguje; ako popravak auth race-conditiona stabilizira app, crashevi će vjerojatno nestati). Ako i dalje budu — zaseban krug.
+## Verifikacija
+- Otvoriti pretragu, upisati: ime izvora plaćanja, zadnje 4 znamenke kartice, ime projekta, ime budžeta, dio datuma `15.03`, riječ "prijenos" — svaki upit treba vraćati relevantne pogotke.
+- Provjeriti da rezultata > 12 prikazuje "Prikaži više".
+- Personal vs Business: prebaciti view → pretraga vidi samo transakcije aktivnog konteksta.
