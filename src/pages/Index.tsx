@@ -291,6 +291,8 @@ const Index = () => {
     handleClearSelection,
     handleBulkCategoryChange,
     handleBulkPaymentSourceChange,
+    handleBulkBudgetChange,
+    handleBulkProjectChange,
     handleBulkDelete,
   } = useBulkActions({
     filteredExpenses: filteredDashboardExpenses,
@@ -480,6 +482,8 @@ const Index = () => {
     onClearSelection: handleClearSelection,
     onBulkCategoryChange: handleBulkCategoryChange,
     onBulkPaymentSourceChange: handleBulkPaymentSourceChange,
+    onBulkBudgetChange: handleBulkBudgetChange,
+    onBulkProjectChange: handleBulkProjectChange,
     onBulkDelete: handleBulkDelete,
     contextLookup,
     // Sources
