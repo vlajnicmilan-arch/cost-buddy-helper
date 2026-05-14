@@ -61,6 +61,8 @@ export const TransactionListSection = ({
   onClearSelection,
   onBulkCategoryChange,
   onBulkPaymentSourceChange,
+  onBulkBudgetChange,
+  onBulkProjectChange,
   onBulkDelete,
   onTransactionClick,
   onDeleteExpense,
@@ -127,6 +129,8 @@ export const TransactionListSection = ({
             totalCount={filteredExpenses.length}
             onBulkCategoryChange={onBulkCategoryChange}
             onBulkPaymentSourceChange={onBulkPaymentSourceChange}
+            onBulkBudgetChange={onBulkBudgetChange}
+            onBulkProjectChange={onBulkProjectChange}
             onBulkDelete={onBulkDelete}
           />
           {expensesLoading ? (
