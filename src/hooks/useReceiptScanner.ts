@@ -264,14 +264,22 @@ export const useReceiptScanner = () => {
       } catch {}
       const data = await response.json();
       
-      // Map payment_method from AI to PaymentSource
+      // Map payment_method from AI to PaymentSource.
+      // If user has a custom source whose name matches the standard method
+      // (e.g. custom "Gotovina" while AI returned cash), prefer the custom one.
       let paymentSource: PaymentSource | null = null;
-      if (data.custom_payment_source_id) {
-        paymentSource = `custom:${data.custom_payment_source_id}` as PaymentSource;
-      } else if (data.payment_method === 'card') {
-        paymentSource = 'bank';
-      } else if (data.payment_method === 'cash') {
-        paymentSource = 'cash';
+      let matchedCustomId: string | null = data.custom_payment_source_id || null;
+      if (matchedCustomId) {
+        paymentSource = `custom:${matchedCustomId}` as PaymentSource;
+      } else if (data.payment_method === 'card' || data.payment_method === 'cash') {
+        const method = data.payment_method as 'card' | 'cash';
+        const customMatch = matchCustomByMethod(method, customPaymentSources || []);
+        if (customMatch) {
+          matchedCustomId = customMatch.id;
+          paymentSource = `custom:${customMatch.id}` as PaymentSource;
+        } else {
+          paymentSource = method === 'card' ? 'bank' : 'cash';
+        }
       }
 
       const merchantName = (typeof data.merchant === 'string' && data.merchant.trim().length > 0)
