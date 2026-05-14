@@ -324,8 +324,8 @@ export const useReceiptScanner = () => {
       setParsedData(result);
       
       // Show different message if custom source was matched
-      if (data.custom_payment_source_id) {
-        const matchedSource = customPaymentSources?.find(s => s.id === data.custom_payment_source_id);
+      if (matchedCustomId) {
+        const matchedSource = customPaymentSources?.find(s => s.id === matchedCustomId);
         showSuccess(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
       } else {
         const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';
