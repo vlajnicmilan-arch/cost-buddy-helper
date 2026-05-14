@@ -113,6 +113,7 @@
     "download": "Download",
     "share": "Share",
     "savedToDocuments": "Saved to Documents",
+    "savedToDownloads": "Saved to Downloads",
     "saveError": "Failed to save file",
     "shareError": "Sharing failed",
     "saveDialogTitle": "Save file",
