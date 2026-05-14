@@ -44,6 +44,8 @@ function resolveRouteFromPushData(data: Record<string, string | undefined>): str
       return '/calendar';
     case 'trial_reminder':
       return '/paywall';
+    case 'app_update':
+      return '/install';
     case 'broadcast':
       return data.url ?? '/';
     default:
