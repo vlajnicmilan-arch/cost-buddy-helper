@@ -106,7 +106,7 @@ export const PaymentSourceOptions = ({
             <span>{t('business.payment.personalAccountsGroup', 'Osobni računi (pozajmica)')}</span>
           </div>
           {filteredLoan.map((source) => (
-            <SelectItem key={source.id} value={source.id}>
+            <SelectItem key={source.id} value={`${customValuePrefix}${source.id}`}>
               <div className="flex items-center gap-2">
                 <span
                   className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
