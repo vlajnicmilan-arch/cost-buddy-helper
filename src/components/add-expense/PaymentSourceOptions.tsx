@@ -36,6 +36,7 @@ export const PaymentSourceOptions = ({
   showBalance = false,
   showLoanGroup = false,
   hideStandard = false,
+  customValuePrefix = '',
 }: PaymentSourceOptionsProps) => {
   const { t } = useTranslation();
   const { activeBusinessProfileId } = useAppState();
