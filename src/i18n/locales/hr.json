@@ -1124,6 +1124,8 @@
     "paymentSource": "Izvor plaćanja",
     "myAccounts": "Moji računi",
     "standardSources": "Standardni izvori",
+    "showStandard": "Prikaži standardne izvore",
+    "hideStandard": "Sakrij standardne izvore",
     "noCard": "Bez kartice",
     "cards": "Kartice",
     "digitalWallets": "Digitalni novčanici",
