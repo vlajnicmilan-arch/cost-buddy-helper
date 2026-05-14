@@ -115,7 +115,8 @@
     "savedToDocuments": "Saved to Documents",
     "saveError": "Failed to save file",
     "shareError": "Sharing failed",
-    "shareDialogTitle": "Save or share file"
+    "saveDialogTitle": "Save file",
+    "shareDialogTitle": "Share file"
   },
   "projects": {
     "noPaymentSource": "No source",
