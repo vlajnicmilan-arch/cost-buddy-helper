@@ -17,12 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { BulkAssignSheet, BulkAssignOption } from './BulkAssignSheet';
 
 type Field = 'category' | 'paymentSource' | 'budget' | 'project';
@@ -61,6 +55,7 @@ export const BulkActionsToolbar = ({
   const { t } = useTranslation();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actionPickerOpen, setActionPickerOpen] = useState(false);
   const [activeField, setActiveField] = useState<Field | null>(null);
   const { customPaymentSources } = useCustomPaymentSources();
   const { budgets } = useBudgets();
@@ -69,6 +64,23 @@ export const BulkActionsToolbar = ({
   const canBudget = showBudgetChange && !!onBulkBudgetChange;
   const canProject = showProjectChange && !!onBulkProjectChange;
   const hasMenu = showCategoryChange || showPaymentSourceChange || canBudget || canProject;
+
+  const actionOptions: BulkAssignOption[] = useMemo(() => {
+    const options: BulkAssignOption[] = [];
+    if (showCategoryChange) {
+      options.push({ id: 'category', label: t('bulk.category_label', 'Kategorija'), icon: <Tag className="w-4 h-4" /> });
+    }
+    if (showPaymentSourceChange) {
+      options.push({ id: 'paymentSource', label: t('bulk.payment', 'Plaćanje'), icon: <CreditCard className="w-4 h-4" /> });
+    }
+    if (canBudget) {
+      options.push({ id: 'budget', label: t('bulk.budget_label', 'Budžet'), icon: <Target className="w-4 h-4" /> });
+    }
+    if (canProject) {
+      options.push({ id: 'project', label: t('bulk.project_label', 'Projekt'), icon: <Folder className="w-4 h-4" /> });
+    }
+    return options;
+  }, [canBudget, canProject, showCategoryChange, showPaymentSourceChange, t]);
 
   const categoryOptions: BulkAssignOption[] = useMemo(
     () =>
@@ -207,45 +219,16 @@ export const BulkActionsToolbar = ({
 
             <div className="flex flex-wrap gap-2">
               {hasMenu && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 text-xs gap-2 bg-background min-w-[44px]"
-                      disabled={isProcessing}
-                    >
-                      <Settings2 className="w-3.5 h-3.5" />
-                      {t('bulk.bulkChange')}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56 z-[65]">
-                    {showCategoryChange && (
-                      <DropdownMenuItem onClick={() => setActiveField('category')} className="min-h-11">
-                        <Tag className="w-4 h-4 mr-2" />
-                        {t('bulk.category_label')}
-                      </DropdownMenuItem>
-                    )}
-                    {showPaymentSourceChange && (
-                      <DropdownMenuItem onClick={() => setActiveField('paymentSource')} className="min-h-11">
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        {t('bulk.payment')}
-                      </DropdownMenuItem>
-                    )}
-                    {canBudget && (
-                      <DropdownMenuItem onClick={() => setActiveField('budget')} className="min-h-11">
-                        <Target className="w-4 h-4 mr-2" />
-                        {t('bulk.budget_label', 'Budžet')}
-                      </DropdownMenuItem>
-                    )}
-                    {canProject && (
-                      <DropdownMenuItem onClick={() => setActiveField('project')} className="min-h-11">
-                        <Folder className="w-4 h-4 mr-2" />
-                        {t('bulk.project_label', 'Projekt')}
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 text-xs gap-2 bg-background min-w-[44px]"
+                  onClick={() => setActionPickerOpen(true)}
+                  disabled={isProcessing}
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  {t('bulk.bulkChange')}
+                </Button>
               )}
 
               <Button
@@ -262,6 +245,16 @@ export const BulkActionsToolbar = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <BulkAssignSheet
+        open={actionPickerOpen}
+        onOpenChange={setActionPickerOpen}
+        title={t('bulk.bulkChange')}
+        options={actionOptions}
+        onSelect={(id) => {
+          if (id) setActiveField(id as Field);
+        }}
+      />
 
       <BulkAssignSheet
         open={activeField !== null}
