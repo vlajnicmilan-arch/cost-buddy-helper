@@ -113,6 +113,7 @@
     "download": "Herunterladen",
     "share": "Teilen",
     "savedToDocuments": "In Dokumenten gespeichert",
+    "savedToDownloads": "In Downloads gespeichert",
     "saveError": "Datei konnte nicht gespeichert werden",
     "shareError": "Teilen fehlgeschlagen",
     "saveDialogTitle": "Datei speichern",
