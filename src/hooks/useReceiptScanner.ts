@@ -296,7 +296,7 @@ export const useReceiptScanner = () => {
         category: data.category as Category,
         date: data.date || null,
         payment_source: paymentSource,
-        custom_payment_source_id: data.custom_payment_source_id || null,
+        custom_payment_source_id: matchedCustomId,
         payment_source_card_id: data.payment_source_card_id || null,
         is_installment: data.is_installment || false,
         installment_count: data.installment_count || null,
