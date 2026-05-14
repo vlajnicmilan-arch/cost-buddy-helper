@@ -132,12 +132,15 @@ jobs:
           echo "✅ APK uploaded via signed URL"
 
       - name: Update version.json with SHA-256 + apkUrl
+        id: manifest
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
           SHA256=$(sha256sum "$APK_PATH" | awk '{print $1}')
           PUBLIC_URL="https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/vmbalance-${VERSION}.apk"
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "apk_url=$PUBLIC_URL" >> $GITHUB_OUTPUT
 
           node -e "
             const fs = require('fs');
@@ -150,6 +153,30 @@ jobs:
             fs.writeFileSync(path, JSON.stringify(m, null, 2) + '\n');
             console.log('Updated version.json:', m);
           "
+
+      - name: Publish manifest to Storage (independent of frontend deploy)
+        env:
+          APK_UPLOAD_TOKEN: ${{ secrets.APK_UPLOAD_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          SHA256: ${{ steps.manifest.outputs.sha256 }}
+          APK_URL: ${{ steps.manifest.outputs.apk_url }}
+        run: |
+          MIN_SUPPORTED=$(node -p "require('./public/version.json').minSupportedVersion || '0.0.0'")
+          FN_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/publish-version-manifest"
+          PAYLOAD=$(node -e "console.log(JSON.stringify({version:'${VERSION}',minSupportedVersion:'${MIN_SUPPORTED}',sha256:'${SHA256}',apkUrl:'${APK_URL}'}))")
+          HTTP_CODE=$(curl -sS -o /tmp/pub_resp.json -w "%{http_code}" \
+            -X POST "$FN_URL" \
+            -H "Content-Type: application/json" \
+            -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
+            --data "$PAYLOAD")
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/pub_resp.json || true
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Manifest publish failed"
+            exit 1
+          fi
+          echo "✅ Manifest published to Storage"
+
 
       - name: Commit updated version.json
         run: |

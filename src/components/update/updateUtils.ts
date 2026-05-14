@@ -8,6 +8,12 @@ export const FALLBACK_ORIGINS = [
   'https://cost-buddy-helper.lovable.app',
 ] as const;
 
+// Stabilan manifest u Storage-u — ažurira ga CI odmah nakon APK uploada,
+// neovisno o tome je li frontend već published. Koristimo ga kao PRIMARNI
+// izvor da update notifikacija ne ovisi o ručnom Publish kliku.
+const STORAGE_MANIFEST_URL =
+  'https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/version.json';
+
 export const getIsNativeApp = () => {
   if (typeof window === 'undefined') return false;
 
@@ -167,16 +173,49 @@ export const fetchVersionFromOrigin = async (origin: string): Promise<string | n
 
 export const fetchLatestVersion = async (): Promise<VersionCheckResult> => {
   const candidateOrigins = getCandidateOrigins();
+  console.info('[UpdateCheck] Storage manifest:', STORAGE_MANIFEST_URL);
   console.info('[UpdateCheck] Candidate origins:', candidateOrigins);
   console.info('[UpdateCheck] Platform:', getPlatformName(), '| Native:', isNativeApp);
   console.info('[UpdateCheck] APP_VERSION:', APP_VERSION);
 
+  // 1) Prvo probaj stabilni Storage manifest (ne ovisi o frontend deploy-u).
+  try {
+    const url = `${STORAGE_MANIFEST_URL}?t=${Date.now()}`;
+    const res = await fetch(url, {
+      cache: 'no-store',
+      headers: { 'cache-control': 'no-cache, no-store, must-revalidate', pragma: 'no-cache' },
+    });
+    if (res.ok) {
+      const data = (await res.json()) as Partial<VersionManifest>;
+      if (typeof data?.version === 'string' && data.version) {
+        const apkUrl =
+          (typeof data.apkUrl === 'string' && data.apkUrl) || buildDefaultApkUrl(data.version);
+        console.info(
+          `[UpdateCheck] Success from STORAGE -> ${data.version} (sha256=${data.sha256 ? 'set' : 'none'}, minSupported=${data.minSupportedVersion ?? 'n/a'})`
+        );
+        return {
+          version: data.version,
+          minSupportedVersion:
+            typeof data.minSupportedVersion === 'string' ? data.minSupportedVersion : null,
+          sha256:
+            typeof data.sha256 === 'string' && data.sha256.length > 0 ? data.sha256 : null,
+          apkUrl,
+          origin: STORAGE_MANIFEST_URL,
+          error: null,
+        };
+      }
+    } else {
+      console.warn(`[UpdateCheck] storage manifest -> HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.warn('[UpdateCheck] storage manifest fetch failed', err);
+  }
+
+  // 2) Fallback: web origin-i (ovise o tome je li frontend published).
   for (const origin of candidateOrigins) {
     const manifest = await fetchVersionManifestFromOrigin(origin);
     if (manifest) {
-      const apkUrl =
-        manifest.apkUrl ??
-        buildDefaultApkUrl(manifest.version);
+      const apkUrl = manifest.apkUrl ?? buildDefaultApkUrl(manifest.version);
       console.info(
         `[UpdateCheck] Success from ${origin} -> ${manifest.version} (sha256=${manifest.sha256 ? 'set' : 'none'}, minSupported=${manifest.minSupportedVersion ?? 'n/a'})`
       );
