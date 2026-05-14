@@ -1125,6 +1125,8 @@
     "paymentSource": "Payment Source",
     "myAccounts": "My Accounts",
     "standardSources": "Standard Sources",
+    "showStandard": "Show standard sources",
+    "hideStandard": "Hide standard sources",
     "noCard": "No card",
     "cards": "Cards",
     "digitalWallets": "Digital Wallets",
