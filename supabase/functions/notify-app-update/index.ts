@@ -74,7 +74,19 @@ Deno.serve(async (req) => {
       langByUser.set(p.user_id, (["hr", "en", "de"].includes(p.preferred_language) ? p.preferred_language : "hr") as Lang);
     });
 
-    const notifications = userIds.map((userId) => {
+    const { data: existing } = await supabase
+      .from("notifications")
+      .select("user_id")
+      .eq("type", "app_update")
+      .eq("data->>version", body.version);
+    const alreadyNotified = new Set((existing ?? []).map((row: any) => row.user_id));
+    const pendingUserIds = userIds.filter((userId) => !alreadyNotified.has(userId));
+
+    if (pendingUserIds.length === 0) {
+      return json({ success: true, targetedUsers: userIds.length, inserted: 0, pushed: 0, skippedExisting: userIds.length });
+    }
+
+    const notifications = pendingUserIds.map((userId) => {
       const lang = langByUser.get(userId) ?? "hr";
       return {
         user_id: userId,
@@ -98,7 +110,7 @@ Deno.serve(async (req) => {
     if (insertError) throw insertError;
 
     let pushed = 0;
-    await Promise.all(userIds.map(async (userId) => {
+    await Promise.all(pendingUserIds.map(async (userId) => {
       const lang = langByUser.get(userId) ?? "hr";
       await sendPushNotification({
         user_id: userId,
@@ -116,7 +128,7 @@ Deno.serve(async (req) => {
       pushed += 1;
     }));
 
-    return json({ success: true, targetedUsers: userIds.length, inserted: notifications.length, pushed });
+    return json({ success: true, targetedUsers: userIds.length, inserted: notifications.length, pushed, skippedExisting: alreadyNotified.size });
   } catch (error) {
     console.error("[notify-app-update]", error);
     return json({ error: error instanceof Error ? error.message : String(error) }, 500);
