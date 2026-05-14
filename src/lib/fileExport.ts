@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError } from '@/hooks/useStatusFeedback';
 import i18n from '@/i18n';
 
 /**
