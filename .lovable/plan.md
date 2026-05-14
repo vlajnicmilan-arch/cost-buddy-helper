@@ -1,34 +1,80 @@
-# Fix: "failed to send request" pri povezivanju računa s izvorom
+## Što sam našao u logovima
 
-## Dijagnoza
+Iz `app_diagnostics_logs` (zadnjih 30 min, tvoja sesija):
 
-Edge funkcije `bank-link-account` i `bank-sync-transactions` postoje u repou (`supabase/functions/...`) ali **NISU deployane** na Cloud:
+1. **`payment_sources_fetch_transient_error`** — ponavlja se ~svakih 1-2 min. Detail: `is_auth: false`, `message: "AbortError: signal is aborted without reason"`. To je upravo "Greška pri dohvaćanju prilagođenih izvora plaćanja".
+2. **`previous_boot_crashed`** — 2× kritično. App je padala između sesija.
+3. **`add_expense_dialog_unmounted`** — log nakon svakog spremanja (normalno).
+4. Auth/postgres logovi nemaju 4xx/5xx → backend je OK, problem je **na klijentu**.
 
-- `POST /bank-link-account` → `404 NOT_FOUND` ("Requested function was not found")
-- `POST /bank-connect-start` (postojeća) → `401` (radi, samo nema auth)
+## Root cause
 
-Frontend (`OpenBankingPanel.tsx:177`) zove `supabaseInvoke('bank-link-account', ...)` što baca generičku grešku "failed to send request" jer endpoint vraća 404 prije nego se odgovor parsa kao JSON.
+### Bug #1 — `useAuth()` nije singleton (uzrok obje greške)
 
-Najvjerojatniji uzrok: deployment iz prethodne iteracije se silently zarolao (npr. zbog `npm:@supabase/supabase-js@2/cors` subpath-a koji u nekim Deno verzijama ne resolva, iako radi u `bank-connect-start`). Treba redeploy.
+`src/hooks/useAuth.ts` je obični hook, **ne** Context. U projektu ga zove **91 različitih datoteka**. Svaki poziv:
+- kreira **vlastiti** `useState(user)`,
+- kreira **vlastitu** `supabase.auth.onAuthStateChange` pretplatu,
+- pokreće **vlastiti** `getSession()`.
 
-## Plan
+Posljedica: različite komponente vide `user` na različite trenutke. Tijekom brzog unosa računa (15 zaredom):
+- `useExpenseCRUD` instanca u AddExpenseDialog-u može na kratko imati `user = null` dok njena lokalna `getSession()` još nije završila → `if (!user) showError('Moraš biti prijavljen'); return;` → izbacuje na dashboard.
+- `useCustomPaymentSources` se mounta prije nego se njegova lokalna auth sesija restoreala → fetch krene s `is_auth:false`, request se aborta kad se hook re-renderuje (deps `user` se promijenila), AbortError se loguje kao "transient" i triger silent retry loop u `setTimeout(800ms)`.
 
-1. **Redeploy obje funkcije** s istim sadržajem koji je već u repou:
-   - `supabase/functions/bank-link-account/index.ts`
-   - `supabase/functions/bank-sync-transactions/index.ts`
+Stack-overflow knowledge u promptu opisuje točno taj race-condition pattern (`useAuthReady`/gating queries na `isReady`).
 
-2. **Verifikacija**: nakon deploya curl `POST /bank-link-account` mora vratiti **401** (unauthorized bez tokena), ne 404.
+### Bug #2 — `useCustomPaymentSources` ne razlikuje "abort" od prave greške
 
-3. **Ako redeploy padne** — fallback na lokalnu CORS deklaraciju umjesto `npm:@supabase/supabase-js@2/cors` importa (replicirati pattern iz npr. `bank-list-aspsps`).
+U `src/hooks/useCustomPaymentSources.ts` (linije 177-209) catch tretira `AbortError` (request je samo otkazan jer su se deps promijenile) kao "transient error", loguje ga i poziva `setTimeout(fetch, 800)` — što stvara petlju retry-a + diagnostic spam.
 
-4. **Frontend dodatak (opcionalno)**: u `OpenBankingPanel.tsx` poboljšati error handling — umjesto "failed to send request" prikazati `error.message` ili HTTP status iz `supabaseInvoke` response-a, da se ovakve situacije lakše dijagnosticiraju ubuduće.
+Također `loading` početni state (linija 39) ovisi o cache-u, pa komponente koje gate na `loading` vide `false` prerano.
 
-## Bez izmjena
+### Bug #3 — `useAuth` postavlja `loading=false` prerano
 
-- DB migracija je već primijenjena (kolone `linked_payment_source_id`, `bank_transaction_id` itd. postoje).
-- UI logika u `OpenBankingPanel.tsx` je ispravna.
-- Sva i18n je na mjestu.
+U `useAuth.ts` linija 20: `setLoading(false)` se zove unutar `onAuthStateChange` **prije** nego `getSession()` završi. Komponente koje koriste samo `loading` (a ne `authReady`) misle da je auth resolvana iako session još nije restorean.
 
-## Sljedeći korak nakon fixa
+## Plan popravka (architecture, ne patch)
 
-Test: Spoji → Kreiraj novi izvor / Odaberi postojeći → Sinkroniziraj. Trebao bi proći bez greške.
+### Korak 1 — `AuthProvider` (singleton auth state)
+
+Pretvori `src/hooks/useAuth.ts` u Context provider:
+- Novi `src/contexts/AuthContext.tsx` s **jednom** `onAuthStateChange` pretplatom i **jednim** `getSession()` pozivom.
+- Eksponiraj `{ user, session, loading, authReady, signUp, signIn, signOut, ... }` (ista signatura).
+- `authReady = true` tek nakon što `getSession()` resolva (ne nakon prvog `onAuthStateChange` eventa).
+- Mountaj `<AuthProvider>` u `src/main.tsx` (najviši level, prije `StorageProvider`).
+
+`src/hooks/useAuth.ts` zadrži kao tanki re-export `useContext(AuthContext)` — ne treba dirati 91 datoteku.
+
+### Korak 2 — gate fetcheva na `authReady`
+
+U `useCustomPaymentSources.ts`:
+- Dodaj `const { authReady } = useAuth();`
+- U `fetchCustomPaymentSources`: `if (!authReady) return;` (ne setLoading(false), ostavi loading dok auth ne resolva).
+- Dodaj `authReady` u `useCallback` deps.
+
+Isto mora dobiti **`useExpenseCRUD`** (i ostali write-pathovi koji bacaju "Moraš biti prijavljen"): provjera u `addExpense`/save:
+```ts
+if (!authReady) {
+  // ne radi nista, ne baci toast — dialog ce ostati otvoren, korisnik moze klik ponoviti
+  return;
+}
+if (!user) { showError(...); return; }
+```
+
+### Korak 3 — pravilan AbortController u `useCustomPaymentSources`
+
+- Drži `AbortController` u `useRef`, `abort()` na cleanup useEffect-a i prije svakog novog fetcha.
+- Proslijedi `signal` u sve `supabase.from(...)` pozive (`.abortSignal(controller.signal)`).
+- U catch: ako je `error.name === 'AbortError'` ili `signal.aborted` → tiho `return`, **bez** logiranja u diagnostics i **bez** `setTimeout` retrya. To eliminira diagnostic spam i retry petlju.
+
+### Korak 4 — verifikacija
+
+- Rebuild → otvori preview, prijavi se, brzo unesi 5 računa zaredom.
+- Provjeri `app_diagnostics_logs` da `payment_sources_fetch_transient_error` više ne dolazi.
+- Provjeri da spremanje računa više ne baca "Moraš biti prijavljen" niti redirecta na dashboard.
+
+## Što NE diram
+
+- Ne mijenjam 91 datoteku koja zove `useAuth()` (re-export iz contexta = drop-in).
+- Ne diram backend, RLS, edge funkcije.
+- Ne diram `useExpenseCRUD` insert logiku, samo dodajem authReady gate na samom početku save funkcija.
+- Bug "previous_boot_crashed" istražim posebno (vjerojatno povezano — kad je app oboren, sljedeći boot to loguje; ako popravak auth race-conditiona stabilizira app, crashevi će vjerojatno nestati). Ako i dalje budu — zaseban krug.
