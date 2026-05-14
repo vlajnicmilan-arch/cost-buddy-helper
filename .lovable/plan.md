@@ -1,46 +1,42 @@
-## Cilj
+## Problem (root cause)
 
-Pretraga u top baru dashboarda (`GlobalSearch`) trenutno gleda samo: `description`, `category` (raw key), `merchant_name`, `note`, `amount`. To je preusko — ne nalazi npr. transakcije po imenu izvora plaćanja, projektu, budžetu, lokaliziranom imenu kategorije, ili formatiranom datumu.
+Na **native Android** buildu Capacitor `Filesystem.writeFile({ directory: Directory.Documents })` ne piše u javni "Documents" folder već u **app-private external storage** (`/storage/emulated/0/Android/data/app.lovable.costbuddy/files/Documents/`). Korisnik vidi `showSuccess('Spremljeno u Dokumenti')`, ali datoteka nije vidljiva ni kroz Files app, ni Galeriju, ni file picker — efektivno "izgubljena".
 
-Proširujemo pretragu **bez mijenjanja konteksta** (i dalje samo trenutni `allExpenses` iz aktivnog Personal/Business view-a).
+Ovo pogađa **sve** PDF/CSV/JSON/ICS izvoze koji idu kroz `src/lib/fileExport.ts` (Reports, Project Reports, Business Reports, Spending Calendar, Items Analysis, Work Records, ICS Calendar, Backup, Financial Assistant).
 
-## Što će se mijenjati
+Web (browser) radi normalno preko `<a download>`.
 
-### 1. `src/components/GlobalSearch.tsx`
-- Dodati nove **opcionalne propse** s lookup mapama (id → label):
-  - `paymentSources?: { id, name, cards?: [{id, last_four_digits}] }[]`
-  - `projects?: { id, name }[]`
-  - `budgets?: { id, name }[]`
-  - `customCategories?: { id, name }[]`
-- Izgraditi indekse `Map<id, name>` u `useMemo`.
-- Proširiti filter funkciju da matcha i:
-  - **ime izvora plaćanja** preko `payment_source` u formatu `custom:UUID` → lookup name
-  - **zadnje 4 znamenke kartice** preko `payment_source_card_id` (već postoji [Card Lookup] memorija)
-  - **ime projekta** preko `project_id`
-  - **ime budžeta** preko `budget_id`
-  - **lokalizirano ime kategorije** (custom kategorije + standardni `t('categories.<key>')` rezolucija)
-  - **datum** u dva oblika: `dd.MM.yyyy` i `yyyy-MM-dd`
-  - **tip transakcije** preko prevedene oznake (`prihod`, `trošak`, `troskovi`, `prijenos`, EN/DE varijante)
-  - **iznos** s normalizacijom decimalnog separatora (`,` ↔ `.`)
-- Ukloniti tvrdi limit `slice(0, 12)`. Zamijeniti s pagination patternom **50 + "Prikaži više"** (postoji konvencija — vidi memoriju [List Pagination]).
-- Sortiranje ostaje po datumu desc.
+## Rješenje (arhitekturno, bez patcheva)
 
-### 2. `src/components/home/HomeHeader.tsx`
-- Primiti nove propse (`paymentSources`, `projects`, `budgets`, `customCategories`) i proslijediti u `<GlobalSearch>`.
+Na nativnoj platformi **uvijek** koristiti Android share/save dijalog (Capacitor Share + Filesystem cache). Korisnik dobiva native picker gdje bira odredište (Downloads, Drive, email, Telegram, Files...) i odmah vidi gdje je datoteka spremljena. Ovo je standardni Android UX i jedini pouzdan način da datoteka završi na mjestu koje korisnik može pronaći (bez MediaStore integracije koju Capacitor Filesystem 8 ne nudi).
 
-### 3. `src/pages/Index.tsx`
-- `contextLookup` već postoji (linija ~164). Proslijediti njegova polja u `HomeHeader`.
+Web ponašanje ostaje nepromijenjeno (`<a download>` za 'save', `navigator.share` za 'share').
 
-### 4. i18n (HR/EN/DE)
-- Dodati `search.showMore` ključ.
-- Postojeći `search.placeholder`, `search.noResults`, `search.results` ostaju.
+## Promjene
+
+### `src/lib/fileExport.ts`
+- **Ukloniti** `Directory.Documents` write granu iz `exportFileNative`.
+- Na native: `exportFile(...)` (oba moda 'save' i 'share') → `shareFromCache` putem `Directory.Cache` + `@capacitor/share`.
+- Razlika ostaje samo u **dialogTitle**: 'save' → "Spremi datoteku", 'share' → "Podijeli datoteku" (i18n ključevi).
+- Ukloniti `fileExport.savedToDocuments` success poruku (Android share dialog je sam po sebi povratna informacija; ako korisnik otkaže, ne emitiramo grešku).
+- Zadržati postojeće obrade `AbortError`/`cancel`.
+
+### i18n (HR/EN/DE) — `src/i18n/locales/*.json`
+- Dodati / preimenovati ključeve:
+  - `fileExport.saveDialogTitle` → "Spremi datoteku" / "Save file" / "Datei speichern"
+  - `fileExport.shareDialogTitle` → već postoji
+- Stari ključ `fileExport.savedToDocuments` može ostati (ne briše ga drugi kod), ali se više neće koristiti.
+
+### `mem://architecture/native-file-export-system`
+- Update napomene: na native uvijek share dialog, ne pisati u `Directory.Documents`.
 
 ## Što se NEĆE dirati
-- Opseg podataka (i dalje `allExpenses` iz aktivnog konteksta — Personal vs aktivni Business profil; skriveni izvori i dalje vidljivi u pretrazi jer `allExpenses` nije filtriran kao `dashboardExpenses`).
-- Ostale liste, filteri, BusinessMode, RLS, edge funkcije.
-- Min. duljina query-a (ostaje 2 znaka).
+- Web download flow.
+- Pozivi `exportFile/exportPDFDoc/exportTextFile` u 17+ datoteka (potpis ostaje isti — `mode` i dalje postoji).
+- Generiranje PDF/CSV/JSON sadržaja.
+- Permissions / AndroidManifest (share + cache ne traže dodatne dozvole).
 
 ## Verifikacija
-- Otvoriti pretragu, upisati: ime izvora plaćanja, zadnje 4 znamenke kartice, ime projekta, ime budžeta, dio datuma `15.03`, riječ "prijenos" — svaki upit treba vraćati relevantne pogotke.
-- Provjeriti da rezultata > 12 prikazuje "Prikaži više".
-- Personal vs Business: prebaciti view → pretraga vidi samo transakcije aktivnog konteksta.
+- Web: kliknuti PDF export iz Reports → datoteka se preuzme u Downloads (kao i prije).
+- Native APK: kliknuti PDF export → otvori se Android share dialog → korisnik bira "Spremi u Drive" / "Spremi u Files (Downloads)" / pošalji email → datoteka odmah dostupna na izabranoj lokaciji.
+- Proizvoljan otkaz dialoga ne smije generirati error toast.

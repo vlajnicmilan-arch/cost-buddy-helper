@@ -115,7 +115,8 @@
     "savedToDocuments": "In Dokumenten gespeichert",
     "saveError": "Datei konnte nicht gespeichert werden",
     "shareError": "Teilen fehlgeschlagen",
-    "shareDialogTitle": "Datei speichern oder teilen"
+    "saveDialogTitle": "Datei speichern",
+    "shareDialogTitle": "Datei teilen"
   },
   "projects": {
     "templates": {

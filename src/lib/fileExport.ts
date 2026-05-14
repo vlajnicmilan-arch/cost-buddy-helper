@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError } from '@/hooks/useStatusFeedback';
 import i18n from '@/i18n';
 
 /**
@@ -100,29 +100,14 @@ function webDownload(blob: Blob, fileName: string): boolean {
 
 async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode): Promise<boolean> {
   try {
-    const { Filesystem, Directory } = await import('@capacitor/filesystem');
     const base64Data = await blobToBase64(blob);
-
-    if (mode === 'save') {
-      // Save directly to public Documents directory — no Share dialog
-      try {
-        await Filesystem.writeFile({
-          path: fileName,
-          data: base64Data,
-          directory: Directory.Documents,
-          recursive: true,
-        });
-        showSuccess(tx('fileExport.savedToDocuments', 'Spremljeno u Dokumenti'));
-        return true;
-      } catch (writeErr: any) {
-        // Fallback for older Android / permission issues: cache + share
-        console.warn('Documents write failed, falling back to share:', writeErr);
-        return shareFromCache(base64Data, fileName);
-      }
-    }
-
-    // mode === 'share'
-    return shareFromCache(base64Data, fileName);
+    // Always go through native share/save dialog — Capacitor's Directory.Documents
+    // writes to app-private external storage on Android 11+, which the user cannot
+    // see in Files/Downloads. Share dialog lets the user pick a real destination
+    // (Drive, Downloads, email, ...) and is the only reliable way to surface the file.
+    const dialogTitleKey = mode === 'share' ? 'fileExport.shareDialogTitle' : 'fileExport.saveDialogTitle';
+    const dialogTitleFallback = mode === 'share' ? 'Podijeli datoteku' : 'Spremi datoteku';
+    return shareFromCache(base64Data, fileName, tx(dialogTitleKey, dialogTitleFallback));
   } catch (e: any) {
     console.error('Native file export error:', e);
     showError(tx('errors.files.saveFailed', 'Greška pri spremanju datoteke'));
@@ -130,7 +115,7 @@ async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode):
   }
 }
 
-async function shareFromCache(base64Data: string, fileName: string): Promise<boolean> {
+async function shareFromCache(base64Data: string, fileName: string, dialogTitle: string): Promise<boolean> {
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem');
     const { Share } = await import('@capacitor/share');
@@ -144,7 +129,7 @@ async function shareFromCache(base64Data: string, fileName: string): Promise<boo
     await Share.share({
       title: fileName,
       files: [writeResult.uri],
-      dialogTitle: tx('fileExport.shareDialogTitle', 'Spremi ili podijeli datoteku'),
+      dialogTitle,
     });
     return true;
   } catch (e: any) {

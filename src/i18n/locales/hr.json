@@ -115,7 +115,8 @@
     "savedToDocuments": "Spremljeno u Dokumenti",
     "saveError": "Greška pri spremanju datoteke",
     "shareError": "Dijeljenje nije uspjelo",
-    "shareDialogTitle": "Spremi ili podijeli datoteku"
+    "saveDialogTitle": "Spremi datoteku",
+    "shareDialogTitle": "Podijeli datoteku"
   },
   "projects": {
     "noPaymentSource": "Bez izvora",
