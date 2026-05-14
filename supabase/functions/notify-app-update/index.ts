@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         message: copy[lang].body(body.version!),
         data: {
           type: "app_update",
-          category: "broadcast",
+          category: "app_update",
           version: body.version,
           minSupportedVersion: body.minSupportedVersion ?? "0.0.0",
           sha256: body.sha256 ?? null,
@@ -117,10 +117,11 @@ Deno.serve(async (req) => {
         title: copy[lang].title,
         body: copy[lang].body(body.version!),
         data: {
-          type: "app_update",
-          category: "broadcast",
+          type: "broadcast",
+          category: "app_update",
           version: body.version,
           apkUrl: body.apkUrl ?? "",
+          url: "/install",
           deeplink: "/install",
         },
         source: "notify-app-update",
