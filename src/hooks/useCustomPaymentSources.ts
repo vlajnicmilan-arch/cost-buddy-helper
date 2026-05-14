@@ -29,7 +29,7 @@ interface UseCustomPaymentSourcesOptions {
 export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions = {}) => {
   const { t } = useTranslation();
   const { includePersonal = false } = options;
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
@@ -38,6 +38,10 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>(initialCached || []);
   const [loading, setLoading] = useState(!initialCached || initialCached.length === 0);
   const hydratedKeyRef = useRef<string | null>(initialCached && initialCached.length > 0 ? initialKey : null);
+  // Tracks the latest in-flight fetch so we can ignore stale results (deps
+  // changed mid-fetch) without logging them as errors. Using a request id
+  // instead of AbortController because supabase-js does not expose abort.
+  const fetchSeqRef = useRef(0);
 
   const isLocalMode = storageMode === 'local' && !user;
 
@@ -55,10 +59,22 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       return;
     }
 
+    // Wait for the auth session to finish restoring before any cloud query.
+    // Without this gate, the hook would race the session restore, fire a
+    // fetch with no JWT, and the request would be aborted by the next render
+    // — producing AbortError + retry loops.
+    if (!authReady) {
+      return;
+    }
+
     if (!user) {
       setLoading(false);
       return;
     }
+
+    const mySeq = ++fetchSeqRef.current;
+    const isStale = () => mySeq !== fetchSeqRef.current;
+
 
     try {
       // Fetch own payment sources filtered by business context
