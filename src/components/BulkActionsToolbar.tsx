@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CATEGORIES, Category, PAYMENT_SOURCE_GROUPS } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
-import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard } from 'lucide-react';
+import { useBudgets } from '@/hooks/useBudgets';
+import { useProjects } from '@/hooks/useProjects';
+import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard, Target, Folder } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,12 +20,12 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { BulkAssignSheet, BulkAssignOption } from './BulkAssignSheet';
+
+type Field = 'category' | 'paymentSource' | 'budget' | 'project';
 
 interface BulkActionsToolbarProps {
   selectedCount: number;
@@ -34,8 +35,12 @@ interface BulkActionsToolbarProps {
   onBulkCategoryChange: (category: Category) => Promise<void>;
   onBulkPaymentSourceChange: (paymentSource: string) => Promise<void>;
   onBulkDelete: () => Promise<void>;
+  onBulkBudgetChange?: (budgetId: string | null) => Promise<void>;
+  onBulkProjectChange?: (projectId: string | null) => Promise<void>;
   showCategoryChange?: boolean;
   showPaymentSourceChange?: boolean;
+  showBudgetChange?: boolean;
+  showProjectChange?: boolean;
 }
 
 export const BulkActionsToolbar = ({
@@ -46,41 +51,131 @@ export const BulkActionsToolbar = ({
   onBulkCategoryChange,
   onBulkPaymentSourceChange,
   onBulkDelete,
+  onBulkBudgetChange,
+  onBulkProjectChange,
   showCategoryChange = true,
   showPaymentSourceChange = true,
+  showBudgetChange = true,
+  showProjectChange = true,
 }: BulkActionsToolbarProps) => {
   const { t } = useTranslation();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activeField, setActiveField] = useState<Field | null>(null);
   const { customPaymentSources } = useCustomPaymentSources();
+  const { budgets } = useBudgets();
+  const { projects } = useProjects();
 
-  const handleCategoryChange = async (category: Category) => {
+  const canBudget = showBudgetChange && !!onBulkBudgetChange;
+  const canProject = showProjectChange && !!onBulkProjectChange;
+  const hasMenu = showCategoryChange || showPaymentSourceChange || canBudget || canProject;
+
+  const categoryOptions: BulkAssignOption[] = useMemo(
+    () =>
+      CATEGORIES.map((cat) => ({
+        id: cat.id,
+        label: cat.name,
+        icon: <span className="text-lg">{cat.icon}</span>,
+      })),
+    []
+  );
+
+  const paymentSourceOptions: BulkAssignOption[] = useMemo(() => {
+    const customs: BulkAssignOption[] = customPaymentSources.map((source) => ({
+      id: `custom:${source.id}`,
+      label: source.name,
+      icon: (
+        <span
+          className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
+          style={{ backgroundColor: source.color + '30', color: source.color }}
+        >
+          {source.icon}
+        </span>
+      ),
+    }));
+    const presets: BulkAssignOption[] = PAYMENT_SOURCE_GROUPS.flatMap((group) =>
+      group.sources.map((source) => ({
+        id: source.id,
+        label: source.name,
+        icon: <span className="text-lg">{source.icon}</span>,
+        hint: group.label,
+      }))
+    );
+    return [...customs, ...presets];
+  }, [customPaymentSources]);
+
+  const budgetOptions: BulkAssignOption[] = useMemo(
+    () =>
+      (budgets ?? [])
+        .filter((b: any) => b.is_active !== false)
+        .map((b: any) => ({
+          id: b.id,
+          label: b.name,
+          icon: b.icon ? <span className="text-lg">{b.icon}</span> : <Target className="w-4 h-4" />,
+        })),
+    [budgets]
+  );
+
+  const projectOptions: BulkAssignOption[] = useMemo(
+    () =>
+      (projects ?? [])
+        .filter((p: any) => p.status !== 'completed' && p.status !== 'archived')
+        .map((p: any) => ({
+          id: p.id,
+          label: p.name,
+          icon: <Folder className="w-4 h-4" />,
+          hint: p.status,
+        })),
+    [projects]
+  );
+
+  const wrap = (fn: () => Promise<void>) => async () => {
     setIsProcessing(true);
     try {
-      await onBulkCategoryChange(category);
+      await fn();
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handlePaymentSourceChange = async (paymentSource: string) => {
-    setIsProcessing(true);
-    try {
-      await onBulkPaymentSourceChange(paymentSource);
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleDelete = wrap(async () => {
+    await onBulkDelete();
+    setDeleteConfirmOpen(false);
+  });
+
+  const handleSelect = async (field: Field, id: string | null) => {
+    if (field === 'category' && id) await onBulkCategoryChange(id as Category);
+    else if (field === 'paymentSource' && id) await onBulkPaymentSourceChange(id);
+    else if (field === 'budget' && onBulkBudgetChange) await onBulkBudgetChange(id);
+    else if (field === 'project' && onBulkProjectChange) await onBulkProjectChange(id);
   };
 
-  const handleDelete = async () => {
-    setIsProcessing(true);
-    try {
-      await onBulkDelete();
-      setDeleteConfirmOpen(false);
-    } finally {
-      setIsProcessing(false);
+  const sheetTitle = (() => {
+    switch (activeField) {
+      case 'category': return t('bulk.category_label', 'Kategorija');
+      case 'paymentSource': return t('bulk.payment', 'Plaćanje');
+      case 'budget': return t('bulk.budget_label', 'Budžet');
+      case 'project': return t('bulk.project_label', 'Projekt');
+      default: return '';
     }
-  };
+  })();
+
+  const sheetOptions = (() => {
+    switch (activeField) {
+      case 'category': return categoryOptions;
+      case 'paymentSource': return paymentSourceOptions;
+      case 'budget': return budgetOptions;
+      case 'project': return projectOptions;
+      default: return [];
+    }
+  })();
+
+  const allowClear = activeField === 'budget' || activeField === 'project';
+  const clearLabel = activeField === 'budget'
+    ? t('bulk.removeBudget', 'Ukloni dodjelu budžeta')
+    : activeField === 'project'
+      ? t('bulk.removeProject', 'Ukloni dodjelu projekta')
+      : undefined;
 
   return (
     <>
@@ -92,7 +187,6 @@ export const BulkActionsToolbar = ({
             exit={{ opacity: 0, y: -10 }}
             className="p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-3"
           >
-            {/* Selection info */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckSquare className="w-4 h-4 text-primary" />
@@ -101,100 +195,54 @@ export const BulkActionsToolbar = ({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onSelectAll}
-                  className="h-7 text-xs"
-                >
+                <Button variant="ghost" size="sm" onClick={onSelectAll} className="h-7 text-xs">
                   {t('bulk.selectAll')}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClearSelection}
-                  className="h-7 text-xs"
-                >
+                <Button variant="ghost" size="sm" onClick={onClearSelection} className="h-7 text-xs">
                   <X className="w-3 h-3 mr-1" />
                   {t('bulk.deselect')}
                 </Button>
               </div>
             </div>
 
-            {/* Bulk actions */}
             <div className="flex flex-wrap gap-2">
-              {(showCategoryChange || showPaymentSourceChange) && (
+              {hasMenu && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8 text-xs gap-2 bg-background"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 text-xs gap-2 bg-background min-w-[44px]"
                       disabled={isProcessing}
                     >
-                      <Settings2 className="w-3 h-3" />
+                      <Settings2 className="w-3.5 h-3.5" />
                       {t('bulk.bulkChange')}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuContent align="start" className="w-56 z-[65]">
                     {showCategoryChange && (
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <Tag className="w-4 h-4 mr-2" />
-                          {t('bulk.category_label')}
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                          {CATEGORIES.map((cat) => (
-                            <DropdownMenuItem 
-                              key={cat.id} 
-                              onClick={() => handleCategoryChange(cat.id as Category)}
-                            >
-                              <span className="mr-2">{cat.icon}</span>
-                              {cat.name}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
+                      <DropdownMenuItem onClick={() => setActiveField('category')} className="min-h-11">
+                        <Tag className="w-4 h-4 mr-2" />
+                        {t('bulk.category_label')}
+                      </DropdownMenuItem>
                     )}
-
                     {showPaymentSourceChange && (
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          {t('bulk.payment')}
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                          {customPaymentSources.length > 0 && (
-                            <>
-                              {customPaymentSources.map((source) => (
-                                <DropdownMenuItem 
-                                  key={source.id} 
-                                  onClick={() => handlePaymentSourceChange(`custom:${source.id}`)}
-                                >
-                                  <span 
-                                    className="w-4 h-4 mr-2 rounded-full flex items-center justify-center text-[10px]"
-                                    style={{ backgroundColor: source.color + '30', color: source.color }}
-                                  >
-                                    {source.icon}
-                                  </span>
-                                  {source.name}
-                                </DropdownMenuItem>
-                              ))}
-                            </>
-                          )}
-                          {PAYMENT_SOURCE_GROUPS.map((group) => (
-                            group.sources.map((source) => (
-                              <DropdownMenuItem 
-                                key={source.id} 
-                                onClick={() => handlePaymentSourceChange(source.id)}
-                              >
-                                <span className="mr-2">{source.icon}</span>
-                                {source.name}
-                              </DropdownMenuItem>
-                            ))
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
+                      <DropdownMenuItem onClick={() => setActiveField('paymentSource')} className="min-h-11">
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        {t('bulk.payment')}
+                      </DropdownMenuItem>
+                    )}
+                    {canBudget && (
+                      <DropdownMenuItem onClick={() => setActiveField('budget')} className="min-h-11">
+                        <Target className="w-4 h-4 mr-2" />
+                        {t('bulk.budget_label', 'Budžet')}
+                      </DropdownMenuItem>
+                    )}
+                    {canProject && (
+                      <DropdownMenuItem onClick={() => setActiveField('project')} className="min-h-11">
+                        <Folder className="w-4 h-4 mr-2" />
+                        {t('bulk.project_label', 'Projekt')}
+                      </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -203,11 +251,11 @@ export const BulkActionsToolbar = ({
               <Button
                 variant="destructive"
                 size="sm"
-                className="h-8 text-xs"
+                className="h-9 text-xs"
                 onClick={() => setDeleteConfirmOpen(true)}
                 disabled={isProcessing}
               >
-                <Trash2 className="w-3 h-3 mr-1" />
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
                 {t('bulk.deleteCount', { count: selectedCount })}
               </Button>
             </div>
@@ -215,18 +263,28 @@ export const BulkActionsToolbar = ({
         )}
       </AnimatePresence>
 
+      <BulkAssignSheet
+        open={activeField !== null}
+        onOpenChange={(o) => { if (!o) setActiveField(null); }}
+        title={sheetTitle}
+        options={sheetOptions}
+        onSelect={async (id) => {
+          if (activeField) await handleSelect(activeField, id);
+        }}
+        allowClear={allowClear}
+        clearLabel={clearLabel}
+      />
+
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent className="z-[70]">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('bulk.deleteConfirmTitle', { count: selectedCount })}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('bulk.deleteConfirmDesc')}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t('bulk.deleteConfirmDesc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isProcessing}>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete} 
+            <AlertDialogAction
+              onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isProcessing}
             >

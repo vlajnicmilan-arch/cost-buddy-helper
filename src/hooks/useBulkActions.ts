@@ -47,6 +47,20 @@ export const useBulkActions = ({
     showSuccess(t('transactions.bulkSourceChanged', { count: selectedExpenses.length }));
   }, [filteredExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
 
+  const handleBulkBudgetChange = useCallback(async (budgetId: string | null) => {
+    const selectedExpenses = filteredExpenses.filter(e => selectedTransactionIds.has(e.id));
+    await bulkUpdateExpenses(selectedExpenses.map(e => ({ ...e, budget_id: budgetId })));
+    setSelectedTransactionIds(new Set());
+    showSuccess(t('transactions.bulkBudgetChanged', { count: selectedExpenses.length }));
+  }, [filteredExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
+
+  const handleBulkProjectChange = useCallback(async (projectId: string | null) => {
+    const selectedExpenses = filteredExpenses.filter(e => selectedTransactionIds.has(e.id));
+    await bulkUpdateExpenses(selectedExpenses.map(e => ({ ...e, project_id: projectId })));
+    setSelectedTransactionIds(new Set());
+    showSuccess(t('transactions.bulkProjectChanged', { count: selectedExpenses.length }));
+  }, [filteredExpenses, selectedTransactionIds, bulkUpdateExpenses, t]);
+
   const handleBulkDelete = useCallback(async () => {
     const idsToDelete = Array.from(selectedTransactionIds);
     await Promise.all(idsToDelete.map(id => deleteExpense(id)));
@@ -62,6 +76,8 @@ export const useBulkActions = ({
     handleClearSelection,
     handleBulkCategoryChange,
     handleBulkPaymentSourceChange,
+    handleBulkBudgetChange,
+    handleBulkProjectChange,
     handleBulkDelete,
   };
 };

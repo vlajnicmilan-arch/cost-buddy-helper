@@ -244,6 +244,26 @@ export const PaymentSourceTransactionsDialog = ({
     clearSelection();
   };
 
+  const handleBulkBudgetChange = async (budgetId: string | null) => {
+    const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
+    let count = 0;
+    for (const expense of selected) {
+      try { await onUpdate({ ...expense, budget_id: budgetId } as any); count++; } catch {}
+    }
+    showSuccess(t('transactions.bulkBudgetChanged', { count }));
+    clearSelection();
+  };
+
+  const handleBulkProjectChange = async (projectId: string | null) => {
+    const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
+    let count = 0;
+    for (const expense of selected) {
+      try { await onUpdate({ ...expense, project_id: projectId } as any); count++; } catch {}
+    }
+    showSuccess(t('transactions.bulkProjectChanged', { count }));
+    clearSelection();
+  };
+
   const handleBulkDelete = async () => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
     let count = 0;
@@ -791,6 +811,8 @@ export const PaymentSourceTransactionsDialog = ({
                   onBulkCategoryChange={handleBulkCategoryChange}
                   onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
                   onBulkDelete={handleBulkDelete}
+                  onBulkBudgetChange={handleBulkBudgetChange}
+                  onBulkProjectChange={handleBulkProjectChange}
                 />
 
                 {/* Transaction List */}

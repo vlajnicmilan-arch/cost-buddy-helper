@@ -80,6 +80,8 @@ interface BusinessModeViewProps {
   onClearSelection: () => void;
   onBulkCategoryChange: (category: Category) => Promise<void>;
   onBulkPaymentSourceChange: (paymentSource: string) => Promise<void>;
+  onBulkBudgetChange?: (budgetId: string | null) => Promise<void>;
+  onBulkProjectChange?: (projectId: string | null) => Promise<void>;
   onBulkDelete: () => Promise<void>;
   contextLookup: any;
   allCards: any[];
@@ -263,6 +265,8 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               onClearSelection={props.onClearSelection}
               onBulkCategoryChange={props.onBulkCategoryChange}
               onBulkPaymentSourceChange={props.onBulkPaymentSourceChange}
+              onBulkBudgetChange={props.onBulkBudgetChange}
+              onBulkProjectChange={props.onBulkProjectChange}
               onBulkDelete={props.onBulkDelete}
               onTransactionClick={props.onTransactionClick}
               onDeleteExpense={props.onDeleteExpense}

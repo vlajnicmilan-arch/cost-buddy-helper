@@ -122,6 +122,26 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
     clearSelection();
   };
 
+  const handleBulkBudgetChange = async (budgetId: string | null) => {
+    const selectedExpenses = filteredExpenses.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    for (const expense of selectedExpenses) {
+      try { await onUpdateExpense({ ...expense, budget_id: budgetId } as any); successCount++; } catch (error) { console.error('Error updating expense:', error); }
+    }
+    showSuccess(t('transactions.bulkBudgetChanged', { count: successCount }));
+    clearSelection();
+  };
+
+  const handleBulkProjectChange = async (projectId: string | null) => {
+    const selectedExpenses = filteredExpenses.filter(e => selectedIds.has(e.id));
+    let successCount = 0;
+    for (const expense of selectedExpenses) {
+      try { await onUpdateExpense({ ...expense, project_id: projectId } as any); successCount++; } catch (error) { console.error('Error updating expense:', error); }
+    }
+    showSuccess(t('transactions.bulkProjectChanged', { count: successCount }));
+    clearSelection();
+  };
+
   const handleBulkDelete = async () => {
     const selectedExpenses = filteredExpenses.filter(e => selectedIds.has(e.id));
     let successCount = 0;
@@ -224,6 +244,8 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
             onBulkCategoryChange={handleBulkCategoryChange}
             onBulkPaymentSourceChange={handleBulkPaymentSourceChange}
             onBulkDelete={handleBulkDelete}
+            onBulkBudgetChange={handleBulkBudgetChange}
+            onBulkProjectChange={handleBulkProjectChange}
           />
         </div>
 

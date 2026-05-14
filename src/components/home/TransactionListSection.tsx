@@ -29,6 +29,8 @@ interface TransactionListSectionProps {
   onClearSelection: () => void;
   onBulkCategoryChange: (category: Category) => Promise<void>;
   onBulkPaymentSourceChange: (paymentSource: string) => Promise<void>;
+  onBulkBudgetChange?: (budgetId: string | null) => Promise<void>;
+  onBulkProjectChange?: (projectId: string | null) => Promise<void>;
   onBulkDelete: () => Promise<void>;
   // Transaction click
   onTransactionClick: (expense: Expense) => void;
@@ -59,6 +61,8 @@ export const TransactionListSection = ({
   onClearSelection,
   onBulkCategoryChange,
   onBulkPaymentSourceChange,
+  onBulkBudgetChange,
+  onBulkProjectChange,
   onBulkDelete,
   onTransactionClick,
   onDeleteExpense,
@@ -125,6 +129,8 @@ export const TransactionListSection = ({
             totalCount={filteredExpenses.length}
             onBulkCategoryChange={onBulkCategoryChange}
             onBulkPaymentSourceChange={onBulkPaymentSourceChange}
+            onBulkBudgetChange={onBulkBudgetChange}
+            onBulkProjectChange={onBulkProjectChange}
             onBulkDelete={onBulkDelete}
           />
           {expensesLoading ? (

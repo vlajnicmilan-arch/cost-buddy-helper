@@ -799,6 +799,8 @@
     "bulkCategoryChanged": "Category changed for {{count}} transactions",
     "bulkSourceChanged": "Payment source changed for {{count}} transactions",
     "bulkDeleted": "Deleted {{count}} transactions",
+    "bulkBudgetChanged": "Budget assigned to {{count}} transactions",
+    "bulkProjectChanged": "Project assigned to {{count}} transactions",
     "toAccountLabel": "📥 To account (destination)",
     "selectDestinationAccount": "Select destination account",
     "noDestination": "No destination",
@@ -1296,7 +1298,14 @@
     "updatedTransactions": "Updated {{count}} transactions to \"{{name}}\"",
     "updateError": "Error updating transactions",
     "bulkUpdatePaymentSourceTitle": "Bulk update payment source",
-    "bulkUpdateCategoryTitle": "Bulk update categories"
+    "bulkUpdateCategoryTitle": "Bulk update categories",
+    "budget_label": "Budget",
+    "project_label": "Project",
+    "removeBudget": "Remove budget assignment",
+    "removeProject": "Remove project assignment",
+    "searchPlaceholder": "Search...",
+    "noOptions": "No options",
+    "none": "Unassigned"
   },
   "filters": {
     "filters": "Filters",
