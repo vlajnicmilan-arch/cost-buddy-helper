@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Check, RotateCcw, FolderKanban, PiggyBank, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Category, getCategoryInfo, CATEGORIES, PaymentSource, PAYMENT_SOURCE_GROUPS } from '@/types/expense';
+import { Category, getCategoryInfo, CATEGORIES, PaymentSource } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { useCurrency } from '@/contexts/CurrencyContext';
