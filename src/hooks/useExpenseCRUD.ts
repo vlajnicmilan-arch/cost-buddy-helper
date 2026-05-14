@@ -35,7 +35,7 @@ export const useExpenseCRUD = ({
   onBalanceUpdated,
 }: UseExpenseCRUDOptions) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated });
   const { checkBudgetAlerts } = useBudgetAlerts();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
