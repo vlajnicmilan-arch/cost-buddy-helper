@@ -799,6 +799,8 @@
     "bulkCategoryChanged": "Category changed for {{count}} transactions",
     "bulkSourceChanged": "Payment source changed for {{count}} transactions",
     "bulkDeleted": "Deleted {{count}} transactions",
+    "bulkBudgetChanged": "Budget assigned to {{count}} transactions",
+    "bulkProjectChanged": "Project assigned to {{count}} transactions",
     "toAccountLabel": "📥 To account (destination)",
     "selectDestinationAccount": "Select destination account",
     "noDestination": "No destination",

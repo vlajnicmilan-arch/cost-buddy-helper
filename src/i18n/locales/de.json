@@ -799,6 +799,8 @@
     "bulkCategoryChanged": "Kategorie für {{count}} Transaktionen geändert",
     "bulkSourceChanged": "Zahlungsquelle für {{count}} Transaktionen geändert",
     "bulkDeleted": "{{count}} Transaktionen gelöscht",
+    "bulkBudgetChanged": "Budget {{count}} Transaktionen zugewiesen",
+    "bulkProjectChanged": "Projekt {{count}} Transaktionen zugewiesen",
     "toAccountLabel": "📥 Auf Konto (Ziel)",
     "selectDestinationAccount": "Zielkonto auswählen",
     "noDestination": "Kein Ziel",

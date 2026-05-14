@@ -796,6 +796,8 @@
     "bulkCategoryChanged": "Kategorija promijenjena za {{count}} transakcija",
     "bulkSourceChanged": "Izvor plaćanja promijenjen za {{count}} transakcija",
     "bulkDeleted": "Obrisano {{count}} transakcija",
+    "bulkBudgetChanged": "Budžet dodijeljen za {{count}} transakcija",
+    "bulkProjectChanged": "Projekt dodijeljen za {{count}} transakcija",
     "expenseNature": "Vrsta troška",
     "assignToBudget": "Pridruži budžetu",
     "noBudget": "Bez budžeta",
