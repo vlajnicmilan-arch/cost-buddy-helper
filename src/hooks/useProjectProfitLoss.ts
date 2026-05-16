@@ -44,6 +44,7 @@ export const useProjectProfitLoss = (projectId: string | null): ProfitLossData =
   const [collaboratorCost, setCollaboratorCost] = useState(0);
   const [workers, setWorkers] = useState<WorkerDetail[]>([]);
   const [collaborators, setCollaborators] = useState<CollaboratorDetail[]>([]);
+  const [contractValue, setContractValue] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -54,7 +55,11 @@ export const useProjectProfitLoss = (projectId: string | null): ProfitLossData =
 
     setLoading(true);
     try {
-      const [transactionsRes, workEntriesRes, workersRes, collaboratorsRes] = await Promise.all([
+      const [projectRes, transactionsRes, workEntriesRes, workersRes, collaboratorsRes] = await Promise.all([
+        (supabase.from('projects') as any)
+          .select('contract_value, total_budget')
+          .eq('id', projectId)
+          .maybeSingle(),
         supabase
           .from('expenses')
           .select('type, amount')
@@ -71,6 +76,12 @@ export const useProjectProfitLoss = (projectId: string | null): ProfitLossData =
           .select('id, first_name, last_name, total_price, paid_amount')
           .eq('project_id', projectId),
       ]);
+
+      // Resolve contract value with fallback to total_budget
+      const proj = projectRes?.data;
+      const cv = Number(proj?.contract_value || 0);
+      const resolvedContract = cv > 0 ? cv : Number(proj?.total_budget || 0);
+      setContractValue(resolvedContract);
 
       // Calculate income and expenses from transactions
       let totalIncome = 0;
@@ -144,6 +155,12 @@ export const useProjectProfitLoss = (projectId: string | null): ProfitLossData =
   const netProfit = income - totalCosts;
   const margin = income > 0 ? (netProfit / income) * 100 : 0;
 
+  // Accrual / contract view
+  const expectedProfit = contractValue - totalCosts;
+  const expectedMargin = contractValue > 0 ? (expectedProfit / contractValue) * 100 : 0;
+  const collectedPercentage = contractValue > 0 ? Math.min((income / contractValue) * 100, 100) : 0;
+  const remainingToCollect = Math.max(contractValue - income, 0);
+
   return {
     totalIncome: income,
     totalExpenses: expenses,
@@ -155,5 +172,10 @@ export const useProjectProfitLoss = (projectId: string | null): ProfitLossData =
     loading,
     workers,
     collaborators,
+    contractValue,
+    expectedProfit,
+    expectedMargin,
+    collectedPercentage,
+    remainingToCollect,
   };
 };
