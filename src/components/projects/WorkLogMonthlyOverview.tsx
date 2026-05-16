@@ -19,6 +19,7 @@ import { loadJsPdf } from '@/lib/loadJsPdf';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import type { WorkLogDayType } from '@/types/projectWorkLog';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 
 interface WorkLogMonthlyOverviewProps {
   projectId: string;
@@ -158,6 +159,7 @@ export const WorkLogMonthlyOverview = ({ projectId, projectName }: WorkLogMonthl
     try {
       const { jsPDF } = await loadJsPdf();
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  applyBrandFont(doc);
       const pageWidth = doc.internal.pageSize.getWidth();
 
       doc.setFontSize(14);
@@ -182,12 +184,12 @@ export const WorkLogMonthlyOverview = ({ projectId, projectName }: WorkLogMonthl
 
       // Lazy-load autotable
       const autoTable = (await import('jspdf-autotable')).default;
-      autoTable(doc, {
+      brandAutoTable(doc, autoTable, {
         startY: 34,
         head,
         body,
         styles: { fontSize: 7, cellPadding: 1 },
-        headStyles: { fillColor: [30, 130, 130] },
+        headStyles: { fillColor: [35, 170, 145] },
         columnStyles: {
           0: { cellWidth: 36 },
           [days.length + 1]: { fontStyle: 'bold' },

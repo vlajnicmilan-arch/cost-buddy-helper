@@ -23,6 +23,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useTranslation } from 'react-i18next';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 
 interface BudgetInfo {
   name: string;
@@ -676,18 +677,19 @@ async function exportToCSV(headers: string[], rows: string[][]) {
 async function exportToPDF(headers: string[], rows: string[][]) {
   const { jsPDF, autoTable } = await loadJsPdf();
   const doc = new jsPDF({ orientation: rows[0]?.length > 5 ? 'landscape' : 'portrait' });
-  doc.setFont('helvetica');
+  applyBrandFont(doc);
+  doc.setFont('Inter');
   doc.setFontSize(14);
   doc.text('V&M Balance - Izvoz podataka', 14, 15);
   doc.setFontSize(9);
   doc.text(`Datum: ${new Date().toLocaleDateString('hr-HR')}`, 14, 22);
 
-  autoTable(doc, {
+  brandAutoTable(doc, autoTable, {
     head: [headers],
     body: rows,
     startY: 28,
     styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+    headStyles: { fillColor: [35, 170, 145], textColor: 255 },
     alternateRowStyles: { fillColor: [245, 247, 250] },
   });
 
@@ -698,7 +700,8 @@ async function exportToPDF(headers: string[], rows: string[][]) {
 async function exportResponseAsPDF(content: string) {
   const { jsPDF } = await loadJsPdf();
   const doc = new jsPDF();
-  doc.setFont('helvetica');
+  applyBrandFont(doc);
+  doc.setFont('Inter');
   doc.setFontSize(14);
   doc.text('V&M Balance - AI Odgovor', 14, 15);
   doc.setFontSize(9);

@@ -15,7 +15,7 @@
 //
 // Ako se logika u tim datotekama mijenja, treba i ovdje.
 
-import { jsPDF } from 'jspdf';
+import { jsPDF } from 'jspdf/dist/jspdf.es.min.js';
 import autoTable from 'jspdf-autotable';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,16 +24,42 @@ const OUT = '/mnt/documents/reports-preview';
 fs.mkdirSync(OUT, { recursive: true });
 
 // ============================================================
-// Helpers (kopirano iz src/lib/*)
+// Helpers (kopirano iz src/lib/* + src/lib/pdfBranding.ts)
 // ============================================================
 
-const toAscii = (text) =>
-  String(text || '')
-    .replace(/č/g, 'c').replace(/Č/g, 'C')
-    .replace(/ć/g, 'c').replace(/Ć/g, 'C')
-    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
-    .replace(/š/g, 's').replace(/Š/g, 'S')
-    .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
+// Brand
+const BRAND_TEAL = [35, 170, 145];
+const BRAND_TEAL_LIGHT = [230, 247, 243];
+const BRAND_DARK = [15, 23, 42];
+
+// Inter font (UTF-8 podrška + bez Helvetica-Bold bug-a)
+const INTER_REGULAR_B64 = fs.readFileSync('src/assets/fonts/Inter-Regular.ttf').toString('base64');
+const INTER_BOLD_B64 = fs.readFileSync('src/assets/fonts/Inter-Bold.ttf').toString('base64');
+const applyBrandFont = (doc) => {
+  doc.addFileToVFS('Inter-Regular.ttf', INTER_REGULAR_B64);
+  doc.addFont('Inter-Regular.ttf', 'Inter', 'normal');
+  doc.addFileToVFS('Inter-Bold.ttf', INTER_BOLD_B64);
+  doc.addFont('Inter-Bold.ttf', 'Inter', 'bold');
+  doc.setFont('Inter', 'normal');
+};
+const BRAND_TABLE_THEME = {
+  theme: 'striped',
+  styles: { font: 'Inter', fontSize: 9, cellPadding: 3, textColor: BRAND_DARK },
+  headStyles: { font: 'Inter', fontStyle: 'bold', fillColor: BRAND_TEAL, textColor: [255, 255, 255], fontSize: 9 },
+  alternateRowStyles: { fillColor: BRAND_TEAL_LIGHT },
+};
+const brandAutoTable = (doc, opts) => {
+  autoTable(doc, {
+    ...BRAND_TABLE_THEME,
+    ...opts,
+    styles: { ...BRAND_TABLE_THEME.styles, ...(opts?.styles || {}) },
+    headStyles: { ...BRAND_TABLE_THEME.headStyles, ...(opts?.headStyles || {}) },
+    alternateRowStyles: { ...BRAND_TABLE_THEME.alternateRowStyles, ...(opts?.alternateRowStyles || {}) },
+  });
+};
+
+// toAscii sada identity — Inter font podržava UTF-8
+const toAscii = (text) => String(text || '');
 
 const formatDate = (d) => new Date(d).toLocaleDateString('hr-HR');
 const formatCurrency = (n) =>
@@ -46,10 +72,11 @@ const addNotOfficialFooter = (doc) => {
     const pageHeight = doc.internal.pageSize.getHeight();
     const pageWidth = doc.internal.pageSize.getWidth();
     doc.setFontSize(7);
+    doc.setFont('Inter', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text('Generirano iz V&M Balance - alat za interno upravljanje projektima.',
+    doc.text('Generirano iz V&M Balance — alat za interno upravljanje projektima.',
       pageWidth / 2, pageHeight - 8, { align: 'center' });
-    doc.text('Nije sluzbena evidencija u smislu Zakona o radu / Zakona o racunovodstvu / Zakona o porezu.',
+    doc.text('Nije službena evidencija u smislu Zakona o radu / Zakona o računovodstvu / Zakona o porezu.',
       pageWidth / 2, pageHeight - 5, { align: 'center' });
     doc.setTextColor(0, 0, 0);
   }
@@ -151,20 +178,21 @@ function render01_financialExpenses() {
   const reportTitle = 'Financijsko izvješće — travanj 2026';
 
   const doc = new jsPDF();
+  applyBrandFont(doc);
   doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii(reportTitle), 14, 20);
 
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
   doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Sazetak'), 14, 46);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 50,
     head: [['Stavka', 'Iznos']],
     body: [
@@ -174,14 +202,14 @@ function render01_financialExpenses() {
       ['Prijenosi', formatCurrency(data.totals.transfers)],
     ],
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 80,
   });
 
   const catY = doc.lastAutoTable.finalY + 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Troskovi po kategorijama'), 14, catY);
 
   const catRows = Object.entries(data.byCategory)
@@ -193,19 +221,19 @@ function render01_financialExpenses() {
       `${((a / data.totals.expenses) * 100).toFixed(1)}%`,
     ]);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: catY + 4,
     head: [['Kategorija', 'Iznos', 'Udio']],
     body: catRows,
     theme: 'striped',
-    headStyles: { fillColor: [239, 68, 68] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 120,
   });
 
   doc.addPage();
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Popis transakcija', 14, 20);
 
   const txRows = [...data.expenses]
@@ -218,12 +246,12 @@ function render01_financialExpenses() {
       e.type === 'expense' ? `-${formatCurrency(e.amount)}` : formatCurrency(e.amount),
     ]);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 24,
     head: [['Datum', 'Tip', 'Opis', 'Kategorija', 'Iznos']],
     body: txRows,
     theme: 'striped',
-    headStyles: { fillColor: [107, 114, 128] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     styles: { fontSize: 8 },
     columnStyles: {
@@ -266,20 +294,21 @@ function render02_incomeReport() {
   };
 
   const doc = new jsPDF();
+  applyBrandFont(doc);
   doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Izvjesce o prihodima'), 14, 20);
 
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
   doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Sazetak prihoda'), 14, 46);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 50,
     head: [['Stavka', 'Vrijednost']],
     body: [
@@ -287,14 +316,14 @@ function render02_incomeReport() {
       ['Broj transakcija', String(data.incomeTransactions.length)],
     ],
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 80,
   });
 
   const catY = doc.lastAutoTable.finalY + 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Prihodi po kategorijama', 14, catY);
 
   const catRows = Object.entries(data.byCategory)
@@ -306,19 +335,19 @@ function render02_incomeReport() {
       `${((a / data.totalIncome) * 100).toFixed(1)}%`,
     ]);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: catY + 4,
     head: [['Kategorija', 'Iznos', 'Udio']],
     body: catRows,
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 120,
   });
 
   doc.addPage();
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Popis prihoda', 14, 20);
 
   const rows = [...data.incomeTransactions]
@@ -330,12 +359,12 @@ function render02_incomeReport() {
       formatCurrency(i.amount),
     ]);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 24,
     head: [['Datum', 'Opis', 'Kategorija', 'Iznos']],
     body: rows,
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     styles: { fontSize: 8 },
     columnStyles: {
@@ -401,12 +430,13 @@ function render03_projectReport() {
   };
 
   const doc = new jsPDF();
+  applyBrandFont(doc);
   doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii(`Izvjestaj: ${data.projectName}`), 14, 20);
 
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   if (data.projectDescription) {
     doc.text(toAscii(data.projectDescription.substring(0, 80)), 14, 28);
   }
@@ -414,13 +444,13 @@ function render03_projectReport() {
   doc.text(`Generirano: ${formatDate(new Date())}`, 14, 40);
 
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Budzet'), 14, 52);
 
   const remaining = data.totalBudget - data.totalSpent;
   const usedPct = ((data.totalSpent / data.totalBudget) * 100).toFixed(1);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 56,
     head: [['Stavka', 'Iznos']],
     body: [
@@ -431,17 +461,17 @@ function render03_projectReport() {
       ['Alocirano iz izvora', formatCurrency(data.totalAllocated)],
     ],
     theme: 'striped',
-    headStyles: { fillColor: [59, 130, 246] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 100,
   });
 
   let y = doc.lastAutoTable.finalY + 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Faze projekta', 14, y);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: y + 4,
     head: [['Faza', 'Status', toAscii('Budzet'), toAscii('Potroseno'), 'Udio']],
     body: data.milestones.map(m => [
@@ -452,16 +482,16 @@ function render03_projectReport() {
       `${((m.spent / m.budget) * 100).toFixed(1)}%`,
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [139, 92, 246] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
   });
 
   y = doc.lastAutoTable.finalY + 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Clanovi tima'), 14, y);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: y + 4,
     head: [['Ime', 'Uloga', toAscii('Potrosnja')]],
     body: data.members.map(m => [
@@ -470,17 +500,17 @@ function render03_projectReport() {
       formatCurrency(m.spent),
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 120,
   });
 
   y = doc.lastAutoTable.finalY + 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Radnici', 14, y);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: y + 4,
     head: [['Ime', 'Sati', 'Satnica', 'Ukupno']],
     body: data.workers.map(w => [
@@ -490,17 +520,17 @@ function render03_projectReport() {
       formatCurrency(w.cost),
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [14, 165, 233] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 140,
   });
 
   y = doc.lastAutoTable.finalY + 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Suradnici', 14, y);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: y + 4,
     head: [['Ime', 'Usluga', 'Ugovoreno', toAscii('Placeno')]],
     body: data.collaborators.map(c => [
@@ -510,16 +540,16 @@ function render03_projectReport() {
       formatCurrency(c.paidAmount),
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [168, 85, 247] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
   });
 
   doc.addPage();
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Popis transakcija', 14, 20);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 24,
     head: [['Datum', 'Opis', 'Faza', 'Iznos']],
     body: [...data.transactions]
@@ -531,7 +561,7 @@ function render03_projectReport() {
         t.type === 'expense' ? `-${formatCurrency(t.amount)}` : formatCurrency(t.amount),
       ]),
     theme: 'striped',
-    headStyles: { fillColor: [107, 114, 128] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     styles: { fontSize: 8 },
     columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 80 }, 2: { cellWidth: 40 }, 3: { cellWidth: 30 } },
@@ -560,15 +590,16 @@ function render04_projectWorkLog() {
   };
 
   const doc = new jsPDF();
+  applyBrandFont(doc);
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
 
   doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Dnevnik rada'), margin, 18);
 
   doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   doc.text(toAscii(`Projekt: ${data.projectName}`), margin, 26);
 
   doc.setFontSize(9);
@@ -590,12 +621,12 @@ function render04_projectWorkLog() {
     return [dateLabel, weather, milestone, author, hoursText, combined];
   });
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 38,
     head: [['Datum', toAscii('Vrijeme'), 'Faza', 'Autor', 'Sati', toAscii('Sto je radjeno / Napomene')]],
     body: rows,
     theme: 'striped',
-    headStyles: { fillColor: [14, 165, 233], fontSize: 9 },
+    headStyles: { fillColor: BRAND_TEAL, fontSize: 9 },
     styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
     columnStyles: {
       0: { cellWidth: 22 }, 1: { cellWidth: 22 }, 2: { cellWidth: 25 },
@@ -608,7 +639,7 @@ function render04_projectWorkLog() {
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Inter', 'normal');
     doc.text(`${i} / ${totalPages}`, pageWidth - margin, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
   }
 
@@ -649,6 +680,7 @@ function render05_workRecords() {
   }
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  applyBrandFont(doc);
   const msMap = new Map(milestones.map(m => [m.id, m.name]));
   const wMap  = new Map(workers.map(w => [w.id, `${w.first_name} ${w.last_name}`.trim()]));
 
@@ -723,15 +755,16 @@ function render06_spendingCalendarDay() {
   const monthName = new Date(year, month, day).toLocaleDateString('hr-HR', { month: 'long', year: 'numeric' });
 
   const doc = new jsPDF();
+  applyBrandFont(doc);
   doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Kalendar potrosnje'), 14, 20);
 
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   doc.text(toAscii(`${day}. ${monthName}`), 14, 28);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 34,
     head: [[toAscii('Opis'), toAscii('Trgovac'), toAscii('Kategorija'), toAscii('Iznos')]],
     body: dayTx.map(tx => {
@@ -744,7 +777,7 @@ function render06_spendingCalendarDay() {
       ];
     }),
     styles: { fontSize: 10 },
-    headStyles: { fillColor: [55, 65, 81] },
+    headStyles: { fillColor: BRAND_TEAL },
     columnStyles: { 3: { halign: 'right' } },
   });
 
@@ -764,7 +797,7 @@ function render06_spendingCalendarDay() {
   }
   const net = totalIncome - totalExpense;
   doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(`Neto: ${net >= 0 ? '+' : ''}${formatCurrency(net)}`, 196, y, { align: 'right' });
 
   savePdf(doc, '06-spending-calendar-day.pdf');
@@ -816,7 +849,8 @@ function render07_itemsAnalysis() {
   // Repliciram baš taj bug ovdje za QA.
 
   const doc = new jsPDF();
-  doc.setFont('helvetica');
+  applyBrandFont(doc);
+  doc.setFont('Inter');
   doc.setFontSize(16);
   doc.text('Analiza troskova po artiklima', 14, 20);
   doc.setFontSize(10);
@@ -835,25 +869,25 @@ function render07_itemsAnalysis() {
       ]);
     });
     tableData.push([
-      { content: `Ukupno ${group.categoryName}`, styles: { fontStyle: 'bold', fillColor: [230, 236, 245] } },
-      { content: '', styles: { fillColor: [230, 236, 245] } },
-      { content: `${group.itemCount}`, styles: { fontStyle: 'bold', fillColor: [230, 236, 245] } },
-      { content: '', styles: { fillColor: [230, 236, 245] } },
-      { content: formatCurrency(group.totalAmount), styles: { fontStyle: 'bold', fillColor: [230, 236, 245] } },
+      { content: `Ukupno ${group.categoryName}`, styles: { fontStyle: 'bold', fillColor: BRAND_TEAL_LIGHT } },
+      { content: '', styles: { fillColor: BRAND_TEAL_LIGHT } },
+      { content: `${group.itemCount}`, styles: { fontStyle: 'bold', fillColor: BRAND_TEAL_LIGHT } },
+      { content: '', styles: { fillColor: BRAND_TEAL_LIGHT } },
+      { content: formatCurrency(group.totalAmount), styles: { fontStyle: 'bold', fillColor: BRAND_TEAL_LIGHT } },
     ]);
   });
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 40,
     head: [['Kategorija', 'Artikl', 'Kol.', 'Jed. cijena', 'Ukupno']],
     body: tableData,
     styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [59, 130, 246] },
+    headStyles: { fillColor: BRAND_TEAL },
   });
 
   const finalY = doc.lastAutoTable.finalY;
   doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(`UKUPNO: ${formatCurrency(totalAmount)}`, 14, finalY + 10);
 
   savePdf(doc, '07-items-analysis.pdf');
@@ -879,20 +913,21 @@ function render08_businessReport() {
   // Repliciram identično za QA.
 
   const doc = new jsPDF();
+  applyBrandFont(doc);
   doc.setFontSize(16);
   doc.text(`${companyName} — Poslovni izvještaj`, 14, 20);
   doc.setFontSize(10);
   doc.text(`Generirano: ${fmtDateTime(now)}`, 14, 28);
   doc.text(`Period: Mjesečno`, 14, 34);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 42,
-    head: [['Period', 'Prihodi (EUR)', 'Rashodi (EUR)', 'Dobit (EUR)', 'Br. transakcija']],
+    head: [['Period', 'Prihodi', 'Rashodi', 'Dobit', 'Br. transakcija']],
     body: periodData.map(p => [
       p.label,
-      p.income.toFixed(2),
-      p.expense.toFixed(2),
-      p.profit.toFixed(2),
+      formatCurrency(p.income),
+      formatCurrency(p.expense),
+      formatCurrency(p.profit),
       p.count.toString(),
     ]),
   });
@@ -943,6 +978,7 @@ function render09_workLogMonthly() {
   }
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  applyBrandFont(doc);
 
   doc.setFontSize(14);
   doc.text('Mjesečni pregled rada', 14, 15);
@@ -962,12 +998,12 @@ function render09_workLogMonthly() {
     return row;
   });
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     startY: 34,
     head,
     body,
     styles: { fontSize: 7, cellPadding: 1 },
-    headStyles: { fillColor: [30, 130, 130] },
+    headStyles: { fillColor: BRAND_TEAL },
     columnStyles: {
       0: { cellWidth: 36 },
       [days.length + 1]: { fontStyle: 'bold' },
@@ -1010,18 +1046,19 @@ function render10a_aiAssistantTable() {
   // NOTE: FinancialAssistantDialog NE radi toAscii — replicira se 1:1.
 
   const doc = new jsPDF({ orientation: rows[0]?.length > 5 ? 'landscape' : 'portrait' });
-  doc.setFont('helvetica');
+  applyBrandFont(doc);
+  doc.setFont('Inter');
   doc.setFontSize(14);
   doc.text('V&M Balance - Izvoz podataka', 14, 15);
   doc.setFontSize(9);
   doc.text(`Datum: ${new Date().toLocaleDateString('hr-HR')}`, 14, 22);
 
-  autoTable(doc, {
+  brandAutoTable(doc, {
     head: [headers],
     body: rows,
     startY: 28,
     styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+    headStyles: { fillColor: BRAND_TEAL, textColor: 255 },
     alternateRowStyles: { fillColor: [245, 247, 250] },
   });
 
@@ -1054,7 +1091,8 @@ Postavi tjedni limit za kategoriju "Hrana" na ~50 EUR i pratit ćeš preko aplik
 Sretno!`;
 
   const doc = new jsPDF();
-  doc.setFont('helvetica');
+  applyBrandFont(doc);
+  doc.setFont('Inter');
   doc.setFontSize(14);
   doc.text('V&M Balance - AI Odgovor', 14, 15);
   doc.setFontSize(9);
