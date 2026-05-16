@@ -60,3 +60,22 @@ export const formatBrandCurrency = (
     return `${amount.toFixed(2)} ${currency?.code || 'EUR'}`;
   }
 };
+
+/**
+ * Wrapper around autoTable that merges brand theme (Inter font, teal header,
+ * alternating row backgrounds) with caller-provided options. Caller options win.
+ */
+export const brandAutoTable = (
+  doc: JsPDFType,
+  autoTable: (doc: JsPDFType, opts: any) => void,
+  opts: any,
+): void => {
+  const merged: any = {
+    ...brandTableTheme,
+    ...opts,
+    styles: { ...brandTableTheme.styles, ...(opts?.styles || {}) },
+    headStyles: { ...brandTableTheme.headStyles, ...(opts?.headStyles || {}) },
+    alternateRowStyles: { ...brandTableTheme.alternateRowStyles, ...(opts?.alternateRowStyles || {}) },
+  };
+  autoTable(doc, merged);
+};
