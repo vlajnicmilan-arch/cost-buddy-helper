@@ -201,12 +201,13 @@ export const useProjects = () => {
           color: project.color,
           status: project.status,
           total_budget: project.total_budget,
+          contract_value: project.contract_value ?? null,
           start_date: project.start_date,
           end_date: project.end_date,
           business_profile_id: (project as any).business_profile_id || activeBusinessProfileId || null,
           // project_type is locked at creation. Default 'general' if not provided.
           project_type: project.project_type || 'general',
-        })
+        } as any)
         .select()
         .single();
 
