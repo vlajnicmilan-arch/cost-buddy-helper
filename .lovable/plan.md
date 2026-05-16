@@ -1,74 +1,57 @@
 ## Cilj
+Riješiti 4 problema utvrđena u QA prolazu i ujednačiti branding na svih 10 PDF-ova.
 
-Generirati **sve PDF izvješća iz aplikacije** s izmišljenim ali realističnim podacima, spremiti ih u `/mnt/documents/` i isporučiti kao artifakte za vizualnu provjeru fonta, sortiranja i boja.
+## Problemi koje rješavamo
+1. **Bold Helvetica razmaci** ("F i n a n c i j s k o") — built-in jsPDF Helvetica-Bold render bug
+2. **Dijakritika & Σ** se gubi u 4 izvještaja koji ne koriste `toAscii`
+3. **Formatiranje valute** — `BusinessReports` koristi `.toFixed(2)` umjesto `Intl.NumberFormat('hr-HR')`
+4. **Inkonzistentan branding** — generičke boje zaglavlja (crvena/plava/siva) umjesto teal `#2DBFA3`
 
-## Popis PDF-ova (10 ukupno)
+## Rješenje
 
-Iz `src/lib/`:
-1. `generatePDFReport` — financijsko izvješće (rashodi po kategorijama)
-2. `generateIncomePDFReport` — izvješće o prihodima
-3. `generateProjectPDFReport` — projekt P&L
-4. `generateWorkLogPDFReport` — dnevnik rada projekta
-5. `generateWorkRecordsPDF` — radni sati radnika
+### A) Centralni PDF helper (`src/lib/pdfBranding.ts` — novi file)
+Jedna točka istine za sve PDF-ove:
+- `BRAND` konstante: primary teal `#2DBFA3`, dark `#0F172A`, muted gray, success/danger HSL → hex
+- `formatCurrency(amount, currency)` — `Intl.NumberFormat('hr-HR', {style:'currency'})`
+- `formatDate(date)` — `dd.MM.yyyy.`
+- `drawHeader(doc, {title, subtitle, logo?})` — teal banner, bijeli naslov, datum generiranja desno
+- `drawFooter(doc, pageNum, totalPages)` — "V&M Balance · stranica X/Y"
+- `tableTheme` — autoTable preset: teal `headStyles.fillColor`, alternateRow světle teal `#E6F7F3`, font size 9, cellPadding 4
+- `safeText(str)` — wrapper koji **ne** koristi `toAscii` već registrira **Inter** ttf (čita iz `node_modules/@fontsource/inter/files/...`) preko `doc.addFileToVFS` + `doc.addFont` → puna podrška za č/ć/ž/đ/š **i** za Σ ∞ €
 
-Inline u komponentama:
-6. `SpendingCalendar` → mjesečni kalendar potrošnje
-7. `ItemsAnalysisTab` → analiza stavki
-8. `BusinessReports` → tvrtka P&L
-9. `WorkLogMonthlyOverview` → mjesečni overview rada (landscape)
-10. `FinancialAssistantDialog` → AI chat tablica + tekst export (dva varijantna)
+### B) Font fix (rješava #1 i #2 odjednom)
+Embed Inter Regular + Bold preko `@fontsource/inter` (već u projektu). `pdfBranding.ts` ima `registerInterFonts(doc)` koji se zove na startu svakog PDF-a. Helvetica-Bold bug nestaje jer više ne koristimo Helvetica. `toAscii` workaround se uklanja iz svih 10 izvještaja.
 
-## Pristup
+### C) Refactor po izvještaju
+Svih 10 PDF generatora migrira na helper:
+- `src/lib/generateFinancialExpensesPDF.ts`
+- `src/lib/generateFinancialIncomePDF.ts`
+- `src/lib/generateProjectPnLPDF.ts`
+- `src/lib/generateWorkLogPDF.ts`
+- `src/lib/generateWorkRecordsPDF.ts`
+- `src/components/SpendingCalendar.tsx` (inline export)
+- `src/components/ItemsAnalysisTab.tsx`
+- `src/components/business/BusinessReports.tsx`
+- `src/components/worklog/WorkLogMonthlyOverview.tsx`
+- `src/components/ai/FinancialAssistantDialog.tsx`
 
-**Standalone Node skripta** (`scripts/render-all-reports.mjs`) koja:
+Svaki: `registerInterFonts` → `drawHeader` → `autoTable(doc, {...tableTheme, head, body})` → `drawFooter` na svakoj stranici. Uklanja se duplicirani styling kod.
 
-- Importa svaku `generate*` funkciju iz `src/lib/` direktno
-- Za inline komponente: izvuče njihovu PDF logiku u privremene `src/lib/__previews__/*.ts` wrappere (čisti refaktor, bez promjene ponašanja u appu) — ili kopira blok u skriptu ako je manji
-- Hrani ih ručno složenim mock objektima koji pokrivaju:
-  - 15-30 transakcija raspoređenih po 6+ kategorija
-  - prihode iz 3 izvora
-  - 1 projekt s 4 milestonea, budžet, troškove, prihode, 5 work entryja
-  - 2 radnika, 20 worker hours unosa kroz mjesec
-- Patcha `fileExport.ts` save() tako da umjesto downloada zapiše PDF na disk (`mode: 'save'` → presretne u Node okruženju preko env flaga `REPORTS_PREVIEW_DIR`)
+### D) QA prolaz
+Ponovo pokrenuti `scripts/render-all-reports.mjs`, konvertirati pdftoppm → vizualna provjera svih 10 PDF-ova. Lista provjera:
+- Č/ć/ž/đ/š/Σ/€ ispravno renderirani
+- Bold naslovi bez razmaka među slovima
+- Teal banner + footer na svim stranicama
+- Iznosi formatirani kao "12.400,00 €"
+- Tablice — alternirajući redovi, teal header, bez clippinga
 
-Output:
-```
-/mnt/documents/reports-preview/
-  01-financial-expenses.pdf
-  02-financial-income.pdf
-  03-project-summary.pdf
-  04-project-worklog.pdf
-  05-work-records.pdf
-  06-spending-calendar.pdf
-  07-items-analysis.pdf
-  08-business-pl.pdf
-  09-worklog-monthly.pdf
-  10-ai-assistant-table.pdf
-```
-
-## QA korak (obavezan)
-
-Za svaki PDF: `pdftoppm -jpeg -r 150` → vizualni pregled svake stranice. Tražim:
-- font fallback (□ kvadratići umjesto č/ć/š/ž/đ — poznata bolna točka jsPDF-a s helveticom)
-- sortiranje tablica (datum desc? abeceda? po iznosu?)
-- boje (teal brand? semantic green/red za income/expense?)
-- preklapanja, odsječen tekst, footer pozicija
-
-Rezultat QA prijavljujem u poruci uz svaki artifact tag, **bez uljepšavanja** — ako nešto puca, to ti i kažem.
-
-## Što NEĆU dirati
-
-- Stvarni produkcijski kod izvoznih funkcija (samo wrapperi za inline blokove ako je nužno)
-- DB
-- UI komponente
+## Što NE diramo
+- Excel/CSV exporti (nisu u scope-u — samo PDF)
+- Realne komponente koje renderiraju in-app UI (radimo samo na PDF generator funkcijama)
+- Mock skripta `scripts/render-all-reports.mjs` — ostaje za buduće QA
+- Logika izvještaja, sortiranje, agregati (samo prezentacija)
 
 ## Tehnički detalji
-
-- Skripta se izvršava preko `bun scripts/render-all-reports.mjs`
-- jsPDF radi u Node-u (jsdom shim ako zatreba za autoTable)
-- Mock podaci hardkodirani u skripti — jedan izvor istine, ponovljivo
-- Skripta i wrapperi ostaju u repou pod `scripts/` i `src/lib/__previews__/` za buduće QA prolaze — možeš ih obrisati kad ne trebaš
-
-## Isporuka
-
-10 PDF-ova u chatu kao `<presentation-artifact>` tagovi + kratki sažetak nalaza po svakom (font OK / problem X, sortiranje, boje).
+- Inter font (cca 80KB Regular + 80KB Bold base64) — load sync na startu generatora, ne utječe na bundle (lazy-loaded zajedno s PDF route-om)
+- Boje izvedene iz postojećih `index.css` HSL varijabli (`--primary`, `--success`, `--destructive`) konvertirane u hex jer jsPDF ne razumije HSL
+- `Intl.NumberFormat` radi i u Node-u (za QA skriptu) i u browseru
