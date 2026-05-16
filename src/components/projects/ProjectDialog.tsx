@@ -106,6 +106,7 @@ export const ProjectDialog = ({
       setColor(preset?.color ?? '#3b82f6');
       setStatus('draft');
       setTotalBudget(preset?.totalBudget !== undefined ? String(preset.totalBudget) : '');
+      setContractValue('');
       setStartDate(undefined);
       setEndDate(undefined);
       setSelectedTemplate(null);
