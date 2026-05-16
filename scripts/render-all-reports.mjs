@@ -202,7 +202,7 @@ function render01_financialExpenses() {
       ['Prijenosi', formatCurrency(data.totals.transfers)],
     ],
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 80,
   });
@@ -226,7 +226,7 @@ function render01_financialExpenses() {
     head: [['Kategorija', 'Iznos', 'Udio']],
     body: catRows,
     theme: 'striped',
-    headStyles: { fillColor: [239, 68, 68] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 120,
   });
@@ -251,7 +251,7 @@ function render01_financialExpenses() {
     head: [['Datum', 'Tip', 'Opis', 'Kategorija', 'Iznos']],
     body: txRows,
     theme: 'striped',
-    headStyles: { fillColor: [107, 114, 128] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     styles: { fontSize: 8 },
     columnStyles: {
@@ -316,7 +316,7 @@ function render02_incomeReport() {
       ['Broj transakcija', String(data.incomeTransactions.length)],
     ],
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 80,
   });
@@ -340,7 +340,7 @@ function render02_incomeReport() {
     head: [['Kategorija', 'Iznos', 'Udio']],
     body: catRows,
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 120,
   });
@@ -364,7 +364,7 @@ function render02_incomeReport() {
     head: [['Datum', 'Opis', 'Kategorija', 'Iznos']],
     body: rows,
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     styles: { fontSize: 8 },
     columnStyles: {
@@ -461,7 +461,7 @@ function render03_projectReport() {
       ['Alocirano iz izvora', formatCurrency(data.totalAllocated)],
     ],
     theme: 'striped',
-    headStyles: { fillColor: [59, 130, 246] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 100,
   });
@@ -482,7 +482,7 @@ function render03_projectReport() {
       `${((m.spent / m.budget) * 100).toFixed(1)}%`,
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [139, 92, 246] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
   });
 
@@ -500,7 +500,7 @@ function render03_projectReport() {
       formatCurrency(m.spent),
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 120,
   });
@@ -520,7 +520,7 @@ function render03_projectReport() {
       formatCurrency(w.cost),
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [14, 165, 233] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     tableWidth: 140,
   });
@@ -540,7 +540,7 @@ function render03_projectReport() {
       formatCurrency(c.paidAmount),
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [168, 85, 247] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
   });
 
@@ -561,7 +561,7 @@ function render03_projectReport() {
         t.type === 'expense' ? `-${formatCurrency(t.amount)}` : formatCurrency(t.amount),
       ]),
     theme: 'striped',
-    headStyles: { fillColor: [107, 114, 128] },
+    headStyles: { fillColor: BRAND_TEAL },
     margin: { left: 14 },
     styles: { fontSize: 8 },
     columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 80 }, 2: { cellWidth: 40 }, 3: { cellWidth: 30 } },
@@ -626,7 +626,7 @@ function render04_projectWorkLog() {
     head: [['Datum', toAscii('Vrijeme'), 'Faza', 'Autor', 'Sati', toAscii('Sto je radjeno / Napomene')]],
     body: rows,
     theme: 'striped',
-    headStyles: { fillColor: [14, 165, 233], fontSize: 9 },
+    headStyles: { fillColor: BRAND_TEAL, fontSize: 9 },
     styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
     columnStyles: {
       0: { cellWidth: 22 }, 1: { cellWidth: 22 }, 2: { cellWidth: 25 },
@@ -777,7 +777,7 @@ function render06_spendingCalendarDay() {
       ];
     }),
     styles: { fontSize: 10 },
-    headStyles: { fillColor: [55, 65, 81] },
+    headStyles: { fillColor: BRAND_TEAL },
     columnStyles: { 3: { halign: 'right' } },
   });
 
@@ -869,11 +869,11 @@ function render07_itemsAnalysis() {
       ]);
     });
     tableData.push([
-      { content: `Ukupno ${group.categoryName}`, styles: { fontStyle: 'bold', fillColor: [230, 236, 245] } },
-      { content: '', styles: { fillColor: [230, 236, 245] } },
-      { content: `${group.itemCount}`, styles: { fontStyle: 'bold', fillColor: [230, 236, 245] } },
-      { content: '', styles: { fillColor: [230, 236, 245] } },
-      { content: formatCurrency(group.totalAmount), styles: { fontStyle: 'bold', fillColor: [230, 236, 245] } },
+      { content: `Ukupno ${group.categoryName}`, styles: { fontStyle: 'bold', fillColor: BRAND_TEAL_LIGHT } },
+      { content: '', styles: { fillColor: BRAND_TEAL_LIGHT } },
+      { content: `${group.itemCount}`, styles: { fontStyle: 'bold', fillColor: BRAND_TEAL_LIGHT } },
+      { content: '', styles: { fillColor: BRAND_TEAL_LIGHT } },
+      { content: formatCurrency(group.totalAmount), styles: { fontStyle: 'bold', fillColor: BRAND_TEAL_LIGHT } },
     ]);
   });
 
@@ -882,7 +882,7 @@ function render07_itemsAnalysis() {
     head: [['Kategorija', 'Artikl', 'Kol.', 'Jed. cijena', 'Ukupno']],
     body: tableData,
     styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [59, 130, 246] },
+    headStyles: { fillColor: BRAND_TEAL },
   });
 
   const finalY = doc.lastAutoTable.finalY;
@@ -1003,7 +1003,7 @@ function render09_workLogMonthly() {
     head,
     body,
     styles: { fontSize: 7, cellPadding: 1 },
-    headStyles: { fillColor: [30, 130, 130] },
+    headStyles: { fillColor: BRAND_TEAL },
     columnStyles: {
       0: { cellWidth: 36 },
       [days.length + 1]: { fontStyle: 'bold' },
@@ -1058,7 +1058,7 @@ function render10a_aiAssistantTable() {
     body: rows,
     startY: 28,
     styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+    headStyles: { fillColor: BRAND_TEAL, textColor: 255 },
     alternateRowStyles: { fillColor: [245, 247, 250] },
   });
 
