@@ -370,7 +370,9 @@
       "prepPhase": "Vorbereitung · {{pct}}% des Budgets",
       "inFullSwing": "Läuft · {{pct}}% des Budgets",
       "nearEnd": "Endphase · {{pct}}% des Budgets",
-      "inProgress": "Läuft · {{count}} Einträge"
+      "inProgress": "Läuft · {{count}} Einträge",
+      "awaitingPayment": "Wartet auf Zahlung · Projekt profitabel",
+      "expectedMini": "Erw. Gewinn {{value}} ({{pct}}%)"
     },
     "quickPhoto": {
       "title": "Schnelle Belegerfassung",

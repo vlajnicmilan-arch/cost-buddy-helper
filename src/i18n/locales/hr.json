@@ -374,7 +374,9 @@
       "prepPhase": "Priprema · {{pct}}% budžeta",
       "inFullSwing": "U tijeku · {{pct}}% budžeta",
       "nearEnd": "Pri kraju · {{pct}}% budžeta",
-      "inProgress": "U tijeku · {{count}} unosa"
+      "inProgress": "U tijeku · {{count}} unosa",
+      "awaitingPayment": "Čeka se naplata · projekt profitabilan",
+      "expectedMini": "Oček. profit {{value}} ({{pct}}%)"
     },
     "quickPhoto": {
       "title": "Brzi unos računa",
