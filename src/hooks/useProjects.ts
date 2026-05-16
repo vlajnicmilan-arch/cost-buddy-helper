@@ -259,9 +259,10 @@ export const useProjects = () => {
           color: project.color,
           status: project.status,
           total_budget: project.total_budget,
+          contract_value: project.contract_value ?? null,
           start_date: project.start_date,
           end_date: project.end_date,
-        })
+        } as any)
         .eq('id', project.id);
 
       if (error) throw error;
