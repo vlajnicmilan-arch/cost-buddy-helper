@@ -3,7 +3,7 @@ import { useProjectProfitLoss } from '@/hooks/useProjectProfitLoss';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp, Wallet, FileSignature } from 'lucide-react';
 
 interface ProjectProfitLossCardProps {
   projectId: string;
@@ -23,7 +23,7 @@ export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps)
     );
   }
 
-  const hasData = pl.totalIncome > 0 || pl.totalExpenses > 0;
+  const hasData = pl.totalIncome > 0 || pl.totalExpenses > 0 || pl.contractValue > 0;
 
   if (!hasData) {
     return (
@@ -34,28 +34,94 @@ export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps)
     );
   }
 
+  const totalCosts = pl.laborCost + pl.collaboratorCost + pl.materialCost;
+  const cashBalance = pl.totalIncome - totalCosts;
+  const hasContract = pl.contractValue > 0;
+
   return (
-    <div className="p-4 rounded-lg border space-y-3">
+    <div className="p-4 rounded-lg border space-y-4">
       <div className="flex items-center gap-2">
         <TrendingUp className="w-4 h-4 text-muted-foreground" />
         <span className="font-medium">{t('projects.profitLoss', 'Profitabilnost (P&L)')}</span>
       </div>
 
-      {/* Income */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-income">{t('projects.plIncome', 'Prihodi')}</span>
-          <span className="font-semibold text-income">+{formatAmount(pl.totalIncome)}</span>
+      {/* Dual View Grid */}
+      <div className={cn("grid gap-3", hasContract ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
+        {/* LEFT: Current state (cash basis) */}
+        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <Wallet className="w-3.5 h-3.5" />
+            {t('projects.currentStateCash', 'Trenutno stanje (gotovina)')}
+          </div>
+          <div className="space-y-1 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">{t('projects.collected', 'Naplaćeno')}</span>
+              <span className="font-medium text-income">+{formatAmount(pl.totalIncome)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">{t('projects.plCosts', 'Troškovi')}</span>
+              <span className="font-medium text-expense">-{formatAmount(totalCosts)}</span>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-dashed">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">{t('projects.cashBalance', 'Cash saldo')}</span>
+              <span className={cn("font-bold", cashBalance >= 0 ? "text-income" : "text-destructive")}>
+                {cashBalance >= 0 ? '+' : ''}{formatAmount(cashBalance)}
+              </span>
+            </div>
+            {hasContract && pl.remainingToCollect > 0 && (
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs text-muted-foreground">{t('projects.remainingToCollect', 'Za naplatu')}</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {formatAmount(pl.remainingToCollect)}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* RIGHT: Expected (contract / accrual) — only when contract value exists */}
+        {hasContract && (
+          <div className="rounded-lg border bg-primary/5 p-3 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+              <FileSignature className="w-3.5 h-3.5" />
+              {t('projects.expectedContract', 'Očekivano (ugovor)')}
+            </div>
+            <div className="space-y-1 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">{t('projects.contracted', 'Ugovoreno')}</span>
+                <span className="font-medium">{formatAmount(pl.contractValue)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">{t('projects.allCosts', 'Svi troškovi')}</span>
+                <span className="font-medium text-expense">-{formatAmount(totalCosts)}</span>
+              </div>
+            </div>
+            <div className="pt-2 border-t border-dashed">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium">{t('projects.expectedProfit', 'Očekivani profit')}</span>
+                <span className={cn("font-bold", pl.expectedProfit >= 0 ? "text-income" : "text-destructive")}>
+                  {pl.expectedProfit >= 0 ? '+' : ''}{formatAmount(pl.expectedProfit)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs text-muted-foreground">{t('projects.expectedMargin', 'Očekivana marža')}</span>
+                <span className={cn("text-xs font-medium", pl.expectedMargin >= 0 ? "text-income" : "text-destructive")}>
+                  {pl.expectedMargin.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Costs breakdown */}
       <div className="space-y-1.5 pl-2 border-l-2 border-muted">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">{t('projects.plCosts', 'Troškovi')}</span>
-          <span className="font-semibold text-expense">-{formatAmount(pl.laborCost + pl.collaboratorCost + pl.materialCost)}</span>
+        <div className="text-xs font-medium text-muted-foreground mb-1">
+          {t('projects.costBreakdown', 'Razrada troškova')}
         </div>
-        
+
         {pl.laborCost > 0 && (
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1 text-muted-foreground">
@@ -65,7 +131,7 @@ export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps)
             <span className="text-muted-foreground">-{formatAmount(pl.laborCost)}</span>
           </div>
         )}
-        
+
         {pl.collaboratorCost > 0 && (
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1 text-muted-foreground">
@@ -75,7 +141,7 @@ export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps)
             <span className="text-muted-foreground">-{formatAmount(pl.collaboratorCost)}</span>
           </div>
         )}
-        
+
         {pl.materialCost > 0 && (
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1 text-muted-foreground">
@@ -85,22 +151,6 @@ export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps)
             <span className="text-muted-foreground">-{formatAmount(pl.materialCost)}</span>
           </div>
         )}
-      </div>
-
-      {/* Net profit */}
-      <div className="pt-2 border-t border-dashed">
-        <div className="flex items-center justify-between">
-          <span className="font-medium">{t('projects.plNetProfit', 'Neto dobit')}</span>
-          <span className={cn("font-bold text-lg", pl.netProfit >= 0 ? "text-income" : "text-destructive")}>
-            {pl.netProfit >= 0 ? '+' : ''}{formatAmount(pl.netProfit)}
-          </span>
-        </div>
-        <div className="flex items-center justify-between mt-1">
-          <span className="text-xs text-muted-foreground">{t('projects.plMargin', 'Marža')}</span>
-          <span className={cn("text-sm font-medium", pl.margin >= 0 ? "text-income" : "text-destructive")}>
-            {pl.margin.toFixed(1)}%
-          </span>
-        </div>
       </div>
 
       {/* Expandable worker/collaborator details */}
