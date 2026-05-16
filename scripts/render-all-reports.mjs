@@ -922,12 +922,12 @@ function render08_businessReport() {
 
   brandAutoTable(doc, {
     startY: 42,
-    head: [['Period', 'Prihodi (EUR)', 'Rashodi (EUR)', 'Dobit (EUR)', 'Br. transakcija']],
+    head: [['Period', 'Prihodi', 'Rashodi', 'Dobit', 'Br. transakcija']],
     body: periodData.map(p => [
       p.label,
-      p.income.toFixed(2),
-      p.expense.toFixed(2),
-      p.profit.toFixed(2),
+      formatCurrency(p.income),
+      formatCurrency(p.expense),
+      formatCurrency(p.profit),
       p.count.toString(),
     ]),
   });
