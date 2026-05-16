@@ -45,8 +45,10 @@ export interface ProjectReportData {
   projectDescription?: string | null;
   projectStatus: string;
   totalBudget: number;
+  contractValue?: number | null;
   totalSpent: number;
   totalAllocated: number;
+  totalIncome?: number;
   milestones: ProjectMilestone[];
   members: { display_name?: string; role: string; spent?: number }[];
   transactions: {
