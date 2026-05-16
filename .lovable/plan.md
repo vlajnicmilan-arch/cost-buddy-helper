@@ -1,57 +1,143 @@
-## Cilj
-Riješiti 4 problema utvrđena u QA prolazu i ujednačiti branding na svih 10 PDF-ova.
 
-## Problemi koje rješavamo
-1. **Bold Helvetica razmaci** ("F i n a n c i j s k o") — built-in jsPDF Helvetica-Bold render bug
-2. **Dijakritika & Σ** se gubi u 4 izvještaja koji ne koriste `toAscii`
-3. **Formatiranje valute** — `BusinessReports` koristi `.toFixed(2)` umjesto `Intl.NumberFormat('hr-HR')`
-4. **Inkonzistentan branding** — generičke boje zaglavlja (crvena/plava/siva) umjesto teal `#2DBFA3`
+# Dual P&L View + Contract Value
 
-## Rješenje
+Cilj: projekti pokazuju **dva paralelna stanja** — trenutni cash flow i očekivani profit po ugovoru. Dodaje se novo polje `contract_value` (ugovorena vrijednost s kupcem).
 
-### A) Centralni PDF helper (`src/lib/pdfBranding.ts` — novi file)
-Jedna točka istine za sve PDF-ove:
-- `BRAND` konstante: primary teal `#2DBFA3`, dark `#0F172A`, muted gray, success/danger HSL → hex
-- `formatCurrency(amount, currency)` — `Intl.NumberFormat('hr-HR', {style:'currency'})`
-- `formatDate(date)` — `dd.MM.yyyy.`
-- `drawHeader(doc, {title, subtitle, logo?})` — teal banner, bijeli naslov, datum generiranja desno
-- `drawFooter(doc, pageNum, totalPages)` — "V&M Balance · stranica X/Y"
-- `tableTheme` — autoTable preset: teal `headStyles.fillColor`, alternateRow světle teal `#E6F7F3`, font size 9, cellPadding 4
-- `safeText(str)` — wrapper koji **ne** koristi `toAscii` već registrira **Inter** ttf (čita iz `node_modules/@fontsource/inter/files/...`) preko `doc.addFileToVFS` + `doc.addFont` → puna podrška za č/ć/ž/đ/š **i** za Σ ∞ €
+---
 
-### B) Font fix (rješava #1 i #2 odjednom)
-Embed Inter Regular + Bold preko `@fontsource/inter` (već u projektu). `pdfBranding.ts` ima `registerInterFonts(doc)` koji se zove na startu svakog PDF-a. Helvetica-Bold bug nestaje jer više ne koristimo Helvetica. `toAscii` workaround se uklanja iz svih 10 izvještaja.
+## 1. Baza (migracija)
 
-### C) Refactor po izvještaju
-Svih 10 PDF generatora migrira na helper:
-- `src/lib/generateFinancialExpensesPDF.ts`
-- `src/lib/generateFinancialIncomePDF.ts`
-- `src/lib/generateProjectPnLPDF.ts`
-- `src/lib/generateWorkLogPDF.ts`
-- `src/lib/generateWorkRecordsPDF.ts`
-- `src/components/SpendingCalendar.tsx` (inline export)
-- `src/components/ItemsAnalysisTab.tsx`
-- `src/components/business/BusinessReports.tsx`
-- `src/components/worklog/WorkLogMonthlyOverview.tsx`
-- `src/components/ai/FinancialAssistantDialog.tsx`
+`projects` tablica — dodati:
+- `contract_value NUMERIC` (nullable, default NULL)
 
-Svaki: `registerInterFonts` → `drawHeader` → `autoTable(doc, {...tableTheme, head, body})` → `drawFooter` na svakoj stranici. Uklanja se duplicirani styling kod.
+Bez RLS promjena, bez triggera. Fallback logika u kodu: `contract_value ?? total_budget`.
 
-### D) QA prolaz
-Ponovo pokrenuti `scripts/render-all-reports.mjs`, konvertirati pdftoppm → vizualna provjera svih 10 PDF-ova. Lista provjera:
-- Č/ć/ž/đ/š/Σ/€ ispravno renderirani
-- Bold naslovi bez razmaka među slovima
-- Teal banner + footer na svim stranicama
-- Iznosi formatirani kao "12.400,00 €"
-- Tablice — alternirajući redovi, teal header, bez clippinga
+---
 
-## Što NE diramo
-- Excel/CSV exporti (nisu u scope-u — samo PDF)
-- Realne komponente koje renderiraju in-app UI (radimo samo na PDF generator funkcijama)
-- Mock skripta `scripts/render-all-reports.mjs` — ostaje za buduće QA
-- Logika izvještaja, sortiranje, agregati (samo prezentacija)
+## 2. Logika računanja (`src/lib/projectCalculations.ts`)
 
-## Tehnički detalji
-- Inter font (cca 80KB Regular + 80KB Bold base64) — load sync na startu generatora, ne utječe na bundle (lazy-loaded zajedno s PDF route-om)
-- Boje izvedene iz postojećih `index.css` HSL varijabli (`--primary`, `--success`, `--destructive`) konvertirane u hex jer jsPDF ne razumije HSL
-- `Intl.NumberFormat` radi i u Node-u (za QA skriptu) i u browseru
+Dodati nove pure funkcije pored postojećih (ne dirati postojeće):
+
+```text
+calculateContractValue(project)        → contract_value ?? total_budget ?? 0
+calculateExpectedProfit(project, exp)  → contractValue − totalCosts
+calculateCollectionProgress(project)   → income / contractValue (%)
+```
+
+Postojeće `calculateProjectSpent / Income / Balance` ostaju netaknute (cash basis).
+
+`useProjectProfitLoss.ts` proširiti returnom:
+- `contractValue: number`
+- `expectedProfit: number` (contract − svi troškovi)
+- `expectedMargin: number` (%)
+- `collectedPercentage: number` (income / contract × 100)
+- `remainingToCollect: number` (contract − income)
+
+---
+
+## 3. UI prikaz (Dual View)
+
+### A) Forma za projekt (`AddProjectDialog` / `EditProjectDialog`)
+Novo polje **"Ugovorena vrijednost (opcionalno)"** ispod `total_budget`, s hint tekstom: "Ako ostaviš prazno, koristi se ukupan budžet."
+
+### B) `ProjectFullScreenView` — P&L sekcija
+Umjesto jednog "Net Profit" reda, prikazati **dva bloka**:
+
+```text
+┌─────────────────────────┬─────────────────────────┐
+│ TRENUTNO STANJE         │ OČEKIVANO (UGOVOR)      │
+│ (gotovina)              │                         │
+├─────────────────────────┼─────────────────────────┤
+│ Naplaćeno:    5.000 €   │ Ugovoreno:   20.000 €   │
+│ Potrošeno:    8.000 €   │ Svi troškovi: 8.000 €   │
+│ ─────────────────────   │ ─────────────────────   │
+│ Saldo:       −3.000 €   │ Profit:      12.000 €   │
+│                         │ Marža:           60%    │
+│ Za naplatu:  15.000 €   │                         │
+└─────────────────────────┴─────────────────────────┘
+```
+
+### C) Kartica projekta u `ActiveProjectsStrip` / `ProjectsPanel`
+- Glavni broj ostaje cash balance (kao sad), ali u boji koja **više nije crvena** ako je očekivani profit pozitivan
+- Mali sekundarni red ispod: "Očekivani profit: 12.000 € (60%)"
+- Health score logika: ako je cash u minusu ali ugovor pozitivan → **yellow** umjesto **red** (manja panika)
+
+### D) `getProjectStatusLine` (`src/lib/projectStatusLine.ts`)
+Dodati novu varijantu kad je cash < 0 a expected > 0: "Čeka se naplata — projekt profitabilan."
+
+---
+
+## 4. PDF Izvještaji
+
+Tri PDF-a koja prikazuju projekte (`projectReportExport.ts`, `BusinessReports.tsx` projekt-sekcija, glavni summary) trebaju **proširenu tablicu**:
+
+Trenutno: `Naziv | Budžet | Potrošeno | Prihod | Saldo`
+Novo:     `Naziv | Ugovoreno | Naplaćeno | Potrošeno | Cash saldo | Oček. profit`
+
+Plus novi summary blok na vrhu Project Report PDF-a:
+```text
+Ugovoreno:        20.000,00 €
+Naplaćeno:         5.000,00 € (25%)
+Za naplatu:       15.000,00 €
+─────────────────────────────
+Ukupni troškovi:   8.000,00 €
+  • Materijal:     3.500,00 €
+  • Radnici:       4.500,00 €
+─────────────────────────────
+Trenutni saldo:   −3.000,00 € (cash)
+Očekivani profit: 12.000,00 € (60% marža)
+```
+
+Koristi postojeći `pdfBranding.ts` (`brandAutoTable`, `formatBrandCurrency`) — bez novih helpera.
+
+---
+
+## 5. i18n (HR / EN / DE)
+
+Novi ključevi pod `projects.profitLoss.*`:
+
+| Ključ | HR | EN | DE |
+|---|---|---|---|
+| `contractValue` | Ugovorena vrijednost | Contract value | Vertragswert |
+| `contractValueHint` | Ako prazno, koristi se ukupan budžet | If empty, total budget is used | Falls leer wird das Gesamtbudget verwendet |
+| `currentState` | Trenutno stanje (gotovina) | Current state (cash) | Aktueller Stand (Bargeld) |
+| `expected` | Očekivano (ugovor) | Expected (contract) | Erwartet (Vertrag) |
+| `collected` | Naplaćeno | Collected | Eingenommen |
+| `remainingToCollect` | Za naplatu | To be collected | Noch einzunehmen |
+| `expectedProfit` | Očekivani profit | Expected profit | Erwarteter Gewinn |
+| `expectedMargin` | Očekivana marža | Expected margin | Erwartete Marge |
+| `cashBalance` | Cash saldo | Cash balance | Kassenstand |
+| `statusLineProfitable` | Čeka se naplata — projekt profitabilan | Awaiting payment — project profitable | Wartet auf Zahlung — Projekt profitabel |
+
+Svi prevodi ulaze u `src/i18n/locales/{hr,en,de}.json` istovremeno.
+
+---
+
+## 6. Što NE diramo
+
+- `expenses` tablica, RLS, triggeri
+- `project_funding` logika (ostaje kao izvor income transakcija)
+- Dashboard balance, transferi, korekcije
+- `useActiveProjectsSummary` (nastavlja vraćati cash brojeve — proširimo samo ako bude tip-safe)
+- Postojeći `useProjectProfitLoss` field-ovi (samo proširenje, ne mijenjamo postojeće)
+
+---
+
+## 7. Redoslijed implementacije
+
+1. Migracija `contract_value` na `projects`
+2. `projectCalculations.ts` — nove pure funkcije + testovi
+3. `useProjectProfitLoss.ts` — proširiti return
+4. `AddProjectDialog` + `EditProjectDialog` — novo polje
+5. i18n ključevi (sva 3 jezika)
+6. `ProjectFullScreenView` P&L sekcija — dual view UI
+7. `ActiveProjectsStrip` / `ProjectsPanel` kartice — sekundarni red
+8. `projectHealthScore` + `projectStatusLine` — nova logika
+9. PDF generatori (3 datoteke)
+10. QA: pokrenuti `scripts/render-all-reports.mjs`, vizualno provjeriti sve PDF-ove (pdftoppm)
+
+---
+
+## 8. Rizik
+
+**Nizak.** Sve promjene su aditivne — postojeće funkcije i prikazi rade isto kao prije ako je `contract_value = NULL`. Migracija je samo `ADD COLUMN nullable`. Ako se nešto pokvari u UI-u, fallback na `total_budget` čuva backward compatibility.
