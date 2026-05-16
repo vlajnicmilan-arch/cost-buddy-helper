@@ -3597,6 +3597,7 @@ export type Database = {
           archived_at: string | null
           business_profile_id: string | null
           color: string | null
+          contract_value: number | null
           created_at: string
           description: string | null
           end_date: string | null
@@ -3615,6 +3616,7 @@ export type Database = {
           archived_at?: string | null
           business_profile_id?: string | null
           color?: string | null
+          contract_value?: number | null
           created_at?: string
           description?: string | null
           end_date?: string | null
@@ -3633,6 +3635,7 @@ export type Database = {
           archived_at?: string | null
           business_profile_id?: string | null
           color?: string | null
+          contract_value?: number | null
           created_at?: string
           description?: string | null
           end_date?: string | null

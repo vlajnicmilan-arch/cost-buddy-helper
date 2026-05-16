@@ -65,6 +65,7 @@ export const ProjectDialog = ({
   const [color, setColor] = useState('#3b82f6');
   const [status, setStatus] = useState<ProjectStatus>('draft');
   const [totalBudget, setTotalBudget] = useState('');
+  const [contractValue, setContractValue] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
@@ -91,6 +92,7 @@ export const ProjectDialog = ({
       setColor(project.color || '#3b82f6');
       setStatus(project.status);
       setTotalBudget(project.total_budget?.toString() || '');
+      setContractValue(project.contract_value != null ? String(project.contract_value) : '');
       setStartDate(project.start_date ? new Date(project.start_date) : undefined);
       setEndDate(project.end_date ? new Date(project.end_date) : undefined);
       setSelectedTemplate(null);
@@ -104,6 +106,7 @@ export const ProjectDialog = ({
       setColor(preset?.color ?? '#3b82f6');
       setStatus('draft');
       setTotalBudget(preset?.totalBudget !== undefined ? String(preset.totalBudget) : '');
+      setContractValue('');
       setStartDate(undefined);
       setEndDate(undefined);
       setSelectedTemplate(null);
@@ -141,6 +144,7 @@ export const ProjectDialog = ({
 
     setSaving(true);
     try {
+      const parsedContract = parseFloat(contractValue);
       const projectData = {
         name: name.trim(),
         description: description.trim() || null,
@@ -148,6 +152,7 @@ export const ProjectDialog = ({
         color,
         status,
         total_budget: parseFloat(totalBudget) || 0,
+        contract_value: Number.isFinite(parsedContract) && parsedContract > 0 ? parsedContract : null,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
         // project_type only set on create; ignored by updateProject.
@@ -327,6 +332,36 @@ export const ProjectDialog = ({
                   {currency.symbol}
                 </span>
               </div>
+            </div>
+
+            {/* Contract value (accrual) */}
+            <div className="space-y-2">
+              <Label htmlFor="contractValue">
+                {t('projects.contractValue', 'Ugovorena vrijednost')}
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                  ({t('common.optional', 'opcionalno')})
+                </span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="contractValue"
+                  type="text"
+                  inputMode="decimal"
+                  value={contractValue}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
+                    setContractValue(value);
+                  }}
+                  placeholder="0.00"
+                  className="pr-12"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {currency.symbol}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t('projects.contractValueHint', 'Iznos koji naplaćuješ kupcu. Ako prazno, koristi se ukupan budžet kao očekivani prihod.')}
+              </p>
             </div>
 
             {/* Dates */}

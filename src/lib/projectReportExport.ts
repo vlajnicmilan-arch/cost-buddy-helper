@@ -45,8 +45,10 @@ export interface ProjectReportData {
   projectDescription?: string | null;
   projectStatus: string;
   totalBudget: number;
+  contractValue?: number | null;
   totalSpent: number;
   totalAllocated: number;
+  totalIncome?: number;
   milestones: ProjectMilestone[];
   members: { display_name?: string; role: string; spent?: number }[];
   transactions: {
@@ -108,12 +110,24 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
     ? ((data.totalSpent / data.totalBudget) * 100).toFixed(1) 
     : '0';
 
+  const resolvedContract = (data.contractValue && data.contractValue > 0) ? data.contractValue : data.totalBudget;
+  const collectedIncome = data.totalIncome ?? 0;
+  const totalCostsAccrual = data.totalSpent;
+  const cashBalance = collectedIncome - totalCostsAccrual;
+  const expectedProfit = resolvedContract - totalCostsAccrual;
+  const expectedMargin = resolvedContract > 0 ? (expectedProfit / resolvedContract) * 100 : 0;
+  const remainingToCollect = Math.max(resolvedContract - collectedIncome, 0);
+
   const budgetData = [
+    [toAscii('Ugovorena vrijednost'), formatCurrency(resolvedContract, data.currency)],
+    [toAscii('Naplaceno'), formatCurrency(collectedIncome, data.currency)],
+    [toAscii('Za naplatu'), formatCurrency(remainingToCollect, data.currency)],
     [toAscii('Ukupni budzet'), formatCurrency(data.totalBudget, data.currency)],
     [toAscii('Potroseno'), formatCurrency(data.totalSpent, data.currency)],
-    ['Preostalo', formatCurrency(remaining, data.currency)],
-    [toAscii('Iskoristeno'), `${usedPercent}%`],
-    ['Alocirano iz izvora', formatCurrency(data.totalAllocated, data.currency)],
+    [toAscii('Cash saldo'), formatCurrency(cashBalance, data.currency)],
+    [toAscii('Ocekivani profit'), `${formatCurrency(expectedProfit, data.currency)} (${expectedMargin.toFixed(1)}%)`],
+    [toAscii('Iskoristeno budzeta'), `${usedPercent}%`],
+    [toAscii('Alocirano iz izvora'), formatCurrency(data.totalAllocated, data.currency)],
   ];
 
   brandAutoTable(doc, autoTable, {
