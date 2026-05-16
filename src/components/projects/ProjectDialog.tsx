@@ -334,6 +334,36 @@ export const ProjectDialog = ({
               </div>
             </div>
 
+            {/* Contract value (accrual) */}
+            <div className="space-y-2">
+              <Label htmlFor="contractValue">
+                {t('projects.contractValue', 'Ugovorena vrijednost')}
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                  ({t('common.optional', 'opcionalno')})
+                </span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="contractValue"
+                  type="text"
+                  inputMode="decimal"
+                  value={contractValue}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
+                    setContractValue(value);
+                  }}
+                  placeholder="0.00"
+                  className="pr-12"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {currency.symbol}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t('projects.contractValueHint', 'Iznos koji naplaćuješ kupcu. Ako prazno, koristi se ukupan budžet kao očekivani prihod.')}
+              </p>
+            </div>
+
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
