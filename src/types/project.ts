@@ -19,6 +19,8 @@ export interface Project {
   color?: string | null;
   status: ProjectStatus;
   total_budget: number;
+  /** Contracted value with the client (accrual basis). If null/0, total_budget is used as fallback. */
+  contract_value?: number | null;
   start_date?: string | null;
   end_date?: string | null;
   business_profile_id?: string | null;
