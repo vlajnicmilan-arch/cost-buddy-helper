@@ -8,6 +8,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subMonths, subQuarters, subYears, format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { loadJsPdf } from '@/lib/loadJsPdf';
+import { applyBrandFont, brandTableTheme, formatBrandCurrency } from '@/lib/pdfBranding';
 import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
 import { ExportButton } from '@/components/ui/export-button';
 import { useTranslation } from 'react-i18next';
