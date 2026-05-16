@@ -65,7 +65,7 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
     doc.text(`${t('business.reports.generated', 'Generirano')}: ${format(now, 'dd.MM.yyyy HH:mm')}`, 14, 28);
     doc.text(`${t('business.reports.period', 'Period')}: ${period === 'monthly' ? t('business.reports.monthly', 'Mjesečno') : period === 'quarterly' ? t('business.reports.quarterly', 'Kvartalno') : t('business.reports.yearly', 'Godišnje')}`, 14, 34);
 
-    const curr = { code: currency, locale: 'hr-HR' };
+    const curr = { code: String(currency), locale: 'hr-HR' };
     autoTable(doc, {
       startY: 42,
       head: [[t('business.reports.period', 'Period'), t('business.reports.income', 'Prihodi'), t('business.reports.expenses', 'Rashodi'), t('business.reports.profit', 'Dobit'), t('business.reports.transactionCount', 'Br. transakcija')]],
