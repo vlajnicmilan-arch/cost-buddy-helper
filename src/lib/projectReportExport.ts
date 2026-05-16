@@ -4,7 +4,7 @@ import { ProjectMilestone, MILESTONE_STATUS_LABELS } from '@/types/project';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { addNotOfficialFooter } from '@/lib/pdfFooter';
 import { sanitizeCsvField } from '@/lib/csvSecurity';
-import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -116,7 +116,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
     ['Alocirano iz izvora', formatCurrency(data.totalAllocated, data.currency)],
   ];
 
-  autoTable(doc, {
+  brandAutoTable(doc, autoTable, {
     startY: 56,
     head: [['Stavka', 'Iznos']],
     body: budgetData,
@@ -147,7 +147,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       ];
     });
 
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: milestoneY + 4,
       head: [['Faza', 'Status', toAscii('Budzet'), toAscii('Potroseno'), 'Udio']],
       body: milestoneData,
@@ -170,7 +170,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       formatCurrency(m.spent || 0, data.currency),
     ]);
 
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: memberY + 4,
       head: [['Ime', 'Uloga', toAscii('Potrosnja')]],
       body: memberData,
@@ -195,7 +195,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       formatCurrency(w.cost, data.currency),
     ]);
 
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: workerY + 4,
       head: [['Ime', 'Sati', 'Satnica', 'Ukupno']],
       body: workerData,
@@ -220,7 +220,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       formatCurrency(c.paidAmount, data.currency),
     ]);
 
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: collabY + 4,
       head: [['Ime', 'Usluga', 'Ugovoreno', toAscii('Placeno')]],
       body: collabData,
@@ -248,7 +248,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
           : formatCurrency(t.amount, data.currency),
       ]);
 
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: 24,
       head: [['Datum', 'Opis', 'Faza', 'Iznos']],
       body: transactionData,
@@ -407,7 +407,7 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: Ex
       return [dateLabel, weather, milestone, author, hoursText, combined];
     });
 
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: 38,
       head: [
         [

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { getCategoryInfo } from '@/types/expense';
 import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
-import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 
 interface Expense {
   id: string;
@@ -113,7 +113,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
       ];
     });
 
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: 34,
       head: [[
         toAscii(t('common.description', 'Opis')),

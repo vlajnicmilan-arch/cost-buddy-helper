@@ -23,7 +23,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useTranslation } from 'react-i18next';
-import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 
 interface BudgetInfo {
   name: string;
@@ -684,7 +684,7 @@ async function exportToPDF(headers: string[], rows: string[][]) {
   doc.setFontSize(9);
   doc.text(`Datum: ${new Date().toLocaleDateString('hr-HR')}`, 14, 22);
 
-  autoTable(doc, {
+  brandAutoTable(doc, autoTable, {
     head: [headers],
     body: rows,
     startY: 28,

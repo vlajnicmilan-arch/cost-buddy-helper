@@ -19,7 +19,7 @@ import { loadJsPdf } from '@/lib/loadJsPdf';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import type { WorkLogDayType } from '@/types/projectWorkLog';
-import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 
 interface WorkLogMonthlyOverviewProps {
   projectId: string;
@@ -184,7 +184,7 @@ export const WorkLogMonthlyOverview = ({ projectId, projectName }: WorkLogMonthl
 
       // Lazy-load autotable
       const autoTable = (await import('jspdf-autotable')).default;
-      autoTable(doc, {
+      brandAutoTable(doc, autoTable, {
         startY: 34,
         head,
         body,

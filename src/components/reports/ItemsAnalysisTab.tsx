@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { ExportButton } from '@/components/ui/export-button';
-import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 
 interface ItemWithCategory extends ReceiptItem {
   category: string;
@@ -202,7 +202,7 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
         ]);
       });
 
-      autoTable(doc, {
+      brandAutoTable(doc, autoTable, {
         startY: 40,
         head: [['Kategorija', 'Artikl', 'Kol.', 'Jed. cijena', 'Ukupno']],
         body: tableData,

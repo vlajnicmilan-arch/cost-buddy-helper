@@ -5,7 +5,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo 
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { addNotOfficialFooter } from '@/lib/pdfFooter';
 import { sanitizeCsvField } from '@/lib/csvSecurity';
-import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -82,7 +82,7 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
     ['Prijenosi', formatCurrency(data.totals.transfers, data.currency)],
   ];
 
-  autoTable(doc, {
+  brandAutoTable(doc, autoTable, {
     startY: 50,
     head: [['Stavka', 'Iznos']],
     body: summaryData,
@@ -109,7 +109,7 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
     });
 
   if (categoryData.length > 0) {
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: categoryY + 4,
       head: [['Kategorija', 'Iznos', 'Udio']],
       body: categoryData,
@@ -141,7 +141,7 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
       ];
     });
 
-  autoTable(doc, {
+  brandAutoTable(doc, autoTable, {
     startY: 24,
     head: [['Datum', 'Tip', 'Opis', 'Kategorija', 'Iznos']],
     body: transactionData,
@@ -244,7 +244,7 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
     ['Broj transakcija', data.incomeTransactions.length.toString()],
   ];
 
-  autoTable(doc, {
+  brandAutoTable(doc, autoTable, {
     startY: 50,
     head: [['Stavka', 'Vrijednost']],
     body: summaryData,
@@ -270,7 +270,7 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
     });
 
   if (categoryData.length > 0) {
-    autoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: categoryY + 4,
       head: [['Kategorija', 'Iznos', 'Udio']],
       body: categoryData,
@@ -297,7 +297,7 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
       ];
     });
 
-  autoTable(doc, {
+  brandAutoTable(doc, autoTable, {
     startY: 24,
     head: [['Datum', 'Opis', 'Kategorija', 'Iznos']],
     body: transactionData,
