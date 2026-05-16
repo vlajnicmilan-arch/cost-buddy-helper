@@ -49,7 +49,7 @@ const BRAND_TABLE_THEME = {
   alternateRowStyles: { fillColor: BRAND_TEAL_LIGHT },
 };
 const brandAutoTable = (doc, opts) => {
-  brandAutoTable(doc, {
+  autoTable(doc, {
     ...BRAND_TABLE_THEME,
     ...opts,
     styles: { ...BRAND_TABLE_THEME.styles, ...(opts?.styles || {}) },
