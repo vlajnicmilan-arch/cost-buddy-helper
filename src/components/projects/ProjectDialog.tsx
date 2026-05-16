@@ -65,6 +65,7 @@ export const ProjectDialog = ({
   const [color, setColor] = useState('#3b82f6');
   const [status, setStatus] = useState<ProjectStatus>('draft');
   const [totalBudget, setTotalBudget] = useState('');
+  const [contractValue, setContractValue] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
