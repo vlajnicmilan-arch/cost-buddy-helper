@@ -92,6 +92,7 @@ export const ProjectDialog = ({
       setColor(project.color || '#3b82f6');
       setStatus(project.status);
       setTotalBudget(project.total_budget?.toString() || '');
+      setContractValue(project.contract_value != null ? String(project.contract_value) : '');
       setStartDate(project.start_date ? new Date(project.start_date) : undefined);
       setEndDate(project.end_date ? new Date(project.end_date) : undefined);
       setSelectedTemplate(null);
