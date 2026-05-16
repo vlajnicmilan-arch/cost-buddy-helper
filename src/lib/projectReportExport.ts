@@ -4,6 +4,7 @@ import { ProjectMilestone, MILESTONE_STATUS_LABELS } from '@/types/project';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { addNotOfficialFooter } from '@/lib/pdfFooter';
 import { sanitizeCsvField } from '@/lib/csvSecurity';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -76,32 +77,21 @@ const formatCurrency = (amount: number, currency?: CurrencyConfig): string => {
 };
 
 // Convert Croatian characters to ASCII for PDF compatibility
-const toAscii = (text: string): string => {
-  return text
-    .replace(/č/g, 'c')
-    .replace(/Č/g, 'C')
-    .replace(/ć/g, 'c')
-    .replace(/Ć/g, 'C')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .replace(/š/g, 's')
-    .replace(/Š/g, 'S')
-    .replace(/ž/g, 'z')
-    .replace(/Ž/g, 'Z');
-};
+const toAscii = (text: string): string => text;
 
 export const generateProjectPDFReport = async (data: ProjectReportData, mode: ExportMode = 'save'): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
+  applyBrandFont(doc);
   
   // Title
   doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii(`Izvjestaj: ${data.projectName}`), 14, 20);
   
   // Metadata
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   if (data.projectDescription) {
     doc.text(toAscii(data.projectDescription.substring(0, 80)), 14, 28);
   }
@@ -110,7 +100,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
 
   // Budget Summary
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Budzet'), 14, 52);
 
   const remaining = data.totalBudget - data.totalSpent;
@@ -131,7 +121,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
     head: [['Stavka', 'Iznos']],
     body: budgetData,
     theme: 'striped',
-    headStyles: { fillColor: [59, 130, 246] },
+    headStyles: { fillColor: [35, 170, 145] },
     margin: { left: 14 },
     tableWidth: 100,
   });
@@ -140,7 +130,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
   if (data.milestones.length > 0) {
     const milestoneY = (doc as any).lastAutoTable.finalY + 15;
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Inter', 'bold');
     doc.text('Faze projekta', 14, milestoneY);
 
     const milestoneData = data.milestones.map(m => {
@@ -162,7 +152,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       head: [['Faza', 'Status', toAscii('Budzet'), toAscii('Potroseno'), 'Udio']],
       body: milestoneData,
       theme: 'striped',
-      headStyles: { fillColor: [139, 92, 246] },
+      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
     });
   }
@@ -171,7 +161,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
   if (data.members.length > 0) {
     const memberY = (doc as any).lastAutoTable?.finalY + 15 || 120;
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Inter', 'bold');
     doc.text(toAscii('Clanovi tima'), 14, memberY);
 
     const memberData = data.members.map(m => [
@@ -185,7 +175,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       head: [['Ime', 'Uloga', toAscii('Potrosnja')]],
       body: memberData,
       theme: 'striped',
-      headStyles: { fillColor: [34, 197, 94] },
+      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       tableWidth: 120,
     });
@@ -195,7 +185,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
   if (data.workers && data.workers.length > 0) {
     const workerY = (doc as any).lastAutoTable?.finalY + 15 || 120;
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Inter', 'bold');
     doc.text('Radnici', 14, workerY);
 
     const workerData = data.workers.map(w => [
@@ -210,7 +200,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       head: [['Ime', 'Sati', 'Satnica', 'Ukupno']],
       body: workerData,
       theme: 'striped',
-      headStyles: { fillColor: [14, 165, 233] },
+      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       tableWidth: 140,
     });
@@ -220,7 +210,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
   if (data.collaborators && data.collaborators.length > 0) {
     const collabY = (doc as any).lastAutoTable?.finalY + 15 || 120;
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Inter', 'bold');
     doc.text('Suradnici', 14, collabY);
 
     const collabData = data.collaborators.map(c => [
@@ -235,7 +225,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       head: [['Ime', 'Usluga', 'Ugovoreno', toAscii('Placeno')]],
       body: collabData,
       theme: 'striped',
-      headStyles: { fillColor: [168, 85, 247] },
+      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
     });
   }
@@ -244,7 +234,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
   if (data.transactions.length > 0) {
     doc.addPage();
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Inter', 'bold');
     doc.text('Popis transakcija', 14, 20);
 
     const transactionData = data.transactions
@@ -263,7 +253,7 @@ export const generateProjectPDFReport = async (data: ProjectReportData, mode: Ex
       head: [['Datum', 'Opis', 'Faza', 'Iznos']],
       body: transactionData,
       theme: 'striped',
-      headStyles: { fillColor: [107, 114, 128] },
+      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       styles: { fontSize: 8 },
       columnStyles: {
@@ -364,17 +354,18 @@ export interface WorkLogReportData {
 export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: ExportMode = 'save'): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
+  applyBrandFont(doc);
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
 
   // Title
   doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Dnevnik rada'), margin, 18);
 
   // Subtitle
   doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   doc.text(toAscii(`Projekt: ${data.projectName}`), margin, 26);
 
   const range =
@@ -430,7 +421,7 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: Ex
       ],
       body: rows,
       theme: 'striped',
-      headStyles: { fillColor: [14, 165, 233], fontSize: 9 },
+      headStyles: { fillColor: [35, 170, 145], fontSize: 9 },
       styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
       columnStyles: {
         0: { cellWidth: 22 },
@@ -449,7 +440,7 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: Ex
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Inter', 'normal');
     doc.text(
       `${i} / ${totalPages}`,
       pageWidth - margin,

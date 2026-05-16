@@ -5,6 +5,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo 
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { addNotOfficialFooter } from '@/lib/pdfFooter';
 import { sanitizeCsvField } from '@/lib/csvSecurity';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -54,30 +55,24 @@ const formatCurrency = (amount: number, currency?: CurrencyConfig): string => {
 };
 
 // Convert Croatian characters to ASCII for PDF compatibility
-const toAscii = (text: string): string => {
-  return text
-    .replace(/č/g, 'c').replace(/Č/g, 'C')
-    .replace(/ć/g, 'c').replace(/Ć/g, 'C')
-    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
-    .replace(/š/g, 's').replace(/Š/g, 'S')
-    .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
-};
+const toAscii = (text: string): string => text;
 
 export const generatePDFReport = async (data: ReportData, reportTitle: string = 'Financijsko izvjesce', mode: ExportMode = 'save'): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
+  applyBrandFont(doc);
   
   doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii(reportTitle), 14, 20);
   
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
   doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Sazetak'), 14, 46);
 
   const summaryData = [
@@ -92,14 +87,14 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
     head: [['Stavka', 'Iznos']],
     body: summaryData,
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: [35, 170, 145] },
     margin: { left: 14 },
     tableWidth: 80,
   });
 
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Troskovi po kategorijama'), 14, categoryY);
 
   const categoryData = Object.entries(data.byCategory)
@@ -119,7 +114,7 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
       head: [['Kategorija', 'Iznos', 'Udio']],
       body: categoryData,
       theme: 'striped',
-      headStyles: { fillColor: [239, 68, 68] },
+      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       tableWidth: 120,
     });
@@ -127,7 +122,7 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
 
   doc.addPage();
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Popis transakcija', 14, 20);
 
   const transactionData = data.expenses
@@ -151,7 +146,7 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
     head: [['Datum', 'Tip', 'Opis', 'Kategorija', 'Iznos']],
     body: transactionData,
     theme: 'striped',
-    headStyles: { fillColor: [107, 114, 128] },
+    headStyles: { fillColor: [35, 170, 145] },
     margin: { left: 14 },
     styles: { fontSize: 8 },
     columnStyles: {
@@ -229,18 +224,19 @@ export interface IncomeReportData {
 export const generateIncomePDFReport = async (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima', mode: ExportMode = 'save'): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
+  applyBrandFont(doc);
   
   doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii(reportTitle), 14, 20);
   
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Inter', 'normal');
   doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
   doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text(toAscii('Sazetak prihoda'), 14, 46);
 
   const summaryData = [
@@ -253,14 +249,14 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
     head: [['Stavka', 'Vrijednost']],
     body: summaryData,
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: [35, 170, 145] },
     margin: { left: 14 },
     tableWidth: 80,
   });
 
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Prihodi po kategorijama', 14, categoryY);
 
   const categoryData = Object.entries(data.byCategory)
@@ -279,7 +275,7 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
       head: [['Kategorija', 'Iznos', 'Udio']],
       body: categoryData,
       theme: 'striped',
-      headStyles: { fillColor: [34, 197, 94] },
+      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       tableWidth: 120,
     });
@@ -287,7 +283,7 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
 
   doc.addPage();
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Inter', 'bold');
   doc.text('Popis prihoda', 14, 20);
 
   const transactionData = data.incomeTransactions
@@ -306,7 +302,7 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
     head: [['Datum', 'Opis', 'Kategorija', 'Iznos']],
     body: transactionData,
     theme: 'striped',
-    headStyles: { fillColor: [34, 197, 94] },
+    headStyles: { fillColor: [35, 170, 145] },
     margin: { left: 14 },
     styles: { fontSize: 8 },
     columnStyles: {

@@ -1,6 +1,7 @@
 import { loadJsPdf } from './loadJsPdf';
 import { exportFile } from './fileExport';
 import { sanitizeCsvField } from './csvSecurity';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
 
 export interface WorkExportConfig {
   workers: Array<{
@@ -91,6 +92,7 @@ export async function generateWorkRecordsPDF(config: WorkExportConfig): Promise<
   const { workers, entries, milestones, projectName, currency } = config;
   const { jsPDF } = await loadJsPdf();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  applyBrandFont(doc);
 
   const msMap = new Map(milestones.map(m => [m.id, m.name]));
   const wMap = new Map(workers.map(w => [w.id, `${w.first_name} ${w.last_name}`.trim()]));

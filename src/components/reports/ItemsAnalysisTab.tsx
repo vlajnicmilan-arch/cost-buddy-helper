@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
 import { ExportButton } from '@/components/ui/export-button';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
 
 interface ItemWithCategory extends ReceiptItem {
   category: string;
@@ -172,7 +173,8 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
     try {
       const { jsPDF, autoTable } = await loadJsPdf();
       const doc = new jsPDF();
-      doc.setFont('helvetica');
+  applyBrandFont(doc);
+      doc.setFont('Inter');
       doc.setFontSize(16);
       doc.text('Analiza troskova po artiklima', 14, 20);
       doc.setFontSize(10);
@@ -192,11 +194,11 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
         });
         // Category subtotal row
         tableData.push([
-          { content: `Ukupno ${group.categoryName}`, styles: { fontStyle: 'bold' as const, fillColor: [230, 236, 245] } },
-          { content: '', styles: { fillColor: [230, 236, 245] } },
-          { content: `${group.itemCount}`, styles: { fontStyle: 'bold' as const, fillColor: [230, 236, 245] } },
-          { content: '', styles: { fillColor: [230, 236, 245] } },
-          { content: formatAmount(group.totalAmount), styles: { fontStyle: 'bold' as const, fillColor: [230, 236, 245] } },
+          { content: `Ukupno ${group.categoryName}`, styles: { fontStyle: 'bold' as const, fillColor: [230, 247, 243] } },
+          { content: '', styles: { fillColor: [230, 247, 243] } },
+          { content: `${group.itemCount}`, styles: { fontStyle: 'bold' as const, fillColor: [230, 247, 243] } },
+          { content: '', styles: { fillColor: [230, 247, 243] } },
+          { content: formatAmount(group.totalAmount), styles: { fontStyle: 'bold' as const, fillColor: [230, 247, 243] } },
         ]);
       });
 
@@ -205,13 +207,13 @@ export const ItemsAnalysisTab = ({ filteredExpenses, dateRange }: ItemsAnalysisT
         head: [['Kategorija', 'Artikl', 'Kol.', 'Jed. cijena', 'Ukupno']],
         body: tableData,
         styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [59, 130, 246] },
+        headStyles: { fillColor: [35, 170, 145] },
       });
 
       // Grand total
       const finalY = (doc as any).lastAutoTable?.finalY || 200;
       doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('Inter', 'bold');
       doc.text(`UKUPNO: ${formatAmount(totalItemsAmount)}`, 14, finalY + 10);
 
       const pdfFileName = `artikli-analiza-${dateRange.start.toISOString().slice(0, 10)}.pdf`;

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { getCategoryInfo } from '@/types/expense';
 import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
 
 interface Expense {
   id: string;
@@ -83,14 +84,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
 
   const selectedDayData = selectedDay ? dailyData[selectedDay] : null;
 
-  const toAscii = (text: string): string => {
-    return text
-      .replace(/č/g, 'c').replace(/Č/g, 'C')
-      .replace(/ć/g, 'c').replace(/Ć/g, 'C')
-      .replace(/đ/g, 'd').replace(/Đ/g, 'D')
-      .replace(/š/g, 's').replace(/Š/g, 'S')
-      .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
-  };
+  const toAscii = (text: string): string => text;
 
   const exportDayPDF = async (mode: ExportMode = 'save') => {
     if (!selectedDay || !selectedDayData || selectedDayData.transactions.length === 0) return;
@@ -98,13 +92,14 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
     const dateStr = `${selectedDay}. ${monthName}`;
     const { jsPDF, autoTable } = await loadJsPdf();
     const doc = new jsPDF();
+  applyBrandFont(doc);
 
     doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Inter', 'bold');
     doc.text(toAscii(t('dashboard.calendar.title', 'Kalendar potrosnje')), 14, 20);
 
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Inter', 'normal');
     doc.text(toAscii(dateStr), 14, 28);
 
     const tableData = selectedDayData.transactions.map(tx => {
@@ -128,7 +123,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
       ]],
       body: tableData,
       styles: { fontSize: 10 },
-      headStyles: { fillColor: [55, 65, 81] },
+      headStyles: { fillColor: [35, 170, 145] },
       columnStyles: { 3: { halign: 'right' } },
     });
 
@@ -148,7 +143,7 @@ export const SpendingCalendar = ({ expenses }: SpendingCalendarProps) => {
     }
     const net = selectedDayData.income - selectedDayData.expense;
     doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Inter', 'bold');
     doc.text(`${toAscii(t('dashboard.calendar.net', 'Neto'))}: ${net >= 0 ? '+' : ''}${formatAmount(net)}`, 196, y, { align: 'right' });
 
     await exportPDFDoc(doc, `${toAscii(t('dashboard.calendar.title', 'Kalendar'))}_${selectedDay}_${month + 1}_${year}.pdf`, mode);
