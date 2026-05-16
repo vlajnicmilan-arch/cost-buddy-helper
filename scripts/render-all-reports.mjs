@@ -24,16 +24,42 @@ const OUT = '/mnt/documents/reports-preview';
 fs.mkdirSync(OUT, { recursive: true });
 
 // ============================================================
-// Helpers (kopirano iz src/lib/*)
+// Helpers (kopirano iz src/lib/* + src/lib/pdfBranding.ts)
 // ============================================================
 
-const toAscii = (text) =>
-  String(text || '')
-    .replace(/č/g, 'c').replace(/Č/g, 'C')
-    .replace(/ć/g, 'c').replace(/Ć/g, 'C')
-    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
-    .replace(/š/g, 's').replace(/Š/g, 'S')
-    .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
+// Brand
+const BRAND_TEAL = [35, 170, 145];
+const BRAND_TEAL_LIGHT = [230, 247, 243];
+const BRAND_DARK = [15, 23, 42];
+
+// Inter font (UTF-8 podrška + bez Helvetica-Bold bug-a)
+const INTER_REGULAR_B64 = fs.readFileSync('src/assets/fonts/Inter-Regular.ttf').toString('base64');
+const INTER_BOLD_B64 = fs.readFileSync('src/assets/fonts/Inter-Bold.ttf').toString('base64');
+const applyBrandFont = (doc) => {
+  doc.addFileToVFS('Inter-Regular.ttf', INTER_REGULAR_B64);
+  doc.addFont('Inter-Regular.ttf', 'Inter', 'normal');
+  doc.addFileToVFS('Inter-Bold.ttf', INTER_BOLD_B64);
+  doc.addFont('Inter-Bold.ttf', 'Inter', 'bold');
+  doc.setFont('Inter', 'normal');
+};
+const BRAND_TABLE_THEME = {
+  theme: 'striped',
+  styles: { font: 'Inter', fontSize: 9, cellPadding: 3, textColor: BRAND_DARK },
+  headStyles: { font: 'Inter', fontStyle: 'bold', fillColor: BRAND_TEAL, textColor: [255, 255, 255], fontSize: 9 },
+  alternateRowStyles: { fillColor: BRAND_TEAL_LIGHT },
+};
+const brandAutoTable = (doc, opts) => {
+  autoTable(doc, {
+    ...BRAND_TABLE_THEME,
+    ...opts,
+    styles: { ...BRAND_TABLE_THEME.styles, ...(opts?.styles || {}) },
+    headStyles: { ...BRAND_TABLE_THEME.headStyles, ...(opts?.headStyles || {}) },
+    alternateRowStyles: { ...BRAND_TABLE_THEME.alternateRowStyles, ...(opts?.alternateRowStyles || {}) },
+  });
+};
+
+// toAscii sada identity — Inter font podržava UTF-8
+const toAscii = (text) => String(text || '');
 
 const formatDate = (d) => new Date(d).toLocaleDateString('hr-HR');
 const formatCurrency = (n) =>
@@ -46,10 +72,11 @@ const addNotOfficialFooter = (doc) => {
     const pageHeight = doc.internal.pageSize.getHeight();
     const pageWidth = doc.internal.pageSize.getWidth();
     doc.setFontSize(7);
+    doc.setFont('Inter', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text('Generirano iz V&M Balance - alat za interno upravljanje projektima.',
+    doc.text('Generirano iz V&M Balance — alat za interno upravljanje projektima.',
       pageWidth / 2, pageHeight - 8, { align: 'center' });
-    doc.text('Nije sluzbena evidencija u smislu Zakona o radu / Zakona o racunovodstvu / Zakona o porezu.',
+    doc.text('Nije službena evidencija u smislu Zakona o radu / Zakona o računovodstvu / Zakona o porezu.',
       pageWidth / 2, pageHeight - 5, { align: 'center' });
     doc.setTextColor(0, 0, 0);
   }
