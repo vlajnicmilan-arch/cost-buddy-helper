@@ -28,6 +28,12 @@ export interface ProfitLossData {
   loading: boolean;
   workers: WorkerDetail[];
   collaborators: CollaboratorDetail[];
+  // ── Accrual / Contract-based (dual view) ──
+  contractValue: number;
+  expectedProfit: number;
+  expectedMargin: number;
+  collectedPercentage: number;
+  remainingToCollect: number;
 }
 
 export const useProjectProfitLoss = (projectId: string | null): ProfitLossData => {
