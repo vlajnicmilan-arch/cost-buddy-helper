@@ -144,6 +144,7 @@ export const ProjectDialog = ({
 
     setSaving(true);
     try {
+      const parsedContract = parseFloat(contractValue);
       const projectData = {
         name: name.trim(),
         description: description.trim() || null,
@@ -151,6 +152,7 @@ export const ProjectDialog = ({
         color,
         status,
         total_budget: parseFloat(totalBudget) || 0,
+        contract_value: Number.isFinite(parsedContract) && parsedContract > 0 ? parsedContract : null,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
         // project_type only set on create; ignored by updateProject.
