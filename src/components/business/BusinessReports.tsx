@@ -56,22 +56,27 @@ export const BusinessReports = ({ expenses, companyName }: Props) => {
   const exportPDF = async (mode: ExportMode = 'save') => {
     const { jsPDF, autoTable } = await loadJsPdf();
     const doc = new jsPDF();
+    applyBrandFont(doc);
     doc.setFontSize(16);
+    doc.setFont('Inter', 'bold');
     doc.text(`${companyName} — ${t('business.reports.businessReport', 'Poslovni izvještaj')}`, 14, 20);
+    doc.setFont('Inter', 'normal');
     doc.setFontSize(10);
     doc.text(`${t('business.reports.generated', 'Generirano')}: ${format(now, 'dd.MM.yyyy HH:mm')}`, 14, 28);
     doc.text(`${t('business.reports.period', 'Period')}: ${period === 'monthly' ? t('business.reports.monthly', 'Mjesečno') : period === 'quarterly' ? t('business.reports.quarterly', 'Kvartalno') : t('business.reports.yearly', 'Godišnje')}`, 14, 34);
 
+    const curr = { code: currency, locale: 'hr-HR' };
     autoTable(doc, {
       startY: 42,
-      head: [[t('business.reports.period', 'Period'), `${t('business.reports.income', 'Prihodi')} (${currency})`, `${t('business.reports.expenses', 'Rashodi')} (${currency})`, `${t('business.reports.profit', 'Dobit')} (${currency})`, t('business.reports.transactionCount', 'Br. transakcija')]],
+      head: [[t('business.reports.period', 'Period'), t('business.reports.income', 'Prihodi'), t('business.reports.expenses', 'Rashodi'), t('business.reports.profit', 'Dobit'), t('business.reports.transactionCount', 'Br. transakcija')]],
       body: periodData.map(p => [
         p.label,
-        p.income.toFixed(2),
-        p.expense.toFixed(2),
-        p.profit.toFixed(2),
+        formatBrandCurrency(p.income, curr),
+        formatBrandCurrency(p.expense, curr),
+        formatBrandCurrency(p.profit, curr),
         p.count.toString(),
       ]),
+      ...brandTableTheme,
     });
 
     const fileName = `${companyName.replace(/\s+/g, '_')}_report_${format(now, 'yyyyMMdd')}.pdf`;
