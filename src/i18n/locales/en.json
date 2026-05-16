@@ -374,7 +374,9 @@
       "prepPhase": "Prep · {{pct}}% of budget",
       "inFullSwing": "In progress · {{pct}}% of budget",
       "nearEnd": "Near the end · {{pct}}% of budget",
-      "inProgress": "In progress · {{count}} entries"
+      "inProgress": "In progress · {{count}} entries",
+      "awaitingPayment": "Awaiting payment · project profitable",
+      "expectedMini": "Exp. profit {{value}} ({{pct}}%)"
     },
     "quickPhoto": {
       "title": "Quick receipt capture",

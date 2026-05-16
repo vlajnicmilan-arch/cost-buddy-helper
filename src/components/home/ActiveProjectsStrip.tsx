@@ -40,6 +40,9 @@ interface ProjectCardData {
   kpiKind: KpiKind;
   kpiValue: number;
   statusLine: StatusLine | null;
+  /** Contract-based expected profit (null when no contract value & no budget). */
+  expectedProfit: number | null;
+  expectedMargin: number | null;
 }
 
 /**
@@ -118,17 +121,12 @@ export const ActiveProjectsStrip = React.memo(({
       const hasIncome = income > 0;
       const hasBudget = budget > 0;
 
-      // Profit-margin–based health (per user request):
-      //  - margin >= 30% → green
-      //  - 10% <= margin < 30% → yellow (warning + AI hint)
-      //  - margin < 10% → red (critical + AI alert)
-      // Reference for margin: realised income if any, else budget.
+      // Cash-based margin (current behaviour).
       let margin: number | null = null;
       let health: HealthLevel = 'green';
       if (hasIncome) {
         margin = profit / income;
       } else if (hasBudget) {
-        // Treat budget as expected revenue baseline; project still in spend phase.
         margin = (budget - spent) / budget;
       }
       if (margin !== null) {
@@ -137,7 +135,29 @@ export const ActiveProjectsStrip = React.memo(({
         else health = 'green';
       }
 
-      // KPI selection (kept for projects without income/budget)
+      // Contract-aware (accrual) view. Uses contract_value if set, otherwise falls back to total_budget.
+      const contractValue = Number(p.contract_value || 0) > 0
+        ? Number(p.contract_value)
+        : budget;
+      let expectedProfit: number | null = null;
+      let expectedMargin: number | null = null;
+      let awaitingPayment = false;
+      if (contractValue > 0) {
+        expectedProfit = contractValue - spent;
+        expectedMargin = expectedProfit / contractValue;
+        // Downgrade panic: project looks bad on cash basis but is profitable on paper
+        // AND there's still money to collect.
+        if (
+          (health === 'red' || health === 'yellow') &&
+          expectedMargin >= 0.30 &&
+          income < contractValue
+        ) {
+          health = 'green';
+          awaitingPayment = true;
+        }
+      }
+
+      // KPI selection
       let kpiKind: KpiKind;
       let kpiValue: number;
       if (hasIncome) {
@@ -154,7 +174,7 @@ export const ActiveProjectsStrip = React.memo(({
         kpiValue = txCount;
       }
 
-      const statusLine = getProjectStatusLine(
+      let statusLine = getProjectStatusLine(
         {
           status: p.status,
           start_date: p.start_date,
@@ -169,7 +189,19 @@ export const ActiveProjectsStrip = React.memo(({
         t,
       );
 
-      return { project: p, spent, income, profit, remaining, txCount, health, margin, kpiKind, kpiValue, statusLine };
+      // Override status line for awaiting-payment case (overrides "stable" etc.)
+      if (awaitingPayment) {
+        statusLine = {
+          text: t('projects.statusLine.awaitingPayment', 'Čeka se naplata · projekt profitabilan'),
+          tone: 'success',
+          icon: 'Clock',
+        };
+      }
+
+      return {
+        project: p, spent, income, profit, remaining, txCount, health, margin,
+        kpiKind, kpiValue, statusLine, expectedProfit, expectedMargin,
+      };
     });
   }, [projects, summary, t]);
 
