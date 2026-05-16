@@ -15,7 +15,7 @@
 //
 // Ako se logika u tim datotekama mijenja, treba i ovdje.
 
-import { jsPDF } from 'jspdf';
+import { jsPDF } from 'jspdf/dist/jspdf.es.min.js';
 import autoTable from 'jspdf-autotable';
 import fs from 'node:fs';
 import path from 'node:path';
