@@ -184,8 +184,7 @@
       "collection": "Collection"
     },
     "alerts": {
-      "budgetHigh": "⚠️ You've spent {{pct}}% of the contracted budget",
-      "collectionLow": "💰 Only {{pct}}% collected. Consider reminding the client."
+      "lossZone": "Project {{name}} is entering the loss zone — only {{pct}}% margin left"
     },
     "forecast": {
       "title": "🔮 Forecast — at the current pace",
@@ -415,9 +414,6 @@
       "promptDesc": "Without a contract value we can't calculate margin, EAC or loss risk.",
       "promptCta": "Enter contract value"
     },
-    "alerts": {
-      "lossZone": "Project {{name}} is entering the loss zone — only {{pct}}% margin left"
-    },
     "statusLine": {
       "paused": "Paused",
       "waitingStart": "Waiting to start · {{date}}",
@@ -573,6 +569,32 @@
       "recommended": "Recommended",
       "finishCta": "Complete project",
       "success": "Project completed"
+    },
+    "advances": {
+      "sectionTitle": "Advance / collaborator",
+      "advanceBadge": "Advance",
+      "isAdvance": "This is an advance to a collaborator",
+      "isAdvanceHelp": "Tick if this amount will be deducted from a later final invoice",
+      "collaborator": "Collaborator",
+      "optional": "(optional)",
+      "selectCollaborator": "Select collaborator",
+      "noCollaborators": "No collaborators on this project",
+      "addNewCollaborator": "Add new collaborator",
+      "newCollaborator": "New collaborator",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "serviceDescription": "Service description (e.g. parquet installer)",
+      "defaultService": "Project collaboration",
+      "unlinkedAdvances": "Unlinked advances for this collaborator",
+      "noUnlinked": "No unlinked advances for this collaborator.",
+      "gross": "Gross amount",
+      "minusAdvances": "Minus advances",
+      "netBooked": "Net booked",
+      "surplusWarning": "Advances exceed invoice by {{amount}} — a receivable from collaborator will be created.",
+      "errors": {
+        "noCollaborator": "Select the collaborator receiving this advance.",
+        "zeroAmountWithLinks": "Invoice amount cannot be 0 when advances are linked."
+      }
     }
   },
   "estimates": {
