@@ -36,6 +36,7 @@ import { TransactionItemsExpander } from '@/components/TransactionItemsExpander'
 import { DateRange } from 'react-day-picker';
 import { enUS, de } from 'date-fns/locale';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
+import { AdvanceLinkSection } from '@/components/add-expense/AdvanceLinkSection';
 
 interface ProjectExpense {
   id: string;
