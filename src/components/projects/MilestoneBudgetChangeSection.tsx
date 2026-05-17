@@ -254,6 +254,78 @@ export const MilestoneBudgetChangeSection = ({
           </RadioGroup>
         </div>
       )}
+
+      {/* Aneks ugovora — only for scope_change increases */}
+      {isScopeChange && isIncrease && (
+        <div className="rounded-md border border-warning/40 bg-warning/5 p-3 space-y-2.5">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <Checkbox
+              checked={amendmentEnabled}
+              onCheckedChange={(v) => onAmendmentEnabledChange(!!v)}
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <FileSignature className="w-3.5 h-3.5 text-warning" />
+                {t('projects.contractAmendment.toggle', 'Naplati klijentu dodatno (aneks ugovora)')}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {t(
+                  'projects.contractAmendment.toggleHelp',
+                  'Povećava dogovoreni iznos s klijentom. Koristi kad je obim posla porastao.'
+                )}
+              </div>
+            </div>
+          </label>
+
+          {amendmentEnabled && (
+            <div className="space-y-2.5 pl-6">
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  {t('projects.contractAmendment.amount', 'Iznos koji naplaćuješ klijentu')}{' '}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={amendmentAmount}
+                    onChange={(e) => onAmendmentAmountChange(e.target.value)}
+                    className="pr-10 text-sm h-9"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    {currency.symbol}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {t(
+                    'projects.contractAmendment.amountHelp',
+                    'Predloženo = čisti trošak povećanja ({{amt}}). Promijeni ako naplaćuješ drugačije.',
+                    { amt: formatAmount(delta) }
+                  )}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  {t('projects.contractAmendment.note', 'Napomena (neobavezno)')}
+                </Label>
+                <Textarea
+                  value={amendmentNote}
+                  onChange={(e) => onAmendmentNoteChange(e.target.value)}
+                  rows={2}
+                  placeholder={t(
+                    'projects.contractAmendment.notePlaceholder',
+                    'npr. Aneks br. 1 – dodatni rad u kupaonici'
+                  )}
+                  className="text-sm"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
