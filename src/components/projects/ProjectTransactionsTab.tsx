@@ -52,6 +52,9 @@ interface ProjectExpense {
   expense_nature?: string | null;
   payment_source?: string | null;
   work_type?: 'material' | 'labor' | 'equipment' | 'other' | null;
+  is_advance?: boolean | null;
+  collaborator_id?: string | null;
+  linked_advance_ids?: string[] | null;
 }
 
 interface ProjectTransactionsTabProps {
