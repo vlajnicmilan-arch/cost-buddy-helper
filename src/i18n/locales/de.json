@@ -165,6 +165,31 @@
     "allocated": "Zugeordnet",
     "budgetUsed": "Verwendet",
     "budgetWarning": "Budget fast aufgebraucht!",
+    "received": "Eingegangen",
+    "receivedOfContract": "{{pct}}% des Vertrags",
+    "margin": "Marge",
+    "currentBalance": "Aktueller Saldo",
+    "marginStatus": {
+      "healthy": "Gesund",
+      "attention": "Achtung",
+      "critical": "Kritisch",
+      "neutral": "—"
+    },
+    "progress": {
+      "cost": "Kosten",
+      "collection": "Eingang"
+    },
+    "alerts": {
+      "budgetHigh": "⚠️ Du hast {{pct}}% des vereinbarten Budgets ausgegeben",
+      "collectionLow": "💰 Nur {{pct}}% eingenommen. Erinnerung an den Kunden senden?"
+    },
+    "forecast": {
+      "title": "🔮 Prognose — beim aktuellen Tempo",
+      "eac": "Voraussichtliche Endkosten",
+      "predictedMargin": "Prognostizierte Marge",
+      "tooEarly": "Prognose verfügbar ab 10% Projektabschluss",
+      "noMilestones": "Füge Projektphasen hinzu, um die Prognose zu sehen"
+    },
     "noBudgetSet": "Kein Budget festgelegt",
     "startDate": "Startdatum",
     "endDate": "Enddatum",

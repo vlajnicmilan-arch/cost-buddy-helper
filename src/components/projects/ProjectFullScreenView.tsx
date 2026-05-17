@@ -27,6 +27,7 @@ import { CompleteProjectWizard } from './CompleteProjectWizard';
 import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
 import { ProjectEarnedValueCard } from './ProjectEarnedValueCard';
+import { ProjectForecastCard } from './ProjectForecastCard';
 import { useProjectLossZoneAlert } from '@/hooks/useProjectLossZoneAlert';
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
 import { format } from 'date-fns';
@@ -187,18 +188,56 @@ export const ProjectFullScreenView = ({
   if (!project) return null;
 
   const budget = project.total_budget || 0;
-  
+
   // Use actual transaction-based spending from useProjectStats
   const totalSpent = stats.totalSpent;
   const completedMilestones = milestones.filter(m => m.status === 'completed').length;
-  
-  // Remaining = Allocated (received funds) - Spent (from real transactions)
-  const remaining = totalAllocated - totalSpent;
-  const budgetUsedPercentage = totalAllocated > 0 
-    ? (totalSpent / totalAllocated) * 100 
-    : 0;
-  const budgetWarning = budgetUsedPercentage >= 90;
   const overdueMilestones = milestones.filter(m => m.status === 'overdue').length;
+
+  // Total received = income transactions + funding allocations
+  const totalReceived = (stats.totalIncome || 0) + totalAllocated;
+
+  // Margin — identical formula to ActiveProjectsStrip home card: (budget - spent) / budget
+  const marginPct = budget > 0 ? ((budget - totalSpent) / budget) * 100 : null;
+  const marginStatusKey: 'healthy' | 'attention' | 'critical' | 'neutral' =
+    marginPct === null ? 'neutral'
+    : marginPct >= 30 ? 'healthy'
+    : marginPct >= 10 ? 'attention'
+    : 'critical';
+
+  const costPct = budget > 0 ? (totalSpent / budget) * 100 : 0;
+  const collectionPct = budget > 0 ? (totalReceived / budget) * 100 : 0;
+
+  // Independent alarms (only when contracted budget exists)
+  const showBudgetAlarm = budget > 0 && costPct >= 80;
+  const daysSinceStart = project.start_date
+    ? Math.floor((Date.now() - new Date(project.start_date).getTime()) / 86400000)
+    : 0;
+  const showCollectionAlarm = budget > 0 && collectionPct < 50 && daysSinceStart > 30;
+
+  // Status token maps
+  const marginDotClass = {
+    healthy: 'bg-income',
+    attention: 'bg-warning',
+    critical: 'bg-destructive',
+    neutral: 'bg-muted-foreground',
+  }[marginStatusKey];
+  const marginTextClass = {
+    healthy: 'text-income',
+    attention: 'text-warning',
+    critical: 'text-destructive',
+    neutral: 'text-muted-foreground',
+  }[marginStatusKey];
+  const marginBarClass = {
+    healthy: '[&>div]:bg-income',
+    attention: '[&>div]:bg-warning',
+    critical: '[&>div]:bg-destructive',
+    neutral: '',
+  }[marginStatusKey];
+  const marginStatusLabel = t(`projects.marginStatus.${marginStatusKey}`,
+    marginStatusKey === 'healthy' ? 'Zdrav'
+    : marginStatusKey === 'attention' ? 'Pažnja'
+    : marginStatusKey === 'critical' ? 'Kritično' : '—');
 
   return (
     <AnimatePresence>
@@ -353,14 +392,13 @@ export const ProjectFullScreenView = ({
             <div className="max-w-6xl mx-auto p-4 pb-24">
               {/* Budget Overview - only show if user can see funding */}
               {canSeeTab('funding') && (
-              <div className="p-4 rounded-lg bg-muted/50 space-y-3 mb-6">
+              <div className="p-4 rounded-lg bg-muted/50 space-y-4 mb-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-5 h-5 text-muted-foreground" />
-                      <span className="font-medium">{t('projects.budgetOverview')}</span>
-                    </div>
-                    {canAccessBusinessTabs && (
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-medium">{t('projects.budgetOverview')}</span>
+                  </div>
+                  {canAccessBusinessTabs && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -370,47 +408,103 @@ export const ProjectFullScreenView = ({
                     >
                       <History className="w-4 h-4 text-muted-foreground" />
                     </Button>
-                    )}
-                  </div>
-                  {budgetWarning && (
-                    <Badge variant="destructive" className="gap-1">
-                      <AlertTriangle className="w-3 h-3" />
-                      {t('projects.budgetWarning')}
-                    </Badge>
                   )}
                 </div>
-                
-                {totalAllocated > 0 ? (
+
+                {budget > 0 || totalReceived > 0 || totalSpent > 0 ? (
                   <>
-                    <Progress 
-                      value={Math.min(budgetUsedPercentage, 100)} 
-                      className={cn(
-                        "h-3",
-                        budgetUsedPercentage >= 90 && "[&>div]:bg-destructive",
-                        budgetUsedPercentage >= 70 && budgetUsedPercentage < 90 && "[&>div]:bg-warning"
-                      )}
-                    />
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                    {/* 4 KPI cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                      <div className="p-2 sm:p-3 rounded-lg bg-muted text-center">
+                        <p className="text-base sm:text-xl font-bold tabular-nums truncate">{formatAmount(budget)}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{t('projects.contracted', 'Ugovoreno')}</p>
+                      </div>
                       <div className="p-2 sm:p-3 rounded-lg bg-income/10 text-center">
-                        <p className="text-base sm:text-2xl font-bold text-income truncate">{formatAmount(totalAllocated)}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.received', 'Primljeno')}</p>
+                        <p className="text-base sm:text-xl font-bold text-income tabular-nums truncate">{formatAmount(totalReceived)}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                          {t('projects.received', 'Primljeno')}
+                        </p>
+                        {budget > 0 && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                            {t('projects.receivedOfContract', '{{pct}}% od ugovorenog', { pct: collectionPct.toFixed(0) })}
+                          </p>
+                        )}
                       </div>
                       <div className="p-2 sm:p-3 rounded-lg bg-expense/10 text-center">
-                        <p className="text-base sm:text-2xl font-bold text-expense truncate">{formatAmount(totalSpent)}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.spent', 'Potrošeno')}</p>
+                        <p className="text-base sm:text-xl font-bold text-expense tabular-nums truncate">{formatAmount(totalSpent)}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{t('projects.spent', 'Potrošeno')}</p>
                       </div>
-                      <div className="p-2 sm:p-3 rounded-lg bg-primary/10 text-center">
-                        <p className={cn("text-base sm:text-2xl font-bold truncate", remaining >= 0 ? "text-primary" : "text-destructive")}>
-                          {formatAmount(remaining)}
+                      <div className="p-2 sm:p-3 rounded-lg bg-muted text-center">
+                        <p className={cn('text-base sm:text-xl font-bold tabular-nums truncate', marginTextClass)}>
+                          {marginPct !== null ? `${marginPct.toFixed(0)}%` : '—'}
                         </p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">{t('projects.remaining', 'Preostalo')}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{t('projects.margin', 'Marža')}</p>
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <span className={cn('w-1.5 h-1.5 rounded-full', marginDotClass)} />
+                          <span className={cn('text-[10px]', marginTextClass)}>{marginStatusLabel}</span>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Dual progress bars (need a budget to be meaningful) */}
+                    {budget > 0 && (
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between text-[11px] sm:text-xs mb-1">
+                            <span className="text-muted-foreground">
+                              {t('projects.progress.cost', 'Trošak')} · {costPct.toFixed(0)}%
+                            </span>
+                            <span className="text-muted-foreground tabular-nums">
+                              {formatAmount(totalSpent)} / {formatAmount(budget)}
+                            </span>
+                          </div>
+                          <Progress value={Math.min(costPct, 100)} className={cn('h-2', marginBarClass)} />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between text-[11px] sm:text-xs mb-1">
+                            <span className="text-muted-foreground">
+                              {t('projects.progress.collection', 'Naplata')} · {collectionPct.toFixed(0)}%
+                            </span>
+                            <span className="text-muted-foreground tabular-nums">
+                              {formatAmount(totalReceived)} / {formatAmount(budget)}
+                            </span>
+                          </div>
+                          <Progress value={Math.min(collectionPct, 100)} className="h-2 [&>div]:bg-primary" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Independent alarms */}
+                    {(showBudgetAlarm || showCollectionAlarm) && (
+                      <div className="space-y-2">
+                        {showBudgetAlarm && (
+                          <div className="flex items-start gap-2 p-2.5 rounded-lg bg-destructive/10 text-destructive text-xs">
+                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                            <span>
+                              {t('projects.alerts.budgetHigh', '⚠️ Potrošio si {{pct}}% ugovorenog budžeta', { pct: costPct.toFixed(0) })}
+                            </span>
+                          </div>
+                        )}
+                        {showCollectionAlarm && (
+                          <div className="flex items-start gap-2 p-2.5 rounded-lg bg-warning/10 text-warning text-xs">
+                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                            <span>
+                              {t('projects.alerts.collectionLow', '💰 Naplaćeno samo {{pct}}%. Razmisli o podsjetniku klijentu.', { pct: collectionPct.toFixed(0) })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <p className="text-center text-muted-foreground py-2">{t('projects.noFundingYet', 'Nema primljenih sredstava')}</p>
                 )}
               </div>
+              )}
+
+              {/* Forecast section */}
+              {canSeeTab('funding') && budget > 0 && (
+                <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
               )}
 
               {/* Tabs - reorganized in 3 groups: Posao / Ljudi / Novac */}

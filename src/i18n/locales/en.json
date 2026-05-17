@@ -169,6 +169,31 @@
     "allocated": "Allocated",
     "budgetUsed": "Used",
     "budgetWarning": "Budget almost depleted!",
+    "received": "Received",
+    "receivedOfContract": "{{pct}}% of contract",
+    "margin": "Margin",
+    "currentBalance": "Current balance",
+    "marginStatus": {
+      "healthy": "Healthy",
+      "attention": "Attention",
+      "critical": "Critical",
+      "neutral": "—"
+    },
+    "progress": {
+      "cost": "Cost",
+      "collection": "Collection"
+    },
+    "alerts": {
+      "budgetHigh": "⚠️ You've spent {{pct}}% of the contracted budget",
+      "collectionLow": "💰 Only {{pct}}% collected. Consider reminding the client."
+    },
+    "forecast": {
+      "title": "🔮 Forecast — at the current pace",
+      "eac": "Estimated final cost",
+      "predictedMargin": "Predicted margin",
+      "tooEarly": "Forecast available after 10% project completion",
+      "noMilestones": "Add project phases to see the forecast"
+    },
     "noBudgetSet": "No budget set",
     "startDate": "Start Date",
     "endDate": "End Date",

@@ -169,6 +169,31 @@
     "allocated": "Alocirano",
     "budgetUsed": "Iskorišteno",
     "budgetWarning": "Budžet pri kraju!",
+    "received": "Primljeno",
+    "receivedOfContract": "{{pct}}% od ugovorenog",
+    "margin": "Marža",
+    "currentBalance": "Trenutni saldo",
+    "marginStatus": {
+      "healthy": "Zdrav",
+      "attention": "Pažnja",
+      "critical": "Kritično",
+      "neutral": "—"
+    },
+    "progress": {
+      "cost": "Trošak",
+      "collection": "Naplata"
+    },
+    "alerts": {
+      "budgetHigh": "⚠️ Potrošio si {{pct}}% ugovorenog budžeta",
+      "collectionLow": "💰 Naplaćeno samo {{pct}}%. Razmisli o podsjetniku klijentu."
+    },
+    "forecast": {
+      "title": "🔮 Prognoza — po trenutnom tempu",
+      "eac": "Predviđeni finalni trošak",
+      "predictedMargin": "Predviđena marža",
+      "tooEarly": "Prognoza dostupna nakon 10% dovršenosti projekta",
+      "noMilestones": "Dodaj faze projekta da vidiš prognozu"
+    },
     "noBudgetSet": "Budžet nije postavljen",
     "startDate": "Datum početka",
     "endDate": "Datum završetka",
