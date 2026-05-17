@@ -1721,7 +1721,12 @@
     "accept": "Prihvati",
     "decline": "Odbij",
     "invitationAccepted": "Pozivnica prihvaćena",
-    "invitationDeclined": "Pozivnica odbijena"
+    "invitationDeclined": "Pozivnica odbijena",
+    "deleteAll": "Obriši sve",
+    "confirmDeleteAllTitle": "Obrisati sve obavijesti?",
+    "confirmDeleteAllDesc": "Sve obavijesti će biti trajno uklonjene s popisa. Postojeće pozivnice ostaju aktivne i možeš ih prihvatiti preko linka koji ti je vlasnik poslao.",
+    "allDeleted": "Sve obavijesti obrisane",
+    "tapToRespond": "Klikni za odgovor →"
   },
   "installments": {
     "title": "Plaćanja na rate",
