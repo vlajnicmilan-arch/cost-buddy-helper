@@ -471,6 +471,12 @@ export const ProjectMilestonesTab = ({
                 contingencyMilestone={contingencyMilestone}
                 currentMilestoneId={editingMilestone.id}
                 currentUsagePct={editingMilestone.budget > 0 ? ((editingMilestone.spent || 0) / editingMilestone.budget) * 100 : undefined}
+                amendmentEnabled={amendmentEnabled}
+                onAmendmentEnabledChange={setAmendmentEnabled}
+                amendmentAmount={amendmentAmount}
+                onAmendmentAmountChange={setAmendmentAmount}
+                amendmentNote={amendmentNote}
+                onAmendmentNoteChange={setAmendmentNote}
               />
             )}
 
