@@ -171,10 +171,11 @@ export const MilestoneBudgetChangeSection = ({
         />
       </div>
 
-      {/* Change type — optional chips */}
+      {/* Change type — required when increasing budget so amendment flow can run */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">
-          {t('projects.revisions.changeType', 'Tip promjene (neobavezno)')}
+          {t('projects.revisions.changeType', 'Tip promjene')}
+          {isIncrease && <span className="text-destructive ml-0.5">*</span>}
         </Label>
         <div className="flex flex-wrap gap-1.5">
           {TYPE_OPTIONS.map((type) => {
