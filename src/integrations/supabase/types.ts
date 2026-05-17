@@ -2902,6 +2902,61 @@ export type Database = {
           },
         ]
       }
+      project_contract_amendments: {
+        Row: {
+          amendment_amount: number
+          created_at: string
+          id: string
+          linked_milestone_id: string | null
+          linked_revision_id: string | null
+          note: string | null
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          amendment_amount: number
+          created_at?: string
+          id?: string
+          linked_milestone_id?: string | null
+          linked_revision_id?: string | null
+          note?: string | null
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          amendment_amount?: number
+          created_at?: string
+          id?: string
+          linked_milestone_id?: string | null
+          linked_revision_id?: string | null
+          note?: string | null
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_contract_amendments_linked_milestone_id_fkey"
+            columns: ["linked_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_contract_amendments_linked_revision_id_fkey"
+            columns: ["linked_revision_id"]
+            isOneToOne: false
+            referencedRelation: "milestone_budget_revisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_contract_amendments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_documents: {
         Row: {
           ai_analysis: Json | null
