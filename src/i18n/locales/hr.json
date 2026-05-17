@@ -121,6 +121,16 @@
   },
   "projects": {
     "noPaymentSource": "Bez izvora",
+    "card": {
+      "realMargin": "STVARNA MARŽA",
+      "expectedMargin": "PREDVIĐENA MARŽA",
+      "collected": "Naplaćeno",
+      "contracted": "Ugovoreno",
+      "spent": "Potrošeno",
+      "profit": "Profit",
+      "remaining": "Preostalo",
+      "setBudget": "Postavi budžet projekta"
+    },
     "onboarding": {
       "title": "Brzi početak",
       "subtitle": "Odaberi tip projekta — ime i budžet možeš promijeniti u sljedećem koraku."
