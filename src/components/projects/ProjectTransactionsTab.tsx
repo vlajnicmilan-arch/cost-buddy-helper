@@ -1212,6 +1212,21 @@ export const ProjectTransactionsTab = ({
               </div>
             </div>
 
+            {/* Advance / Collaborator */}
+            {expenseType === 'expense' && (
+              <AdvanceLinkSection
+                projectId={projectId}
+                type={expenseType}
+                amount={amount}
+                isAdvance={isAdvance}
+                onIsAdvanceChange={setIsAdvance}
+                collaboratorId={collaboratorId}
+                onCollaboratorIdChange={setCollaboratorId}
+                linkedAdvanceIds={linkedAdvanceIds}
+                onLinkedAdvanceIdsChange={setLinkedAdvanceIds}
+              />
+            )}
+
             {/* Actions */}
             <div className="flex gap-2 pt-2">
               <Button 
