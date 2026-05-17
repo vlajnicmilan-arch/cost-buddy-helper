@@ -27,6 +27,7 @@ import { CompleteProjectWizard } from './CompleteProjectWizard';
 import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
 import { ProjectEarnedValueCard } from './ProjectEarnedValueCard';
+import { ContractAmendmentsBadge } from './ContractAmendmentsBadge';
 import { ProjectForecastCard } from './ProjectForecastCard';
 import { useProjectLossZoneAlert } from '@/hooks/useProjectLossZoneAlert';
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
