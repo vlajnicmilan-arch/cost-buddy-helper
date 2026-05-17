@@ -59,12 +59,19 @@ export const MilestoneBudgetChangeSection = ({
   contingencyMilestone,
   currentMilestoneId,
   currentUsagePct,
+  amendmentEnabled,
+  onAmendmentEnabledChange,
+  amendmentAmount,
+  onAmendmentAmountChange,
+  amendmentNote,
+  onAmendmentNoteChange,
 }: Props) => {
   const { t } = useTranslation();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency } = useCurrency();
 
   const delta = newAmount - previousAmount;
   const isIncrease = delta > 0;
+  const isScopeChange = changeType === 'scope_change';
 
   // Source candidates for "transfer" — sibling phases (excluding current and contingency) with budget
   const transferCandidates = useMemo(
