@@ -406,6 +406,9 @@ export const ProjectTransactionsTab = ({
     setEditDate(new Date(expense.date));
     setEditMilestoneId(expense.milestone_id || 'none');
     setEditPaymentSourceValue(expense.payment_source || 'none');
+    setEditIsAdvance(!!expense.is_advance);
+    setEditCollaboratorId(expense.collaborator_id || null);
+    setEditLinkedAdvanceIds(Array.isArray(expense.linked_advance_ids) ? expense.linked_advance_ids : []);
     setEditDialogOpen(true);
   };
 
