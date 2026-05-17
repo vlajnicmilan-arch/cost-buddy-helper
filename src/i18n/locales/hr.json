@@ -352,6 +352,7 @@
       "overdueDays_other": "{{count}} d kašnjenja",
       "dueToday": "Rok danas",
       "margin": "Marža",
+      "marginUnknown": "Unesite ugovoreni iznos za točniju analizu",
       "profit": "Profit",
       "noIncomeYet": "Još nema prihoda",
       "trafficLight": {
@@ -363,6 +364,27 @@
         "yellow": "Marža niska · {{pct}}% — smanji troškove",
         "red": "Marža kritična · {{pct}}% — hitno reagiraj"
       }
+    },
+    "earnedValue": {
+      "title": "Earned Value",
+      "contracted": "Ugovoreno",
+      "spent": "Trošak",
+      "marginAmount": "Marža",
+      "marginPct": "Marža %",
+      "eac": "Predviđeni finalni trošak",
+      "eacHint": "Procjena na temelju trenutnog tempa potrošnje",
+      "scoreLabel": "Zdravlje",
+      "status": {
+        "healthy": "Zdravo",
+        "risk": "Rizik",
+        "loss": "Gubitak"
+      },
+      "promptTitle": "Unesite ugovoreni iznos",
+      "promptDesc": "Bez ugovorenog iznosa ne možemo izračunati maržu, EAC ni rizik gubitka.",
+      "promptCta": "Unesi ugovoreni iznos"
+    },
+    "alerts": {
+      "lossZone": "Projekt {{name}} ulazi u zonu gubitka — preostalo samo {{pct}}% marže"
     },
     "statusLine": {
       "paused": "Pauzirano",

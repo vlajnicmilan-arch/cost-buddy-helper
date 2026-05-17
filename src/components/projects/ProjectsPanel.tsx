@@ -353,6 +353,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
         onClose={handleCloseFullScreen}
         project={selectedProject}
         initialTab={pendingExpenseId ? 'transactions' : undefined}
+        onRequestEdit={(p) => { setEditingProject(p); setDialogOpen(true); }}
         onRefreshExpenses={() => {
           refetch();
           fetchAllStats();

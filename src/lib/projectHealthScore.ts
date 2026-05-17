@@ -1,7 +1,7 @@
 /**
  * Project Health Score
- * Combines budget pressure, timeline pressure, and milestone progress
- * into a single 0–100 score with traffic-light color.
+ * Combines margin, budget, timeline and milestone signals into a single
+ * 0–100 score with traffic-light color.
  *
  * Scoring rules (lower is worse):
  * - 80–100: green ("on_track")
@@ -9,9 +9,13 @@
  * - 0–49:   red   ("critical")
  *
  * Components:
- *  budgetScore   — 100 if spent <= 80% budget, scales down to 0 at 130%+
- *  timelineScore — 100 if within timeline; degrades when % time used > % budget used
+ *  marginScore    — based on (contract − spent) / contract; only when contract_value > 0
+ *  budgetScore    — 100 if spent <= 80% budget, scales down to 0 at 130%+
+ *  timelineScore  — 100 if within timeline; degrades when % time used > % budget used
  *  milestoneScore — % of completed milestones (with overdue penalty)
+ *
+ * Weights (when contract_value > 0):  Margin 40% / Budget 30% / Timeline 20% / Milestone 10%
+ * Fallback (no contract_value):       Budget 40% / Timeline 35% / Milestone 25%
  */
 
 export type HealthLevel = 'on_track' | 'at_risk' | 'critical' | 'unknown';
@@ -19,6 +23,8 @@ export type HealthLevel = 'on_track' | 'at_risk' | 'critical' | 'unknown';
 export interface ProjectHealthInput {
   spent: number;
   budget: number;
+  /** Contracted value with the client. When > 0 enables Margin component & EAC. */
+  contractValue?: number | null;
   startDate?: string | null;
   endDate?: string | null;
   milestones?: Array<{
@@ -34,21 +40,50 @@ export interface ProjectHealthResult {
   totalDays: number | null;
   timeProgressPct: number | null;   // 0–100
   budgetUsedPct: number;            // 0–unbounded
-  reason: string;                   // dominant cause
+  reason: string;                   // dominant cause: margin | budget | timeline | milestones | on_track
+  /** Margin % vs contract (contract − spent) / contract × 100. null when no contract. */
+  marginPct: number | null;
+  /** Margin amount in currency (contract − spent). null when no contract. */
+  marginAmount: number | null;
+  /** Estimated cost At Completion. Projects current spend rate onto full timeline. */
+  eac: number | null;
+  /** True when contract_value not set — UI should prompt to enter it. */
+  marginUnknown: boolean;
 }
 
 const clamp = (v: number, min = 0, max = 100) => Math.max(min, Math.min(max, v));
 
+/** Margin score from margin % (0–100 input). */
+const marginScoreFromPct = (pct: number): number => {
+  if (pct < 0) return 0;
+  if (pct < 5) return 25;
+  if (pct < 15) return 50;
+  if (pct < 30) return 80;
+  return 100;
+};
+
 export const calculateProjectHealth = (input: ProjectHealthInput): ProjectHealthResult => {
-  const { spent, budget, startDate, endDate, milestones = [] } = input;
+  const { spent, budget, contractValue, startDate, endDate, milestones = [] } = input;
+  const contract = Number(contractValue || 0);
+  const hasContract = contract > 0;
+
+  // --- Margin component ---
+  let marginPct: number | null = null;
+  let marginAmount: number | null = null;
+  let marginScore = 0;
+  if (hasContract) {
+    marginAmount = contract - spent;
+    marginPct = (marginAmount / contract) * 100;
+    marginScore = marginScoreFromPct(marginPct);
+  }
 
   // --- Budget component ---
   const budgetUsedPct = budget > 0 ? (spent / budget) * 100 : 0;
   let budgetScore = 100;
   if (budget > 0) {
     if (budgetUsedPct <= 80) budgetScore = 100;
-    else if (budgetUsedPct <= 100) budgetScore = 100 - (budgetUsedPct - 80) * 2.5; // 80→100 = 100→50
-    else if (budgetUsedPct <= 130) budgetScore = 50 - (budgetUsedPct - 100) * 1.66; // 100→130 = 50→0
+    else if (budgetUsedPct <= 100) budgetScore = 100 - (budgetUsedPct - 80) * 2.5;
+    else if (budgetUsedPct <= 130) budgetScore = 50 - (budgetUsedPct - 100) * 1.66;
     else budgetScore = 0;
   }
   budgetScore = clamp(budgetScore);
@@ -68,18 +103,15 @@ export const calculateProjectHealth = (input: ProjectHealthInput): ProjectHealth
     const used = Math.max(0, now - start);
     timeProgressPct = clamp((used / Math.max(1, end - start)) * 100);
 
-    // If past deadline → critical timeline
     if (daysRemaining < 0) {
       timelineScore = 0;
     } else if (budget > 0) {
-      // Burn-rate analysis: % time used should not greatly exceed % budget used
       const drift = budgetUsedPct - timeProgressPct;
       if (drift <= 5) timelineScore = 100;
-      else if (drift <= 20) timelineScore = 100 - (drift - 5) * 3.33; // 5→20 = 100→50
-      else if (drift <= 40) timelineScore = 50 - (drift - 20) * 2.5;  // 20→40 = 50→0
+      else if (drift <= 20) timelineScore = 100 - (drift - 5) * 3.33;
+      else if (drift <= 40) timelineScore = 50 - (drift - 20) * 2.5;
       else timelineScore = 0;
     } else {
-      // No budget — score on time remaining only
       const remainingPct = 100 - timeProgressPct;
       timelineScore = clamp(remainingPct * 1.2);
     }
@@ -102,20 +134,39 @@ export const calculateProjectHealth = (input: ProjectHealthInput): ProjectHealth
   }
 
   // --- Composite score ---
-  // Weight: budget 40%, timeline 35%, milestones 25%
-  const score = Math.round(budgetScore * 0.4 + timelineScore * 0.35 + milestoneScore * 0.25);
+  const score = hasContract
+    ? Math.round(marginScore * 0.4 + budgetScore * 0.3 + timelineScore * 0.2 + milestoneScore * 0.1)
+    : Math.round(budgetScore * 0.4 + timelineScore * 0.35 + milestoneScore * 0.25);
 
   let level: HealthLevel = 'on_track';
   if (score < 50) level = 'critical';
   else if (score < 80) level = 'at_risk';
-  if (budget === 0 && !endDate && milestones.length === 0) level = 'unknown';
+  if (!hasContract && budget === 0 && !endDate && milestones.length === 0) level = 'unknown';
 
-  // Dominant reason
+  // Dominant reason (only count components that are active)
+  const candidates: Array<{ name: string; score: number }> = [];
+  if (hasContract) candidates.push({ name: 'margin', score: marginScore });
+  if (budget > 0) candidates.push({ name: 'budget', score: budgetScore });
+  if (endDate) candidates.push({ name: 'timeline', score: timelineScore });
+  if (milestones.length > 0) candidates.push({ name: 'milestones', score: milestoneScore });
+
   let reason = 'on_track';
-  const lowest = Math.min(budgetScore, timelineScore, milestoneScore);
-  if (lowest === budgetScore && budgetScore < 80) reason = 'budget';
-  else if (lowest === timelineScore && timelineScore < 80) reason = 'timeline';
-  else if (lowest === milestoneScore && milestoneScore < 80) reason = 'milestones';
+  if (candidates.length > 0) {
+    const worst = candidates.reduce((a, b) => (a.score <= b.score ? a : b));
+    if (worst.score < 80) reason = worst.name;
+  }
+
+  // --- EAC (Estimated At Completion) ---
+  // Time-based projection: if we've used X% of time, EAC ≈ spent / X.
+  // Skip projection when timeline too early (<5%) to avoid wild extrapolation.
+  let eac: number | null = null;
+  if (hasContract || budget > 0) {
+    if (timeProgressPct !== null && timeProgressPct > 5) {
+      eac = spent / (timeProgressPct / 100);
+    } else {
+      eac = spent;
+    }
+  }
 
   return {
     score,
@@ -125,6 +176,10 @@ export const calculateProjectHealth = (input: ProjectHealthInput): ProjectHealth
     timeProgressPct,
     budgetUsedPct,
     reason,
+    marginPct,
+    marginAmount,
+    eac,
+    marginUnknown: !hasContract,
   };
 };
 
