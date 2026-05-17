@@ -475,6 +475,12 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                     props.expenseNature === 'extraordinary'
                       ? "bg-amber-500 text-white shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t('transactions.extraordinary', 'Vanredan')}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Collaborator advance section — only for projects + expense type */}
@@ -491,11 +497,6 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
               onLinkedAdvanceIdsChange={props.onLinkedAdvanceIdsChange}
             />
           )}
-                >
-                  {t('transactions.extraordinary', 'Vanredan')}
-                </button>
-              </div>
-            </div>
           )}
 
           {/* Location toggle */}
