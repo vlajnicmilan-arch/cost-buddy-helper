@@ -434,7 +434,10 @@ export const ProjectTransactionsTab = ({
           date: editDate.toISOString(),
           milestone_id: editMilestoneId !== 'none' ? editMilestoneId : null,
           business_profile_id: activeBusinessProfileId || null,
-          payment_source: newPaymentSource
+          payment_source: newPaymentSource,
+          is_advance: editType === 'expense' ? editIsAdvance : false,
+          collaborator_id: editType === 'expense' ? editCollaboratorId : null,
+          linked_advance_ids: editType === 'expense' && !editIsAdvance && editLinkedAdvanceIds.length > 0 ? editLinkedAdvanceIds : null,
         } as any)
         .eq('id', editingExpense.id);
 
