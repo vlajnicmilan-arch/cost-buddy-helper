@@ -12,10 +12,14 @@
  */
 
 export interface RawProjectExpense {
+  id?: string;
   amount: number | string;
   type: string;
   status?: string | null;
   expense_nature?: string | null;
+  is_advance?: boolean | null;
+  collaborator_id?: string | null;
+  linked_advance_ids?: string[] | null;
 }
 
 export interface RawFundingRow {

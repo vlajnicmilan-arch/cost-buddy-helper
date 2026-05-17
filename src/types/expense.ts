@@ -206,6 +206,10 @@ export interface Expense {
   updated_at?: string;
   import_batch_id?: string | null;
   items?: ReceiptItem[];
+  // Suradnički avansi — vidi mem://features/collaborator-advances
+  collaborator_id?: string | null;
+  is_advance?: boolean | null;
+  linked_advance_ids?: string[] | null;
 }
 
 // Helper to get transaction type display info
