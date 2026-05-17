@@ -206,6 +206,16 @@ export const ProjectTransactionsTab = ({
   const [editPaymentSourceValue, setEditPaymentSourceValue] = useState<string>('none');
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
 
+  // Advance / collaborator state — add dialog
+  const [isAdvance, setIsAdvance] = useState(false);
+  const [collaboratorId, setCollaboratorId] = useState<string | null>(null);
+  const [linkedAdvanceIds, setLinkedAdvanceIds] = useState<string[]>([]);
+
+  // Advance / collaborator state — edit dialog
+  const [editIsAdvance, setEditIsAdvance] = useState(false);
+  const [editCollaboratorId, setEditCollaboratorId] = useState<string | null>(null);
+  const [editLinkedAdvanceIds, setEditLinkedAdvanceIds] = useState<string[]>([]);
+
   // Calendar popover open states (auto-close on select)
   const [filterDateOpen, setFilterDateOpen] = useState(false);
   const [addDateOpen, setAddDateOpen] = useState(false);
