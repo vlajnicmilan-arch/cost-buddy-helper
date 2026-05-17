@@ -420,6 +420,7 @@ export const ProjectFullScreenView = ({
                       <div className="p-2 sm:p-3 rounded-lg bg-muted text-center">
                         <p className="text-base sm:text-xl font-bold tabular-nums truncate">{formatAmount(budget)}</p>
                         <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{t('projects.contracted', 'Ugovoreno')}</p>
+                        <ContractAmendmentsBadge projectId={project.id} />
                       </div>
                       <div className="p-2 sm:p-3 rounded-lg bg-income/10 text-center">
                         <p className="text-base sm:text-xl font-bold text-income tabular-nums truncate">{formatAmount(totalReceived)}</p>
