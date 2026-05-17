@@ -958,6 +958,9 @@ export const AddExpenseDialog = ({
       project_id: selectedProjectId || undefined,
       budget_id: selectedBudgetId || undefined,
       expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+      collaborator_id: selectedProjectId ? collaboratorId : null,
+      is_advance: selectedProjectId ? isAdvance : false,
+      linked_advance_ids: (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) ? linkedAdvanceIds : [],
       business_profile_id: effectiveBusinessProfileId || null,
       currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
