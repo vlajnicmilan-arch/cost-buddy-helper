@@ -121,6 +121,16 @@
   },
   "projects": {
     "noPaymentSource": "No source",
+    "card": {
+      "realMargin": "ACTUAL MARGIN",
+      "expectedMargin": "EXPECTED MARGIN",
+      "collected": "Collected",
+      "contracted": "Contracted",
+      "spent": "Spent",
+      "profit": "Profit",
+      "remaining": "Remaining",
+      "setBudget": "Set project budget"
+    },
     "onboarding": {
       "title": "Quick start",
       "subtitle": "Pick a project type — you can change name and budget in the next step."
