@@ -118,7 +118,7 @@ export const ActiveProjectsStrip = React.memo(({
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="min-w-[200px] h-[190px] bg-muted/30 rounded-2xl animate-pulse" />
+            <div key={i} className="min-w-[200px] h-[150px] bg-muted/30 rounded-2xl animate-pulse" />
           ))}
         </div>
       </div>
