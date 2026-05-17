@@ -437,7 +437,7 @@ export const ProjectTransactionsTab = ({
           payment_source: newPaymentSource,
           is_advance: editType === 'expense' ? editIsAdvance : false,
           collaborator_id: editType === 'expense' ? editCollaboratorId : null,
-          linked_advance_ids: editType === 'expense' && !editIsAdvance && editLinkedAdvanceIds.length > 0 ? editLinkedAdvanceIds : null,
+          linked_advance_ids: editType === 'expense' && !editIsAdvance ? editLinkedAdvanceIds : [],
         } as any)
         .eq('id', editingExpense.id);
 
