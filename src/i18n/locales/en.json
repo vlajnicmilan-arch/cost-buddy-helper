@@ -1722,7 +1722,11 @@
     "accept": "Accept",
     "decline": "Decline",
     "invitationAccepted": "Invitation accepted",
-    "invitationDeclined": "Invitation declined"
+    "invitationDeclined": "Invitation declined",
+    "deleteAll": "Delete all",
+    "confirmDeleteAllTitle": "Delete all notifications?",
+    "confirmDeleteAllDesc": "All notifications will be permanently removed from this list. Existing invitations remain active — you can still accept them via the link the owner sent you.",
+    "allDeleted": "All notifications deleted"
   },
   "installments": {
     "title": "Installment Payments",

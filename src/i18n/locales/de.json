@@ -1722,7 +1722,11 @@
     "accept": "Akzeptieren",
     "decline": "Ablehnen",
     "invitationAccepted": "Einladung angenommen",
-    "invitationDeclined": "Einladung abgelehnt"
+    "invitationDeclined": "Einladung abgelehnt",
+    "deleteAll": "Alle löschen",
+    "confirmDeleteAllTitle": "Alle Benachrichtigungen löschen?",
+    "confirmDeleteAllDesc": "Alle Benachrichtigungen werden dauerhaft aus dieser Liste entfernt. Bestehende Einladungen bleiben aktiv — du kannst sie weiterhin über den vom Eigentümer gesendeten Link annehmen.",
+    "allDeleted": "Alle Benachrichtigungen gelöscht"
   },
   "installments": {
     "title": "Ratenzahlungen",

@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -89,9 +91,11 @@ export const NotificationsDropdown = () => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllNotifications,
     refetch,
   } = useNotifications();
   const [open, setOpen] = useState(false);
+  const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [invitationDialog, setInvitationDialog] = useState<{
     notification: Notification;
@@ -283,19 +287,32 @@ export const NotificationsDropdown = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80">
-          <div className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
             <h3 className="font-semibold text-sm">{t('notifications.title', 'Obavijesti')}</h3>
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => markAllAsRead()}
-              >
-                <CheckCheck className="w-3 h-3 mr-1" />
-                {t('notifications.markAllRead', 'Označi sve')}
-              </Button>
-            )}
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs px-2"
+                  onClick={() => markAllAsRead()}
+                >
+                  <CheckCheck className="w-3 h-3 mr-1" />
+                  {t('notifications.markAllRead', 'Označi sve')}
+                </Button>
+              )}
+              {notifications.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setConfirmDeleteAllOpen(true)}
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  {t('notifications.deleteAll', 'Obriši sve')}
+                </Button>
+              )}
+            </div>
           </div>
           <DropdownMenuSeparator />
           <ScrollArea className="max-h-80">
@@ -503,6 +520,37 @@ export const NotificationsDropdown = () => {
                 </>
               )}
             </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm delete all */}
+      <AlertDialog open={confirmDeleteAllOpen} onOpenChange={setConfirmDeleteAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('notifications.confirmDeleteAllTitle', 'Obrisati sve obavijesti?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('notifications.confirmDeleteAllDesc', 'Sve obavijesti će biti trajno uklonjene s popisa. Postojeće pozivnice ostaju aktivne i možeš ih prihvatiti preko linka koji ti je vlasnik poslao.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                const ok = await deleteAllNotifications();
+                if (ok) {
+                  showSuccess(t('notifications.allDeleted', 'Sve obavijesti obrisane'));
+                  setOpen(false);
+                } else {
+                  showError(t('common.error', 'Greška'));
+                }
+              }}
+            >
+              {t('notifications.deleteAll', 'Obriši sve')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
