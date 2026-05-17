@@ -26,6 +26,8 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { CompleteProjectWizard } from './CompleteProjectWizard';
 import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
+import { ProjectEarnedValueCard } from './ProjectEarnedValueCard';
+import { useProjectLossZoneAlert } from '@/hooks/useProjectLossZoneAlert';
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -51,6 +53,8 @@ interface ProjectFullScreenViewProps {
   project: ProjectWithOwnership | null;
   onRefreshExpenses?: () => void;
   initialTab?: string;
+  /** Called when user wants to edit the project (e.g. from "enter contract value" CTA). */
+  onRequestEdit?: (project: ProjectWithOwnership) => void;
 }
 
 export const ProjectFullScreenView = ({
@@ -58,7 +62,8 @@ export const ProjectFullScreenView = ({
   onClose,
   project,
   onRefreshExpenses,
-  initialTab
+  initialTab,
+  onRequestEdit
 }: ProjectFullScreenViewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -589,6 +594,16 @@ export const ProjectFullScreenView = ({
                         </p>
                       )}
                     </div>
+                  )}
+
+                  {/* Earned Value Card — margin, EAC, contract-based health */}
+                  {isBusinessView && (
+                    <ProjectEarnedValueCard
+                      project={project}
+                      spent={stats.spent}
+                      milestones={milestones}
+                      onEnterContract={() => onRequestEdit?.(project)}
+                    />
                   )}
 
                   {/* P&L Card - only in business view */}
