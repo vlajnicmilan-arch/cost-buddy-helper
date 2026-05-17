@@ -22,15 +22,13 @@ interface ActiveProjectsStripProps {
 const MAX_VISIBLE = 5;
 
 type HealthLevel = 'green' | 'yellow' | 'red' | 'neutral';
-type MarginKind = 'real' | 'expected' | 'none';
 
 interface ProjectCardData {
   project: ProjectWithOwnership;
   spent: number;
-  income: number;
   budget: number;
   margin: number | null; // ratio, e.g. 0.42
-  kind: MarginKind;
+  hasMargin: boolean;
   health: HealthLevel;
 }
 
@@ -84,26 +82,21 @@ export const ActiveProjectsStrip = React.memo(({
     return active.slice(0, MAX_VISIBLE).map(p => {
       const entry = summary.get(p.id);
       const spent = entry?.spent ?? 0;
-      const income = entry?.income ?? 0;
       const budget = p.total_budget || 0;
 
       let margin: number | null = null;
-      let kind: MarginKind = 'none';
-      if (income > 0) {
-        margin = (income - spent) / income;
-        kind = 'real';
-      } else if (budget > 0) {
+      let hasMargin = false;
+      if (budget > 0) {
         margin = (budget - spent) / budget;
-        kind = 'expected';
+        hasMargin = true;
       }
 
       return {
         project: p,
         spent,
-        income,
         budget,
         margin,
-        kind,
+        hasMargin,
         health: healthFromMargin(margin),
       };
     });
@@ -125,7 +118,7 @@ export const ActiveProjectsStrip = React.memo(({
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="min-w-[200px] h-[210px] bg-muted/30 rounded-2xl animate-pulse" />
+            <div key={i} className="min-w-[200px] h-[190px] bg-muted/30 rounded-2xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -201,36 +194,27 @@ export const ActiveProjectsStrip = React.memo(({
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory -mx-3 px-3 sm:-mx-4 sm:px-4 scrollbar-none">
         {activeProjects.map((data, idx) => {
-          const { project, spent, income, budget, margin, kind, health } = data;
+          const { project, spent, budget, margin, hasMargin, health } = data;
           const color = project.color || DEFAULT_PROJECT_COLORS[idx % DEFAULT_PROJECT_COLORS.length];
           const dotColor = HEALTH_DOT_COLOR[health];
           const trafficLabel = trafficLightLabel(health);
 
           let ariaLabel: string;
-          if (kind === 'none') {
-            ariaLabel = `${project.name}: ${t('projects.card.setBudget', 'Postavi budžet projekta')}`;
+          if (!hasMargin) {
+            ariaLabel = `${project.name}: ${t('projects.card.setContracted', 'Postavi ugovoreni iznos')}`;
           } else {
             const pct = `${Math.round((margin ?? 0) * 100)}%`;
-            const marginLabel = kind === 'real'
-              ? t('projects.card.realMargin', 'STVARNA MARŽA')
-              : t('projects.card.expectedMargin', 'PREDVIĐENA MARŽA');
-            ariaLabel = `${project.name}: ${marginLabel} ${pct}${trafficLabel ? `, ${trafficLabel}` : ''}`;
+            ariaLabel = `${project.name}: ${t('projects.card.margin', 'MARŽA')} ${pct}${trafficLabel ? `, ${trafficLabel}` : ''}`;
           }
 
-          // Compose footer lines
           const renderFooterLines = () => {
-            if (kind === 'none') return null;
-            const lines = kind === 'real'
-              ? [
-                  { label: t('projects.card.collected', 'Naplaćeno'), value: income, signed: false },
-                  { label: t('projects.card.spent', 'Potrošeno'), value: spent, signed: false },
-                  { label: t('projects.card.profit', 'Profit'), value: income - spent, signed: true },
-                ]
-              : [
-                  { label: t('projects.card.contracted', 'Ugovoreno'), value: budget, signed: false },
-                  { label: t('projects.card.spent', 'Potrošeno'), value: spent, signed: false },
-                  { label: t('projects.card.remaining', 'Preostalo'), value: budget - spent, signed: true },
-                ];
+            if (!hasMargin) return null;
+            const profit = budget - spent;
+            const lines = [
+              { label: t('projects.card.contracted', 'Ugovoreno'), value: budget, signed: false },
+              { label: t('projects.card.spent', 'Trošak'), value: spent, signed: false },
+              { label: t('projects.card.profit', 'Zarada'), value: profit, signed: true },
+            ];
             return (
               <div className="mt-auto space-y-1 pt-2 border-t border-border/40">
                 {lines.map((ln, i) => {
@@ -256,29 +240,26 @@ export const ActiveProjectsStrip = React.memo(({
           };
 
           const renderCenter = () => {
-            if (kind === 'none') {
+            if (!hasMargin) {
               return (
                 <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
                   <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center mb-2">
                     <Wallet className="w-5 h-5 text-primary" />
                   </div>
                   <p className="text-xs font-semibold text-primary leading-snug">
-                    {t('projects.card.setBudget', 'Postavi budžet projekta')}
+                    {t('projects.card.setContracted', 'Postavi ugovoreni iznos')}
                   </p>
                 </div>
               );
             }
             const pct = `${Math.round((margin ?? 0) * 100)}%`;
-            const label = kind === 'real'
-              ? t('projects.card.realMargin', 'STVARNA MARŽA')
-              : t('projects.card.expectedMargin', 'PREDVIĐENA MARŽA');
             return (
-              <div className="flex-1 flex flex-col items-center justify-center py-1">
-                <p className={cn('text-3xl font-bold leading-none tabular-nums', HEALTH_TEXT_CLASS[health])}>
+              <div className="flex-1 flex flex-col items-center justify-center py-0.5">
+                <p className={cn('text-2xl font-bold leading-none tabular-nums', HEALTH_TEXT_CLASS[health])}>
                   {pct}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1.5 text-center">
-                  {label}
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1 text-center">
+                  {t('projects.card.margin', 'MARŽA')}
                 </p>
               </div>
             );
@@ -293,7 +274,7 @@ export const ActiveProjectsStrip = React.memo(({
               whileTap={{ scale: 0.97 }}
               onClick={() => handleNav('/projects', { openProjectId: project.id, from: '/home' })}
               aria-label={ariaLabel}
-              className="snap-start min-w-[200px] max-w-[220px] min-h-[210px] p-3 rounded-2xl border border-border/50 bg-card hover:shadow-md transition-all text-left flex flex-col gap-2 relative overflow-hidden"
+              className="snap-start min-w-[200px] max-w-[220px] min-h-[190px] p-3 rounded-2xl border border-border/50 bg-card hover:shadow-md transition-all text-left flex flex-col gap-2 relative overflow-hidden"
               style={{
                 borderLeftWidth: 3,
                 borderLeftColor: color,
@@ -320,7 +301,7 @@ export const ActiveProjectsStrip = React.memo(({
                 />
               </div>
 
-              {/* Centerpiece: big margin % or CTA */}
+              {/* Centerpiece: margin % or CTA */}
               {renderCenter()}
 
               {/* Footer: 3 amount lines */}
@@ -336,7 +317,7 @@ export const ActiveProjectsStrip = React.memo(({
           transition={{ delay: activeProjects.length * 0.04 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => handleNav('/projects', { openNewProject: true, from: '/home' })}
-          className="snap-start min-w-[200px] max-w-[220px] min-h-[210px] p-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
+          className="snap-start min-w-[200px] max-w-[220px] min-h-[190px] p-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
         >
           <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
             <Plus className="w-6 h-6 text-primary" />

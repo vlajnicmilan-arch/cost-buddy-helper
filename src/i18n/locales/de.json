@@ -121,14 +121,11 @@
   },
   "projects": {
     "card": {
-      "realMargin": "TATSÄCHLICHE MARGE",
-      "expectedMargin": "ERWARTETE MARGE",
-      "collected": "Eingenommen",
+      "margin": "MARGE",
       "contracted": "Vereinbart",
-      "spent": "Ausgegeben",
+      "spent": "Kosten",
       "profit": "Gewinn",
-      "remaining": "Verbleibend",
-      "setBudget": "Projektbudget festlegen"
+      "setContracted": "Vertragsbetrag festlegen"
     },
     "templates": {
       "startFrom": "Aus Vorlage starten (optional)",
