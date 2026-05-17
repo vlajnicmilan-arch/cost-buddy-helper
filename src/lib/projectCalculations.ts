@@ -33,10 +33,45 @@ const isCounted = (e: RawProjectExpense): boolean => {
   return true;
 };
 
+/**
+ * Net amount of an expense after subtracting linked advances.
+ * - For an advance itself: returns 0 (it is "consumed" by the final invoice that links it,
+ *   if any). If unlinked, the advance still counts at its full amount (real cash out).
+ * - For a final invoice: returns max(amount - sum(linked advances), 0).
+ *   Surplus (when advances exceed invoice) is handled by business_debts elsewhere.
+ * - For everything else: returns raw amount.
+ *
+ * This eliminates double-counting when both an advance and a final invoice exist for the
+ * same job (e.g. 500 advance + 3640 final invoice should count as 3640, not 4140).
+ */
+export const calculateNetExpenseAmount = (
+  expense: RawProjectExpense,
+  allExpenses: RawProjectExpense[]
+): number => {
+  const amount = Number(expense.amount || 0);
+  if (expense.is_advance) {
+    // Is this advance linked to any final invoice in the set?
+    const linked = allExpenses.some(e =>
+      !e.is_advance &&
+      Array.isArray(e.linked_advance_ids) &&
+      expense.id != null &&
+      e.linked_advance_ids.includes(expense.id)
+    );
+    return linked ? 0 : amount;
+  }
+  const linkedIds = expense.linked_advance_ids || [];
+  if (linkedIds.length === 0) return amount;
+  const linkedSum = linkedIds.reduce((s, id) => {
+    const a = allExpenses.find(e => e.id === id && e.is_advance);
+    return a ? s + Number(a.amount || 0) : s;
+  }, 0);
+  return Math.max(amount - linkedSum, 0);
+};
+
 export const calculateProjectSpent = (expenses: RawProjectExpense[]): number => {
   return expenses
     .filter(e => isCounted(e) && e.type === 'expense')
-    .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    .reduce((sum, e) => sum + calculateNetExpenseAmount(e, expenses), 0);
 };
 
 export const calculateProjectIncomeFromTransactions = (expenses: RawProjectExpense[]): number => {
