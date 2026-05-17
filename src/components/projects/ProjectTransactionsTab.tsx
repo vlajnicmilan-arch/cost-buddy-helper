@@ -292,7 +292,10 @@ export const ProjectTransactionsTab = ({
           date: date.toISOString(),
           status,
           submitted_by: needsApproval ? user.id : null,
-          expense_nature: expenseNature
+          expense_nature: expenseNature,
+          is_advance: expenseType === 'expense' ? isAdvance : false,
+          collaborator_id: expenseType === 'expense' ? collaboratorId : null,
+          linked_advance_ids: expenseType === 'expense' && !isAdvance && linkedAdvanceIds.length > 0 ? linkedAdvanceIds : null,
         } as any)
         .select()
         .single();
