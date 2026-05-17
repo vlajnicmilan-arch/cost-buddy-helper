@@ -287,19 +287,32 @@ export const NotificationsDropdown = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80">
-          <div className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
             <h3 className="font-semibold text-sm">{t('notifications.title', 'Obavijesti')}</h3>
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => markAllAsRead()}
-              >
-                <CheckCheck className="w-3 h-3 mr-1" />
-                {t('notifications.markAllRead', 'Označi sve')}
-              </Button>
-            )}
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs px-2"
+                  onClick={() => markAllAsRead()}
+                >
+                  <CheckCheck className="w-3 h-3 mr-1" />
+                  {t('notifications.markAllRead', 'Označi sve')}
+                </Button>
+              )}
+              {notifications.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setConfirmDeleteAllOpen(true)}
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  {t('notifications.deleteAll', 'Obriši sve')}
+                </Button>
+              )}
+            </div>
           </div>
           <DropdownMenuSeparator />
           <ScrollArea className="max-h-80">
