@@ -73,6 +73,10 @@ export const ProjectMilestonesTab = ({
   const [revisionType, setRevisionType] = useState<MilestoneRevisionType | null>(null);
   const [revisionCoverage, setRevisionCoverage] = useState<MilestoneRevisionCoverage>('increase_total');
   const [revisionLinkedId, setRevisionLinkedId] = useState<string | null>(null);
+  // Contract amendment (aneks ugovora) — only used for scope_change
+  const [amendmentEnabled, setAmendmentEnabled] = useState(true);
+  const [amendmentAmount, setAmendmentAmount] = useState('');
+  const [amendmentNote, setAmendmentNote] = useState('');
 
   const contingencyMilestone = milestones.find((m) => m.is_contingency) || null;
   const previousBudget = editingMilestone ? editingMilestone.budget : 0;
