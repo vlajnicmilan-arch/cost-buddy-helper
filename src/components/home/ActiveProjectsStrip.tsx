@@ -274,7 +274,7 @@ export const ActiveProjectsStrip = React.memo(({
               whileTap={{ scale: 0.97 }}
               onClick={() => handleNav('/projects', { openProjectId: project.id, from: '/home' })}
               aria-label={ariaLabel}
-              className="snap-start min-w-[200px] max-w-[220px] min-h-[190px] p-3 rounded-2xl border border-border/50 bg-card hover:shadow-md transition-all text-left flex flex-col gap-2 relative overflow-hidden"
+              className="snap-start min-w-[200px] max-w-[220px] p-2.5 rounded-2xl border border-border/50 bg-card hover:shadow-md transition-all text-left flex flex-col gap-1.5 relative overflow-hidden"
               style={{
                 borderLeftWidth: 3,
                 borderLeftColor: color,
