@@ -170,12 +170,41 @@ export const ProjectMilestonesTab = ({
       };
 
       if (editingMilestone) {
+        // Build amendment payload only when scope_change + user enabled it + valid positive amount
+        const amendmentAmt = parseFloat(amendmentAmount) || 0;
+        const includeAmendment =
+          budgetChanged &&
+          revisionType === 'scope_change' &&
+          newBudgetNum > previousBudget &&
+          amendmentEnabled &&
+          amendmentAmt > 0;
+
+        if (
+          budgetChanged &&
+          revisionType === 'scope_change' &&
+          newBudgetNum > previousBudget &&
+          amendmentEnabled &&
+          amendmentAmt <= 0
+        ) {
+          showError(
+            t(
+              'projects.contractAmendment.amountRequired',
+              'Iznos aneksa ugovora mora biti veći od 0.'
+            )
+          );
+          setSaving(false);
+          return;
+        }
+
         const revisionInput = budgetChanged
           ? {
               reason: revisionReason.trim(),
               change_type: revisionType,
               coverage: revisionCoverage,
               linked_milestone_id: revisionCoverage === 'transfer' ? revisionLinkedId : null,
+              amendment: includeAmendment
+                ? { amount: amendmentAmt, note: amendmentNote.trim() || null }
+                : null,
             }
           : undefined;
         await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget);
