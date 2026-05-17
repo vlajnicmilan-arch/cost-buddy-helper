@@ -195,7 +195,9 @@ export const ProjectFullScreenView = ({
   const overdueMilestones = milestones.filter(m => m.status === 'overdue').length;
 
   // Total received = income transactions + funding allocations
-  const totalReceived = (stats.totalIncome || 0) + totalAllocated;
+  // Naplaćeno = samo stvarne income transakcije na projektu.
+  // project_funding (totalAllocated) je alokacija izvora, ne stvarna uplata klijenta.
+  const totalReceived = stats.totalIncome || 0;
 
   // Margin — identical formula to ActiveProjectsStrip home card: (budget - spent) / budget
   const marginPct = budget > 0 ? ((budget - totalSpent) / budget) * 100 : null;
